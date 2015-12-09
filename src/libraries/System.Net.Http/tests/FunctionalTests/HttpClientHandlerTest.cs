@@ -706,23 +706,28 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Version tests
-        [ActiveIssue(4754, PlatformID.Windows)]
+        // The HTTP RFC 7230 states that servers are NOT required to respond back with the same
+        // minor version if they support a higher minor version. In fact, the RFC states that
+        // servers SHOULD send back the highest minor version they support. So, testing the
+        // response version to see if the client sent a particular request version only works
+        // for some servers. In particular the 'Http2Servers' used in these tests always seem
+        // to echo the minor version of the request.
         [Theory, MemberData("Http2Servers")]
-        public async Task SendAsync_RequestVersion10_ResponseVersion10(Uri server)
+        public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
             Assert.Equal(new Version(1, 0), responseVersion);
         }
 
         [Theory, MemberData("Http2Servers")]
-        public async Task SendAsync_RequestVersion11_ResponseVersion11(Uri server)
+        public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
             Assert.Equal(new Version(1, 1), responseVersion);
         }
 
         [Theory, MemberData("Http2Servers")]
-        public async Task SendAsync_RequestVersionNotSpecified_ResponseVersion11(Uri server)
+        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
             Assert.Equal(new Version(1, 1), responseVersion);
@@ -746,6 +751,12 @@ namespace System.Net.Http.Functional.Tests
             if (requestVersion != null)
             {
                 request.Version = requestVersion;
+            }
+            else
+            {
+                // The default value for HttpRequestMessage.Version is Version(1,1).
+                // So, we need to set something different to test the "unknown" version.
+                request.Version = new Version(0,0);
             }
 
             using (var client = new HttpClient())
