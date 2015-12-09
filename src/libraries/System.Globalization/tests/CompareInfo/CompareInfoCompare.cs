@@ -3,12 +3,22 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CompareInfoCompare
     {
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        // on windows hiragana characters sort after katakana. on ICU, it is the opposite
+        private static int s_expectedHiraganaToKatakanaCompare = s_isWindows ? 1 : -1;
+
+        // on windows, all halfwidth characters sort before fullwidth characters.
+        // on ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
+        // sort before the corresponding characters that are in the block U+FF00-U+FFEF
+        private static int s_expectedHalfToFullFormsComparison = s_isWindows ? -1 : 1;
+
         private const string c_SoftHyphen = "\u00AD";
 
         [Fact]
@@ -203,24 +213,19 @@ namespace System.Globalization.Tests
         public void Test63() { TestOrd(CultureInfo.InvariantCulture, "\"", "\uFF02", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test64() { Test(CultureInfo.InvariantCulture, "\u3042", "\u30A1", 1, CompareOptions.None); }
+        public void Test64() { Test(CultureInfo.InvariantCulture, "\u3042", "\u30A1", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test65() { Test(CultureInfo.InvariantCulture, "\u3042", "\u30A2", 1, CompareOptions.None); }
+        public void Test65() { Test(CultureInfo.InvariantCulture, "\u3042", "\u30A2", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test66() { Test(CultureInfo.InvariantCulture, "\u3042", "\uFF71", 1, CompareOptions.None); }
+        public void Test66() { Test(CultureInfo.InvariantCulture, "\u3042", "\uFF71", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test67() { Test(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u30E3", 1, CompareOptions.None); }
+        public void Test67() { Test(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u30E3", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test68() { Test(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u3083", 1, CompareOptions.None); }
+        public void Test68() { Test(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u3083", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
         public void Test69() { Test(CultureInfo.InvariantCulture, "\u304D \u3083", "\u30AD\u3083", -1, CompareOptions.None); }
@@ -250,20 +255,16 @@ namespace System.Globalization.Tests
         public void Test77() { Test(CultureInfo.InvariantCulture, "\u6FA4", "\u6CA2", 1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test78() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", 1, CompareOptions.None); }
+        public void Test78() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test79() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", 1, CompareOptions.None); }
+        public void Test79() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test80() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", 1, CompareOptions.None); }
+        public void Test80() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test81() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", 1, CompareOptions.None); }
+        public void Test81() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
         public void Test82() { Test(CultureInfo.InvariantCulture, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\uFF8E\uFF9E", -1, CompareOptions.None); }
@@ -305,12 +306,10 @@ namespace System.Globalization.Tests
         public void Test94() { Test(CultureInfo.InvariantCulture, "\u3060", "\u305F", 1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test95() { Test(CultureInfo.InvariantCulture, "\u3060", "\uFF80\uFF9E", 1, CompareOptions.None); }
+        public void Test95() { Test(CultureInfo.InvariantCulture, "\u3060", "\uFF80\uFF9E", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
-        public void Test96() { Test(CultureInfo.InvariantCulture, "\u3060", "\u30C0", 1, CompareOptions.None); }
+        public void Test96() { Test(CultureInfo.InvariantCulture, "\u3060", "\u30C0", s_expectedHiraganaToKatakanaCompare, CompareOptions.None); }
 
         [Fact]
         [ActiveIssue(846, PlatformID.AnyUnix)]
@@ -522,10 +521,63 @@ namespace System.Globalization.Tests
         public void Test158() { Test(CultureInfo.InvariantCulture, "foobar", "FooB\u00C0R", -1, CompareOptions.IgnoreNonSpace); }
 
         [Fact]
-        public void Test159() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", 0, CompareOptions.IgnoreWidth); }
+        public void Test159() { Test(CultureInfo.InvariantCulture, "\uFF9E", "\u3099", 0, CompareOptions.IgnoreCase); }
 
         [Fact]
-        public void Test160() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", 1, CompareOptions.IgnoreCase); }
+        public void Test160() { Test(CultureInfo.InvariantCulture, "\uFF9E", "\u3099", 0, CompareOptions.IgnoreNonSpace); }
+
+        [Fact]
+        public void Test161() { Test(CultureInfo.InvariantCulture, "\u20A9", "\uFFE6", 0, CompareOptions.IgnoreWidth); }
+
+        [Fact]
+        public void Test162() { Test(CultureInfo.InvariantCulture, "\u20A9", "\uFFE6", -1, CompareOptions.IgnoreCase); }
+
+        [Fact]
+        public void Test163() { Test(CultureInfo.InvariantCulture, "\u20A9", "\uFFE6", -1, CompareOptions.None); }
+
+        [Fact]
+        public void Test164() { Test(CultureInfo.InvariantCulture, "\u0021", "\uFF01", 0, CompareOptions.IgnoreSymbols); }
+
+        [Fact]
+        [ActiveIssue(4907, PlatformID.AnyUnix)]
+        public void Test165() { Test(CultureInfo.InvariantCulture, "\u00A2", "\uFFE0", 0, CompareOptions.IgnoreSymbols); }
+
+        [Fact]
+        [ActiveIssue(4907, PlatformID.AnyUnix)]
+        public void Test166() { Test(CultureInfo.InvariantCulture, "$", "&", 0, CompareOptions.IgnoreSymbols); }
+
+        [Fact]
+        public void Test167() { Test(CultureInfo.InvariantCulture, "\uFF65", "\u30FB", 0, CompareOptions.IgnoreSymbols); }
+
+        [Fact]
+        public void Test168() { Test(CultureInfo.InvariantCulture, "\u0021", "\uFF01", 0, CompareOptions.IgnoreWidth); }
+
+        [Fact]
+        public void Test169() { Test(CultureInfo.InvariantCulture, "\u0021", "\uFF01", -1, CompareOptions.None); }
+
+        [Fact]
+        public void Test170() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", 0, CompareOptions.IgnoreWidth); }
+
+        [Fact]
+        public void Test171() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", s_expectedHalfToFullFormsComparison, CompareOptions.IgnoreSymbols); }
+
+        [Fact]
+        public void Test172() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", s_expectedHalfToFullFormsComparison, CompareOptions.IgnoreCase); }
+
+        [Fact]
+        public void Test173() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", s_expectedHalfToFullFormsComparison, CompareOptions.IgnoreNonSpace); }
+
+        [Fact]
+        public void Test174() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", s_expectedHalfToFullFormsComparison, CompareOptions.None); }
+
+        [Fact]
+        public void Test175() { Test(CultureInfo.InvariantCulture, "\u3060", "\u30C0", 0, CompareOptions.IgnoreKanaType); }
+
+        [Fact]
+        public void Test176() { Test(CultureInfo.InvariantCulture, "\u3060", "\u30C0", s_expectedHiraganaToKatakanaCompare, CompareOptions.IgnoreCase); }
+
+        [Fact]
+        public void Test177() { Test(CultureInfo.InvariantCulture, "c", "C", -1, CompareOptions.IgnoreKanaType); }
 
         [Theory]
         [InlineData(null, 0, 0, null, 0, 0, 0)]
@@ -594,7 +646,7 @@ namespace System.Globalization.Tests
             i = Math.Sign(i);
             Assert.Equal((0 - expected), i);
         }
-        
+
         private char GetNextUnassignedUnicode()
         {
             for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
