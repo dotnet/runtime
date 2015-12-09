@@ -1654,8 +1654,11 @@ public:
 
         // we will create a  long lifetime temp for the new cse LclVar
         unsigned   cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG("ValNumCSE"));  
-        var_types  cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());  
-
+        var_types  cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
+        if (varTypeIsStruct(cseLclVarTyp))
+        {
+            m_pCompiler->lvaSetStruct(cseLclVarNum, m_pCompiler->gtGetStructHandle(successfulCandidate->Expr()), false);
+        }
         m_pCompiler->lvaTable[cseLclVarNum].lvType = cseLclVarTyp;
         m_pCompiler->lvaTable[cseLclVarNum].lvIsCSE = true;
 
@@ -2127,7 +2130,9 @@ bool                Compiler::optIsCSEcandidate(GenTreePtr tree)
     var_types   type = tree->TypeGet();
     genTreeOps  oper = tree->OperGet();
 
-    if (type == TYP_STRUCT || type == TYP_VOID)
+    // TODO-1stClassStructs: Enable CSE for TYP_SIMD (depends on either transforming
+    // to use regular assignments, or handling copyObj.
+    if (varTypeIsStruct(type) || type == TYP_VOID)
         return false;
 
 #ifdef _TARGET_X86_
