@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Globalization.Tests</RootNamespace>
     <AssemblyName>System.Globalization.Tests</AssemblyName>
-    <RestorePackages>true</RestorePackages>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

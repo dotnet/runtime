@@ -140,6 +140,9 @@ publish/
 *.nupkg
 **/packages/*
 
+# NuGet package restore lockfiles
+project.lock.json
+
 # Windows Azure Build Output
 csx/
 *.build.csdef

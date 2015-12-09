@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00130</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00131</BuildToolsVersion>
     <DnxVersion>1.0.0-rc2-16128</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -58,6 +58,27 @@
     <TestRuntimeProjectLockJson Condition="'$(TestRuntimeProjectLockJson)' == ''">$(SourceDir)Common/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
   </PropertyGroup>
 
+  <!-- Package dependency validation -->
+  <PropertyGroup>
+    <ValidatePackageVersions>true</ValidatePackageVersions>
+    <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ValidationPattern Include="^((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
+      <ExpectedPrerelease>rc2-23604</ExpectedPrerelease>
+    </ValidationPattern>
+    <ValidationPattern Include="^(System\..*TestData)$">
+      <ExpectedVersion>1.0.0-prerelease</ExpectedVersion>
+    </ValidationPattern>
+    <ValidationPattern Include="^xunit$">
+      <ExpectedVersion>2.1.0</ExpectedVersion>
+    </ValidationPattern>
+    <ValidationPattern Include="^xunit\.netcore\.extensions$">
+      <ExpectedVersion>1.0.0-prerelease-00123</ExpectedVersion>
+    </ValidationPattern>
+  </ItemGroup>
+
   <!-- list of nuget package sources passed to nuget.exe -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
@@ -98,6 +119,7 @@
          https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
     <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\ref\*\project.json" />
     <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\tests\*\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\*\netcore50aot\project.json" />
     <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\Common\tests\**\project.json" />
   </ItemGroup>
 
@@ -114,6 +136,11 @@
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
+
+  <!-- Create a collection of all project.json files for dependency updates. -->
+  <ItemGroup>
+    <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">  
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->  

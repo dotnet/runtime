@@ -2,12 +2,12 @@
   "dependencies": {
     "System.Globalization": "4.0.0",
     "System.IO": "4.0.0",
-    "System.Reflection": "4.0.0",
+    "System.Reflection": "4.0.10",
     "System.Reflection.Extensions": "4.0.0",
     "System.Text.Encoding.Extensions": "4.0.0",
     "System.Threading": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}

@@ -9,7 +9,6 @@
     <RootNamespace>System.Runtime.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RestorePackages>true</RestorePackages>
     <NoWarn>1718</NoWarn>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>

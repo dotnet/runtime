@@ -18,6 +18,7 @@
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
+      ValidateAllProjectDependencies;
       BatchRestorePackages;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
@@ -33,6 +34,33 @@
       <_allPackagesConfigs Include="$(MSBuildProjectDirectory)\src\**\packages.config"/>
     </ItemGroup>
     <Exec Condition="'@(_allPackagesConfigs)' != ''" Command="$(NugetRestoreCommand) &quot;%(_allPackagesConfigs.FullPath)&quot;" StandardOutputImportance="Low" />
+  </Target>
+
+  <!-- Task from buildtools that validates dependencies contained in project.json files. -->
+  <UsingTask TaskName="ValidateProjectDependencyVersions" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="ValidateAllProjectDependencies"
+          Condition="'$(ValidatePackageVersions)'=='true' and '@(ProjectJsonFiles)'!=''">
+    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
+                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
+                                       ValidationPatterns="@(ValidationPattern)" />
+  </Target>
+
+  <!-- Tasks from buildtools for easy project.json dependency updates -->
+  <UsingTask TaskName="UpdatePrereleaseDependencies" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="UpdatePrereleaseDependencies">
+    <UpdatePrereleaseDependencies ProjectJsons="@(ProjectJsonFiles)"
+                                  OldPrerelease="$(OldPrerelease)"
+                                  NewPrerelease="$(NewPrerelease)" />
+  </Target>
+
+  <Target Name="UpdatePackageDependencyVersion">
+    <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
+                                    PackageId="$(PackageId)"
+                                    OldVersion="$(OldVersion)"
+                                    NewVersion="$(NewVersion)" />
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
