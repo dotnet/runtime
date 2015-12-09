@@ -25,6 +25,7 @@
     <Compile Include="SendReceive.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
+    <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="SocketTestServerAPMMock.cs" />
     
     <!-- Common Sockets files -->
