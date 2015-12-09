@@ -21,11 +21,10 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-// Helper function returns the instance handle of this module.
-HINSTANCE GetModuleInst();
-
 //********** Globals. *********************************************************
+#ifndef FEATURE_PAL
 HINSTANCE       g_hInst;                // Instance handle to this piece of code.
+#endif
 
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
@@ -180,9 +179,9 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         case DLL_PROCESS_ATTACH:
         {
+#ifndef FEATURE_PAL
             g_hInst = hInstance;
-
-#ifdef FEATURE_PAL
+#else
             int err = PAL_InitializeDLL();
             if(err != 0)
             {
@@ -429,16 +428,15 @@ HRESULT STDMETHODCALLTYPE CClassFactory::LockServer(
 }
 
 
-
-
-
 //*****************************************************************************
 // This helper provides access to the instance handle of the loaded image.
 //*****************************************************************************
+#ifndef FEATURE_PAL
 HINSTANCE GetModuleInst()
 {
     return g_hInst;
 }
+#endif
 
 
 //-----------------------------------------------------------------------------
