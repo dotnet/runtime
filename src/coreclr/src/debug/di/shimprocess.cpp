@@ -1825,16 +1825,16 @@ HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
 
 HMODULE ShimProcess::GetDacModule()
 {
-    
     HModuleHolder hDacDll;
+    WCHAR wszAccessDllPath[MAX_LONGPATH];
 
 #ifdef FEATURE_PAL
-    // For now on Unix we'll just search for DAC in the default location.
-    // Debugger can always control it by setting LD_LIBRARY_PATH env var.
-    WCHAR wszAccessDllPath[MAX_LONGPATH] = MAKEDLLNAME_W(W("mscordaccore"));
-
-#else    
-    WCHAR wszAccessDllPath[MAX_LONGPATH];
+    if (!PAL_GetPALDirectoryW(wszAccessDllPath, _countof(wszAccessDllPath)))
+    {
+        ThrowLastError();
+    }
+    wcscat_s(wszAccessDllPath, _countof(wszAccessDllPath), MAKEDLLNAME_W(W("mscordaccore")));
+#else
     //
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //
@@ -1844,7 +1844,7 @@ HMODULE ShimProcess::GetDacModule()
         ThrowLastError();
     }
 
-    PWSTR pPathTail = wcsrchr(wszAccessDllPath, '\\');
+    PWSTR pPathTail = wcsrchr(wszAccessDllPath, DIRECTORY_SEPARATOR_CHAR_W);
     if (!pPathTail)
     {
         ThrowHR(E_INVALIDARG);
@@ -1855,7 +1855,7 @@ HMODULE ShimProcess::GetDacModule()
     //   mscordaccore.dll  <-- coreclr
     //   mscordacwks.dll   <-- desktop
     PCWSTR eeFlavor = 
-#ifdef FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
+#if defined(FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
         W("core");    
 #else
         W("wks");    
@@ -1869,7 +1869,7 @@ HMODULE ShimProcess::GetDacModule()
     {
         ThrowHR(E_INVALIDARG);
     }
-#endif //!FEATURE_PAL  
+#endif // FEATURE_PAL
 
     hDacDll.Assign(WszLoadLibrary(wszAccessDllPath));
     if (!hDacDll)
