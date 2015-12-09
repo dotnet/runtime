@@ -602,6 +602,8 @@ typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 
 typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
+typedef void enum_alloc_context_func(alloc_context*, void*);
+
 class GCToEEInterface
 {
 public:
@@ -620,10 +622,7 @@ public:
     // 
     // The stack roots enumeration callback
     //
-    static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc);
-
-    // Optional static GC refs scanning for better parallelization of server GC marking
-    static void ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc);
+    static void GcScanRoots(promote_func* fn,  int condemned, int max_gen, ScanContext* sc);
 
     // 
     // Callbacks issues during GC that the execution engine can do its own bookeeping
@@ -655,12 +654,12 @@ public:
     static void EnablePreemptiveGC(Thread * pThread);
     static void DisablePreemptiveGC(Thread * pThread);
     static void SetGCSpecial(Thread * pThread);
-    static alloc_context * GetAllocContext(Thread * pThread);
     static bool CatchAtSafePoint(Thread * pThread);
+    static alloc_context * GetAllocContext(Thread * pThread);
 
     // ThreadStore functions
     static void AttachCurrentThread(); // does not acquire thread store lock
-    static Thread * GetThreadList(Thread * pThread);
+    static void GcEnumAllocContexts (enum_alloc_context_func* fn, void* param);
 };
 
 class FinalizerThread
