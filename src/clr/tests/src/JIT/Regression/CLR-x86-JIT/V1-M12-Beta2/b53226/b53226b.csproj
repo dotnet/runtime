@@ -27,11 +27,10 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType>Full</DebugType>
-    <Optimize>False</Optimize>
+    <DebugType></DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="gcreport.cs" />
+    <Compile Include="b53226b.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)empty\project.json" />
