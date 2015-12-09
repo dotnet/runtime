@@ -17,6 +17,9 @@
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <GenerateRunScript>false</GenerateRunScript>
+    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+   <GenerateRunScript>false</GenerateRunScript> 
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -36,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
