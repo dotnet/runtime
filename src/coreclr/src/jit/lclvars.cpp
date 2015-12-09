@@ -449,7 +449,7 @@ void                Compiler::lvaInitRetBuffArg(InitVarDscInfo *    varDscInfo)
     bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (info.compRetNativeType == TYP_STRUCT)
+    if (varTypeIsStruct(info.compRetNativeType))
     {
         if (IsRegisterPassable(info.compMethodInfo->args.retTypeClass))
         {
@@ -561,7 +561,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 
 #ifdef _TARGET_ARM_
 
-        var_types hfaType = (argType == TYP_STRUCT) ? GetHfaType(typeHnd) : TYP_UNDEF;
+        var_types hfaType = (varTypeIsStruct(argType) ? GetHfaType(typeHnd) : TYP_UNDEF;
         bool isHfaArg = !info.compIsVarArgs && varTypeIsFloating(hfaType);
 
         // On ARM we pass the first 4 words of integer arguments and non-HFA structs in registers.
@@ -652,7 +652,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #else // !_TARGET_ARM_
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-        if (argType == TYP_STRUCT)
+        if (varTypeIsStruct(argType))
         {
             assert(typeHnd != nullptr);
             eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -700,7 +700,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         bool canPassArgInRegisters = false;
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        if (argType == TYP_STRUCT)
+        if (varTypeIsStruct(argType))
         {
             canPassArgInRegisters = structDesc.passedInRegisters;
         }
@@ -728,7 +728,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             var_types firstEightByteType  = TYP_UNDEF;
             var_types secondEightByteType = TYP_UNDEF;
 
-            if (argType == TYP_STRUCT)
+            if (varTypeIsStruct(argType))
             {
                 if (structDesc.eightByteCount >= 1)
                 {
@@ -754,7 +754,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             varDsc->lvIsRegArg = 1;
 
 #if FEATURE_MULTIREG_STRUCT_ARGS
-            if (argType == TYP_STRUCT)
+            if (varTypeIsStruct(argType))
             {
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 varDsc->lvArgReg = genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType);
@@ -806,7 +806,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 // In case of one eightbyte struct the type is already normalized earlier.
                 // The varTypeIsFloating(argType) is good for this case.
-                if ((argType == TYP_STRUCT) && (structDesc.eightByteCount >= 1))
+                if (varTypeIsStruct(argType) && (structDesc.eightByteCount >= 1))
                 {
                     isFloat = varTypeIsFloating(firstEightByteType);
                 }
@@ -818,7 +818,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                if (argType == TYP_STRUCT)
+                if (varTypeIsStruct(argType))
                 {
                     // Print both registers, just to be clear
                     if (firstEightByteType == TYP_UNDEF)
@@ -1142,7 +1142,7 @@ void                Compiler::lvaInitVarDsc(LclVarDsc *              varDsc,
         
         // we don't want the EE to assert in lvaSetStruct on bad sigs, so change
         // the JIT type to avoid even trying to call back
-        if (type == TYP_STRUCT && varDsc->lvVerTypeInfo.IsDead())
+        if (varTypeIsStruct(type) && varDsc->lvVerTypeInfo.IsDead())
             type = TYP_VOID;
     }
 
@@ -1169,7 +1169,7 @@ void                Compiler::lvaInitVarDsc(LclVarDsc *              varDsc,
         varDsc->lvStructGcCount = 1;
 
     // Set the lvType (before this point it is TYP_UNDEF).
-    if (type == TYP_STRUCT)
+    if ((varTypeIsStruct(type)))
     {
         lvaSetStruct(varNum, typeHnd, typeHnd!=NULL, !tiVerificationNeeded);
     }
@@ -1893,7 +1893,7 @@ void               Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUG_ARG(
 }
 
 /*****************************************************************************
- * Set the lvClass for a local variable of TYP_STRUCT */
+ * Set the lvClass for a local variable of a struct type */
 
 void   Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo)
 {
@@ -1904,15 +1904,18 @@ void   Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, boo
         varDsc->lvVerTypeInfo = typeInfo(TI_STRUCT, typeHnd);
 
     // Set the type and associated info if we haven't already set it.
-    if ((varDsc->lvType == TYP_UNDEF) || (varDsc->lvType = TYP_STRUCT))
+    var_types structType = varDsc->lvType;
+    if (varDsc->lvType == TYP_UNDEF)
     {
-        varDsc->lvType     = TYP_STRUCT;
-
+        varDsc->lvType = TYP_STRUCT;
+    }
+    if (varDsc->lvExactSize == 0)
+    {
         varDsc->lvExactSize = info.compCompHnd->getClassSize(typeHnd);
 
         size_t lvSize = varDsc->lvSize();
         assert((lvSize % sizeof(void*)) == 0); // The struct needs to be a multiple of sizeof(void*) bytes for getClassGClayout() to be valid.
-        varDsc->lvGcLayout = (BYTE*) compGetMemA((lvSize / sizeof(void*)) * sizeof(BYTE), CMK_LvaTable);
+        varDsc->lvGcLayout = (BYTE*)compGetMemA((lvSize / sizeof(void*)) * sizeof(BYTE), CMK_LvaTable);
         unsigned numGCVars;
         var_types simdBaseType = TYP_UNKNOWN;
         varDsc->lvType = impNormStructType(typeHnd, varDsc->lvGcLayout, &numGCVars, &simdBaseType);
@@ -1933,6 +1936,9 @@ void   Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, boo
     else
     {
         assert(varDsc->lvExactSize != 0);
+#if FEATURE_SIMD
+        assert(!varTypeIsSIMD(varDsc) || (varDsc->lvBaseType != TYP_UNKNOWN));
+#endif // FEATURE_SIMD
     }
 
 #ifndef _TARGET_64BIT_
@@ -3036,8 +3042,8 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     bool allowStructs = false;
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    // On System V the type of the var could be a TYP_STRUCT.
-    allowStructs = varDsc->lvType == TYP_STRUCT;
+    // On System V the type of the var could be a struct type.
+    allowStructs = varTypeIsStruct(varDsc);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     /* Variables must be used as the same type throughout the method */
@@ -4300,7 +4306,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
         varDsc->lvStkOffs = *callerArgOffset;
         // Structs passed on stack could be of size less than TARGET_POINTER_SIZE.
         // Make sure they get at least TARGET_POINTER_SIZE on the stack - this is required for alignment.
-        if (varDsc->lvType == TYP_STRUCT)
+        if (argSize > TARGET_POINTER_SIZE)
         {
             *callerArgOffset += (int)roundUp(argSize, TARGET_POINTER_SIZE);
         }
@@ -5310,9 +5316,9 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         // alignment padding
         unsigned pad = 0;
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-        if (lclVarIsSIMDType(lclNum))
+        if (lclVarIsSIMDType(lclNum) && !lvaIsImplicitByRefLocal(lclNum))
         {
-            int alignment = getSIMDTypeAlignment(lvaTable[lclNum].lvVerTypeInfo.GetClassHandle());
+            int alignment = getSIMDTypeAlignment(lvaTable[lclNum].lvType);
 
             if (stkOffs % alignment != 0)
             {

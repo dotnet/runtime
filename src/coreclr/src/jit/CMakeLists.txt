@@ -6,11 +6,12 @@ include_directories("../inc")
 # Enable the following for UNIX altjit on Windows
 # add_definitions(-DALT_JIT)
 
-if (WIN32) 
 if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
-  add_definitions(-DFEATURE_SIMD -DFEATURE_AVX_SUPPORT) 
-endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_definitions(-DFEATURE_SIMD) 
+if (WIN32) 
+  add_definitions(-DFEATURE_AVX_SUPPORT) 
 endif (WIN32)
+endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
 set( JIT_SOURCES
   alloc.cpp
