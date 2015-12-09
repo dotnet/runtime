@@ -332,7 +332,7 @@ mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, M
 static gboolean
 get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
-	MonoMethod **dest = data;
+	MonoMethod **dest = (MonoMethod **)data;
 	const char *ns;
 
 	/* skip unmanaged frames */
@@ -436,7 +436,7 @@ typedef struct {
 static gboolean
 get_caller_of_elevated_trust_code (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
-	ElevatedTrustCookie *cookie = data;
+	ElevatedTrustCookie *cookie = (ElevatedTrustCookie *)data;
 
 	/* skip unmanaged frames and wrappers */
 	if (!managed || (m->wrapper_type != MONO_WRAPPER_NONE))
@@ -917,7 +917,7 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 	if (cinfo && mono_custom_attrs_has_attr (cinfo, security_critical_attribute ()))
 		level = MONO_SECURITY_CORE_CLR_CRITICAL;
 
-	return level;
+	return (MonoSecurityCoreCLRLevel)level;
 }
 
 /*

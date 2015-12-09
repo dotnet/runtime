@@ -324,7 +324,7 @@ bin_writer_emit_ensure_buffer (BinSection *section, int size)
 		guint8 *data;
 		while (new_size <= new_offset)
 			new_size *= 2;
-		data = g_malloc0 (new_size);
+		data = (guint8 *)g_malloc0 (new_size);
 #ifdef __native_client_codegen__
 		/* for Native Client, fill empty space with HLT instruction */
 		/* instead of 00.                                           */
@@ -448,7 +448,7 @@ static BinReloc*
 create_reloc (MonoImageWriter *acfg, const char *end, const char* start, int offset)
 {
 	BinReloc *reloc;
-	reloc = mono_mempool_alloc0 (acfg->mempool, sizeof (BinReloc));
+	reloc = (BinReloc *)mono_mempool_alloc0 (acfg->mempool, sizeof (BinReloc));
 	reloc->val1 = mono_mempool_strdup (acfg->mempool, end);
 	if (strcmp (start, ".") == 0) {
 		reloc->val2_section = acfg->cur_section;
@@ -899,7 +899,7 @@ get_label_addr (MonoImageWriter *acfg, const char *name)
 	BinSection *section;
 	gsize value;
 
-	lab = g_hash_table_lookup (acfg->labels, name);
+	lab = (BinLabel *)g_hash_table_lookup (acfg->labels, name);
 	if (!lab)
 		g_error ("Undefined label: '%s'.\n", name);
 	section = lab->section;
@@ -982,7 +982,7 @@ collect_syms (MonoImageWriter *acfg, int *hash, ElfStrTable *strtab, ElfSectHead
 		/*g_print ("sym name %s tabled to %d\n", symbol->name, symbols [i].st_name);*/
 		section = symbol->section;
 		symbols [i].st_shndx = section->parent? section->parent->shidx: section->shidx;
-		lab = g_hash_table_lookup (acfg->labels, symbol->name);
+		lab = (BinLabel *)g_hash_table_lookup (acfg->labels, symbol->name);
 		offset = lab->offset;
 		if (section->parent) {
 			symbols [i].st_value = section->parent->virt_offset + section->cur_offset + offset;
@@ -991,7 +991,7 @@ collect_syms (MonoImageWriter *acfg, int *hash, ElfStrTable *strtab, ElfSectHead
 		}
 
 		if (symbol->end_label) {
-			BinLabel *elab = g_hash_table_lookup (acfg->labels, symbol->end_label);
+			BinLabel *elab = (BinLabel *)g_hash_table_lookup (acfg->labels, symbol->end_label);
 			g_assert (elab);
 			symbols [i].st_size = elab->offset - lab->offset;
 		}
@@ -1063,7 +1063,7 @@ reloc_symbols (MonoImageWriter *acfg, ElfSymbol *symbols, ElfSectHeader *sheader
 		if (dynamic && !symbol->is_global)
 			continue;
 		section = symbol->section;
-		lab = g_hash_table_lookup (acfg->labels, symbol->name);
+		lab = (BinLabel *)g_hash_table_lookup (acfg->labels, symbol->name);
 		offset = lab->offset;
 		if (section->parent) {
 			symbols [i].st_value = sheaders [section->parent->shidx].sh_addr + section->cur_offset + offset;
@@ -1615,7 +1615,7 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 
 	if (!acfg->fp) {
 		acfg->out_buf_size = file_offset + sizeof (secth);
-		acfg->out_buf = g_malloc (acfg->out_buf_size);
+		acfg->out_buf = (guint8 *)g_malloc (acfg->out_buf_size);
 	}
 
 	bin_writer_fwrite (acfg, &header, sizeof (header), 1);

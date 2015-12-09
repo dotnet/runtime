@@ -48,7 +48,7 @@ mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
 static void
 free_node (void *n)
 {
-	node_t *node = n;
+	node_t *node = (node_t *)n;
 	assert (node->state == STATE_BUSY);
 	node->state = STATE_OUT;
 }
@@ -56,7 +56,7 @@ free_node (void *n)
 static void*
 worker (void *arg)
 {
-	thread_data_t *thread_data = arg;
+	thread_data_t *thread_data = (thread_data_t *)arg;
 	MonoThreadHazardPointers *hp;
 	int skip = thread_data->skip;
 	int i, j;

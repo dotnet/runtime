@@ -88,7 +88,7 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 static void
 doc_free (gpointer key)
 {
-	MonoDebugSourceInfo *info = key;
+	MonoDebugSourceInfo *info = (MonoDebugSourceInfo *)key;
 
 	g_free (info->source_file);
 	g_free (info);
@@ -176,7 +176,7 @@ mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 
 	mono_debugger_lock ();
 
-	minfo = g_hash_table_lookup (ppdb->method_hash, method);
+	minfo = (MonoDebugMethodInfo *)g_hash_table_lookup (ppdb->method_hash, method);
 	if (minfo) {
 		mono_debugger_unlock ();
 		return minfo;
@@ -208,7 +208,7 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	MonoDebugSourceInfo *res, *cached;
 
 	mono_debugger_lock ();
-	cached = g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
+	cached = (MonoDebugSourceInfo *)g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
 	mono_debugger_unlock ();
 	if (cached)
 		return cached;
@@ -246,7 +246,7 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	res->hash = (guint8*)mono_metadata_blob_heap (image, cols [MONO_DOCUMENT_HASH]);
 
 	mono_debugger_lock ();
-	cached = g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
+	cached = (MonoDebugSourceInfo *)g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
 	if (!cached) {
 		g_hash_table_insert (ppdb->doc_hash, GUINT_TO_POINTER (docidx), res);
 	} else {

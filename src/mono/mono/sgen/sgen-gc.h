@@ -237,8 +237,8 @@ sgen_get_nursery_end (void)
 #define SGEN_POINTER_UNTAG_VTABLE(p)		SGEN_POINTER_UNTAG_ALL((p))
 
 /* returns NULL if not forwarded, or the forwarded address */
-#define SGEN_VTABLE_IS_FORWARDED(vtable) (SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL)
-#define SGEN_OBJECT_IS_FORWARDED(obj) (SGEN_VTABLE_IS_FORWARDED (((mword*)(obj))[0]))
+#define SGEN_VTABLE_IS_FORWARDED(vtable) ((GCVTable *)(SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL))
+#define SGEN_OBJECT_IS_FORWARDED(obj) ((GCObject *)SGEN_VTABLE_IS_FORWARDED (((mword*)(obj))[0]))
 
 #define SGEN_VTABLE_IS_PINNED(vtable) SGEN_POINTER_IS_TAGGED_PINNED ((vtable))
 #define SGEN_OBJECT_IS_PINNED(obj) (SGEN_VTABLE_IS_PINNED (((mword*)(obj))[0]))
@@ -264,7 +264,7 @@ sgen_get_nursery_end (void)
  * Since we set bits in the vtable, use the macro to load it from the pointer to
  * an object that is potentially pinned.
  */
-#define SGEN_LOAD_VTABLE(obj)		((GCVTable)(SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((obj)))))
+#define SGEN_LOAD_VTABLE(obj)		((GCVTable)(SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((GCObject *)(obj)))))
 
 /*
 List of what each bit on of the vtable gc bits means. 
@@ -441,7 +441,7 @@ void sgen_pin_stats_register_global_remset (GCObject *obj);
 void sgen_pin_stats_print_class_stats (void);
 
 void sgen_sort_addresses (void **array, size_t size);
-void sgen_add_to_global_remset (gpointer ptr, gpointer obj);
+void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
 
 int sgen_get_current_collection_generation (void);
 gboolean sgen_collection_is_concurrent (void);

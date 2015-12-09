@@ -166,9 +166,9 @@ static void start_element (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **error)
 {
-	ParseState *state = user_data;
+	ParseState *state = (ParseState *)user_data;
 	if (!state->current) {
-		state->current = g_hash_table_lookup (config_handlers, element_name);
+		state->current = (MonoParseHandler *)g_hash_table_lookup (config_handlers, element_name);
 		if (state->current && state->current->init)
 			state->user_data = state->current->init (state->assembly);
 	}
@@ -181,7 +181,7 @@ static void end_element   (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **error)
 {
-	ParseState *state = user_data;
+	ParseState *state = (ParseState *)user_data;
 	if (state->current) {
 		if (state->current->end)
 			state->current->end (state->user_data, element_name);
@@ -200,7 +200,7 @@ static void parse_text    (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **error)
 {
-	ParseState *state = user_data;
+	ParseState *state = (ParseState *)user_data;
 	if (state->current && state->current->text)
 		state->current->text (state->user_data, text, text_len);
 }
@@ -218,7 +218,7 @@ static void parse_error   (GMarkupParseContext *context,
                            GError              *error,
 			   gpointer             user_data)
 {
-	ParseState *state = user_data;
+	ParseState *state = (ParseState *)user_data;
 	const gchar *msg;
 	const gchar *filename;
 
@@ -267,7 +267,7 @@ dllmap_start (gpointer user_data,
               const gchar        **attribute_values)
 {
 	int i;
-	DllInfo *info = user_data;
+	DllInfo *info = (DllInfo *)user_data;
 	
 	if (strcmp (element_name, "dllmap") == 0) {
 		g_free (info->dll);
@@ -284,7 +284,7 @@ dllmap_start (gpointer user_data,
 					size_t libdir_len = strlen (libdir);
 					char *result;
 					
-					result = g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_values[i])+1);
+					result = (char *)g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_values[i])+1);
 					strncpy (result, attribute_names[i], p-attribute_values[i]);
 					strcat (result, libdir);
 					strcat (result, p+strlen("$mono_libdir"));
@@ -327,7 +327,7 @@ dllmap_start (gpointer user_data,
 static void
 dllmap_finish (gpointer user_data)
 {
-	DllInfo *info = user_data;
+	DllInfo *info = (DllInfo *)user_data;
 
 	g_free (info->dll);
 	g_free (info->target);
@@ -448,7 +448,7 @@ mono_config_parse_xml_with_context (ParseState *state, const char *text, gsize l
 	if (!inited)
 		mono_config_init ();
 
-	context = g_markup_parse_context_new (&mono_parser, 0, state, NULL);
+	context = g_markup_parse_context_new (&mono_parser, (GMarkupParseFlags)0, state, NULL);
 	if (g_markup_parse_context_parse (context, text, len, NULL)) {
 		g_markup_parse_context_end_parse (context, NULL);
 	}
@@ -668,7 +668,7 @@ mono_get_machine_config (void)
 static void
 assembly_binding_end (gpointer user_data, const char *element_name)
 {
-	ParserUserData *pud = user_data;
+	ParserUserData *pud = (ParserUserData *)user_data;
 
 	if (!strcmp (element_name, "dependentAssembly")) {
 		if (pud->info_parsed && pud->info) {
@@ -689,7 +689,7 @@ publisher_policy_start (gpointer user_data,
 	MonoAssemblyBindingInfo *info;
 	int n;
 
-	pud = user_data;
+	pud = (ParserUserData *)user_data;
 	info = pud->info;
 	if (!strcmp (element_name, "dependentAssembly")) {
 		info->name = NULL;

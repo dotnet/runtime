@@ -20,7 +20,7 @@ static char *
 convert_name (const char *str)
 {
 	int i, j, len = strlen (str);
-	char *res = g_malloc (len * 2);
+	char *res = (char *)g_malloc (len * 2);
 
 	j = 0;
 	for (i = 0; i < len; i++) {

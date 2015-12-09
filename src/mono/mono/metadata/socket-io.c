@@ -648,19 +648,19 @@ ves_icall_System_Net_Sockets_Socket_Socket_internal (MonoObject *this_obj, gint3
 	
 	*error = 0;
 	
-	sock_family=convert_family(family);
+	sock_family = convert_family ((MonoAddressFamily)family);
 	if(sock_family==-1) {
 		*error = WSAEAFNOSUPPORT;
 		return(NULL);
 	}
 
-	sock_proto=convert_proto(proto);
+	sock_proto = convert_proto ((MonoProtocolType)proto);
 	if(sock_proto==-1) {
 		*error = WSAEPROTONOSUPPORT;
 		return(NULL);
 	}
 	
-	sock_type=convert_type(type);
+	sock_type = convert_type ((MonoSocketType)type);
 	if(sock_type==-1) {
 		*error = WSAESOCKTNOSUPPORT;
 		return(NULL);
@@ -967,12 +967,12 @@ ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (SOCKET sock, gint32 
 	
 	*error = 0;
 	
-	salen = get_sockaddr_size (convert_family (af));
+	salen = get_sockaddr_size (convert_family ((MonoAddressFamily)af));
 	if (salen == 0) {
 		*error = WSAEAFNOSUPPORT;
 		return NULL;
 	}
-	sa = (salen <= 128) ? alloca (salen) : g_malloc0 (salen);
+	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
 
 	MONO_PREPARE_BLOCKING;
 
@@ -1005,12 +1005,12 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (SOCKET sock, gint32
 	
 	*error = 0;
 	
-	salen = get_sockaddr_size (convert_family (af));
+	salen = get_sockaddr_size (convert_family ((MonoAddressFamily)af));
 	if (salen == 0) {
 		*error = WSAEAFNOSUPPORT;
 		return NULL;
 	}
-	sa = (salen <= 128) ? alloca (salen) : g_malloc0 (salen);
+	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
 	/* Note: linux returns just 2 for AF_UNIX. Always. */
 
 	MONO_PREPARE_BLOCKING;
@@ -1060,7 +1060,7 @@ create_sockaddr_from_object(MonoObject *saddr_obj, socklen_t *sa_size, gint32 *e
 		mono_raise_exception (mono_exception_from_name(mono_get_corlib (), "System", "SystemException"));
 	}
 	
-	family = convert_family (mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8));
+	family = convert_family ((MonoAddressFamily)(mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8)));
 	if (family == AF_INET) {
 		struct sockaddr_in *sa;
 		guint16 port;
@@ -1233,7 +1233,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 		}
 
 		if (ret == -1 && errno == EINTR) {
-			if (mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested)) {
+			if (mono_thread_test_state (thread, (MonoThreadState)(ThreadState_AbortRequested | ThreadState_StopRequested))) {
 				g_free (pfds);
 				return FALSE;
 			}
@@ -1335,8 +1335,8 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	 * pointers to functions in managed objects that still works
 	 * on 64bit platforms.
 	 */
-	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (void *)&disco_guid, sizeof(GUID),
-			(void *)&_wapi_disconnectex, sizeof(void *), &output_bytes, NULL, NULL);
+	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (gchar *)&disco_guid, sizeof(GUID),
+			(gchar *)&_wapi_disconnectex, sizeof(void *), &output_bytes, NULL, NULL);
 
 	MONO_FINISH_BLOCKING;
 
@@ -1356,8 +1356,8 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 		 * For an explanation of why this is done, you can read
 		 * the article at http://www.codeproject.com/internet/jbsocketserver3.asp
 		 */
-		ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (void *)&trans_guid, sizeof(GUID),
-				(void *)&_wapi_transmitfile, sizeof(void *), &output_bytes, NULL, NULL);
+		ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, (gchar *)&trans_guid, sizeof(GUID),
+				(gchar *)&_wapi_transmitfile, sizeof(void *), &output_bytes, NULL, NULL);
 
 		MONO_FINISH_BLOCKING;
 
@@ -1374,10 +1374,10 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	MONO_PREPARE_BLOCKING;
 
 	if (_wapi_disconnectex != NULL) {
-		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, 0))
+		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, (WapiTransmitFileFlags)0))
 			*error = WSAGetLastError ();
 	} else if (_wapi_transmitfile != NULL) {
-		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | TF_REUSE_SOCKET))
+		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, (WapiTransmitFileFlags)(TF_DISCONNECT | TF_REUSE_SOCKET)))
 			*error = WSAGetLastError ();
 	} else {
 		*error = ERROR_NOT_SUPPORTED;
@@ -1820,7 +1820,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 		}
 
 		if (ret == -1 && errno == EINTR) {
-			if (mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested)) {
+			if (mono_thread_test_state (thread, (MonoThreadState)(ThreadState_AbortRequested | ThreadState_StopRequested))) {
 				g_free (pfds);
 				*sockets = NULL;
 				return;
@@ -1924,7 +1924,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 #endif
 	{
 
-		ret = convert_sockopt_level_and_name (level, name, &system_level, &system_name);
+		ret = convert_sockopt_level_and_name ((MonoSocketOptionLevel)level, (MonoSocketOptionName)name, &system_level, &system_name);
 	}
 
 	if(ret==-1) {
@@ -2054,7 +2054,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal (SOCKET sock, g
 	
 	*error = 0;
 	
-	ret=convert_sockopt_level_and_name(level, name, &system_level,
+	ret=convert_sockopt_level_and_name((MonoSocketOptionLevel)level, (MonoSocketOptionName)name, &system_level,
 					   &system_name);
 	if(ret==-1) {
 		*error = WSAENOPROTOOPT;
@@ -2170,7 +2170,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 	sol_ipv6 = mono_networking_get_ipv6_protocol ();
 	sol_ip = mono_networking_get_ip_protocol ();
 
-	ret=convert_sockopt_level_and_name(level, name, &system_level,
+	ret=convert_sockopt_level_and_name((MonoSocketOptionLevel)level, (MonoSocketOptionName)name, &system_level,
 					   &system_name);
 
 #if !defined(SO_EXCLUSIVEADDRUSE) && defined(SO_REUSEADDR)
@@ -2221,7 +2221,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 				 *	Get group address
 				 */
 				field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
-				address = *(gpointer *)(((char *)obj_val) + field->offset);
+				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 				
 				if(address) {
 					mreq6.ipv6mr_multiaddr = ipaddress_to_struct_in6_addr (address);
@@ -2260,7 +2260,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 				 * those :-(
 				 */
 				field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
-				address = *(gpointer *)(((char *)obj_val) + field->offset);
+				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 
 				/* address might not be defined and if so, set the address to ADDR_ANY.
 				 */
@@ -2269,7 +2269,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 				}
 
 				field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
-				address = *(gpointer *)(((char *)obj_val) + field->offset);
+				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 
 #ifdef HAVE_STRUCT_IP_MREQN
 				if(address) {

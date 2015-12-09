@@ -60,8 +60,8 @@ static const RegionInfoEntry* region_info_entry_from_lcid (int lcid);
 static int
 culture_lcid_locator (const void *a, const void *b)
 {
-	const int *lcid = a;
-	const CultureInfoEntry *bb = b;
+	const int *lcid = (const int *)a;
+	const CultureInfoEntry *bb = (const CultureInfoEntry *)b;
 
 	return *lcid - bb->lcid;
 }
@@ -69,8 +69,8 @@ culture_lcid_locator (const void *a, const void *b)
 static int
 culture_name_locator (const void *a, const void *b)
 {
-	const char *aa = a;
-	const CultureInfoNameEntry *bb = b;
+	const char *aa = (const char *)a;
+	const CultureInfoNameEntry *bb = (const CultureInfoNameEntry *)b;
 	int ret;
 	
 	ret = strcmp (aa, idx2string (bb->name));
@@ -81,8 +81,8 @@ culture_name_locator (const void *a, const void *b)
 static int
 region_name_locator (const void *a, const void *b)
 {
-	const char *aa = a;
-	const RegionInfoNameEntry *bb = b;
+	const char *aa = (const char *)a;
+	const RegionInfoNameEntry *bb = (const RegionInfoNameEntry *)b;
 	int ret;
 	
 	ret = strcmp (aa, idx2string (bb->name));
@@ -167,7 +167,7 @@ ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData
 	char *n;
 
 	n = mono_string_to_utf8 (name);
-	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
+	ne = (const CultureInfoNameEntry *)mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 	g_free (n);
 	if (ne == NULL) {
@@ -317,7 +317,7 @@ culture_info_entry_from_lcid (int lcid)
 {
 	const CultureInfoEntry *ci;
 
-	ci = mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
+	ci = (const CultureInfoEntry *)mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
 	return ci;
 }
@@ -328,7 +328,7 @@ region_info_entry_from_lcid (int lcid)
 	const RegionInfoEntry *entry;
 	const CultureInfoEntry *ne;
 
-	ne = mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
+	ne = (const CultureInfoEntry *)mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
 	if (ne == NULL)
 		return FALSE;
@@ -509,7 +509,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 	char *n;
 	
 	n = mono_string_to_utf8 (name);
-	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
+	ne = (const CultureInfoNameEntry *)mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL) {
@@ -557,7 +557,7 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
 	char *n;
 	
 	n = mono_string_to_utf8 (name);
-	ne = mono_binary_search (n, region_name_entries, NUM_REGION_ENTRIES,
+	ne = (const RegionInfoNameEntry *)mono_binary_search (n, region_name_entries, NUM_REGION_ENTRIES,
 		sizeof (RegionInfoNameEntry), region_name_locator);
 
 	if (ne == NULL) {
@@ -666,12 +666,12 @@ int ves_icall_System_Threading_Thread_current_lcid (void)
 	return(0x007F);
 }
 
-MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this_obj, MonoString *old, MonoString *new, MonoCompareInfo *comp)
+MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this_obj, MonoString *old, MonoString *new_, MonoCompareInfo *comp)
 {
 	/* Do a normal ascii string compare and replace, as we only
 	 * know the invariant locale if we dont have ICU
 	 */
-	return(string_invariant_replace (this_obj, old, new));
+	return(string_invariant_replace (this_obj, old, new_));
 }
 
 static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,

@@ -173,7 +173,7 @@ sgen_dump_pin_queue (void)
 	int i;
 
 	for (i = 0; i < last_num_pinned; ++i) {
-		void *ptr = pin_queue.data [i];
+		GCObject *ptr = (GCObject *)pin_queue.data [i];
 		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (ptr)), sgen_safe_object_get_size (ptr));
 	}
 }

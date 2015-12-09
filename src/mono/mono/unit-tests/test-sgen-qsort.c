@@ -100,7 +100,7 @@ compare_sorts2 (void *base, size_t nel)
 	memcpy (b2, base, len);
 
 	qsort (b1, nel, sizeof (teststruct_t*), compare_teststructs2);
-	qsort_test_struct (b2, nel);
+	qsort_test_struct ((teststruct_t **)b2, nel);
 
 	assert (!memcmp (b1, b2, len));
 

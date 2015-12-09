@@ -99,7 +99,7 @@ load_file (const char *name) {
 			is_template = TRUE;
 			desc = g_new0 (OpDesc, 1);
 		} else {
-			desc = g_hash_table_lookup (table, str);
+			desc = (OpDesc *)g_hash_table_lookup (table, str);
 			if (!desc)
 				g_error ("Invalid opcode '%s' at line %d in %s\n", str, line, name);
 			if (desc->desc)
@@ -165,7 +165,7 @@ load_file (const char *name) {
 				tname = p;
 				while (*p && isalnum (*p)) ++p;
 				*p++ = 0;
-				tdesc = g_hash_table_lookup (template_table, tname);
+				tdesc = (OpDesc *)g_hash_table_lookup (template_table, tname);
 				if (!tdesc)
 					g_error ("Invalid template name %s at '%s' at line %d in %s\n", tname, p, line, name);
 				for (i = 0; i < MONO_INST_MAX; ++i) {

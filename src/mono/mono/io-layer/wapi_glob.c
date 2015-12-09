@@ -266,8 +266,9 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 	const gchar *p;
 
 	newsize = sizeof(*pathv) * (2 + pglob->gl_pathc + pglob->gl_offs);
-	pathv = pglob->gl_pathv ? realloc((char *)pglob->gl_pathv, newsize) :
-	    malloc(newsize);
+	/* FIXME: Can just use realloc(). */
+	pathv = (char **)(pglob->gl_pathv ? realloc((char *)pglob->gl_pathv, newsize) :
+	    malloc(newsize));
 	if (pathv == NULL) {
 		if (pglob->gl_pathv) {
 			free(pglob->gl_pathv);
@@ -288,7 +289,7 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 		;
 	len = (size_t)(p - path);
 	*limitp += len;
-	if ((copy = malloc(len)) != NULL) {
+	if ((copy = (char *)malloc(len)) != NULL) {
 		if (g_Ctoc(path, copy, len)) {
 			free(copy);
 			return(WAPI_GLOB_NOSPACE);

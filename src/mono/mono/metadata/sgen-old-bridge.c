@@ -147,7 +147,7 @@ dyn_array_ensure_capacity (DynArray *da, int capacity, int elem_size)
 	while (capacity > da->capacity)
 		da->capacity *= 2;
 
-	new_data = sgen_alloc_internal_dynamic (elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	new_data = (char *)sgen_alloc_internal_dynamic (elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	memcpy (new_data, da->data, elem_size * da->size);
 	sgen_free_internal_dynamic (da->data, elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = new_data;
@@ -193,7 +193,7 @@ dyn_array_int_set_size (DynIntArray *da, int size)
 static void
 dyn_array_int_add (DynIntArray *da, int x)
 {
-	int *p = dyn_array_add (&da->array, sizeof (int));
+	int *p = (int *)dyn_array_add (&da->array, sizeof (int));
 	*p = x;
 }
 
@@ -258,7 +258,7 @@ dyn_array_ptr_get (DynPtrArray *da, int x)
 static void
 dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 {
-	void **p = dyn_array_add (&da->array, sizeof (void*));
+	void **p = (void **)dyn_array_add (&da->array, sizeof (void*));
 	*p = ptr;
 }
 
@@ -298,7 +298,7 @@ dyn_array_scc_size (DynSCCArray *da)
 static SCC*
 dyn_array_scc_add (DynSCCArray *da)
 {
-	return dyn_array_add (&da->array, sizeof (SCC));
+	return (SCC *)dyn_array_add (&da->array, sizeof (SCC));
 }
 
 static SCC*
@@ -408,7 +408,7 @@ class_kind (MonoClass *klass)
 static HashEntry*
 get_hash_entry (GCObject *obj, gboolean *existing)
 {
-	HashEntry *entry = sgen_hash_table_lookup (&hash_table, obj);
+	HashEntry *entry = (HashEntry *)sgen_hash_table_lookup (&hash_table, obj);
 	HashEntry new_entry;
 
 	if (entry) {
@@ -428,7 +428,7 @@ get_hash_entry (GCObject *obj, gboolean *existing)
 
 	sgen_hash_table_replace (&hash_table, obj, &new_entry, NULL);
 
-	return sgen_hash_table_lookup (&hash_table, obj);
+	return (HashEntry *)sgen_hash_table_lookup (&hash_table, obj);
 }
 
 static void
@@ -445,7 +445,7 @@ free_data (void)
 	int total_srcs = 0;
 	int max_srcs = 0;
 
-	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+	SGEN_HASH_TABLE_FOREACH (&hash_table, GCObject *, obj, HashEntry *, entry) {
 		int entry_size = dyn_array_ptr_size (&entry->srcs);
 		total_srcs += entry_size;
 		if (entry_size > max_srcs)
@@ -516,11 +516,11 @@ dfs1 (HashEntry *obj_entry)
 		GCObject *obj;
 		++dfs1_passes;
 
-		obj_entry = dyn_array_ptr_pop (&dfs_stack);
+		obj_entry = (HashEntry *)dyn_array_ptr_pop (&dfs_stack);
 		if (obj_entry) {
 			char *start;
 			mword desc;
-			src = dyn_array_ptr_pop (&dfs_stack);
+			src = (HashEntry *)dyn_array_ptr_pop (&dfs_stack);
 
 			obj = obj_entry->obj;
 			desc = sgen_obj_get_descriptor_safe (obj);
@@ -544,7 +544,7 @@ dfs1 (HashEntry *obj_entry)
 			start = (char*)obj;
 #include "sgen/sgen-scan-object.h"
 		} else {
-			obj_entry = dyn_array_ptr_pop (&dfs_stack);
+			obj_entry = (HashEntry *)dyn_array_ptr_pop (&dfs_stack);
 
 			//g_print ("finish %s\n", sgen_safe_name (obj_entry->obj));
 			register_finishing_time (obj_entry, current_time++);
@@ -592,7 +592,7 @@ dfs2 (HashEntry *entry)
 	dyn_array_ptr_push (&dfs_stack, entry);
 
 	do {
-		entry = dyn_array_ptr_pop (&dfs_stack);
+		entry = (HashEntry *)dyn_array_ptr_pop (&dfs_stack);
 		++dfs2_passes;
 
 		if (entry->scc_index >= 0) {
@@ -663,10 +663,10 @@ processing_stw_step (void)
 	*/
 	bridge_count = dyn_array_ptr_size (&registered_bridges);
 	for (i = 0; i < bridge_count ; ++i)
-		register_bridge_object (dyn_array_ptr_get (&registered_bridges, i));
+		register_bridge_object ((GCObject *)dyn_array_ptr_get (&registered_bridges, i));
 
 	for (i = 0; i < bridge_count; ++i)
-		dfs1 (get_hash_entry (dyn_array_ptr_get (&registered_bridges, i), NULL));
+		dfs1 (get_hash_entry ((GCObject *)dyn_array_ptr_get (&registered_bridges, i), NULL));
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
@@ -700,10 +700,10 @@ processing_build_callback_data (int generation)
 
 	/* alloc and fill array of all entries */
 
-	all_entries = sgen_alloc_internal_dynamic (sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	all_entries = (HashEntry **)sgen_alloc_internal_dynamic (sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 
 	j = 0;
-	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+	SGEN_HASH_TABLE_FOREACH (&hash_table, GCObject *, obj, HashEntry *, entry) {
 		g_assert (entry->finishing_time >= 0);
 		all_entries [j++] = entry;
 		fist_pass_links += dyn_array_ptr_size (&entry->srcs);
@@ -795,7 +795,7 @@ processing_build_callback_data (int generation)
 		max_sccs_links = MAX (max_sccs_links, dyn_array_int_size (&scc->xrefs));
 	}
 
-	api_sccs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	num_xrefs = 0;
 	j = 0;
 	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
@@ -803,7 +803,7 @@ processing_build_callback_data (int generation)
 		if (!scc->num_bridge_entries)
 			continue;
 
-		api_sccs [j] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * scc->num_bridge_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+		api_sccs [j] = (MonoGCBridgeSCC *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * scc->num_bridge_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 		api_sccs [j]->is_alive = FALSE;
 		api_sccs [j]->num_objs = scc->num_bridge_entries;
 		scc->num_bridge_entries = 0;
@@ -812,14 +812,14 @@ processing_build_callback_data (int generation)
 		num_xrefs += dyn_array_int_size (&scc->xrefs);
 	}
 
-	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+	SGEN_HASH_TABLE_FOREACH (&hash_table, GCObject *, obj, HashEntry *, entry) {
 		if (entry->is_bridge) {
 			SCC *scc = dyn_array_scc_get_ptr (&sccs, entry->scc_index);
 			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = (MonoObject*)entry->obj;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 
-	api_xrefs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	j = 0;
 	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		int k;
@@ -923,7 +923,7 @@ describe_pointer (GCObject *obj)
 		}
 	}
 
-	entry = sgen_hash_table_lookup (&hash_table, obj);
+	entry = (HashEntry *)sgen_hash_table_lookup (&hash_table, obj);
 	if (!entry)
 		return;
 

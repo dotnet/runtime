@@ -144,7 +144,7 @@ mono_regstate_assign (MonoRegState *rs)
 	if (rs->next_vreg > rs->vassign_size) {
 		g_free (rs->vassign);
 		rs->vassign_size = MAX (rs->next_vreg, 256);
-		rs->vassign = g_malloc (rs->vassign_size * sizeof (gint32));
+		rs->vassign = (gint32 *)g_malloc (rs->vassign_size * sizeof (gint32));
 	}
 
 	memset (rs->isymbolic, 0, MONO_MAX_IREGS * sizeof (rs->isymbolic [0]));
@@ -295,7 +295,7 @@ resize_spill_info (MonoCompile *cfg, int bank)
 
 	g_assert (bank < MONO_NUM_REGBANKS);
 
-	new_info = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoSpillInfo) * new_len);
+	new_info = (MonoSpillInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoSpillInfo) * new_len);
 	if (orig_info)
 		memcpy (new_info, orig_info, sizeof (MonoSpillInfo) * orig_len);
 	for (i = orig_len; i < new_len; ++i)
@@ -1180,10 +1180,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (cfg->reginfo && cfg->reginfo_len < max)
 		cfg->reginfo = NULL;
 
-	reginfo = cfg->reginfo;
+	reginfo = (RegTrack *)cfg->reginfo;
 	if (!reginfo) {
 		cfg->reginfo_len = MAX (1024, max * 2);
-		reginfo = cfg->reginfo = mono_mempool_alloc (cfg->mempool, sizeof (RegTrack) * cfg->reginfo_len);
+		reginfo = (RegTrack *)mono_mempool_alloc (cfg->mempool, sizeof (RegTrack) * cfg->reginfo_len);
+		cfg->reginfo = reginfo;
 	} 
 	else
 		g_assert (cfg->reginfo_len >= rs->next_vreg);
@@ -2450,7 +2451,7 @@ mono_opcode_to_cond (int opcode)
 	default:
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
-		return 0;
+		return (CompRelation)0;
 	}
 }
 
@@ -2512,7 +2513,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 		}
 	} else {
 		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
-		return 0;
+		return (CompType)0;
 	}
 }
 

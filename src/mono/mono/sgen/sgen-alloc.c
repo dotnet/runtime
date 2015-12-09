@@ -196,7 +196,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 	 */
 
 	if (real_size > SGEN_MAX_SMALL_OBJ_SIZE) {
-		p = sgen_los_alloc_large_inner (vtable, ALIGN_UP (real_size));
+		p = (void **)sgen_los_alloc_large_inner (vtable, ALIGN_UP (real_size));
 	} else {
 		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
@@ -252,7 +252,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 			available_in_tlab = (int)(TLAB_REAL_END - TLAB_NEXT);//We'll never have tlabs > 2Gb
 			if (size > tlab_size || available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 				/* Allocate directly from the nursery */
-				p = sgen_nursery_alloc (size);
+				p = (void **)sgen_nursery_alloc (size);
 				if (!p) {
 					/*
 					 * We couldn't allocate from the nursery, so we try
@@ -273,7 +273,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 					 */
 					sgen_ensure_free_space (real_size);
 					if (!degraded_mode)
-						p = sgen_nursery_alloc (size);
+						p = (void **)sgen_nursery_alloc (size);
 				}
 				if (!p)
 					return alloc_degraded (vtable, size, FALSE);
@@ -285,12 +285,12 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 					SGEN_LOG (3, "Retire TLAB: %p-%p [%ld]", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size));
 				sgen_nursery_retire_region (p, available_in_tlab);
 
-				p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+				p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				if (!p) {
 					/* See comment above in similar case. */
 					sgen_ensure_free_space (tlab_size);
 					if (!degraded_mode)
-						p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+						p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				}
 				if (!p)
 					return alloc_degraded (vtable, size, FALSE);
@@ -304,7 +304,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 				zero_tlab_if_necessary (TLAB_START, alloc_size);
 
 				/* Allocate from the TLAB */
-				p = (void*)TLAB_NEXT;
+				p = (void **)TLAB_NEXT;
 				TLAB_NEXT += size;
 				sgen_set_nursery_scan_start ((char*)p);
 			}
@@ -349,7 +349,7 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 
 	if (G_UNLIKELY (size > tlab_size)) {
 		/* Allocate directly from the nursery */
-		p = sgen_nursery_alloc (size);
+		p = (void **)sgen_nursery_alloc (size);
 		if (!p)
 			return NULL;
 		sgen_set_nursery_scan_start ((char*)p);
@@ -380,7 +380,7 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 			}
 		} else if (available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 			/* Allocate directly from the nursery */
-			p = sgen_nursery_alloc (size);
+			p = (void **)sgen_nursery_alloc (size);
 			if (!p)
 				return NULL;
 
@@ -389,7 +389,7 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 			size_t alloc_size = 0;
 
 			sgen_nursery_retire_region (p, available_in_tlab);
-			new_next = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+			new_next = (char *)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 			p = (void**)new_next;
 			if (!p)
 				return NULL;
@@ -478,7 +478,7 @@ sgen_alloc_obj_pinned (GCVTable vtable, size_t size)
 
 	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
-		p = sgen_los_alloc_large_inner (vtable, size);
+		p = (GCObject *)sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		SGEN_ASSERT (9, sgen_client_vtable_is_inited (vtable), "class %s:%s is not initialized", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 		p = major_collector.alloc_small_pinned_obj (vtable, size, SGEN_VTABLE_HAS_REFERENCES (vtable));

@@ -260,8 +260,8 @@ mono_monitor_cleanup (void)
 	/*mono_os_mutex_destroy (&monitor_mutex);*/
 
 	/* The monitors on the freelist don't have weak links - mark them */
-	for (mon = monitor_freelist; mon; mon = mon->data)
-		mon->wait_list = (gpointer)-1;
+	for (mon = monitor_freelist; mon; mon = (MonoThreadsSync *)mon->data)
+		mon->wait_list = (GSList *)-1;
 
 	/*
 	 * FIXME: This still crashes with sgen (async_read.exe)
@@ -319,7 +319,7 @@ mono_locks_dump (gboolean include_untaken)
 	int used = 0, on_freelist = 0, to_recycle = 0, total = 0, num_arrays = 0;
 	MonoThreadsSync *mon;
 	MonitorArray *marray;
-	for (mon = monitor_freelist; mon; mon = mon->data)
+	for (mon = monitor_freelist; mon; mon = (MonoThreadsSync *)mon->data)
 		on_freelist++;
 	for (marray = monitor_allocated; marray; marray = marray->next) {
 		total += marray->num_monitors;
@@ -330,7 +330,7 @@ mono_locks_dump (gboolean include_untaken)
 				if (i < marray->num_monitors - 1)
 					to_recycle++;
 			} else {
-				if (!monitor_is_on_freelist (mon->data)) {
+				if (!monitor_is_on_freelist ((MonoThreadsSync *)mon->data)) {
 					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
@@ -378,39 +378,39 @@ mon_finalize (MonoThreadsSync *mon)
 static MonoThreadsSync *
 mon_new (gsize id)
 {
-	MonoThreadsSync *new;
+	MonoThreadsSync *new_;
 
 	if (!monitor_freelist) {
 		MonitorArray *marray;
 		int i;
 		/* see if any sync block has been collected */
-		new = NULL;
+		new_ = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
 				if (mono_gchandle_get_target ((guint32)marray->monitors [i].data) == NULL) {
-					new = &marray->monitors [i];
-					if (new->wait_list) {
+					new_ = &marray->monitors [i];
+					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
-						while (new->wait_list) {
+						while (new_->wait_list) {
 							LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d): Closing orphaned event %d", mono_thread_info_get_small_id (), new->wait_list->data));
-							CloseHandle (new->wait_list->data);
-							new->wait_list = g_slist_remove (new->wait_list, new->wait_list->data);
+							CloseHandle (new_->wait_list->data);
+							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
-					mono_gchandle_free ((guint32)new->data);
-					new->data = monitor_freelist;
-					monitor_freelist = new;
+					mono_gchandle_free ((guint32)new_->data);
+					new_->data = monitor_freelist;
+					monitor_freelist = new_;
 				}
 			}
 			/* small perf tweak to avoid scanning all the blocks */
-			if (new)
+			if (new_)
 				break;
 		}
 		/* need to allocate a new array of monitors */
 		if (!monitor_freelist) {
 			MonitorArray *last;
 			LOCK_DEBUG (g_message ("%s: allocating more monitors: %d", __func__, array_size));
-			marray = g_malloc0 (MONO_SIZEOF_MONO_ARRAY + array_size * sizeof (MonoThreadsSync));
+			marray = (MonitorArray *)g_malloc0 (MONO_SIZEOF_MONO_ARRAY + array_size * sizeof (MonoThreadsSync));
 			marray->num_monitors = array_size;
 			array_size *= 2;
 			/* link into the freelist */
@@ -433,18 +433,18 @@ mon_new (gsize id)
 		}
 	}
 
-	new = monitor_freelist;
-	monitor_freelist = new->data;
+	new_ = monitor_freelist;
+	monitor_freelist = (MonoThreadsSync *)new_->data;
 
-	new->status = mon_status_set_owner (0, id);
-	new->status = mon_status_init_entry_count (new->status);
-	new->nest = 1;
-	new->data = NULL;
+	new_->status = mon_status_set_owner (0, id);
+	new_->status = mon_status_init_entry_count (new_->status);
+	new_->nest = 1;
+	new_->data = NULL;
 	
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_sync_blocks++;
 #endif
-	return new;
+	return new_;
 }
 
 static MonoThreadsSync*
@@ -493,7 +493,7 @@ mono_monitor_inflate_owned (MonoObject *obj, int id)
 	nlw = lock_word_new_inflated (mon);
 
 	mono_memory_write_barrier ();
-	tmp_lw.sync = InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
+	tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
 	if (tmp_lw.sync != old_lw.sync) {
 		/* Someone else inflated the lock in the meantime */
 		discard_mon (mon);
@@ -536,7 +536,7 @@ mono_monitor_inflate (MonoObject *obj)
 			mon->nest = lock_word_get_nest (old_lw);
 		}
 		mono_memory_write_barrier ();
-		tmp_lw.sync = InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
+		tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, old_lw.sync);
 		if (tmp_lw.sync == old_lw.sync) {
 			/* Successfully inflated the lock */
 			return;
@@ -592,7 +592,7 @@ mono_object_hash (MonoObject* obj)
 		LockWord old_lw;
 		lw = lock_word_new_thin_hash (hash);
 
-		old_lw.sync = InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, NULL);
+		old_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, NULL);
 		if (old_lw.sync == NULL) {
 			return hash;
 		}
@@ -707,7 +707,7 @@ mono_monitor_exit_flat (MonoObject *obj, LockWord old_lw)
 	else
 		new_lw.lock_word = 0;
 
-	tmp_lw.sync = InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, new_lw.sync, old_lw.sync);
+	tmp_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, new_lw.sync, old_lw.sync);
 	if (old_lw.sync != tmp_lw.sync) {
 		/* Someone inflated the lock in the meantime */
 		mono_monitor_exit_inflated (obj);
@@ -896,7 +896,7 @@ retry_contended:
 		 * We have to obey a stop/suspend request even if 
 		 * allow_interruption is FALSE to avoid hangs at shutdown.
 		 */
-		if (!mono_thread_test_state (mono_thread_internal_current (), (ThreadState_StopRequested|ThreadState_SuspendRequested))) {
+		if (!mono_thread_test_state (mono_thread_internal_current (), (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested))) {
 			if (ms != INFINITE) {
 				now = mono_msec_ticks ();
 				if (now < then) {
@@ -981,7 +981,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 			} else {
 				LockWord nlw, old_lw;
 				nlw = lock_word_increment_nest (lw);
-				old_lw.sync = InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, lw.sync);
+				old_lw.sync = (MonoThreadsSync *)InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, nlw.sync, lw.sync);
 				if (old_lw.sync != lw.sync) {
 					/* Someone else inflated it in the meantime */
 					g_assert (lock_word_is_inflated (old_lw));

@@ -301,7 +301,7 @@ dis_directive_moduleref (MonoImage *m)
 static void
 dis_nt_header (MonoImage *m)
 {
-	MonoCLIImageInfo *image_info = m->image_info;
+	MonoCLIImageInfo *image_info = (MonoCLIImageInfo *)m->image_info;
 	if (image_info && image_info->cli_header.nt.pe_stack_reserve != 0x100000)
 		fprintf (output, ".stackreserve 0x%x\n", image_info->cli_header.nt.pe_stack_reserve);
 }
@@ -493,7 +493,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContainer *
 			
 			if ((crow = mono_metadata_get_constant_index (m, MONO_TOKEN_FIELD_DEF | (i+1), 0))) {
 				mono_metadata_decode_row (&m->tables [MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
-				lit = get_constant (m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
+				lit = get_constant (m, (MonoTypeEnum)const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
 			} else {
 				lit = g_strdup ("not found");
 			}
@@ -800,7 +800,7 @@ dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *
 			if ((crow = mono_metadata_get_constant_index(m, MONO_TOKEN_PARAM_DEF | i, 0))) {
 				guint32 const_cols [MONO_CONSTANT_SIZE];
 				mono_metadata_decode_row( &m->tables[MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
-				lit = get_constant(m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
+				lit = get_constant (m, (MonoTypeEnum)const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
 			}
 			else {
 				lit = g_strdup ("not found");
@@ -1664,7 +1664,7 @@ setup_filter (MonoImage *image)
 	const char *name = mono_image_get_name (image);
 
 	for (item = filter_list; item; item = item->next) {
-		ifilter = item->data;
+		ifilter = (ImageFilter *)item->data;
 		if (strcmp (ifilter->name, name) == 0) {
 			cur_filter = ifilter;
 			return;
@@ -1676,8 +1676,8 @@ setup_filter (MonoImage *image)
 static int
 int_cmp (const void *e1, const void *e2)
 {
-	const int *i1 = e1;
-	const int *i2 = e2;
+	const int *i1 = (const int *)e1;
+	const int *i2 = (const int *)e2;
 	return *i1 - *i2;
 }
 
@@ -1720,7 +1720,7 @@ add_filter (const char *name)
 	GList *item;
 
 	for (item = filter_list; item; item = item->next) {
-		ifilter = item->data;
+		ifilter = (ImageFilter *)item->data;
 		if (strcmp (ifilter->name, name) == 0)
 			return ifilter;
 	}
@@ -1736,10 +1736,10 @@ add_item (TableFilter *tf, int val)
 	if (tf->count >= tf->size) {
 		if (!tf->size) {
 			tf->size = 8;
-			tf->elems = g_malloc (sizeof (int) * tf->size);
+			tf->elems = (int *)g_malloc (sizeof (int) * tf->size);
 		} else {
 			tf->size *= 2;
-			tf->elems = g_realloc (tf->elems, sizeof (int) * tf->size);
+			tf->elems = (int *)g_realloc (tf->elems, sizeof (int) * tf->size);
 		}
 	}
 	tf->elems [tf->count++] = val;
@@ -1752,7 +1752,7 @@ sort_filter_elems (void)
 	GList *item;
 
 	for (item = filter_list; item; item = item->next) {
-		ifilter = item->data;
+		ifilter = (ImageFilter *)item->data;
 		qsort (ifilter->types.elems, ifilter->types.count, sizeof (int), int_cmp);
 		qsort (ifilter->fields.elems, ifilter->fields.count, sizeof (int), int_cmp);
 		qsort (ifilter->methods.elems, ifilter->methods.count, sizeof (int), int_cmp);
@@ -1913,7 +1913,7 @@ monodis_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
         GList *tmp;
 
        for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
-               MonoAssembly *ass = tmp->data;
+               MonoAssembly *ass = (MonoAssembly *)tmp->data;
                if (mono_assembly_names_equal (aname, &ass->aname))
 		       return ass;
        }
@@ -2000,7 +2000,7 @@ main (int argc, char *argv [])
 	 * If we just have one file, use the corlib version it requires.
 	 */
 	if (!input_files->next) {
-		char *filename = input_files->data;
+		char *filename = (char *)input_files->data;
 
 		mono_init_from_assembly (argv [0], filename);
 
@@ -2011,7 +2011,7 @@ main (int argc, char *argv [])
 		mono_init (argv [0]);
 
 		for (l = input_files; l; l = l->next)
-			disassemble_file (l->data);
+			disassemble_file ((const char *)l->data);
 	}
 
 	return 0;

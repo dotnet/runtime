@@ -147,7 +147,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_conten
 	if (raw_contents != NULL) {
 		unsigned char *p;
 		symfile->raw_contents_size = size;
-		symfile->raw_contents = p = g_malloc (size);
+		symfile->raw_contents = p = (unsigned char *)g_malloc (size);
 		memcpy (p, raw_contents, size);
 		symfile->filename = g_strdup_printf ("LoadedFromMemory");
 		symfile->was_loaded_from_memory = TRUE;
@@ -163,7 +163,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_conten
 					g_warning ("stat of %s failed: %s",
 						   symfile->filename,  g_strerror (errno));
 			} else {
-				symfile->raw_contents = mono_file_map (symfile->raw_contents_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (f), 0, &symfile->raw_contents_handle);
+				symfile->raw_contents = (const unsigned char *)mono_file_map (symfile->raw_contents_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (f), 0, &symfile->raw_contents_handle);
 			}
 
 			mono_file_map_close (f);
@@ -444,7 +444,7 @@ get_source_info (MonoSymbolFile *symfile, int index)
 {
 	MonoDebugSourceInfo *info;
 
-	info = g_hash_table_lookup (symfile->source_hash, GUINT_TO_POINTER (index));
+	info = (MonoDebugSourceInfo *)g_hash_table_lookup (symfile->source_hash, GUINT_TO_POINTER (index));
 	if (!info) {
 		int offset = read32(&(symfile->offset_table->_source_table_offset)) +
 			(index - 1) * sizeof (MonoSymbolFileSourceEntry);
@@ -454,10 +454,10 @@ get_source_info (MonoSymbolFile *symfile, int index)
 
 		info = g_new0 (MonoDebugSourceInfo, 1);
 		info->source_file = read_string (ptr, &ptr);
-		info->guid = g_malloc0 (16);
+		info->guid = (guint8 *)g_malloc0 (16);
 		memcpy (info->guid, ptr, 16);
 		ptr += 16;
-		info->hash = g_malloc0 (16);
+		info->hash = (guint8 *)g_malloc0 (16);
 		memcpy (info->hash, ptr, 16);
 		ptr += 16;
 		g_hash_table_insert (symfile->source_hash, GUINT_TO_POINTER (index), info);
@@ -478,7 +478,7 @@ method_get_lnt_flags (MonoDebugMethodInfo *minfo)
 	guint32 flags;
 
 	if ((symfile = minfo->handle->symfile) == NULL)
-		return FALSE;
+		return (LineNumberTableFlags)0;
 
 	ptr = symfile->raw_contents + minfo->data_offset;
 
@@ -497,7 +497,7 @@ method_get_lnt_flags (MonoDebugMethodInfo *minfo)
 	read_leb128 (ptr, &ptr);
 
 	flags = read_leb128 (ptr, &ptr);
-	return flags;
+	return (LineNumberTableFlags)flags;
 }
 
 /*
@@ -635,7 +635,7 @@ mono_debug_symfile_get_seq_points (MonoDebugMethodInfo *minfo, char **source_fil
 
 		*source_file_list = g_ptr_array_new ();
 		if (source_files)
-			*source_files = g_malloc (il_offset_array->len * sizeof (int));
+			*source_files = (int *)g_malloc (il_offset_array->len * sizeof (int));
 
 		for (i = 0; i < il_offset_array->len; ++i) {
 			file = GPOINTER_TO_UINT (g_ptr_array_index (source_file_array, i));
@@ -744,7 +744,7 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 
 	mono_debugger_lock ();
 
-	minfo = g_hash_table_lookup (symfile->method_hash, method);
+	minfo = (MonoDebugMethodInfo *)g_hash_table_lookup (symfile->method_hash, method);
 	if (minfo) {
 		mono_debugger_unlock ();
 		return minfo;
@@ -753,7 +753,7 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	first_ie = (MonoSymbolFileMethodEntry *)
 		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
-	ie = mono_binary_search (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
+	ie = (MonoSymbolFileMethodEntry *)mono_binary_search (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
 				   read32(&(symfile->offset_table->_method_count)),
 				   sizeof (MonoSymbolFileMethodEntry), compare_method);
 
@@ -823,7 +823,7 @@ mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo)
 	for (i = 0; i < num_locals; ++i) {
 		res->locals [i].index = read_leb128 (p, &p);
 		len = read_leb128 (p, &p);
-		res->locals [i].name = g_malloc (len + 1);
+		res->locals [i].name = (char *)g_malloc (len + 1);
 		memcpy (res->locals [i].name, p, len);
 		res->locals [i].name [len] = '\0';
 		p += len;

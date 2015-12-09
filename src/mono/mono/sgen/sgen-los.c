@@ -238,7 +238,7 @@ get_los_section_memory (size_t size)
 	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
 
-	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, NULL);
+	section = (LOSSection *)sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL);
 
 	if (!section)
 		return NULL;
@@ -379,7 +379,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
-			obj = sgen_alloc_os_memory (alloc_size, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, NULL);
+			obj = (LOSObject *)sgen_alloc_os_memory (alloc_size, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL);
 		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
@@ -593,7 +593,7 @@ get_cardtable_mod_union_for_object (LOSObject *obj)
 	if (mod_union)
 		return mod_union;
 	mod_union = sgen_card_table_alloc_mod_union ((char*)obj->data, size);
-	other = SGEN_CAS_PTR ((gpointer*)&obj->cardtable_mod_union, mod_union, NULL);
+	other = (guint8 *)SGEN_CAS_PTR ((gpointer*)&obj->cardtable_mod_union, mod_union, NULL);
 	if (!other) {
 		SGEN_ASSERT (0, obj->cardtable_mod_union == mod_union, "Why did CAS not replace?");
 		return mod_union;

@@ -401,7 +401,7 @@ sgen_client_binary_protocol_block_free (gpointer addr, size_t size)
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_block_set_state (gpointer addr, size_t size, int old, int new)
+sgen_client_binary_protocol_block_set_state (gpointer addr, size_t size, int old, int new_)
 {
 }
 

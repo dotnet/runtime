@@ -151,7 +151,7 @@ mono_gc_run_finalize (void *obj, void *data)
 #ifndef HAVE_SGEN_GC
 	mono_domain_finalizers_lock (domain);
 
-	o2 = g_hash_table_lookup (domain->finalizable_objects_hash, o);
+	o2 = (MonoObject *)g_hash_table_lookup (domain->finalizable_objects_hash, o);
 
 	mono_domain_finalizers_unlock (domain);
 
@@ -161,7 +161,7 @@ mono_gc_run_finalize (void *obj, void *data)
 #endif
 
 	/* make sure the finalizer is not called again if the object is resurrected */
-	object_register_finalizer (obj, NULL);
+	object_register_finalizer ((MonoObject *)obj, NULL);
 
 	if (log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Registered finalizer as processed.", o->vtable->klass->name, o);
@@ -241,7 +241,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		domain->finalize_runtime_invoke = mono_compile_method (invoke);
 	}
 
-	runtime_invoke = domain->finalize_runtime_invoke;
+	runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
 
 	mono_runtime_class_init (o->vtable);
 
@@ -723,7 +723,7 @@ finalizer_thread (gpointer unused)
 		if (domains_to_finalize) {
 			mono_finalizer_lock ();
 			if (domains_to_finalize) {
-				DomainFinalizationReq *req = domains_to_finalize->data;
+				DomainFinalizationReq *req = (DomainFinalizationReq *)domains_to_finalize->data;
 				domains_to_finalize = g_slist_remove (domains_to_finalize, req);
 				mono_finalizer_unlock ();
 
@@ -932,7 +932,7 @@ ref_list_remove_element (RefQueueEntry **prev, RefQueueEntry *element)
 		/* Guard if head is changed concurrently. */
 		while (*prev != element)
 			prev = &(*prev)->next;
-	} while (prev && InterlockedCompareExchangePointer ((void*)prev, element->next, element) != element);
+	} while (prev && InterlockedCompareExchangePointer ((volatile gpointer *)prev, element->next, element) != element);
 }
 
 static void
@@ -943,7 +943,7 @@ ref_list_push (RefQueueEntry **head, RefQueueEntry *value)
 		current = *head;
 		value->next = current;
 		STORE_STORE_FENCE; /*Must make sure the previous store is visible before the CAS. */
-	} while (InterlockedCompareExchangePointer ((void*)head, value, current) != current);
+	} while (InterlockedCompareExchangePointer ((volatile gpointer *)head, value, current) != current);
 }
 
 static void

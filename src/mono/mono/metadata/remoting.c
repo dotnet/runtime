@@ -266,7 +266,7 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 
 	mono_marshal_lock_internal ();
 	if (mono_method_get_wrapper_cache (method)->remoting_invoke_cache)
-		wrps = g_hash_table_lookup (mono_method_get_wrapper_cache (method)->remoting_invoke_cache, method);
+		wrps = (MonoRemotingMethods *)g_hash_table_lookup (mono_method_get_wrapper_cache (method)->remoting_invoke_cache, method);
 
 	if (wrps) {
 		switch (wrapper_type) {
@@ -297,7 +297,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	cache = get_cache_full (&mono_method_get_wrapper_cache (key)->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
 
 	mono_marshal_lock_internal ();
-	wrps = g_hash_table_lookup (cache, key);
+	wrps = (MonoRemotingMethods *)g_hash_table_lookup (cache, key);
 	if (!wrps) {
 		wrps = g_new0 (MonoRemotingMethods, 1);
 		g_hash_table_insert (cache, key, wrps);
@@ -361,7 +361,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 				} else {
 					/* runtime_invoke expects a boxed instance */
 					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i])))
-						mparams[i] = mono_nullable_box (params [i], klass);
+						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass);
 					else
 						mparams[i] = params [i];
 				}
@@ -469,7 +469,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		if (mt == MONO_MARSHAL_COPY) {
 			int i, len = mono_array_length ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
-				MonoObject *item = mono_array_get ((MonoArray *)src, gpointer, i);
+				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
 				mono_array_setref ((MonoArray *)dst, i, mono_marshal_xdomain_copy_value (item));
 			}
 		} else {
@@ -564,7 +564,7 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image)
 	
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = tmp->data;
+		ass = (MonoAssembly *)tmp->data;
 		if (ass->image == image)
 			break;
 	}
@@ -629,7 +629,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* try */
 
-	main_clause = mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
+	main_clause = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
 	main_clause->try_offset = mono_mb_get_label (mb);
 
 	/* Clean the call context */
@@ -880,7 +880,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 
 	/* Count the number of parameters that need to be serialized */
 
-	marshal_types = alloca (sizeof (int) * sig->param_count);
+	marshal_types = (int *)alloca (sizeof (int) * sig->param_count);
 	complex_count = complex_out_count = 0;
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *ptype = sig->params[i];
@@ -2006,7 +2006,7 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 		if (mt == MONO_MARSHAL_COPY) {
 			int i, len = mono_array_length (acopy);
 			for (i = 0; i < len; i++) {
-				MonoObject *item = mono_array_get (acopy, gpointer, i);
+				MonoObject *item = (MonoObject *)mono_array_get (acopy, gpointer, i);
 				mono_array_setref (acopy, i, mono_marshal_xdomain_copy_value (item));
 			}
 		}

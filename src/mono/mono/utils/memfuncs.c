@@ -188,7 +188,7 @@ mono_gc_memmove_aligned (void *dest, const void *src, size_t size)
 			while (p > align_end)
 			        *--p = *--s;
 
-			word_start = align_up (start);
+			word_start = (char *)align_up (start);
 			bytes_to_memmove = p - word_start;
 			p -= bytes_to_memmove;
 			s -= bytes_to_memmove;

@@ -539,7 +539,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			g_assert (!info->sig->hasthis);
 			g_assert (info->sig->param_count <= MONO_MAX_SRC_REGS);
 
-			args = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * info->sig->param_count);
+			args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * info->sig->param_count);
 			if (info->sig->param_count > 0) {
 				int sregs [MONO_MAX_SRC_REGS];
 				int num_sregs, i;
@@ -1197,7 +1197,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 	 * Create a dummy bblock and emit code into it so we can use the normal 
 	 * code generation macros.
 	 */
-	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+	cfg->cbb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 	first_bb = cfg->cbb;
 
 	/* For LLVM, decompose only the OP_STOREV_MEMBASE opcodes, which need write barriers and the gsharedvt opcodes */
@@ -1489,7 +1489,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 	 * Create a dummy bblock and emit code into it so we can use the normal 
 	 * code generation macros.
 	 */
-	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+	cfg->cbb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 	first_bb = cfg->cbb;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {

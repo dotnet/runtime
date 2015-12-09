@@ -66,7 +66,7 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	} else {
 		/* Allocate a new section */
-		section = sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
+		section = (GrayQueueSection *)sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
 		STATE_SET (section, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	}
 

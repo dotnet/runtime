@@ -2222,7 +2222,7 @@ get_encoded_user_string_or_bytearray (const unsigned char *ptr, int len)
 	char *res, *eres, *result;
 	int i;
 
-	res = g_malloc ((len >> 1) + 1);
+	res = (char *)g_malloc ((len >> 1) + 1);
 
 	/*
 	 * I should really use some kind of libunicode here
@@ -3137,7 +3137,7 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 	for (i = 0; i < container->type_argc; i++) {
 		MonoGenericParam *param = mono_generic_container_get_param (container, i);
 
-		if ((p = g_hash_table_lookup (table, mono_generic_param_info (param)->name)))
+		if ((p = (gpointer *)g_hash_table_lookup (table, mono_generic_param_info (param)->name)))
 			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (i + 1)), p);
 		else
 			g_hash_table_insert (table, (char*)mono_generic_param_info (param)->name, GUINT_TO_POINTER (i + 1));

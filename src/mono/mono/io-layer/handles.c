@@ -56,7 +56,7 @@
 
 static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, gpointer);
 
-static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT]={0};
+static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT] = { (WapiHandleCapability)0 };
 static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	NULL,
 	&_wapi_file_ops,
@@ -258,12 +258,12 @@ wapi_init (void)
 
 	_wapi_shm_semaphores_init ();
 	
-	_wapi_shared_layout = _wapi_shm_attach (WAPI_SHM_DATA);
+	_wapi_shared_layout = (_WapiHandleSharedLayout *)_wapi_shm_attach (WAPI_SHM_DATA);
 	g_assert (_wapi_shared_layout != NULL);
 	
 	if (_wapi_shm_enabled ()) {
 		/* This allocates a 4mb array, so do it only if SHM is enabled */
-		_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
+		_wapi_fileshare_layout = (_WapiFileShareLayout *)_wapi_shm_attach (WAPI_SHM_FILESHARE);
 		g_assert (_wapi_fileshare_layout != NULL);
 	}
 	
@@ -1636,8 +1636,8 @@ _wapi_free_share_info (_WapiFileShare *share_info)
 static gint
 wapi_share_info_equal (gconstpointer ka, gconstpointer kb)
 {
-	const _WapiFileShare *s1 = ka;
-	const _WapiFileShare *s2 = kb;
+	const _WapiFileShare *s1 = (const _WapiFileShare *)ka;
+	const _WapiFileShare *s2 = (const _WapiFileShare *)kb;
 
 	return (s1->device == s2->device && s1->inode == s2->inode) ? 1 : 0;
 }
@@ -1645,7 +1645,7 @@ wapi_share_info_equal (gconstpointer ka, gconstpointer kb)
 static guint
 wapi_share_info_hash (gconstpointer data)
 {
-	const _WapiFileShare *s = data;
+	const _WapiFileShare *s = (const _WapiFileShare *)data;
 
 	return s->inode;
 }
@@ -1689,7 +1689,7 @@ gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 
 		file_share_hash_lock ();
 
-		file_share = g_hash_table_lookup (file_share_hash, &tmp);
+		file_share = (_WapiFileShare *)g_hash_table_lookup (file_share_hash, &tmp);
 		if (file_share) {
 			*old_sharemode = file_share->sharemode;
 			*old_access = file_share->access;

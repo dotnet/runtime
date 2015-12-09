@@ -114,7 +114,7 @@ mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
 	ImageUnloadHook *hook;
 
 	for (l = image_unload_hooks; l; l = l->next) {
-		hook = l->data;
+		hook = (ImageUnloadHook *)l->data;
 
 		if (hook->func == func && hook->user_data == user_data) {
 			g_free (hook);
@@ -131,7 +131,7 @@ mono_image_invoke_unload_hook (MonoImage *image)
 	ImageUnloadHook *hook;
 
 	for (l = image_unload_hooks; l; l = l->next) {
-		hook = l->data;
+		hook = (ImageUnloadHook *)l->data;
 
 		hook->func (image, hook->user_data);
 	}
@@ -149,7 +149,7 @@ mono_install_image_loader (const MonoImageLoader *loader)
 guint32
 mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -185,7 +185,7 @@ mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 char *
 mono_image_rva_map (MonoImage *image, guint32 addr)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -274,7 +274,7 @@ mono_images_cleanup (void)
 int
 mono_image_ensure_section_idx (MonoImage *image, int section)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	MonoSectionTable *sect;
 	
 	g_return_val_if_fail (section < iinfo->cli_section_count, FALSE);
@@ -309,7 +309,7 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 int
 mono_image_ensure_section (MonoImage *image, const char *section)
 {
-	MonoCLIImageInfo *ii = image->image_info;
+	MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
 	int i;
 	
 	for (i = 0; i < ii->cli_section_count; i++){
@@ -697,7 +697,7 @@ mono_image_load_module (MonoImage *image, int idx)
 static gpointer
 class_key_extract (gpointer value)
 {
-	MonoClass *klass = value;
+	MonoClass *klass = (MonoClass *)value;
 
 	return GUINT_TO_POINTER (klass->type_token);
 }
@@ -705,7 +705,7 @@ class_key_extract (gpointer value)
 static gpointer*
 class_next_value (gpointer value)
 {
-	MonoClass *klass = value;
+	MonoClass *klass = (MonoClass *)value;
 
 	return (gpointer*)&klass->next_class_cache;
 }
@@ -894,7 +894,7 @@ pe_image_load_pe_data (MonoImage *image)
 	MonoMSDOSHeader msdos;
 	gint32 offset = 0;
 
-	iinfo = image->image_info;
+	iinfo = (MonoCLIImageInfo *)image->image_info;
 	header = &iinfo->cli_header;
 
 #ifdef HOST_WIN32
@@ -963,7 +963,7 @@ pe_image_load_cli_data (MonoImage *image)
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 
-	iinfo = image->image_info;
+	iinfo = (MonoCLIImageInfo *)image->image_info;
 	header = &iinfo->cli_header;
 
 	/* Load the CLI header */
@@ -1034,12 +1034,12 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	mono_image_init (image);
 
-	iinfo = image->image_info;
+	iinfo = (MonoCLIImageInfo *)image->image_info;
 	header = &iinfo->cli_header;
 
 	if (!image->metadata_only) {
 		for (l = image_loaders; l; l = l->next) {
-			MonoImageLoader *loader = l->data;
+			MonoImageLoader *loader = (MonoImageLoader *)l->data;
 			if (loader->match (image)) {
 				image->loader = loader;
 				break;
@@ -1091,7 +1091,7 @@ done:
 
 invalid_image:
 	if (errors) {
-		MonoVerifyInfo *info = errors->data;
+		MonoVerifyInfo *info = (MonoVerifyInfo *)errors->data;
 		g_warning ("Could not load image %s due to %s", image->name, info->message);
 		mono_free_verify_list (errors);
 	}
@@ -1127,11 +1127,11 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image = g_new0 (MonoImage, 1);
 	image->raw_buffer_used = TRUE;
 	image->raw_data_len = mono_file_map_size (filed);
-	image->raw_data = mono_file_map (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
+	image->raw_data = (char *)mono_file_map (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
 #if defined(HAVE_MMAP) && !defined (HOST_WIN32)
 	if (!image->raw_data) {
 		image->fileio_used = TRUE;
-		image->raw_data = mono_file_map_fileio (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
+		image->raw_data = (char *)mono_file_map_fileio (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
 	}
 #endif
 	if (!image->raw_data) {
@@ -1170,9 +1170,9 @@ mono_image_loaded_full (const char *name, gboolean refonly)
 	MonoImage *res;
 
 	mono_images_lock ();
-	res = g_hash_table_lookup (get_loaded_images_hash (refonly), name);
+	res = (MonoImage *)g_hash_table_lookup (get_loaded_images_hash (refonly), name);
 	if (!res)
-		res = g_hash_table_lookup (get_loaded_images_by_name_hash (refonly), name);
+		res = (MonoImage *)g_hash_table_lookup (get_loaded_images_by_name_hash (refonly), name);
 	mono_images_unlock ();
 
 	return res;
@@ -1200,12 +1200,12 @@ typedef struct {
 static void
 find_by_guid (gpointer key, gpointer val, gpointer user_data)
 {
-	GuidData *data = user_data;
+	GuidData *data = (GuidData *)user_data;
 	MonoImage *image;
 
 	if (data->res)
 		return;
-	image = val;
+	image = (MonoImage *)val;
 	if (strcmp (data->guid, mono_image_get_guid (image)) == 0)
 		data->res = image;
 }
@@ -1237,7 +1237,7 @@ register_image (MonoImage *image)
 	GHashTable *loaded_images = get_loaded_images_hash (image->ref_only);
 
 	mono_images_lock ();
-	image2 = g_hash_table_lookup (loaded_images, image->name);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, image->name);
 
 	if (image2) {
 		/* Somebody else beat us to it */
@@ -1270,7 +1270,7 @@ mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_
 	}
 	datac = data;
 	if (need_copy) {
-		datac = g_try_malloc (data_len);
+		datac = (char *)g_try_malloc (data_len);
 		if (!datac) {
 			if (status)
 				*status = MONO_IMAGE_ERROR_ERRNO;
@@ -1429,7 +1429,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	 * the same image, we discard all but the first copy.
 	 */
 	mono_images_lock ();
-	image = g_hash_table_lookup (loaded_images, absfname);
+	image = (MonoImage *)g_hash_table_lookup (loaded_images, absfname);
 	g_free (absfname);
 
 	if (image) { // Image already loaded
@@ -1669,7 +1669,7 @@ mono_image_close_except_pools (MonoImage *image)
 
 	loaded_images         = get_loaded_images_hash (image->ref_only);
 	loaded_images_by_name = get_loaded_images_by_name_hash (image->ref_only);
-	image2 = g_hash_table_lookup (loaded_images, image->name);
+	image2 = (MonoImage *)g_hash_table_lookup (loaded_images, image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images, image->name);
@@ -1740,7 +1740,7 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->raw_data_allocated) {
 		/* FIXME: do we need this? (image is disposed anyway) */
 		/* image->raw_metadata and cli_sections might lie inside image->raw_data */
-		MonoCLIImageInfo *ii = image->image_info;
+		MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
 
 		if ((image->raw_metadata > image->raw_data) &&
 			(image->raw_metadata <= (image->raw_data + image->raw_data_len)))
@@ -1829,7 +1829,7 @@ mono_image_close_except_pools (MonoImage *image)
 		mono_bitset_free (image->interface_bitset);
 	}
 	if (image->image_info){
-		MonoCLIImageInfo *ii = image->image_info;
+		MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
 
 		if (ii->cli_section_tables)
 			g_free (ii->cli_section_tables);
@@ -2049,7 +2049,7 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 
 	mono_image_ensure_section_idx (image, MONO_SECTION_RSRC);
 
-	info=image->image_info;
+	info = (MonoCLIImageInfo *)image->image_info;
 	if(info==NULL) {
 		return(NULL);
 	}
@@ -2122,7 +2122,7 @@ mono_image_get_entry_point (MonoImage *image)
 const char*
 mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	MonoCLIHeader *ch = &iinfo->cli_cli_header;
 	const char* data;
 
@@ -2212,7 +2212,7 @@ done:
 const char*
 mono_image_get_strong_name (MonoImage *image, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
 	const char* data;
 
@@ -2240,7 +2240,7 @@ mono_image_get_strong_name (MonoImage *image, guint32 *size)
 guint32
 mono_image_strong_name_position (MonoImage *image, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
 	guint32 pos;
 
@@ -2384,7 +2384,7 @@ mono_image_is_dynamic (MonoImage *image)
 gboolean
 mono_image_has_authenticode_entry (MonoImage *image)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 	MonoDotNetHeader *header = &iinfo->cli_header;
 	MonoPEDirEntry *de = &header->datadir.pe_certificate_table;
 	// the Authenticode "pre" (non ASN.1) header is 8 bytes long
@@ -2441,7 +2441,7 @@ g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 {
 	GList *new_list;
 	
-	new_list = mono_image_alloc (image, sizeof (GList));
+	new_list = (GList *)mono_image_alloc (image, sizeof (GList));
 	new_list->data = data;
 	new_list->prev = list ? list->prev : NULL;
     new_list->next = list;
@@ -2459,7 +2459,7 @@ g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 {
 	GSList *new_list;
 
-	new_list = mono_image_alloc (image, sizeof (GSList));
+	new_list = (GSList *)mono_image_alloc (image, sizeof (GSList));
 	new_list->data = data;
 	new_list->next = NULL;
 

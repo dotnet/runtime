@@ -153,7 +153,7 @@ GetTokenName (uid_t uid)
 #else
 	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
-	fbuf = g_malloc0 (fbufsize);
+	fbuf = (gchar *)g_malloc0 (fbufsize);
 	retval = getpwuid_r (uid, &pwd, fbuf, fbufsize, &p);
 	result = ((retval == 0) && (p == &pwd));
 #else
@@ -220,7 +220,7 @@ IsDefaultGroup (uid_t user, gid_t group)
 	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 
-	fbuf = g_malloc0 (fbufsize);
+	fbuf = (gchar *)g_malloc0 (fbufsize);
 	retval = getpwuid_r (user, &pwd, fbuf, fbufsize, &p);
 	result = ((retval == 0) && (p == &pwd));
 #else
@@ -359,7 +359,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 
-	fbuf = g_malloc0 (fbufsize);
+	fbuf = (gchar *)g_malloc0 (fbufsize);
 	retval = getpwnam_r (utf8_name, &pwd, fbuf, fbufsize, &p);
 	result = ((retval == 0) && (p == &pwd));
 #else
@@ -500,7 +500,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 #else
 	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
-	fbuf = g_malloc0 (fbufsize);
+	fbuf = (gchar *)g_malloc0 (fbufsize);
 	retval = getgrgid_r ((gid_t) GPOINTER_TO_INT (group), &grp, fbuf, fbufsize, &g);
 	result = ((retval == 0) && (g == &grp));
 #else
@@ -547,7 +547,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #else
 		size_t fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
-		fbuf = g_malloc0 (fbufsize);
+		fbuf = (gchar *)g_malloc0 (fbufsize);
 		retval = getgrnam_r (utf8_groupname, &grp, fbuf, fbufsize, &g);
 		result = ((retval == 0) && (g == &grp));
 #else

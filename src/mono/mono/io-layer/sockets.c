@@ -841,10 +841,10 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	 * https://bugzilla.novell.com/show_bug.cgi?id=MONO53992
 	 */
 	{
-		int ret, true = 1;
+		int ret, true_ = 1;
 	
-		ret = setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &true,
-				  sizeof (true));
+		ret = setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &true_,
+				  sizeof (true_));
 		if (ret == -1) {
 			int errnum = errno;
 
@@ -1165,7 +1165,7 @@ WSAIoctl (guint32 fd, gint32 command,
 	}
 
 	if (i_len > 0) {
-		buffer = g_memdup (input, i_len);
+		buffer = (char *)g_memdup (input, i_len);
 	}
 
 	ret = ioctl (fd, command, buffer);

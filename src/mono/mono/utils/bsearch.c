@@ -42,7 +42,7 @@ mono_binary_search (
 	size_t member_size,
 	BinarySearchComparer comparer)
 {
-	const char *base = array;
+	const char *base = (const char *)array;
 	size_t lim;
 	int cmp;
 	const void *p;

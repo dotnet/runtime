@@ -23,7 +23,7 @@ mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, in
 		return g_list_prepend (NULL, mv);
 
 	for (l = list; l; l = l->next) {
-		MonoMethodVar *v1 = l->data;
+		MonoMethodVar *v1 = (MonoMethodVar *)l->data;
 		
 		if (sort_type == 2) {
 			if (mv->spill_costs >= v1->spill_costs) {
@@ -108,7 +108,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 
 	/* linear scan */
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 
 #ifdef DEBUG_LSCAN
 		printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, 
@@ -199,7 +199,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 
 	n_regvars = 0;
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 		
 		if (vmv->reg >= 0)  {
 			if ((gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
@@ -227,7 +227,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	/* Compute used regs */
 	used_regs = 0;
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 		
 		if (vmv->reg >= 0)
 			used_regs |= 1LL << vmv->reg;
@@ -288,7 +288,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	int n_regs, n_regvars, i;
 
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 		LSCAN_DEBUG (printf ("VAR R%d %08x %08x C%d\n", cfg->varinfo [vmv->idx]->dreg, vmv->range.first_use.abs_pos, 
 							 vmv->range.last_use.abs_pos, vmv->spill_costs));
 	}
@@ -302,7 +302,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	inactive = NULL;
 
 	while (unhandled) {
-		MonoMethodVar *current = unhandled->data;
+		MonoMethodVar *current = (MonoMethodVar *)unhandled->data;
 		int pos, reg, max_free_pos;
 		gboolean changed;
 
@@ -470,7 +470,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	/* Do the actual register assignment */
 	n_regvars = 0;
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 
 		if (vmv->reg >= 0) {
 			int reg_index = vmv->reg;
@@ -498,7 +498,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	/* Compute used regs */
 	used_regs = 0;
 	for (l = vars; l; l = l->next) {
-		vmv = l->data;
+		vmv = (MonoMethodVar *)l->data;
 		
 		if (vmv->reg >= 0)
 			used_regs |= 1LL << vmv->reg;

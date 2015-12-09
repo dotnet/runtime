@@ -105,17 +105,17 @@ static void
 protocol_gchandle_update (int handle_type, gpointer link, gpointer old_value, gpointer new_value)
 {
 	gboolean old = MONO_GC_HANDLE_IS_OBJECT_POINTER (old_value);
-	gboolean new = MONO_GC_HANDLE_IS_OBJECT_POINTER (new_value);
+	gboolean new_ = MONO_GC_HANDLE_IS_OBJECT_POINTER (new_value);
 	gboolean track = handle_type == HANDLE_WEAK_TRACK;
 
 	if (!MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type))
 		return;
 
-	if (!old && new)
+	if (!old && new_)
 		binary_protocol_dislink_add (link, MONO_GC_REVEAL_POINTER (new_value, TRUE), track);
-	else if (old && !new)
+	else if (old && !new_)
 		binary_protocol_dislink_remove (link, track);
-	else if (old && new && old_value != new_value)
+	else if (old && new_ && old_value != new_value)
 		binary_protocol_dislink_update (link, MONO_GC_REVEAL_POINTER (new_value, TRUE), track);
 }
 
@@ -123,15 +123,15 @@ protocol_gchandle_update (int handle_type, gpointer link, gpointer old_value, gp
 static inline gpointer
 try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType type)
 {
-	gpointer new;
+	gpointer new_;
 	if (obj)
-		new = MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type));
+		new_ = MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type));
 	else
-		new = MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type));
-	SGEN_ASSERT (0, new, "Why is the occupied bit not set?");
-	if (InterlockedCompareExchangePointer (slot, new, old) == old) {
-		protocol_gchandle_update (type, (gpointer)slot, old, new);
-		return new;
+		new_ = MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type));
+	SGEN_ASSERT (0, new_, "Why is the occupied bit not set?");
+	if (InterlockedCompareExchangePointer (slot, new_, old) == old) {
+		protocol_gchandle_update (type, (gpointer)slot, old, new_);
+		return new_;
 	}
 	return NULL;
 }
@@ -143,7 +143,7 @@ try_occupy_slot (HandleData *handles, guint bucket, guint offset, GCObject *obj,
 	volatile gpointer *link_addr = &(handles->entries [bucket] [offset]);
 	if (MONO_GC_HANDLE_OCCUPIED (*link_addr))
 		return FALSE;
-	return try_set_slot (link_addr, obj, NULL, handles->type) != NULL;
+	return try_set_slot (link_addr, obj, NULL, (GCHandleType)handles->type) != NULL;
 }
 
 static HandleData gc_handles [] = {
@@ -216,7 +216,7 @@ handle_data_grow (HandleData *handles, guint32 old_capacity)
 	const size_t new_bucket_size = sizeof (**handles->entries) * growth;
 	if (handles->capacity >= new_capacity)
 		return;
-	entries = g_malloc0 (new_bucket_size);
+	entries = (gpointer *)g_malloc0 (new_bucket_size);
 	if (handles->type == HANDLE_PINNED)
 		sgen_register_root ((char *)entries, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, "pinned gc handles");
 	/* The zeroing of the newly allocated bucket must be complete before storing
@@ -446,7 +446,7 @@ GCObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
+	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
 	/* Invalid handles are possible; accessing one should produce NULL. (#34276) */
 	if (!handles)
@@ -461,7 +461,7 @@ void
 sgen_gchandle_set_target (guint32 gchandle, GCObject *obj)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
+	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
 	if (!handles)
 		return;
@@ -474,7 +474,7 @@ sgen_gchandle_set_target (guint32 gchandle, GCObject *obj)
 	do {
 		slot = handles->entries [bucket] [offset];
 		SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (slot), "Why are we setting the target on an unoccupied slot?");
-	} while (!try_set_slot (&handles->entries [bucket] [offset], obj, slot, handles->type));
+	} while (!try_set_slot (&handles->entries [bucket] [offset], obj, slot, (GCHandleType)handles->type));
 }
 
 static gpointer
@@ -487,7 +487,7 @@ retry:
 	if (!MONO_GC_HANDLE_OCCUPIED (slot))
 		return NULL;
 	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (slot)) {
-		GCObject *obj = MONO_GC_REVEAL_POINTER (slot, is_weak);
+		GCObject *obj = (GCObject *)MONO_GC_REVEAL_POINTER (slot, is_weak);
 		/* See note [dummy use]. */
 		sgen_dummy_use (obj);
 		/*
@@ -511,7 +511,7 @@ gpointer
 sgen_gchandle_get_metadata (guint32 gchandle)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
+	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
 	if (!handles)
 		return NULL;
@@ -534,7 +534,7 @@ void
 mono_gchandle_free (guint32 gchandle)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
-	guint type = MONO_GC_HANDLE_TYPE (gchandle);
+	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
 	if (!handles)
 		return;
@@ -566,7 +566,7 @@ null_link_if_necessary (gpointer hidden, GCHandleType handle_type, int max_gener
 	if (!MONO_GC_HANDLE_VALID (hidden))
 		return hidden;
 
-	obj = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
+	obj = (GCObject *)MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
 	SGEN_ASSERT (0, obj, "Why is the hidden pointer NULL?");
 
 	if (object_older_than (obj, max_generation))
@@ -607,7 +607,7 @@ null_link_if (gpointer hidden, GCHandleType handle_type, int max_generation, gpo
 	if (!MONO_GC_HANDLE_VALID (hidden))
 		return hidden;
 
-	obj = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
+	obj = (GCObject *)MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
 	SGEN_ASSERT (0, obj, "Why is the hidden pointer NULL?");
 
 	if (object_older_than (obj, max_generation))

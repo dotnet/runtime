@@ -671,14 +671,14 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 	va_start (ap, cm);
 	
-	lengths = alloca (sizeof (uintptr_t) * pcount);
+	lengths = (uintptr_t *)alloca (sizeof (uintptr_t) * pcount);
 	for (i = 0; i < pcount; ++i)
 		lengths [i] = d = va_arg(ap, int);
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
 		if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-			lower_bounds = alloca (sizeof (intptr_t) * rank);
+			lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 		} else {
 			lower_bounds = NULL;
@@ -712,7 +712,7 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
@@ -739,7 +739,7 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
@@ -767,7 +767,7 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
@@ -796,7 +796,7 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
@@ -1119,7 +1119,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 	MonoClass *oklass;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+		jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1150,7 +1150,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 	gpointer cached_vtable, obj_vtable;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+		jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1388,7 +1388,7 @@ mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_met
 		/*
 		 * The exact compiled method might not be shared so it doesn't have an rgctx arg.
 		 */
-		ji = mini_jit_info_table_find (mono_domain_get (), compiled_method, NULL);
+		ji = mini_jit_info_table_find (mono_domain_get (), (char *)compiled_method, NULL);
 		if (!ji || (ji && ji->has_generic_jit_info)) {
 			if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m->klass->rank && strstr (m->name, "System.Collections.Generic"))
 				m = mono_aot_get_array_helper_from_wrapper (m);

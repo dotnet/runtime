@@ -43,7 +43,7 @@ static void
 realloc_queue (SgenPointerQueue *queue)
 {
 	size_t new_size = queue->size ? queue->size + queue->size/2 : 1024;
-	void **new_data = sgen_alloc_internal_dynamic (sizeof (void*) * new_size, queue->mem_type, TRUE);
+	void **new_data = (void **)sgen_alloc_internal_dynamic (sizeof (void*) * new_size, queue->mem_type, TRUE);
 
 	memcpy (new_data, queue->data, sizeof (void*) * queue->next_slot);
 	sgen_free_internal_dynamic (queue->data, sizeof (void*) * queue->size, queue->mem_type);

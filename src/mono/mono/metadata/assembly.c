@@ -208,7 +208,7 @@ encode_public_tok (const guchar *token, gint32 len)
 	gchar *res;
 	int i;
 
-	res = g_malloc (len * 2 + 1);
+	res = (gchar *)g_malloc (len * 2 + 1);
 	for (i = 0; i < len; i++) {
 		res [i * 2] = allowed [token [i] >> 4];
 		res [i * 2 + 1] = allowed [token [i] & 0xF];
@@ -791,7 +791,7 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	aname->revision = cols [MONO_ASSEMBLY_REV_NUMBER];
 	aname->hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
 	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
-		guchar* token = g_malloc (8);
+		guchar* token = (guchar *)g_malloc (8);
 		gchar* encoded;
 		const gchar* pkey;
 		int len;
@@ -1116,7 +1116,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		 * a non loaded reference using the ReflectionOnly api
 		*/
 		if (!reference)
-			reference = REFERENCE_MISSING;
+			reference = (MonoAssembly *)REFERENCE_MISSING;
 	} else {
 		/* we first try without setting the basedir: this can eventually result in a ResolveAssembly
 		 * event which is the MS .net compatible behaviour (the assemblyresolve_event3.cs test has been fixed
@@ -1157,7 +1157,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	mono_assemblies_lock ();
 	if (reference == NULL) {
 		/* Flag as not found */
-		reference = REFERENCE_MISSING;
+		reference = (MonoAssembly *)REFERENCE_MISSING;
 	}	
 
 	if (!image->references [index]) {
@@ -1937,10 +1937,10 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	/* Encode the size of the blob */
 	offset = 0;
 	if (keylen <= 127) {
-		arr = g_malloc (keylen + 1);
+		arr = (gchar *)g_malloc (keylen + 1);
 		arr [offset++] = keylen;
 	} else {
-		arr = g_malloc (keylen + 2);
+		arr = (gchar *)g_malloc (keylen + 2);
 		arr [offset++] = 0x80; /* 10bs */
 		arr [offset++] = keylen;
 	}
@@ -2547,7 +2547,7 @@ mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
 
 	if (strstr (aname->name, ".dll")) {
 		len = strlen (aname->name) - 4;
-		name = g_malloc (len);
+		name = (gchar *)g_malloc (len);
 		strncpy (name, aname->name, len);
 	} else
 		name = g_strdup (aname->name);
@@ -2613,7 +2613,7 @@ search_binding_loaded (MonoAssemblyName *aname)
 	GSList *tmp;
 
 	for (tmp = loaded_assembly_bindings; tmp; tmp = tmp->next) {
-		MonoAssemblyBindingInfo *info = tmp->data;
+		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)tmp->data;
 		if (assembly_binding_maps_name (info, aname))
 			return info;
 	}
@@ -2668,12 +2668,12 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 		return;
 
 	for (tmp = domain->assembly_bindings; tmp; tmp = tmp->next) {
-		info_tmp = tmp->data;
+		info_tmp = (MonoAssemblyBindingInfo *)tmp->data;
 		if (strcmp (info->name, info_tmp->name) == 0 && info_versions_equal (info, info_tmp))
 			return;
 	}
 
-	info_copy = mono_mempool_alloc0 (domain->mp, sizeof (MonoAssemblyBindingInfo));
+	info_copy = (MonoAssemblyBindingInfo *)mono_mempool_alloc0 (domain->mp, sizeof (MonoAssemblyBindingInfo));
 	memcpy (info_copy, info, sizeof (MonoAssemblyBindingInfo));
 	if (info->name)
 		info_copy->name = mono_mempool_strdup (domain->mp, info->name);
@@ -2721,7 +2721,7 @@ get_per_domain_assembly_binding_info (MonoDomain *domain, MonoAssemblyName *anam
 
 	info = NULL;
 	for (list = domain->assembly_bindings; list; list = list->next) {
-		info = list->data;
+		info = (MonoAssemblyBindingInfo *)list->data;
 		if (info && !strcmp (aname->name, info->name) && info_major_minor_in_range (info, aname))
 			break;
 		info = NULL;
@@ -2787,7 +2787,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		info2 = get_per_domain_assembly_binding_info (domain, aname);
 
 		if (info2) {
-			info = g_memdup (info2, sizeof (MonoAssemblyBindingInfo));
+			info = (MonoAssemblyBindingInfo *)g_memdup (info2, sizeof (MonoAssemblyBindingInfo));
 			info->name = g_strdup (info2->name);
 			info->culture = g_strdup (info2->culture);
 			info->domain_id = domain->domain_id;
@@ -2858,7 +2858,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	if (strstr (aname->name, ".dll")) {
 		len = strlen (filename) - 4;
-		name = g_malloc (len);
+		name = (gchar *)g_malloc (len);
 		strncpy (name, aname->name, len);
 	} else {
 		name = g_strdup (aname->name);
@@ -3173,7 +3173,7 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 		assembly->image = NULL;
 
 	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
-		MonoAssemblyName *fname = tmp->data;
+		MonoAssemblyName *fname = (MonoAssemblyName *)tmp->data;
 		mono_assembly_name_free (fname);
 		g_free (fname);
 	}
@@ -3252,7 +3252,7 @@ mono_assemblies_cleanup (void)
 	mono_os_mutex_destroy (&assembly_binding_mutex);
 
 	for (l = loaded_assembly_bindings; l; l = l->next) {
-		MonoAssemblyBindingInfo *info = l->data;
+		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)l->data;
 
 		mono_assembly_binding_info_free (info);
 		g_free (info);
@@ -3274,7 +3274,7 @@ mono_assembly_cleanup_domain_bindings (guint32 domain_id)
 	iter = &loaded_assembly_bindings;
 	while (*iter) {
 		GSList *l = *iter;
-		MonoAssemblyBindingInfo *info = l->data;
+		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)l->data;
 
 		if (info->domain_id == domain_id) {
 			*iter = l->next;

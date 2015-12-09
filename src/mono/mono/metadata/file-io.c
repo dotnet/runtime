@@ -190,7 +190,7 @@ static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *
 static guint32 convert_attrs(MonoFileAttributes attrs)
 {
 	if(attrs & FileAttributes_Encrypted) {
-		attrs |= FILE_ATTRIBUTE_ENCRYPTED;
+		attrs = (MonoFileAttributes)(attrs | FILE_ATTRIBUTE_ENCRYPTED);
 	}
 	
 	return(attrs);
@@ -324,7 +324,7 @@ get_filesystem_entries (const gunichar2 *path,
 	gchar *utf8_path = NULL, *utf8_result, *full_name;
 	gint32 attributes;
 
-	mask = convert_attrs (mask);
+	mask = convert_attrs ((MonoFileAttributes)mask);
 	attributes = get_file_attributes (path);
 	if (attributes != -1) {
 		if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
@@ -415,7 +415,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 
 	result = mono_array_new (domain, mono_defaults.string_class, names->len);
 	for (i = 0; i < names->len; i++) {
-		mono_array_setref (result, i, mono_string_new (domain, g_ptr_array_index (names, i)));
+		mono_array_setref (result, i, mono_string_new (domain, (const char *)g_ptr_array_index (names, i)));
 		g_free (g_ptr_array_index (names, i));
 	}
 	g_ptr_array_free (names, TRUE);
@@ -499,7 +499,7 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 MonoString *
 ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint32 *error)
 {
-	IncrementalFind *ifh = handle;
+	IncrementalFind *ifh = (IncrementalFind *)handle;
 	WIN32_FIND_DATA data;
 	MonoString *result;
 
@@ -520,7 +520,7 @@ ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint3
 int
 ves_icall_System_IO_MonoIO_FindClose (gpointer handle)
 {
-	IncrementalFind *ifh = handle;
+	IncrementalFind *ifh = (IncrementalFind *)handle;
 	gint32 error;
 
 	MONO_PREPARE_BLOCKING;
@@ -705,7 +705,7 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 	*error=ERROR_SUCCESS;
 	
 	ret=SetFileAttributes (mono_string_chars (path),
-			       convert_attrs (attrs));
+		convert_attrs ((MonoFileAttributes)attrs));
 	if(ret==FALSE) {
 		*error=GetLastError ();
 	}
@@ -803,8 +803,8 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 		}
 	}
 	
-	ret=CreateFile (chars, convert_access (access_mode),
-			convert_share (share), NULL, convert_mode (mode),
+	ret=CreateFile (chars, convert_access ((MonoFileAccess)access_mode),
+			convert_share ((MonoFileShare)share), NULL, convert_mode ((MonoFileMode)mode),
 			attributes, NULL);
 	if(ret==INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
@@ -905,7 +905,7 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 	
 	offset_hi = offset >> 32;
 	offset = SetFilePointer (handle, (gint32) (offset & 0xFFFFFFFF), &offset_hi,
-				 convert_seekorigin (origin));
+				 (WapiSeekMethod)convert_seekorigin ((MonoSeekOrigin)origin));
 
 	if(offset==INVALID_SET_FILE_POINTER) {
 		*error=GetLastError ();

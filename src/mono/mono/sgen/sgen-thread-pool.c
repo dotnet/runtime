@@ -52,7 +52,7 @@ static SgenThreadPoolJob*
 get_job_and_set_in_progress (void)
 {
 	for (size_t i = 0; i < job_queue.next_slot; ++i) {
-		SgenThreadPoolJob *job = job_queue.data [i];
+		SgenThreadPoolJob *job = (SgenThreadPoolJob *)job_queue.data [i];
 		if (job->state == STATE_WAITING) {
 			job->state = STATE_IN_PROGRESS;
 			return job;
@@ -171,7 +171,7 @@ sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, 
 SgenThreadPoolJob*
 sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJobFunc func, size_t size)
 {
-	SgenThreadPoolJob *job = sgen_alloc_internal_dynamic (size, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
+	SgenThreadPoolJob *job = (SgenThreadPoolJob *)sgen_alloc_internal_dynamic (size, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
 	job->name = name;
 	job->size = size;
 	job->state = STATE_WAITING;
