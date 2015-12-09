@@ -91,7 +91,6 @@ void                Compiler::impInit()
  *  Pushes the given tree on the stack.
  */
 
-inline
 void                Compiler::impPushOnStack(GenTreePtr tree, typeInfo ti)
 {
     /* Check for overflow. If inlining, we may be using a bigger stack */
@@ -296,7 +295,6 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN * pResol
  *  Pop one tree from the stack.
  */
 
-inline
 StackEntry          Compiler::impPopStack()
 {
     if (verCurrentState.esStackDepth == 0)
@@ -319,7 +317,6 @@ StackEntry          Compiler::impPopStack()
     return verCurrentState.esStack[--verCurrentState.esStackDepth];
 }
 
-inline
 StackEntry          Compiler::impPopStack(CORINFO_CLASS_HANDLE& structType)
 {
     StackEntry ret = impPopStack();
@@ -327,7 +324,6 @@ StackEntry          Compiler::impPopStack(CORINFO_CLASS_HANDLE& structType)
     return(ret);
 }
 
-inline
 GenTreePtr          Compiler::impPopStack(typeInfo& ti)
 {
     StackEntry ret = impPopStack();
@@ -342,7 +338,6 @@ GenTreePtr          Compiler::impPopStack(typeInfo& ti)
  *  Peep at n'th (0-based) tree on the top of the stack.
  */
 
-inline
 StackEntry&         Compiler::impStackTop(unsigned n)
 {
     if (verCurrentState.esStackDepth <= n)
@@ -1170,7 +1165,8 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
            src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
            src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
            src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
-           src->gtOper == GT_ADDR     || GenTree::OperIsSIMD(src->gtOper));
+           src->gtOper == GT_ADDR     ||
+           (src->TypeGet() != TYP_STRUCT && (GenTree::OperIsSIMD(src->gtOper) || src->gtOper == GT_LCL_FLD)));
 #else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     assert(varTypeIsStruct(src));
 
@@ -1178,7 +1174,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
            src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
            src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
            src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
-           GenTree::OperIsSIMD(src->gtOper));
+           (src->TypeGet() != TYP_STRUCT && (GenTree::OperIsSIMD(src->gtOper) || src->gtOper == GT_LCL_FLD)));
 #endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     if (src->gtOper == GT_CALL)
@@ -7108,8 +7104,10 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!call->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
 
-    // The return is a struct if not normalized to a single eightbyte return type below.
-    call->gtCall.gtReturnType = TYP_STRUCT;
+    // The return type will remain as the incoming struct type unless normalized to a
+    // single eightbyte return type below.
+    call->gtCall.gtReturnType = call->gtType;
+
     // Get the classification for the struct.
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
@@ -7169,11 +7167,9 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     assert(info.compRetBuffArg == BAD_VAR_NUM);
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(info.compRetNativeType != TYP_STRUCT);
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(!info.compIsVarArgs); // No VarArgs for CoreCLR.
-    if (info.compRetNativeType == TYP_STRUCT)
+    if (varTypeIsStruct(info.compRetNativeType))
     {
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
         eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
@@ -7197,6 +7193,8 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
             return impAssignStructClassToVar(op, retClsHnd);
         }
     }
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(info.compRetNativeType != TYP_STRUCT);
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #elif defined(_TARGET_ARM_)
@@ -7291,7 +7289,7 @@ REDO_RETURN_NODE:
         {
 #ifdef DEBUG
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            if (op->gtType == TYP_STRUCT)
+            if (varTypeIsStruct(op))
             {
                 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
                 eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
@@ -7301,7 +7299,7 @@ REDO_RETURN_NODE:
             else
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             {
-            assert(info.compRetNativeType == op->gtCall.gtReturnType);
+                assert(info.compRetNativeType == op->gtCall.gtReturnType);
             }
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif // DEBUG
@@ -7314,7 +7312,7 @@ REDO_RETURN_NODE:
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
     }
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (op->gtType == TYP_STRUCT)
+    if (varTypeIsStruct(op))
     {
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
         eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
@@ -7324,7 +7322,7 @@ REDO_RETURN_NODE:
     else
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     {
-    op->gtType = info.compRetNativeType;
+        op->gtType = info.compRetNativeType;
     }
 
     return op;
@@ -11749,9 +11747,9 @@ DO_LDFTN:
 
             lclTyp = JITtype2varType(ciType);
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_AMD64
             noway_assert(varTypeIsIntegralOrI(lclTyp) || varTypeIsFloating(lclTyp) || lclTyp == TYP_STRUCT);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             if (compIsForInlining())
             {
@@ -12790,7 +12788,7 @@ FIELD_DONE:
 
                 assert(helper == CORINFO_HELP_UNBOX_NULLABLE && "Make sure the helper is nullable!");
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                if (op1->gtType == TYP_STRUCT)
+                if (varTypeIsStruct(op1))
                 {
                     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
                     eeGetSystemVAmd64PassStructInRegisterDescriptor(resolvedToken.hClass, &structDesc);
@@ -12821,13 +12819,13 @@ FIELD_DONE:
                         impPushOnStack(op1, tiRetVal);
 
                         // Load the struct.
-                    oper = GT_LDOBJ;
+                        oper = GT_LDOBJ;
 
                         assert(op1->gtType == TYP_BYREF);
                         assert(!tiVerificationNeeded || tiRetVal.IsByRef());
 
-                    goto LDOBJ;
-                }   
+                        goto LDOBJ;
+                    }   
                     else
                     {
                         // If non register passable struct we have it materialized in the RetBuf.
@@ -13676,7 +13674,7 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg structs."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
-    GenTreePtr ret = gtNewLclvNode(tmpNum, TYP_STRUCT);
+    GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #ifdef DEBUG
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -13737,7 +13735,8 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
             assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
                       ((op2->TypeGet() == TYP_I_IMPL) && (info.compRetType == TYP_BYREF)) ||
                       ((op2->TypeGet() == TYP_BYREF) && (info.compRetType == TYP_I_IMPL)) ||
-                      varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)); 
+                      (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
+                      (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType))); 
 
 #ifdef DEBUG
             if (opts.compGcChecks && info.compRetType == TYP_REF)

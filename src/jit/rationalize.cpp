@@ -1555,19 +1555,21 @@ void Rationalizer::RewriteLdObj(GenTreePtr* ppTree, Compiler::fgWalkData* data)
 {    
 #ifdef FEATURE_SIMD
     Compiler* comp = data->compiler;
+    GenTreeLdObj* ldObj = (*ppTree)->AsLdObj();
 
+    // For UNIX struct passing, we can have LdObj nodes for arguments.
+    // For other cases, we should never see a non-SIMD type here.
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (!varTypeIsSIMD(ldObj))
+    {
+        return;
+    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     // Should come here only if featureSIMD is enabled
     noway_assert(comp->featureSIMD);
-
-    GenTreeLdObj* ldObj = (*ppTree)->AsLdObj();
-    assert(ldObj->OperGet() == GT_LDOBJ);
-
-    unsigned simdSize = 0;
-    var_types baseType = comp->getBaseTypeAndSizeOfSIMDType(ldObj->gtClass, &simdSize);
-    assert(baseType != TYP_UNKNOWN);
-    var_types simdType = comp->getSIMDTypeForSize(simdSize);
-
-    assert(ldObj->TypeGet() == TYP_STRUCT || ldObj->TypeGet() == simdType);
+    // On  we should only call this with a SIMD type.
+    noway_assert(varTypeIsSIMD(ldObj));
+    var_types simdType = ldObj->TypeGet();
 
     // If the operand of ldobj is a GT_ADDR(GT_LCL_VAR) and LclVar is known to be a SIMD type,
     // replace ldobj by GT_LCL_VAR.
@@ -1596,6 +1598,7 @@ void Rationalizer::RewriteLdObj(GenTreePtr* ppTree, Compiler::fgWalkData* data)
         {
             comp->fgSnipInnerNode(ldObj);
         }
+        comp->fgFixupIfCallArg(data->parentStack, ldObj, src);
         src->gtType = simdType;
 
         *ppTree = src;
@@ -1965,6 +1968,10 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree **ppTree, Com
         unsigned simdSize = 0;
         switch(tree->gtOper)
         {
+        default:
+            // Nothing to do for most nodes.
+            break;
+
         case GT_INITBLK:
             RewriteInitBlk(ppTree, data);
             break;
@@ -2064,7 +2071,6 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree **ppTree, Com
                     }
                 }
             }
-
             break;
         }
         if ((*ppTree) != tree)
@@ -2109,6 +2115,10 @@ void Rationalizer::FixupIfSIMDLocal(Compiler* comp, GenTreeLclVarCommon* tree)
     }
     switch(tree->OperGet())
     {
+    default:
+        // Nothing to do for most tree nodes.
+        break;
+
     case GT_LCL_FLD:
         // We may see a lclFld used for pointer-sized structs that have been morphed, in which
         // case we can change it to GT_LCL_VAR.
@@ -2124,8 +2134,9 @@ void Rationalizer::FixupIfSIMDLocal(Compiler* comp, GenTreeLclVarCommon* tree)
         }
         else
         {
-            // If we access a field of a SIMD lclVar via GT_LCL_FLD, it must not have been promoted.
-            assert(varDsc->lvPromoted == false);
+            // If we access a field of a SIMD lclVar via GT_LCL_FLD, it cannot have been
+            // independently promoted.
+            assert(comp->lvaGetPromotionType(varDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT);
             return;
         }
         break;

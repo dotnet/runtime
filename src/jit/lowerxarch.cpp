@@ -298,7 +298,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 #endif // !defined(_TARGET_64BIT_)
             {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                if (tree->TypeGet() == TYP_STRUCT && 
+                if (varTypeIsStruct(tree) &&
                     tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
                 {
 #ifdef DEBUG
@@ -876,7 +876,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             }
 
             // Set destination candidates for return value of the call.
-            if (varTypeIsFloating(registerType))
+            if (varTypeIsFloating(registerType)
+                FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || varTypeIsSIMD(registerType)))
             {
 #ifdef _TARGET_X86_
                 // The return value will be on the X87 stack, and we will need to move it.
@@ -938,13 +939,14 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     argNode->gtLsraInfo.dstCount = 0;
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                    // If the node is a struct and it is put on stack with
+                    // If the node is TYP_STRUCT and it is put on stack with
                     // putarg_stk operation, we consume and produce no registers.
                     // In this case the embedded LdObj node should not produce 
                     // registers too since it is contained.
+                    // Note that if it is a SIMD type the argument will be in a register.
                     if (argNode->TypeGet() == TYP_STRUCT)
                     {
-                        assert(argNode != nullptr && argNode->gtOp.gtOp1 != nullptr && argNode->gtOp.gtOp1->OperGet() == GT_LDOBJ);
+                        assert(argNode->gtOp.gtOp1 != nullptr && argNode->gtOp.gtOp1->OperGet() == GT_LDOBJ);
                         argNode->gtOp.gtOp1->gtLsraInfo.dstCount = 0;
                         argNode->gtLsraInfo.srcCount = 0;
                     }
@@ -978,7 +980,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
                 // If the struct arg is wraped in CPYBLK the type of the param will be TYP_VOID.
                 // Use the curArgTabEntry's isStruct to get whether the param is a struct.
-                if (argNode->TypeGet() == TYP_STRUCT 
+                if (varTypeIsStruct(argNode)
                     FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(|| curArgTabEntry->isStruct))
                 {
                     unsigned originalSize = 0;
@@ -1213,18 +1215,27 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
             GenTreePutArgStk* putArgStkTree = tree->AsPutArgStk();
             
-            GenTreePtr   dstAddr = tree;
-            GenTreePtr   srcAddr = tree->gtOp.gtOp1;
+            GenTreePtr   dst = tree;
+            GenTreePtr   src = tree->gtOp.gtOp1;
+            GenTreePtr   srcAddr = nullptr;
 
-            assert(srcAddr->OperGet() == GT_LDOBJ);
-            info->srcCount = srcAddr->gtLsraInfo.dstCount;
+            if ((src->OperGet() == GT_LDOBJ) || (src->OperGet() == GT_IND))
+            {
+                srcAddr = src->gtOp.gtOp1;
+            }
+            else
+            {
+                assert(varTypeIsSIMD(tree));
+            }
+            info->srcCount = src->gtLsraInfo.dstCount;
 
             // If this is a stack variable address,
             // make the op1 contained, so this way 
             // there is no unnecessary copying between registers.
             // To avoid assertion, increment the parent's source.
             // It is recovered below.
-            if (srcAddr->gtGetOp1()->OperIsLocalAddr())
+            bool haveLocalAddr = ((srcAddr != nullptr) && (srcAddr->OperIsLocalAddr()));
+            if (haveLocalAddr)
             {
                 info->srcCount += 1;
             }
@@ -1278,9 +1289,9 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     info->addInternalCandidates(l, l->internalFloatRegCandidates());
                 }
                 
-                if (srcAddr->gtGetOp1()->OperIsLocalAddr())
+                if (haveLocalAddr)
                 {
-                    MakeSrcContained(putArgStkTree, srcAddr->gtGetOp1());
+                    MakeSrcContained(putArgStkTree, srcAddr);
                 }
                 
                 // If src or dst are on stack, we don't have to generate the address into a register
@@ -1291,19 +1302,19 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             {
                 info->internalIntCount += 3;
                 info->setInternalCandidates(l, (RBM_RDI | RBM_RCX | RBM_RSI));
-                if (srcAddr->gtGetOp1()->OperIsLocalAddr())
+                if (haveLocalAddr)
                 {
-                    MakeSrcContained(putArgStkTree, srcAddr->gtGetOp1());
+                    MakeSrcContained(putArgStkTree, srcAddr);
                 }
                 
                 putArgStkTree->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindRepInstr;
             }
             
             // Always mark the LDOBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
-            MakeSrcContained(putArgStkTree, srcAddr);
+            MakeSrcContained(putArgStkTree, src);
             
             // Balance up the inc above.
-            if (srcAddr->gtGetOp1()->OperIsLocalAddr())
+            if (haveLocalAddr)
             {
                 info->srcCount -= 1;
             }
