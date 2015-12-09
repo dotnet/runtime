@@ -26,7 +26,7 @@ struct SIMDIntrinsicInfo
     const char *methodName;
     bool isInstMethod;
     var_types retType;
-    byte argCount;    
+    unsigned char argCount;    
     var_types argType[SIMD_INTRINSIC_MAX_MODELED_PARAM_COUNT];
     var_types supportedBaseTypes[SIMD_INTRINSIC_MAX_BASETYPE_COUNT];
 };
