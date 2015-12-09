@@ -752,6 +752,12 @@ namespace System.Net.Http.Functional.Tests
             {
                 request.Version = requestVersion;
             }
+            else
+            {
+                // The default value for HttpRequestMessage.Version is Version(1,1).
+                // So, we need to set something different to test the "unknown" version.
+                request.Version = new Version(0,0);
+            }
 
             using (var client = new HttpClient())
             using (HttpResponseMessage response = await client.SendAsync(request))
