@@ -86,19 +86,6 @@ BOOL LOADSetExeName(LPWSTR name);
 
 /*++
 Function :
-    LOADFreeModules
-
-    Release all resources held by the module manager (including dlopen handles)
-
-Parameters:
-    BOOL bTerminateUnconditionally: If TRUE, this will avoid calling any DllMains
-
-    (no return value)
---*/
-void LOADFreeModules(BOOL bTerminateUnconditionally);
-
-/*++
-Function :
     LOADCallDllMain
 
     Call DllMain for all modules (that have one) with the given "fwReason"

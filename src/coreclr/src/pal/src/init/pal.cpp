@@ -550,7 +550,6 @@ CLEANUP15:
 CLEANUP13:
     VIRTUALCleanup();
 CLEANUP10:
-    LOADFreeModules(TRUE);
     MAPCleanup();
 CLEANUP6:
     SEHCleanup();
@@ -742,6 +741,99 @@ done:
 
 /*++
 Function:
+  PAL_Shutdown
+
+Abstract:
+  This function shuts down the PAL WITHOUT exiting the current process.
+--*/
+void
+PALAPI
+PAL_Shutdown(
+    void)
+{
+    TerminateCurrentProcessNoExit(FALSE /* bTerminateUnconditionally */);
+}
+
+/*++
+Function:
+  PAL_Terminate
+
+Abstract:
+  This function is the called when a thread has finished using the PAL
+  library. It shuts down PAL and exits the current process.
+--*/
+void
+PALAPI
+PAL_Terminate(
+    void)
+{
+    PAL_TerminateEx(0);
+}
+
+/*++
+Function:
+PAL_TerminateEx
+
+Abstract:
+This function is the called when a thread has finished using the PAL
+library. It shuts down PAL and exits the current process with
+the specified exit code.
+--*/
+void
+PALAPI
+PAL_TerminateEx(
+    int exitCode)
+{
+    ENTRY_EXTERNAL("PAL_TerminateEx()\n");
+
+    if (NULL == init_critsec)
+    {
+        /* note that these macros probably won't output anything, since the
+        debug channels haven't been initialized yet */
+        ASSERT("PAL_Initialize has never been called!\n");
+        LOGEXIT("PAL_Terminate returns.\n");
+    }
+
+    PALSetShutdownIntent();
+
+    LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
+    exit(exitCode);
+}
+
+/*++
+Function:
+  PAL_InitializeDebug
+
+Abstract:
+  This function is the called when cordbg attaches to the process.
+--*/
+void
+PALAPI
+PAL_InitializeDebug(
+    void)
+{
+    PERF_ENTRY(PAL_InitializeDebug);
+    ENTRY("PAL_InitializeDebug()\n");
+#if HAVE_MACH_EXCEPTIONS
+    MachExceptionInitializeDebug();
+#endif
+    LOGEXIT("PAL_InitializeDebug returns\n");
+    PERF_EXIT(PAL_InitializeDebug);
+}
+
+/*++
+Function:
+  PALIsThreadDataInitialized
+
+Returns TRUE if startup has reached a point where thread data is available
+--*/
+BOOL PALIsThreadDataInitialized()
+{
+    return g_fThreadDataAvailable;
+}
+
+/*++
+Function:
   PALCommonCleanup
 
 Utility function to prepare for shutdown.
@@ -772,84 +864,6 @@ PALCommonCleanup()
 
 /*++
 Function:
-  PAL_Terminate
-
-Abstract:
-  This function is the called when a thread has finished using the PAL
-  library. It shuts down PAL and exits the current process.
---*/
-void
-PALAPI
-PAL_Terminate(
-          void)
-{
-    PAL_TerminateEx(0);
-}
-
-/*++
-Function:
-PAL_TerminateEx
-
-Abstract:
-This function is the called when a thread has finished using the PAL
-library. It shuts down PAL and exits the current process with
-the specified exit code.
---*/
-void
-PALAPI
-PAL_TerminateEx(int exitCode)
-{
-    ENTRY_EXTERNAL("PAL_TerminateEx()\n");
-
-    if (NULL == init_critsec)
-    {
-        /* note that these macros probably won't output anything, since the
-        debug channels haven't been initialized yet */
-        ASSERT("PAL_Initialize has never been called!\n");
-        LOGEXIT("PAL_Terminate returns.\n");
-    }
-
-    PALSetShutdownIntent();
-
-    LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
-    exit(exitCode);
-}
-
-/*++
-Function:
-  PAL_InitializeDebug
-
-Abstract:
-  This function is the called when cordbg attaches to the process.
---*/
-void
-PALAPI
-PAL_InitializeDebug(
-          void)
-{
-    PERF_ENTRY(PAL_InitializeDebug);
-    ENTRY("PAL_InitializeDebug()\n");
-#if HAVE_MACH_EXCEPTIONS
-    MachExceptionInitializeDebug();
-#endif
-    LOGEXIT("PAL_InitializeDebug returns\n");
-    PERF_EXIT(PAL_InitializeDebug);
-}
-
-/*++
-Function:
-  PALIsThreadDataInitialized
-
-Returns TRUE if startup has reached a point where thread data is available
---*/
-BOOL
-PALIsThreadDataInitialized()
-{
-    return g_fThreadDataAvailable;
-}
-
-/*++
-Function:
   PALShutdown
 
   sets the PAL's initialization count to zero, so that PALIsInitialized will 
@@ -858,15 +872,12 @@ Function:
   
 (no parameters, no retun vale)
 --*/
-void
-PALShutdown(
-          void)
+void PALShutdown()
 {
     init_count = 0;
 }
 
-BOOL
-PALIsShuttingDown()
+BOOL PALIsShuttingDown()
 {
     /* ROTORTODO: This function may be used to provide a reader/writer-like
        mechanism (or a ref counting one) to prevent PAL APIs that need to access 
@@ -878,8 +889,7 @@ PALIsShuttingDown()
     return shutdown_intent;
 }
 
-void
-PALSetShutdownIntent()
+void PALSetShutdownIntent()
 {
     /* ROTORTODO: See comment in PALIsShuttingDown */
     shutdown_intent = TRUE;

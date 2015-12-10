@@ -801,8 +801,6 @@ pal_specific/pal_errno/test1,1
 pal_specific/pal_getpaldirectoryw/test1,1
 pal_specific/pal_getuserconfigurationdirectoryw/test1,1
 pal_specific/pal_initialize_terminate/test1,1
-pal_specific/pal_registerlibraryw_unregisterlibraryw/pal_registerlibraryw_unregisterlibraryw_neg,1
-pal_specific/pal_registerlibraryw_unregisterlibraryw/test1,1
 threading/createeventa/test1,1
 threading/createeventa/test2,1
 threading/createeventa/test3,1

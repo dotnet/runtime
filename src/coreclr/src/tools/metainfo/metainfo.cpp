@@ -77,14 +77,6 @@ extern "C" int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     HRESULT hr = 0;
     BOOL    fWantHelp=FALSE;
     
-#if FEATURE_PAL
-    if (!PAL_RegisterLibrary(L"rotor_palrt") ||
-        !PAL_RegisterLibrary(L"sscoree"))
-    {
-        MDInfo::Error("Unable to register libraries", 1);
-    }
-#endif  // FEATURE_PAL
-    
     // Validate incoming arguments
     for (int i=1;  i<argc;  i++)
     {

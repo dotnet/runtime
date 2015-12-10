@@ -10,5 +10,4 @@ add_subdirectory(PAL_errno)
 add_subdirectory(PAL_GetPALDirectoryW)
 add_subdirectory(pal_initializedebug)
 add_subdirectory(PAL_Initialize_Terminate)
-add_subdirectory(PAL_RegisterLibraryW_UnregisterLibraryW)
 
