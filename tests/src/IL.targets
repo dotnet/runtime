@@ -13,11 +13,17 @@
     <PropertyGroup>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">/DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">/EXE</_OutputTypeArgument>
-
-      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">/KEY=$(KeyOriginatorFile)</_KeyFileArgument>
+      <_IlasmSwitches>/QUIET /NOLOGO</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(KeyOriginatorFile)' != ''">$(_IlasmSwitches) /KEY=$(KeyOriginatorFile)</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) /FOLD</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) /STACK=$(SizeOfStackReserve)</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) /DEBUG</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) /DEBUG=IMPL</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) /DEBUG=OPT</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) /OPTIMIZE</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="ilasm /QUIET $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_KeyFileArgument) @(Compile)">
+    <Exec Command="ilasm $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
     <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
