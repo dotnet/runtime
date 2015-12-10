@@ -27,8 +27,7 @@ namespace System.Net.Http
             chain.ChainPolicy.RevocationMode =
                 checkCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-            chain.Build(certificate);
-            if (chain.ChainStatus != null && chain.ChainStatus.Length != 0)
+            if (!chain.Build(certificate))
             {
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
