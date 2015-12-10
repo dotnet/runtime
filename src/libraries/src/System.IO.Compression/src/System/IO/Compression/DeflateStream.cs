@@ -46,7 +46,6 @@ namespace System.IO.Compression
             _buffer = new byte[DefaultBufferSize];
         }
 
-
         public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             if (stream == null)
@@ -202,14 +201,34 @@ namespace System.IO.Compression
         public override void Flush()
         {
             EnsureNotDisposed();
+            if (_mode == CompressionMode.Compress)
+                FlushBuffers();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (_asyncOperations != 0)
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+
             EnsureNotDisposed();
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled(cancellationToken) :
-                Task.CompletedTask;
+
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+
+            return _mode != CompressionMode.Compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
+        }
+
+        private async Task FlushAsyncCore(CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _asyncOperations);
+            try
+            {
+                await base.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _asyncOperations);
+            }
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -427,7 +446,6 @@ namespace System.IO.Compression
             WriteDeflaterOutput();
         }
 
-
         private void WriteDeflaterOutput()
         {
             while (!_deflater.NeedsInput())
@@ -471,6 +489,28 @@ namespace System.IO.Compression
 
             // Inform formatter of the data bytes written:
             _formatWriter.UpdateWithBytesRead(array, offset, count);
+        }
+
+        // This is called by Flush:
+        private void FlushBuffers()
+        {
+            // Make sure to only "flush" when we actually had some input:
+            if (_wroteBytes)
+            {
+                // Compress any bytes left:                        
+                WriteDeflaterOutput();
+
+                // Pull out any bytes left inside deflater:
+                bool flushSuccessful;
+                do
+                {
+                    int compressedBytes;
+                    flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                    if (flushSuccessful)
+                        DoWrite(_buffer, 0, compressedBytes);
+                    Debug.Assert(flushSuccessful == (compressedBytes > 0));
+                } while (flushSuccessful);
+            }
         }
 
         // This is called by Dispose:

@@ -158,6 +158,7 @@ namespace System.IO.Compression
         internal bool Finish(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!_inputBufferHandle.IsAllocated);
 
@@ -167,6 +168,23 @@ namespace System.IO.Compression
 
             ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
             return errC == ZErrorCode.StreamEnd;
+        }
+
+        /// <summary>
+        /// Returns true if there was something to flush. Otherwise False.
+        /// </summary>
+        internal bool Flush(byte[] outputBuffer, out int bytesRead)
+        {
+            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(outputBuffer.Length > 0 , "Can't pass in an empty output buffer!");
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(!_inputBufferHandle.IsAllocated);
+
+            // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
+            // If there is still input left we should never be getting here; instead we
+            // should be calling GetDeflateOutput.
+
+            return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
         #endregion
