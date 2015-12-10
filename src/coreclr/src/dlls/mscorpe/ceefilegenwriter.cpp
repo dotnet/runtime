@@ -1178,84 +1178,100 @@ HRESULT CeeFileGenWriter::emitResourceSection()
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hMap = NULL;
     IMAGE_FILE_HEADER *hMod = NULL;
-    SIZE_T cbFileSize;
-    const BYTE *pbStartOfMappedMem;
-    IMAGE_SECTION_HEADER *rsrc[2] = { NULL, NULL };
-
-    S_SIZE_T cbTotalSizeOfRawData;
 
     hr = S_OK;
 
-    WIN_PAL_TRY
+    struct Param
     {
+        HANDLE hFile;
+        HANDLE hMap;
+        IMAGE_FILE_HEADER *hMod;
+        const WCHAR* szResFileName;
+        CeeFileGenWriter *genWriter;
+        HRESULT hr;
+    } param;
+
+    param.hFile = hFile;
+    param.hMap = hMap;
+    param.hMod = hMod;
+    param.szResFileName = szResFileName;
+    param.genWriter = this;
+    param.hr = S_OK;
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        SIZE_T cbFileSize;
+        const BYTE *pbStartOfMappedMem;
+        IMAGE_SECTION_HEADER *rsrc[2] = { NULL, NULL };
+        S_SIZE_T cbTotalSizeOfRawData;
         // create a mapped view of the .res file
-        hFile = WszCreateFile(szResFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-        if (hFile == INVALID_HANDLE_VALUE)
+        pParam->hFile = WszCreateFile(pParam->szResFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (pParam->hFile == INVALID_HANDLE_VALUE)
         {
             //dbprintf("Resource file %S not found\n", szResFileName);
-            hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+            pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
 
         // Grab the file size for verification checks.
         {
             DWORD dwFileSizeHigh;
-            DWORD dwFileSize = SafeGetFileSize(hFile, &dwFileSizeHigh);
+            DWORD dwFileSize = SafeGetFileSize(pParam->hFile, &dwFileSizeHigh);
             if (dwFileSize == (DWORD)(-1))
             {
-                hr = HRESULT_FROM_GetLastError();
+                pParam->hr = HRESULT_FROM_GetLastError();
                 goto lDone;
             }
 
             // Since we intend to memory map this file, the size of the file can not need 64 bits to represent!
             if (dwFileSizeHigh != 0)
             {
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
             cbFileSize = static_cast<SIZE_T>(dwFileSize);
         }
 
-        hMap = WszCreateFileMapping(hFile, 0, PAGE_READONLY, 0, 0, NULL);
+        pParam->hMap = WszCreateFileMapping(pParam->hFile, 0, PAGE_READONLY, 0, 0, NULL);
 
-        if (hMap == NULL)
+        if (pParam->hMap == NULL)
         {
             //dbprintf("Invalid .res file: %S\n", szResFileName);
-            hr = HRESULT_FROM_GetLastError();
+            pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
 
-        pbStartOfMappedMem = reinterpret_cast<const BYTE *>(MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0));
+        pbStartOfMappedMem = reinterpret_cast<const BYTE *>(MapViewOfFile(pParam->hMap, FILE_MAP_READ, 0, 0, 0));
 
         // test failure conditions
         if (pbStartOfMappedMem == NULL)
         {
             //dbprintf("Invalid .res file: %S:Can't get header\n", szResFileName);
-            hr = HRESULT_FROM_GetLastError();
+            pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
 
         // Check that the file contains an IMAGE_FILE_HEADER structure.
         if (IMAGE_SIZEOF_FILE_HEADER > cbFileSize)
         {
-            hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+            pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
 
-        hMod = (IMAGE_FILE_HEADER*) pbStartOfMappedMem;
+        pParam->hMod = (IMAGE_FILE_HEADER*)pbStartOfMappedMem;
 
-        if (VAL16(hMod->SizeOfOptionalHeader) != 0)
+        if (VAL16(pParam->hMod->SizeOfOptionalHeader) != 0)
         {
             //dbprintf("Invalid .res file: %S:Illegal optional header\n", szResFileName);
-            hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND); // GetLastError() = 0 since API worked.
+            pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND); // GetLastError() = 0 since API worked.
             goto lDone;
         }
 
         // Scan all section headers and grab .rsrc$01 and .rsrc$02
         {
             // First section is directly after header
-            SIZE_T cSections = static_cast<SIZE_T>(VAL16(hMod->NumberOfSections));
+            SIZE_T cSections = static_cast<SIZE_T>(VAL16(pParam->hMod->NumberOfSections));
             SIZE_T cbStartOfSections = IMAGE_SIZEOF_FILE_HEADER;
             S_SIZE_T cbEndOfSections(S_SIZE_T(cbStartOfSections) +
                                      (S_SIZE_T(cSections) * S_SIZE_T(IMAGE_SIZEOF_SECTION_HEADER)));
@@ -1264,7 +1280,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             if (cbEndOfSections.IsOverflow() ||
                 cbEndOfSections.Value() > cbFileSize)
             {
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
@@ -1291,7 +1307,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         if (!rsrc[0] || !rsrc[1])
         {
             //dbprintf("Invalid .res file: %S: Missing sections .rsrc$01 or .rsrc$02\n", szResFileName);
-            hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+            pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
 
@@ -1308,7 +1324,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 if (cbEndOfResourceData.IsOverflow() ||
                     cbEndOfResourceData.Value() > cbFileSize)
                 {
-                    hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                    pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                     goto lDone;
                 }
 
@@ -1319,25 +1335,25 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             if (cbTotalSizeOfRawData.IsOverflow() ||
                 cbTotalSizeOfRawData.Value() > cbFileSize)
             {
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
         }
 
         PESection *rsrcSection;
-        hr = getPEWriter().getSectionCreate(".rsrc", sdReadOnly, &rsrcSection);
-        if (FAILED(hr)) goto lDone;
+        pParam->hr = pParam->genWriter->getPEWriter().getSectionCreate(".rsrc", sdReadOnly, &rsrcSection);
+        if (FAILED(pParam->hr)) goto lDone;
 
         rsrcSection->directoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE);
         char *data = rsrcSection->getBlock(static_cast<unsigned>(cbTotalSizeOfRawData.Value()), 8);
         if(data == NULL)
         {
-            hr = E_OUTOFMEMORY;
+            pParam->hr = E_OUTOFMEMORY;
             goto lDone;
         }
 
         // Copy resource header
-        memcpy(data, (char *)hMod + VAL32(rsrc[0]->PointerToRawData), VAL32(rsrc[0]->SizeOfRawData));
+        memcpy(data, (char *)pParam->hMod + VAL32(rsrc[0]->PointerToRawData), VAL32(rsrc[0]->SizeOfRawData));
 
         // Map all the relocs in .rsrc$01 using the reloc and symbol tables in the COFF object.,
         SIZE_T            cReloc        = 0;         // Total number of relocs
@@ -1355,8 +1371,8 @@ HRESULT CeeFileGenWriter::emitResourceSection()
 
 
             // Verify the number of symbols fit into the resource.
-            cSymbol = static_cast<SIZE_T>(VAL32(hMod->NumberOfSymbols));
-            SIZE_T cbStartOfSymbolTable = static_cast<SIZE_T>(VAL32(hMod->PointerToSymbolTable));
+            cSymbol = static_cast<SIZE_T>(VAL32(pParam->hMod->NumberOfSymbols));
+            SIZE_T cbStartOfSymbolTable = static_cast<SIZE_T>(VAL32(pParam->hMod->PointerToSymbolTable));
             S_SIZE_T cbEndOfSymbolTable(S_SIZE_T(cbStartOfSymbolTable) +
                                         (S_SIZE_T(cSymbol) * S_SIZE_T(IMAGE_SIZEOF_SYMBOL)));
 
@@ -1365,7 +1381,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 cbEndOfSymbolTable.IsOverflow() ||
                 cbEndOfSymbolTable.Value() > cbFileSize)
             {
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
@@ -1383,7 +1399,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 if (cbRelocEnd.IsOverflow() || 
                     cbRelocEnd.Value() > static_cast<SIZE_T>(VAL32(rsrc[0]->SizeOfRawData)))
                 {
-                    hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                    pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                     goto lDone;
                 }
             }
@@ -1394,7 +1410,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             // Make sure the index is in range
             if (iSymbol >= cSymbol)
             {
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
@@ -1406,7 +1422,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 (VAL16(pSymbolEntry->SectionNumber) != 3)) // 3rd section is .rsrc$02
             {
                 //dbprintf("Invalid .res file: %S:Illegal symbol entry\n", szResFileName);
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
@@ -1414,7 +1430,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             if (VAL32(pSymbolEntry->Value) >= VAL32(rsrc[1]->SizeOfRawData))
             {
                 //dbprintf("Invalid .res file: %S:Illegal rva into .rsrc$02\n", szResFileName);
-                hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+                pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
 
@@ -1426,18 +1442,23 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         }
 
         // Copy $02 (resource raw) data
-        memcpy(data+VAL32(rsrc[0]->SizeOfRawData), 
-            (char *)hMod + VAL32(rsrc[1]->PointerToRawData), 
+        memcpy(data+VAL32(rsrc[0]->SizeOfRawData),
+            (char *)pParam->hMod + VAL32(rsrc[1]->PointerToRawData),
             VAL32(rsrc[1]->SizeOfRawData));
 
 lDone: ;
     }
-    WIN_PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
         //dbprintf("Exception occured manipulating .res file %S\n", szResFileName);
-        hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
+        param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
-    WIN_PAL_ENDTRY
+    PAL_ENDTRY
+
+    hMod = param.hMod;
+    hFile = param.hFile;
+    szResFileName = param.szResFileName;
+    hr = param.hr;
 
     if (hMod != NULL)
         UnmapViewOfFile(hMod);

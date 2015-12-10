@@ -10,7 +10,9 @@
 #define ASMMAN_HPP
 
 #include "strongname.h"
+#ifndef FEATURE_CORECLR
 #include "LegacyActivationShim.h"
+#endif
 #include "specstrings.h"
 
 struct AsmManFile
@@ -172,13 +174,16 @@ struct AsmManStrongName
     AsmManStrongName() { ZeroMemory(this, sizeof(*this)); }
     ~AsmManStrongName()
     {
+#ifndef FEATURE_CORECLR
         if (m_dwPublicKeyAllocated == AllocatedBySNApi)
         {
             LegacyActivationShim::StrongNameFreeBuffer(m_pbPublicKey);
         }
-        else if (m_dwPublicKeyAllocated == AllocatedByNew)
+        else
+#endif
+        if (m_dwPublicKeyAllocated == AllocatedByNew)
             delete [] m_pbPublicKey;
-    
+
         if (m_pbPrivateKey)
             delete [] m_pbPrivateKey;
 
