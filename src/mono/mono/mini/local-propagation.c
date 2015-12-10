@@ -187,6 +187,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			} else {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, ins->dreg, tmp_regl, 32 + mag.shift);
 			}
+			mono_jit_stats.optimized_divisions++;
 			break;
 		}
 		case OP_IDIV_IMM: {
@@ -236,6 +237,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			}
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, ins->dreg, tmp_regl, SIZEOF_REGISTER * 8 - 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_LADD, ins->dreg, ins->dreg, tmp_regl);
+			mono_jit_stats.optimized_divisions++;
 			break;
 		}
 	}

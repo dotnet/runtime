@@ -3328,6 +3328,7 @@ register_jit_stats (void)
 	mono_counters_register ("Aliases eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.alias_removed);
 	mono_counters_register ("Aliased loads eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.loads_eliminated);
 	mono_counters_register ("Aliased stores eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.stores_eliminated);
+	mono_counters_register ("Optimized immediate divisions", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.optimized_divisions);
 }
 
 static void runtime_invoke_info_free (gpointer value);
