@@ -17,6 +17,11 @@ namespace Internal.Cryptography
     {
         public static byte[] CloneByteArray(this byte[] src)
         {
+            if (src == null)
+            {
+                return null;
+            }
+
             return (byte[])(src.Clone());
         }
 
