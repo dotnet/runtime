@@ -37,6 +37,12 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs">
+      <Link>CommonTest\AlgorithmImplementations\TripleDES\TripleDESFactory.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
       <Link>CommonTest\System\RandomDataGenerator.cs</Link>
     </Compile>
@@ -60,6 +66,7 @@
     <Compile Include="Sha256Tests.cs" />
     <Compile Include="Sha384Tests.cs" />
     <Compile Include="Sha512Tests.cs" />
+    <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>

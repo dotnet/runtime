@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -44,6 +46,35 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                     Assert.Throws<CryptographicException>(() => d.Key = key);
                 }
             }
+        }
+
+        [Fact]
+        public static void TripleDesCreate()
+        {
+            byte[] inputBytes = Encoding.ASCII.GetBytes("This is a secret message and is a sentence that is longer than a block, it ensures that multi-block functions work.");
+            TripleDES tripleDes = TripleDES.Create();
+
+            byte[] encryptedBytes;
+            using (MemoryStream input = new MemoryStream(inputBytes))
+            using (CryptoStream cryptoStream = new CryptoStream(input, tripleDes.CreateEncryptor(), CryptoStreamMode.Read))
+            using (MemoryStream output = new MemoryStream())
+            {
+                cryptoStream.CopyTo(output);
+                encryptedBytes = output.ToArray();
+            }
+
+            Assert.NotEqual(inputBytes, encryptedBytes);
+
+            byte[] decryptedBytes;
+            using (MemoryStream input = new MemoryStream(encryptedBytes))
+            using (CryptoStream cryptoStream = new CryptoStream(input, tripleDes.CreateDecryptor(), CryptoStreamMode.Read))
+            using (MemoryStream output = new MemoryStream())
+            {
+                cryptoStream.CopyTo(output);
+                decryptedBytes = output.ToArray();
+            }
+
+            Assert.Equal(inputBytes, decryptedBytes);
         }
 
         private static IEnumerable<byte[]> BadKeys()
