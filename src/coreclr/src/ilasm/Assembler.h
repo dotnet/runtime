@@ -23,7 +23,9 @@
 #pragma warning(disable : 4640)
 #endif
 
-
+#ifdef ResetEvent
+#undef ResetEvent
+#endif
 
 #define OUTPUT_BUFFER_SIZE          8192      // initial size of asm code for a single method
 #define OUTPUT_BUFFER_INCREMENT     1024      // size of code buffer increment when it's full
@@ -1035,9 +1037,10 @@ public:
     void EmitSecurityInfo(mdToken           token,
                           PermissionDecl*   pPermissions,
                           PermissionSetDecl*pPermissionSets);
-    
+#ifndef FEATURE_CORECLR
     HRESULT AllocateStrongNameSignature();
     HRESULT StrongNameSign();
+#endif
     BinStr* EncodeSecAttr(__in __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps);
 
     // Custom values paraphernalia:
@@ -1174,7 +1177,9 @@ public:
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
 private:
     HRESULT GetCAName(mdToken tkCA, __out LPWSTR *ppszName);
+#ifndef FEATURE_CORECLR
     HRESULT GetSignatureKey();
+#endif
 };
 
 #endif  // Assember_h

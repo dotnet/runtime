@@ -16,7 +16,9 @@
 #define DECLARE_DATA
 
 #include "assembler.h"
+#ifndef FEATURE_CORECLR
 #include "MscorpeSxS.h"
+#endif
 
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
@@ -190,7 +192,11 @@ Assembler::~Assembler()
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);
+#ifdef FEATURE_CORECLR
+        DestroyICeeFileGen(&m_pCeeFileGen);
+#else
         MscorpeSxS::DestroyICeeFileGen(&m_pCeeFileGen);
+#endif
         m_pCeeFileGen = NULL;
     }
 
@@ -243,10 +249,18 @@ BOOL Assembler::Init()
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);
+#ifdef FEATURE_CORECLR
+        DestroyICeeFileGen(&m_pCeeFileGen);
+#else
         MscorpeSxS::DestroyICeeFileGen(&m_pCeeFileGen);
+#endif
         m_pCeeFileGen = NULL;
     }
+#ifdef FEATURE_CORECLR
+    if (FAILED(CreateICeeFileGen(&m_pCeeFileGen))) return FALSE;
+#else
     if (FAILED(MscorpeSxS::CreateICeeFileGen(&m_pCeeFileGen))) return FALSE;
+#endif
     if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;
 
     if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
