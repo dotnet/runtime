@@ -46,7 +46,6 @@ namespace System.IO.Compression
             _buffer = new byte[DefaultBufferSize];
         }
 
-
         public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             if (stream == null)
@@ -208,18 +207,19 @@ namespace System.IO.Compression
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (_asyncOperations != 0)
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+
             EnsureNotDisposed();
-            return
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                _mode != CompressionMode.Compress ? Task.CompletedTask :
-                FlushAsyncCore(cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+
+            return _mode != CompressionMode.Compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
         }
 
         private async Task FlushAsyncCore(CancellationToken cancellationToken)
         {
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
             Interlocked.Increment(ref _asyncOperations);
             try
             {
@@ -501,13 +501,15 @@ namespace System.IO.Compression
                 WriteDeflaterOutput();
 
                 // Pull out any bytes left inside deflater:
-                int compressedBytes;
+                bool flushSuccessful;
                 do
                 {
-                    compressedBytes = _deflater.Flush(_buffer);
-                    if (compressedBytes > 0)
+                    int compressedBytes;
+                    flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                    if (flushSuccessful)
                         DoWrite(_buffer, 0, compressedBytes);
-                } while (compressedBytes > 0);
+                    Debug.Assert(flushSuccessful == (compressedBytes > 0));
+                } while (flushSuccessful);
             }
         }
 
