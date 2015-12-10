@@ -127,30 +127,31 @@ namespace Internal.Cryptography
         private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
         {
             if (rgbKey == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException("rgbKey");
 
             byte[] key = rgbKey.CloneByteArray();
 
             long keySize = key.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(_outer.LegalKeySizes))
-                throw new ArgumentException(SR.Cryptography_InvalidKeySize, "key");
+                throw new ArgumentException(SR.Cryptography_InvalidKeySize, "rgbKey");
 
             if (_outer.IsWeakKey(key))
                 throw new CryptographicException(SR.Cryptography_WeakKey);
 
-            byte[] iv = rgbIV == null ? null : rgbIV.CloneByteArray();
-            if (iv != null && iv.Length != _outer.BlockSize.BitSizeToByteSize())
-                throw new ArgumentException(SR.Cryptography_InvalidIVSize, "iv");
+            if (rgbIV != null && rgbIV.Length != _outer.BlockSize.BitSizeToByteSize())
+                throw new ArgumentException(SR.Cryptography_InvalidIVSize, "rgbIV");
 
-            if (iv == null && _outer.Mode != CipherMode.ECB)
+            if (rgbIV == null && _outer.Mode != CipherMode.ECB)
                 throw new CryptographicException(SR.Cryptography_MissingIV);
 
             string algorithm = _algorithm;
-            return CreateCryptoTransformCore(() => key.ToCngKey(algorithm), iv, encrypting);
+            return CreateCryptoTransformCore(() => key.ToCngKey(algorithm), rgbIV.CloneByteArray(), encrypting);
         }
 
         private ICryptoTransform CreateCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
         {
+            // note: iv is guaranteed to be cloned before this method, so no need to clone it again
+
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
             BasicSymmetricCipher cipher = new BasicSymmetricCipherCng(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
