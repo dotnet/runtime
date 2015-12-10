@@ -88,7 +88,6 @@ Below is an example for System.Linq.Expressions where it only builds for the win
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>
-  <ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
 ```
