@@ -18,7 +18,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.CoreCLR.csproj">
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <Name>System.Runtime</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
