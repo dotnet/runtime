@@ -4464,6 +4464,9 @@ protected:
 // get an ICorDebugProcess back
 // 
 class SOSDataTarget : public ICorDebugMutableDataTarget
+#ifdef FEATURE_PAL
+, public ICorDebugDataTarget4
+#endif
 {
 public:
     SOSDataTarget() : m_ref(0)
@@ -4478,7 +4481,7 @@ public:
     {
         if (InterfaceId == IID_IUnknown)
         {
-            *pInterface = static_cast<IUnknown *>(this);
+            *pInterface = static_cast<IUnknown *>(static_cast<ICorDebugDataTarget *>(this));
         }
         else if (InterfaceId == IID_ICorDebugDataTarget)
         {
@@ -4488,6 +4491,12 @@ public:
         {
             *pInterface = static_cast<ICorDebugMutableDataTarget *>(this);
         }
+#ifdef FEATURE_PAL
+        else if (InterfaceId == IID_ICorDebugDataTarget4)
+        {
+            *pInterface = static_cast<ICorDebugDataTarget4 *>(this);
+        }
+#endif
         else
         {
             *pInterface = NULL;
@@ -4547,6 +4556,10 @@ public:
         ULONG32 request,
         ULONG32 * pcbRead)
     {
+        if (g_ExtData == NULL)
+        {
+            return E_UNEXPECTED;
+        }
         return g_ExtData->ReadVirtual(address, pBuffer, request, (PULONG) pcbRead);
     }
 
@@ -4557,6 +4570,10 @@ public:
         BYTE * context)
     {
 #ifdef FEATURE_PAL
+        if (g_ExtSystem == NULL)
+        {
+            return E_UNEXPECTED;
+        }
         return g_ExtSystem->GetThreadContextById(dwThreadOSID, contextFlags, contextSize, context);
 #else
         ULONG ulThreadIDOrig;
@@ -4604,6 +4621,10 @@ public:
                                                    const BYTE * pBuffer,
                                                    ULONG32 bytesRequested)
     {
+        if (g_ExtData == NULL)
+        {
+            return E_UNEXPECTED;
+        }
         return g_ExtData->WriteVirtual(address, (PVOID)pBuffer, bytesRequested, NULL);
     }
 
@@ -4620,6 +4641,20 @@ public:
         return E_NOTIMPL;
     }
 
+#ifdef FEATURE_PAL
+    //
+    // ICorDebugDataTarget4
+    //
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
+    {
+        if (g_ExtClient == NULL)
+        {
+            return E_UNEXPECTED;
+        }
+        return g_ExtClient->VirtualUnwind(threadId, contextSize, context);
+
+    }
+#endif // FEATURE_PAL
 
 protected:
     LONG m_ref;
@@ -4629,7 +4664,7 @@ HRESULT InitCorDebugInterfaceFromModule(ULONG64 ulBase, ICLRDebugging * pClrDebu
 {
     HRESULT hr;
 
-    ToRelease<IUnknown> pSOSDataTarget = new SOSDataTarget;
+    ToRelease<ICorDebugMutableDataTarget> pSOSDataTarget = new SOSDataTarget;
     pSOSDataTarget->AddRef();
 
     ToRelease<ICLRDebuggingLibraryProvider> pSOSLibraryProvider = new SOSLibraryProvider;

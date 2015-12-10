@@ -84,6 +84,7 @@ if(WIN32)
     ntdll.lib
   )
 else(WIN32)
+  add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
   add_definitions(-DPAL_STDCPP_COMPAT=1)
   add_compile_options(-Wno-null-arithmetic)
   add_compile_options(-Wno-format)
