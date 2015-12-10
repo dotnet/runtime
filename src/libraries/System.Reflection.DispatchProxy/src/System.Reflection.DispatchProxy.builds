@@ -5,6 +5,9 @@
     <Project Include="System.Reflection.DispatchProxy.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
+    <Project Include="facade\System.Reflection.DispatchProxy.csproj" Condition="'$(TargetsWindows)' == 'true'">
+      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
