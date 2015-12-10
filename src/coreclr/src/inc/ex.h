@@ -11,6 +11,7 @@ void RetailAssertIfExpectedClean();             // Defined in src/utilcode/debug
 
 #ifdef FEATURE_PAL
 #define EX_TRY_HOLDER                                   \
+    HardwareExceptionHolder                             \
     NativeExceptionHolderCatchAll __exceptionHolder;    \
     __exceptionHolder.Push();                           \
 
