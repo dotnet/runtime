@@ -3,15 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties> 
+      <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
-    <Project Include="System.Linq.Expressions.csproj">
+    <Project Include="System.Linq.Expressions.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
     </Project>
-    <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties> 
+    <Project Include="System.Linq.Expressions.csproj" Condition="'$(TargetsWindows)' == 'true'">
+      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
     </Project>
-    <Project Include="Facade\System.Linq.Expressions.csproj">
+    <Project Include="Facade\System.Linq.Expressions.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>
