@@ -531,7 +531,8 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: {
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : klass->image,
 			(MonoType *)data, context, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		if (!mono_error_ok (&error)) /*FIXME proper error handling */
+			g_error ("Could not inflate generic type due to %s", mono_error_get_message (&error));
 		return result;
 	}
 
