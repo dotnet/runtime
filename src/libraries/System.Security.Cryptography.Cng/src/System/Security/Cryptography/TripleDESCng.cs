@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
         }
 
         public TripleDESCng(string keyName, CngProvider provider)
-            : this(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.None)
+            : this(keyName, provider, CngKeyOpenOptions.None)
         {
         }
 
