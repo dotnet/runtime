@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
 using System.Text;
 using System.Diagnostics;
 
@@ -677,9 +676,7 @@ namespace System
             return false;
         }
 
-        private const string RFC2396ReservedMarks = @";/?:@&=+$,";
         private const string RFC3986ReservedMarks = @":/?#[]@!$&'()*+,;=";
-        private const string RFC2396UnreservedMarks = @"-_.!~*'()";
         private const string RFC3986UnreservedMarks = @"-._~";
 
         private static unsafe bool IsReservedUnreservedOrHash(char c)

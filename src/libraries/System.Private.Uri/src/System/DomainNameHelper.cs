@@ -9,8 +9,6 @@ namespace System
     // The idea is to stay with static helper methods and strings
     internal class DomainNameHelper
     {
-        private const char c_DummyChar = (char)0xFFFF;     //An Invalid Unicode character used as a dummy char passed into the parameter
-
         private DomainNameHelper()
         {
         }

@@ -14,8 +14,6 @@ namespace System
         // fields
 
         private const int NumberOfLabels = 8;
-        // Upper case hex, zero padded to 4 characters
-        private const string LegacyFormat = "{0:X4}:{1:X4}:{2:X4}:{3:X4}:{4:X4}:{5:X4}:{6:X4}:{7:X4}";
         // Lower case hex, no leading zeros
         private const string CanonicalNumberFormat = "{0:x}";
         private const string EmbeddedIPv4Format = ":{0:d}.{1:d}.{2:d}.{3:d}";
