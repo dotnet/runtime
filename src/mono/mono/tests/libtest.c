@@ -1067,7 +1067,7 @@ typedef int (STDCALL *SimpleDelegate9) (return_int_fnt d);
 LIBTEST_API int STDCALL 
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
 {
-	return delegate ((int (*)(int))ftn);
+	return delegate ((return_int_fnt)ftn);
 }
 
 static int STDCALL 
@@ -3624,7 +3624,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		goto done;
 	}
 
-	CreateObject = (gpointer (*)(gpointer *))mono_method_get_unmanaged_thunk (create_object_method_handle);
+	CreateObject = (gpointer (STDCALL *)(gpointer *))mono_method_get_unmanaged_thunk (create_object_method_handle);
 	if (!CreateObject) {
 		ret = 3;
 		goto done;
