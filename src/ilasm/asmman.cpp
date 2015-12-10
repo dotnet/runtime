@@ -11,7 +11,9 @@
 
 #include "assembler.h"
 #include "strongname.h"
+#ifndef FEATURE_CORECLR
 #include "LegacyActivationShim.h"
+#endif
 #include <limits.h>
 #include <fusion.h>
 
@@ -445,6 +447,7 @@ void    AsmMan::EndAssembly()
                 m_pCurAsmRef = NULL;
                 return;
             }
+#ifndef FEATURE_CORECLR
             if(m_pCurAsmRef->isAutodetect)
             {
                 IAssemblyName* pIAsmName;
@@ -582,6 +585,7 @@ void    AsmMan::EndAssembly()
                 else
                     report->error("Failed to create assembly name object for %S, hr=0x%08X\n",wzUniBuf,hr);
             } // end if isAutodetect
+#endif // !FEATURE_CORECLR
             m_AsmRefLst.PUSH(m_pCurAsmRef);
             m_pCurAsmRef->tkTok = TokenFromRid(m_AsmRefLst.COUNT(),mdtAssemblyRef);
         }
@@ -589,6 +593,7 @@ void    AsmMan::EndAssembly()
         {
             HRESULT                 hr = S_OK;
             m_pCurAsmRef->tkTok = TokenFromRid(1,mdtAssembly);
+
             // Determine the strong name public key. This may have been set
             // via a directive in the source or from the command line (which
             // overrides the directive). From the command line we may have
@@ -601,6 +606,11 @@ void    AsmMan::EndAssembly()
                 // character of the source ('@' for container).
                 if (*(((Assembler*)m_pAssembler)->m_wzKeySourceName) == L'@')
                 {
+#ifdef FEATURE_CORECLR
+                    report->error("Error: ilasm on CoreCLR does not support getting public key from container.\n");
+                    m_pCurAsmRef = NULL;
+                    return;
+#else
                     // Extract public key from container (works whether
                     // container has just a public key or an entire key
                     // pair).
@@ -618,6 +628,7 @@ void    AsmMan::EndAssembly()
                     }
                     m_sStrongName.m_fFullSign = TRUE;
                     m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedBySNApi;
+#endif // FEATURE_CORECLR
                 }
                 else
                 {
@@ -683,6 +694,11 @@ void    AsmMan::EndAssembly()
                     // from a consistent place.
                     if (m_sStrongName.m_fFullSign)
                     {
+#ifdef FEATURE_CORECLR
+                        report->error("Error: ilasm on CoreCLR does not support full sign.\n");
+                        m_pCurAsmRef = NULL;
+                        return;
+#else
                         m_sStrongName.m_pbPrivateKey = m_sStrongName.m_pbPublicKey;
                         m_sStrongName.m_cbPrivateKey = m_sStrongName.m_cbPublicKey;
 
@@ -704,6 +720,7 @@ void    AsmMan::EndAssembly()
                         }
     
                         m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedBySNApi;
+#endif // FEATURE_CORECLR
                     }
                 }
             }
