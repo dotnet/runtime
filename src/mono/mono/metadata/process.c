@@ -623,9 +623,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
-	shellex.fMask = (WapiShellExecuteInfoFlags)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
-	shellex.nShow = (WapiShellExecuteShowFlags)proc_start_info->window_style;
-	shellex.nShow = (WapiShellExecuteShowFlags)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
+	shellex.fMask = (gulong)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
+	shellex.nShow = (gulong)proc_start_info->window_style;
+	shellex.nShow = (gulong)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
 	
 	
 	if (proc_start_info->filename != NULL) {
@@ -649,7 +649,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	if (proc_start_info->error_dialog) {	
 		shellex.hwnd = proc_start_info->error_dialog_parent_handle;
 	} else {
-		shellex.fMask = (WapiShellExecuteInfoFlags)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
+		shellex.fMask = (gulong)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
 	}
 
 	ret = ShellExecuteEx (&shellex);

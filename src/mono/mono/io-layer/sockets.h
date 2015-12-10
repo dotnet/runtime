@@ -72,7 +72,7 @@ typedef struct
 #define SIO_KEEPALIVE_VALS 0x98000004
 
 typedef gboolean (*WapiDisconnectExFn)(guint32, WapiOverlapped *, guint32,
-					WapiTransmitFileFlags);
+					guint32);
 typedef gboolean (*WapiTransmitFileFn)(guint32, gpointer, guint32, guint32,
 					WapiOverlapped *,
 					WapiTransmitFileBuffers *,

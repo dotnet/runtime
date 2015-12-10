@@ -905,7 +905,7 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 	
 	offset_hi = offset >> 32;
 	offset = SetFilePointer (handle, (gint32) (offset & 0xFFFFFFFF), &offset_hi,
-				 (WapiSeekMethod)convert_seekorigin ((MonoSeekOrigin)origin));
+				 convert_seekorigin ((MonoSeekOrigin)origin));
 
 	if(offset==INVALID_SET_FILE_POINTER) {
 		*error=GetLastError ();

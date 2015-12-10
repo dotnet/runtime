@@ -1374,10 +1374,10 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	MONO_PREPARE_BLOCKING;
 
 	if (_wapi_disconnectex != NULL) {
-		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, (WapiTransmitFileFlags)0))
+		if (!_wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, 0))
 			*error = WSAGetLastError ();
 	} else if (_wapi_transmitfile != NULL) {
-		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, (WapiTransmitFileFlags)(TF_DISCONNECT | TF_REUSE_SOCKET)))
+		if (!_wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | TF_REUSE_SOCKET))
 			*error = WSAGetLastError ();
 	} else {
 		*error = ERROR_NOT_SUPPORTED;
