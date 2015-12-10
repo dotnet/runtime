@@ -254,6 +254,7 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	long.cs			\
 	jit-ulong.cs		\
 	jit-float.cs		\
+	constant-division.cs	\
 	pop.cs			\
 	time.cs			\
 	pointer.cs		\
