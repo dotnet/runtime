@@ -1,0 +1,9 @@
+{
+    "frameworks": {
+        "dnxcore50": {
+            "dependencies": {
+                "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23604"
+            }
+        }
+    }
+}
