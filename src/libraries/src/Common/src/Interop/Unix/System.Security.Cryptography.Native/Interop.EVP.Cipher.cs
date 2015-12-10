@@ -60,5 +60,11 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr EvpAes256Cbc();
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr EvpDes3Ecb();
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr EvpDes3Cbc();
     }
 }

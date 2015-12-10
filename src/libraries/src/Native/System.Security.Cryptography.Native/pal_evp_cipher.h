@@ -108,3 +108,19 @@ EvpAes256Cbc
 Direct shim to EVP_aes_256_cbc.
 */
 extern "C" const EVP_CIPHER* EvpAes256Cbc();
+
+/*
+Function:
+EvpDes3Ecb
+
+Direct shim to EVP_des_ede3.
+*/
+extern "C" const EVP_CIPHER* EvpDes3Ecb();
+
+/*
+Function:
+EvpDes3Cbc
+
+Direct shim to EVP_des_ede3_cbc.
+*/
+extern "C" const EVP_CIPHER* EvpDes3Cbc();
