@@ -131,6 +131,9 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Unix.cs">
+      <Link>Common\System\Text\EncodingHelper.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Text\StringOrCharArray.cs">
       <Link>Common\System\Text\StringOrCharArray.cs</Link>
     </Compile>
