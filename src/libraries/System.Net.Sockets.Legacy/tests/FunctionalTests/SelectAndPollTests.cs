@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -15,19 +16,19 @@ namespace System.Net.Sockets.Tests
     public class SelectAndPollTests
     {
         const int SelectTimeout = 100;
-        const int SelectSuccessTimeout = 5000;
+        const int SelectSuccessTimeoutMicroseconds = 5*1000*1000; // 5 seconds
 
         [Fact]
         public void SelectNone_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, SelectSuccessTimeout));
+            Assert.Throws<ArgumentNullException>(() => Socket.Select(null, null, null, SelectSuccessTimeoutMicroseconds));
         }
 
         [Fact]
         public void Select_Read_NotASocket_Throws()
         {
             var list = new List<object> { new object() };
-            Assert.Throws<ArgumentException>(() => Socket.Select(list, null, null, SelectSuccessTimeout));
+            Assert.Throws<ArgumentException>(() => Socket.Select(list, null, null, SelectSuccessTimeoutMicroseconds));
         }
 
         [Fact]
@@ -42,7 +43,7 @@ namespace System.Net.Sockets.Tests
                 sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
 
                 var list = new List<Socket> { receiver };
-                Socket.Select(list, null, null, SelectSuccessTimeout);
+                Socket.Select(list, null, null, SelectSuccessTimeoutMicroseconds);
 
                 Assert.Equal(1, list.Count);
                 Assert.Equal(receiver, list[0]);
@@ -63,7 +64,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(4686, PlatformID.OSX)]
         [Fact]
         public void SelectRead_Multiple_Success()
         {
@@ -80,12 +80,20 @@ namespace System.Net.Sockets.Tests
                 sender.SendTo(new byte[1], SocketFlags.None, firstReceiverEndpoint);
                 sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
 
-                var list = new List<Socket> { firstReceiver, secondReceiver };
-                Socket.Select(list, null, null, SelectSuccessTimeout);
-
-                Assert.Equal(2, list.Count);
-                Assert.Equal(firstReceiver, list[0]);
-                Assert.Equal(secondReceiver, list[1]);
+                var sw = Stopwatch.StartNew();
+                Assert.True(SpinWait.SpinUntil(() =>
+                {
+                    var list = new List<Socket> { firstReceiver, secondReceiver };
+                    Socket.Select(list, null, null, Math.Max((int)(SelectSuccessTimeoutMicroseconds - (sw.Elapsed.TotalSeconds * 1000000)), 0));
+                    Assert.True(list.Count <= 2);
+                    if (list.Count == 2)
+                    {
+                        Assert.Equal(firstReceiver, list[0]);
+                        Assert.Equal(secondReceiver, list[1]);
+                        return true;
+                    }
+                    return false;
+                }, SelectSuccessTimeoutMicroseconds / 1000), "Failed to select both items within allotted time");
             }
         }
 
@@ -120,7 +128,7 @@ namespace System.Net.Sockets.Tests
                 sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
 
                 var list = new List<Socket> { firstReceiver, secondReceiver };
-                Socket.Select(list, null, null, SelectSuccessTimeout);
+                Socket.Select(list, null, null, SelectSuccessTimeoutMicroseconds);
 
                 Assert.Equal(1, list.Count);
                 Assert.Equal(secondReceiver, list[0]);
@@ -131,7 +139,7 @@ namespace System.Net.Sockets.Tests
         public void Select_Write_NotASocket_Throws()
         {
             var list = new List<object> { new object() };
-            Assert.Throws<ArgumentException>(() => Socket.Select(null, list, null, SelectSuccessTimeout));
+            Assert.Throws<ArgumentException>(() => Socket.Select(null, list, null, SelectSuccessTimeoutMicroseconds));
         }
 
         [Fact]
@@ -140,7 +148,7 @@ namespace System.Net.Sockets.Tests
             using (var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 var list = new List<Socket> { sender };
-                Socket.Select(null, list, null, SelectSuccessTimeout);
+                Socket.Select(null, list, null, SelectSuccessTimeoutMicroseconds);
 
                 Assert.Equal(1, list.Count);
                 Assert.Equal(sender, list[0]);
@@ -170,7 +178,7 @@ namespace System.Net.Sockets.Tests
             using (var secondSender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 var list = new List<Socket> { firstSender, secondSender };
-                Socket.Select(null, list, null, SelectSuccessTimeout);
+                Socket.Select(null, list, null, SelectSuccessTimeoutMicroseconds);
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(firstSender, list[0]);
@@ -210,7 +218,7 @@ namespace System.Net.Sockets.Tests
                 listener.AcceptAsync();
 
                 var list = new List<Socket> { listener, sender };
-                Socket.Select(null, list, null, SelectSuccessTimeout);
+                Socket.Select(null, list, null, SelectSuccessTimeoutMicroseconds);
 
                 Assert.Equal(1, list.Count);
                 Assert.Equal(sender, list[0]);
@@ -221,7 +229,7 @@ namespace System.Net.Sockets.Tests
         public void Select_Error_NotASocket_Throws()
         {
             var list = new List<object> { new object() };
-            Assert.Throws<ArgumentException>(() => Socket.Select(null, null, list, SelectSuccessTimeout));
+            Assert.Throws<ArgumentException>(() => Socket.Select(null, null, list, SelectSuccessTimeoutMicroseconds));
         }
 
         [Fact]
@@ -265,7 +273,7 @@ namespace System.Net.Sockets.Tests
 
                 sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
 
-                Assert.True(receiver.Poll(SelectSuccessTimeout, SelectMode.SelectRead));
+                Assert.True(receiver.Poll(SelectSuccessTimeoutMicroseconds, SelectMode.SelectRead));
             }
         }
 
@@ -285,7 +293,7 @@ namespace System.Net.Sockets.Tests
         {
             using (var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                Assert.True(sender.Poll(SelectSuccessTimeout, SelectMode.SelectWrite));
+                Assert.True(sender.Poll(SelectSuccessTimeoutMicroseconds, SelectMode.SelectWrite));
             }
         }
 
