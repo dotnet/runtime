@@ -337,12 +337,18 @@ GetTickCount64()
 {
     ULONGLONG retval = 0;
 
-#if HAVE_CLOCK_MONOTONIC
+#if HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {
+        clockid_t clockType = 
+#if HAVE_CLOCK_MONOTONIC_COARSE
+            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+#else
+            CLOCK_MONOTONIC;
+#endif
         struct timespec ts;
-        if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        if (clock_gettime(clockType, &ts) != 0)
         {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC) failed; errno is %d (%s)\n", errno, strerror(errno));
+            ASSERT("clock_gettime(CLOCK_MONOTONIC*) failed; errno is %d (%s)\n", errno, strerror(errno));
             goto EXIT;
         }
         retval = (ts.tv_sec * tccSecondsToMillieSeconds)+(ts.tv_nsec / tccMillieSecondsToNanoSeconds);
