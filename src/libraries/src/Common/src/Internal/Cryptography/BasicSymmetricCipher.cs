@@ -33,14 +33,22 @@ namespace Internal.Cryptography
 
         public int BlockSizeInBytes { get; private set; }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            if (IV != null)
-            {
-                Array.Clear(IV, 0, IV.Length);
-                IV = null;
-            }
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (IV != null)
+                {
+                    Array.Clear(IV, 0, IV.Length);
+                    IV = null;
+                }
+            }
         }
 
         protected byte[] IV { get; private set; }
