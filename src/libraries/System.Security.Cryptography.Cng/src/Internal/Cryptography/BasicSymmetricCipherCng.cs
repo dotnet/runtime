@@ -104,14 +104,18 @@ namespace Internal.Cryptography
             return output;
         }
 
-        public sealed override void Dispose()
+        protected sealed override void Dispose(bool disposing)
         {
-            if (_cngKey != null)
+            if (disposing)
             {
-                _cngKey.Dispose();
-                _cngKey = null;
+                if (_cngKey != null)
+                {
+                    _cngKey.Dispose();
+                    _cngKey = null;
+                }
             }
-            base.Dispose();
+
+            base.Dispose(disposing);
         }
 
         private void Reset()
