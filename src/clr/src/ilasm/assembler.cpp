@@ -93,7 +93,7 @@ void    Assembler::ClearBoundList(void)
     m_TyParList = NULL;
 }
 /**************************************************************************/
-mdToken Assembler::ResolveClassRef(mdToken tkResScope, __in __nullterminated char *pszFullClassName, Class** ppClass)
+mdToken Assembler::ResolveClassRef(mdToken tkResScope, __in __nullterminated const char *pszFullClassName, Class** ppClass)
 {
     Class *pClass = NULL;
     mdToken tkRet = mdTokenNil;
@@ -167,11 +167,11 @@ private:
     mdToken token_;
 public:
     // Constructor for a 'lookup' object
-    TypeSpecContainer(BinStr *typeSpec) : 
-        len_(typeSpec->length()), 
-        hash_(typeSpec->length()), 
-        token_(mdTokenNil), 
-        ptr_(typeSpec->ptr())
+    TypeSpecContainer(BinStr *typeSpec) :
+        ptr_(typeSpec->ptr()),
+        len_(typeSpec->length()),
+        hash_(typeSpec->length()),
+        token_(mdTokenNil)
     {        
         for (unsigned i = 0; i < len_; i++)
             hash_ = (hash_ * 257) ^ ((i + 1) * (ptr_[i] ^ 0xA5));
@@ -179,10 +179,10 @@ public:
     // Constructor for a 'permanent' object
     // Don't bother re-hashing, since we will always have already constructed the lookup object
     TypeSpecContainer(const TypeSpecContainer &t, mdToken tk) : 
-        len_(t.len_), 
+        ptr_(new unsigned __int8[t.len_]),
+        len_(t.len_),
         hash_(t.hash_),
-        token_(tk), 
-        ptr_(new unsigned __int8[t.len_])
+        token_(tk)
     {
         _ASSERT(tk != mdTokenNil);
         _ASSERT(t.token_ == mdTokenNil);
@@ -252,7 +252,7 @@ mdToken Assembler::ResolveTypeSpec(BinStr* typeSpec)
 }
 
 /**************************************************************************/
-mdToken Assembler::GetAsmRef(__in __nullterminated char* szName)
+mdToken Assembler::GetAsmRef(__in __nullterminated const char* szName)
 {
     mdToken tkResScope = 0;
     if(strcmp(szName,"*")==0) tkResScope = mdTokenNil;
@@ -938,7 +938,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     WszMultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
-        WCHAR* p = wcsstr(wzFieldName,L"$PST04");
+        WCHAR* p = wcsstr(wzFieldName,W("$PST04"));
         if(p) *p = 0;
     }
 
@@ -2020,7 +2020,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         L = UnicodeString ? WszMultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
         if(L == 0)
         {
-            char* sz=NULL;
+            const char* sz=NULL;
             DWORD dw;
             switch(dw=GetLastError())
             {

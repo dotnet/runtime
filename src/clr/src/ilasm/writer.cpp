@@ -36,7 +36,7 @@ HRESULT Assembler::InitMetaData()
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
 #ifdef FEATURE_CORECLR
-    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+    hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
         IID_IMetaDataDispenserEx, (void **)&m_pDisp);
 #else
     hr = LegacyActivationShim::ClrCoCreateInstance(
@@ -67,6 +67,7 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
+#ifndef FEATURE_CORECLR
     hr = CoCreateInstance(CLSID_CorSymWriter_SxS,
                            NULL,
                            CLSCTX_INPROC_SERVER,
@@ -84,6 +85,7 @@ HRESULT Assembler::InitMetaData()
         fprintf(stderr, "Error: QueryInterface(IID_ISymUnmanagedWriter) returns %X\n",hr);
         m_pSymWriter = NULL;
     }
+#endif // !FEATURE_CORECLR
 
     //m_Parser = new AsmParse(m_pEmitter);
     m_fInitialisedMetaData = TRUE;
@@ -231,6 +233,9 @@ HRESULT Assembler::CreateTLSDirectory() {
 HRESULT Assembler::CreateDebugDirectory()
 {
     HRESULT hr = S_OK;
+    HCEESECTION sec = m_pILSection;
+    BYTE *de;
+    ULONG deOffset;
 
     // Only emit this if we're also emitting debug info.
     if (!(m_fGeneratePDB && m_pSymWriter))
@@ -281,9 +286,6 @@ HRESULT Assembler::CreateDebugDirectory()
     // Note that UpdateResource doesn't work correctly if the debug directory is
     // in the data section.  So instead we put it in the text section (same as
     // cs compiler).
-    HCEESECTION sec = m_pILSection;//m_pGlobalDataSection;
-    BYTE *de;
-
     if (FAILED(hr = m_pCeeFileGen->GetSectionBlock(sec,
                                                    sizeof(debugDirIDD) +
                                                    param.debugDirDataSize,
@@ -292,7 +294,6 @@ HRESULT Assembler::CreateDebugDirectory()
         goto ErrExit;
 
     // Where did we get that memory?
-    ULONG deOffset;
     if (FAILED(hr = m_pCeeFileGen->GetSectionDataLen(sec,
                                                      &deOffset)))
         goto ErrExit;
@@ -1026,7 +1027,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
 
                             if(IsMdPrivateScope(pListMD->m_Attr))
                             {
-                                WCHAR* p = wcsstr(wzUniBuf,L"$PST06");
+                                WCHAR* p = wcsstr(wzUniBuf,W("$PST06"));
                                 if(p) *p = 0;
                             }
 
@@ -1466,11 +1467,15 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
 
     if(m_wzResourceFile)
     {
+#ifdef FEATURE_PAL
+        report->msg("Warning: The Win32 resource file '%S' is ignored and not emitted on xPlatform.\n", m_wzResourceFile);
+#else
         if (FAILED(hr=m_pCeeFileGen->SetResourceFileName(m_pCeeFile, m_wzResourceFile)))
         {
             report->msg("Warning: failed to set Win32 resource file name '%S', hr=0x%8.8X\n         The Win32 resource is not emitted.\n",
                         m_wzResourceFile, hr);
         }
+#endif
     }
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
