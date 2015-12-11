@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
+
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -133,23 +135,16 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        public static void IsReadOnly_Get_Success()
-        {
-            CookieCollection cc = new CookieCollection();
-            Assert.True(cc.IsReadOnly);
-        }
-
-        [Fact]
         public static void IsSynchronized_Get_Success()
         {
-            CookieCollection cc = new CookieCollection();
+            ICollection cc = new CookieCollection();
             Assert.False(cc.IsSynchronized);
         }
 
         [Fact]
         public static void SyncRoot_Get_Success()
         {
-            CookieCollection cc = new CookieCollection();
+            ICollection cc = new CookieCollection();
             Assert.Equal(cc, cc.SyncRoot);
         }
     }
