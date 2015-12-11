@@ -11,6 +11,7 @@ set(PALRT_SOURCES
     memorystream.cpp
     path.cpp
     urlpars.cpp
+    unicode.cpp
     variant.cpp
 )
 

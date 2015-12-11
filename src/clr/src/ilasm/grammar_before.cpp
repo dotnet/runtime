@@ -11,6 +11,7 @@
 #endif
 
 #define YYMAXDEPTH 0x80000
+#define YYLOCAL int
 //#define YYRECURSIVE
 
 //#define DEBUG_PARSING
@@ -60,7 +61,7 @@ void SetFunctionPtrs()
 #endif    
 
 static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3 = 0);
-static char* newString(__in __nullterminated char* str1);
+static char* newString(__in __nullterminated const char* str1);
 static void corEmitInt(BinStr* buff, unsigned data);
 static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz);
 bool bParsingByteArray = FALSE;

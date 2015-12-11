@@ -86,9 +86,9 @@ add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(ildasm)
+add_subdirectory(ilasm)
 
 if(WIN32)
-  add_subdirectory(ilasm)
   add_subdirectory(ipcman)
 endif(WIN32)
 
