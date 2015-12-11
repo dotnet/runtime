@@ -59,21 +59,9 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <!-- Temporary until we have new work in build tools to
-       deploy content from nuget packages -->
-  <Target Name="CopySystemNetTestDataToTestDirectory" AfterTargets="CopyTestToTestDirectory" Inputs="$(PackagesDir)$(SystemNetTestPackage)\content" Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
-    <PropertyGroup>
-      <SystemNetTestPackage>System.Net.TestData\1.0.0-prerelease</SystemNetTestPackage>
-      <TestTargetFrameworkFolder>%(TestTargetFramework.Folder)</TestTargetFrameworkFolder>
-    </PropertyGroup>
-    <ItemGroup>
-      <SystemNetTestDataSrc Include="$(PackagesDir)$(SystemNetTestPackage)\content\**\*.*" />
-      <SystemNetTestDataDest Include="@(SystemNetTestDataSrc->'$(TestPath)$(TestTargetFrameworkFolder)\%(RecursiveDir)%(Filename)%(Extension)')" />
-    </ItemGroup>
-    <Copy SourceFiles="@(SystemNetTestDataSrc)" DestinationFiles="@(SystemNetTestDataDest)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-  </Target>
 </Project>
 
