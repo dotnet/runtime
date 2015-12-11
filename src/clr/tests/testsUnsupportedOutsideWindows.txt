@@ -32,6 +32,10 @@ JIT/jit64/mcc/interop/mcc_i04/mcc_i04.sh
 JIT/jit64/mcc/interop/mcc_i05/mcc_i05.sh
 JIT/jit64/mcc/interop/mcc_i06/mcc_i06.sh
 JIT/jit64/mcc/interop/mcc_i07/mcc_i07.sh
+JIT/jit64/mcc/interop/mcc_i10/mcc_i10.sh
+JIT/jit64/mcc/interop/mcc_i11/mcc_i11.sh
+JIT/jit64/mcc/interop/mcc_i12/mcc_i12.sh
+JIT/jit64/mcc/interop/mcc_i13/mcc_i13.sh
 JIT/jit64/mcc/interop/mcc_i14/mcc_i14.sh
 JIT/jit64/mcc/interop/mcc_i15/mcc_i15.sh
 JIT/jit64/mcc/interop/mcc_i16/mcc_i16.sh
