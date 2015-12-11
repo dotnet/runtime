@@ -801,8 +801,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIRegPair: {
 			MonoType *t = mini_get_underlying_type (sig->ret);
 			if (((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
-				MonoInst *low = get_vreg_to_inst (cfg, cfg->ret->dreg + 1);
-				MonoInst *high = get_vreg_to_inst (cfg, cfg->ret->dreg + 2);
+				MonoInst *low = get_vreg_to_inst (cfg, MONO_LVREG_LS (cfg->ret->dreg));
+				MonoInst *high = get_vreg_to_inst (cfg, MONO_LVREG_MS (cfg->ret->dreg));
 
 				low->opcode = OP_REGVAR;
 				low->dreg = cinfo->ret.reg + 1;
@@ -943,8 +943,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			case ArgInIRegPair:
 				if (inst->type == STACK_I8) {
-					MonoInst *low = get_vreg_to_inst (cfg, inst->dreg + 1);
-					MonoInst *high = get_vreg_to_inst (cfg, inst->dreg + 2);
+					MonoInst *low = get_vreg_to_inst (cfg, MONO_LVREG_LS (inst->dreg));
+					MonoInst *high = get_vreg_to_inst (cfg, MONO_LVREG_MS (inst->dreg));
 
 					low->opcode = OP_REGVAR;
 					low->dreg = sparc_i0 + ainfo->reg + 1;
@@ -1032,8 +1032,8 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 
 	if (!sig->ret->byref && (sig->ret->type == MONO_TYPE_I8 || sig->ret->type == MONO_TYPE_U8)) {
-		MonoInst *low = get_vreg_to_inst (cfg, cfg->ret->dreg + 1);
-		MonoInst *high = get_vreg_to_inst (cfg, cfg->ret->dreg + 2);
+		MonoInst *low = get_vreg_to_inst (cfg, MONO_LVREG_LS (cfg->ret->dreg));
+		MonoInst *high = get_vreg_to_inst (cfg, MONO_LVREG_MS (cfg->ret->dreg));
 
 		low->flags |= MONO_INST_VOLATILE;
 		high->flags |= MONO_INST_VOLATILE;
@@ -1090,16 +1090,16 @@ emit_pass_long (MonoCompile *cfg, MonoCallInst *call, ArgInfo *ainfo, MonoInst *
 
 	switch (ainfo->storage) {
 	case ArgInIRegPair:
-		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg + 1, in->dreg + 1);
-		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg + 1, MONO_LVREG_LS (in->dreg));
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, MONO_LVREG_MS (in->dreg));
 		break;
 	case ArgOnStackPair:
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset, in->dreg + 2);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, in->dreg + 1);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset, MONO_LVREG_MS (in->dreg));
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, MONO_LVREG_LS (in->dreg));
 		break;
 	case ArgInSplitRegStack:
-		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, in->dreg + 1);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, MONO_LVREG_MS (in->dreg));
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, MONO_LVREG_LS (in->dreg));
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1347,8 +1347,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
 		} else {
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 2, val->dreg + 2);
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 1, val->dreg + 1);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (cfg->ret->dreg), MONO_LVREG_MS (val->dreg));
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (cfg->ret->dreg), MONO_LVREG_LS (val->dreg));
 		}
 		break;
 	case ArgInFReg:
@@ -1822,8 +1822,8 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
 	case OP_LNEG:
-		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, 0, ins->sreg1 + 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_SBB, ins->dreg + 2, 0, ins->sreg1 + 2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, MONO_LVREG_LS (ins->dreg), 0, MONO_LVREG_LS (ins->sreg1));
+		MONO_EMIT_NEW_BIALU (cfg, OP_SBB, MONO_LVREG_MS (ins->dreg), 0, MONO_LVREG_MS (ins->sreg1));
 		NULLIFY_INS (ins);
 		break;
 	default:

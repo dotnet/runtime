@@ -870,7 +870,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		 */
 
 		if (cfg->verbose_level >= 4) {
-			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
+			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, MONO_LVREG_LS (inst->dreg), MONO_LVREG_MS (inst->dreg));
 		}
 
 		if (mono_arch_is_soft_float () && cfg->opt & MONO_OPT_SSA) {
@@ -880,7 +880,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 
 		/* Allocate a dummy MonoInst for the first vreg */
 		MONO_INST_NEW (cfg, tree, OP_LOCAL);
-		tree->dreg = inst->dreg + 1;
+		tree->dreg = MONO_LVREG_LS (inst->dreg);
 		if (cfg->opt & MONO_OPT_SSA)
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
@@ -888,11 +888,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
-		set_vreg_to_inst (cfg, inst->dreg + 1, tree);
+		set_vreg_to_inst (cfg, MONO_LVREG_LS (inst->dreg), tree);
 
 		/* Allocate a dummy MonoInst for the second vreg */
 		MONO_INST_NEW (cfg, tree, OP_LOCAL);
-		tree->dreg = inst->dreg + 2;
+		tree->dreg = MONO_LVREG_MS (inst->dreg);
 		if (cfg->opt & MONO_OPT_SSA)
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
@@ -900,7 +900,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
-		set_vreg_to_inst (cfg, inst->dreg + 2, tree);
+		set_vreg_to_inst (cfg, MONO_LVREG_MS (inst->dreg), tree);
 	}
 
 	cfg->num_varinfo++;

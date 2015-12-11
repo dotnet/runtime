@@ -614,8 +614,6 @@ mono_decompose_long_opts (MonoCompile *cfg)
 	 * needs to be able to handle long vregs.
 	 */
 
-	/* reg + 1 contains the ls word, reg + 2 contains the ms word */
-
 	/**
 	 * Create a dummy bblock and emit code into it so we can use the normal 
 	 * code generation macros.
@@ -638,28 +636,28 @@ mono_decompose_long_opts (MonoCompile *cfg)
 
 			switch (tree->opcode) {
 			case OP_I8CONST:
-				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (tree->dreg), tree->inst_ls_word);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), tree->inst_ms_word);
 				break;
 			case OP_DUMMY_I8CONST:
-				MONO_EMIT_NEW_DUMMY_INIT (cfg, tree->dreg + 1, OP_DUMMY_ICONST);
-				MONO_EMIT_NEW_DUMMY_INIT (cfg, tree->dreg + 2, OP_DUMMY_ICONST);
+				MONO_EMIT_NEW_DUMMY_INIT (cfg, MONO_LVREG_LS (tree->dreg), OP_DUMMY_ICONST);
+				MONO_EMIT_NEW_DUMMY_INIT (cfg, MONO_LVREG_MS (tree->dreg), OP_DUMMY_ICONST);
 				break;
 			case OP_LMOVE:
 			case OP_LCONV_TO_U8:
 			case OP_LCONV_TO_I8:
 			case OP_LCONV_TO_OVF_U8_UN:
 			case OP_LCONV_TO_OVF_I8:
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1 + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 2, tree->sreg1 + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_STOREI8_MEMBASE_REG:
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, tree->inst_destbasereg, tree->inst_offset + MINI_MS_WORD_OFFSET, tree->sreg1 + 2);
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, tree->inst_destbasereg, tree->inst_offset + MINI_LS_WORD_OFFSET, tree->sreg1 + 1);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, tree->inst_destbasereg, tree->inst_offset + MINI_MS_WORD_OFFSET, MONO_LVREG_MS (tree->sreg1));
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, tree->inst_destbasereg, tree->inst_offset + MINI_LS_WORD_OFFSET, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LOADI8_MEMBASE:
-				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tree->dreg + 2, tree->inst_basereg, tree->inst_offset + MINI_MS_WORD_OFFSET);
-				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tree->dreg + 1, tree->inst_basereg, tree->inst_offset + MINI_LS_WORD_OFFSET);
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, MONO_LVREG_MS (tree->dreg), tree->inst_basereg, tree->inst_offset + MINI_MS_WORD_OFFSET);
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, MONO_LVREG_LS (tree->dreg), tree->inst_basereg, tree->inst_offset + MINI_LS_WORD_OFFSET);
 				break;
 
 			case OP_ICONV_TO_I8: {
@@ -670,59 +668,59 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				 * tmp = low > -1 ? 1: 0;
 				 * high = tmp - 1; if low is zero or pos high becomes 0, else -1
 				 */
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, tree->dreg + 1, -1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), tree->sreg1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, MONO_LVREG_LS (tree->dreg), -1);
 				MONO_EMIT_NEW_BIALU (cfg, OP_ICGT, tmpreg, -1, -1);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, tree->dreg + 2, tmpreg, 1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, MONO_LVREG_MS (tree->dreg), tmpreg, 1);
 				break;
 			}
 			case OP_ICONV_TO_U8:
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
-				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), tree->sreg1);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), 0);
 				break;
 			case OP_ICONV_TO_OVF_I8:
 				/* a signed 32 bit num always fits in a signed 64 bit one */
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tree->dreg + 2, tree->sreg1, 31);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, MONO_LVREG_MS (tree->dreg), tree->sreg1, 31);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), tree->sreg1);
 				break;
 			case OP_ICONV_TO_OVF_U8:
 				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1, 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
-				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), 0);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), tree->sreg1);
 				break;
 			case OP_ICONV_TO_OVF_I8_UN:
 			case OP_ICONV_TO_OVF_U8_UN:
 				/* an unsigned 32 bit num always fits in an (un)signed 64 bit one */
-				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), 0);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), tree->sreg1);
 				break;
 			case OP_LCONV_TO_I1:
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_U1:
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_U1, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_U1, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_I2:
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_U2:
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_U2, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_U2, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_I4:
 			case OP_LCONV_TO_U4:
 			case OP_LCONV_TO_I:
 			case OP_LCONV_TO_U:
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_R8:
-				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R8_2, tree->dreg, tree->sreg1 + 1, tree->sreg1 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R8_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_R4:
-				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R4_2, tree->dreg, tree->sreg1 + 1, tree->sreg1 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R4_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_R_UN:
-				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R_UN_2, tree->dreg, tree->sreg1 + 1, tree->sreg1 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R_UN_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_I1: {
 				MonoBasicBlock *is_negative, *end_label;
@@ -730,48 +728,48 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				NEW_BBLOCK (cfg, is_negative);
 				NEW_BBLOCK (cfg, end_label);
 
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, -1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), -1);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
 
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBLT, is_negative);
 
 				/* Positive */
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 127);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 127);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT_UN, "OverflowException");
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_label);
 
 				/* Negative */
 				MONO_START_BB (cfg, is_negative);
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, -128);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), -128);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT_UN, "OverflowException");
 
 				MONO_START_BB (cfg, end_label);
 
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			}
 			case OP_LCONV_TO_OVF_I1_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
 
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 127);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 127);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, -128);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), -128);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I1, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_U1:
 			case OP_LCONV_TO_OVF_U1_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
 
 				/* probe value to be within 0 to 255 */
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 255);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 255);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT_UN, "OverflowException");
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg, tree->sreg1 + 1, 0xff);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg, MONO_LVREG_LS (tree->sreg1), 0xff);
 				break;
 			case OP_LCONV_TO_OVF_I2: {
 				MonoBasicBlock *is_negative, *end_label;
@@ -779,132 +777,132 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				NEW_BBLOCK (cfg, is_negative);
 				NEW_BBLOCK (cfg, end_label);
 
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, -1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), -1);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
 
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBLT, is_negative);
 
 				/* Positive */
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 32767);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 32767);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT_UN, "OverflowException");
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_label);
 
 				/* Negative */
 				MONO_START_BB (cfg, is_negative);
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, -32768);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), -32768);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT_UN, "OverflowException");
 				MONO_START_BB (cfg, end_label);
 
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			}
 			case OP_LCONV_TO_OVF_I2_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
 
 				/* Probe value to be within -32768 and 32767 */
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 32767);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 32767);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, -32768);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), -32768);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
-				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICONV_TO_I2, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_U2:
 			case OP_LCONV_TO_OVF_U2_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
 
 				/* Probe value to be within 0 and 65535 */
-				MONO_EMIT_NEW_COMPARE_IMM (cfg, tree->sreg1 + 1, 0xffff);
+				MONO_EMIT_NEW_COMPARE_IMM (cfg, MONO_LVREG_LS (tree->sreg1), 0xffff);
 				MONO_EMIT_NEW_COND_EXC (cfg, GT_UN, "OverflowException");
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg, tree->sreg1 + 1, 0xffff);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg, MONO_LVREG_LS (tree->sreg1), 0xffff);
 				break;
 			case OP_LCONV_TO_OVF_I4:
 			case OP_LCONV_TO_OVF_I:
-				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_OVF_I4_2, tree->dreg, tree->sreg1 + 1, tree->sreg1 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_OVF_I4_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_U4:
 			case OP_LCONV_TO_OVF_U:
 			case OP_LCONV_TO_OVF_U4_UN:
 			case OP_LCONV_TO_OVF_U_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_I_UN:
 			case OP_LCONV_TO_OVF_I4_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "OverflowException");
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 1, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_LS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_U8:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
 
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1 + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 2, tree->sreg1 + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LCONV_TO_OVF_I8_UN:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tree->sreg1 + 2, 0);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, MONO_LVREG_MS (tree->sreg1), 0);
 				MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
 
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1 + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 2, tree->sreg1 + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
 				break;
 
 			case OP_LADD:
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				break;
 			case OP_LSUB:
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				break;
 
 			case OP_LADD_OVF:
 				/* ADC sets the condition code */
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 				break;
 			case OP_LADD_OVF_UN:
 				/* ADC sets the condition code */
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 				break;
 			case OP_LSUB_OVF:
 				/* SBB sets the condition code */
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 				break;
 			case OP_LSUB_OVF_UN:
 				/* SBB sets the condition code */
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 				break;
 			case OP_LAND:
-				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				break;
 			case OP_LOR:
-				MONO_EMIT_NEW_BIALU (cfg, OP_IOR, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IOR, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IOR, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IOR, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				break;
 			case OP_LXOR:
-				MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
-				MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+				MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 				break;
 			case OP_LNOT:
-				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 1, tree->sreg1 + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 2, tree->sreg1 + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
+				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
 				break;
 			case OP_LNEG:
 				/* Handled in mono_arch_decompose_long_opts () */
@@ -916,24 +914,24 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				break;
 
 			case OP_LADD_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADDCC_IMM, tree->dreg + 1, tree->sreg1 + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, tree->dreg + 2, tree->sreg1 + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADDCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
 			case OP_LSUB_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUBCC_IMM, tree->dreg + 1, tree->sreg1 + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SBB_IMM, tree->dreg + 2, tree->sreg1 + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUBCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SBB_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
 			case OP_LAND_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg + 1, tree->sreg1 + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, tree->dreg + 2, tree->sreg1 + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
 			case OP_LOR_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, tree->dreg + 1, tree->sreg1 + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, tree->dreg + 2, tree->sreg1 + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
 			case OP_LXOR_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, tree->dreg + 1, tree->sreg1 + 1, tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, tree->dreg + 2, tree->sreg1 + 2, tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
 			case OP_LSHR_UN_IMM:
 				if (tree->inst_c1 == 32) {
@@ -945,15 +943,15 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					 */
 					/* FIXME: Move this to the strength reduction pass */
 					/* just move the upper half to the lower and zero the high word */
-					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1 + 2);
-					MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
+					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
+					MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), 0);
 				}
 				break;
 			case OP_LSHL_IMM:
 				if (tree->inst_c1 == 32) {
 					/* just move the lower half to the upper and zero the lower word */
-					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 2, tree->sreg1 + 1);
-					MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 1, 0);
+					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
+					MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (tree->dreg), 0);
 				}
 				break;
 
@@ -970,8 +968,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					/* Branchless version based on gcc code */
 					d1 = alloc_ireg (cfg);
 					d2 = alloc_ireg (cfg);
-					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d1, tree->sreg1 + 1, tree->sreg2 + 1);
-					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d2, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d1, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d2, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BIALU (cfg, OP_IOR, d1, d1, d2);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, d1, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK2 (cfg, next->opcode == OP_LBEQ ? OP_IBEQ : OP_IBNE_UN, next->inst_true_bb, next->inst_false_bb);
@@ -987,11 +985,11 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				case OP_LBLE_UN:
 				case OP_LBLT_UN:
 					/* Convert into three comparisons + branches */
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, lbr_decomp [next->opcode - OP_LBEQ][0], next->inst_true_bb);
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, next->inst_false_bb);
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 1, tree->sreg2 + 1);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK2 (cfg, lbr_decomp [next->opcode - OP_LBEQ][1], next->inst_true_bb, next->inst_false_bb);
 					NULLIFY_INS (next);
 					break;
@@ -1001,8 +999,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					/* Branchless version based on gcc code */
 					d1 = alloc_ireg (cfg);
 					d2 = alloc_ireg (cfg);
-					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d1, tree->sreg1 + 1, tree->sreg2 + 1);
-					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d2, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d1, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
+					MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, d2, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BIALU (cfg, OP_IOR, d1, d1, d2);
 
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, d1, 0);
@@ -1020,11 +1018,11 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					NEW_BBLOCK (cfg, set_to_1);
 
 					MONO_EMIT_NEW_ICONST (cfg, next->dreg, 0);
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, lcset_decomp [next->opcode - OP_LCEQ][0], set_to_0);
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 2, tree->sreg2 + 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, set_to_1);
-					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, tree->sreg1 + 1, tree->sreg2 + 1);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, lcset_decomp [next->opcode - OP_LCEQ][1], set_to_0);
 					MONO_START_BB (cfg, set_to_1);
 					MONO_EMIT_NEW_ICONST (cfg, next->dreg, 1);
@@ -1043,8 +1041,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MonoInst *next = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
 				guint32 low_imm = tree->inst_ls_word;
 				guint32 high_imm = tree->inst_ms_word;
-				int low_reg = tree->sreg1 + 1;
-				int high_reg = tree->sreg1 + 2;
+				int low_reg = MONO_LVREG_LS (tree->sreg1);
+				int high_reg = MONO_LVREG_MS (tree->sreg1);
 
 				g_assert (next);
 
@@ -1409,8 +1407,8 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 								break;
 							}
 							call2->inst.dreg = alloc_lreg (cfg);
-							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, MINI_MS_WORD_OFFSET, call2->inst.dreg + 2);
-							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, MINI_LS_WORD_OFFSET, call2->inst.dreg + 1);
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, MINI_MS_WORD_OFFSET, MONO_LVREG_MS (call2->inst.dreg));
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, MINI_LS_WORD_OFFSET, MONO_LVREG_LS (call2->inst.dreg));
 #else
 							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
 #endif
@@ -1644,19 +1642,19 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					break;
 				case OP_FGETLOW32:
 					ins->opcode = OP_MOVE;
-					ins->sreg1 = ins->sreg1 + 1;
+					ins->sreg1 = MONO_LVREG_LS (ins->sreg1);
 					break;
 				case OP_FGETHIGH32:
 					ins->opcode = OP_MOVE;
-					ins->sreg1 = ins->sreg1 + 2;
+					ins->sreg1 = MONO_LVREG_MS (ins->sreg1);
 					break;
 				case OP_SETFRET: {
 					int reg = ins->sreg1;
 
 					ins->opcode = OP_SETLRET;
 					ins->dreg = -1;
-					ins->sreg1 = reg + 1;
-					ins->sreg2 = reg + 2;
+					ins->sreg1 = MONO_LVREG_LS (reg);
+					ins->sreg2 = MONO_LVREG_MS (reg);
 					break;
 				}
 				case OP_LOADR8_MEMBASE:

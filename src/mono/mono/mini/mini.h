@@ -106,6 +106,9 @@
 #define inst_ls_word data.op[MINI_LS_WORD_IDX].const_val
 #define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
+#define MONO_LVREG_LS(lvreg)	((lvreg) + 1)
+#define MONO_LVREG_MS(lvreg)	((lvreg) + 2)
+
 #ifndef DISABLE_AOT
 #define MONO_USE_AOT_COMPILER
 #endif
