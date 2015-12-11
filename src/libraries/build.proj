@@ -46,15 +46,15 @@
                                        ValidationPatterns="@(ValidationPattern)" />
   </Target>
 
-  <!-- Tasks from buildtools for easy project.json dependency updates -->
-  <UsingTask TaskName="UpdatePrereleaseDependencies" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
-  <Target Name="UpdatePrereleaseDependencies">
-    <UpdatePrereleaseDependencies ProjectJsons="@(ProjectJsonFiles)"
-                                  OldPrerelease="$(OldPrerelease)"
-                                  NewPrerelease="$(NewPrerelease)" />
+  <Target Name="UpdateInvalidPackageVersions">
+    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
+                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
+                                       ValidationPatterns="@(ValidationPattern)"
+                                       UpdateInvalidDependencies="true" />
   </Target>
+
+  <!-- Tasks from buildtools for easy project.json dependency updates -->
+  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
 
   <Target Name="UpdatePackageDependencyVersion">
     <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
