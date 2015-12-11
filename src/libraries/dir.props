@@ -11,7 +11,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00134</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00135</BuildToolsVersion>
     <DnxVersion>1.0.0-rc2-16128</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -27,10 +27,10 @@
       <Value>True</Value>
     </AssemblyMetadata>
   </ItemGroup>
-  
-  <!-- 
-    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer 
-    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks. 
+
+  <!--
+    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
+    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
     <BuildToolsTargets45>true</BuildToolsTargets45>
@@ -51,7 +51,7 @@
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
-    
+
     <!-- Packaging configuration -->
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
@@ -151,9 +151,9 @@
     <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">  
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->  
-    <RestorePackages>false</RestorePackages>  
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
+    <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
   <!--
@@ -189,14 +189,14 @@
     -->
     <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
-  <!-- 
+  <!--
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
   if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
@@ -204,7 +204,7 @@
   a single binary folder and can have a similar experience between the command line and Visual Studio.
   -->
 
-  <!-- 
+  <!--
   If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
   values for $(ConfigurationGroup), $(TargetGroup), or $(OSGroup) or accept the defaults for them.
   -->
@@ -422,7 +422,7 @@
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
-  
+
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 
 </Project>

@@ -2,7 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Diagnostics.Tracing.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Diagnostics.Tracing.csproj">
+      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+    </Project>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Diagnostics.Tracing.csproj">
+      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
+    </Project>
+    <Project Include="System.Diagnostics.Tracing.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>

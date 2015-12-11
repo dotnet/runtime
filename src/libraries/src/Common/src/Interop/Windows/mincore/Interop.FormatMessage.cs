@@ -14,13 +14,13 @@ internal partial class Interop
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
 
-        
+
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
         [DllImport(Libraries.Localization, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
             int dwFlags,
-            IntPtr lpSource, 
+            IntPtr lpSource,
             uint dwMessageId,
             int dwLanguageId,
             [Out] StringBuilder lpBuffer,
@@ -34,7 +34,7 @@ internal partial class Interop
         {
             return GetMessage(IntPtr.Zero, errorCode);
         }
-        
+
         internal static string GetMessage(IntPtr moduleHandle, int errorCode)
         {
             var sb = new StringBuilder(InitialBufferSize);
@@ -66,7 +66,7 @@ internal partial class Interop
             {
                 flags |= FORMAT_MESSAGE_FROM_HMODULE;
             }
-            
+
             int result = FormatMessage(flags, moduleHandle, (uint)errorCode, 0, sb, sb.Capacity, null);
             if (result != 0)
             {
