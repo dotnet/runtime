@@ -118,14 +118,21 @@ namespace System.IO.Compression
         /// <strong>Note</strong>:
         /// <code>windowBits</code> can also be –8..–15 for raw deflate. In this case, -windowBits determines the window size.
         /// <code>Deflate</code> will then generate raw deflate data with no ZLib header or trailer, and will not compute an adler32 check value.<br />
-        /// <code>windowBits</code> can also be greater than 15 for optional gzip encoding. Add 16 to <code>windowBits</code> to write a simple
-        /// GZip header and trailer around the compressed data instead of a ZLib wrapper. The GZip header will have no file name, no extra data,
-        /// no comment, no modification time (set to zero), no header crc, and the operating system will be set to 255 (unknown).
-        /// If a GZip stream is being written, <code>ZStream.adler</code> is a crc32 instead of an adler32.</p>
         /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>
         /// </summary>
         public const int Deflate_DefaultWindowBits = -15; // Leagl values are 8..15 and -8..-15. 15 is the window size,
                                                           // negative val causes deflate to produce raw deflate data (no zlib header).
+
+        /// <summary>
+        /// <p>Zlib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
+        /// For GZip header encoding, <code>windowBits</code> should be equal to a value between 8..15 (to specify Window Size) added to
+        /// 16. The range of values for GZip encoding is therefore 24..31.
+        /// <strong>Note</strong>:
+        /// The GZip header will have no file name, no extra data, no comment, no modification time (set to zero), no header crc, and 
+        /// the operating system will be set based on the OS that the ZLib library was compiled to. <code>ZStream.adler</code> 
+        /// is a crc32 instead of an adler32.</p>
+        /// </summary>
+        public const int GZip_DefaultWindowBits = 31;
 
         /// <summary>
         /// <p><strong>From the ZLib manual:</strong></p>
@@ -137,6 +144,7 @@ namespace System.IO.Compression
         public const int Deflate_DefaultMemLevel = 8;     // Memory usage by deflate. Legal range: [1..9]. 8 is ZLib default.
                                                           // More is faster and better compression with more memory usage.
         public const int Deflate_NoCompressionMemLevel = 7;
+
         #endregion  // Defaults for ZLib parameters
 
         /**

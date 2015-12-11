@@ -45,7 +45,7 @@ namespace System.IO.Compression.Tests
             zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
 
             zip.BaseStream.Position = 0;
-            await zip.BaseStream.ReadAsync(bytes, 0, size); 
+            await zip.BaseStream.ReadAsync(bytes, 0, size);
         }
 
         [Fact]
@@ -107,7 +107,7 @@ namespace System.IO.Compression.Tests
             baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
 
             baseStream.Position = 0;
-            await baseStream.ReadAsync(bytes, 0, size); 
+            await baseStream.ReadAsync(bytes, 0, size);
         }
 
         [Fact]
@@ -476,7 +476,7 @@ namespace System.IO.Compression.Tests
         public async Task RoundtripCompressDecompress()
         {
             await RoundtripCompressDecompress(useAsync: false, useGzip: false, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
-            await RoundtripCompressDecompress(useAsync: true,  useGzip: true,  chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+            await RoundtripCompressDecompress(useAsync: true, useGzip: true, chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
         }
 
         [Fact]
@@ -664,7 +664,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void SequentialReadsOnMemoryStream_Return_SameBytes()
         {
-            byte[] data = new byte[1024*10];
+            byte[] data = new byte[1024 * 10];
             new Random(42).NextBytes(data);
 
             var compressed = new MemoryStream();
@@ -743,7 +743,7 @@ namespace System.IO.Compression.Tests
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                return _mode == Mode.ReturnNullTasks ? 
+                return _mode == Mode.ReturnNullTasks ?
                     null :
                     base.ReadAsync(buffer, offset, count, cancellationToken);
             }
