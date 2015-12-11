@@ -2769,9 +2769,9 @@ namespace System.Xml
 
             // the whole value is in buffer
 
-            TaskValue<ValueTuple<int, int, int, bool>> parseTextTask = ParseTextAsync(orChars);
+            ValueTask<ValueTuple<int, int, int, bool>> parseTextTask = ParseTextAsync(orChars);
             bool fullValue = false;
-            if (!parseTextTask.IsRanToCompletion)
+            if (!parseTextTask.IsCompletedSuccessfully)
             {
                 return _ParseTextAsync(parseTextTask.AsTask());
             }
@@ -3023,7 +3023,7 @@ namespace System.Xml
         private Task<ValueTuple<int, int, int, bool>> _parseText_dummyTask = Task.FromResult(new ValueTuple<int, int, int, bool>(0, 0, 0, false));
 
         //To avoid stackoverflow like ParseText->ParseEntity->ParText->..., use a loop and parsing function to implement such call.
-        private TaskValue<ValueTuple<int, int, int, bool>> ParseTextAsync(int outOrChars)
+        private ValueTask<ValueTuple<int, int, int, bool>> ParseTextAsync(int outOrChars)
         {
             Task<ValueTuple<int, int, int, bool>> task = ParseTextAsync(outOrChars, _ps.chars, _ps.charPos, 0, -1, outOrChars, (char)0);
             while (true)
@@ -3346,7 +3346,7 @@ namespace System.Xml
             return Task.FromResult(new ValueTuple<int, int, int, bool>(pos, pos, outOrChars, true));
         }
 
-        private TaskValue<ValueTuple<int, int, int, bool>> ParseTextAsync_PartialValue(int pos, int rcount, int rpos, int orChars, char c)
+        private ValueTask<ValueTuple<int, int, int, bool>> ParseTextAsync_PartialValue(int pos, int rcount, int rpos, int orChars, char c)
         {
             if (_parsingMode == ParsingMode.Full && rcount > 0)
             {
