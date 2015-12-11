@@ -34,6 +34,7 @@ Project Docs
 - [Strong Name Signing](project-docs/strong-name-signing.md)
 - [Open Source Signing](project-docs/oss-signing.md)
 - [Repo Organization](project-docs/repo-organization.md)
+- [Project NuGet Dependencies](project-docs/project-nuget-dependencies.md)
 
 Coding Guidelines
 =================
