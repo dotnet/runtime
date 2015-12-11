@@ -5,23 +5,24 @@
 #include "trace.h"
 #include "utils.h"
 
+#include <cassert>
 #include <locale>
 #include <codecvt>
 
 static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> g_converter;
 
-bool pal::find_coreclr(pal::string_t& recv)
+bool pal::find_coreclr(pal::string_t* recv)
 {
     pal::string_t candidate;
     pal::string_t test;
 
     // Try %LocalAppData%\dotnet
-    if (pal::getenv(_X("LocalAppData"), candidate)) {
-        append_path(candidate, _X("dotnet"));
-        append_path(candidate, _X("runtime"));
-        append_path(candidate, _X("coreclr"));
+    if (pal::getenv(_X("LocalAppData"), &candidate)) {
+        append_path(&candidate, _X("dotnet"));
+        append_path(&candidate, _X("runtime"));
+        append_path(&candidate, _X("coreclr"));
         if (coreclr_exists_in_dir(candidate)) {
-            recv.assign(candidate);
+            recv->assign(candidate);
             return true;
         }
     }
@@ -30,12 +31,12 @@ bool pal::find_coreclr(pal::string_t& recv)
     return false;
 }
 
-bool pal::load_library(const char_t* path, dll_t& dll)
+bool pal::load_library(const char_t* path, dll_t* dll)
 {
-    dll = ::LoadLibraryW(path);
-    if (dll == nullptr)
+    *dll = ::LoadLibraryW(path);
+    if (*dll == nullptr)
     {
-        trace::error(_X("failed to load coreclr.dll from %s, HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to load coreclr.dll from %s, HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -43,15 +44,15 @@ bool pal::load_library(const char_t* path, dll_t& dll)
     HMODULE dummy_module;
     if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path, &dummy_module))
     {
-        trace::error(_X("failed to pin library: %s"));
+        trace::error(_X("Failed to pin library: %s"));
         return false;
     }
 
     if (trace::is_enabled())
     {
         pal::char_t buf[PATH_MAX];
-        ::GetModuleFileNameW(dll, buf, PATH_MAX);
-        trace::info(_X("loaded library from %s"), buf);
+        ::GetModuleFileNameW(*dll, buf, PATH_MAX);
+        trace::info(_X("Loaded library from %s"), buf);
     }
 
     return true;
@@ -67,14 +68,15 @@ void pal::unload_library(dll_t library)
     // No-op. On windows, we pin the library, so it can't be unloaded.
 }
 
-bool pal::get_default_packages_directory(string_t& recv)
+bool pal::get_default_packages_directory(string_t* recv)
 {
+    recv->clear();
     if (!pal::getenv(_X("USERPROFILE"), recv))
     {
         return false;
     }
-    append_path(recv, _X(".dnx"));
-    append_path(recv, _X("packages"));
+    append_path(&*recv, _X(".dnx"));
+    append_path(&*recv, _X("packages"));
     return true;
 }
 
@@ -83,7 +85,7 @@ bool pal::is_path_rooted(const string_t& path)
     return path.length() >= 2 && path[1] == L':';
 }
 
-bool pal::getenv(const char_t* name, string_t& recv)
+bool pal::getenv(const char_t* name, string_t* recv)
 {
     auto length = ::GetEnvironmentVariableW(name, nullptr, 0);
     if (length == 0)
@@ -94,17 +96,17 @@ bool pal::getenv(const char_t* name, string_t& recv)
             // Leave the receiver empty and return success
             return true;
         }
-        trace::error(_X("failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
     auto buf = new char_t[length];
     if (::GetEnvironmentVariableW(name, buf, length) == 0)
     {
-        trace::error(_X("failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
-    recv.assign(buf);
+    recv->assign(buf);
     delete[] buf;
 
     return true;
@@ -115,14 +117,14 @@ int pal::xtoi(const char_t* input)
     return ::_wtoi(input);
 }
 
-bool pal::get_own_executable_path(string_t& recv)
+bool pal::get_own_executable_path(string_t* recv)
 {
     char_t program_path[MAX_PATH];
     DWORD dwModuleFileName = ::GetModuleFileNameW(NULL, program_path, MAX_PATH);
     if (dwModuleFileName == 0 || dwModuleFileName >= MAX_PATH) {
         return false;
     }
-    recv.assign(program_path);
+    recv->assign(program_path);
     return true;
 }
 
@@ -136,21 +138,36 @@ pal::string_t pal::to_palstring(const std::string& str)
     return g_converter.from_bytes(str);
 }
 
-bool pal::realpath(string_t& path)
+void pal::to_palstring(const char* str, pal::string_t* out)
+{
+    out->assign(g_converter.from_bytes(str));
+}
+
+void pal::to_stdstring(const pal::char_t* str, std::string* out)
+{
+    out->assign(g_converter.to_bytes(str));
+}
+
+bool pal::realpath(string_t* path)
 {
     char_t buf[MAX_PATH];
-    auto res = ::GetFullPathNameW(path.c_str(), MAX_PATH, buf, nullptr);
+    auto res = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
     if (res == 0 || res > MAX_PATH)
     {
-        trace::error(_X("error resolving path: %s"), path.c_str());
+        trace::error(_X("Error resolving path: %s"), path->c_str());
         return false;
     }
-    path.assign(buf);
+    path->assign(buf);
     return true;
 }
 
 bool pal::file_exists(const string_t& path)
 {
+    if (path.empty())
+    {
+        return false;
+    }
+
     WIN32_FIND_DATAW data;
     auto find_handle = ::FindFirstFileW(path.c_str(), &data);
     bool found = find_handle != INVALID_HANDLE_VALUE;
@@ -158,9 +175,11 @@ bool pal::file_exists(const string_t& path)
     return found;
 }
 
-std::vector<pal::string_t> pal::readdir(const string_t& path)
+void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
 {
-    std::vector<string_t> files;
+    assert(list != nullptr);
+
+    std::vector<string_t>& files = *list;
 
     string_t search_string(path);
     search_string.push_back(DIR_SEPARATOR);
@@ -174,6 +193,4 @@ std::vector<pal::string_t> pal::readdir(const string_t& path)
         files.push_back(filepath);
     } while (::FindNextFileW(handle, &data));
     ::FindClose(handle);
-
-    return files;
 }

@@ -3,10 +3,12 @@
 
 #include "args.h"
 #include "utils.h"
+#include "coreclr.h"
 
 arguments_t::arguments_t() :
     managed_application(_X("")),
-    clr_path(_X("")),
+    own_path(_X("")),
+    app_dir(_X("")),
     app_argc(0),
     app_argv(nullptr)
 {
@@ -24,10 +26,22 @@ void display_help()
 
 bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args)
 {
-    // Get the full name of the application
-    if (!pal::get_own_executable_path(args.own_path) || !pal::realpath(args.own_path))
+    // Read trace environment variable
+    pal::string_t trace_str;
+    if (pal::getenv(_X("COREHOST_TRACE"), &trace_str))
     {
-        trace::error(_X("failed to locate current executable"));
+        auto trace_val = pal::xtoi(trace_str.c_str());
+        if (trace_val > 0)
+        {
+            trace::enable();
+            trace::info(_X("Tracing enabled"));
+        }
+    }
+
+    // Get the full name of the application
+    if (!pal::get_own_executable_path(&args.own_path) || !pal::realpath(&args.own_path))
+    {
+        trace::error(_X("Failed to locate current executable"));
         return false;
     }
 
@@ -43,6 +57,12 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
             return false;
         }
         args.managed_application = pal::string_t(argv[1]);
+        if (!pal::realpath(&args.managed_application))
+        {
+            trace::error(_X("Failed to locate managed application: %s"), args.managed_application.c_str());
+            return false;
+        }
+        args.app_dir = get_directory(args.managed_application);
         args.app_argc = argc - 2;
         args.app_argv = &argv[2];
     }
@@ -54,39 +74,20 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         managed_app.append(get_executable(own_name));
         managed_app.append(_X(".dll"));
         args.managed_application = managed_app;
+        if (!pal::realpath(&args.managed_application))
+        {
+            trace::error(_X("Failed to locate managed application: %s"), args.managed_application.c_str());
+            return false;
+        }
+        args.app_dir = own_dir;
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;
     }
 
-    // Read trace environment variable
-    pal::string_t trace_str;
-    if (pal::getenv(_X("COREHOST_TRACE"), trace_str))
-    {
-        auto trace_val = pal::xtoi(trace_str.c_str());
-        if (trace_val > 0)
-        {
-            trace::enable();
-            trace::info(_X("tracing enabled"));
-        }
-    }
-
-    // Read CLR path from environment variable
-    pal::string_t home_str;
-    pal::getenv(_X("DOTNET_HOME"), home_str);
-    if (!home_str.empty())
-    {
-        append_path(home_str, _X("runtime"));
-        append_path(home_str, _X("coreclr"));
-        args.clr_path.assign(home_str);
-    }
-    else
-    {
-        // Use platform-specific search algorithm
-        if (pal::find_coreclr(home_str))
-        {
-            args.clr_path.assign(home_str);
-        }
-    }
-
+    pal::getenv(_X("DOTNET_PACKAGES"), &args.dotnet_packages);
+    pal::getenv(_X("DOTNET_PACKAGES_CACHE"), &args.dotnet_packages_cache);
+    pal::getenv(_X("DOTNET_SERVICING"), &args.dotnet_servicing);
+    pal::getenv(_X("DOTNET_RUNTIME_SERVICING"), &args.dotnet_runtime_servicing);
+    pal::getenv(_X("DOTNET_HOME"), &args.dotnet_home);
     return true;
 }
