@@ -67,9 +67,6 @@
 /* Disable reflection emit support */
 /* #undef DISABLE_REFLECTION_EMIT */
 
-/* Disable inter-process shared handles */
-/* #undef DISABLE_SHARED_HANDLES */
-
 /* Disable advanced SSA JIT optimizations */
 /* #undef DISABLE_SSA */
 

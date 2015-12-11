@@ -1454,14 +1454,6 @@ static gboolean share_check (struct stat *statbuf, guint32 sharemode,
 			       share_info) == TRUE) {
 		return (TRUE);
 	}
-	
-	/* Still violating.  It's possible that a process crashed
-	 * while still holding a file handle, and that a non-mono
-	 * process has the file open.  (For example, C-c mcs while
-	 * editing a source file.)  As a last resort, run a handle
-	 * collection, which will remove stale share entries.
-	 */
-	_wapi_handle_collect ();
 
 	return(share_allows_open (statbuf, sharemode, fileaccess, share_info));
 }

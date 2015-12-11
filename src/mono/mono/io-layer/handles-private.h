@@ -17,7 +17,6 @@
 #include <sys/types.h>
 
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/collection.h>
 #include <mono/io-layer/shared.h>
 #include <mono/utils/atomic.h>
 
@@ -31,7 +30,6 @@
 
 extern struct _WapiHandleUnshared *_wapi_private_handles [];
 extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
-extern struct _WapiFileShareLayout *_wapi_fileshare_layout;
 
 extern guint32 _wapi_fd_reserve;
 extern mono_mutex_t *_wapi_global_signal_mutex;
@@ -89,7 +87,6 @@ extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 extern void _wapi_handle_check_share (struct _WapiFileShare *share_info,
 				      int fd);
 extern void _wapi_handle_dump (void);
-extern void _wapi_handle_update_refs (void);
 extern void _wapi_handle_foreach (WapiHandleType type,
 					gboolean (*on_each)(gpointer test, gpointer user),
 					gpointer user_data);
