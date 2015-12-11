@@ -10,14 +10,16 @@ include_directories(inc)
 set(SOURCES
     src/args.cpp
     src/main.cpp
-    src/tpafile.cpp
+    src/deps_resolver.cpp
     src/trace.cpp
     src/utils.cpp
     src/coreclr.cpp
+    src/servicing_index.cpp
 
     inc/args.h
     inc/pal.h
-    inc/tpafile.h
+    inc/servicing_index.h
+    inc/deps_resolver.h
     inc/trace.h
     inc/coreclr.h
     inc/utils.h)
