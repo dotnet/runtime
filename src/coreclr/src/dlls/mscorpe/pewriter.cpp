@@ -242,6 +242,7 @@ static inline HRESULT SubOvf_U_U32(UINT64 & a, unsigned int b)
     return S_OK;
 }
 
+#ifndef _AMD64_
 /* subtract two unsigned pointers yeilding a signed pointer sized int */
 static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
 {
@@ -253,6 +254,7 @@ static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
     }
     return E_FAIL;
 }
+#endif
 
 
 /******************************************************************/
@@ -1898,7 +1900,7 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
 
         for(PESectionReloc* rcur = textSection->m_relocStart; rcur < textSection->m_relocCur; rcur++)
         {
-            switch(rcur->type)
+            switch((int)rcur->type)
             {
                 case 0x7FFA: // Ptr to symbol name
 #ifdef _WIN64
@@ -2026,7 +2028,7 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                         {
                             IMAGE_SECTION_HEADER* phdr = textSection->m_header;
                             // Add to reloc table
-                            IMAGE_RELOC_FIELD(ir, VirtualAddress) = VAL32(rva);
+                            ir.VirtualAddress = VAL32(rva);
                             ir.SymbolTableIndex = VAL32(i);
                             ir.Type = VAL16(IMAGE_REL_I386_SECREL);
                             if(phdr->PointerToRelocations == 0)
@@ -2176,7 +2178,7 @@ HRESULT PEWriter::Close()
 }
 
 /******************************************************************/
-HRESULT PEWriter::write(__in const LPWSTR fileName) {
+HRESULT PEWriter::write(__in LPCWSTR fileName) {
 
     HRESULT hr;
 

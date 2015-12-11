@@ -1703,7 +1703,7 @@ typedef enum CorAttributeTargets
 #define INTEROP_COMIMPORT_TYPE                  "System.Runtime.InteropServices.ComImportAttribute"
 #define INTEROP_COMIMPORT_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_GUID_TYPE_W                     L"System.Runtime.InteropServices.GuidAttribute"
+#define INTEROP_GUID_TYPE_W                     W("System.Runtime.InteropServices.GuidAttribute")
 #define INTEROP_GUID_TYPE                       "System.Runtime.InteropServices.GuidAttribute"
 #define INTEROP_GUID_SIG                        {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
