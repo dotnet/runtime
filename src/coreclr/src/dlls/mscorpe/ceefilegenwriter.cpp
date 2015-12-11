@@ -227,7 +227,7 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
 #ifdef ENC_DELTA_HACK
     // for EnC we want the RVA to be right at the front of the IL stream
     WCHAR szFileName[256];
-    DWORD len = WszGetEnvironmentVariable(L"COMP_ENC_EMIT", szFileName, NumItems(szFileName));
+    DWORD len = WszGetEnvironmentVariable(W("COMP_ENC_EMIT"), szFileName, NumItems(szFileName));
     if (len > 0)
         g_EnCMode = TRUE;
 #endif
@@ -335,10 +335,11 @@ HRESULT CeeFileGenWriter::link()
         hr = emitExeMain();
         if (FAILED(hr))
             return hr;
-
+#ifndef FEATURE_PAL
         hr = emitResourceSection();
         if (FAILED(hr))
             return hr;
+#endif
     }
 
     m_linked = true;
@@ -386,8 +387,9 @@ HRESULT CeeFileGenWriter::fixup()
 HRESULT CeeFileGenWriter::generateImage(void **ppImage)
 {
     HRESULT hr = S_OK;
-    LPWSTR outputFileName = NULL;
+    LPCWSTR outputFileName = NULL;
 
+#ifndef FEATURE_PAL
     HANDLE hThreadToken = NULL;
     // Impersonation is only supported on Win2k and above. 
     if (!OpenThreadToken(GetCurrentThread(), TOKEN_READ | TOKEN_IMPERSONATE, TRUE, &hThreadToken)) 
@@ -408,6 +410,7 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
             return HRESULT_FROM_GetLastError();
         }                
     }
+#endif // !FEATURE_PAL
 
 #ifdef ENC_DELTA_HACK
     // fixups break because we've set the base RVA to 0 for the delta stream
@@ -420,13 +423,13 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
 
     if (! outputFileName && ppImage == NULL) {
         if (m_comImageFlags & COMIMAGE_FLAGS_IL_LIBRARY)
-            outputFileName = L"output.ill";
+            outputFileName = W("output.ill");
         else if (m_dllSwitch)
-            outputFileName = L"output.dll";
+            outputFileName = W("output.dll");
         else if (m_objSwitch)
-            outputFileName = L"output.obj";
+            outputFileName = W("output.exe");
         else
-            outputFileName = L"output.exe";
+            outputFileName = W("output.obj");
     }
 
     // output file name and ppImage are mutually exclusive
@@ -438,6 +441,7 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
         IfFailGo(getPEWriter().write(ppImage));
 
 ErrExit:
+#ifndef FEATURE_PAL
     if (hThreadToken != NULL) 
     {
         BOOL success = SetThreadToken(NULL, hThreadToken);
@@ -449,6 +453,7 @@ ErrExit:
             hr = HRESULT_FROM_GetLastError();
         }
     }
+#endif // !FEATURE_PAL
     return hr;
 } // HRESULT CeeFileGenWriter::generateImage()
 
@@ -504,7 +509,7 @@ HRESULT CeeFileGenWriter::emitLibraryName(IMetaDataEmit *emitter)
         WCHAR wzGuid[40];
         BYTE  rgCA[50];
         IfFailRet(emitter->DefineTypeRefByName(mdTypeRefNil, INTEROP_GUID_TYPE_W, &tr));
-        IfFailRet(emitter->DefineMemberRef(tr, L".ctor", _SIG, sizeof(_SIG), &mr));
+        IfFailRet(emitter->DefineMemberRef(tr, W(".ctor"), _SIG, sizeof(_SIG), &mr));
         StringFromGUID2(m_libraryGuid, wzGuid, lengthof(wzGuid));
         memset(rgCA, 0, sizeof(rgCA));
         // Tag is 0x0001
@@ -997,7 +1002,7 @@ HRESULT GetClrSystemDirectory(__out_ecount_part(cchBuffer, *pdwLength) LPWSTR pb
         return CopySystemDirectory(pPath, pbuffer, cchBuffer, pdwLength);
 }
 
-
+#ifndef FEATURE_PAL
 BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEWriter &pewriter)
 {
     BOOL fSuccess = FALSE;
@@ -1472,6 +1477,7 @@ lDone: ;
 
     return hr;
 } // HRESULT CeeFileGenWriter::emitResourceSection()
+#endif // !FEATURE_PAL
 
 HRESULT CeeFileGenWriter::setManifestEntry(ULONG size, ULONG offset)
 {

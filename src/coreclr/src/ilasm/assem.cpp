@@ -16,9 +16,15 @@
 #define DECLARE_DATA
 
 #include "assembler.h"
-#ifndef FEATURE_CORECLR
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+#include "coreclrloader.h"
+CoreCLRLoader *g_loader;
+#endif // FEATURE_PAL
+MetaDataGetDispenserFunc metaDataGetDispenser;
+#else
 #include "MscorpeSxS.h"
-#endif
+#endif // FEATURE_CORECLR
 
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
@@ -232,20 +238,38 @@ Assembler::~Assembler()
         m_pDisp = NULL;
     }
 
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+    if (g_loader != NULL)
+    {
+        g_loader->Finish();
+    }
+#endif
+#else
     if (m_fDidCoInitialise)
         CoUninitialize();
+#endif // FEATURE_CORECLR
 
 }
 
 
 BOOL Assembler::Init()
 {
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+    g_loader = CoreCLRLoader::Create(g_pszExeFile);
+    metaDataGetDispenser = (MetaDataGetDispenserFunc)g_loader->LoadFunction("MetaDataGetDispenser");
+#else
+    metaDataGetDispenser = (MetaDataGetDispenserFunc)MetaDataGetDispenser;
+#endif // FEATURE_PAL
+#else
     if(!m_fDidCoInitialise)
     {
         if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
             return FALSE;
         m_fDidCoInitialise = TRUE;
     }
+#endif // FEATURE_CORECLR
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);
@@ -804,7 +828,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
 
     if(IsMdPrivateScope(pMethod->m_Attr))
     {
-        WCHAR* p = wcsstr(wzMemberName,L"$PST06");
+        WCHAR* p = wcsstr(wzMemberName,W("$PST06"));
         if(p) *p = 0;
     }
 
@@ -832,7 +856,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
         {
             mdToken tkPseudoCtor;
             BYTE bSig[3] = {IMAGE_CEE_CS_CALLCONV_HASTHIS,0,ELEMENT_TYPE_VOID};
-            if(FAILED(m_pEmitter->DefineMemberRef(tkPseudoClass, L".ctor", (PCCOR_SIGNATURE)bSig, 3, &tkPseudoCtor)))
+            if(FAILED(m_pEmitter->DefineMemberRef(tkPseudoClass, W(".ctor"), (PCCOR_SIGNATURE)bSig, 3, &tkPseudoCtor)))
                 report->error("Unable to define member reference '%s::.ctor'\n", COR_REQUIRES_SECOBJ_ATTRIBUTE_ANSI);
             else DefineCV(new CustomDescr(MethodToken,tkPseudoCtor,NULL));
         }
@@ -1144,7 +1168,7 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     return TRUE;
 }
 
-Class *Assembler::FindCreateClass(__in __nullterminated char *pszFQN)
+Class *Assembler::FindCreateClass(__in __nullterminated const char *pszFQN)
 {
     Class *pSearch = NULL;
 
@@ -1216,7 +1240,7 @@ BOOL Assembler::EmitClass(Class *pClass)
     L = wcslen(wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
     {
-        wcscat_s(wzFullName,dwUniBuf,L"$UNNAMED_TYPE$");
+        wcscat_s(wzFullName,dwUniBuf,W("$UNNAMED_TYPE$"));
     }
 
     pClass->m_Attr = CheckClassFlagsIfNested(pClass->m_pEncloser, pClass->m_Attr);
