@@ -1430,7 +1430,7 @@ ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_
 
 	counter.as_gint64 = COUNTER_READ ();
 
-	*worker_threads = threadpool->limit_worker_max - counter._.active;
+	*worker_threads = MAX (0, threadpool->limit_worker_max - counter._.active);
 	*completion_port_threads = threadpool->limit_io_max;
 }
 
