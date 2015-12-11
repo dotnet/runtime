@@ -12,6 +12,9 @@
 #include <cstring>
 #include <cstdarg>
 #include <tuple>
+#include <unordered_map>
+#include <memory>
+#include <algorithm>
 
 #if defined(_WIN32)
 
@@ -65,7 +68,13 @@ namespace pal
     typedef wchar_t char_t;
     typedef std::wstring string_t;
     typedef std::wstringstream stringstream_t;
-    typedef std::ifstream ifstream_t;
+    // TODO: Agree on the correct encoding of the files: The PoR for now is to
+    // temporarily wchar for Windows and char for Unix. Current implementation
+    // implicitly expects the contents on both Windows and Unix as char and
+    // converts them to wchar in code for Windows. This line should become:
+    // typedef std::basic_ifstream<pal::char_t> ifstream_t.
+    typedef std::basic_ifstream<char> ifstream_t;
+    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
@@ -77,11 +86,14 @@ namespace pal
 
     pal::string_t to_palstring(const std::string& str);
     std::string to_stdstring(const pal::string_t& str);
+    void to_palstring(const char* str, pal::string_t* out);
+    void to_stdstring(const pal::char_t* str, std::string* out);
 #else
     typedef char char_t;
     typedef std::string string_t;
     typedef std::stringstream stringstream_t;
-    typedef std::ifstream ifstream_t;
+    typedef std::basic_ifstream<char> ifstream_t;
+    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
     typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;
@@ -92,24 +104,26 @@ namespace pal
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfprintf(stderr, format, vl); ::fputc('\n', stderr); }
     inline pal::string_t to_palstring(const std::string& str) { return str; }
     inline std::string to_stdstring(const pal::string_t& str) { return str; }
+    inline void to_palstring(const char* str, pal::string_t* out) { out->assign(str); }
+    inline void to_stdstring(const pal::char_t* str, std::string* out) { out->assign(str); }
 #endif
-
-    bool realpath(string_t& path);
+    bool realpath(string_t* path);
     bool file_exists(const string_t& path);
-    std::vector<pal::string_t> readdir(const string_t& path);
+    inline bool directory_exists(const string_t& path) { return file_exists(path); }
+    void readdir(const string_t& path, std::vector<pal::string_t>* list);
 
-    bool get_own_executable_path(string_t& recv);
-    bool getenv(const char_t* name, string_t& recv);
-    bool get_default_packages_directory(string_t& recv);
+    bool get_own_executable_path(string_t* recv);
+    bool getenv(const char_t* name, string_t* recv);
+    bool get_default_packages_directory(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
     int xtoi(const char_t* input);
 
-    bool load_library(const char_t* path, dll_t& dll);
+    bool load_library(const char_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
-    bool find_coreclr(pal::string_t& recv);
+    bool find_coreclr(pal::string_t* recv);
 }
 
 #endif // PAL_H
