@@ -160,7 +160,7 @@ void DbgTransportSession::Shutdown()
             SessionState ePreviousState = m_eState;
             m_eState = SS_Closed;
 
-            if ((ePreviousState != SS_Opening_NC) && (ePreviousState != SS_Resync_NC) && (ePreviousState != SS_Closed))
+            if (ePreviousState != SS_Closed)
             {
                 m_pipe.Disconnect();
             }
@@ -171,10 +171,6 @@ void DbgTransportSession::Shutdown()
         // Signal the m_hSessionOpenEvent now to quickly error out any callers of WaitForSessionToOpen().
         SetEvent(m_hSessionOpenEvent);
 #endif // RIGHT_SIDE_COMPILE
-
-        // Now let the transport thread shut itself down cleanly. This will take care of emptying the send queue
-        // as well.
-        WaitForSingleObject(m_hTransportThread, INFINITE);
     }
 
     // No other threads are now using session resources. We're free to deallocate them as we wish (if they
