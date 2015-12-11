@@ -23,14 +23,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -53,7 +55,7 @@
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
@@ -138,9 +140,13 @@
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

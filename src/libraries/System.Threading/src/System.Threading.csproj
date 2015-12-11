@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{604027F5-1DFC-42F4-B4FE-61F8789BA647}</ProjectGuid>
+    <AssemblyName>System.Threading</AssemblyName>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'netcore50aot'">None</ResourcesSourceOutputDirectory>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU' " />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'netcore50aot' ">
+    <Compile Include="System\Threading\Helpers.CoreCLR.cs" />
+    <Compile Include="System\Threading\Barrier.cs" />
+    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
+    <Compile Include="System\Threading\CountdownEvent.cs" />
+    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'netcore50aot'">
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Core" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

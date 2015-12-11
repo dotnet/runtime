@@ -5,10 +5,10 @@
     <Project Include="System.Diagnostics.Debug.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
-    <Project Include="facade\System.Diagnostics.Debug.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Diagnostics.Debug.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
     </Project>
-    <Project Include="facade\System.Diagnostics.Debug.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Diagnostics.Debug.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>

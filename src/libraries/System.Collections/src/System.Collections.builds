@@ -5,7 +5,7 @@
     <Project Include="System.Collections.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
-    <Project Include="facade\System.Collections.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Collections.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>
