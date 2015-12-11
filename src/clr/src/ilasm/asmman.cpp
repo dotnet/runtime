@@ -284,12 +284,11 @@ void    AsmMan::EmitFiles()
                     tmp->pHash = new BinStr(pHash,cbHash);
                 }
                 else
-#else
+#endif // !FEATURE_CORECLR
                 {
                     pHash = NULL;
                     cbHash = 0;
                 }
-#endif // !FEATURE_CORECLR
             }
         }
         else 
