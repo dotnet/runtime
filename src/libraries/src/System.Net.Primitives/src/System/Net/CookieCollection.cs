@@ -3,13 +3,12 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace System.Net
 {
     // CookieCollection
     //
-    // A list of cookies maintained in Sorted order. Only one cookie with matching Name/Domain/Path 
+    // A list of cookies maintained in Sorted order. Only one cookie with matching Name/Domain/Path
     public class CookieCollection : ICollection
     {
         internal enum Stamp
@@ -20,30 +19,13 @@ namespace System.Net
             SetToMaxUsed = 3,
         }
 
-        internal int _version;
-        private List<Cookie> _list = new List<Cookie>();
+        private readonly List<Cookie> _list = new List<Cookie>();
 
         private DateTime _timeStamp = DateTime.MinValue;
         private bool _hasOtherVersions;
 
-        private readonly bool _isReadOnly;
-
         public CookieCollection()
         {
-            _isReadOnly = true;
-        }
-
-        internal CookieCollection(bool IsReadOnly)
-        {
-            _isReadOnly = IsReadOnly;
-        }
-
-        public bool IsReadOnly
-        {
-            get
-            {
-                return _isReadOnly;
-            }
         }
 
         public Cookie this[int index]
@@ -79,7 +61,6 @@ namespace System.Net
             {
                 throw new ArgumentNullException("cookie");
             }
-            ++_version;
             int idx = IndexOf(cookie);
             if (idx == -1)
             {
@@ -97,7 +78,7 @@ namespace System.Net
             {
                 throw new ArgumentNullException("cookies");
             }
-            foreach (Cookie cookie in cookies)
+            foreach (Cookie cookie in cookies._list)
             {
                 Add(cookie);
             }
@@ -111,7 +92,7 @@ namespace System.Net
             }
         }
 
-        public bool IsSynchronized
+        bool ICollection.IsSynchronized
         {
             get
             {
@@ -119,7 +100,7 @@ namespace System.Net
             }
         }
 
-        public object SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
@@ -127,14 +108,9 @@ namespace System.Net
             }
         }
 
-        public void CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
-            ((IList)_list).CopyTo(array, index);
-        }
-
-        public void CopyTo(Cookie[] array, int index)
-        {
-            _list.CopyTo(array, index);
+            ((ICollection)_list).CopyTo(array, index);
         }
 
         internal DateTime TimeStamp(Stamp how)
@@ -233,7 +209,7 @@ namespace System.Net
 
         public IEnumerator GetEnumerator()
         {
-            return new CookieCollectionEnumerator(this);
+            return _list.GetEnumerator();
         }
 
 #if DEBUG
@@ -246,55 +222,5 @@ namespace System.Net
             }
         }
 #endif
-
-        private class CookieCollectionEnumerator : IEnumerator
-        {
-            private CookieCollection _cookies;
-            private int _count;
-            private int _index = -1;
-            private int _version;
-
-            internal CookieCollectionEnumerator(CookieCollection cookies)
-            {
-                _cookies = cookies;
-                _count = cookies.Count;
-                _version = cookies._version;
-            }
-
-            object IEnumerator.Current
-            {
-                get
-                {
-                    if (_index < 0 || _index >= _count)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
-                    }
-                    if (_version != _cookies._version)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    }
-                    return _cookies[_index];
-                }
-            }
-
-            bool IEnumerator.MoveNext()
-            {
-                if (_version != _cookies._version)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                }
-                if (++_index < _count)
-                {
-                    return true;
-                }
-                _index = _count;
-                return false;
-            }
-
-            void IEnumerator.Reset()
-            {
-                _index = -1;
-            }
-        }
     }
 }
