@@ -19,6 +19,8 @@ namespace System.IO.Compression
         private ZLibNative.ZLibStreamHandle _zlibStream;
         private GCHandle _inputBufferHandle;
         private bool _isDisposed;
+        private const int minWindowBits = -15;              // WindowBits must be between -8..-15 to write no header, 8..15 for a
+        private const int maxWindowBits = 31;               // zlib header, or 24..31 for a GZip header
 
         // Note, DeflateStream or the deflater do not try to be thread safe.
         // The lock is just used to make writing to unmanaged structures atomic to make sure
@@ -29,12 +31,9 @@ namespace System.IO.Compression
 
         #region exposed members
 
-        internal Deflater() : this(CompressionLevel.Optimal)
+        internal Deflater(CompressionLevel compressionLevel, int windowBits)
         {
-        }
-
-        internal Deflater(CompressionLevel compressionLevel)
-        {
+            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
             ZLibNative.CompressionLevel zlibCompressionLevel;
             int memLevel;
 
@@ -61,7 +60,6 @@ namespace System.IO.Compression
                     throw new ArgumentOutOfRangeException("compressionLevel");
             }
 
-            int windowBits = ZLibNative.Deflate_DefaultWindowBits;
             ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
 
             DeflateInit(zlibCompressionLevel, windowBits, memLevel, strategy);
@@ -176,7 +174,7 @@ namespace System.IO.Compression
         internal bool Flush(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.Length > 0 , "Can't pass in an empty output buffer!");
+            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!_inputBufferHandle.IsAllocated);
 

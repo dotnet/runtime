@@ -15,8 +15,10 @@ namespace System.IO.Compression
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private GCHandle _inputBufferHandle;               // The handle to the buffer that provides input to _zlibStream
+        private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
         private readonly object _syncLock = new object();   // Used to make writing to unmanaged structures atomic 
+        private const int minWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
+        private const int maxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
 
         #region Exposed Members
 
@@ -25,6 +27,7 @@ namespace System.IO.Compression
         /// </summary>
         internal Inflater(int windowBits)
         {
+            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
             _finished = false;
             _isDisposed = false;
             InflateInit(windowBits);
