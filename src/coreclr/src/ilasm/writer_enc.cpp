@@ -71,6 +71,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
     if(!Init()) goto exit; // close and re-open CeeFileGen and CeeFile
     hr = S_OK;
 
+#ifndef FEATURE_CORECLR
     hr = CoCreateInstance(CLSID_CorSymWriter_SxS,
                            NULL,
                            CLSCTX_INPROC_SERVER,
@@ -79,7 +80,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
     if(SUCCEEDED(hr))
     {
         WCHAR* pwc = &wzOrigFileName[wcslen(wzOrigFileName)];
-        wcscat_s(wzOrigFileName,MAX_SCOPE_LENGTH,L".pdb");
+        wcscat_s(wzOrigFileName,MAX_SCOPE_LENGTH,W(".pdb"));
         if(m_pSymWriter) m_pSymWriter->Initialize((IUnknown*)m_pEmitter,
                                                   wzOrigFileName,
                                                   NULL,
@@ -91,7 +92,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         fprintf(stderr, "Error: CoCreateInstance(IID_ISymUnmanagedWriter) returns %X\n",hr);
         m_pSymWriter = NULL;
     }
-
+#endif
 
 exit:
     return hr;
@@ -363,8 +364,8 @@ REPT_STEP
         Class* pClass;
         Method* pMethod;
         FILE* pF = NULL;
-        wcscat_s(pwzOutputFilename,MAX_SCOPE_LENGTH,L".dil");
-        if(_wfopen_s(&pF,pwzOutputFilename,L"wb")==0)
+        wcscat_s(pwzOutputFilename,MAX_SCOPE_LENGTH,W(".dil"));
+        if(_wfopen_s(&pF,pwzOutputFilename,W("wb"))==0)
         {
             int i,j,L=0,M=0;
             BinStr bsOut;
@@ -426,7 +427,7 @@ REPT_STEP
     DWORD metaDataSize; 
     if (FAILED(hr=pENCEmitter->GetDeltaSaveSize(cssAccurate, &metaDataSize))) goto exit;
 
-    wcscat_s(pwzOutputFilename,MAX_SCOPE_LENGTH,L".dmeta");
+    wcscat_s(pwzOutputFilename,MAX_SCOPE_LENGTH,W(".dmeta"));
     pENCEmitter->SaveDelta(pwzOutputFilename,0); // second arg (dwFlags) is not used
     *pEnd = 0;
     pENCEmitter->Release();

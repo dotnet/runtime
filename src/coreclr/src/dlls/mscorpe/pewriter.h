@@ -43,7 +43,7 @@ public:
 
     HRESULT link();
     HRESULT fixup(CeeGenTokenMapper *pMapper);
-    HRESULT write(__in const LPWSTR fileName);
+    HRESULT write(__in LPCWSTR fileName);
     HRESULT write(void **ppImage);
 
     // calling these functions is optional
