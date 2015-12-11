@@ -428,6 +428,7 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 //      IMAGE_LIBRARY_PROCESS_TERM           0x0002     // Reserved.
 //      IMAGE_LIBRARY_THREAD_INIT            0x0004     // Reserved.
 //      IMAGE_LIBRARY_THREAD_TERM            0x0008     // Reserved.
+#define IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA 0x0020 // Image can handle a high entropy 64-bit virtual address space.
 #define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE 0x0040    // DLL can move
 #define IMAGE_DLLCHARACTERISTICS_NX_COMPAT   0x0100     // Image ix NX compatible
 #define IMAGE_DLLCHARACTERISTICS_NO_SEH       0x0400    // Image does not use SEH.  No SE handler may reside in this image
@@ -796,7 +797,7 @@ typedef struct _IMAGE_RELOCATION {
     union {
         ULONG   VirtualAddress;
         ULONG   RelocCount;             // Set to the real count when IMAGE_SCN_LNK_NRELOC_OVFL is set
-    } u;
+    };
     ULONG   SymbolTableIndex;
     USHORT  Type;
 } IMAGE_RELOCATION;

@@ -3,6 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+#ifndef CORECLRLOADER_H
+#define CORECLRLOADER_H
 typedef int (*InitializeCoreCLRFunction)(
     const char* exePath,
     const char* appDomainFriendlyName,
@@ -29,4 +31,5 @@ public:
     void* LoadFunction(const char* functionName);
     int Finish();
 };
+#endif // CORECLRLOADER_H
 
