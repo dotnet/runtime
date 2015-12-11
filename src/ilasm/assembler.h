@@ -51,6 +51,19 @@
 #define NESTING_SEP     ((char)0xF8)
 
 #define dwUniBuf 16384
+
+#ifdef FEATURE_PAL
+#include "coreclrloader.h"
+extern CoreCLRLoader *g_loader;
+extern char *g_pszExeFile;
+#endif
+typedef int(*MetaDataGetDispenserFunc) (
+    REFCLSID    rclsid,                 // The class to desired.
+    REFIID      riid,                   // Interface wanted on class factory.
+    LPVOID FAR  *ppv);                  // Return interface pointer here.
+
+extern MetaDataGetDispenserFunc metaDataGetDispenser;
+
 extern WCHAR   wzUniBuf[]; // Unicode conversion global buffer (assem.cpp)
 
 class Class;
@@ -776,13 +789,13 @@ public:
     HRESULT CreateTLSDirectory();
     HRESULT CreateDebugDirectory();
     HRESULT InitMetaData();
-    Class *FindCreateClass(__in __nullterminated char *pszFQN);
+    Class *FindCreateClass(__in __nullterminated const char *pszFQN);
     BOOL EmitFieldRef(__in_z __in char *pszArg, int opcode);
     BOOL EmitSwitchData(__in_z __in char *pszArg);
-    mdToken ResolveClassRef(mdToken tkResScope, __in __nullterminated char *pszClassName, Class** ppClass);
+    mdToken ResolveClassRef(mdToken tkResScope, __in __nullterminated const char *pszClassName, Class** ppClass);
     mdToken ResolveTypeSpec(BinStr* typeSpec);
     mdToken GetBaseAsmRef();
-    mdToken GetAsmRef(__in __nullterminated char* szName);
+    mdToken GetAsmRef(__in __nullterminated const char* szName);
     mdToken GetModRef(__in __nullterminated char* szName);
     mdToken GetInterfaceImpl(mdToken tsClass, mdToken tsInterface);
     char* ReflectionNotation(mdToken tk);

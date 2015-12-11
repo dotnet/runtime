@@ -14,6 +14,7 @@
 #include "shimload.h"
 
 #include "strsafe.h"
+#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 WCHAR* EqualOrColon(__in __nullterminated WCHAR* szArg)
 {
@@ -30,6 +31,9 @@ static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlig
 static ULONGLONG   g_stBaseAddress=0;
 static size_t   g_stSizeOfStackReserve=0;
 extern unsigned int g_uConsoleCP;
+#ifdef FEATURE_PAL
+char * g_pszExeFile;
+#endif
 
 void MakeTestFile(__in __nullterminated char* szFileName)
 {
@@ -66,7 +70,7 @@ void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
         if(wzProperName[j] == '.') break;
         if((wzProperName[j] == '\\')||(j == 0))
         {
-            wcscat_s(wzProperName,MAX_FILENAME_LENGTH,L".il");
+            wcscat_s(wzProperName,MAX_FILENAME_LENGTH,W(".il"));
             break;
         }
     }
@@ -98,6 +102,7 @@ WCHAR       wzIncludePathBuffer[MAX_FILENAME_LENGTH];
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
 extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 {
     int         i, NumFiles = 0, NumDeltaFiles = 0;
@@ -139,7 +144,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #pragma warning(push)
 #pragma warning(disable:26000) // "Suppress prefast warning about index overflow"
 #endif
-    if (! wcscmp(argv[1], L"/?") || ! wcscmp(argv[1],L"-?"))
+    if (! wcscmp(argv[1], W("/?")) || ! wcscmp(argv[1],W("-?")))
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif    
@@ -203,8 +208,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     }
 
     uCodePage = CP_UTF8;
-    WszSetEnvironmentVariable(L"COMP_ENC_OPENSCOPE", L"");
-    WszSetEnvironmentVariable(L"COMP_ENC_EMIT", L"");
+    WszSetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), W(""));
+    WszSetEnvironmentVariable(W("COMP_ENC_EMIT"), W(""));
     if((pAsm = new Assembler()))
     {
         pAsm->SetCodePage(uCodePage);
@@ -214,7 +219,11 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
             //-------------------------------------------------
             for (i = 1; i < argc; i++)
             {
+#ifdef FEATURE_PAL
+                if(argv[i][0] == L'-')
+#else
                 if((argv[i][0] == L'/') || (argv[i][0] == L'-'))
+#endif
                 {
                     memset(szOpt,0,sizeof(szOpt));
                     WszWideCharToMultiByte(uCodePage,0,&argv[i][1],-1,szOpt,sizeof(szOpt),NULL,NULL);
@@ -240,7 +249,11 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     else if (!_stricmp(szOpt, "DEB"))
                     {
                       pAsm->m_dwIncludeDebugInfo = 0x101;
+#ifdef FEATURE_CORECLR
+                      printf("Warning: PDB is ignored under 'DEB' option for ilasm on CoreCLR.\n");
+#else
                       pAsm->m_fGeneratePDB = TRUE;
+#endif
                       bNoDebug = FALSE;
 
                       WCHAR *pStr = EqualOrColon(argv[i]);
@@ -253,13 +266,13 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                               WCHAR wzSubOpt[8];
                               wcsncpy_s(wzSubOpt,8,pStr,3);
                               wzSubOpt[3] = 0;
-                              if(0 == _wcsicmp(wzSubOpt,L"OPT"))
+                              if(0 == _wcsicmp(wzSubOpt,W("OPT")))
                                 pAsm->m_dwIncludeDebugInfo = 0x3;
-                              else if(0 == _wcsicmp(wzSubOpt,L"IMP"))
+                              else if(0 == _wcsicmp(wzSubOpt,W("IMP")))
                                 pAsm->m_dwIncludeDebugInfo = 0x103;
                               else 
                               {
-                                WCHAR *pFmt =((*pStr == '0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
+                                const WCHAR *pFmt =((*pStr == '0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                                 if(swscanf_s(pStr,pFmt,&(pAsm->m_dwIncludeDebugInfo))!=1)
                                 goto InvalidOption; // bad subooption
                               }
@@ -268,7 +281,11 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "PDB"))
                     {
+#ifdef FEATURE_CORECLR
+                      printf("Warning: 'PDB' option is ignored for ilasm on CoreCLR.\n");
+#else
                       pAsm->m_fGeneratePDB = TRUE;
+#endif
                       bNoDebug = FALSE;
                     }
                     else if (!_stricmp(szOpt, "CLO"))
@@ -406,7 +423,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         if(wcslen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
-                            if(swscanf_s(pStr,L"%d.%d",&major, &minor)==2)
+                            if(swscanf_s(pStr,W("%d.%d"),&major, &minor)==2)
                             {
                                 if((major >= 0)&&(major < 0xFF))
                                     pAsm->m_wMSVmajor = (WORD)major;
@@ -429,7 +446,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
+                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                         if(swscanf_s(pStr,pFmt,&g_dwSubsystem)!=1) goto InvalidOption;
                     }
                     else if (!_stricmp(szOpt, "SSV"))
@@ -440,7 +457,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         if(wcslen(pStr)==0) goto InvalidOption; //if no version
                         {
                             int major=-1,minor=-1;
-                            if(swscanf_s(pStr,L"%d.%d",&major, &minor)==2)
+                            if(swscanf_s(pStr,W("%d.%d"),&major, &minor)==2)
                             {
                                 if((major >= 0)&&(major < 0xFFFF))
                                     pAsm->m_wSSVersionMajor = (WORD)major;
@@ -455,7 +472,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
+                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                         if(swscanf_s(pStr,pFmt,&g_dwFileAlignment)!=1) goto InvalidOption;
                         if((g_dwFileAlignment & (g_dwFileAlignment-1))
                            || (g_dwFileAlignment < 0x200) || (g_dwFileAlignment > 0x10000))
@@ -469,7 +486,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
+                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                         if(swscanf_s(pStr,pFmt,&g_dwComImageFlags)!=1) goto InvalidOption;
                     }
                     else if (!_stricmp(szOpt, "BAS"))
@@ -477,7 +494,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%I64x" : L"%I64d";
+                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%I64x") : W("%I64d");
                         if(swscanf_s(pStr,pFmt,&g_stBaseAddress)!=1) goto InvalidOption;
                         if(g_stBaseAddress & 0xFFFF)
                         {
@@ -490,7 +507,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         WCHAR *pStr = EqualOrColon(argv[i]);
                         if(pStr == NULL) goto InvalidOption;
                         pStr++;
-                        WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? L"%lx" : L"%ld";
+                        const WCHAR *pFmt = ((*pStr=='0')&&(*(pStr+1) == 'x'))? W("%lx") : W("%ld");
                         if(swscanf_s(pStr,pFmt,&g_stSizeOfStackReserve)!=1) goto InvalidOption;
                     }
 #ifdef _SPECIAL_INTERNAL_USE_ONLY
@@ -606,11 +623,11 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                 }
                 while(j);
-                wcscat_s(wzOutputFilename, MAX_FILENAME_LENGTH,(IsDLL ? L".dll" : (IsOBJ ? L".obj" : L".exe")));
+                wcscat_s(wzOutputFilename, MAX_FILENAME_LENGTH,(IsDLL ? W(".dll") : (IsOBJ ? W(".obj") : W(".exe"))));
             }
             if(wzIncludePath == NULL)
             {
-                if(0!=WszGetEnvironmentVariable(L"ILASM_INCLUDE",wzIncludePathBuffer,MAX_FILENAME_LENGTH))
+                if(0!=WszGetEnvironmentVariable(W("ILASM_INCLUDE"),wzIncludePathBuffer,MAX_FILENAME_LENGTH))
                     wzIncludePath = wzIncludePathBuffer;
             }
             //------------ Assembler initialization done. Now, to business -----------------------
@@ -672,6 +689,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         }
                         else
                         {
+#ifndef FEATURE_PAL
                             DWORD dwBinType;
                             if(GetBinaryTypeA(szInputFilename,&dwBinType))
                             {
@@ -679,6 +697,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                 fAllFilesPresent = FALSE;
                             }
                             else
+#endif
                             {
                                 pAsm->SetSourceFileName(FullFileName(wzInputFilename,uCodePage)); // deletes the argument!
 
@@ -745,7 +764,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     {
                                         wcscpy_s(wzNewOutputFilename,MAX_FILENAME_LENGTH+16,wzOutputFilename);
                                         exitval = (int)StringCchPrintfW(&wzNewOutputFilename[wcslen(wzNewOutputFilename)], 32,
-                                                 L".%d",iFile+1);
+                                                 W(".%d"),iFile+1);
                                         MakeProperSourceFileName(pwzDeltaFiles[iFile], uCodePage, wzInputFilename, szInputFilename);
                                         if(pAsm->m_fReportProgress)
                                         {
@@ -770,6 +789,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                         }
                                         else
                                         {
+#ifndef FEATURE_PAL
                                             DWORD dwBinType;
                                             if(GetBinaryTypeA(szInputFilename,&dwBinType))
                                             {
@@ -777,6 +797,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                                 fAllFilesPresent = FALSE;
                                             }
                                             else
+#endif
                                             if (SUCCEEDED(pAsm->InitMetaDataForENC(wzNewOutputFilename)))
                                             {
                                                 pAsm->SetSourceFileName(FullFileName(wzInputFilename,uCodePage)); // deletes the argument!
@@ -847,8 +868,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     }
     else printf("Insufficient memory\n");
 
-    WszSetEnvironmentVariable(L"COMP_ENC_OPENSCOPE", L"");
-    WszSetEnvironmentVariable(L"COMP_ENC_EMIT", L"");
+    WszSetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), W(""));
+    WszSetEnvironmentVariable(W("COMP_ENC_EMIT"), W(""));
 
     if(exitval || bNoDebug)
     {
@@ -859,7 +880,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
             pc = &wzOutputFilename[wcslen(wzOutputFilename)];
             *pc = L'.';
         }
-        wcscpy_s(pc+1,4,L"PDB");
+        wcscpy_s(pc+1,4,W("PDB"));
 #undef DeleteFileW
         DeleteFileW(wzOutputFilename);
     }
@@ -896,11 +917,45 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #pragma warning(pop)
 #endif
 
-
+#ifndef FEATURE_CORECLR
 HINSTANCE GetModuleInst()
 {
     return (NULL);
 }
+#endif // !FEATURE_CORECLR
 
+#ifdef FEATURE_PAL
+int main(int argc, char* str[])
+{
+    g_pszExeFile = str[0];
+    if (0 != PAL_Initialize(argc, str))
+    {
+        fprintf(stderr,"Error: Fail to PAL_Initialize\n");
+        exit(1);
+    }
 
+    WCHAR **argv = new WCHAR*[argc];
+    for (int i = 0; i < argc; i++) {
+        int length = MultiByteToWideChar(CP_ACP, 0, str[i], -1, NULL, 0);
+        ASSERTE_ALL_BUILDS(length != 0);
+
+        LPWSTR result = new (nothrow) WCHAR[length];
+        ASSERTE_ALL_BUILDS(result != NULL);
+
+        length = MultiByteToWideChar(CP_ACP, 0, str[i], -1, result, length);
+        ASSERTE_ALL_BUILDS (length != 0);
+
+        argv[i] = result;
+    }
+
+    int ret = wmain(argc, argv);
+
+    for (int i = 0 ; i < argc; i++) {
+        delete[] argv[i];
+    }
+    delete[] argv;
+
+    return ret;
+}
+#endif // FEATURE_PAL
 

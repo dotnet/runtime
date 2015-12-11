@@ -115,7 +115,7 @@ mdToken             AsmMan::GetComTypeTokByName(
     return(tmp ? tmp->tkTok : mdExportedTypeNil);
 }
 
-AsmManAssembly*     AsmMan::GetAsmRefByName(__in __nullterminated char* szAsmRefName)
+AsmManAssembly*     AsmMan::GetAsmRefByName(__in __nullterminated const char* szAsmRefName)
 {
     AsmManAssembly* ret = NULL;
     if(szAsmRefName)
@@ -130,7 +130,7 @@ AsmManAssembly*     AsmMan::GetAsmRefByName(__in __nullterminated char* szAsmRef
     }
     return ret;
 }
-mdToken             AsmMan::GetAsmRefTokByName(__in __nullterminated char* szAsmRefName)
+mdToken             AsmMan::GetAsmRefTokByName(__in __nullterminated const char* szAsmRefName)
 {
     AsmManAssembly* tmp = GetAsmRefByName(szAsmRefName);
     return(tmp ? tmp->tkTok : mdAssemblyRefNil);
@@ -155,7 +155,7 @@ void    AsmMan::SetModuleName(__inout_opt __nullterminated char* szName)
 }
 //==============================================================================================================
 // Borrowed from VM\assembly.cpp
-
+#ifndef FEATURE_CORECLR
 HRESULT GetHash(__in LPWSTR moduleName,
                           ALG_ID iHashAlg,
                           BYTE** pbCurrentValue,  // should be NULL
@@ -224,6 +224,7 @@ HRESULT GetHash(__in LPWSTR moduleName,
 
     return hr;
 }
+#endif // !FEATURE_CORECLR
 //==============================================================================================================
 
 void    AsmMan::AddFile(__in __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob)
@@ -277,15 +278,18 @@ void    AsmMan::EmitFiles()
             if(m_pAssembly      // and assembly is defined
                 && m_pAssembly->ulHashAlgorithm) // and hash algorithm is defined...
             { // then try to compute it
-                if(FAILED(GetHash(wzUniBuf,(ALG_ID)(m_pAssembly->ulHashAlgorithm),&pHash,&cbHash)))
+#ifndef FEATURE_CORECLR
+                if(SUCCEEDED(GetHash(wzUniBuf,(ALG_ID)(m_pAssembly->ulHashAlgorithm),&pHash,&cbHash)))
+                {
+                    tmp->pHash = new BinStr(pHash,cbHash);
+                }
+                else
+#else
                 {
                     pHash = NULL;
                     cbHash = 0;
                 }
-                else
-                {
-                    tmp->pHash = new BinStr(pHash,cbHash);
-                }
+#endif // !FEATURE_CORECLR
             }
         }
         else 

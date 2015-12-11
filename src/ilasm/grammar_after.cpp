@@ -6,6 +6,7 @@
 /* Code goes here */
 
 /********************************************************************************/
+extern int yyparse();
 
 struct Keywords {
     const char* name;
@@ -204,7 +205,7 @@ char* yygetline(int Line)
     return buff;
 }
 
-void yyerror(__in __nullterminated char* str) {
+void yyerror(__in __nullterminated const char* str) {
     char tokBuff[64];
     WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
     int iline = PENV->curLine;
@@ -1174,7 +1175,7 @@ Just_A_Character:
 #endif
 
 /**************************************************************************/
-static char* newString(__in __nullterminated char* str1) 
+static char* newString(__in __nullterminated const char* str1)
 {
     char* ret = new char[strlen(str1)+1];
     if(ret) strcpy_s(ret, strlen(str1)+1, str1);

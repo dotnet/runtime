@@ -9,14 +9,14 @@
 
 typedef struct
 {
-    char *  pszName;
-    OPCODE  op;
+    const char * pszName;
+    OPCODE       op;
 
-    BYTE    Type;   // Inline0 etc.
+    BYTE         Type;   // Inline0 etc.
 
-    BYTE    Len;    // std mapping
-    BYTE    Std1;
-    BYTE    Std2;
+    BYTE         Len;    // std mapping
+    BYTE         Std1;
+    BYTE         Std2;
 } opcodeinfo_t;
 
 #ifdef DECLARE_DATA
