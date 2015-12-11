@@ -1244,7 +1244,7 @@ namespace System.Globalization {
             get {
                 if (dateTimeOffsetPattern == null) {
 
-                    dateTimeOffsetPattern = ShortDatePattern + " " + LongTimePattern;
+                    string dateTimePattern = ShortDatePattern + " " + LongTimePattern;
 
                     /* LongTimePattern might contain a "z" as part of the format string in which case we don't want to append a time zone offset */
 
@@ -1280,8 +1280,10 @@ namespace System.Globalization {
                     }
 
                     if (!foundZ) {
-                        dateTimeOffsetPattern = dateTimeOffsetPattern + " zzz";
-                    } 
+                        dateTimePattern = dateTimePattern + " zzz";
+                    }
+
+                    dateTimeOffsetPattern = dateTimePattern;
                 }
                 return (dateTimeOffsetPattern);
             }
