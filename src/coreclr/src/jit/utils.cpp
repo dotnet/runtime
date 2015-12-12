@@ -1364,9 +1364,9 @@ void HelperCallProperties::init()
         case CORINFO_HELP_VERIFICATION:
         case CORINFO_HELP_RNGCHKFAIL:
         case CORINFO_HELP_THROWDIVZERO:
-#ifndef RYUJIT_CTPBUILD
+#if COR_JIT_EE_VERSION > 460
         case CORINFO_HELP_THROWNULLREF:
-#endif
+#endif // COR_JIT_EE_VERSION
         case CORINFO_HELP_THROW:
         case CORINFO_HELP_RETHROW:
 

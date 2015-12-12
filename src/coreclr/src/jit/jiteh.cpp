@@ -1409,7 +1409,7 @@ void                Compiler::fgRemoveEHTableEntry(unsigned XTnum)
         if (XTnum < compHndBBtabCount)
         {
             /* We copy over the old entry */
-            memcpy(HBtab, HBtab + 1, (compHndBBtabCount - XTnum) * sizeof(*HBtab));
+            memmove(HBtab, HBtab + 1, (compHndBBtabCount - XTnum) * sizeof(*HBtab));
         }
         else
         {

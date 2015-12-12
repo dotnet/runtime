@@ -136,8 +136,8 @@ private:
 struct ResolveStub 
 {
     inline PCODE failEntryPoint()            { LIMITED_METHOD_CONTRACT; return (PCODE)&_failEntryPoint[0]; }
-    inline PCODE resolveEntryPoint()       { LIMITED_METHOD_CONTRACT; return (PCODE)&_resolveEntryPoint[0]; }
-    inline PCODE slowEntryPoint()          { LIMITED_METHOD_CONTRACT; return (PCODE)&_slowEntryPoint[0]; }
+    inline PCODE resolveEntryPoint()         { LIMITED_METHOD_CONTRACT; return (PCODE)&_resolveEntryPoint[0]; }
+    inline PCODE slowEntryPoint()            { LIMITED_METHOD_CONTRACT; return (PCODE)&_slowEntryPoint[0]; }
     inline size_t  token()                   { LIMITED_METHOD_CONTRACT; return _token; }
     inline INT32*  pCounter()                { LIMITED_METHOD_CONTRACT; return _pCounter; }
 
@@ -147,7 +147,7 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 19;
+    const static int resolveEntryPointLen = 17;
     const static int slowEntryPointLen = 4;
     const static int failEntryPointLen = 8;
     
@@ -155,7 +155,7 @@ private:
     DWORD _slowEntryPoint[slowEntryPointLen];
     DWORD _failEntryPoint[failEntryPointLen];
     INT32*  _pCounter;               //Base of the Data Region
-    size_t  _cacheAddress; // lookupCache
+    size_t  _cacheAddress;           // lookupCache
     size_t  _token;
     PCODE   _resolveWorkerTarget;
     UINT32  _hashedToken;
@@ -173,13 +173,12 @@ struct ResolveHolder
          DWORD offset;
          int br_nextEntry[2];
 /******** Rough Convention of used in this routine
-         ;;x9 current variable
+         ;;x9  hash scratch / current ResolveCacheElem 
          ;;x10 base address of the data region
          ;;x11 indirection cell
-         ;;x12 passed MT
-         ;;X13 data read from data region
-         ;;X14 computed address into data region
-         ;;X15 this._token
+         ;;x12 MethodTable (from object ref in x0), out: this._token 
+         ;;X13 temp
+         ;;X15 temp, this._token
          ;;cachemask => [CALL_STUB_CACHE_MASK * sizeof(void*)]
 *********/         
          // Called directly by JITTED code
@@ -188,12 +187,16 @@ struct ResolveHolder
          //    MethodTable mt = x0.m_pMethTab;
          //    int i = ((mt + mt >> 12) ^ this._hashedToken) & _cacheMask
          //    ResolveCacheElem e = this._cacheAddress + i
-         //    do
+         //    x9 = e = this._cacheAddress + i
+         //    if (mt == e.pMT && this._token == e.token)
          //    {
-         //        if (mt == e.pMT && this._token == e.token) (e.target)(x0, x1,...,x7);
-         //        e = e.pNext;
-         //    } while (e != null)
-         //    (this._slowEntryPoint)(x0, x1,.., x7, x11);
+         //        (e.target)(x0, [x1,...,x7]);
+         //    }
+         //    else
+         //    {
+         //        x12 = this._token;
+         //        (this._slowEntryPoint)(x0, [x1,.., x7], x9, x11, x12);
+         //    }
          // }
          //
 
@@ -236,15 +239,10 @@ struct ResolveHolder
          //ldr x9, [x13, x9] ;; x9 = e = this._cacheAddress + i
          _stub._resolveEntryPoint[n++] = 0xF86969A9  ;
 
-         //hoisting loop invariant this._token F940014F
-         //
          //ldr x15, [x10 + DATA_OFFSET(_token)]
          offset = DATA_OFFSET(_token);
          _ASSERTE(offset >=0 && offset%8 == 0);
          _stub._resolveEntryPoint[n++] = 0xF940014F | offset<<7;
-
-         int loop=n;
-         //do {
 
          //;; Check mt == e.pMT
          //
@@ -292,26 +290,14 @@ struct ResolveHolder
          {
             _stub._resolveEntryPoint[i] = 0x54000001 | ((((n-i)*sizeof(DWORD))<<3) & 0x3FFFFFF);  
          }
- 
-         //;; e = e.pNext;
-         //ldr x9, [x9, #offsetof(ResolveCacheElem,pNext ) ]
-         offset = offsetof(ResolveCacheElem, pNext) & 0xffffffff;
-         _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xF9400129 | offset<<7;
-         
-         //;; } while(e != null);
-         //;; cbnz x9, loop 
-         offset = (DWORD)(loop - n)*sizeof(DWORD);
-         _stub._resolveEntryPoint[n++] = 0xB5000009 | ((offset<<3) & 0xFFFFF0);
-         
 
          _ASSERTE(n == ResolveStub::resolveEntryPointLen);
          _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
          
-         // ResolveStub._slowEntryPoint(x0:MethodToken, x1..x7, x11:IndirectionCellAndFlags)
+         // ResolveStub._slowEntryPoint(x0:MethodToken, [x1..x7], x11:IndirectionCellAndFlags)
          // {
          //     x12 = this._token;
-         //     this._resolveWorkerTarget(x0,.., x7, x12);
+         //     this._resolveWorkerTarget(x0, [x1..x7], x9, x11, x12);
          // }
 
 #undef PC_REL_OFFSET
@@ -326,28 +312,27 @@ struct ResolveHolder
          //ldr x12, [x10 , DATA_OFFSET(_token)]
          offset=DATA_OFFSET(_token);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<7);
+         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<7); 
          
          //
-         //ldr x9, [x10 , DATA_OFFSET(_resolveWorkerTarget)]
+         //ldr x13, [x10 , DATA_OFFSET(_resolveWorkerTarget)]
          offset=DATA_OFFSET(_resolveWorkerTarget);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF9400149 | (offset<<7);
+         _stub._slowEntryPoint[n++] = 0xF940014d | (offset<<7); 
          
-         //  br x9 
-         _stub._slowEntryPoint[n++] = 0xD61F0120;
+         //  br x13 
+         _stub._slowEntryPoint[n++] = 0xD61F01A0;
 
          _ASSERTE(n == ResolveStub::slowEntryPointLen);
          // ResolveStub._failEntryPoint(x0:MethodToken, x1,.., x7, x11:IndirectionCellAndFlags)
          // {
          //     if(--*(this._pCounter) < 0) x11 = x11 | SDF_ResolveBackPatch;
-         //     this._resolveEntryPoint(x0,..,x7);
+         //     this._resolveEntryPoint(x0, [x1..x7]);
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
 #define PC_REL_OFFSET(_field) (DWORD)((offsetof(ResolveStub, _field) - (offsetof(ResolveStub, _failEntryPoint[n]))) & 0xffffffff)
          n = 0;
-
 
          //;;failEntryPoint
          //;;adr x10, #Dataregionbase 
@@ -359,12 +344,12 @@ struct ResolveHolder
          _ASSERTE(offset >=0 && offset%8 == 0);
          _stub._failEntryPoint[n++] = 0xF940014D | offset<<7; 
 
-         //ldr x9, [x13]
-         _stub._failEntryPoint[n++] = 0xF94001A9;
-         //subs x9,x9,#1
-         _stub._failEntryPoint[n++] = 0xF1000529;
-         //str x9, [x13]
-         _stub._failEntryPoint[n++] = 0xF90001A9;
+         //ldr w9, [x13]
+         _stub._failEntryPoint[n++] = 0xB94001A9;
+         //subs w9,w9,#1
+         _stub._failEntryPoint[n++] = 0x71000529;
+         //str w9, [x13]
+         _stub._failEntryPoint[n++] = 0xB90001A9;
 
          //;;bge resolveEntryPoint
          offset = PC_REL_OFFSET(_resolveEntryPoint);
