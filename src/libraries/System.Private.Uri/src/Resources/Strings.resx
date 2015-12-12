@@ -153,9 +153,6 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
-  <data name="net_uri_AlreadyRegistered" xml:space="preserve">
-    <value>A URI scheme name '{0}' already has a registered custom parser.</value>
-  </data>
   <data name="net_uri_BadAuthority" xml:space="preserve">
     <value>Invalid URI: The Authority/Host could not be parsed.</value>
   </data>
@@ -194,9 +191,6 @@
   </data>
   <data name="net_uri_MustRootedPath" xml:space="preserve">
     <value>Invalid URI: A Dos path must be rooted, for example, 'c:\\'.</value>
-  </data>
-  <data name="net_uri_NeedFreshParser" xml:space="preserve">
-    <value>The URI parser instance passed into 'uriParser' parameter is already registered with the scheme name '{0}'.</value>
   </data>
   <data name="net_uri_NotAbsolute" xml:space="preserve">
     <value>This operation is not supported for a relative URI.</value>
