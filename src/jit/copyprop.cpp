@@ -407,6 +407,7 @@ void Compiler::optVnCopyProp()
 
     // Compute the domTree to use.
     BlkToBlkSetMap* domTree = new (getAllocator()) BlkToBlkSetMap(getAllocator());
+    domTree->Reallocate(fgBBcount * 3 / 2); // Prime the allocation
     SsaBuilder::ComputeDominators(this, domTree);
 
     struct BlockWork

@@ -381,7 +381,7 @@ public:
                                   regNumber   outReg,
                                   regNumber   inReg);
 
-    void            handleOutoingCriticalEdges(BasicBlock*  block);
+    void            handleOutgoingCriticalEdges(BasicBlock*  block);
 
     void            resolveEdge (BasicBlock*      fromBlock,
                                  BasicBlock*      toBlock,

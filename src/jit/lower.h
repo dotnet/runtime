@@ -31,6 +31,24 @@ public:
     }
     virtual void DoPhase();
     
+    // If requiresOverflowCheck is false, all other values will be unset
+    struct CastInfo
+    {
+        bool    requiresOverflowCheck;      // Will the cast require an overflow check
+        bool    unsignedSource;             // Is the source unsigned
+        bool    unsignedDest;               // is the dest unsigned
+
+        // All other fields are only meaningful if requiresOverflowCheck is set.
+
+        ssize_t typeMin;                    // Lowest storable value of the dest type
+        ssize_t typeMax;                    // Highest storable value of the dest type
+        ssize_t typeMask;                   // For converting from/to unsigned
+        bool    signCheckOnly;              // For converting between unsigned/signed int
+    };
+
+#ifdef _TARGET_64BIT_
+    static void getCastDescription(GenTreePtr treeNode, CastInfo* castInfo);
+#endif // _TARGET_64BIT_
 
 private:
     // Friends
@@ -65,7 +83,7 @@ private:
     void     InsertPInvokeCallProlog  (GenTreeCall* call);
     void     InsertPInvokeCallEpilog  (GenTreeCall* call);
     void     InsertPInvokeMethodProlog();
-    void     InsertPInvokeMethodEpilog(BasicBlock *returnBB);
+    void     InsertPInvokeMethodEpilog(BasicBlock *returnBB DEBUGARG(GenTreePtr lastExpr));
     GenTree *SetGCState(int cns);
     GenTree *CreateReturnTrapSeq();
     enum FrameLinkAction { PushFrame, PopFrame };
@@ -130,6 +148,7 @@ private:
     void TreeNodeInfoInitCall(GenTreePtr tree, TreeNodeInfo &info, int &srcCount, int &dstCount);
 #endif // _TARGET_ARM_
     void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+    void TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode);
 #ifdef FEATURE_SIMD
     void TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra);
 #endif // FEATURE_SIMD
@@ -154,11 +173,14 @@ private:
 
     void SetMulOpCounts(GenTreePtr tree);
     void LowerCmp(GenTreePtr tree);
+
 #if !CPU_LOAD_STORE_ARCH
-    bool LowerStoreInd(GenTreePtr tree);
+    bool IsBinOpInRMWStoreInd(GenTreePtr tree);
+    bool IsRMWMemOpRootedAtStoreInd(GenTreePtr storeIndTree, GenTreePtr *indirCandidate, GenTreePtr *indirOpSource);
+    bool SetStoreIndOpCountsIfRMWMemOp(GenTreePtr storeInd);
 #endif
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    void HandleIndirAddressExpression(GenTree *indirTree, GenTree* tree);
+    void SetIndirAddrOpCounts(GenTree *indirTree);
     void LowerGCWriteBarrier(GenTree *tree);
     void LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data);
     void LowerRotate(GenTree *tree);
@@ -169,8 +191,6 @@ public:
     static bool IndirsAreEquivalent            (GenTreePtr pTreeA, GenTreePtr pTreeB);
 private:
     static bool NodesAreEquivalentLeaves       (GenTreePtr candidate, GenTreePtr storeInd);
-    void SetStoreIndOpCounts            (GenTreePtr storeInd,
-                                         GenTreePtr indirCandidate);
 
     GenTreePtr  CreateLocalTempAsg      (GenTreePtr rhs, unsigned refCount, GenTreePtr *ppLclVar = nullptr);
 

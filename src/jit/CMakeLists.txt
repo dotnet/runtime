@@ -18,6 +18,7 @@ set( JIT_SOURCES
   block.cpp
   compiler.cpp
   disasm.cpp
+  earlyprop.cpp
   eeinterface.cpp
   ee_il_dll.cpp
   jiteh.cpp
@@ -31,6 +32,7 @@ set( JIT_SOURCES
   hashbv.cpp
   importer.cpp
   instr.cpp
+  jittelemetry.cpp
   lclvars.cpp
   liveness.cpp
   morph.cpp
@@ -56,6 +58,7 @@ set( JIT_SOURCES
   codegencommon.cpp
   assertionprop.cpp
   rangecheck.cpp
+  jittelemetry.cpp
   loopcloning.cpp
   lower.cpp
   lsra.cpp

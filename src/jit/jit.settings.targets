@@ -5,10 +5,9 @@
 
         <UserIncludes>
             $(UserIncludes);
-            $(VCToolsIncPath);
             ..;
             ..\jitstd\;
-            ..\ssa\;
+            $(Clrbase)\src\TraceLog;
         </UserIncludes>
 
         <!-- PCH baloney -->
@@ -16,14 +15,27 @@
         <PCHCompile>..\jitpch.cpp</PCHCompile>
         <PCHHeader>jitpch.h</PCHHeader>
 
-        <ClDefines Condition="'$(DebugBuild)' == 'false'">$(ClDefines);FAST=1</ClDefines>
+        <!-- JIT_BUILD disables certain PAL_TRY debugging features -->
         <ClDefines>$(ClDefines);JIT_BUILD=1</ClDefines>
+
+        <ClDefines Condition="'$(DebugBuild)' == 'false'">$(ClDefines);FAST=1</ClDefines>
         <ClDefines Condition="'$(DebugBuild)' == 'true'">$(ClDefines);DEBUG=1</ClDefines>
+    </PropertyGroup>
+
+    <!-- For debugging purposes only, temporarily enable these in RET builds so GenTree debugging is easier. -->
+    <!-- We need to link with /OPT:NOICF or our magic vtable debugging system for GenTree doesn't work. -->
+    <PropertyGroup Condition="'$(DebugBuild)' == 'true'">
+        <!-- This is already automatically defined in DEBUG builds.
+        <ClDefines>$(ClDefines);DEBUGGABLE_GENTREE=1</ClDefines>
+        -->
+        <LinkEnableCOMDATFolding>false</LinkEnableCOMDATFolding>                <!-- /OPT:NOICF -->
+        <ClAdditionalOptions>$(ClAdditionalOptions) /Ob0</ClAdditionalOptions>  <!-- no inlining -->
     </PropertyGroup>
 
     <!-- Leaf Project Items -->
     <ItemGroup>
         <CppCompile Include="..\alloc.cpp" />
+        <CppCompile Include="..\earlyprop.cpp" />        
         <CppCompile Include="..\bitset.cpp" />
         <CppCompile Include="..\block.cpp" />
         <CppCompile Include="..\Compiler.cpp" />
@@ -41,6 +53,7 @@
         <CppCompile Include="..\hashbv.cpp" />
         <CppCompile Include="..\Importer.cpp" />
         <CppCompile Include="..\Instr.cpp" />
+        <CppCompile Include="..\JitTelemetry.cpp" />
         <CppCompile Include="..\LclVars.cpp" />
         <CppCompile Include="..\Liveness.cpp" />
         <CppCompile Include="..\Morph.cpp" />
@@ -106,9 +119,6 @@
         <CppCompile Include="..\CodeGenArm64.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
         <CppCompile Include="..\unwindArm64.cpp" />
-    </ItemGroup>
-    <ItemGroup>
-        <ClDisableSpecificWarnings Include="4480"/>
     </ItemGroup>
 
     <!-- Import the targets - this actually contains the full build rules -->
