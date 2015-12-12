@@ -163,13 +163,6 @@ namespace System.Security.Cryptography {
 #if FEATURE_CRYPTO
                     Type SHA1CryptoServiceProviderType = typeof(System.Security.Cryptography.SHA1CryptoServiceProvider);
                     Type MD5CryptoServiceProviderType = typeof(System.Security.Cryptography.MD5CryptoServiceProvider);
-#endif //FEATURE_CRYPTO
-#if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
-                    Type SHA256ManagedType = typeof(SHA256Managed);
-#endif //FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
-#if FEATURE_CRYPTO
-                    Type SHA384ManagedType = typeof(SHA384Managed);
-                    Type SHA512ManagedType = typeof(SHA512Managed);
                     Type RIPEMD160ManagedType  = typeof(System.Security.Cryptography.RIPEMD160Managed); 
                     Type HMACMD5Type       = typeof(System.Security.Cryptography.HMACMD5);
                     Type HMACRIPEMD160Type = typeof(System.Security.Cryptography.HMACRIPEMD160);
@@ -224,11 +217,26 @@ namespace System.Security.Cryptography {
                     string SHA384CryptoSerivceProviderType = "System.Security.Cryptography.SHA384CryptoServiceProvider, " + AssemblyRef.SystemCore;
                     string SHA512CngType = "System.Security.Cryptography.SHA512Cng, " + AssemblyRef.SystemCore;
                     string SHA512CryptoServiceProviderType = "System.Security.Cryptography.SHA512CryptoServiceProvider, " + AssemblyRef.SystemCore;
+#endif //FEATURE_CRYPTO
+
+
+#if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+                    bool fipsOnly = AllowOnlyFipsAlgorithms;
+                    object SHA256DefaultType = typeof(SHA256Managed);
+#endif //FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+
+#if FEATURE_CRYPTO
+                    if (fipsOnly)
+                    {
+                        SHA256DefaultType = SHA256CngType;
+                    }
+                    object SHA384DefaultType = fipsOnly ? (object)SHA384CngType : (object)typeof(SHA384Managed);
+                    object SHA512DefaultType = fipsOnly ? (object)SHA512CngType : (object)typeof(SHA512Managed);
 
                     // Cryptography algorithms in System.Security
                     string DpapiDataProtectorType = "System.Security.Cryptography.DpapiDataProtector, " + AssemblyRef.SystemSecurity;
-
 #endif //FEATURE_CRYPTO
+
 #if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
                     // Random number generator
                     ht.Add("RandomNumberGenerator", RNGCryptoServiceProviderType);
@@ -247,21 +255,21 @@ namespace System.Security.Cryptography {
                     ht.Add("System.Security.Cryptography.MD5Cng", MD5CngType);
 #endif //FEATURE_CRYPTO
 #if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
-                    ht.Add("SHA256", SHA256ManagedType);
-                    ht.Add("SHA-256", SHA256ManagedType);
-                    ht.Add("System.Security.Cryptography.SHA256", SHA256ManagedType);
+                    ht.Add("SHA256", SHA256DefaultType);
+                    ht.Add("SHA-256", SHA256DefaultType);
+                    ht.Add("System.Security.Cryptography.SHA256", SHA256DefaultType);
 #endif //FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
 #if FEATURE_CRYPTO
                     ht.Add("System.Security.Cryptography.SHA256Cng", SHA256CngType);
                     ht.Add("System.Security.Cryptography.SHA256CryptoServiceProvider", SHA256CryptoServiceProviderType);
-                    ht.Add("SHA384", SHA384ManagedType);
-                    ht.Add("SHA-384", SHA384ManagedType);
-                    ht.Add("System.Security.Cryptography.SHA384", SHA384ManagedType);
+                    ht.Add("SHA384", SHA384DefaultType);
+                    ht.Add("SHA-384", SHA384DefaultType);
+                    ht.Add("System.Security.Cryptography.SHA384", SHA384DefaultType);
                     ht.Add("System.Security.Cryptography.SHA384Cng", SHA384CngType);
                     ht.Add("System.Security.Cryptography.SHA384CryptoServiceProvider", SHA384CryptoSerivceProviderType);
-                    ht.Add("SHA512", SHA512ManagedType);
-                    ht.Add("SHA-512", SHA512ManagedType);
-                    ht.Add("System.Security.Cryptography.SHA512", SHA512ManagedType);
+                    ht.Add("SHA512", SHA512DefaultType);
+                    ht.Add("SHA-512", SHA512DefaultType);
+                    ht.Add("System.Security.Cryptography.SHA512", SHA512DefaultType);
                     ht.Add("System.Security.Cryptography.SHA512Cng", SHA512CngType);
                     ht.Add("System.Security.Cryptography.SHA512CryptoServiceProvider", SHA512CryptoServiceProviderType);
                     ht.Add("RIPEMD160", RIPEMD160ManagedType);
@@ -354,10 +362,10 @@ namespace System.Security.Cryptography {
                     // Add the other hash algorithms introduced with XML Encryption
 #endif //FEATURE_CRYPTO
 #if FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
-                    ht.Add("http://www.w3.org/2001/04/xmlenc#sha256", SHA256ManagedType);
+                    ht.Add("http://www.w3.org/2001/04/xmlenc#sha256", SHA256DefaultType);
 #endif //FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
 #if FEATURE_CRYPTO && !FEATURE_CORECLR
-                    ht.Add("http://www.w3.org/2001/04/xmlenc#sha512", SHA512ManagedType);
+                    ht.Add("http://www.w3.org/2001/04/xmlenc#sha512", SHA512DefaultType);
                     ht.Add("http://www.w3.org/2001/04/xmlenc#ripemd160", RIPEMD160ManagedType);
 
                     // Xml Encryption symmetric keys
@@ -412,7 +420,7 @@ namespace System.Security.Cryptography {
 
                     // Xml Dsig-more Uri's as defined in http://www.ietf.org/rfc/rfc4051.txt
                     ht.Add("http://www.w3.org/2001/04/xmldsig-more#md5", MD5CryptoServiceProviderType);
-                    ht.Add("http://www.w3.org/2001/04/xmldsig-more#sha384", SHA384ManagedType);
+                    ht.Add("http://www.w3.org/2001/04/xmldsig-more#sha384", SHA384DefaultType);
                     ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-md5", HMACMD5Type);
                     ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160", HMACRIPEMD160Type);
 #endif //FEATURE_CRYPTO

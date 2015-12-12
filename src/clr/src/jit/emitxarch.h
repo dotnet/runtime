@@ -494,8 +494,6 @@ public:
                                     bool            isJump = false,
                                     bool            isNoGC = false);
 
-    void            AdjustDisp32ForRipRelative(instrDesc *id, BYTE ** pDisp, const BYTE * addrOfNextInstr);
-
 #ifdef _TARGET_AMD64_
     // Is the last instruction emitted a call instruction?
     bool            emitIsLastInsCall();

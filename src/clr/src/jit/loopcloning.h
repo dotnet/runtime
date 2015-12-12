@@ -521,13 +521,13 @@ struct LC_Deref
     void Print(unsigned indent = 0)
     {
         unsigned tab = 4 * indent;
-        JITDUMP("%*s%d,%d => {", tab, "", Lcl(), level);
+        printf("%*s%d,%d => {", tab, "", Lcl(), level);
         if (children != nullptr)
         {
             for (unsigned i = 0; i < children->Size(); ++i)
             {
-                if (i > 0) { JITDUMP(","); }
-                JITDUMP("\n");
+                if (i > 0) { printf(","); }
+                printf("\n");
 #ifdef _MSC_VER
                 (*children)[i]->Print(indent + 1);
 #else // _MSC_VER
@@ -535,7 +535,7 @@ struct LC_Deref
 #endif // _MSC_VER
             }
         }
-        JITDUMP("\n%*s}", tab, "");
+        printf("\n%*s}", tab, "");
     }
 #endif
 };

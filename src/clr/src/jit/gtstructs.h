@@ -68,7 +68,7 @@ GTSTRUCT_1(Call        , GT_CALL)
 GTSTRUCT_1(ArgList     , GT_LIST)
 GTSTRUCT_1(Colon       , GT_COLON)
 GTSTRUCT_1(FptrVal     , GT_FTN_ADDR)
-GTSTRUCT_1(Math        , GT_MATH) 
+GTSTRUCT_1(Intrinsic   , GT_INTRINSIC) 
 GTSTRUCT_1(Index       , GT_INDEX)
 #ifdef FEATURE_SIMD
 GTSTRUCT_2(BoundsChk   , GT_ARR_BOUNDS_CHECK, GT_SIMD_CHK)

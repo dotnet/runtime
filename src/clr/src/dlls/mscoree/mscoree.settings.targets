@@ -94,12 +94,9 @@
     <ItemGroup Condition="'$(FeatureMergeJitAndEngine)' == 'true'">
         <ImportLib Include="$(ClrLibPath)\clrjit.lib" />
 
-        <!-- In the CodeGen branch, we use RyuJIT for all JIT builds -->
-        <ProjectReference Condition="'$(_BuildBranch)' == 'CodeGen'" Include="$(ClrSrcDirectory)jit\dll\jit.nativeproj" />
-
-        <!-- In other branches, we build RyuJIT only for amd64 and arm64, and use JIT32 for ARM and x86 -->
-        <ProjectReference Condition="'$(_BuildBranch)' != 'CodeGen' and ('$(BuildArchitecture)' == 'amd64' or  '$(BuildArchitecture)' == 'arm64')" Include="$(ClrSrcDirectory)jit\dll\jit.nativeproj" />
-        <ProjectReference Condition="'$(_BuildBranch)' != 'CodeGen' and ('$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64')" Include="$(ClrSrcDirectory)jit32\dll\jit.nativeproj" />
+        <!-- We build RyuJIT only for amd64 and arm64, and use JIT32 for ARM and x86 -->
+        <ProjectReference Condition="'$(BuildArchitecture)' == 'amd64' or  '$(BuildArchitecture)' == 'arm64'" Include="$(ClrSrcDirectory)jit\dll\jit.nativeproj" />
+        <ProjectReference Condition="'$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64'" Include="$(ClrSrcDirectory)jit32\dll\jit.nativeproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -52,13 +52,20 @@ namespace System.Security.Cryptography {
 
             // Two cases here -- if we are talking to the CSP version or if we are talking to some other RSA provider.
             if (_rsaKey is RSACryptoServiceProvider) {
+                // This path is kept around for desktop compat: in case someone is using this with a hash algorithm that's known to GetAlgIdFromOid but
+                // not from OidToHashAlgorithmName.
                 int calgHash = X509Utils.GetAlgIdFromOid(_strOID, OidGroup.HashAlgorithm);
                 return ((RSACryptoServiceProvider)_rsaKey).SignHash(rgbHash, calgHash);
             }
             else {
+#if FEATURE_CORECLR
                 byte[] pad = Utils.RsaPkcs1Padding(_rsaKey, CryptoConfig.EncodeOID(_strOID), rgbHash);
                 // Create the signature by applying the private key to the padded buffer we just created.
                 return _rsaKey.DecryptValue(pad);
+#else
+                HashAlgorithmName hashAlgorithmName = Utils.OidToHashAlgorithmName(_strOID);
+                return _rsaKey.SignHash(rgbHash, hashAlgorithmName, RSASignaturePadding.Pkcs1);
+#endif
             }
         }
     }
