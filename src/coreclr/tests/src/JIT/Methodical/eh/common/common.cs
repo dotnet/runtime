@@ -180,7 +180,8 @@ namespace TestUtil
                             expectedLine = expectedLine.Substring(nextIgnore);
                             actualLine = similar ? actualLine.Substring(at + expectedToken.Length) : actualLine;
                         }
-                        else {
+                        else
+                        {
                             similar = (ignoreMode && actualLine.EndsWith(expectedLine)) || actualLine.Equals(expectedLine);
                             expectedLine = String.Empty;
                             actualLine = String.Empty;
@@ -222,7 +223,8 @@ namespace TestUtil
                 //				this.stdOut.WriteLine("PASSED");
                 retCode = SUCC_RET_CODE;
             }
-            else {
+            else
+            {
                 this.stdOut.WriteLine();
                 this.stdOut.WriteLine("FAILED!");
                 this.stdOut.WriteLine();
