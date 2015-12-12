@@ -286,17 +286,6 @@ namespace System.Data.SqlClient
             }
         }
 
-
-        private SqlInternalConnectionTds InternalTdsConnection
-        {
-            get
-            {
-                return (SqlInternalConnectionTds)_activeConnection.InnerConnection;
-            }
-        }
-
-
-
         internal SqlStatistics Statistics
         {
             get
@@ -1734,72 +1723,6 @@ namespace System.Data.SqlClient
 
             return returnedTask;
         }
-
-        // If the user part is quoted, remove first and last brackets and then unquote any right square
-        // brackets in the procedure.  This is a very simple parser that performs no validation.  As
-        // with the function below, ideally we should have support from the server for this.
-        private static string UnquoteProcedurePart(string part)
-        {
-            if ((null != part) && (2 <= part.Length))
-            {
-                if ('[' == part[0] && ']' == part[part.Length - 1])
-                {
-                    part = part.Substring(1, part.Length - 2); // strip outer '[' & ']'
-                    part = part.Replace("]]", "]"); // undo quoted "]" from "]]" to "]"
-                }
-            }
-            return part;
-        }
-
-        // User value in this format: [server].[database].[schema].[sp_foo];1
-        // This function should only be passed "[sp_foo];1".
-        // This function uses a pretty simple parser that doesn't do any validation.
-        // Ideally, we would have support from the server rather than us having to do this.
-        private static string UnquoteProcedureName(string name, out object groupNumber)
-        {
-            groupNumber = null; // Out param - initialize value to no value.
-            string sproc = name;
-
-            if (null != sproc)
-            {
-                if (Char.IsDigit(sproc[sproc.Length - 1]))
-                { // If last char is a digit, parse.
-                    int semicolon = sproc.LastIndexOf(';');
-                    if (semicolon != -1)
-                    { // If we found a semicolon, obtain the integer.
-                        string part = sproc.Substring(semicolon + 1);
-                        int number = 0;
-                        if (Int32.TryParse(part, out number))
-                        { // No checking, just fail if this doesn't work.
-                            groupNumber = number;
-                            sproc = sproc.Substring(0, semicolon);
-                        }
-                    }
-                }
-                sproc = UnquoteProcedurePart(sproc);
-            }
-            return sproc;
-        }
-
-        //index into indirection arrays for columns of interest to DeriveParameters
-        private enum ProcParamsColIndex
-        {
-            ParameterName = 0,
-            ParameterType,
-            DataType,                  // obsolete in katmai, use ManagedDataType instead
-            ManagedDataType,          // new in katmai
-            CharacterMaximumLength,
-            NumericPrecision,
-            NumericScale,
-            TypeCatalogName,
-            TypeSchemaName,
-            TypeName,
-            XmlSchemaCollectionCatalogName,
-            XmlSchemaCollectionSchemaName,
-            XmlSchemaCollectionName,
-            UdtTypeName,                // obsolete in Katmai.  Holds the actual typename if UDT, since TypeName didn't back then.
-            DateTimeScale               // new in Katmai
-        };
 
         // Yukon- column ordinals (this array indexed by ProcParamsColIndex
         static readonly internal string[] PreKatmaiProcParamsNames = new string[] {

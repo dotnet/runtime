@@ -431,30 +431,6 @@ namespace System.Data.SqlClient
 
         internal TypeSystem TypeSystemVersion { get { return _typeSystemVersion; } }
 
-        private static bool CompareHostName(ref string host, string name, bool fixup)
-        {
-            // same computer name or same computer name + "\named instance"
-            bool equal = false;
-
-            if (host.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                if (fixup)
-                {
-                    host = ".";
-                }
-                equal = true;
-            }
-            else if (host.StartsWith(name + @"\", StringComparison.OrdinalIgnoreCase))
-            {
-                if (fixup)
-                {
-                    host = "." + host.Substring(name.Length);
-                }
-                equal = true;
-            }
-            return equal;
-        }
-
         // this hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
         internal static Hashtable GetParseSynonyms()
