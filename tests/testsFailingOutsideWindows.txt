@@ -105,3 +105,4 @@ JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
 JIT/Regression/VS-ia64-JIT/V1.2-M02/b12011/b12011/b12011.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
+JIT/Methodical/Boxing/misc/_dbgconcurgc_il/_dbgconcurgc_il.sh
