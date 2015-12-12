@@ -104,7 +104,7 @@ namespace Internal.Cryptography
         private byte[] _iv;         // _iv holds a copy of the original IV for Reset(), until it is cleared by Dispose().
         private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
 
-        private static readonly SafeAlgorithmHandle s_hAlgCbc = OpenAesAlgorithm("ChainingModeCBC");
-        private static readonly SafeAlgorithmHandle s_hAlgEcb = OpenAesAlgorithm("ChainingModeECB");
+        private static readonly SafeAlgorithmHandle s_hAlgCbc = OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
+        private static readonly SafeAlgorithmHandle s_hAlgEcb = OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
     }
 }

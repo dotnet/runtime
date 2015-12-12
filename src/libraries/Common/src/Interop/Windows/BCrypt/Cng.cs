@@ -68,7 +68,11 @@ namespace Internal.NativeCrypto
             BCRYPT_ALG_HANDLE_HMAC_FLAG = 0x00000008,
         }
 
-        public const String BCRYPT_AES_ALGORITHM = "AES";
+        public const string BCRYPT_3DES_ALGORITHM = "3DES";
+        public const string BCRYPT_AES_ALGORITHM = "AES";
+
+        public const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
+        public const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(String pszAlgId, String pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {

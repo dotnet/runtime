@@ -65,6 +65,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
+    </Compile>
 
     <Compile Include="RSACngProvider.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs">

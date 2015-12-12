@@ -110,3 +110,13 @@ extern "C" const EVP_CIPHER* EvpAes256Cbc()
 {
     return EVP_aes_256_cbc();
 }
+
+extern "C" const EVP_CIPHER* EvpDes3Ecb()
+{
+    return EVP_des_ede3();
+}
+
+extern "C" const EVP_CIPHER* EvpDes3Cbc()
+{
+    return EVP_des_ede3_cbc();
+}

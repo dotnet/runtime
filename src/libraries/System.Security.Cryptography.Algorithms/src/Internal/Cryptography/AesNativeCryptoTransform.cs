@@ -204,17 +204,7 @@ namespace Internal.Cryptography
 
         protected byte[] GetCipherIv(byte[] iv)
         {
-            if (CipherMode.UsesIv())
-            {
-                if (iv == null)
-                {
-                    throw new CryptographicException(SR.Cryptography_MissingIV);
-                }
-
-                return iv;
-            }
-
-            return null;
+            return CipherMode.GetCipherIv(iv);
         }
     }
 }
