@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace System.IO.IsolatedStorage
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class IsolatedStorageFileStream : Stream
     {
         private const String s_BackSlash = "\\";
@@ -42,9 +41,8 @@ namespace System.IO.IsolatedStorage
 
         private const int DefaultBufferSize = 1024;
 
-        // If the isolated storage file is null, then we default to using a file 
+        // If the isolated storage file is null, then we default to using a file
         // that is scoped by user, appdomain, and assembly.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public IsolatedStorageFileStream(String path, FileMode mode,
             FileAccess access, FileShare share, int bufferSize,
             IsolatedStorageFile isf)
@@ -67,7 +65,7 @@ namespace System.IO.IsolatedStorage
 
             switch (mode)
             {
-                case FileMode.CreateNew:        // Assume new file   
+                case FileMode.CreateNew:        // Assume new file
                 case FileMode.Create:           // Check for New file & Unreserve
                 case FileMode.OpenOrCreate:     // Check for new file
                 case FileMode.Truncate:         // Unreserve old file size
@@ -91,10 +89,10 @@ namespace System.IO.IsolatedStorage
             }
             catch (Exception e)
             {
-                // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an 
+                // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
-                // in retail bits we leak the path only under the debugger via IsolatedStorageException.m_underlyingException which 
+                // in retail bits we leak the path only under the debugger via IsolatedStorageException.m_underlyingException which
                 // they can any way look at via IsolatedStorageFile instance as well.
                 throw IsolatedStorageFile.GetIsolatedStorageException("IsolatedStorage_Operation_ISFS", e);
             }
@@ -178,13 +176,11 @@ namespace System.IO.IsolatedStorage
             m_fs.Flush();
         }
 
-        [System.Security.SecuritySafeCritical]
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             return m_fs.FlushAsync();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value)
         {
             m_fs.SetLength(value);
@@ -195,7 +191,6 @@ namespace System.IO.IsolatedStorage
             return m_fs.Read(buffer, offset, count);
         }
 
-        [System.Security.SecuritySafeCritical]
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Threading.CancellationToken cancellationToken)
         {
             return m_fs.ReadAsync(buffer, offset, count, cancellationToken);
@@ -206,7 +201,6 @@ namespace System.IO.IsolatedStorage
             return m_fs.ReadByte();
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override long Seek(long offset, SeekOrigin origin)
         {
             // Desktop implementation of IsolatedStorage ensures that in case the size is increased the new memory is zero'ed out.
@@ -214,19 +208,16 @@ namespace System.IO.IsolatedStorage
             return m_fs.Seek(offset, origin);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] buffer, int offset, int count)
         {
             m_fs.Write(buffer, offset, count);
         }
 
-        [System.Security.SecuritySafeCritical]
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return m_fs.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value)
         {
             m_fs.WriteByte(value);

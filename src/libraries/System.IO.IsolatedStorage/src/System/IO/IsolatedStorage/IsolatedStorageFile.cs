@@ -38,7 +38,6 @@ namespace System.IO.IsolatedStorage
 
         internal static string IsolatedStorageRoot
         {
-            [System.Security.SecurityCritical] // auto-generated
             get
             {
                 if (s_IsolatedStorageRoot == null)
@@ -58,7 +57,6 @@ namespace System.IO.IsolatedStorage
 
         internal bool IsDeleted
         {
-            [System.Security.SecurityCritical] // auto-generated
             get
             {
                 try
@@ -90,7 +88,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void DeleteFile(String file)
         {
             if (file == null)
@@ -110,7 +107,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public bool FileExists(string path)
         {
             if (path == null)
@@ -123,7 +119,6 @@ namespace System.IO.IsolatedStorage
             return File.Exists(GetFullPath(path));
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public bool DirectoryExists(string path)
         {
             if (path == null)
@@ -135,7 +130,6 @@ namespace System.IO.IsolatedStorage
             return Directory.Exists(GetFullPath(path));
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void CreateDirectory(String dir)
         {
             if (dir == null)
@@ -173,7 +167,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void DeleteDirectory(String dir)
         {
             if (dir == null)
@@ -201,7 +194,6 @@ namespace System.IO.IsolatedStorage
         /*
          * foo\abc*.txt will give all abc*.txt files in foo directory
          */
-        [System.Security.SecuritySafeCritical] // auto-generated
         public String[] GetFileNames(String searchPattern)
         {
             if (searchPattern == null)
@@ -228,10 +220,9 @@ namespace System.IO.IsolatedStorage
         }
 
         /*
-         * foo\data* will give all directory names in foo directory that 
+         * foo\data* will give all directory names in foo directory that
          * starts with data
          */
-        [System.Security.SecuritySafeCritical] // auto-generated
         public String[] GetDirectoryNames(String searchPattern)
         {
             if (searchPattern == null)
@@ -276,7 +267,6 @@ namespace System.IO.IsolatedStorage
             return new IsolatedStorageFileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, this);
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public DateTimeOffset GetCreationTime(string path)
         {
             if (path == null)
@@ -301,7 +291,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public DateTimeOffset GetLastAccessTime(string path)
         {
             if (path == null)
@@ -326,7 +315,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public DateTimeOffset GetLastWriteTime(string path)
         {
             if (path == null)
@@ -375,7 +363,6 @@ namespace System.IO.IsolatedStorage
             CopyFile(sourceFileName, destinationFileName, false);
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite)
         {
             if (sourceFileName == null)
@@ -419,7 +406,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void MoveFile(string sourceFileName, string destinationFileName)
         {
             if (sourceFileName == null)
@@ -463,7 +449,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName)
         {
             if (sourceDirectoryName == null)
@@ -510,13 +495,11 @@ namespace System.IO.IsolatedStorage
         /*
          * Public Static Methods
          */
-        [System.Security.SecuritySafeCritical] // auto-generated
         public static IsolatedStorageFile GetUserStoreForApplication()
         {
             return GetUserStore();
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         internal static IsolatedStorageFile GetUserStore()
         {
             IsolatedStorageRoot = FetchOrCreateRoot();
@@ -552,7 +535,6 @@ namespace System.IO.IsolatedStorage
         /*
          * Private Static Methods
          */
-        [System.Security.SecurityCritical] // auto-generated
         private static void CreatePathPrefixIfNeeded(string path)
         {
             string root = Path.GetPathRoot(path);
@@ -576,7 +558,6 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [System.Security.SecurityCritical] // auto-generated
         internal static string FetchOrCreateRoot()
         {
             string rootFromHost = s_RootFromHost;
@@ -592,7 +573,6 @@ namespace System.IO.IsolatedStorage
             return s_RootFromHost;
         }
 
-        [System.Security.SecuritySafeCritical] // auto-generated
         internal void EnsureStoreIsValid()
         {
             if (Disposed)
