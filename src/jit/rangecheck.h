@@ -430,7 +430,20 @@ struct RangeOps
         {
             result.lLimit = r1lo;
         }
-
+        // Widen Upper Limit => Max(k, (a.len + n)) yields (a.len + n),
+        // This is correct if k >= 0 and n >= k, since a.len always >= 0
+        // (a.len + n) could overflow, but the result (a.len + n) also
+        // preserves the overflow.
+        if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && 
+                r2hi.IsBinOpArray() && r2hi.GetConstant() >= r1hi.GetConstant())
+        {
+            result.uLimit = r2hi;
+        }
+        if (r2hi.IsConstant() && r2hi.GetConstant() >= 0 &&
+                r1hi.IsBinOpArray() && r1hi.GetConstant() >= r2hi.GetConstant())
+        {
+            result.uLimit = r1hi;
+        }
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
             result.uLimit = r1hi;
@@ -532,7 +545,7 @@ public:
 
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
-    void MergeEdgeAssertions(GenTreePtr phiArg, EXPSET_TP assertions, Range* pRange);
+    void MergeEdgeAssertions(GenTreePtr phiArg, const ASSERT_VALARG_TP assertions, Range* pRange);
 
     // The maximum possible value of the given "limit." If such a value could not be determined
     // return "false." For example: ARRLEN_MAX for array length.
