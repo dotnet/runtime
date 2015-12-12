@@ -189,6 +189,77 @@ TODO: Talk about initializing strutures before use
 #include <corhdr.h>
 #include <specstrings.h>
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
+//
+// #JITEEVersionIdentifier
+//
+// This GUID represents the version of the JIT/EE interface. Any time the interface between the JIT and
+// the EE changes (by adding or removing methods to any interface shared between them), this GUID should
+// be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
+//
+// You can use "uuidgen.exe -s" to generate this value.
+//
+// **** NOTE TO INTEGRATORS:
+//
+// If there is a merge conflict here, because the version changed in two different places, you must
+// create a **NEW** GUID, not simply choose one or the other!
+//
+// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if !defined(SELECTANY)
+    #define SELECTANY extern __declspec(selectany)
+#endif
+
+// COR_JIT_EE_VERSION is a #define that specifies a JIT-EE version, but on a less granular basis than the GUID.
+// The #define is intended to be used on a per-product basis. That is, for each release that we support a JIT
+// CTP build, we'll update the COR_JIT_EE_VERSION. The GUID must change any time any part of the interface changes.
+//
+// COR_JIT_EE_VERSION is set, by convention, to a number related to the the product number. So, 460 is .NET 4.60.
+// 461 would indicate .NET 4.6.1. Etc.
+//
+// Note that the EE should always build with the most current (highest numbered) version. Only the JIT will
+// potentially build with a lower version number. In that case, the COR_JIT_EE_VERSION will be specified in the
+// CTP JIT build project, such as ctpjit.nativeproj.
+
+#if !defined(COR_JIT_EE_VERSION)
+#define COR_JIT_EE_VERSION 999999999    // This means we'll take everything in the interface
+#endif
+
+#if COR_JIT_EE_VERSION > 460
+
+// Update this one
+SELECTANY const GUID JITEEVersionIdentifier = { /* f7be09f3-9ca7-42fd-b0ca-f97c0499f5a3 */
+    0xf7be09f3,
+    0x9ca7,
+    0x42fd,
+    {0xb0, 0xca, 0xf9, 0x7c, 0x04, 0x99, 0xf5, 0xa3}
+};
+
+#else
+
+// ************ Leave this one alone ***************
+// We need it to build a .NET 4.6 compatible JIT for the RyuJIT CTP releases
+SELECTANY const GUID JITEEVersionIdentifier = { /* 9110edd8-8fc3-4e3d-8ac9-12555ff9be9c */
+    0x9110edd8,
+    0x8fc3,
+    0x4e3d,
+    { 0x8a, 0xc9, 0x12, 0x55, 0x5f, 0xf9, 0xbe, 0x9c }
+};
+
+#endif
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// END JITEEVersionIdentifier
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if COR_JIT_EE_VERSION > 460
+
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.
 #define CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS   2 
@@ -263,6 +334,8 @@ private:
     }
 };
 
+#endif // COR_JIT_EE_VERSION
+
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
 // Compilers can emit calls to these helpers.
@@ -329,9 +402,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
     CORINFO_HELP_STRCNS,            // create a new string literal
-#if !defined(RYUJIT_CTPBUILD)
     CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
-#endif
+
     /* Object model */
 
     CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -369,9 +441,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
     CORINFO_HELP_OVERFLOW,          // throw an overflow exception
     CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
-#ifndef RYUJIT_CTPBUILD
+#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
-#endif
+#endif // COR_JIT_EE_VERSION
 
     CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
     CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
@@ -509,9 +581,6 @@ enum CorInfoHelpFunc
 
     // These helpers are required for MDIL backward compatibility only. They are not used by current JITed code.
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_OBSOLETE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-#if defined(RYUJIT_CTPBUILD)
-    CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_MAYBENULL_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
-#endif
     CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
     CORINFO_HELP_FIELDDESC_TO_RUNTIMEFIELDHANDLE_OBSOLETE, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
 
@@ -523,7 +592,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
     //CORINFO_HELP_VIRTUAL_FUNC_PTR_LOG,  // look up a virtual method at run-time, with IBC logging
 
-#ifndef RYUJIT_CTPBUILD
     // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
     CORINFO_HELP_READYTORUN_NEW,
     CORINFO_HELP_READYTORUN_NEWARR_1,
@@ -531,8 +599,12 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_CHKCAST,
     CORINFO_HELP_READYTORUN_STATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
+
+#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
-#endif
+#else
+    #define CORINFO_HELP_READYTORUN_DELEGATE_CTOR CORINFO_HELP_EE_PRESTUB
+#endif // COR_JIT_EE_VERSION
 
 #ifdef REDHAWK
     // these helpers are arbitrary since we don't have any relation to the actual CLR corinfo.h.
@@ -618,7 +690,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR, // Return the reference to a counter to decide to take cloned path in debug stress.
     CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, // Print a message that a loop cloning optimization has occurred in debug mode.
 
-#ifndef RYUJIT_CTPBUILD
+#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
 #endif
@@ -1184,6 +1256,19 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_Sqrt,
     CORINFO_INTRINSIC_Abs,
     CORINFO_INTRINSIC_Round,
+    CORINFO_INTRINSIC_Cosh,
+    CORINFO_INTRINSIC_Sinh,
+    CORINFO_INTRINSIC_Tan,
+    CORINFO_INTRINSIC_Tanh,
+    CORINFO_INTRINSIC_Asin,
+    CORINFO_INTRINSIC_Acos,
+    CORINFO_INTRINSIC_Atan,
+    CORINFO_INTRINSIC_Atan2,
+    CORINFO_INTRINSIC_Log10,
+    CORINFO_INTRINSIC_Pow,
+    CORINFO_INTRINSIC_Exp,
+    CORINFO_INTRINSIC_Ceiling,
+    CORINFO_INTRINSIC_Floor,
     CORINFO_INTRINSIC_GetChar,              // fetch character out of string
     CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
@@ -1898,9 +1983,7 @@ struct CORINFO_CALL_INFO
         CORINFO_LOOKUP      codePointerLookup;
     };
 
-#ifndef RYUJIT_CTPBUILD
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
-#endif
 };
 
 //----------------------------------------------------------------------------
@@ -1909,9 +1992,7 @@ struct CORINFO_CALL_INFO
 enum CORINFO_FIELD_ACCESSOR
 {
     CORINFO_FIELD_INSTANCE,                 // regular instance field at given offset from this-ptr
-#ifndef RYUJIT_CTPBUILD
     CORINFO_FIELD_INSTANCE_WITH_BASE,       // instance field with base offset (used by Ready-to-Run)
-#endif
     CORINFO_FIELD_INSTANCE_HELPER,          // instance field accessed using helper (arguments are this, FieldDesc * and the value)
     CORINFO_FIELD_INSTANCE_ADDR_HELPER,     // instance field accessed using address-of helper (arguments are this and FieldDesc *)
 
@@ -1956,9 +2037,7 @@ struct CORINFO_FIELD_INFO
     CorInfoIsAccessAllowedResult accessAllowed;
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
-#ifndef RYUJIT_CTPBUILD
     CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
-#endif
 };
 
 //----------------------------------------------------------------------------
@@ -2027,10 +2106,8 @@ struct CORINFO_EE_INFO
     unsigned    offsetOfTransparentProxyRP;
     unsigned    offsetOfRealProxyServer;
 
-#ifndef RYUJIT_CTPBUILD
     // Array offsets
     unsigned    offsetOfObjArrayData;
-#endif
 
     CORINFO_OS  osType;
     unsigned    osMajor;
@@ -2120,9 +2197,6 @@ struct CORINFO_RefArray : public CORINFO_Object
 #ifdef _WIN64
     unsigned                alignpad;
 #endif // _WIN64
-#if defined(RYUJIT_CTPBUILD)
-    CORINFO_CLASS_HANDLE    cls;
-#endif
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -2628,13 +2702,11 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-#ifndef RYUJIT_CTPBUILD
     // Is the given module the System.Numerics.Vectors module?
     // This defaults to false.
     virtual bool isInSIMDModule(
             CORINFO_CLASS_HANDLE        classHnd
             ) { return false; }
-#endif // RYUJIT_CTPBUILD
 
     // return the unmanaged calling convention for a PInvoke
     virtual CorInfoUnmanagedCallConv getUnmanagedCallConv(
@@ -3029,13 +3101,11 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-#ifndef RYUJIT_CTPBUILD
     virtual void getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN * pResolvedToken,
             CorInfoHelpFunc          id,
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
-#endif
 
     virtual const char* getHelperName(
             CorInfoHelpFunc
@@ -3371,12 +3441,6 @@ public:
     // Returns name of the JIT timer log
     virtual LPCWSTR getJitTimeLogFilename() = 0;
 
-#ifdef RYUJIT_CTPBUILD
-    // Logs a SQM event for a JITting a very large method.
-    virtual void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts, 
-                                    CORINFO_METHOD_HANDLE methodHnd) = 0;
-#endif // RYUJIT_CTPBUILD
-
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3412,13 +3476,14 @@ public:
             size_t FQNameCapacity  /* IN */
             ) = 0;
 
+#if COR_JIT_EE_VERSION > 460
+
     // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
         /* IN */    CORINFO_CLASS_HANDLE        structHnd,
         /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
         ) = 0;
 
-#if !defined(RYUJIT_CTPBUILD)
     /*************************************************************************/
     //
     // Configuration values - Allows querying of the CLR configuration.
@@ -3445,7 +3510,9 @@ public:
     virtual void freeStringConfigValue(
         __in_z wchar_t *value
         ) = 0;
-#endif // !RYUJIT_CTPBUILD
+
+#endif // COR_JIT_EE_VERSION
+
 };
 
 /*****************************************************************************
@@ -3521,23 +3588,12 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-#if defined(RYUJIT_CTPBUILD)
-    // These entry points must be called if a handle is being embedded in
-    // the code to be passed to a JIT helper function. (as opposed to just
-    // being passed back into the ICorInfo interface.)
-
-    // a module handle may not always be available. A call to embedModuleHandle should always
-    // be preceeded by a call to canEmbedModuleHandleForHelper. A dynamicMethod does not have a module
-    virtual bool canEmbedModuleHandleForHelper(
-        CORINFO_MODULE_HANDLE   handle
-        ) = 0;
-#else
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*). 
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
                     CORINFO_MODULE_HANDLE   handle
                     ) = 0;
-#endif
+
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(
                     CORINFO_MODULE_HANDLE   handle,
                     void                  **ppIndirection = NULL

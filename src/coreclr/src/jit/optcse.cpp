@@ -376,17 +376,19 @@ int __cdecl         Compiler::optCSEcostCmpEx(const void *op1, const void *op2)
     if (diff != 0)
         return diff;
 
-    diff = (int)  (dsc2->csdDefWtCnt - dsc1->csdDefWtCnt);
+    // Sort the higher Use Counts toward the top
+    diff = (int)  (dsc2->csdUseWtCnt - dsc1->csdUseWtCnt);
 
     if (diff != 0)
         return diff;
 
-    diff = (int) (dsc1->csdUseWtCnt - dsc2->csdUseWtCnt);
+    // With the same use count, Sort the lower Def Counts toward the top
+    diff = (int) (dsc1->csdDefWtCnt - dsc2->csdDefWtCnt);
 
     if (diff != 0)
         return diff;
 
-    // If order to ensure that we have a stable sort we use the cseIndex 
+    // In order to ensure that we have a stable sort the lower csdIndex towards to the top
     return (int) (dsc1->csdIndex - dsc2->csdIndex);
 }
 
@@ -404,7 +406,27 @@ int __cdecl         Compiler::optCSEcostCmpSz(const void *op1, const void *op2)
     GenTreePtr      exp1 = dsc1->csdTree;
     GenTreePtr      exp2 = dsc2->csdTree;
 
-    return  exp2->gtCostSz - exp1->gtCostSz;
+    int diff;
+
+    diff = (int)(exp2->gtCostEx - exp1->gtCostEx);
+
+    if (diff != 0)
+        return diff;
+
+    // Sort the higher Use Counts toward the top
+    diff = (int)(dsc2->csdUseWtCnt - dsc1->csdUseWtCnt);
+
+    if (diff != 0)
+        return diff;
+
+    // With the same use count, Sort the lower Def Counts toward the top
+    diff = (int)(dsc1->csdDefWtCnt - dsc2->csdDefWtCnt);
+
+    if (diff != 0)
+        return diff;
+
+    // In order to ensure that we have a stable sort the lower csdIndex towards to the top
+    return (int)(dsc1->csdIndex - dsc2->csdIndex);
 }
 
 /*****************************************************************************/
@@ -763,7 +785,6 @@ class CSE_DataFlow
 {
 private:
     EXPSET_TP  m_preMergeOut;
-    EXPSET_TP  m_postMergeOut;
 
     Compiler*  m_pCompiler;
 
@@ -788,24 +809,11 @@ public:
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
-    void EndMerge(BasicBlock* block)
+    bool EndMerge(BasicBlock* block)
     {
-        EXPSET_TP  mergeOut = block->bbCseOut & (block->bbCseIn | block->bbCseGen);
-        m_postMergeOut = mergeOut;
-    }
-
-    // Check if anything changed by comparing premerge and postmerge states.
-    bool Changed(BasicBlock* block)
-    {
-        bool changed = (m_postMergeOut != m_preMergeOut);
-        return changed;
-    }
-
-    // Finish any updates to the basic blocks after the merge.
-    DataFlow::UpdateResult Update(BasicBlock* block)
-    {
-        block->bbCseOut = m_postMergeOut;
-        return DataFlow::ContinueAnalysis;
+        EXPSET_TP mergeOut = block->bbCseOut & (block->bbCseIn | block->bbCseGen);
+        block->bbCseOut = mergeOut;
+        return (mergeOut != m_preMergeOut);
     }
 };
 
@@ -968,6 +976,10 @@ class CSE_Heuristic
     Compiler::codeOptimize  codeOptKind;
     Compiler::CSEdsc**      sortTab;
     size_t                  sortSiz;
+#ifdef DEBUG
+    CLRRandom               m_cseRNG;
+    unsigned                m_bias;
+#endif
 
 public:
     CSE_Heuristic(Compiler* pCompiler)
@@ -1005,19 +1017,66 @@ public:
 #endif
 
         unsigned frameSize = 0;
+        unsigned regAvailEstimate = ((CNT_CALLEE_ENREG * 3)  + (CNT_CALLEE_TRASH * 2) + 1);  
         unsigned lclNum;
         LclVarDsc * varDsc;
 
         for (lclNum = 0, varDsc = m_pCompiler->lvaTable;
              lclNum < m_pCompiler->lvaCount;
-             lclNum++  , varDsc++)
+             lclNum++, varDsc++)
         {
-            frameSize += m_pCompiler->lvaLclSize(lclNum);
-#ifdef _TARGET_XARCH_
-            if (frameSize > 0x0A0)
+            if (varDsc->lvRefCnt == 0)
+                continue;
+
+            bool onStack = (regAvailEstimate == 0);   // true when it is likely that this LclVar will have a stack home
+
+            // Some LclVars always have stack homes
+            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+                onStack = true;
+
+#ifdef _TARGET_X86_
+            // Treat floating point and 64 bit integers as always on the stack
+            if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsLong(varDsc->TypeGet()))
+                onStack = true;
+#endif
+
+            if (onStack)
             {
+                frameSize += m_pCompiler->lvaLclSize(lclNum);
+            }
+            else
+            {
+                // For the purposes of estimating the frameSize we 
+                // will consider this LclVar as being enregistered.
+                // Now we reduce the remaining regAvailEstimate by
+                // an appropriate amount.
+                if (varDsc->lvRefCnt <= 2)
+                {
+                    // a single use single def LclVar only uses 1 
+                    regAvailEstimate -= 1;
+                }
+                else
+                {
+                    // a LclVar with multiple uses and defs uses 2
+                    if (regAvailEstimate >= 2)
+                    {
+                        regAvailEstimate -= 2;
+                    }
+                    else
+                    {
+                        // Don't try to subtract when regAvailEstimate is 1
+                        regAvailEstimate = 0;
+                    }
+                }
+            }
+#ifdef _TARGET_XARCH_
+            if (frameSize > 0x080)
+            {
+                // We likely have a large stack frame.
+                // Thus we might need to use large displacements when loading or storing 
+                // to CSE LclVars that are not enregistered
                 largeFrame = true;
-                break;
+                break;              // early out,  we don't need to keep increasing frameSize
             }
 #else // _TARGET_ARM_
             if (frameSize > 0x0400)
@@ -1043,17 +1102,23 @@ public:
 
             if (!varTypeIsFloating(varTyp))
             {
+                // TODO-1stClassStructs: Remove this; it is here to duplicate previous behavior.
+                // Note that this makes genTypeStSz return 1.
+                if (varTypeIsStruct(varTyp))
+                {
+                    varTyp = TYP_STRUCT;
+                }
                 enregCount += genTypeStSz(varTyp);                
             }
 
-            if ((aggressiveRefCnt == 0) && (enregCount >= CNT_CALLEE_ENREG))
+            if ((aggressiveRefCnt == 0) && (enregCount > (CNT_CALLEE_ENREG*3/2)))
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
-                    aggressiveRefCnt = varDsc->lvRefCnt+1;
+                    aggressiveRefCnt = varDsc->lvRefCnt+BB_UNITY_WEIGHT;
                 else
-                    aggressiveRefCnt = varDsc->lvRefCntWtd+1;
+                    aggressiveRefCnt = varDsc->lvRefCntWtd+BB_UNITY_WEIGHT;
             }
-            if ((moderateRefCnt == 0) && (enregCount >= CNT_CALLEE_ENREG*2))
+            if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                     moderateRefCnt = varDsc->lvRefCnt;
@@ -1061,8 +1126,15 @@ public:
                     moderateRefCnt = varDsc->lvRefCntWtd;
             }
         }
-        aggressiveRefCnt = max(BB_UNITY_WEIGHT * 3, aggressiveRefCnt);
-        moderateRefCnt = max((BB_UNITY_WEIGHT * 3)/2, moderateRefCnt);
+        unsigned mult = 3;
+        // use smaller value for mult when enregCount is in [0..4]
+        if (enregCount <= 4)
+        {
+            mult = (enregCount <= 2) ? 1 : 2;
+        }
+
+        aggressiveRefCnt = max(BB_UNITY_WEIGHT * mult, aggressiveRefCnt);
+        moderateRefCnt = max((BB_UNITY_WEIGHT * mult) / 2, moderateRefCnt);
         
 #ifdef  DEBUG
         if  (m_pCompiler->verbose)
@@ -1070,6 +1142,7 @@ public:
             printf("\n");
             printf("Aggressive CSE Promotion cutoff is %u\n", aggressiveRefCnt);
             printf("Moderate CSE Promotion cutoff is %u\n", moderateRefCnt);
+            printf("Framesize estimate is 0x%04X\n", frameSize);
             printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
         }
 #endif
@@ -1139,6 +1212,7 @@ public:
         unsigned           m_useCount; 
 
         unsigned           m_Cost;
+        unsigned           m_Size;
 
     public:
         CSE_Candidate(CSE_Heuristic*  context, Compiler::CSEdsc*  cseDsc)
@@ -1155,6 +1229,7 @@ public:
         // TODO-CQ: With ValNum CSE's the Expr and its cost can vary.
         GenTreePtr        Expr()      { return m_CseDsc->csdTree; }
         unsigned          Cost()      { return m_Cost;            }
+        unsigned          Size()      { return m_Size;            }
 
         bool              LiveAcrossCall() { return (m_CseDsc->csdLiveAcrossCall != 0); }
 
@@ -1162,18 +1237,97 @@ public:
         {
             if (m_context->CodeOptKind() == Compiler::SMALL_CODE)
             {
-                m_Cost      = Expr()->gtCostSz;
+                m_Cost      = Expr()->gtCostSz;      // the estimated code size
+                m_Size      = Expr()->gtCostSz;      // always the gtCostSz 
                 m_defCount  = m_CseDsc->csdDefCount; // def count
                 m_useCount  = m_CseDsc->csdUseCount; // use count (excluding the implicit uses at defs)
             }
             else
             {
-                m_Cost      = Expr()->gtCostEx;
+                m_Cost      = Expr()->gtCostEx;      // the estimated execution cost
+                m_Size      = Expr()->gtCostSz;      // always the gtCostSz 
                 m_defCount  = m_CseDsc->csdDefWtCnt; // weighted def count
                 m_useCount  = m_CseDsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
             }
         }
     };
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // optConfigBiasedCSE:
+    //     Stress mode to shuffle the decision to CSE or not using environment
+    //     variable COMPlus_JitStressBiasedCSE (= 0 to 100%). When the bias value
+    //     is not specified but COMPlus_JitStress is ON, generate a random bias.
+    //
+    // Return Value:
+    //      0 -- This method is indifferent about this CSE (no bias specified and no stress)
+    //      1 -- This CSE must be performed to maintain specified/generated bias.
+    //     -1 -- This CSE mustn't be performed to maintain specified/generated bias.
+    //
+    // Operation:
+    //     A debug stress only method that returns "1" with probability (P)
+    //     defined by:
+    //         
+    //         P = (COMPlus_JitStressBiasedCSE / 100) (or)
+    //         P = (random(100) / 100) when COMPlus_JitStress is specified and 
+    //                                 COMPlus_JitStressBiasedCSE is unspecified.
+    //
+    //     When specified, the bias is reinterpreted as a decimal number between 0
+    //     to 100.
+    //     When bias is not specified, a bias is randomly generated if COMPlus_JitStress
+    //     is non-zero.
+    //
+    //     Callers are supposed to call this method for each CSE promotion decision
+    //     and ignore the call if return value is 0 and honor the 1 with a CSE and
+    //     -1 with a no-CSE to maintain the specified/generated bias.
+    //
+    int optConfigBiasedCSE()
+    {
+        // Seed the PRNG, if never done before.
+        if (!m_cseRNG.IsInitialized())
+        {
+            m_cseRNG.Init(m_pCompiler->info.compMethodHash());
+            m_bias = m_cseRNG.Next(100);
+        }
+
+        // Obtain the bias value and reinterpret as decimal.
+        static ConfigDWORD fJitStressBiasedCSE;
+        unsigned bias = ReinterpretHexAsDecimal(
+                            fJitStressBiasedCSE.val(CLRConfig::INTERNAL_JitStressBiasedCSE));
+
+        // Invalid value, check if JitStress is ON.
+        if (bias > 100)
+        {
+            if (!m_pCompiler->compStressCompile(Compiler::STRESS_MAKE_CSE, MAX_STRESS_WEIGHT))
+            {
+                // JitStress is OFF for CSE, nothing to do.
+                return 0;
+            }
+            bias = m_bias;
+            JITDUMP("JitStressBiasedCSE is OFF, but JitStress is ON: generated bias=%d.\n", bias);
+        }
+
+        // Generate a number between (0, 99) and if the generated
+        // number is smaller than bias, then perform CSE.
+        unsigned gen = m_cseRNG.Next(100);
+        int ret = (gen < bias) ? 1 : -1;
+
+        if (m_pCompiler->verbose)
+        {
+            if (ret < 0)
+            {
+                printf("No CSE because gen=%d >= bias=%d\n", gen, bias);
+            }
+            else
+            {
+                printf("Promoting CSE because gen=%d < bias=%d\n", gen, bias);
+            }
+        }
+
+        // Indicate whether to perform CSE or not.
+        return ret;
+    }
+#endif
 
     // Given a CSE candidate decide whether it passes or fails the profitablity heuristic
     // return true if we believe that it is profitable to promote this candidate to a CSE
@@ -1183,6 +1337,13 @@ public:
         bool result = false;
 
 #ifdef  DEBUG
+        int stressResult = optConfigBiasedCSE();
+        if (stressResult != 0)
+        {
+            // Stress is enabled. Check whether to perform CSE or not.
+            return (stressResult > 0);
+        }
+
         if (m_pCompiler->optConfigDisableCSE2())
         {
             return false; // skip this CSE
@@ -1238,8 +1399,12 @@ public:
             
         unsigned no_cse_cost  = 0;
         unsigned yes_cse_cost = 0;
+        unsigned extra_yes_cost = 0;
+        unsigned extra_no_cost = 0;
 
-        unsigned cseRefCnt = (candidate->DefCount() * 2) + candidate->DefCount();
+        // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
+        // Each CSE Def will contain two Refs and each CSE Use wil have one Ref of this new LclVar
+        unsigned cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
@@ -1324,43 +1489,58 @@ public:
                 cse_def_cost = 1;
                 cse_use_cost = 1; 
             }
-            else if (candidate->LiveAcrossCall() == 0)
-            {
-#ifdef  DEBUG
-                if  (m_pCompiler->verbose)
-                {
-                    printf("Aggressive CSE Promotion (CSE never live at call)\n");
-                }
-#endif
-                if (cseRefCnt >= moderateRefCnt)
-                    cse_def_cost = 1;
-                else
-                    cse_def_cost = (IND_COST_EX + 1) / 2; 
-                cse_use_cost = 1; 
-            }
             else if (cseRefCnt >= moderateRefCnt)
             {
-#ifdef  DEBUG
-                if  (m_pCompiler->verbose)
+
+                if (candidate->LiveAcrossCall() == 0)
                 {
-                    printf("Moderate CSE Promotion (%u >= %u)\n", cseRefCnt, moderateRefCnt);
-                }
+#ifdef  DEBUG
+                    if  (m_pCompiler->verbose)
+                    {
+                        printf("Moderate CSE Promotion (CSE never live at call) (%u >= %u)\n", cseRefCnt, moderateRefCnt);
+                    }
 #endif
-                cse_def_cost = (IND_COST_EX + 1) / 2;
-                cse_use_cost = (IND_COST_EX + 1) / 2; 
-                yes_cse_cost = 2;    // We might have to spill/restore a caller saved register  
+                    cse_def_cost = 2;
+                    cse_use_cost = 1; 
+                }
+                else // candidate is live across call
+                {
+#ifdef  DEBUG
+                    if  (m_pCompiler->verbose)
+                    {
+                        printf("Moderate CSE Promotion (%u >= %u)\n", cseRefCnt, moderateRefCnt);
+                    }
+#endif
+                    cse_def_cost = 2;
+                    cse_use_cost = 2;
+                    extra_yes_cost = BB_UNITY_WEIGHT * 2;   // Extra cost in case we have to spill/restore a caller saved register  
+                }
             }
-            else 
+            else // Conservative CSE promotion
             { 
-#ifdef  DEBUG
-                if  (m_pCompiler->verbose)
+                if (candidate->LiveAcrossCall() == 0)
                 {
-                    printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
-                }
+#ifdef  DEBUG
+                    if  (m_pCompiler->verbose)
+                    {
+                        printf("Conservative CSE Promotion (CSE never live at call) (%u < %u)\n", cseRefCnt, moderateRefCnt);
+                    }
 #endif
-                cse_def_cost = IND_COST_EX;
-                cse_use_cost = IND_COST_EX; 
-                yes_cse_cost = 4;   // We might have to spill/restore a caller saved register
+                    cse_def_cost = 2;
+                    cse_use_cost = 2;
+                }
+                else // candidate is live across call
+                {
+#ifdef  DEBUG
+                    if  (m_pCompiler->verbose)
+                    {
+                        printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
+                    }
+#endif
+                    cse_def_cost = 3;
+                    cse_use_cost = 3;
+                    extra_yes_cost = BB_UNITY_WEIGHT * 4;   // Extra cost in case we have to spill/restore a caller saved register  
+                }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
                 if (m_pCompiler->lvaTrackedCount == lclMAX_TRACKED)
@@ -1369,6 +1549,7 @@ public:
                     cse_use_cost++;
                 }
             }
+
             if (largeFrame)
             {
                 cse_def_cost++;
@@ -1381,32 +1562,48 @@ public:
             }
         }
 
+        // estimate the cost from lost codesize reduction if we do not perform the CSE
+        if (candidate->Size() > cse_use_cost)
+        {
+            Compiler::CSEdsc* dsc = candidate->CseDsc();    // We need to retrieve the actual use count, not the weighted count
+            extra_no_cost = candidate->Size() - cse_use_cost;
+            extra_no_cost = extra_no_cost * dsc->csdUseCount * 2;
+        }
+
         /* no_cse_cost  is the cost estimate when we decide not to make a CSE */
         /* yes_cse_cost is the cost estimate when we decide to make a CSE     */
             
-        no_cse_cost   = candidate->UseCount() * candidate->Cost();
-        yes_cse_cost += (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost);
+        no_cse_cost  = candidate->UseCount() * candidate->Cost();
+        yes_cse_cost = (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost);
 
 #if CPU_LONG_USES_REGPAIR
         if (candidate->Expr()->TypeGet() == TYP_LONG)
         {
-            yes_cse_cost += (candidate->DefCount() * cse_def_cost) + (candidate->UseCount()  * cse_use_cost);
+            yes_cse_cost *= 2;
         }
 #endif
+        no_cse_cost  += extra_no_cost;
+        yes_cse_cost += extra_yes_cost;
 
 #ifdef  DEBUG
         if  (m_pCompiler->verbose)
         {
+            printf("cseRefCnt=%d, aggressiveRefCnt=%d, moderateRefCnt=%d\n", cseRefCnt, aggressiveRefCnt, moderateRefCnt);
+            printf("defCnt=%d, useCnt=%d, cost=%d, size=%d\n", candidate->DefCount(), candidate->UseCount(), candidate->Cost(), candidate->Size());
+            printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost, extra_no_cost, extra_yes_cost);
+
             printf("CSE cost savings check (%u >= %u) %s\n", 
                     no_cse_cost, yes_cse_cost,
                     (no_cse_cost >= yes_cse_cost) ? "passes" : "fails");
         }
 #endif
 
-        /* Does it cost us more to make this expression a CSE? */
+        // Should we make this candidate into a CSE?
+        // Is the yes cost less than the no cost
+        //
         if  (yes_cse_cost <= no_cse_cost)
         {
-            result = true;          // YES_CSE
+            result = true;          // Yes make this a CSE
         }
         else
         {
@@ -1417,7 +1614,7 @@ public:
 
                 if (m_pCompiler->compStressCompile(Compiler::STRESS_MAKE_CSE, percentage))
                 {
-                    result = true;  // YES_CSE
+                    result = true;          // Yes make this a CSE
                 }
             }
         }
@@ -1434,20 +1631,23 @@ public:
     { 
         unsigned cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
-        // As we introduce new LclVars for these CSE we slightly
-        // increase the cutoffs for aggressive and moderate CSE's
-        //
         if (successfulCandidate->LiveAcrossCall() != 0)
         {
-            int incr = 1;
+            // As we introduce new LclVars for these CSE we slightly
+            // increase the cutoffs for aggressive and moderate CSE's
+            //
+            int incr = BB_UNITY_WEIGHT;
+
 #if CPU_LONG_USES_REGPAIR
             if (successfulCandidate->Expr()->TypeGet() == TYP_LONG)
                 incr *= 2;
 #endif
+
             if (cseRefCnt > aggressiveRefCnt)
-                aggressiveRefCnt += (2*incr);
+                aggressiveRefCnt += incr;
+
             if (cseRefCnt > moderateRefCnt)
-                moderateRefCnt += incr;
+                moderateRefCnt += (incr/2);
         }
 
         /* Introduce a new temp for the CSE */
@@ -2040,8 +2240,8 @@ bool                Compiler::optIsCSEcandidate(GenTreePtr tree)
     case GT_GT:
         return  true;      // Also CSE these Comparison Operators 
 
-    case GT_MATH:   
-        return  true;      // FP Instrinsics: Round, Sqrt, etc...
+    case GT_INTRINSIC:   
+        return  true;      // Intrinsics
 
     case GT_COMMA:
         return true;       // Allow GT_COMMA nodes to be CSE-ed.

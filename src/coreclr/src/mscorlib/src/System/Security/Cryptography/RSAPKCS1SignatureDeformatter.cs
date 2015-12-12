@@ -61,14 +61,21 @@ namespace System.Security.Cryptography {
 
             // Two cases here -- if we are talking to the CSP version or if we are talking to some other RSA provider.
             if (_rsaKey is RSACryptoServiceProvider) {
+                // This path is kept around for desktop compat: in case someone is using this with a hash algorithm that's known to GetAlgIdFromOid but
+                // not from OidToHashAlgorithmName.
                 int calgHash = X509Utils.GetAlgIdFromOid(_strOID, OidGroup.HashAlgorithm);
                 return ((RSACryptoServiceProvider)_rsaKey).VerifyHash(rgbHash, calgHash, rgbSignature);
             }
             else {
+#if FEATURE_CORECLR
                 byte[] pad = Utils.RsaPkcs1Padding(_rsaKey, CryptoConfig.EncodeOID(_strOID), rgbHash);
                 // Apply the public key to the signature data to get back the padded buffer actually signed.
                 // Compare the two buffers to see if they match; ignoring any leading zeros
                 return Utils.CompareBigIntArrays(_rsaKey.EncryptValue(rgbSignature), pad);
+#else
+                HashAlgorithmName hashAlgorithmName = Utils.OidToHashAlgorithmName(_strOID);
+                return _rsaKey.VerifyHash(rgbHash, rgbSignature, hashAlgorithmName, RSASignaturePadding.Pkcs1);
+#endif
             }
         }
     }

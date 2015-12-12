@@ -962,6 +962,29 @@ namespace System.Security.Cryptography
             return true;
         }
 
+#if !FEATURE_CORECLR
+        internal static HashAlgorithmName OidToHashAlgorithmName(string oid)
+        {
+            switch (oid)
+            {
+                case Constants.OID_OIWSEC_SHA1:
+                    return HashAlgorithmName.SHA1;
+
+                case Constants.OID_OIWSEC_SHA256:
+                    return HashAlgorithmName.SHA256;
+
+                case Constants.OID_OIWSEC_SHA384:
+                    return HashAlgorithmName.SHA384;
+
+                case Constants.OID_OIWSEC_SHA512:
+                    return HashAlgorithmName.SHA512;
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+#endif // FEATURE_CORECLR
+
         [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         internal static extern SafeHashHandle CreateHash(SafeProvHandle hProv, int algid);
