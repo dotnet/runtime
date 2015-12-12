@@ -604,28 +604,6 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, s
     return 0;
 }
 
-void emitter::AdjustDisp32ForRipRelative(instrDesc* id, BYTE** pDisp, const BYTE* addrOfNextInstr)
-{
-#ifdef _TARGET_AMD64_
-    BYTE* disp = *pDisp;
-    ssize_t relativeDisp = disp - addrOfNextInstr;
-
-    if (id->idIsDspReloc())
-        return;
-
-    // If we can directly encode RIP-relative, do it
-    // otherwise use a reloc so the VM knows to generate a jump stub
-    if ((int)relativeDisp == relativeDisp)
-    {
-        *pDisp = (BYTE*)relativeDisp;
-    }
-    else
-    {
-        id->idSetIsDspReloc();
-    }
-#endif //_TARGET_AMD64_
-}
-
 #ifdef _TARGET_AMD64_
 /*****************************************************************************
  * Is the last instruction emitted a call instruction?
@@ -1968,6 +1946,14 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
             /* The address is of the form "[disp]" */
 
             size += sizeof(INT32);
+
+#ifdef _TARGET_AMD64_
+            // If id is not marked for reloc, add 1 additional byte for SIB that follows disp32
+            if (!id->idIsDspReloc())
+            {
+                size++;
+            }
+#endif
             return size;
 
         case REG_EBP: AMD64_ONLY(case REG_R13:)
@@ -2343,12 +2329,10 @@ void                emitter::emitIns(instruction ins)
 
 #ifdef  DEBUG
 #if FEATURE_STACK_FP_X87
-#if     INLINE_MATH
     if    (ins != INS_fabs    &&
            ins != INS_fsqrt   &&
            ins != INS_fsin    &&
            ins != INS_fcos)
-#endif
 #endif // FEATURE_STACK_FP_X87
 
     {
@@ -2421,7 +2405,7 @@ void                emitter::emitIns(instruction ins)
     emitCurIGsize += sz;
 }
 
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if !defined(LEGACY_BACKEND)
 // Add an instruction with no operands, but whose encoding depends on the size
 // (Only CDQ/CQO currently)
 void emitter::emitIns(instruction ins, emitAttr attr)
@@ -2446,10 +2430,6 @@ void emitter::emitIns(instruction ins, emitAttr attr)
     dispIns(id);
     emitCurIGsize += sz;
 }
-#endif // defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
-// not amd64 specific, just calls back into stuff that is in codegenamd64 (for now)
 
 
 // fill in all the fields
@@ -2466,12 +2446,15 @@ void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
         // Static always need relocs
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
-            if (emitComp->opts.compReloc)
-            {
-                // Mark idInfo()->idDspReloc to remember that the
-                // address mode has a displacement that is relocatable
-                id->idSetIsDspReloc();
-            }
+            // Contract: 
+            // fgMorphField() changes any statics that won't fit into 32-bit addresses into
+            // constants with an indir, rather than GT_CLS_VAR, based on reloc type hint given
+            // by VM. Hence emitter should always mark GT_CLS_VAR_ADDR as relocatable.
+            //
+            // Data section constants: these get allocated close to code block of the method and 
+            // always addressable IP relative.  These too should be marked as relocatable.
+
+            id->idSetIsDspReloc();
         }
 
         id->idAddr()->iiaFieldHnd = fldHnd;
@@ -2484,12 +2467,19 @@ void emitter::emitHandleMemOp(GenTree* mem, instrDesc* id, bool isSrc)
             id->idInsFmt(IF_MRD_RRD);
         }
     }
-    else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained() && memBase->AsIntConCommon()->FitsInAddrBase(emitComp))
+    else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
-        if (emitComp->opts.compReloc && memBase->IsIconHandle())
+        // Absolute addresses marked as contained should fit within the base of addr mode.
+        assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+        
+        // Either not generating relocatable code or addr must be an icon handle
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle());
+
+        if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
             id->idSetIsDspReloc();
         }
+
         if (isSrc)
         {
             id->idInsFmt(IF_RRD_ARD);
@@ -2594,16 +2584,28 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
             }
             else
             {
-                assert (mem->Addr()->OperIsAddrMode() ||
-                        mem->Addr()->gtOper == GT_CLS_VAR_ADDR ||
-                        (mem->Addr()->IsCnsIntOrI() && mem->Addr()->isContained()) ||
-                        !mem->Addr()->isContained());
+                GenTreePtr addr = mem->Addr();
+
+                assert (addr->OperIsAddrMode() ||
+                        addr->gtOper == GT_CLS_VAR_ADDR ||
+                        (addr->IsCnsIntOrI() && addr->isContained()) ||
+                        !addr->isContained());
                 size_t offset = mem->Offset();
                 id = emitNewInstrAmd(attr, offset);
                 id->idIns(ins);
                 id->idReg1(node->gtRegNum);
                 id->idInsFmt(IF_RWR_ARD);
                 emitHandleMemOp(node, id, true); // may overwrite format
+
+                if (addr->IsCnsIntOrI() && addr->isContained())
+                {
+                    // Absolute addresses marked as contained should fit within the base of addr mode.
+                    assert(addr->AsIntConCommon()->FitsInAddrBase(emitComp));
+
+                    // Case of "ins re, [disp]" and should use IF_RWR_ARD as format
+                    id->idInsFmt(IF_RWR_ARD);
+                }
+
                 sz = emitInsSizeAM(id, insCodeRM(ins));
                 id->idCodeSize(sz);
             }
@@ -2646,6 +2648,7 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
                 }
                 return;
             }
+
             if (data->isContainedIntOrIImmed())
             {
                 int icon = (int) data->AsIntConCommon()->IconValue();
@@ -2653,6 +2656,16 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
                 id->idIns(ins);
                 id->idInsFmt(IF_AWR_CNS);
                 emitHandleMemOp(node, id, false); // may overwrite format
+
+                if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
+                {                    
+                    // Absolute addresses marked as contained should fit within the base of addr mode.
+                    assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+
+                    // Case of "ins [disp], immed " and should use IF_AWR_CNS as format
+                    id->idInsFmt(IF_AWR_CNS);
+                }
+
                 sz = emitInsSizeAM(id, insCodeMI(ins), icon);
                 id->idCodeSize(sz);
             }
@@ -2697,6 +2710,12 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
 
     dispIns(id);
     emitCurIGsize += sz;
+}
+
+CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*= EA_8BYTE*/)
+{
+    NYI("emitLiteralConst");
+    return nullptr;
 }
 
 // Generates a float or double data section constant and returns field handle representing
@@ -3046,13 +3065,23 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
  */
 void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTree* src)
 {
-    GenTreePtr mem = dstAddr->gtOp.gtOp1;
+    assert(dstAddr->isIndir());
+    GenTreeIndir* indir = dstAddr->AsIndir();
+    GenTreePtr mem = indir->Addr();
     assert(mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR_ADDR ||
            mem->gtSkipReloadOrCopy()->OperGet() == GT_LEA ||
-		   mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR);
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
 
     instrDesc* id = nullptr;
     UNATIVE_OFFSET  sz;
+
+    size_t offset = 0;
+    if (mem->gtSkipReloadOrCopy()->OperGet() != GT_CLS_VAR_ADDR)
+    {
+        offset = indir->Offset();
+    }
 
     // find immed (if any) - it cannot be a dst
     GenTreeIntConCommon* intConst = nullptr;
@@ -3061,26 +3090,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTr
         intConst = src->AsIntConCommon();
     }
 
-    if (intConst)
+    if (intConst != nullptr)
     {
-        if (mem->OperGet() == GT_LEA)
-        {
-            id = emitNewInstrAmdCns(attr, mem->AsAddrMode()->gtOffset, (int) intConst->IconValue());
-        }
-        else // it's just an indir, no offset
-        {
-            id = emitNewInstrAmdCns(attr, 0, (int) intConst->IconValue());
-        }
+        id = emitNewInstrAmdCns(attr, offset, (int) intConst->IconValue());
     }
     else
     {
         // ind, reg
-        size_t offset = 0;
-        if (mem->OperIsAddrMode() && mem->isContained())
-        {
-            offset = mem->AsAddrMode()->gtOffset;
-        }
-
         id = emitNewInstrAmd(attr, offset);
         // there must be one non-contained src
         assert(!src->isContained());
@@ -3094,26 +3110,26 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTr
 
     if (src->isContainedIntOrIImmed())
     {
-		if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
-		{
-			id->idInsFmt(IF_MRW_CNS);
-		}
-		else
-		{
-			id->idInsFmt(IF_ARW_CNS);
-		}
+        if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
+        {
+            id->idInsFmt(IF_MRW_CNS);
+        }
+        else
+        {
+            id->idInsFmt(IF_ARW_CNS);
+        }
         sz = emitInsSizeAM(id, insCodeMI(ins), (int) intConst->IconValue());
     }
     else
     {
-		if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
-		{
-			id->idInsFmt(IF_MRW_RRD);
-		}
-		else
-		{
-			id->idInsFmt(IF_ARW_RRD);
-		}
+        if (mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR)
+        {
+            id->idInsFmt(IF_MRW_RRD);
+        }
+        else
+        {
+            id->idInsFmt(IF_ARW_RRD);
+        }
         sz = emitInsSizeAM(id, insCodeMR(ins));
     }
 
@@ -3139,17 +3155,19 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr, GenTr
 void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr)
 {
     assert(ins == INS_not || ins == INS_neg);
-
-    GenTreePtr mem = dstAddr->gtOp.gtOp1;
-    assert(mem->OperGet() == GT_LCL_VAR ||
-		   mem->OperGet() == GT_CLS_VAR_ADDR ||
-           mem->OperGet() == GT_LEA ||
-           (mem->OperGet() == GT_COPY && mem->gtGetOp1()->OperGet() == GT_LCL_VAR));
+    assert(dstAddr->isIndir());
+    GenTreeIndir* indir = dstAddr->AsIndir();
+    GenTreePtr mem = indir->Addr();
+    assert(mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_LCL_VAR_ADDR ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_CLS_VAR_ADDR ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_LEA ||
+           mem->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
 
     size_t offset = 0;
-    if (mem->OperIsAddrMode() && mem->isContained())
+    if (mem->gtSkipReloadOrCopy()->OperGet() != GT_CLS_VAR_ADDR)
     {
-        offset = mem->AsAddrMode()->gtOffset;
+        offset = indir->Offset();
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
@@ -3157,15 +3175,15 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr)
     emitHandleMemOp(dstAddr, id, true);
 
     id->idIns(ins);
-	
-	if(mem->OperGet() == GT_CLS_VAR_ADDR)
-	{
-		id->idInsFmt(IF_MRW);
-	}
-	else
-	{
-		id->idInsFmt(IF_ARW);
-	}
+
+    if(mem->OperGet() == GT_CLS_VAR_ADDR)
+    {
+        id->idInsFmt(IF_MRW);
+    }
+    else
+    {
+        id->idInsFmt(IF_ARW);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
     id->idCodeSize(sz);
@@ -3174,7 +3192,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTree* dstAddr)
     emitCurIGsize += sz;
 }
 
-#endif // _TARGET_XARCH_ && !LEGACY_BACKEND
+#endif // !LEGACY_BACKEND
 
 #if FEATURE_STACK_FP_X87
 /*****************************************************************************
@@ -3243,14 +3261,14 @@ void                emitter::emitIns_R(instruction ins,
 
         sz = 2; // x64 has no 1-byte opcode (it is the same encoding as the REX prefix)
 
-#else // _TARGET_AMD64_
+#else // !_TARGET_AMD64_
 
         if (size == EA_1BYTE)
             sz = 2; // Use the long form as the small one has no 'w' bit
         else
             sz = 1; // Use short form
 
-#endif // _TARGET_AMD64_
+#endif // !_TARGET_AMD64_
 
         break;
 
@@ -3814,8 +3832,7 @@ void                emitter::emitIns_R_C(instruction  ins,
     UNATIVE_OFFSET  sz;
     instrDesc*      id;
 
-    /* Are we MOV'ing the offset of the class variable into EAX? */
-
+    // Are we MOV'ing the offset of the class variable into EAX?
     if  (EA_IS_OFFSET(attr))
     {
         id                 = emitNewInstrDsp(EA_1BYTE, offs);
@@ -3824,8 +3841,7 @@ void                emitter::emitIns_R_C(instruction  ins,
 
         assert(ins == INS_mov && reg == REG_EAX);
 
-        /* Special case: "mov eax, [addr]" is smaller */
-
+        // Special case: "mov eax, [addr]" is smaller
         sz = 1 + sizeof(void*);
     }
     else
@@ -3836,21 +3852,24 @@ void                emitter::emitIns_R_C(instruction  ins,
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        /* Special case: "mov eax, [addr]" is smaller */
-
-        if  (ins == INS_mov && reg == REG_EAX)
+#ifdef _TARGET_X86_
+        // Special case: "mov eax, [addr]" is smaller.
+        // This case is not enabled for amd64 as it always uses RIP relative addressing
+        // and it results in smaller instruction size than encoding 64-bit addr in the
+        // instruction.
+        if (ins == INS_mov && reg == REG_EAX)
         {
             sz = 1 + sizeof(void*);
             if (size == EA_2BYTE)
                 sz += 1;
         }
         else
+#endif //_TARGET_X86_
         {
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
 
-        /* Special case: mov reg, fs:[ddd] */
-
+        // Special case: mov reg, fs:[ddd]
         if (fldHnd == FLD_GLOBAL_FS)
             sz += 1;
     }
@@ -3909,21 +3928,24 @@ void                emitter::emitIns_C_R  (instruction  ins,
 
     UNATIVE_OFFSET  sz;
 
-    /* Special case: "mov [addr], EAX" is smaller */
-
-    if  (ins == INS_mov && reg == REG_EAX)
+#ifdef _TARGET_X86_
+    // Special case: "mov [addr], EAX" is smaller.
+    // This case is not enable for amd64 as it always uses RIP relative addressing
+    // and it will result in smaller instruction size than encoding 64-bit addr in
+    // the instruction.
+    if (ins == INS_mov && reg == REG_EAX)
     {
         sz = 1 + sizeof(void*);
         if (size == EA_2BYTE)
             sz += 1;
     }
     else
+#endif //_TARGET_X86_
     {
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
-    /* Special case: mov reg, fs:[ddd] */
-
+    // Special case: mov reg, fs:[ddd]
     if (fldHnd == FLD_GLOBAL_FS)
     {
         sz += 1;
@@ -4053,10 +4075,17 @@ void                emitter::emitIns_J_S    (instruction ins,
 #if RELOC_SUPPORT
     // Storing the address of a basicBlock will need a reloc
     // as the instruction uses the absolute address,
-    // not a relative address
+    // not a relative address.
+    //
+    // On Amd64, Absolute code addresses should always go through a reloc to
+    // to be encoded as RIP rel32 offset. 
+#ifndef _TARGET_AMD64_
     if (emitComp->opts.compReloc)
-        id->idSetIsDspReloc();
 #endif
+    {
+        id->idSetIsDspReloc();
+    }
+#endif //RELOC_SUPPORT
 
     id->idCodeSize(sz);
 
@@ -5519,19 +5548,17 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
     id->idSetIsNoGC(isNoGC);
 
-    /* Record the address: method, indirection, or funcptr */
-
+    // Record the address: method, indirection, or funcptr
     if  (callType >= EC_FUNC_VIRTUAL)
     {
-        /* This is an indirect call (either a virtual call or func ptr call) */
+        // This is an indirect call (either a virtual call or func ptr call) 
 
         switch (callType)
         {
         case EC_INDIR_C:
-
-            if (emitComp->opts.compReloc)
-                id->idSetIsDspReloc();
-
+            // Indirect call using an absolute code address.
+            // Must be marked as relocatable and is done at the 
+            // branch target location.
             goto CALL_ADDR_MODE;
 
         case EC_INDIR_R:            // the address is in a register
@@ -5560,17 +5587,35 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
             // fall-through
 
-            /* The function is "ireg" if id->idIsCallRegPtr(),
-               else [ireg+xmul*xreg+disp] */
+            // The function is "ireg" if id->idIsCallRegPtr(),
+            // else [ireg+xmul*xreg+disp]
 
             id->idInsFmt(IF_ARD);
 
             id->idAddr()->iiaAddrMode.amBaseReg = ireg;
-
             id->idAddr()->iiaAddrMode.amIndxReg = xreg;
             id->idAddr()->iiaAddrMode.amScale   = xmul ? emitEncodeScale(xmul) : emitter::OPSZ1;
 
             sz = emitInsSizeAM(id, insCodeMR(INS_call));
+
+            if (ireg == REG_NA && xreg == REG_NA)
+            {
+                if (codeGen->genCodeIndirAddrNeedsReloc(disp))
+                {
+                    id->idSetIsDspReloc();
+                }
+#ifdef _TARGET_AMD64_
+                else
+                {
+                    // An absolute indir address that doesn't need reloc should fit within 32-bits
+                    // to be encoded as offset relative to zero.  This addr mode requires an extra
+                    // SIB byte
+                    noway_assert((int)addr == (size_t)addr);
+                    sz++;
+                }
+#endif //_TARGET_AMD64_
+            }
+
             break;
 
         default:
@@ -5583,22 +5628,31 @@ void                emitter::emitIns_Call(EmitCallType  callType,
     {
         /* "call [method_addr]" */
 
-        assert(addr != NULL);
+        assert(addr != nullptr);
 
         id->idInsFmt(IF_METHPTR);
         id->idAddr()->iiaAddr            = (BYTE*)addr;
         sz                               = 6;
 
 #if RELOC_SUPPORT
-        if (emitComp->opts.compReloc)
+        // Since this is an indirect call through a pointer and we don't
+        // currently pass in emitAttr into this function, we query codegen
+        // whether addr needs a reloc.
+        if (codeGen->genCodeIndirAddrNeedsReloc((size_t)addr))
         {
-            // Since this is an indirect call through a pointer and we don't
-            // currently pass in emitAttr into this function we have decided
-            // to always mark the displacement as being relocatable.
-
             id->idSetIsDspReloc();
         }
-#endif
+#ifdef _TARGET_AMD64_
+        else
+        {
+            // An absolute indir address that doesn't need reloc should fit within 32-bits
+            // to be encoded as offset relative to zero.  This addr mode requires an extra
+            // SIB byte
+            noway_assert((int)addr == (size_t)addr);
+            sz++;
+        }
+#endif //_TARGET_AMD64_
+#endif //RELOC_SUPPORT
 
     }
     else
@@ -5607,7 +5661,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
 
         assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
 
-        assert(addr != NULL);
+        assert(addr != nullptr);
 
         id->idInsFmt(IF_METHOD);
         sz                               = 5;
@@ -5617,18 +5671,15 @@ void                emitter::emitIns_Call(EmitCallType  callType,
         if (callType == EC_FUNC_ADDR)
         {
             id->idSetIsCallAddr();
+        }
 
 #if RELOC_SUPPORT
-            if (emitComp->opts.compReloc)
-            {
-                // Since this is an indirect call through a pointer and we don't
-                // currently pass in emitAttr into this function we have decided
-                // to always mark the displacement as being relocatable.
-
-                id->idSetIsDspReloc();
-            }
-#endif
+        // Direct call to a method and no addr indirection is needed. 
+        if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
+        {
+            id->idSetIsDspReloc();
         }
+#endif
     }
 
 #ifdef  DEBUG
@@ -5810,10 +5861,6 @@ const char*         emitter::emitRegName(regNumber reg, emitAttr attr, bool varN
     static unsigned char rbc = 0;
 
     const char* rn = emitComp->compRegVarName(reg, varName);
-
-#ifdef _TARGET_ARM_
-    assert(strlen(rn) >= 1);
-#endif
 
 #ifdef _TARGET_AMD64_
     char suffix = '\0';
@@ -6522,7 +6569,7 @@ void                emitter::emitDispIns(instrDesc*   id,
                 /* Display a data section reference */
 
                 assert((unsigned)offs < emitConsDsc.dsdOffs);
-                addr = emitConsBlock ? emitConsBlock + offs : NULL;
+                addr = emitConsBlock ? emitConsBlock + offs : nullptr;
 
 #if 0
                 // TODO-XArch-Cleanup: Fix or remove this code.
@@ -7428,7 +7475,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
         *dst++ = 0x00;
         break;
     }
-#endif // !_TARGET_AMD64_
+#endif // _TARGET_AMD64_
 
     return dst;
 }
@@ -7639,20 +7686,6 @@ BYTE*       emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal*
 
 GOT_DSP:
 
-    // Adjust for RIP-relative addressing
-    if ((rgx == REG_NA) && (reg == REG_NA))
-    {
-        BYTE* end = dst + 2 + 4;
-        if (addc)
-        {
-            if (opsz == 0 || opsz == 8)
-                end += 4;
-            else
-                end += opsz;
-        }
-        AdjustDisp32ForRipRelative(id, (BYTE**)&dsp, emitOffsetToPtr(emitCurCodeOffs(end)));
-    }
-
     dspInByte = ((signed char)dsp == (ssize_t)dsp);
     dspIsZero = (dsp == 0);
 
@@ -7670,30 +7703,70 @@ GOT_DSP:
         switch (reg)
         {
         case REG_NA:
-
-            // The address is of the form "[disp]"
-            dst += emitOutputWord(dst, code | 0x0500);
-#ifdef _TARGET_X86_
-
-            dst += emitOutputLong(dst, dsp);
-
             if (id->idIsDspReloc())
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_DISP32);
-            }
-#else // AMD64
-            if (id->idIsDspReloc())
-            {
-                // im not sure why on amd64 this has to be different.  The code here before indicates it didn't
-                // have to be at the time grant first started working on amd64.
+                INT32 addlDelta = 0;
+
+                // The address is of the form "[disp]" 
+                // On x86 - disp is relative to zero
+                // On Amd64 - disp is relative to RIP
+                dst += emitOutputWord(dst, code | 0x0500);
+
+                if (addc)
+                {
+                    // It is of the form "ins [disp], immed" 
+                    // For emitting relocation, we also need to take into account of the
+                    // additional bytes of code emitted for immed val.
+
+                    ssize_t cval = addc->cnsVal;
+
+#ifdef _TARGET_AMD64_
+                    // all these opcodes only take a sign-extended 4-byte immediate
+                    noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+#else 
+                    noway_assert(opsz <= 4);
+#endif
+
+                    switch (opsz)
+                    {
+                    case 0:
+                    case 4:
+                    case 8: addlDelta = -4; break;
+                    case 2: addlDelta = -2; break;
+                    case 1: addlDelta = -1; break;
+
+                    default:
+                        assert(!"unexpected operand size");
+                        unreached();
+                    }
+                }
+
+#ifdef _TARGET_AMD64_
+                // We emit zero on Amd64, to avoid the assert in emitOutputLong()
                 dst += emitOutputLong(dst, 0);
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_DISP32);
+#else
+                dst += emitOutputLong(dst, dsp);
+#endif
+                emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_DISP32, 0, addlDelta);
             }
             else
             {
+#ifdef _TARGET_X86_
+                dst += emitOutputWord(dst, code | 0x0500);                
+#else //_TARGET_AMD64_
+                // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
+                // This addr mode should never be used while generating relocatable ngen code nor if
+                // the addr can be encoded as pc-relative address.
+                noway_assert(!emitComp->opts.compReloc);
+                noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
+                noway_assert((int)dsp == dsp);
+
+                // This requires, specifying a SIB byte after ModRM byte.
+                dst += emitOutputWord(dst, code | 0x0400);
+                dst += emitOutputByte(dst, 0x25);
+#endif //_TARGET_AMD64_
                 dst += emitOutputLong(dst, dsp);
             }
-#endif
             break;
 
 
@@ -8501,20 +8574,14 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
             opsz = 1;
         }
     }
+#ifdef _TARGET_X86_
     else
     {
-        /* Special case: "mov eax, [addr]" and "mov [addr], eax" */
-        /* TODO-AMD64-CQ: Because on 64-bit the offset is 8-bytes/64-bits,
-           this encoding is larger than using a regular 'mov'
-           encoding and RIP-relative addressing (only 5 bytes for
-           modR/M and 32-bit displacement, versus 8 bytes moffset).
-
-           If we don't need a reloc and we can use RIP-relative
-           addressing, we should use the original encoding and
-           avoid the 8 byte moffset...
-         */
-
-        if  (ins == INS_mov && id->idReg1() == REG_EAX)
+        // Special case: "mov eax, [addr]" and "mov [addr], eax"
+        // Amd64: this is one case where addr can be 64-bit in size.  This is
+        // currently unused or not enabled on amd64 as it always uses RIP
+        // relative addressing which results in smaller instruction size.
+        if (ins == INS_mov && id->idReg1() == REG_EAX)
         {
             switch (id->idInsFmt())
             {
@@ -8541,6 +8608,7 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
             }
         }
     }
+#endif //_TARGET_X86_
 
     // Special case emitting AVX instructions
     if (Is4ByteAVXInstruction(ins))
@@ -8635,8 +8703,8 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
     if (code)
     {
         if  (id->idInsFmt() == IF_MRD_OFF ||
-            id->idInsFmt() == IF_RWR_MRD_OFF ||
-            isMoffset)
+             id->idInsFmt() == IF_RWR_MRD_OFF ||
+             isMoffset)
             dst += emitOutputByte(dst, code);
         else
             dst += emitOutputWord(dst, code);
@@ -8665,14 +8733,17 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if  (jitStaticFldIsGlobAddr(fldh))
-            addr = NULL;
+        if (jitStaticFldIsGlobAddr(fldh))
+        {
+            addr = nullptr;
+        }
         else
         {
-            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh,
-                                                       NULL);
-            if (addr == NULL)
+            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
+            if (addr == nullptr)
+            {
                 NO_WAY("could not obtain address of static field");
+            }
         }
     }
 
@@ -8680,27 +8751,61 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
 
     if (!isMoffset)
     {
-        BYTE* end = dst + 4;
+        INT32 addlDelta = 0;
+
         if (addc)
         {
-            if (opsz == 0 || opsz == 8)
-                end += 4;
-            else
-                end += opsz;
-        }
-        AdjustDisp32ForRipRelative(id, &target, end);
+            // It is of the form "ins [disp], immed" 
+            // For emitting relocation, we also need to take into account of the
+            // additional bytes of code emitted for immed val.
 
+            ssize_t cval = addc->cnsVal;
+
+#ifdef _TARGET_AMD64_
+            // all these opcodes only take a sign-extended 4-byte immediate
+            noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+#else 
+            noway_assert(opsz <= 4);
+#endif
+
+            switch (opsz)
+            {
+            case 0:
+            case 4:
+            case 8: addlDelta = -4; break;
+            case 2: addlDelta = -2; break;
+            case 1: addlDelta = -1; break;
+
+            default:
+                assert(!"unexpected operand size");
+                unreached();
+            }
+        }
+
+#ifdef _TARGET_AMD64_
+        // All static field and data section constant accesses should be marked as relocatable
+        noway_assert(id->idIsDspReloc());
+        dst += emitOutputLong(dst, 0);
+#else //_TARGET_X86_
         dst += emitOutputLong(dst, (int)target);
+#endif //_TARGET_X86_
 
 #ifdef RELOC_SUPPORT
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - sizeof(int)), target, IMAGE_REL_BASED_DISP32);
+            emitRecordRelocation((void*)(dst - sizeof(int)), target, IMAGE_REL_BASED_DISP32, 0, addlDelta);
         }
 #endif
     }
     else
     {
+#ifdef _TARGET_AMD64_
+        // This code path should never be hit on amd64 since it always uses RIP relative addressing.
+        // In future if ever there is a need to enable this special case, also enable the logic
+        // that sets isMoffset to true on amd64.
+        unreached();
+#else //_TARGET_X86_
+
         dst += emitOutputSizeT(dst, (ssize_t)target);
 
 #ifdef RELOC_SUPPORT
@@ -8709,6 +8814,8 @@ BYTE*       emitter::emitOutputCV(BYTE* dst, instrDesc* id, size_t code, CnsVal*
             emitRecordRelocation((void*)(dst - sizeof(void*)), target, IMAGE_REL_BASED_MOFFSET);
         }
 #endif
+
+#endif //_TARGET_X86_
     }
 
     // Now generate the constant value, if present
@@ -10033,7 +10140,7 @@ BYTE*               emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
         dst += emitOutputByte(dst, insCode(ins));
 
         // For forward jumps, record the address of the distance value
-        id->idjTemp.idjAddr = (distVal > 0) ? dst : NULL;
+        id->idjTemp.idjAddr = (distVal > 0) ? dst : nullptr;
 
         dst += emitOutputByte(dst, distVal);
     }
@@ -10101,6 +10208,7 @@ BYTE*               emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
             idAmd->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
             idAmd->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
             emitSetAmdDisp(idAmd, distVal);     // set the displacement
+            idAmd->idSetIsDspReloc(id->idIsDspReloc());
             assert(emitGetInsAmdAny(idAmd) == distVal); // make sure "disp" is stored properly
 
             UNATIVE_OFFSET sz = emitInsSizeAM(idAmd, insCodeRM(ins));
@@ -10115,7 +10223,7 @@ BYTE*               emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
             // For forward jumps, record the address of the distance value
             // Hard-coded 4 here because we already output the displacement, as the last thing.
-            id->idjTemp.idjAddr = (dstOffs > srcOffs) ? (dst - 4) : NULL;
+            id->idjTemp.idjAddr = (dstOffs > srcOffs) ? (dst - 4) : nullptr;
 
             // We're done
             return dst;
@@ -10331,54 +10439,70 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
             sz          = sizeof(instrDesc);
         }
 
+        addr = (BYTE*)id->idAddr()->iiaAddr;
+        assert(addr != nullptr);
+
+        // Some helpers don't get recorded in GC tables
+        if (id->idIsNoGC())
+        {
+            recCall = false;
+        }
+
         // What kind of a call do we have here?
-        if (id->idIsCallAddr())
+        if (id->idInsFmt() == IF_METHPTR)
         {
-            // This is call indirect where we know the target, thus we can
-            // use a direct call; the target to jump to is in iiaAddr.
-            assert(id->idInsFmt() == IF_METHOD);
-            addr = (BYTE*)id->idAddr()->iiaAddr;
-        }
-        else
-        {
-            // Some helpers don't get recorded in GC tables
-            if (id->idIsNoGC())
-                recCall = false;
+            // This is call indirect via a method pointer
 
-            // Static method call
-            addr = id->idAddr()->iiaAddr;
-
-            if  (id->idInsFmt() == IF_METHPTR)
+            code = insCodeMR(ins);
+            if (ins == INS_i_jmp)
             {
-                // This is a call via a global method pointer
-                assert(addr);
-
-                code = insCodeMR(ins);
-                if (ins == INS_i_jmp)
-                    code |= 1;
-
-                AdjustDisp32ForRipRelative(id, &addr, dst + 6);
-
-                dst += emitOutputWord(dst, code | 0x0500);
-                dst += emitOutputLong(dst, (int)addr);
-
-#ifdef RELOC_SUPPORT
-                if (id->idIsDspReloc())
-                {
-                    emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
-                }
-#endif
-                goto DONE_CALL;
+                code |= 1;
             }
+
+            if (id->idIsDspReloc())
+            {
+                dst += emitOutputWord(dst, code | 0x0500);
+#ifdef _TARGET_AMD64_
+                dst += emitOutputLong(dst, 0);
+#else
+                dst += emitOutputLong(dst, (int)addr);
+#endif
+                emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
+            }
+            else
+            {
+#ifdef _TARGET_X86_
+                dst += emitOutputWord(dst, code | 0x0500);
+#else //_TARGET_AMD64_
+                // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
+                // This addr mode should never be used while generating relocatable ngen code nor if
+                // the addr can be encoded as pc-relative address.
+                noway_assert(!emitComp->opts.compReloc);
+                noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
+                noway_assert((int)addr == (ssize_t)addr);
+
+                // This requires, specifying a SIB byte after ModRM byte.
+                dst += emitOutputWord(dst, code | 0x0400);
+                dst += emitOutputByte(dst, 0x25);
+#endif //_TARGET_AMD64_
+                dst += emitOutputLong(dst, (int)addr);
+            }
+            goto DONE_CALL;
         }
+
+        // Else
+        // This is call direct where we know the target, thus we can
+        // use a direct call; the target to jump to is in iiaAddr.
+        assert(id->idInsFmt() == IF_METHOD);
 
         // Output the call opcode followed by the target distance
         dst += (ins == INS_l_jmp) ? emitOutputByte(dst, insCode(ins)) : emitOutputByte(dst, insCodeMI(ins));
 
         ssize_t offset;
 #ifdef _TARGET_AMD64_
-        // All REL32 on Amd go through recordRelocation.  Here we will output zero to advance dst.
+        // All REL32 on Amd64 go through recordRelocation.  Here we will output zero to advance dst.
         offset = 0; 
+        assert(id->idIsDspReloc());
 #else
         // Calculate PC relative displacement.
         // Although you think we should be using sizeof(void*), the x86 and x64 instruction set
@@ -10388,12 +10512,12 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
 
         dst += emitOutputLong(dst, offset);
 
-#ifndef _TARGET_AMD64_ // all REL32 on AMD have to go through recordRelocation
-        if (emitComp->opts.compReloc)
-#endif
+#ifdef RELOC_SUPPORT
+        if (id->idIsDspReloc())
         {
             emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, IMAGE_REL_BASED_REL32);
         }
+#endif
 
     DONE_CALL:
 
@@ -10837,34 +10961,9 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
 
 #endif // FEATURE_STACK_FP_X87
 
-        dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500);
-
-        if  (ins == INS_call)
-        {
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            // All arguments will be popped after the call
-            emitStackPop(dst, true, emitGetInsDspCns(id, &offs));
-
-            // Figure out the size of the instruction descriptor
-            if  (id->idIsLargeCall())
-                sz = sizeof(instrDescDCGC);
-            else
-                sz = emitSizeOfInsDsc(id);
-
-            // Do we need to record a call location for GC purposes?
-            if  (!emitFullGCinfo)
-                scRecordGCcall(dst);
-
-#else
-            assert(!"what???????");
-#endif
-
-        }
-        else
-        {
-            sz = emitSizeOfInsDsc(id);
-        }
+        noway_assert(ins != INS_call);
+        dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500);      
+        sz = emitSizeOfInsDsc(id);
         break;
 
     case IF_MRD_OFF:

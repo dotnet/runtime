@@ -490,6 +490,11 @@ bool _DbgBreakCheck(
 
     switch(ret)
     {
+    case 0:
+#if 0
+        // The message box was not displayed. Tell caller to break.
+        return true;
+#endif
     // For abort, just quit the app.
     case IDABORT:
         TerminateProcess(GetCurrentProcess(), 1);
@@ -538,10 +543,6 @@ bool _DbgBreakCheck(
         psData->iLine = iLine;
         strcpy(psData->rcFile, szFile);
         break;
-
-    case 0:
-        // The message box was not displayed. Tell caller to break.
-        return true;
     }
 
     return false;

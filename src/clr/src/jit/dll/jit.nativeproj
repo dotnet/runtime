@@ -30,8 +30,6 @@
 
     <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
 
-    <ClDefines Condition="'$(BuildArchitecture)' == 'i386'">$(ClDefines);LEGACY_BACKEND</ClDefines>
-    <ClDefines Condition="'$(BuildArchitecture)' == 'arm'">$(ClDefines);LEGACY_BACKEND</ClDefines>
     <ClDefines Condition="'$(BuildArchitecture)' == 'amd64'">$(ClDefines);FEATURE_SIMD;FEATURE_AVX_SUPPORT</ClDefines>
 
     <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>
@@ -57,13 +55,6 @@
     <ClDefines Condition="'$(EnableLateDisasm)' == 'true'">$(ClDefines);LATE_DISASM=1</ClDefines>
     <LinkDelayLoad Condition="'$(EnableLateDisasm)' == 'true'">$(LinkDelayLoad);msvcdis$(VC_NONCRT_ProdVerX).dll</LinkDelayLoad>
     <UseDelayimpLib Condition="'$(EnableLateDisasm)' == 'true' and '$(FeatureMergeJitAndEngine)'!='true'">true</UseDelayimpLib>
-
-    <!-- For debugging purposes only, temporarily enable these in RET builds so GenTree debugging is easier. -->
-    <!--
-    <ClDefines>$(ClDefines);DEBUGGABLE_GENTREE=1</ClDefines>
-    <ClAdditionalOptions Condition="'$(DebugBuild)' != 'true'">$(ClAdditionalOptions) /Ob0</ClAdditionalOptions>
-    <LinkAdditionalOptions Condition="'$(DebugBuild)' != 'true'">$(LinkAdditionalOptions) /OPT:NOICF</LinkAdditionalOptions>
-    -->
 
     <!-- Disable merge of text and rdata for DevDiv:696146-->
     <LinkMergeRData Condition="'$(BuildArchitecture)'=='i386'">false</LinkMergeRData>
