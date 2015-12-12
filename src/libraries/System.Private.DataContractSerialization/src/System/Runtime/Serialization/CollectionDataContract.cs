@@ -5,10 +5,7 @@ namespace System.Runtime.Serialization
 {
     using System;
     using System.Collections;
-    using System.Diagnostics;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Globalization;
     using System.Reflection;
     using System.Threading;
     using System.Xml;
@@ -209,10 +206,6 @@ namespace System.Runtime.Serialization
                 _itemContract = _helper.ItemContract;
             }
             _helper.SharedTypeContract = sharedTypeContract;
-        }
-
-        private void InitSharedTypeContract()
-        {
         }
 
         private static Type[] KnownInterfaces
@@ -455,17 +448,6 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.InvalidCollectionInSharedContractMessage; }
-        }
-
-        private bool ItemNameSetExplicit
-        {
-            /// <SecurityNote>
-            /// Critical - fetches the critical itemNameSetExplicit property
-            /// Safe - itemNameSetExplicit only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
-            get
-            { return _helper.ItemNameSetExplicit; }
         }
 
 #if !NET_NATIVE

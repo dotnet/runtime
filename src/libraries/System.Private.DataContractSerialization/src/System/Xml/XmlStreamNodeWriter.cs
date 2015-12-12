@@ -4,10 +4,7 @@
 //------------------------------------------------------------
 
 using System.IO;
-using System.Collections.Generic;
 using System.Text;
-using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.Serialization;
 using System.Security;
 using System.Threading.Tasks;
@@ -21,7 +18,6 @@ namespace System.Xml
         private int _offset;
         private bool _ownsStream;
         private const int bufferLength = 512;
-        private const int maxEntityLength = 32;
         private const int maxBytesPerChar = 3;
         private Encoding _encoding;
         private static UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);

@@ -276,9 +276,6 @@
   <data name="IndexedPropertyCannotBeSerialized" xml:space="preserve">
     <value>Property '{1}' in type '{0}' cannot be serialized because serialization of indexed properties is not supported.</value>
   </data>
-  <data name="InterfaceTypeCannotBeCreated" xml:space="preserve">
-    <value>Interface type '{0}' cannot be created. Consider replacing with a non-interface serializable type.</value>
-  </data>
   <data name="InvalidCollectionContractItemName" xml:space="preserve">
     <value>Type '{0}' cannot have CollectionDataContractAttribute attribute ItemName set to null or empty string.</value>
   </data>
@@ -398,9 +395,6 @@
   </data>
   <data name="KnownTypeAttributeOneScheme" xml:space="preserve">
     <value>Type '{0}': If a KnownTypeAttribute attribute specifies a method it must be the only KnownTypeAttribute attribute on that type.</value>
-  </data>
-  <data name="KnownTypeConfigClosedGenericDeclared" xml:space="preserve">
-    <value>Declared type '{0}' in config cannot be a closed or partial generic type.</value>
   </data>
   <data name="KnownTypeAttributeValidMethodTypes" xml:space="preserve">
     <value>Method specified by KnownTypeAttribute attribute on type '{0}' does not expose valid types.</value>

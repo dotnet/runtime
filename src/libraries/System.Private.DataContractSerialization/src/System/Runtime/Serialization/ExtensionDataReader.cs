@@ -1,14 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
-using System.IO;
 using System.Xml;
-using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Security;
 
 namespace System.Runtime.Serialization
@@ -27,8 +21,6 @@ namespace System.Runtime.Serialization
             ReferencedElement,
             NullElement,
         }
-
-        private Dictionary<IDataNode, IDataNode> _cache = new Dictionary<IDataNode, IDataNode>();
 
         private ElementData[] _elements;
         private ElementData _element;
@@ -466,198 +458,6 @@ namespace System.Runtime.Serialization
         private void SetNextElement(IDataNode node, string name, string ns, string prefix)
         {
             throw NotImplemented.ByDesign;
-        }
-
-        private void AddDeserializedDataNode(IDataNode node)
-        {
-            if (node.Id != Globals.NewObjectId && (node.Value == null || !node.IsFinalValue))
-            {
-                if (_deserializedDataNodes == null)
-                    _deserializedDataNodes = new Queue<IDataNode>();
-                _deserializedDataNodes.Enqueue(node);
-            }
-        }
-
-        private bool CheckIfNodeHandled(IDataNode node)
-        {
-            bool handled = false;
-            if (node.Id != Globals.NewObjectId)
-            {
-                handled = (_cache[node] != null);
-                if (handled)
-                {
-                    if (_nextElement == null)
-                        _nextElement = GetNextElement();
-                    _nextElement.attributeCount = 0;
-                    _nextElement.AddAttribute(Globals.SerPrefix, Globals.SerializationNamespace, Globals.RefLocalName, node.Id);
-                    _nextElement.AddAttribute(Globals.XsiPrefix, Globals.SchemaInstanceNamespace, Globals.XsiNilLocalName, Globals.True);
-                    _internalNodeType = ExtensionDataNodeType.ReferencedElement;
-                }
-                else
-                {
-                    _cache.Add(node, node);
-                }
-            }
-            return handled;
-        }
-
-        private void MoveNextInClass(ClassDataNode dataNode)
-        {
-            if (dataNode.Members != null && _element.childElementIndex < dataNode.Members.Count)
-            {
-                if (_element.childElementIndex == 0)
-                    _context.IncrementItemCount(-dataNode.Members.Count);
-
-                ExtensionDataMember member = dataNode.Members[_element.childElementIndex++];
-                SetNextElement(member.Value, member.Name, member.Namespace, GetPrefix(member.Namespace));
-            }
-            else
-            {
-                _internalNodeType = ExtensionDataNodeType.EndElement;
-                _element.childElementIndex = 0;
-            }
-        }
-
-        private void MoveNextInCollection(CollectionDataNode dataNode)
-        {
-            if (dataNode.Items != null && _element.childElementIndex < dataNode.Items.Count)
-            {
-                if (_element.childElementIndex == 0)
-                    _context.IncrementItemCount(-dataNode.Items.Count);
-
-                IDataNode item = dataNode.Items[_element.childElementIndex++];
-                SetNextElement(item, dataNode.ItemName, dataNode.ItemNamespace, GetPrefix(dataNode.ItemNamespace));
-            }
-            else
-            {
-                _internalNodeType = ExtensionDataNodeType.EndElement;
-                _element.childElementIndex = 0;
-            }
-        }
-
-        private void MoveNextInISerializable(ISerializableDataNode dataNode)
-        {
-            if (dataNode.Members != null && _element.childElementIndex < dataNode.Members.Count)
-            {
-                if (_element.childElementIndex == 0)
-                    _context.IncrementItemCount(-dataNode.Members.Count);
-
-                ISerializableDataMember member = dataNode.Members[_element.childElementIndex++];
-                SetNextElement(member.Value, member.Name, String.Empty, String.Empty);
-            }
-            else
-            {
-                _internalNodeType = ExtensionDataNodeType.EndElement;
-                _element.childElementIndex = 0;
-            }
-        }
-
-        private void MoveToDeserializedObject(IDataNode dataNode)
-        {
-            Type type = dataNode.DataType;
-            bool isTypedNode = true;
-            if (type == Globals.TypeOfObject)
-            {
-                type = dataNode.Value.GetType();
-                if (type == Globals.TypeOfObject)
-                {
-                    _internalNodeType = ExtensionDataNodeType.EndElement;
-                    return;
-                }
-                isTypedNode = false;
-            }
-
-            if (!MoveToText(type, dataNode, isTypedNode))
-            {
-                if (dataNode.IsFinalValue)
-                {
-                    _internalNodeType = ExtensionDataNodeType.EndElement;
-                }
-                else
-                {
-                    throw new XmlException(SR.Format(SR.InvalidDataNode, DataContract.GetClrTypeFullName(type)));
-                }
-            }
-        }
-
-        private bool MoveToText(Type type, IDataNode dataNode, bool isTypedNode)
-        {
-            bool handled = true;
-            switch (type.GetTypeCode())
-            {
-                case TypeCode.Boolean:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<bool>)dataNode).GetValue() : (bool)dataNode.Value);
-                    break;
-                case TypeCode.Char:
-                    _value = XmlConvert.ToString((int)(isTypedNode ? ((DataNode<char>)dataNode).GetValue() : (char)dataNode.Value));
-                    break;
-                case TypeCode.Byte:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<byte>)dataNode).GetValue() : (byte)dataNode.Value);
-                    break;
-                case TypeCode.Int16:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<short>)dataNode).GetValue() : (short)dataNode.Value);
-                    break;
-                case TypeCode.Int32:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<int>)dataNode).GetValue() : (int)dataNode.Value);
-                    break;
-                case TypeCode.Int64:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<long>)dataNode).GetValue() : (long)dataNode.Value);
-                    break;
-                case TypeCode.Single:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<float>)dataNode).GetValue() : (float)dataNode.Value);
-                    break;
-                case TypeCode.Double:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<double>)dataNode).GetValue() : (double)dataNode.Value);
-                    break;
-                case TypeCode.Decimal:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<decimal>)dataNode).GetValue() : (decimal)dataNode.Value);
-                    break;
-                case TypeCode.DateTime:
-                    DateTime dateTime = isTypedNode ? ((DataNode<DateTime>)dataNode).GetValue() : (DateTime)dataNode.Value;
-                    _value = dateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffffffK", DateTimeFormatInfo.InvariantInfo);
-                    break;
-                case TypeCode.String:
-                    _value = isTypedNode ? ((DataNode<string>)dataNode).GetValue() : (string)dataNode.Value;
-                    break;
-                case TypeCode.SByte:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<sbyte>)dataNode).GetValue() : (sbyte)dataNode.Value);
-                    break;
-                case TypeCode.UInt16:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<ushort>)dataNode).GetValue() : (ushort)dataNode.Value);
-                    break;
-                case TypeCode.UInt32:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<uint>)dataNode).GetValue() : (uint)dataNode.Value);
-                    break;
-                case TypeCode.UInt64:
-                    _value = XmlConvert.ToString(isTypedNode ? ((DataNode<ulong>)dataNode).GetValue() : (ulong)dataNode.Value);
-                    break;
-                case TypeCode.Object:
-                default:
-                    if (type == Globals.TypeOfByteArray)
-                    {
-                        byte[] bytes = isTypedNode ? ((DataNode<byte[]>)dataNode).GetValue() : (byte[])dataNode.Value;
-                        _value = (bytes == null) ? String.Empty : Convert.ToBase64String(bytes);
-                    }
-                    else if (type == Globals.TypeOfTimeSpan)
-                        _value = XmlConvert.ToString(isTypedNode ? ((DataNode<TimeSpan>)dataNode).GetValue() : (TimeSpan)dataNode.Value);
-                    else if (type == Globals.TypeOfGuid)
-                    {
-                        Guid guid = isTypedNode ? ((DataNode<Guid>)dataNode).GetValue() : (Guid)dataNode.Value;
-                        _value = guid.ToString();
-                    }
-                    else if (type == Globals.TypeOfUri)
-                    {
-                        Uri uri = isTypedNode ? ((DataNode<Uri>)dataNode).GetValue() : (Uri)dataNode.Value;
-                        _value = uri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
-                    }
-                    else
-                        handled = false;
-                    break;
-            }
-
-            if (handled)
-                _internalNodeType = ExtensionDataNodeType.Text;
-            return handled;
         }
 
         private void PushElement()
