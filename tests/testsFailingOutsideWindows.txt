@@ -72,9 +72,13 @@ JIT/Methodical/xxobj/operand/_il_dbgrefanyval/_il_dbgrefanyval.sh
 JIT/Methodical/xxobj/operand/_il_relrefanyval/_il_relrefanyval.sh
 JIT/Methodical/xxobj/operand/refanyval/refanyval.sh
 JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16335/b16335/b16335.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16423/b16423/b16423.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28776/b28776/b28776.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b29583/b29583/b29583.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30126/b30126/b30126.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30128/b30128/b30128.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/b30838.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/b30864.sh
 JIT/Regression/CLR-x86-JIT/V1-M09/b15307/b15307/b15307.sh
@@ -106,3 +110,4 @@ JIT/Regression/VS-ia64-JIT/V1.2-M02/b12011/b12011/b12011.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 JIT/Methodical/Boxing/misc/_dbgconcurgc_il/_dbgconcurgc_il.sh
+JIT/jit64/gc/regress/vswhidbey/143837/143837.sh
