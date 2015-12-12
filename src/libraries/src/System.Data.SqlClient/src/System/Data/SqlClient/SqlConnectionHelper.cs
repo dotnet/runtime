@@ -29,22 +29,6 @@ namespace System.Data.SqlClient
             _innerConnection = DbConnectionClosedNeverOpened.SingletonInstance;
         }
 
-        private void CopyFrom(SqlConnection connection)
-        {
-            ADP.CheckArgumentNull(connection, "connection");
-            _userConnectionOptions = connection.UserConnectionOptions;
-            _poolGroup = connection.PoolGroup;
-
-            if (DbConnectionClosedNeverOpened.SingletonInstance == connection._innerConnection)
-            {
-                _innerConnection = DbConnectionClosedNeverOpened.SingletonInstance;
-            }
-            else
-            {
-                _innerConnection = DbConnectionClosedPreviouslyOpened.SingletonInstance;
-            }
-        }
-
         internal int CloseCount
         {
             get
@@ -75,13 +59,6 @@ namespace System.Data.SqlClient
             bool hidePassword = InnerConnection.ShouldHidePassword;
             DbConnectionOptions connectionOptions = UserConnectionOptions;
             return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
-        }
-
-        private void ConnectionString_Set(string value)
-        {
-            DbConnectionPoolKey key = new DbConnectionPoolKey(value);
-
-            ConnectionString_Set(key);
         }
 
         private void ConnectionString_Set(DbConnectionPoolKey key)

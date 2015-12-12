@@ -494,17 +494,6 @@ namespace System.Data.SqlTypes
             return _state == SqlBytesCharsState.Stream;
         }
 
-        private void SetBuffer(byte[] buffer)
-        {
-            m_rgbBuf = buffer;
-            _lCurLen = (m_rgbBuf == null) ? x_lNull : (long)m_rgbBuf.Length;
-            m_stream = null;
-            _state = (m_rgbBuf == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
-
-            AssertValid();
-        }
-
-
         // --------------------------------------------------------------
         //	  Static fields, properties
         // --------------------------------------------------------------

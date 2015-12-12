@@ -433,15 +433,6 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// True if there is data left to read
-        /// </summary>
-        /// <returns></returns>
-        private bool IsDataLeft
-        {
-            get { return ((_leftOverBytes != null) || (_reader.ColumnDataBytesRemaining() > 0)); }
-        }
-
-        /// <summary>
         /// True if there is a peeked character available
         /// </summary>
         private bool HasPeekedChar

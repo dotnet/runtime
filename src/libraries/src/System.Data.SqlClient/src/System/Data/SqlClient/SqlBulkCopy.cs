@@ -158,14 +158,6 @@ namespace System.Data.SqlClient
 
     public sealed class SqlBulkCopy : IDisposable
     {
-        private enum TableNameComponents
-        {
-            Server = 0,
-            Catalog,
-            Owner,
-            TableName,
-        }
-
         // Enum for specifying SqlDataReader.Get method used 
         private enum ValueMethod : byte
         {
@@ -198,16 +190,9 @@ namespace System.Data.SqlClient
         // MetaData has n columns but no rows
         // Collation has 4 columns and n rows
 
-        private const int TranCountResultId = 0;
-        private const int TranCountRowId = 0;
-        private const int TranCountValueId = 0;
-
         private const int MetaDataResultId = 1;
 
         private const int CollationResultId = 2;
-        private const int ColIdId = 0;
-        private const int NameId = 1;
-        private const int Tds_CollationId = 2;
         private const int CollationId = 3;
 
         private const int MAX_LENGTH = 0x7FFFFFFF;
@@ -1881,24 +1866,6 @@ namespace System.Data.SqlClient
             {
                 return null;
             }
-        }
-
-        private TaskCompletionSource<object> ContinueTaskPend(Task task, TaskCompletionSource<object> source, Func<TaskCompletionSource<object>> action)
-        {
-            if (task == null)
-            {
-                return action();
-            }
-            else
-            {
-                Debug.Assert(source != null, "source should already be initialized if task is not null");
-                AsyncHelper.ContinueTask(task, source, () =>
-                {
-                    TaskCompletionSource<object> newSource = action();
-                    Debug.Assert(newSource == null, "Shouldn't create a new source when one already exists");
-                });
-            }
-            return null;
         }
 
         // Copies all the rows in a batch
