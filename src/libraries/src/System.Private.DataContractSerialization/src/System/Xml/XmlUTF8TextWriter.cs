@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
-using System.Runtime;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,7 +45,6 @@ namespace System.Xml
         private bool _inAttribute;
         private const int bufferLength = 512;
         private const int maxEntityLength = 32;
-        private const int maxBytesPerChar = 3;
         private Encoding _encoding;
         private char[] _chars;
 
