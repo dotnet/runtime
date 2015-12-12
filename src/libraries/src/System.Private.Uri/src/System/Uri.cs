@@ -5,8 +5,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Security;
-using System.Threading;
 
 namespace System
 {
@@ -27,7 +25,6 @@ namespace System
         internal static readonly string SchemeDelimiter = "://";
 
 
-        private const int c_Max16BitUtf8SequenceLength = 3 + 3 + 3 + 3; //each unicode byte takes 3 escaped chars
         internal const int c_MaxUriBufferSize = 0xFFF0;
         private const int c_MaxUriSchemeName = 1024;
 
@@ -839,21 +836,6 @@ namespace System
         // Value from config Uri section
         // On by default in .NET 4.5+ and cannot be disabled by config.
         private static volatile bool s_IriParsing = true; // IRI Parsing is always enabled in .NET Native and CoreCLR
-
-        private static object s_initLock;
-
-        private static object InitializeLock
-        {
-            get
-            {
-                if (s_initLock == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_initLock, o, null);
-                }
-                return s_initLock;
-            }
-        }
 
         private string GetLocalPath()
         {

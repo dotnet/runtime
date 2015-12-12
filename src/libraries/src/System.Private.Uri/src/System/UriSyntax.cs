@@ -99,13 +99,6 @@ namespace System
         internal static UriParser VsMacrosUri;
 
 
-        private enum UriQuirksVersion
-        {
-            // V1 = 1, // RFC 1738 - Not supported
-            V2 = 2, // RFC 2396
-            V3 = 3, // RFC 3986, 3987
-        }
-
         static UriParser()
         {
             s_table = new LowLevelDictionary<string, UriParser>(c_InitialTableSize);
@@ -234,35 +227,6 @@ namespace System
         {
             _flags = flags;
             _scheme = string.Empty;
-        }
-
-        private static void FetchSyntax(UriParser syntax, string lwrCaseSchemeName, int defaultPort)
-        {
-            if (syntax.SchemeName.Length != 0)
-                throw new InvalidOperationException(SR.Format(SR.net_uri_NeedFreshParser, syntax.SchemeName));
-
-            lock (s_table)
-            {
-                syntax._flags &= ~UriSyntaxFlags.V1_UnknownUri;
-                UriParser oldSyntax = null;
-                s_table.TryGetValue(lwrCaseSchemeName, out oldSyntax);
-                if (oldSyntax != null)
-                    throw new InvalidOperationException(SR.Format(SR.net_uri_AlreadyRegistered, oldSyntax.SchemeName));
-
-                s_tempTable.TryGetValue(syntax.SchemeName, out oldSyntax);
-                if (oldSyntax != null)
-                {
-                    // optimization on schemeName, will try to keep the first reference
-                    lwrCaseSchemeName = oldSyntax._scheme;
-                    s_tempTable.Remove(lwrCaseSchemeName);
-                }
-
-                syntax.OnRegister(lwrCaseSchemeName, defaultPort);
-                syntax._scheme = lwrCaseSchemeName;
-                syntax._port = defaultPort;
-
-                s_table[syntax.SchemeName] = syntax;
-            }
         }
 
         private const int c_MaxCapacity = 512;
