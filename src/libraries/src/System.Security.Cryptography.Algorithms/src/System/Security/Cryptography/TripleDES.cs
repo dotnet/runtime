@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
 
         public static TripleDES Create()
         {
-            throw new NotImplementedException(SR.WorkInProgress);
+            return new TripleDesImplementation();
         }
 
         public override KeySizes[] LegalKeySizes
