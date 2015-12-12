@@ -26,13 +26,6 @@ private:
     DataFlow();
 
 public:
-    // Used to ask the dataflow object to restart analysis.
-    enum UpdateResult
-    {
-        RestartAnalysis,
-        ContinueAnalysis
-    };
-
     // The callback interface that needs to be implemented by anyone
     // needing updates by the dataflow object.
     class Callback
@@ -42,9 +35,7 @@ public:
 
         void StartMerge(BasicBlock* block);
         void Merge(BasicBlock* block, BasicBlock* pred, flowList* preds);
-        void EndMerge(BasicBlock* block);
-        bool Changed(BasicBlock* block);
-        DataFlow::UpdateResult Update(BasicBlock* block);
+        bool EndMerge(BasicBlock* block);
 
     private:
         Compiler* m_pCompiler;
@@ -78,14 +69,9 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
                 callback.Merge(block, pred->flBlock, preds);
             }
         }
-        callback.EndMerge(block);
 
-        if (callback.Changed(block))
+        if (callback.EndMerge(block))
         {
-            UpdateResult result = callback.Update(block);
-
-            assert(result == DataFlow::ContinueAnalysis);
-
             AllSuccessorIter succsBegin = block->GetAllSuccs(m_pCompiler).begin();
             AllSuccessorIter succsEnd = block->GetAllSuccs(m_pCompiler).end(); 
             for (AllSuccessorIter succ = succsBegin; succ != succsEnd; ++succ)

@@ -38,6 +38,7 @@
     IMPORT  g_highest_address
     IMPORT  g_card_table
     IMPORT  g_TrapReturningThreads
+    IMPORT  g_dispatch_cache_chain_success_counter
 
     TEXTAREA
 
@@ -133,8 +134,8 @@
 #endif
 
         ; If machine state is invalid, then simply exit
-        ldr x1, [x0, #MachState__isValid]
-        cmp x1, #0
+        ldr w1, [x0, #MachState__isValid]
+        cmp w1, #0
         beq Done
 
         RestoreRegMS 19, X19
@@ -211,35 +212,6 @@ ThePreStubPatchLabel
         EXPORT          ThePreStubPatchLabel
         ret             lr
         LEAF_END
-
-
-;; ------------------------------------------------------------------
-;; void ResolveWorkerAsmStub(args in regs x0-x7 & stack, x11:IndirectionCellAndFlags, x12:DispatchToken)
-;;
-;; The stub dispatch thunk which transfers control to VSD_ResolveWorker.
-        NESTED_ENTRY ResolveWorkerAsmStub
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-        and x1, x11, #-4 ; Indirection cell
-        mov x2, x12 ; DispatchToken
-        and x3, x11, #3 ; flag
-        bl VSD_ResolveWorker
-        mov x9, x0
-       
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        EPILOG_BRANCH_REG  x9
-
-        NESTED_END
-
-        NESTED_ENTRY ResolveWorkerChainLookupAsmStub
-
-        // ARMSTUB TODO: implement chained lookup
-        b ResolveWorkerAsmStub
-
-        NESTED_END
 
 ;-----------------------------------------------------------------------------
 ; The following Macros help in WRITE_BARRIER Implemetations
@@ -1026,6 +998,95 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
         GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
 
+; ------------------------------------------------------------------
+; ResolveWorkerChainLookupAsmStub
+;
+; This method will perform a quick chained lookup of the entry if the 
+;  initial cache lookup fails.
+; 
+; On Entry:  
+;   x9        contains the pointer to the current ResolveCacheElem
+;   x11       contains the address of the indirection (and the flags in the low two bits)
+;   x12       contains our contract the DispatchToken
+; Must be preserved:
+;   x0        contains the instance object ref that we are making an interface call on
+;  [x1-x7]    contains any additional register arguments for the interface method
+;
+; Loaded from x0 
+;   x13       contains our type     the MethodTable  (from object ref in x0)
+; 
+; On Exit:
+;   x0, [x1-x7] arguments for the interface implementation target
+; 
+; On Exit (to ResolveWorkerAsmStub):  
+;   x11       contains the address of the indirection and the flags in the low two bits.
+;   x12       contains our contract (DispatchToken)
+; 
+    GBLA BACKPATCH_FLAG      ; two low bit flags used by ResolveWorkerAsmStub
+    GBLA PROMOTE_CHAIN_FLAG  ; two low bit flags used by ResolveWorkerAsmStub
+BACKPATCH_FLAG      SETA  1
+PROMOTE_CHAIN_FLAG  SETA  2
+        
+    NESTED_ENTRY ResolveWorkerChainLookupAsmStub
+
+        tst     x11, #BACKPATCH_FLAG    ; First we check if x11 has the BACKPATCH_FLAG set
+        bne     Fail                    ; If the BACKPATCH_FLAGS is set we will go directly to the ResolveWorkerAsmStub
+        
+        ldr     x13, [x0]         ; retrieve the MethodTable from the object ref in x0
+MainLoop 
+        ldr     x9, [x9, #24]     ; x9 <= the next entry in the chain
+        cmp     x9, #0
+        beq     Fail
+
+        ldr     x9,  [x9, #0]
+        cmp     x9, x13           ; compare our MT with the one in the ResolveCacheElem
+        bne     MainLoop
+        
+        ldr     x9,  [x9, #8]
+        cmp     x8, x12           ; compare our DispatchToken with one in the ResolveCacheElem
+        bne     MainLoop
+        
+Success         
+        ldr     x13, =g_dispatch_cache_chain_success_counter
+        ldr     x9, [x13]
+        subs    x9, x9, #1
+        str     x9, [x13]
+        blt     Promote
+
+        ldr     x16, [x9, #16]    ; get the ImplTarget
+        br      x16               ; branch to interface implemenation target
+        
+Promote
+                                  ; Move this entry to head postion of the chain
+        mov     x9, #256
+        str     x9, [x13]         ; be quick to reset the counter so we don't get a bunch of contending threads
+        orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG 
+
+Fail           
+        b       ResolveWorkerAsmStub ; call the ResolveWorkerAsmStub method to transition into the VM
+    
+    NESTED_END ResolveWorkerChainLookupAsmStub
+
+;; ------------------------------------------------------------------
+;; void ResolveWorkerAsmStub(args in regs x0-x7 & stack, x11:IndirectionCellAndFlags, x12:DispatchToken)
+;;
+;; The stub dispatch thunk which transfers control to VSD_ResolveWorker.
+        NESTED_ENTRY ResolveWorkerAsmStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        and x1, x11, #-4 ; Indirection cell
+        mov x2, x12 ; DispatchToken
+        and x3, x11, #3 ; flag
+        bl VSD_ResolveWorker
+        mov x9, x0
+       
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        EPILOG_BRANCH_REG  x9
+
+        NESTED_END
 
 ; Must be at very end of file
     END

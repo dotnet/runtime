@@ -489,7 +489,9 @@ void                GCInfo::gcCountForHeader(UNALIGNED unsigned int * untrackedC
 
             count++;
         }
-        else if  (varDsc->lvType == TYP_STRUCT && varDsc->lvOnFrame)
+        else if  (varDsc->lvType == TYP_STRUCT &&
+                  varDsc->lvOnFrame            &&
+                  (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
         {
             unsigned slots  = compiler->lvaLclSize(varNum) / sizeof(void*);
             BYTE *   gcPtrs = compiler->lvaGetGcLayout(varNum);
@@ -791,7 +793,7 @@ GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc *v
 
     if (srcMask != RBM_NONE)
     {
-        regSet->rsMaskVars &= ~(srcMask);
+        regSet->RemoveMaskVars(srcMask);
         if (isGCRef)
         {
             assert((gcRegByrefSetCur & srcMask) == 0);
@@ -813,7 +815,7 @@ GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc *v
     }
     if (dstMask != RBM_NONE)
     {
-        regSet->rsMaskVars |= dstMask;
+        regSet->AddMaskVars(dstMask);
         // If the source is a reg, then the gc sets have been set appropriately
         // Otherwise, we have to determine whether to set them
         if (srcMask == RBM_NONE)

@@ -1043,6 +1043,10 @@ void                CodeGen::psiBegProlog()
 
 void                CodeGen::psiAdjustStackLevel(unsigned size)
 {
+#ifdef DEBUGGING_SUPPORT
+    if (!compiler->opts.compScopeInfo || (compiler->info.compVarScopesCount == 0))
+        return;
+
     assert(compiler->compGeneratingProlog);
 
 #ifdef ACCURATE_PROLOG_DEBUG_INFO
@@ -1069,6 +1073,7 @@ void                CodeGen::psiAdjustStackLevel(unsigned size)
     }
     
 #endif // ACCURATE_PROLOG_DEBUG_INFO
+#endif // DEBUGGING_SUPPORT
 }
 
 
@@ -1082,6 +1087,10 @@ void                CodeGen::psiAdjustStackLevel(unsigned size)
 
 void                CodeGen::psiMoveESPtoEBP()
 {
+#ifdef DEBUGGING_SUPPORT
+    if (!compiler->opts.compScopeInfo || (compiler->info.compVarScopesCount == 0))
+        return;
+
     assert(compiler->compGeneratingProlog);
     assert(doubleAlignOrFramePointerUsed());
 
@@ -1109,6 +1118,7 @@ void                CodeGen::psiMoveESPtoEBP()
     }
     
 #endif // ACCURATE_PROLOG_DEBUG_INFO
+#endif // DEBUGGING_SUPPORT
 }
 
 
@@ -1126,6 +1136,7 @@ void            CodeGen::psiMoveToReg (unsigned    varNum,
                                         regNumber   reg, 
                                         regNumber   otherReg)
 {
+#ifdef DEBUGGING_SUPPORT
     assert(compiler->compGeneratingProlog);
 
     if (!compiler->opts.compScopeInfo)
@@ -1175,6 +1186,7 @@ void            CodeGen::psiMoveToReg (unsigned    varNum,
            !"Parameter scope not found (Assert doesnt always indicate error)");
 
 #endif // ACCURATE_PROLOG_DEBUG_INFO
+#endif // DEBUGGING_SUPPORT
 }
 
 
@@ -1187,6 +1199,10 @@ void            CodeGen::psiMoveToReg (unsigned    varNum,
 
 void                CodeGen::psiMoveToStack(unsigned   varNum)
 {
+#ifdef DEBUGGING_SUPPORT
+    if (!compiler->opts.compScopeInfo || (compiler->info.compVarScopesCount == 0))
+        return;
+
     assert(compiler->compGeneratingProlog);
     assert( compiler->lvaTable[varNum].lvIsRegArg);
     assert(!compiler->lvaTable[varNum].lvRegister);
@@ -1223,6 +1239,7 @@ void                CodeGen::psiMoveToStack(unsigned   varNum)
            !"Parameter scope not found (Assert doesnt always indicate error)");
 
 #endif // ACCURATE_PROLOG_DEBUG_INFO   
+#endif // DEBUGGING_SUPPORT
 }
 
 /*****************************************************************************

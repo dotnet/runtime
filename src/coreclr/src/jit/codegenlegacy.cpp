@@ -111,7 +111,7 @@ void                CodeGen::genDyingVars(VARSET_VALARG_TP   beforeSet,
 #endif
             noway_assert((regSet.rsMaskVars &  regBit) != 0);
 
-            regSet.rsMaskVars &= ~regBit;
+            regSet.RemoveMaskVars(regBit);
 
             // Remove GC tracking if any for this register
 
@@ -2448,7 +2448,7 @@ regMaskTP           CodeGen::genMakeAddressable(GenTreePtr      tree,
         // Relocs can be left alone if they are RIP-relative.
         if ((genTypeSize(tree->TypeGet()) > 4) && (!tree->IsIntCnsFitsInI32() || 
                 (tree->IsIconHandle() && 
-                    (IMAGE_REL_BASED_REL32 != compiler->info.compCompHnd->getRelocTypeHint((void*)tree->gtIntCon.gtIconVal)))))
+                    (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint((void*)tree->gtIntCon.gtIconVal)))))
         {
             break;
         }
@@ -5804,7 +5804,7 @@ void                CodeGen::genCodeForQmark(GenTreePtr tree,
             // So, pretend there aren't any, and spill them anyway. This will only occur
             // if rsAdditional is non-empty.
             regMaskTP   rsTemp = regSet.rsMaskVars;
-            regSet.rsMaskVars = RBM_NONE;
+            regSet.ClearMaskVars();
 
             regSet.rsSpillRegs(rsSpill);
 
@@ -9237,12 +9237,9 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
             genCodeForTree_DONE(tree, reg);
             return;
 
+        case GT_INTRINSIC:
 
-#if INLINE_MATH
-
-        case GT_MATH:
-
-            switch (tree->gtMath.gtMathFN)
+            switch (tree->gtIntrinsic.gtIntrinsicId)
             {
             case CORINFO_INTRINSIC_Round:
                 {
@@ -9278,8 +9275,6 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
 
             genCodeForTree_DONE(tree, reg);
             return;
-
-#endif // INLINE_MATH
 
         case GT_LCLHEAP:
 
@@ -10853,50 +10848,7 @@ UPPER_BITS_ZERO:
         break;
 
     case TYP_DOUBLE:
-        // if SSE2 is not enabled this can only be a DblWasInt case
-        if (!compiler->opts.compCanUseSSE2)
-        {
-            /* Using a call (to a helper-function) for this cast will cause
-               all FP variable which are live across the call to not be
-               enregistered. Since we know that compiler->gtDblWasInt() varaiables
-               will not overflow when cast to TYP_INT, we just use a
-               memory spill and load to do the cast and avoid the call */
-
-            assert(compiler->gtDblWasInt(op1));
-
-            /* Load the FP value onto the coprocessor stack */
-
-            genCodeForTreeFlt(op1);
-
-            /* Allocate a temp for the result */
-
-            TempDsc * temp;
-            temp = compiler->tmpGetTemp(TYP_INT);
-
-            /* Store the FP value into the temp */
-
-            inst_FS_ST(INS_fistp, EA_4BYTE, temp, 0);
-            genFPstkLevel--;
-
-            /* Pick a register for the value */
-
-            reg = regSet.rsPickReg(needReg);
-
-            /* Load the converted value into the registers */
-
-            inst_RV_ST(INS_mov, reg, temp, 0, TYP_INT, EA_4BYTE);
-
-            /* The value in the register is now trashed */
-
-            regTracker.rsTrackRegTrash(reg);
-
-            /* We no longer need the temp */
-
-            compiler->tmpRlsTemp(temp);
-
-            genCodeForTree_DONE(tree, reg);
-        }
-        else
+        if (compiler->opts.compCanUseSSE2)
         {
             // do the SSE2 based cast inline
             // getting the fp operand
@@ -12669,7 +12621,7 @@ void                CodeGen::genCodeForBBlist()
 
         specialUseMask |= doubleAlignOrFramePointerUsed() ? RBM_SPBASE|RBM_FPBASE
                                                      : RBM_SPBASE;
-        regSet.rsMaskVars      = 0;
+        regSet.ClearMaskVars();
         VarSetOps::ClearD(compiler, compiler->compCurLife);
         VarSetOps::Assign(compiler, liveSet, block->bbLiveIn);
 
@@ -12707,7 +12659,7 @@ void                CodeGen::genCodeForBBlist()
             regNumber  regNum  = varDsc->lvRegNum;
             regMaskTP  regMask = genRegMask(regNum);
 
-            regSet.rsMaskVars |= regMask;
+            regSet.AddMaskVars(regMask);
 
             if       (varDsc->lvType == TYP_REF)
                 gcrefRegs |= regMask;
@@ -18110,7 +18062,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
             regMaskTP rsTemp = regSet.rsMaskVars & regSet.rsMaskUsed & RBM_CALLEE_TRASH;
             regMaskTP gcRegSavedByref = gcInfo.gcRegByrefSetCur & rsTemp;
             regMaskTP gcRegSavedGCRef = gcInfo.gcRegGCrefSetCur & rsTemp;
-            regSet.rsMaskVars -= rsTemp;
+            regSet.RemoveMaskVars(rsTemp);
 
             regNumber regNum2 = regNum;
             for (unsigned i = 0; i < curArgTabEntry->numRegs; i++)
@@ -18136,7 +18088,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
             gcInfo.gcRegGCrefSetCur |= gcRegSavedGCRef;
 
             // Set maskvars back to normal
-            regSet.rsMaskVars |= rsTemp;
+            regSet.AddMaskVars(rsTemp);
         }
 
         /* Evaluate the argument to a register */
@@ -20277,7 +20229,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         // We keep regSet.rsMaskVars current during codegen, so we have to remove any
         // that have been copied into arg regs.
 
-        regSet.rsMaskVars       &= ~(curArgMask);
+        regSet.RemoveMaskVars(curArgMask);
         gcInfo.gcRegGCrefSetCur &= ~(curArgMask);
         gcInfo.gcRegByrefSetCur &= ~(curArgMask);
     }

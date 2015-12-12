@@ -1783,29 +1783,6 @@ void LinearScan::identifyCandidates()
         varDsc->lvOtherReg = REG_STK;
 #endif // _TARGET_64BIT_
 
-#ifdef FEATURE_SIMD
-        // Set the SIMD type appropriately, according to whether the size is the full
-        // vector register length, or some subset (e.g. Vector2f on SSE2 and
-        // all the fixed types on AVX).
-        if (varDsc->lvIsSIMDType() && (varDsc->TypeGet() != TYP_BYREF))
-        {
-            // If this is a reg arg that's passed fully in a register, don't change the type
-            // as it has been passed in an integer register, and we'll mess up the prolog
-            // handling if we change its type to TYP_DOUBLE.
-            // Instead, we'll lave it is TYP_STRUCT and not enregister it.
-            // TODO-XArch-CQ: Improve the handling of these.
-            // We currently also have issues with the morpher transforming pointer-size structs
-            // into longs in unanticipated ways, so for now we will not enregister these types.
-            if (varDsc->lvSize() > TARGET_POINTER_SIZE)
-            {
-                var_types simdType = compiler->getSIMDTypeForSize(varDsc->lvSize());
-                varDsc->lvType = simdType;
-                newInt->registerType = simdType;
-                newInt->registerPreferences = allRegs(simdType);
-            }
-        }
-#endif // FEATURE_SIMD
-
 #if !defined(_TARGET_64BIT_)
         if(intervalType == TYP_LONG)
         {
@@ -1838,14 +1815,13 @@ void LinearScan::identifyCandidates()
             varDsc->lvLRACandidate = 0;
         }
 
-        // Variables that are address-exposed, and all struct locals, are never enregistered, or tracked.
-        // (The struct may be promoted, and its field variables enregistered/tracked, or the VM may "normalize"
-        // its type so that its not seen by the JIT as a struct.)
+        // Variables that are address-exposed are never enregistered, or tracked.
+        // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
         // Pinned variables may not be tracked (a condition of the GCInfo representation)
         // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
         // references when using the general GC encoding.
 
-        if  (varDsc->lvAddrExposed || (varDsc->lvType == TYP_STRUCT && !varDsc->lvIsSIMDType()))
+        if  (varDsc->lvAddrExposed || !varTypeIsEnregisterableStruct(varDsc))
         {
             varDsc->lvLRACandidate  = 0;
 #ifdef DEBUG
@@ -1897,12 +1873,21 @@ void LinearScan::identifyCandidates()
         case TYP_LONG:
         case TYP_REF:
         case TYP_BYREF:
+            break;
+
 #ifdef FEATURE_SIMD
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
-#endif // FEATURE_SIMD
+            if (varDsc->lvPromoted)
+            {
+                varDsc->lvLRACandidate = 0;
+            }
             break;
+        // TODO-1stClassStructs: Move TYP_SIMD8 up with the other SIMD types, after handling the param issue
+        // (passing & returning as TYP_LONG).
+        case TYP_SIMD8:
+#endif // FEATURE_SIMD
 
         case TYP_STRUCT:
             {
@@ -2476,6 +2461,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
             }
         }
         break;
+
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
@@ -2496,8 +2482,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
         {
             killMask = RBM_INT_CALLEE_TRASH;
         }
-#if (defined(_TARGET_AMD64_) || defined (_TARGET_ARM_)) && !defined(RYUJIT_CTPBUILD)
-
+#if defined(_TARGET_AMD64_) || defined (_TARGET_ARM_)
         // AMD (and ARM) helpers for this save the return value
         killMask &= ~(RBM_INTRET | RBM_FLOATRET);
 #endif
@@ -2985,7 +2970,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
 
                 // We can have a case where the source of the store has a different register type,
                 // e.g. when the store is of a return value temp, and op1 is a Vector2
-                // (8-byte SIMD, which is TYP_DOUBLE at this point).  We will need to set the
+                // (TYP_SIMD8).  We will need to set the
                 // src candidates accordingly on op1 so that LSRA will generate a copy.
                 // We could do this during Lowering, but at that point we don't know whether
                 // this lclVar will be a register candidate, and if not, we would prefer to leave
@@ -3077,6 +3062,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         regMaskTP candidates = getUseCandidates(useNode);
         Interval *i = locInfo.interval;
 
+#ifdef FEATURE_SIMD
         if (tree->OperIsLocalStore() && varDefInterval == nullptr)
         {
             // This is a non-candidate store.  If this is a SIMD type, the use candidates
@@ -3086,11 +3072,14 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
             {
                 noway_assert((candidates & allRegs(useNode->gtType)) != RBM_NONE);
                 // Currently, the only case where this should happen is for a TYP_LONG
-                // source and a TYP_DOUBLE target.
-                assert(useNode->gtType == TYP_LONG && tree->gtType == TYP_DOUBLE);
+                // source and a TYP_SIMD8 target.
+                assert((useNode->gtType == TYP_LONG  && tree->gtType == TYP_SIMD8) ||
+                       (useNode->gtType == TYP_SIMD8 && tree->gtType == TYP_LONG));
                 tree->gtType = useNode->gtType;
             }
         }
+#endif // FEATURE_SIMD
+
         bool delayRegFree = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
         if (useNode->gtLsraInfo.isTgtPref)
         {
@@ -3128,7 +3117,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
                 regNumber physicalReg = genRegNumFromMask(fixedAssignment);
                 RefPosition *pos = newRefPosition (physicalReg, currentLoc,  RefTypeFixedReg, nullptr, fixedAssignment);
             }
-            pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, i->recentRefPosition->registerAssignment);
+            pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, allRegs(i->registerType));
             pos->registerAssignment = candidates;
         }
         else
@@ -3408,8 +3397,12 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
             );
 
 #ifdef _TARGET_ARM_
-        if (argDsc->lvIsHfaRegArg) isFloat = true;
+        if (argDsc->lvIsHfaRegArg) 
+        {
+            isFloat = true;
+        }
 #endif // _TARGET_ARM_
+
         if (isFloat)
         {
             JITDUMP("Float arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
@@ -3418,6 +3411,12 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
         else
         {
             JITDUMP("Int arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
+#if FEATURE_MULTIREG_STRUCT_ARGS
+            if (argDsc->lvOtherArgReg != REG_NA)
+            {
+                JITDUMP("(second half) in reg %s\n", getRegName(argDsc->lvOtherArgReg));
+            }
+#endif
             compiler->raUpdateRegStateForArg(intRegState, argDsc);
         }
     }
@@ -3624,7 +3623,7 @@ LinearScan::buildIntervals()
             }
             RefPosition * pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
         }
-        else if (argDsc->lvType == TYP_STRUCT)
+        else if (varTypeIsStruct(argDsc->lvType))
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt;
@@ -4042,7 +4041,18 @@ LinearScan::setFrameType()
     // frame if needed.  Note that this feature isn't on for amd64, because the stack is
     // always double-aligned by default.
     compiler->codeGen->setDoubleAlign(false);
-#endif
+
+    // TODO-CQ: Tune this (see regalloc.cpp, in which raCntWtdStkDblStackFP is used to
+    // determine whether to double-align). Note, though that there is at least one test
+    // (jit\opt\Perf\DoubleAlign\Locals.exe) that depends on double-alignment being set
+    // in certain situations.
+    if (!compiler->opts.MinOpts() && 
+        !compiler->codeGen->isFramePointerRequired() &&
+        compiler->compFloatingPointUsed)
+    {
+        frameType = FT_DOUBLE_ALIGN_FRAME;
+    }
+#endif // DOUBLE_ALIGN
 
     switch (frameType)
     {
@@ -4245,7 +4255,7 @@ LinearScan::getRegisterType(Interval *currentInterval, RefPosition* refPosition)
 #if defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
     if ((candidates & allRegs(regType)) == RBM_NONE)
     {
-        assert((regType == TYP_DOUBLE)              &&
+        assert((regType == TYP_SIMD8)              &&
                (refPosition->refType == RefTypeUse) &&
                ((candidates & allRegs(TYP_INT)) != RBM_NONE));
         regType = TYP_INT;
@@ -4420,6 +4430,7 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
     // position, which is one location past the use (getRefEndLocation() takes care of this).
     LsraLocation rangeEndLocation = rangeEndRefPosition->getRefEndLocation();
     LsraLocation lastLocation = lastRefPosition->getRefEndLocation();
+    regNumber prevReg = REG_NA;
 
     if (currentInterval->assignedReg)
     {
@@ -4431,7 +4442,7 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
         // only if it is preferred and available.
 
         RegRecord *regRec = currentInterval->assignedReg;
-        regNumber prevReg = regRec->regNum;
+        prevReg = regRec->regNum;
         regMaskTP prevRegBit = genRegMask(prevReg);
 
         // Is it in the preferred set of regs?
@@ -4512,13 +4523,54 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
 
     // An optimization for the common case where there is only one candidate -
     // avoid looping over all the other registers
-    regNumber singleReg;
+    regNumber singleReg = REG_NA;
     if (genMaxOneBit(candidates))
     {
         regOrderSize = 1;
         singleReg = genRegNumFromMask(candidates);
         regOrder = &singleReg;
     }
+#if FEATURE_MULTIREG_STRUCTS
+    if (regType == TYP_STRUCT)
+    {
+#ifdef _TARGET_ARM64_
+        // For now we can special case this case as it is used to
+        // pass arguments in pairs of consecutive registers
+        //
+        // TODO ARM64 - this is not complete and is really just a workaround
+        //     that allows us to pass 16-byte structs in argment registers 
+        //     Additional work is require to properly reserve the second register
+        //
+        if (genCountBits(candidates) == 2)
+        {
+            // We currently are only expecting to handle setting up argument registers
+            // with this code sequence
+            // So both register bits in candidates should be arg registers
+            //
+            if ((candidates & RBM_ARG_REGS) == candidates)
+            {
+                // Make sure that we have two consecutive registers available
+                regMaskTP lowRegBit  = genFindLowestBit(candidates);
+                regMaskTP nextRegBit = lowRegBit << 1;
+                if (candidates == (lowRegBit | nextRegBit))
+                {
+                    // We use the same trick as above when regOrderSize, singleReg and regOrder are set 
+                    regOrderSize = 1;
+                    singleReg = genRegNumFromMask(lowRegBit);
+                    regOrder = &singleReg;
+                }
+            }
+        }
+#endif
+        // Unless we setup singleReg we have to issue an NYI error here
+        if (singleReg == REG_NA)
+        {
+            // Need support for MultiReg sized structs
+            NYI("Multireg struct - LinearScan::tryAllocateFreeReg");
+        }
+
+    }
+#endif // FEATURE_MULTIREG_STRUCTS   
     
     for (unsigned i = 0; i < regOrderSize && (candidates != RBM_NONE); i++)
     {
@@ -4577,7 +4629,19 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                     if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
                         (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
                     {
-                        score |= VALUE_AVAILABLE;
+#ifdef _TARGET_64BIT_
+                        // If the constant is negative, only reuse registers of the same type.
+                        // This is because, on a 64-bit system, we do not sign-extend immediates in registers to
+                        // 64-bits unless they are actually longs, as this requires a longer instruction.
+                        // This doesn't apply to a 32-bit system, on which long values occupy multiple registers.
+                        // (We could sign-extend, but we would have to always sign-extend, because if we reuse more
+                        // than once, we won't have access to the instruction that originally defines the constant).
+                        if ((refPosition->treeNode->TypeGet() == otherTreeNode->TypeGet()) ||
+                            (refPosition->treeNode->AsIntCon()->IconValue() >= 0))
+#endif // _TARGET_64BIT_
+                        {
+                            score |= VALUE_AVAILABLE;
+                        }
                     }
                     break;
                 case GT_CNS_DBL:
@@ -4592,7 +4656,7 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                         break;
                     }
                 default:
-                    // for all other 'operTreeNodee->OperGet()' kinds, we leave 'score' unchanged
+                    // for all other 'otherTreeNode->OperGet()' kinds, we leave 'score' unchanged
                     break;
                 }
             }
@@ -4666,9 +4730,18 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                 }
             } 
             // If both cover the range, prefer a register that is killed sooner (leaving the longer range register available).
-            else if (nextPhysRefLocation > lastLocation && nextPhysRefLocation < bestLocation)
+            // If both cover the range and also getting killed at the same location, prefer the one which is same as previous
+            // assignment.
+            else if (nextPhysRefLocation > lastLocation)
             {
-                foundBetterCandidate = true;
+                if (nextPhysRefLocation < bestLocation)
+                {
+                    foundBetterCandidate = true;
+                }
+                else if (nextPhysRefLocation == bestLocation && prevReg == regNum)
+                {
+                    foundBetterCandidate = true;
+                }
             }
         }
 
@@ -6719,6 +6792,7 @@ LinearScan::insertCopyOrReload(GenTreePtr tree, RefPosition* refPosition)
 {
     GenTreePtr* parentChildPointer = nullptr;
     GenTreePtr parent = tree->gtGetParent(&parentChildPointer);
+    noway_assert(parent != nullptr && parentChildPointer != nullptr);
 
     // Create the new node, with "tree" as its only child.
     genTreeOps  oper;
@@ -6731,6 +6805,9 @@ LinearScan::insertCopyOrReload(GenTreePtr tree, RefPosition* refPosition)
         oper = GT_COPY;
     }
 
+    var_types treeType = tree->TypeGet();
+
+#ifdef FEATURE_SIMD
     // Check to see whether we need to move to a different register set.
     // This currently only happens in the case of SIMD vector types that are small enough (pointer size)
     // that they must be passed & returned in integer registers.
@@ -6738,11 +6815,11 @@ LinearScan::insertCopyOrReload(GenTreePtr tree, RefPosition* refPosition)
     // and refPosition->registerAssignment is the mask for the register we are moving TO.
     // If they don't match, we need to reverse the type for the "move" node.
 
-    var_types treeType = tree->TypeGet();
     if ((allRegs(treeType) & refPosition->registerAssignment) == 0)
     {
-        treeType = (varTypeIsFloating(treeType)) ? TYP_I_IMPL : TYP_DOUBLE;
+        treeType = (useFloatReg(treeType)) ? TYP_I_IMPL : TYP_SIMD8;
     }
+#endif // FEATURE_SIMD
 
     GenTreePtr newNode = compiler->gtNewOperNode(oper, treeType, tree);
     assert(refPosition->registerAssignment != RBM_NONE);
@@ -6900,12 +6977,12 @@ LinearScan::recordMaxSpill()
     if (needDoubleTmpForFPCall || (returnType == TYP_DOUBLE))
     {
         JITDUMP("Adding a spill temp for moving a double call/return value between xmm reg and x87 stack.\n");
-        maxSpill[TYP_DOUBLE] = 1;
+        maxSpill[TYP_DOUBLE] += 1;
     }
     if (needFloatTmpForFPCall || (returnType == TYP_FLOAT))
     {
         JITDUMP("Adding a spill temp for moving a float call/return value between xmm reg and x87 stack.\n");
-        maxSpill[TYP_FLOAT] = 1;
+        maxSpill[TYP_FLOAT] += 1;
     }
 #endif // _TARGET_X86_
     for (int i = 0; i < TYP_COUNT; i++)
@@ -7636,7 +7713,8 @@ LinearScan::insertMove(BasicBlock * block,
         }
         else
         {
-            compiler->fgInsertStmtNearEnd(block, stmt);
+            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            compiler->fgInsertStmtAtEnd(block, stmt);
         }
     }
 }
@@ -7728,7 +7806,8 @@ LinearScan::insertSwap(BasicBlock* block,
         }
         else
         {
-            compiler->fgInsertStmtNearEnd(block, stmt);
+            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            compiler->fgInsertStmtAtEnd(block, stmt);
         }
     }
 }
@@ -7839,10 +7918,10 @@ LinearScan::addResolution(BasicBlock* block,
 }
 
 //------------------------------------------------------------------------
-// handleOutoingCriticalEdges: Performs the necessary resolution on all critical edges that feed out of 'block'
+// handleOutgoingCriticalEdges: Performs the necessary resolution on all critical edges that feed out of 'block'
 //
 // Arguments:
-//    block     - the block with incoming critical edges.
+//    block     - the block with outgoing critical edges.
 //
 // Return Value:
 //    None..
@@ -7853,7 +7932,7 @@ LinearScan::addResolution(BasicBlock* block,
 //    and generate the resolution code into that block.
 
 void
-LinearScan::handleOutoingCriticalEdges(BasicBlock*  block)
+LinearScan::handleOutgoingCriticalEdges(BasicBlock*  block)
 {
     VARSET_TP VARSET_INIT_NOCOPY(sameResolutionSet, VarSetOps::MakeEmpty(compiler));
     VARSET_TP VARSET_INIT_NOCOPY(sameLivePathsSet, VarSetOps::MakeEmpty(compiler));
@@ -7922,6 +8001,7 @@ LinearScan::handleOutoingCriticalEdges(BasicBlock*  block)
         bool isSame = false;
         bool maybeSingleTarget = false;
         bool maybeSameLivePaths = false;
+        bool liveOnlyAtSplitEdge = true;
         regNumber sameToReg = REG_NA;
         for (unsigned succIndex = 0; succIndex < succCount; succIndex++)
         {
@@ -7931,6 +8011,12 @@ LinearScan::handleOutoingCriticalEdges(BasicBlock*  block)
                 maybeSameLivePaths = true;
                 continue;
             }
+            else if (liveOnlyAtSplitEdge)
+            {
+                // Is the var live only at those target blocks which are connected by a split edge to this block
+                liveOnlyAtSplitEdge = ((succBlock->bbPreds->flNext == nullptr) && (succBlock != compiler->fgFirstBB));
+            }
+
             regNumber toReg = getVarReg(getInVarToRegMap(succBlock->bbNum), varNum);
             if (sameToReg == REG_NA)
             {
@@ -7962,6 +8048,18 @@ LinearScan::handleOutoingCriticalEdges(BasicBlock*  block)
             // If this register is used by a switch table at the end of the block, we can't do the copy
             // in this block (since we can't insert it after the switch).
             if ((sameToRegMask & switchRegs) != RBM_NONE)
+            {
+                sameToReg = REG_NA;
+            }
+
+            // If the var is live only at those blocks connected by a split edge and not live-in at some of the
+            // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution
+            // will be deferred to the handling of split edges, which means copy will only be at those target(s).
+            //
+            // Another way to achieve similar resolution for vars live only at split edges is by removing them
+            // from consideration up-front but it requires that we traverse those edges anyway to account for
+            // the registers that must note be overwritten.
+            if (liveOnlyAtSplitEdge && maybeSameLivePaths)
             {
                 sameToReg = REG_NA;
             }
@@ -8083,7 +8181,7 @@ LinearScan::resolveEdges()
         }
         if (blockInfo[block->bbNum].hasCriticalOutEdge)
         {
-            handleOutoingCriticalEdges(block);
+            handleOutgoingCriticalEdges(block);
         }
         prevBlock = block;
     }
@@ -8642,13 +8740,6 @@ void dumpRegMask(regMaskTP regs)
     }
 }
 
-
-const char *gtOpNames[] = 
-{
-    #define GTNODE(en,sn,cm,ok) #en , 
-    #include "gtlist.h"
-};
-
 void RefPosition::dump()
 {
     printf("<RefPosition #%-3u @%-3u", rpNum, nodeLocation);
@@ -8664,7 +8755,7 @@ void RefPosition::dump()
         this->getInterval()->tinyDump();
 
     if (this->treeNode)
-        printf("%s ", gtOpNames[treeNode->OperGet()]);
+        printf("%s ", treeNode->OpName(treeNode->OperGet()));
     printf("BB%02u ", this->bbNum);
 
     printf("regmask=");
@@ -9686,6 +9777,7 @@ LinearScan::dumpRegRecordHeader()
     //    l is either '*' (if a last use) or ' ' (otherwise)
     //    d is either 'D' (if a delayed use) or ' ' (otherwise)
 
+    maxNodeLocation = (maxNodeLocation == 0) ? 1: maxNodeLocation;  // corner case of a method with an infinite loop without any gentree nodes
     assert(maxNodeLocation >= 1);
     assert(refPositionCount >= 1);
     int nodeLocationWidth = (int)log10((double)maxNodeLocation) + 1;

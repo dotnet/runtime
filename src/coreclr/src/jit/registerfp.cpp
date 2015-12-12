@@ -78,7 +78,7 @@ void CodeGen::genFloatConst(GenTree *tree, RegSet::RegisterPreference *pref)
 
 void CodeGen::genFloatMath(GenTree *tree, RegSet::RegisterPreference *pref)
 {
-    assert(tree->OperGet() == GT_MATH);
+    assert(tree->OperGet() == GT_INTRINSIC);
 
     GenTreePtr op1 = tree->gtOp.gtOp1;
 
@@ -87,7 +87,7 @@ void CodeGen::genFloatMath(GenTree *tree, RegSet::RegisterPreference *pref)
 
     instruction ins;
 
-    switch (tree->gtMath.gtMathFN)
+    switch (tree->gtIntrinsic.gtIntrinsicId)
     {
     case CORINFO_INTRINSIC_Sin:
         ins = INS_invalid; 
@@ -215,7 +215,7 @@ void CodeGen::genFloatSimple(GenTree *tree, RegSet::RegisterPreference *pref)
             genFloatAsgArith(tree);
             break;
         }
-        case GT_MATH:
+        case GT_INTRINSIC:
             genFloatMath(tree, pref);
             break;
 

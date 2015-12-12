@@ -161,14 +161,14 @@ inline PCODE GetLR(const T_CONTEXT * context) {
 
 extern "C" LPVOID __stdcall GetCurrentSP();
 
-inline void SetSP(T_CONTEXT *context, TADDR esp) {
+inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;
-    context->Sp = DWORD(esp);
+    context->Sp = DWORD64(sp);
 }
 
-inline void SetFP(T_CONTEXT *context, TADDR ebp) {
+inline void SetFP(T_CONTEXT *context, TADDR fp) {
     LIMITED_METHOD_DAC_CONTRACT;
-    context->Fp = DWORD(ebp);
+    context->Fp = DWORD64(fp);
 }
 
 inline TADDR GetFP(const T_CONTEXT * context)
@@ -180,6 +180,16 @@ inline TADDR GetFP(const T_CONTEXT * context)
 #ifdef FEATURE_COMINTEROP
 void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
 #endif // FEATURE_COMINTEROP
+
+inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
+{
+#ifdef CROSSGEN_COMPILE
+    // The code won't be executed when we are cross-compiling so flush instruction cache is unnecessary
+    return TRUE;
+#else
+    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+#endif
+}
 
 //------------------------------------------------------------------------
 inline void emitJump(UINT32* pCode, LPVOID target)
@@ -196,7 +206,11 @@ inline void emitJump(UINT32* pCode, LPVOID target)
     pCode[0] = 0x58000050UL;   // ldr x16, [pc, #8]
     pCode[1] = 0xD61F0200UL;   // br  x16
 
+    // Ensure that the updated instructions get updated in the I-Cache
+    ClrFlushInstructionCache(pCode, 8);
+
     *((LPVOID *)(pCode + 2)) = target;   // 64-bit target address
+
 }
 
 //------------------------------------------------------------------------
@@ -436,15 +450,6 @@ struct HijackArgs
     // ARM64:NYI
 };
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
-{
-#ifdef CROSSGEN_COMPILE
-    // The code won't be executed when we are cross-compiling so flush instruction cache is unnecessary
-    return TRUE;
-#else
-    return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
-#endif
-}
 EXTERN_C VOID STDCALL PrecodeFixupThunk();
 
 // Invalid precode type
