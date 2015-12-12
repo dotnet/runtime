@@ -104,5 +104,6 @@
     <!-- Setting this to "false" works only for workstation GC, not server. -->
     <FeatureSymDiff>true</FeatureSymDiff>
     <FeatureWinDbAppCompat>true</FeatureWinDbAppCompat>
+    <FeatureReadyToRun Condition="'$(TargetArch)'!='arm64'">true</FeatureReadyToRun>
   </PropertyGroup>
 </Project>

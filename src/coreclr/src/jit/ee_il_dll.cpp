@@ -46,6 +46,21 @@ JitOptions jitOpts =
 
 /*****************************************************************************/
 
+void jitStartup()
+{
+#ifdef FEATURE_TRACELOGGING
+    JitTelemetry::NotifyDllProcessAttach();
+#endif
+    Compiler::compStartup();
+}
+
+void jitShutdown()
+{
+    Compiler::compShutdown();
+#ifdef FEATURE_TRACELOGGING
+    JitTelemetry::NotifyDllProcessDetach();
+#endif
+}
 
 /*****************************************************************************
  *  jitOnDllProcessAttach() called by DllMain() when jit.dll is loaded
@@ -53,7 +68,7 @@ JitOptions jitOpts =
 
 void jitOnDllProcessAttach()
 {
-    Compiler::compStartup();
+    jitStartup();
 }
 
 /*****************************************************************************
@@ -62,7 +77,7 @@ void jitOnDllProcessAttach()
 
 void jitOnDllProcessDetach()
 {
-    Compiler::compShutdown();
+    jitShutdown();
 }
 
 
@@ -126,7 +141,7 @@ ICorJitCompiler* __stdcall getJit()
     {
         ILJitter = new (CILJitSingleton) CILJit();
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-        Compiler::compStartup();
+        jitStartup();
 #endif
     }
     return(ILJitter);
@@ -213,6 +228,10 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
         // Continue, by shutting down this JIT as well.
     }
 
+#ifdef FEATURE_MERGE_JIT_AND_ENGINE
+    jitShutdown();
+#endif
+
     Compiler::ProcessShutdownWork(statInfo);
 }
 
@@ -231,7 +250,6 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
 
-#ifndef RYUJIT_CTPBUILD
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */
@@ -260,14 +278,11 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
     return 0;
 #endif // !_TARGET_AMD64_
 }
-#endif //!RYUJIT_CTPBUILD
 
-#ifndef RYUJIT_CTPBUILD
 void CILJit::setRealJit(ICorJitCompiler* realJitCompiler)
 {
     g_realJitCompiler = realJitCompiler;
 }
-#endif // !RYUJIT_CTPBUILD
 
 
 /*****************************************************************************
@@ -276,11 +291,11 @@ void CILJit::setRealJit(ICorJitCompiler* realJitCompiler)
 
 unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig)
 {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(_TARGET_AMD64_) 
 
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
-    // TODO-ARM64-Bug?: structs <= 16 bytes get passed in 2 consecutive registers.
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     CORINFO_CLASS_HANDLE        argClass;
     CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
@@ -288,12 +303,12 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
     if (argType == TYP_STRUCT)
     {
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
-        return structSize;
+        return structSize;  // TODO: roundUp() needed here?
     }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     return sizeof(size_t);
 
-#else // !_TARGET_AMD64_ && !_TARGET_ARM64_
+#else // !_TARGET_AMD64_ 
 
     CORINFO_CLASS_HANDLE        argClass;
     CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
@@ -306,13 +321,23 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
         // make certain the EE passes us back the right thing for refanys
         assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2*sizeof(void*));
 
-        return (unsigned)roundUp(structSize, sizeof(size_t));
+#if FEATURE_MULTIREG_STRUCT_ARGS
+#ifdef _TARGET_ARM64_
+        if (structSize > MAX_PASS_MULTIREG_BYTES)
+        {
+            // This struct is passed by reference using a single 'slot'
+            return TARGET_POINTER_SIZE;
+        }
+#endif // _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_STRUCT_ARGS
+
+        return (unsigned)roundUp(structSize, TARGET_POINTER_SIZE);
     }
     else
     {
-        unsigned  argSize = sizeof(size_t) * genTypeStSz(argType);
+        unsigned  argSize = sizeof(int) * genTypeStSz(argType);
         assert(0 < argSize && argSize <= sizeof(__int64));
-        return  argSize;
+        return (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
     }
 #endif
 }
@@ -332,13 +357,8 @@ GenTreePtr          Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO *szMetaSig)
 
 unsigned           Compiler::eeGetArrayDataOffset(var_types type)
 {
-#ifndef RYUJIT_CTPBUILD
     return varTypeIsGC(type) ? eeGetEEInfo()->offsetOfObjArrayData 
                                                  : offsetof(CORINFO_Array, u1Elems);
-#else
-    return varTypeIsGC(type) ? offsetof(CORINFO_RefArray, refElems)
-                                                 : offsetof(CORINFO_Array, u1Elems);
-#endif
 }
 
 /*****************************************************************************/
@@ -894,6 +914,20 @@ void                Compiler::eeSetEHinfo(unsigned                 EHnumber,
         info.compCompHnd->setEHinfo(EHnumber, clause);
     }
 }
+
+WORD                Compiler::eeGetRelocTypeHint(void * target)
+{
+    if (info.compMatchedVM)
+    {
+        return info.compCompHnd->getRelocTypeHint(target);
+    }
+    else
+    {
+        // No hints
+        return (WORD)-1;
+    }
+}
+
 
 CORINFO_FIELD_HANDLE Compiler::eeFindJitDataOffs(unsigned dataOffs)
 {

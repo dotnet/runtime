@@ -54,7 +54,7 @@ DEF_TP(DOUBLE  ,"double"  , TYP_DOUBLE,  TI_DOUBLE,8,  8,  8,   2, 8, VTF_FLT,  
 DEF_TP(REF     ,"ref"     , TYP_REF,     TI_REF,  PS,GCS,GCS, PST,PS, VTF_ANY|VTF_GCR|VTF_I,TYPE_REF_PTR)
 DEF_TP(BYREF   ,"byref"   , TYP_BYREF,   TI_ERROR,PS,BRS,BRS, PST,PS, VTF_ANY|VTF_BYR|VTF_I,TYPE_REF_BYR)
 DEF_TP(ARRAY   ,"array"   , TYP_REF,     TI_REF,  PS,GCS,GCS, PST,PS, VTF_ANY|VTF_GCR|VTF_I,TYPE_REF_PTR)
-DEF_TP(STRUCT  ,"struct"  , TYP_STRUCT,  TI_STRUCT,0,  0,  0,   1, 4, VTF_ANY,        TYPE_REF_STC)
+DEF_TP(STRUCT  ,"struct"  , TYP_STRUCT,  TI_STRUCT,0,  0,  0,   1, 4, VTF_S,          TYPE_REF_STC)
 
 DEF_TP(BLK     ,"blk"     , TYP_BLK,     TI_ERROR, 0,  0,  0,   1, 4, VTF_ANY,        0           ) // blob of memory
 DEF_TP(LCLBLK  ,"lclBlk"  , TYP_LCLBLK,  TI_ERROR, 0,  0,  0,   1, 4, VTF_ANY,        0           ) // preallocated memory for locspace
@@ -64,9 +64,10 @@ DEF_TP(FNC     ,"function", TYP_FNC,     TI_ERROR, 0, PS, PS,   0, 0, VTF_ANY|VT
 
 #ifdef FEATURE_SIMD
 // Amd64: The size and alignment of SIMD vector varies at JIT time based on whether target arch supports AVX or SSE2.
-DEF_TP(SIMD12   ,"simd12" , TYP_SIMD16,  TI_STRUCT,12,12, 16,   4,16, VTF_ANY,        TYPE_REF_STC)
-DEF_TP(SIMD16   ,"simd16" , TYP_SIMD16,  TI_STRUCT,16,16, 16,   4,16, VTF_ANY,        TYPE_REF_STC)
-DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  TI_STRUCT,32,32, 32,   8,16, VTF_ANY,        TYPE_REF_STC)
+DEF_TP(SIMD8    ,"simd8"  , TYP_SIMD8,   TI_STRUCT, 8, 8,  8,   2, 8, VTF_S,          TYPE_REF_STC)
+DEF_TP(SIMD12   ,"simd12" , TYP_SIMD12,  TI_STRUCT,12,16, 16,   4,16, VTF_S,          TYPE_REF_STC)
+DEF_TP(SIMD16   ,"simd16" , TYP_SIMD16,  TI_STRUCT,16,16, 16,   4,16, VTF_S,          TYPE_REF_STC)
+DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  TI_STRUCT,32,32, 32,   8,16, VTF_S,          TYPE_REF_STC)
 #endif // FEATURE_SIMD
 
 DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  TI_ERROR, 0,  0,  0,   0, 0, VTF_ANY,        0           )

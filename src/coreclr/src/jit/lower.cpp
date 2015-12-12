@@ -134,6 +134,24 @@ Compiler::fgWalkResult Lowering::LowerNodeHelper(GenTreePtr* pTree, Compiler::fg
     return Compiler::WALK_CONTINUE;
 }
 
+#if !defined(_TARGET_64BIT_)
+genTreeOps getHiOper(genTreeOps oper)
+{
+    switch(oper)
+    {
+    case GT_ADD: return GT_ADD_HI;  break;
+    case GT_SUB: return GT_SUB_HI;  break;
+    case GT_MUL: return GT_MUL_HI;  break;
+    case GT_DIV: return GT_DIV_HI;  break;
+    case GT_MOD: return GT_MOD_HI;  break;
+    case GT_OR:  return GT_OR;      break;
+    case GT_AND: return GT_AND;     break;
+    case GT_XOR: return GT_XOR;     break;
+    }
+    assert(!"getHiOper called for invalid oper");
+    return GT_NONE;
+}
+#endif // !defined(_TARGET_64BIT_)
 
 //------------------------------------------------------------------------
 // DecomposeNode: Decompose long-type trees into lower & upper halves.
@@ -265,6 +283,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
                 unsigned hiVarNum = loVarNum + 1;
                 tree->AsLclVarCommon()->SetLclNum(loVarNum);
                 hiStore->SetOper(GT_STORE_LCL_VAR);
+                hiStore->AsLclVarCommon()->SetLclNum(hiVarNum);
             }
             else
             {
@@ -370,6 +389,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             GenTree* hiOp1 = op1->gtGetOp2();
             comp->fgSnipNode(curStmt, op1);
             loResult = tree;
+            loResult->gtType = TYP_INT;
             loResult->gtOp.gtOp1 = loOp1;
             loOp1->gtNext = loResult;
             loResult->gtPrev = loOp1;
@@ -382,15 +402,49 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
     case GT_NEG:
         NYI("GT_NEG of TYP_LONG");
         break;
-    // Binary operators whose long result is simply the concatenation of the int result
-    // on its constituent halves:
+    // Binary operators. Those that require different computation for upper and lower half are
+    // handled by the use of getHiOper().
+    case GT_ADD:
     case GT_OR:
     case GT_XOR:
     case GT_AND:
-        NYI("Logical binary operators on TYP_LONG");
+        {
+            NYI_IF((tree->gtFlags & GTF_REVERSE_OPS) != 0, "Binary operator with GTF_REVERSE_OPS");
+            GenTree* op1 = tree->gtGetOp1();
+            GenTree* op2 = tree->gtGetOp2();
+            // Both operands must have already been decomposed into GT_LONG operators.
+            noway_assert((op1->OperGet() == GT_LONG) && (op2->OperGet() == GT_LONG));
+            // Capture the lo and hi halves of op1 and op2.
+            GenTree* loOp1 = op1->gtGetOp1();
+            GenTree* hiOp1 = op1->gtGetOp2();
+            GenTree* loOp2 = op2->gtGetOp1();
+            GenTree* hiOp2 = op2->gtGetOp2();
+            // Now, remove op1 and op2 from the node list.
+            comp->fgSnipNode(curStmt, op1);
+            comp->fgSnipNode(curStmt, op2);
+            // We will reuse "tree" for the loResult, which will now be of TYP_INT, and its operands
+            // will be the lo halves of op1 from above.
+            loResult = tree;
+            loResult->gtType = TYP_INT;
+            loResult->gtOp.gtOp1 = loOp1;
+            loResult->gtOp.gtOp2 = loOp2;
+            // The various halves will be correctly threaded internally. We simply need to
+            // relink them into the proper order, i.e. loOp1 is followed by loOp2, and then
+            // the loResult node.
+            // (This rethreading, and that below, are where we need to address the reverse ops case).
+            loOp1->gtNext = loOp2;
+            loOp2->gtPrev = loOp1;
+            loOp2->gtNext = loResult;
+            loResult->gtPrev = loOp2;
+
+            // We will now create a new tree for the hiResult, and then thread these nodes as above.
+            hiResult = new (comp, oper) GenTreeOp(getHiOper(oper), TYP_INT, hiOp1, hiOp2);
+            hiOp1->gtNext = hiOp2;
+            hiOp2->gtPrev = hiOp1;
+            hiOp2->gtNext = hiResult;
+            hiResult->gtPrev = hiOp2;
+        }
         break;
-    // Binary operators whose upper and lower halves require different computation.
-    case GT_ADD:
     case GT_SUB:
     case GT_MUL:
     case GT_DIV:
@@ -1070,9 +1124,8 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
     if (!isOnStack)
     {
 #ifdef FEATURE_SIMD
-        // We can have SIMD types that are handled as TYP_DOUBLE, but which need to be
-        // passed in integer registers.  We need the putArg node to be of the int type.
-        if (type == TYP_DOUBLE && genIsValidIntReg(fp->regNum))
+        // TYP_SIMD8 is passed in an integer register.  We need the putArg node to be of the int type.
+        if (type == TYP_SIMD8 && genIsValidIntReg(fp->regNum))
         {
             type = TYP_LONG;
         }
@@ -1658,7 +1711,11 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
                     if (op1->OperGet() == GT_LCL_VAR_ADDR)
                     {
                         unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-                        if(comp->lvaTable[lclNum].TypeGet() == TYP_STRUCT)
+                        // TODO-1stClassStructs: This is here to duplicate previous behavior,
+                        // but is not needed because the scenario being quirked did not involve
+                        // a SIMD or enregisterable struct.
+                        // if(comp->lvaTable[lclNum].TypeGet() == TYP_STRUCT)
+                        if (varTypeIsStruct(comp->lvaTable[lclNum].TypeGet()))
                         {
                             // First arg is addr of a struct local.
                             paddingNeeded = true;
@@ -1807,7 +1864,7 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
-        InsertPInvokeMethodEpilog(comp->compCurBB);
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
 #endif
 
@@ -2048,7 +2105,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
     {
-        InsertPInvokeMethodEpilog(comp->compCurBB);
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
 #endif
 
@@ -2117,7 +2174,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
     // a method returns.
     if (comp->info.compCallUnmanaged)
     {
-        InsertPInvokeMethodEpilog(comp->compCurBB);
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(jmp));
     }
 #endif
 }
@@ -2135,7 +2192,7 @@ void Lowering::LowerRet(GenTree* ret)
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->info.compCallUnmanaged && (comp->compCurBB == comp->genReturnBB))
     {
-        InsertPInvokeMethodEpilog(comp->compCurBB);
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
 #endif
 }
@@ -2365,7 +2422,7 @@ GenTree* Lowering::SetGCState(int state)
     GenTree* base = new(comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->info.compLvFrameListRoot, -1);
 
     GenTree* storeGcState = new(comp, GT_STOREIND)
-        GenTreeIndir(GT_STOREIND, TYP_BYTE,
+        GenTreeStoreInd(TYP_BYTE,
                      new(comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL,
                                                        base,
                                                        nullptr, 1, pInfo->offsetOfGCState),
@@ -2404,9 +2461,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
         data = new(comp, GT_LCL_FLD)
             GenTreeLclFld(GT_LCL_FLD, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
     }
-    GenTree* storeInd = new(comp, GT_STOREIND)
-        GenTreeIndir(GT_STOREIND, TYP_I_IMPL, addr, data);
-
+    GenTree* storeInd = new(comp, GT_STOREIND) GenTreeStoreInd(TYP_I_IMPL, addr, data);
     return storeInd;
 }
 
@@ -2486,27 +2541,65 @@ void Lowering::InsertPInvokeMethodProlog()
     }
 }
 
-// code that needs to be run when exiting any method that has pinvoke inlines
+// Code that needs to be run when exiting any method that has pinvoke inlines
 // this needs to be inserted any place you can exit the function: returns, tailcalls and jmps
-void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB)
+//
+// Parameters
+//    returnBB   -  basic block from which a method can return
+//    lastExpr   -  Gentree of the last top level stmnt of returnBB  (debug only arg)
+void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
+                                         DEBUGARG(GenTreePtr lastExpr) )
 {
     assert(returnBB != nullptr);
     assert(comp->info.compCallUnmanaged);
 
     // Method doing Pinvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
+#ifdef DEBUG
+    bool endsWithTailCallOrJmp = false;
+#if FEATURE_FASTTAILCALL
+    endsWithTailCallOrJmp = returnBB->endsWithTailCallOrJmp(comp);
+#endif // FEATURE_FASTTAILCALL
+    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) || endsWithTailCallOrJmp);
+#endif // DEBUG
 
+    GenTreeStmt* lastTopLevelStmt = comp->fgGetLastTopLevelStmt(returnBB)->AsStmt();
+    GenTreePtr lastTopLevelStmtExpr = lastTopLevelStmt->gtStmtExpr;
+
+    // Gentree of the last top level stmnt should match.
+    assert(lastTopLevelStmtExpr == lastExpr);   
+
+    // Note: PInvoke Method Epilog (PME) needs to be inserted just before GT_RETURN, GT_JMP or GT_CALL node in execution order
+    // so that it is guaranteed that there will be no further PInvokes after that point in the method.
+    //
+    // Example1: GT_RETURN(op1) - say execution order is: Op1, GT_RETURN.  After inserting PME, execution order would be
+    //           Op1, PME, GT_RETURN
+    //
+    // Example2: GT_CALL(arg side effect computing nodes, Stk Args Setup, Reg Args setup). The execution order would be
+    //           arg side effect computing nodes, Stk Args setup, Reg Args setup, GT_CALL
+    //           After inserting PME execution order would be:
+    //           arg side effect computing nodes, Stk Args setup, Reg Args setup, PME, GT_CALL
+    //
+    // Example3: GT_JMP.  After inserting PME execution order would be: PME, GT_JMP
+    //           That is after PME, args for GT_JMP call will be setup.
+
+    // TODO-Cleanup: setting GCState to 1 seems to be redundant as InsertPInvokeCallProlog will set it to zero before a PInvoke
+    // call and InsertPInvokeCallEpilog() will set it back to 1 after the PInvoke.  Though this is redundant, it is harmeless.
+    // Note that liveness is artificially extending the life of compLvFrameListRoot var if the method being compiled has
+    // pinvokes.  Deleting the below stmnt would cause an an assert in lsra.cpp::SetLastUses() since compLvFrameListRoot
+    // will be live-in to a BBJ_RETURN block without any uses.  Long term we need to fix liveness for x64 case to properly
+    // extend the life of compLvFrameListRoot var.
+    // 
     // Thread.offsetOfGcState = 0/1 
     // That is [tcb + offsetOfGcState] = 1
     GenTree* storeGCState = SetGCState(1);
-    comp->fgInsertStmtNearEnd(returnBB, LowerMorphAndSeqTree(storeGCState));
+    comp->fgInsertTreeBeforeAsEmbedded(storeGCState, lastTopLevelStmtExpr, lastTopLevelStmt, returnBB);
 
     if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
     {
         // Pop the frame, in non-stubs we do this around each pinvoke call
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
 
-        comp->fgInsertStmtNearEnd(returnBB, LowerMorphAndSeqTree(frameUpd));
+        comp->fgInsertTreeBeforeAsEmbedded(frameUpd, lastTopLevelStmtExpr, lastTopLevelStmt, returnBB);
     }
 }
 
@@ -3142,9 +3235,6 @@ void Lowering::LowerInd(GenTreePtr* pTree)
 {
     GenTreePtr newNode = NULL;
     GenTreePtr cTree = *pTree;
-    GenTreePtr  base, index;
-    unsigned    scale, offset;
-    bool        rev;
 
     JITDUMP("\n");
     DISPNODE(cTree);
@@ -3157,6 +3247,12 @@ void Lowering::LowerInd(GenTreePtr* pTree)
 
     LowerAddrMode(&cTree->gtOp.gtOp1, before, nullptr, true);
 
+    // Mark all GT_STOREIND nodes to indicate that it is not known
+    // whether it represents a RMW memory op.  
+    if (cTree->OperGet() == GT_STOREIND)
+    {
+        cTree->AsStoreInd()->SetRMWStatusDefault();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3614,7 +3710,7 @@ void Lowering::DoPhase()
  *
  * This is a first iteration to actually recognize trees that can be code-generated
  * as a single read-modify-write instruction on AMD64/x86.  For now
- * this method only supports the recognition of simple addresing modes (through GT_LEA)
+ * this method only supports the recognition of simple addressing modes (through GT_LEA)
  * or local var indirections.  Local fields, array access and other more complex nodes are
  * not yet supported.
  *
@@ -3625,9 +3721,18 @@ bool Lowering::IndirsAreEquivalent(GenTreePtr candidate, GenTreePtr storeInd)
 {
     assert(candidate->OperGet() == GT_IND);
     assert(storeInd->OperGet()  == GT_STOREIND);
+    
+    // We should check the size of the indirections.  If they are
+    // different, say because of a cast, then we can't call them equivalent.  Doing so could cause us
+    // to drop a cast.
+    // Signed-ness difference is okay and expected since a store indirection must always 
+    // be signed based on the CIL spec, but a load could be unsigned.
+    if (genTypeSize(candidate->gtType) != genTypeSize(storeInd->gtType))
+        return false;
+    
     GenTreePtr pTreeA = candidate->gtGetOp1();
     GenTreePtr pTreeB = storeInd->gtGetOp1();
-
+    
     // This method will be called by codegen (as well as during lowering).
     // After register allocation, the sources may have been spilled and reloaded
     // to a different register, indicated by an inserted GT_RELOAD node.
@@ -3640,14 +3745,12 @@ bool Lowering::IndirsAreEquivalent(GenTreePtr candidate, GenTreePtr storeInd)
     if (pTreeA->OperGet() != pTreeB->OperGet())
         return false;
 
-    if (genTypeSize(candidate->gtType) != genTypeSize(storeInd->gtType))
-        return false;
-
     oper = pTreeA->OperGet();
     switch (oper)
     {
     case GT_LCL_VAR:
-	case GT_CLS_VAR_ADDR:
+    case GT_LCL_VAR_ADDR:
+    case GT_CLS_VAR_ADDR:
     case GT_CNS_INT:
         return NodesAreEquivalentLeaves(pTreeA, pTreeB);
 
@@ -3682,8 +3785,8 @@ bool Lowering::NodesAreEquivalentLeaves(GenTreePtr tree1, GenTreePtr tree2)
     tree1 = tree1->gtSkipReloadOrCopy();
     tree2 = tree2->gtSkipReloadOrCopy();
 
-	if (tree1->TypeGet() != tree2->TypeGet())
-		return false;
+    if (tree1->TypeGet() != tree2->TypeGet())
+        return false;
 
     if (tree1->OperGet() != tree2->OperGet())
         return false;
@@ -3694,11 +3797,13 @@ bool Lowering::NodesAreEquivalentLeaves(GenTreePtr tree1, GenTreePtr tree2)
     switch (tree1->OperGet())
     {
     case GT_CNS_INT:
-        return tree1->gtIntCon.gtIconVal == tree2->gtIntCon.gtIconVal;
+        return tree1->gtIntCon.gtIconVal == tree2->gtIntCon.gtIconVal &&
+               tree1->IsIconHandle() == tree2->IsIconHandle();
     case GT_LCL_VAR:
+    case GT_LCL_VAR_ADDR:
         return tree1->gtLclVarCommon.gtLclNum == tree2->gtLclVarCommon.gtLclNum;
-	case GT_CLS_VAR_ADDR:
-		return tree1->gtClsVar.gtClsVarHnd == tree2->gtClsVar.gtClsVarHnd;
+    case GT_CLS_VAR_ADDR:
+        return tree1->gtClsVar.gtClsVarHnd == tree2->gtClsVar.gtClsVarHnd;
     default:
         return false;
     }
@@ -3792,6 +3897,121 @@ void Lowering::SimpleLinkNodeAfter(GenTree* prevTree, GenTree* newTree)
         nextTree->gtPrev = newTree;
     }
 }
+
+
+#ifdef _TARGET_64BIT_
+/**
+ * Get common information required to handle a cast instruction
+ *
+ * Right now only supports 64 bit targets. In order to support 32 bit targets the
+ * switch statement needs work.
+ *
+ */
+void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
+{
+    // Intialize castInfo
+    memset(castInfo, 0, sizeof(*castInfo));
+
+    GenTreePtr castOp = treeNode->gtCast.CastOp();
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = castOp->TypeGet();
+
+    castInfo->unsignedDest = varTypeIsUnsigned(dstType);
+    castInfo->unsignedSource = varTypeIsUnsigned(srcType);
+
+    // If necessary, force the srcType to unsigned when the GT_UNSIGNED flag is set.
+    if (!castInfo->unsignedSource && (treeNode->gtFlags & GTF_UNSIGNED) != 0)
+    {
+        srcType = genUnsignedType(srcType);
+        castInfo->unsignedSource = true;
+    }
+
+    if (treeNode->gtOverflow() && (genTypeSize(srcType) >= genTypeSize(dstType) || (srcType == TYP_INT && dstType == TYP_ULONG)))
+    {
+        castInfo->requiresOverflowCheck = true;
+    }
+
+    if (castInfo->requiresOverflowCheck)
+    {
+        ssize_t    typeMin = 0;
+        ssize_t    typeMax = 0;
+        ssize_t    typeMask = 0;
+        bool       signCheckOnly = false;
+
+        // Do we need to compare the value, or just check masks
+
+        switch (dstType)
+        {
+        default:
+            assert(!"unreachable: getCastDescription");
+            break;
+
+        case TYP_BYTE:
+            typeMask = ssize_t((int)0xFFFFFF80);
+            typeMin = SCHAR_MIN;
+            typeMax = SCHAR_MAX;
+            break;
+
+        case TYP_UBYTE:
+            typeMask = ssize_t((int)0xFFFFFF00L);
+            break;
+
+        case TYP_SHORT:
+            typeMask = ssize_t((int)0xFFFF8000);
+            typeMin = SHRT_MIN;
+            typeMax = SHRT_MAX;
+            break;
+
+        case TYP_CHAR:
+            typeMask = ssize_t((int)0xFFFF0000L);
+            break;
+
+        case TYP_INT:
+            if (srcType == TYP_UINT)
+            {
+                signCheckOnly = true;
+            }
+            else
+            {
+                typeMask = 0xFFFFFFFF80000000LL;
+                typeMin = INT_MIN;
+                typeMax = INT_MAX;
+            }
+            break;
+
+        case TYP_UINT:
+            if (srcType == TYP_INT)
+            {
+                signCheckOnly = true;
+            }
+            else
+            {
+                typeMask = 0xFFFFFFFF00000000LL;
+            }
+            break;
+
+        case TYP_LONG:
+            signCheckOnly = true;
+            break;
+
+        case TYP_ULONG:
+            signCheckOnly = true;
+            break;
+        }
+
+        if (signCheckOnly)
+        {
+            castInfo->signCheckOnly = true;
+        }
+
+        castInfo->typeMax = typeMax;
+        castInfo->typeMin = typeMin;
+        castInfo->typeMask = typeMask;
+    }
+}
+
+#endif // _TARGET_64BIT_
 
 #ifdef DEBUG
 void Lowering::DumpNodeInfoMap()
