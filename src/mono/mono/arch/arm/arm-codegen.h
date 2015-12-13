@@ -500,14 +500,24 @@ typedef struct {
 /* Rd := (Rm * Rs)[31:0]; 32 x 32 -> 32 */
 #define ARM_MUL_COND(p, rd, rm, rs, cond) \
 	ARM_EMIT(p, ARM_DEF_MUL_COND(ARMOP_MUL, rd, rm, rs, 0, 0, cond))
+#define ARM_UMULL_COND(p, rdhi, rdlo, rm, rs, cond) \
+	ARM_EMIT(p, ARM_DEF_MUL_COND(ARMOP_UMULL, rdhi, rm, rs, rdlo, 0, cond))
+#define ARM_SMULL_COND(p, rdhi, rdlo, rm, rs, cond) \
+	ARM_EMIT(p, ARM_DEF_MUL_COND(ARMOP_SMULL, rdhi, rm, rs, rdlo, 0, cond))
 #define ARM_MUL(p, rd, rm, rs) \
 	ARM_MUL_COND(p, rd, rm, rs, ARMCOND_AL)
+#define ARM_UMULL(p, rdhi, rdlo, rm, rs) \
+	ARM_UMULL_COND(p, rdhi, rdlo, rm, rs, ARMCOND_AL)
+#define ARM_SMULL(p, rdhi, rdlo, rm, rs) \
+	ARM_SMULL_COND(p, rdhi, rdlo, rm, rs, ARMCOND_AL)
 #define ARM_MULS_COND(p, rd, rm, rs, cond) \
 	ARM_EMIT(p, ARM_DEF_MUL_COND(ARMOP_MUL, rd, rm, rs, 0, 1, cond))
 #define ARM_MULS(p, rd, rm, rs) \
 	ARM_MULS_COND(p, rd, rm, rs, ARMCOND_AL)
 #define ARM_MUL_REG_REG(p, rd, rm, rs) ARM_MUL(p, rd, rm, rs)
 #define ARM_MULS_REG_REG(p, rd, rm, rs) ARM_MULS(p, rd, rm, rs)
+#define ARM_UMULL_REG_REG(p, rdhi, rdlo, rm, rs) ARM_UMULL(p, rdhi, rdlo, rm, rs)
+#define ARM_SMULL_REG_REG(p, rdhi, rdlo, rm, rs) ARM_SMULL(p, rdhi, rdlo, rm, rs)
 
 /* inline */
 #define ARM_IASM_MUL_COND(rd, rm, rs, cond) \
