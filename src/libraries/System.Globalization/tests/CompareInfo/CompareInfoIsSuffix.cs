@@ -59,14 +59,12 @@ namespace System.Globalization.Tests
         public void Test15() { Test(CultureInfo.InvariantCulture, "foobardzsdzs", "rddzs", false, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test16() { Test(s_turkish, "Hi", "I", false, CompareOptions.IgnoreCase); }
 
         [Fact]
         public void Test17() { Test(CultureInfo.InvariantCulture, "Hi", "I", true, CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test18() { Test(s_turkish, "Hi", "\u0130", true, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -85,14 +83,12 @@ namespace System.Globalization.Tests
         public void Test23() { Test(CultureInfo.InvariantCulture, "Hi", "\u0130", false, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test24() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "A\u0300", true, CompareOptions.None); }
 
         [Fact]
         public void Test25() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "A\u0300", false, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test26() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "a\u0300", true, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -124,15 +120,12 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test33()
         {
-            char unassignedUnicode = GetNextUnassignedUnicode();
-            Test(CultureInfo.InvariantCulture, "FooBA\u0300R", "Foo" + unassignedUnicode + "B\u00C0R", true, CompareOptions.IgnoreNonSpace);
+            Test(CultureInfo.InvariantCulture, "FooBA\u0300R", "FooB\u00C0R", true, CompareOptions.IgnoreNonSpace);
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void Test34() { Test(CultureInfo.InvariantCulture, "More Test's", "Tests", true, CompareOptions.IgnoreSymbols); }
 
         [Fact]
