@@ -64,6 +64,9 @@ public:
         DWORD dwThreadId,
         CORDB_CONTINUE_STATUS dwContinueStatus);
 
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(
+        DWORD threadId, ULONG32 contextSize, PBYTE context);
+
 private:
     DbgTransportTarget  * m_pProxy;
     DbgTransportSession * m_pTransport;
@@ -331,4 +334,17 @@ ShimRemoteDataTarget::ContinueStatusChanged(
         return m_fpContinueStatusChanged(m_pContinueStatusChangedUserData, dwThreadId, dwContinueStatus);
     }
     return E_NOTIMPL;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Unwind the stack to the next frame.
+//
+// Return Value: 
+//     context filled in with the next frame
+//
+HRESULT STDMETHODCALLTYPE 
+ShimRemoteDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
+{
+    return m_pTransport->VirtualUnwind(threadId, contextSize, context);
 }

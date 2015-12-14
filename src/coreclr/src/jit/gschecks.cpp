@@ -397,6 +397,7 @@ void Compiler::gsParamsToShadows()
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
         LclVarDsc *varDsc = &lvaTable[lclNum];
+        gsShadowVarInfo[lclNum].shadowCopy = NO_SHADOW_COPY;
 
         // Only care about params whose values are on the stack
         if (!ShadowParamVarInfo::mayNeedShadowCopy(varDsc))
@@ -405,8 +406,7 @@ void Compiler::gsParamsToShadows()
         }
 
         if (!varDsc->lvIsPtr && !varDsc->lvIsUnsafeBuffer)
-        {
-            gsShadowVarInfo[lclNum].shadowCopy = NO_SHADOW_COPY;
+        {            
             continue;
         }
 
@@ -447,11 +447,6 @@ void Compiler::gsParamsToShadows()
     {
         LclVarDsc *varDsc = &lvaTable[lclNum];
 
-        if (!ShadowParamVarInfo::mayNeedShadowCopy(varDsc))
-        {
-            continue;
-        }
-
         unsigned shadowVar = gsShadowVarInfo[lclNum].shadowCopy;
         if (shadowVar == NO_SHADOW_COPY)
         {
@@ -486,6 +481,60 @@ void Compiler::gsParamsToShadows()
         }
         fgEnsureFirstBBisScratch();
         (void) fgInsertStmtAtBeg(fgFirstBB, fgMorphTree(opAssign));
+    }
+
+    // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
+    // params before "jmp" to CalleeMethod.
+    if (compJmpOpUsed)
+    {
+        // There could be more than one basic block ending with a "Jmp" type tail call.
+        // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
+        for (BasicBlock * block = fgFirstBB; block; block = block->bbNext)
+        {
+            if (block->bbJumpKind != BBJ_RETURN)
+            {
+                continue;
+            }
+
+            if  ((block->bbFlags & BBF_HAS_JMP) == 0) 
+            {
+                continue;
+            }
+
+            for (UINT lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                LclVarDsc *varDsc = &lvaTable[lclNum];
+
+                unsigned shadowVar = gsShadowVarInfo[lclNum].shadowCopy;
+                if (shadowVar == NO_SHADOW_COPY)
+                {
+                    continue;
+                }
+
+                GenTreePtr src = gtNewLclvNode(shadowVar, lvaTable[shadowVar].TypeGet());
+                GenTreePtr dst = gtNewLclvNode(lclNum, varDsc->TypeGet());
+                
+                src->gtFlags |= GTF_DONT_CSE;
+                dst->gtFlags |= GTF_DONT_CSE;
+
+                GenTreePtr opAssign = nullptr;
+                if (varDsc->TypeGet() == TYP_STRUCT)
+                {
+                    CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+                    src = gtNewOperNode(GT_ADDR, TYP_BYREF, src);
+                    dst = gtNewOperNode(GT_ADDR, TYP_BYREF, dst);
+
+                    opAssign = gtNewCpObjNode(dst, src, clsHnd, false);
+                }
+                else
+                {
+                    opAssign = gtNewAssignNode(dst, src);
+                }
+                
+                (void) fgInsertStmtNearEnd(block, fgMorphTree(opAssign));
+            }
+
+        }
     }
 }
 

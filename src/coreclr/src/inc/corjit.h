@@ -334,52 +334,6 @@ struct IEEMemoryManager;
 
 extern "C" ICorJitCompiler* __stdcall getJit();
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-// #JITEEVersionIdentifier
-//
-// This GUID represents the version of the JIT/EE interface. Any time the interface between the JIT and
-// the EE changes (by adding or removing methods to any interface shared between them), this GUID should
-// be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
-//
-// You can use "uuidgen.exe -s" to generate this value.
-//
-// **** NOTE TO INTEGRATORS:
-//
-// If there is a merge conflict here, because the version changed in two different places, you must
-// create a **NEW** GUID, not simply choose one or the other!
-//
-// NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if !defined(SELECTANY)
-    #define SELECTANY extern __declspec(selectany)
-#endif
-
-#if !defined(RYUJIT_CTPBUILD)
-
-// Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* f7be09f3-9ca7-42fd-b0ca-f97c0499f5a3 */
-    0xf7be09f3,
-    0x9ca7,
-    0x42fd,
-    {0xb0, 0xca, 0xf9, 0x7c, 0x04, 0x99, 0xf5, 0xa3}
-};
-
-#else
-// Leave this one alone
-// We need it to build a .NET 4.5.1 compatible JIT for the RyuJIT CTP releases
-SELECTANY const GUID JITEEVersionIdentifier = { /* 72d8f09d-1052-4466-94e9-d095b370bdae */
-    0x72d8f09d,
-    0x1052,
-    0x4466,
-    {0x94, 0xe9, 0xd0, 0x95, 0xb3, 0x70, 0xbd, 0xae}
-};
-#endif
-
 // #EEToJitInterface
 // ICorJitCompiler is the interface that the EE uses to get IL bytecode converted to native code. Note that
 // to accomplish this the JIT has to call back to the EE to get symbolic information.  The code:ICorJitInfo
@@ -428,7 +382,6 @@ public:
             GUID*   versionIdentifier   /* OUT */
             ) = 0;
 
-#ifndef RYUJIT_CTPBUILD
     // When the EE loads the System.Numerics.Vectors assembly, it asks the JIT what length (in bytes) of
     // SIMD vector it supports as an intrinsic type.  Zero means that the JIT does not support SIMD
     // intrinsics, so the EE should use the default size (i.e. the size of the IL implementation).
@@ -441,7 +394,6 @@ public:
     // ICorJitCompiler implementation. If 'realJitCompiler' is nullptr, then the JIT should resume
     // executing all the functions itself.
     virtual void setRealJit(ICorJitCompiler* realJitCompiler) { }
-#endif // !RYUJIT_CTPBUILD
 
 };
 
@@ -579,7 +531,6 @@ public:
             ULONG *               numRuns
             ) = 0;
 
-#if !defined(RYUJIT_CTPBUILD)
     // Associates a native call site, identified by its offset in the native code stream, with
     // the signature information and method handle the JIT used to lay out the call site. If
     // the call site has no signature information (e.g. a helper call) or has no method handle
@@ -589,7 +540,6 @@ public:
             CORINFO_SIG_INFO *    callSig,      /* IN */
             CORINFO_METHOD_HANDLE methodHandle  /* IN */
             ) = 0;
-#endif // !defined(RYUJIT_CTPBUILD)
 
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting

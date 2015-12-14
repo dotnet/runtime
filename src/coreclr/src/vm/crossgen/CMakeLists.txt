@@ -22,7 +22,6 @@ set(VM_CROSSGEN_SOURCES
     ../baseassemblyspec.cpp
     ../corebindresult.cpp
     ../coreassemblyspec.cpp
-    ../crossdomaincalls.cpp
     ../dataimage.cpp
     ../decodemd.cpp
     ../debuginfostore.cpp
@@ -34,8 +33,6 @@ set(VM_CROSSGEN_SOURCES
     ../field.cpp
     ../fieldmarshaler.cpp
     ../formattype.cpp
-    ../typeequivalencehash.cpp
-    ../gcdecode.cpp
     ../genericdict.cpp
     ../generics.cpp
     ../genmeth.cpp
@@ -113,6 +110,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   include_directories(../i386)
   list(APPEND VM_CROSSGEN_SOURCES 
     ../i386/stublinkerx86.cpp
+    ../gcdecode.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
   include_directories(../arm)

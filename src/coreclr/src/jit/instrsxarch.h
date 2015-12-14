@@ -154,23 +154,23 @@ INSTMUL(imul_15, "imul", 0, IUM_RD, 0, 1, BAD_CODE, 0x4400003868, BAD_CODE)
 // So a 4-byte opcode would be something like this:
 //             0x22114433
 
-#define B3(byte1,byte2,byte3) ((byte1 << 16) | (byte2 << 24) | byte3)
-#define B2(byte1,byte2)                       ((byte1 << 16) | byte2)
-#define SSEFLT(c) B3(0xf3, 0x0f, c)
-#define SSEDBL(c) B3(0xf2, 0x0f, c)
-#define PCKDBL(c) B3(0x66, 0x0f, c)
-#define PCKFLT(c) B2(0x0f,c)
+#define PACK3(byte1,byte2,byte3) ((byte1 << 16) | (byte2 << 24) | byte3)
+#define PACK2(byte1,byte2)                       ((byte1 << 16) | byte2)
+#define SSEFLT(c) PACK3(0xf3, 0x0f, c)
+#define SSEDBL(c) PACK3(0xf2, 0x0f, c)
+#define PCKDBL(c) PACK3(0x66, 0x0f, c)
+#define PCKFLT(c) PACK2(0x0f,c)
 
 // These macros encode extra byte that is implicit in the macro.
-#define B4(byte1,byte2,byte3,byte4) ((byte1 << 16) | (byte2 << 24) | byte3 | (byte4 << 8))
-#define SSE38(c)   B4(0x66, 0x0f, 0x38, c)
-#define SSE3A(c)   B4(0x66, 0x0f, 0x3A, c)
+#define PACK4(byte1,byte2,byte3,byte4) ((byte1 << 16) | (byte2 << 24) | byte3 | (byte4 << 8))
+#define SSE38(c)   PACK4(0x66, 0x0f, 0x38, c)
+#define SSE3A(c)   PACK4(0x66, 0x0f, 0x3A, c)
 
 // VEX* encodes the implied leading opcode bytes in c1:
 // 1: implied 0f, 2: implied 0f 38, 3: implied 0f 3a
-#define VEX2INT(c1,c2)   B3(c1, 0xc5, c2)
-#define VEX3INT(c1,c2)   B4(c1, 0xc5, 0x02, c2)
-#define VEX3FLT(c1,c2)   B4(c1, 0xc5, 0x02, c2)
+#define VEX2INT(c1,c2)   PACK3(c1, 0xc5, c2)
+#define VEX3INT(c1,c2)   PACK4(c1, 0xc5, 0x02, c2)
+#define VEX3FLT(c1,c2)   PACK4(c1, 0xc5, 0x02, c2)
 
 //  Please insert any SSE2 instructions between FIRST_SSE2_INSTRUCTION and LAST_SSE2_INSTRUCTION
 INST3(FIRST_SSE2_INSTRUCTION, "FIRST_SSE2_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
@@ -427,7 +427,6 @@ INST1(fcomi  , "fcomi"        , 1, IUM_RD, 0, 1, 0x00F0DB)
 INST1(fcomip , "fcomip"       , 1, IUM_RD, 0, 1, 0x00F0DF)
 
 INST1(fchs   , "fchs"         , 1, IUM_RW, 0, 1, 0x00E0D9)
-#if INLINE_MATH
 INST1(fabs   , "fabs"         , 1, IUM_RW, 0, 1, 0x00E1D9)
 INST1(fsin   , "fsin"         , 1, IUM_RW, 0, 1, 0x00FED9)
 INST1(fcos   , "fcos"         , 1, IUM_RW, 0, 1, 0x00FFD9)
@@ -436,7 +435,6 @@ INST1(fldl2e , "fldl2e"       , 1, IUM_RW, 0, 1, 0x00EAD9)
 INST1(frndint, "frndint"      , 1, IUM_RW, 0, 1, 0x00FCD9)
 INST1(f2xm1  , "f2xm1"        , 1, IUM_RW, 0, 1, 0x00F0D9)
 INST1(fscale , "fscale"       , 1, IUM_RW, 0, 1, 0x00FDD9)
-#endif
 
 INST1(fld1   , "fld1"         , 1, IUM_WR, 0, 0, 0x00E8D9)
 INST1(fldz   , "fldz"         , 1, IUM_WR, 0, 0, 0x00EED9)

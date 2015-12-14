@@ -155,6 +155,9 @@ CodeGen::CodeGen(Compiler * theCompiler) :
 #ifdef _TARGET_AMD64_
     // This will be set before final frame layout.
     compiler->compVSQuirkStackPaddingNeeded = 0;
+
+    // Set to true if we perform the Quirk that fixes the PPP issue
+    compiler->compQuirkForPPPflag = false;
 #endif // _TARGET_AMD64_
 
 #ifdef LEGACY_BACKEND
@@ -183,11 +186,13 @@ void CodeGenInterface::genMarkTreeInReg(GenTreePtr tree, regNumber reg)
     tree->gtFlags  |= GTF_REG_VAL;
 }
 
+#if CPU_LONG_USES_REGPAIR
 void CodeGenInterface::genMarkTreeInRegPair(GenTreePtr tree, regPairNo regPair)
 {
     tree->gtRegPair = regPair;
     tree->gtFlags  |= GTF_REG_VAL;
 }
+#endif
 
 
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
@@ -715,12 +720,12 @@ void                CodeGenInterface::genUpdateRegLife(const LclVarDsc * varDsc,
         // We'd like to be able to assert the following, however if we are walking
         // through a qmark/colon tree, we may encounter multiple last-use nodes.
         // assert((regSet.rsMaskVars & regMask) == regMask);
-        regSet.rsMaskVars &= ~(regMask);
+        regSet.RemoveMaskVars(regMask);
     }
     else
     {
         assert((regSet.rsMaskVars & regMask) == 0);
-        regSet.rsMaskVars |= regMask;
+        regSet.AddMaskVars(regMask);
     }
 }
 
@@ -1485,12 +1490,145 @@ regNumber           CodeGenInterface::genGetThisArgReg(GenTreePtr  call)
 }
 
 #ifdef _TARGET_XARCH_
-// return true if this relocatable address should use IP-rel
-bool CodeGenInterface::genAddrShouldUsePCRel(size_t addr)
+
+#ifdef _TARGET_AMD64_
+// Returns relocation type hint for an addr.
+// Note that there are no reloc hints on x86.
+//
+// Arguments
+//    addr  -  data address
+//
+// Returns
+//    relocation type hint
+//
+unsigned short CodeGenInterface::genAddrRelocTypeHint(size_t addr)
 {
-    return compiler->info.compCompHnd->getRelocTypeHint((void *)addr) == IMAGE_REL_BASED_REL32;
+    return compiler->eeGetRelocTypeHint((void *)addr);
 }
+#endif //_TARGET_AMD64_
+
+// Return true if an absolute indirect data address can be encoded as IP-relative.
+// offset. Note that this method should be used only when the caller knows that
+// the address is an icon value that VM has given and there is no GenTree node
+// representing it. Otherwise, one should always use FitsInAddrBase().
+//
+// Arguments
+//    addr  -  an absolute indirect data address
+//
+// Returns
+//    true if indir data addr could be encoded as IP-relative offset.
+//
+bool CodeGenInterface::genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
+{
+#ifdef _TARGET_AMD64_
+    return genAddrRelocTypeHint(addr) == IMAGE_REL_BASED_REL32;
+#else 
+    // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
+    return false;
 #endif
+}
+
+// Return true if an indirect code address can be encoded as IP-relative offset.
+// Note that this method should be used only when the caller knows that the
+// address is an icon value that VM has given and there is no GenTree node
+// representing it. Otherwise, one should always use FitsInAddrBase().
+//
+// Arguments
+//    addr  -  an absolute indirect code address
+//
+// Returns
+//    true if indir code addr could be encoded as IP-relative offset.
+//
+bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
+{
+#ifdef _TARGET_AMD64_
+    return genAddrRelocTypeHint(addr) == IMAGE_REL_BASED_REL32;
+#else 
+    // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
+    return true;
+#endif
+}
+
+// Return true if an indirect code address can be encoded as 32-bit displacement
+// relative to zero. Note that this method should be used only when the caller
+// knows that the address is an icon value that VM has given and there is no
+// GenTree node representing it. Otherwise, one should always use FitsInAddrBase().
+//
+// Arguments
+//    addr  -  absolute indirect code address
+//
+// Returns
+//    true if absolute indir code addr could be encoded as 32-bit displacement relative to zero.
+//
+bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsZeroRelOffset(size_t addr)
+{
+    return GenTreeIntConCommon::FitsInI32((ssize_t)addr);
+}
+
+// Return true if an absolute indirect code address needs a relocation recorded with VM.
+//
+// Arguments
+//    addr  -  an absolute indirect code address
+//
+// Returns
+//    true if indir code addr needs a relocation recorded with VM
+//
+bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
+{
+    // If generating relocatable ngen code, then all code addr should go through relocation
+    if (compiler->opts.compReloc)
+    {
+        return true;
+    }
+
+    // Else jitting.
+
+#ifdef _TARGET_AMD64_
+    // If code addr could be encoded as 32-bit offset relative to IP, we need to record a relocation.    
+    if (genCodeIndirAddrCanBeEncodedAsPCRelOffset(addr))
+    {
+        return true;
+    }
+
+    // It could be possible that the code indir addr could be encoded as 32-bit displacement relative
+    // to zero.  But we don't need to emit a relocation in that case.
+    return false;
+#else //_TARGET_X86_
+    // On x86 there is need for recording relocations during jitting, 
+    // because all addrs fit within 32-bits.
+    return false;
+#endif //_TARGET_X86_
+}
+
+// Return true if a direct code address needs to be marked as relocatable.
+//
+// Arguments
+//    addr  -  absolute direct code address
+//
+// Returns
+//    true if direct code addr needs a relocation recorded with VM
+//
+bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
+{
+    // If generating relocatable ngen code, then all code addr should go through relocation
+    if (compiler->opts.compReloc)
+    {
+        return true;
+    }
+
+    // Else jitting.
+
+#ifdef _TARGET_AMD64_
+    // By default all direct code addresses go through relocation so that VM will setup
+    // a jump stub if addr cannot be encoded as pc-relative offset.
+    return true;
+#else //_TARGET_X86_
+    // On x86 there is no need for recording relocations during jitting, 
+    // because all addrs fit within 32-bits.
+    return false;
+#endif //_TARGET_X86_
+}
+#endif //_TARGET_XARCH_
 
 
 /*****************************************************************************
@@ -3767,11 +3905,11 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         int slots = 0;
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
         if (varDsc->TypeGet() == TYP_STRUCT)
         {
             CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
             assert(typeHnd != nullptr);
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
             if (!structDesc.passedInRegisters)
             {
@@ -3834,6 +3972,31 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             regArgTab[regArgNum].slot = 1;
 
             slots = 1;
+
+#if FEATURE_MULTIREG_STRUCT_ARGS
+#ifdef _TARGET_ARM64_
+            if (varDsc->TypeGet() == TYP_STRUCT)
+            {
+                if (varDsc->lvExactSize > REGSIZE_BYTES)
+                {
+                    assert(varDsc->lvExactSize <= 2*REGSIZE_BYTES);
+
+                    // Note that regArgNum+1 represents an argument index not an actual argument register.  
+                    // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
+
+                    // This is the setup for the second half of a MULTIREG struct arg
+                    noway_assert(regArgNum+1 < regState->rsCalleeRegArgNum);
+                    // we better not have added it already (there better not be multiple vars representing this argument register)
+                    noway_assert(regArgTab[regArgNum+1].slot == 0);
+                    
+                    regArgTab[regArgNum+1].varNum = varNum;
+                    regArgTab[regArgNum+1].slot = 2;
+
+                    slots++;
+                }
+            }
+#endif // _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_STRUCT_ARGS
         }
 
 #ifdef _TARGET_ARM_
@@ -4013,13 +4176,13 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 {
                     destRegNum = varDsc->lvRegNum;
                 }
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if FEATURE_MULTIREG_STRUCT_ARGS && !defined(_TARGET_ARM_)
                 else
                 {
                     assert(regArgTab[argNum].slot == 2);
                     destRegNum = varDsc->lvOtherReg;
                 }
-#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else // FEATURE_MULTIREG_STRUCT_ARGS && !defined(_TARGET_ARM_)
                 else if (regArgTab[argNum].slot == 2 &&
                          genActualType(varDsc->TypeGet()) == TYP_LONG)
                 {
@@ -4031,7 +4194,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                     assert(varDsc->TypeGet() == TYP_DOUBLE);
                     destRegNum = REG_NEXT(varDsc->lvRegNum);
                 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_MULTIREG_STRUCT_ARGS && !defined(_TARGET_ARM_)
                 if (genRegMask(destRegNum) & regArgMaskLive)
                 {
                     /* we are trashing a live argument register - record it */
@@ -4149,7 +4312,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         var_types storeType = TYP_UNDEF;
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-        if (varDsc->TypeGet() == TYP_STRUCT)
+        if (varTypeIsStruct(varDsc))
         {
             size = EA_SIZE(varDsc->lvSize());
 #if defined(_TARGET_AMD64_)
@@ -4164,14 +4327,10 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_ARM64_)
             // Must be <= 16 bytes or else it wouldn't be passed in registers
-            noway_assert(EA_SIZE_IN_BYTES(size) <= 16);
-            // For now, if the struct is between (8, 16] bytes let's NYI since we would
-            // need to allocate a register pair for this.
-            if (size > 8)
-            {
-                NYI_ARM64("Struct parameter of size between 9 and 16 bytes needs a register pair");
-            }
-            storeType = TYP_I_IMPL;
+            noway_assert(EA_SIZE_IN_BYTES(size) <= MAX_PASS_MULTIREG_BYTES);
+
+            storeType = TYP_I_IMPL;   
+            size = emitActualTypeSize(storeType);
 #endif // _TARGET_ARM64_
         }
         else
@@ -4205,16 +4364,17 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         }
         else
         {
-            getEmitter()->emitIns_S_R(ins_Store(storeType),
-                                      size,
-                                      srcRegNum,
-                                      varNum,
-                                      (regArgTab[argNum].slot-1) * TARGET_POINTER_SIZE);
+            // Since slot is typically 1, baseOffset is typically 0
+            int baseOffset = (regArgTab[argNum].slot - 1) * TARGET_POINTER_SIZE;
 
-#ifdef DEBUGGING_SUPPORT
-            if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0) && regArgTab[argNum].slot == 1)
+            getEmitter()->emitIns_S_R(ins_Store(storeType),
+                                        size,
+                                        srcRegNum,
+                                        varNum,
+                                        baseOffset);                                    
+
+            if (regArgTab[argNum].slot == 1)
                 psiMoveToStack(varNum);
-#endif
         }
 
         /* mark the argument as processed */
@@ -4360,10 +4520,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 regArgMaskLive &= ~genRegMask(varDscSrc->lvArgReg);
                 regArgMaskLive &= ~genRegMask(varDscDest->lvArgReg);
 
-#ifdef  DEBUGGING_SUPPORT
                 psiMoveToReg(varNumSrc );
                 psiMoveToReg(varNumDest);
-#endif
             }
             else
 #endif // _TARGET_XARCH_
@@ -4425,9 +4583,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
                 *pXtraRegClobbered = true;
 
-#ifdef  DEBUGGING_SUPPORT
                 psiMoveToReg(varNumDest, xtraReg);
-#endif
 
                 /* start moving everything to its right place */
 
@@ -4496,9 +4652,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
                 regTracker.rsTrackRegCopy(destRegNum, xtraReg);
 
-#ifdef  DEBUGGING_SUPPORT
                 psiMoveToReg(varNumSrc);
-#endif
 
                 /* mark the beginning register as processed */
 
@@ -4654,9 +4808,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 
                 getEmitter()->emitIns_R_R(ins_Copy(destMemType), size, destRegNum, regNum);
 
-#ifdef  DEBUGGING_SUPPORT
                 psiMoveToReg(varNum);
-#endif
             }
 
             /* mark the argument as processed */
@@ -4807,11 +4959,7 @@ void    CodeGen::genEnregisterIncomingStackArgs()
             regTracker.rsTrackRegTrash(regNum);
         }
 
-
-#ifdef  DEBUGGING_SUPPORT
         psiMoveToReg(varNum);
-#endif
-
     }
 }
 
@@ -4931,7 +5079,15 @@ void CodeGen::genCheckUseBlockInit()
             /* With compInitMem, all untracked vars will have to be init'ed */
             /* VSW 102460 - Do not force initialization of compiler generated temps,
                unless they are untracked GC type or structs that contain GC pointers */
-            if ((!varDsc->lvTracked || varDsc->lvType == TYP_STRUCT) && varDsc->lvOnFrame &&
+#if FEATURE_SIMD
+            // TODO-1stClassStructs
+            // This is here to duplicate previous behavior, where TYP_SIMD8 locals
+            // were not being re-typed correctly.
+            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT) || (varDsc->lvType == TYP_SIMD8))     &&
+#else // !FEATURE_SIMD
+            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT))     &&
+#endif // !FEATURE_SIMD
+                varDsc->lvOnFrame                                          &&
                 (!varDsc->lvIsTemp || varTypeIsGC(varDsc->TypeGet()) || (varDsc->lvStructGcCount > 0)))
             {
                 varDsc->lvMustInit = true;
@@ -5191,14 +5347,15 @@ void CodeGen::genPushCalleeSavedRegisters()
         assert((maskSaveRegsInt & RBM_FP) != 0);
         assert((maskSaveRegsInt & RBM_LR) != 0);
 
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (-totalFrameSize >= -512))
+        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512))
         {
             // Case #1.
             //
             // Generate:
             //      stp fp,lr,[sp,#-framesz]!
             //
-            // The (-totalFrameSize >= -512) condition ensures that the predecrement of SP can occur with STP.
+            // The (totalFrameSize < 512) condition ensures that both the predecrement 
+            //  and the postincrement of SP can occur with STP.
             //
             // After saving callee-saved registers, we establish the frame pointer with:
             //      mov fp,sp
@@ -5423,10 +5580,9 @@ void CodeGen::genPushCalleeSavedRegisters()
             inst_RV(INS_push, reg, TYP_REF);
             compiler->unwindPush(reg);
 
-#ifdef DEBUGGING_SUPPORT
-            if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0) && !doubleAlignOrFramePointerUsed())
+            if (!doubleAlignOrFramePointerUsed())
                 psiAdjustStackLevel(REGSIZE_BYTES);
-#endif
+
             rsPushRegs &= ~regBit;
         }
     }
@@ -5457,14 +5613,14 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
     assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
 #endif // _TARGET_ARM_
 
-#ifdef _TARGET_X86_
+#ifdef _TARGET_XARCH_
     if (frameSize == REGSIZE_BYTES)
     {
-        // Frame size is 4
+        // Frame size is the same as register size.
         inst_RV(INS_push, REG_EAX, TYP_I_IMPL);
     }
     else 
-#endif // _TARGET_X86_
+#endif // _TARGET_XARCH_
     if (frameSize < CORINFO_PAGE_SIZE)
     {
 #ifndef _TARGET_ARM64_
@@ -5656,10 +5812,8 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
 #ifndef _TARGET_ARM64_
     compiler->unwindAllocStack(frameSize);
 
-#ifdef DEBUGGING_SUPPORT
-    if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0) && !doubleAlignOrFramePointerUsed())
+    if (!doubleAlignOrFramePointerUsed())
         psiAdjustStackLevel(frameSize);
-#endif
 #endif // !_TARGET_ARM64_
 
 }
@@ -6043,7 +6197,7 @@ void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool         
 
     if (isFramePointerUsed())
     {
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (-totalFrameSize >= -512))
+        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512))
         {
             frameType = 1;
 
@@ -6579,7 +6733,9 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
             }
 #endif // !_TARGET_64BIT_
 
-            if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem)
+            if ((varDsc->TypeGet() == TYP_STRUCT) &&
+                !compiler->info.compInitMem       &&
+                (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
                 const unsigned slots  = (unsigned)compiler->lvaLclSize(varNum) / REGSIZE_BYTES;
@@ -8391,23 +8547,14 @@ void                CodeGen::genFnProlog()
     {
         inst_RV   (INS_push, REG_FPBASE, TYP_REF);
         compiler->unwindPush(REG_FPBASE);
-
-#ifdef DEBUGGING_SUPPORT
-        if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
-            psiAdjustStackLevel(sizeof(int));
-#endif
+        psiAdjustStackLevel(REGSIZE_BYTES);
 
 #ifndef _TARGET_AMD64_ // On AMD64, establish the frame pointer after the "sub rsp"
         inst_RV_RV(INS_mov, REG_FPBASE, REG_SPBASE);
         compiler->unwindSetFrameReg(REG_FPBASE, 0);
-
-#ifdef DEBUGGING_SUPPORT
-        if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
-            psiMoveESPtoEBP();
-#endif
+        psiMoveESPtoEBP();
 
 #if DOUBLE_ALIGN
-
         if  (compiler->genDoubleAlign())
         {
             noway_assert(isFramePointerUsed() == false);
@@ -8415,7 +8562,7 @@ void                CodeGen::genFnProlog()
 
             inst_RV_IV(INS_AND, REG_SPBASE, -8, EA_PTRSIZE);
         }
-#endif
+#endif // DOUBLE_ALIGN
 #endif // !_TARGET_AMD64_
     }
 #endif // _TARGET_XARCH_
@@ -10098,7 +10245,7 @@ void                CodeGen::genSetPSPSym(regNumber initReg,
 {
     assert(compiler->compGeneratingProlog);
 
-    if  (!compiler->ehNeedsPSPSym())
+    if (!compiler->ehNeedsPSPSym())
         return;
 
     noway_assert(isFramePointerUsed());             // We need an explicit frame pointer
@@ -10154,7 +10301,7 @@ void                CodeGen::genSetPSPSym(regNumber initReg,
     regNumber regTmp = initReg;
     *pInitRegZeroed = false;
 
-    getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta);
+    getEmitter()->emitIns_R_R_Imm(INS_add, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta);
     getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 
 #elif defined(_TARGET_AMD64_)
@@ -10601,7 +10748,7 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
                                  0);
 #elif defined(_TARGET_AMD64_)
 
-        if (IMAGE_REL_BASED_REL32 != compiler->info.compCompHnd->getRelocTypeHint(addrOfCaptureThreadGlobal))
+        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(addrOfCaptureThreadGlobal))
         {
             instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, reg3, (ssize_t)addrOfCaptureThreadGlobal);
 
@@ -10644,7 +10791,7 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
 #else // !_TARGET_ARM_
 
 #ifdef _TARGET_AMD64_
-        if (IMAGE_REL_BASED_REL32 != compiler->info.compCompHnd->getRelocTypeHint(pAddrOfCaptureThreadGlobal))
+        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(pAddrOfCaptureThreadGlobal))
         {
             instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_ECX, (ssize_t)pAddrOfCaptureThreadGlobal);
             getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ECX, REG_ECX, 0);
@@ -10957,9 +11104,9 @@ void                CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 
 
 //------------------------------------------------------------------------
-// ARM-specific methods used by both the classic and RyuJIT
+// Methods used to support FEATURE_MULTIREG_STRUCTS and HFA support for ARM32
 //------------------------------------------------------------------------
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if FEATURE_MULTIREG_STRUCTS
 CORINFO_CLASS_HANDLE Compiler::GetStructClassHandle(GenTreePtr tree)
 {
     if (tree->TypeGet() == TYP_STRUCT)
@@ -10971,15 +11118,10 @@ CORINFO_CLASS_HANDLE Compiler::GetStructClassHandle(GenTreePtr tree)
 
         switch (tree->OperGet())
         {
+        default:
+            break;
         case GT_CALL:
             return tree->gtCall.gtRetClsHnd;
-
-        case GT_RET_EXPR:
-            return tree->gtRetExpr.gtRetClsHnd;
-
-        case GT_RETURN:
-            assert(tree->gtOp.gtOp1->gtOper == GT_LCL_VAR);
-            return GetStructClassHandle(tree->gtOp.gtOp1);
 
         case GT_LDOBJ:
             return tree->gtLdObj.gtClass;
@@ -10994,13 +11136,20 @@ CORINFO_CLASS_HANDLE Compiler::GetStructClassHandle(GenTreePtr tree)
         case GT_ASG:
             assert(tree->gtOp.gtOp1->gtOper == GT_LCL_VAR || tree->gtOp.gtOp1->gtOper == GT_LCL_FLD);
             return GetStructClassHandle(tree->gtOp.gtOp1);
-        default:
-            return NO_CLASS_HANDLE; 
+
+#if FEATURE_MULTIREG_STRUCT_RET
+        case GT_RET_EXPR:
+            return tree->gtRetExpr.gtRetClsHnd;
+
+        case GT_RETURN:
+            assert(tree->gtOp.gtOp1->gtOper == GT_LCL_VAR);
+            return GetStructClassHandle(tree->gtOp.gtOp1);
+#endif
         }
     }
     return NO_CLASS_HANDLE;
 }
-#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_MULTIREG_STRUCTS
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 bool Compiler::IsRegisterPassable(CORINFO_CLASS_HANDLE hClass)
@@ -11282,6 +11431,7 @@ void                CodeGen::genSetScopeInfo()
 #endif // !_TARGET_64BIT_
 
 #ifdef FEATURE_SIMD
+            case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
@@ -11313,6 +11463,7 @@ void                CodeGen::genSetScopeInfo()
             case TYP_STRUCT:
             case TYP_BLK: //Needed because of the TYP_BLK stress mode
 #ifdef FEATURE_SIMD
+            case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
