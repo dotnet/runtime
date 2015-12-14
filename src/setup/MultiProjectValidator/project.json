@@ -6,11 +6,9 @@
     },
 
     "dependencies": {
-        "Microsoft.NETCore.Runtime": "1.0.1-beta-*",
-      "NETStandard.Library": "1.0.0-rc2-23608",
+      "NETStandard.Library": "1.0.0-rc2-23614",
       "Microsoft.DotNet.ProjectModel": "1.0.0-*",
       "Microsoft.DotNet.Cli.Utils": "1.0.0-*", 
-        "System.Linq": "4.0.1-rc2-23608"
     },
 
     "frameworks": {
