@@ -49,6 +49,8 @@
 #define MONITOR_INTERVAL 100 // ms
 #define MONITOR_MINIMAL_LIFETIME 60 * 1000 // ms
 
+#define WORKER_CREATION_MAX_PER_SEC 10
+
 /* The exponent to apply to the gain. 1.0 means to use linear gain,
  * higher values will enhance large moves and damp small ones.
  * default: 2.0 */
@@ -131,6 +133,10 @@ typedef struct {
 	gint32 parked_threads_count;
 	MonoCoopCond parked_threads_cond;
 	MonoCoopMutex active_threads_lock; /* protect access to working_threads and parked_threads */
+
+	guint32 worker_creation_current_second;
+	guint32 worker_creation_current_count;
+	MonoCoopMutex worker_creation_lock;
 
 	gint32 heuristic_completions;
 	guint32 heuristic_sample_start;
@@ -255,6 +261,9 @@ initialize (void)
 	threadpool->working_threads = g_ptr_array_new ();
 	mono_coop_mutex_init (&threadpool->active_threads_lock);
 
+	threadpool->worker_creation_current_second = -1;
+	mono_coop_mutex_init (&threadpool->worker_creation_lock);
+
 	threadpool->heuristic_adjustment_interval = 10;
 	mono_coop_mutex_init (&threadpool->heuristic_lock);
 
@@ -295,7 +304,12 @@ initialize (void)
 	threads_count = mono_cpu_count () * threads_per_cpu;
 
 	threadpool->limit_worker_min = threadpool->limit_io_min = threads_count;
+
+#if defined (PLATFORM_ANDROID) || defined (HOST_IOS)
+	threadpool->limit_worker_max = threadpool->limit_io_max = CLAMP (threads_count * 100, MIN (threads_count, 200), MAX (threads_count, 200));
+#else
 	threadpool->limit_worker_max = threadpool->limit_io_max = threads_count * 100;
+#endif
 
 	threadpool->counters._.max_working = threadpool->limit_worker_min;
 
@@ -680,29 +694,56 @@ worker_try_create (void)
 {
 	ThreadPoolCounter counter;
 	MonoInternalThread *thread;
+	gint32 now;
+
+	mono_coop_mutex_lock (&threadpool->worker_creation_lock);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker", mono_native_thread_id_get ());
 
+	if ((now = mono_100ns_ticks () / 10 / 1000 / 1000) == 0) {
+		g_warning ("failed to get 100ns ticks");
+	} else {
+		if (threadpool->worker_creation_current_second != now) {
+			threadpool->worker_creation_current_second = now;
+			threadpool->worker_creation_current_count = 0;
+		} else {
+			g_assert (threadpool->worker_creation_current_count <= WORKER_CREATION_MAX_PER_SEC);
+			if (threadpool->worker_creation_current_count == WORKER_CREATION_MAX_PER_SEC) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: maximum number of worker created per second reached, current count = %d",
+					mono_native_thread_id_get (), threadpool->worker_creation_current_count);
+				mono_coop_mutex_unlock (&threadpool->worker_creation_lock);
+				return FALSE;
+			}
+		}
+	}
+
 	COUNTER_ATOMIC (counter, {
-		if (counter._.working >= counter._.max_working)
+		if (counter._.working >= counter._.max_working) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: maximum number of working threads reached",
+				mono_native_thread_id_get ());
+			mono_coop_mutex_unlock (&threadpool->worker_creation_lock);
 			return FALSE;
+		}
 		counter._.working ++;
 		counter._.active ++;
 	});
 
 	if ((thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0)) != NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p",
-			mono_native_thread_id_get (), thread->tid);
+		threadpool->worker_creation_current_count += 1;
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p, now = %d count = %d", mono_native_thread_id_get (), thread->tid, now, threadpool->worker_creation_current_count);
+		mono_coop_mutex_unlock (&threadpool->worker_creation_lock);
 		return TRUE;
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed", mono_native_thread_id_get ());
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: could not create thread", mono_native_thread_id_get ());
 
 	COUNTER_ATOMIC (counter, {
 		counter._.working --;
 		counter._.active --;
 	});
 
+	mono_coop_mutex_unlock (&threadpool->worker_creation_lock);
 	return FALSE;
 }
 
@@ -881,8 +922,18 @@ monitor_thread (void)
 
 		if (all_waitsleepjoin) {
 			ThreadPoolCounter counter;
-			COUNTER_ATOMIC (counter, { counter._.max_working ++; });
-			hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
+			gboolean limit_worker_max_reached = FALSE;
+
+			COUNTER_ATOMIC (counter, {
+				if (counter._.max_working >= threadpool->limit_worker_max) {
+					limit_worker_max_reached = TRUE;
+					break;
+				}
+				counter._.max_working ++;
+			});
+
+			if (!limit_worker_max_reached)
+				hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
 		}
 
 		threadpool->cpu_usage = mono_cpu_usage (threadpool->cpu_usage_state);
