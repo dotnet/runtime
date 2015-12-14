@@ -2,10 +2,10 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Threading.Tasks.CoreCLR.csproj">
+    <Project Include="System.Threading.Tasks.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
-    <Project Include="facade\System.Threading.Tasks.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Threading.Tasks.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>

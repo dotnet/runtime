@@ -8,7 +8,7 @@
     <Project Include="System.Runtime.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
     </Project>
-    <Project Include="facade\System.Runtime.csproj" Condition="'$(TargetsWindows)' == 'true'">
+    <Project Include="System.Runtime.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>
