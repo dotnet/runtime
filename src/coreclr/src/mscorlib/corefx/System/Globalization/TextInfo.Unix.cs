@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.Contracts;
+using System.Security;
 using System.Text;
 
 namespace System.Globalization
@@ -25,7 +26,7 @@ namespace System.Globalization
             m_needsTurkishCasing = NeedsTurkishCasing(m_textInfoName);
         }
 
-        [System.Security.SecuritySafeCritical]
+        [SecuritySafeCritical]
         private unsafe string ChangeCase(string s, bool toUpper)
         {
             Contract.Assert(s != null);
@@ -70,7 +71,7 @@ namespace System.Globalization
             return result;
         }
 
-        [System.Security.SecuritySafeCritical]
+        [SecuritySafeCritical]
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             char dst = default(char);
@@ -92,6 +93,7 @@ namespace System.Globalization
 
         private bool IsInvariant { get { return m_cultureName.Length == 0; } }
 
+        [SecurityCritical]
         internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (IsInvariant)
