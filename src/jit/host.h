@@ -28,8 +28,10 @@ private:
 
 BOOL vlogf(unsigned level, const char* fmt, va_list args);
 
-void logf_stdout(const char* fmt, va_list args);
-void logf(const char*, ...);
+int logf_stdout(const char* fmt, va_list args);
+int logf(const char*, ...);
+void gcDump_logf(const char* fmt, ...);
+
 void logf(unsigned level, const char* fmt, ...);
 
 extern  "C" 

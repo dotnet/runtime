@@ -37,14 +37,26 @@
 
     void                genCkfinite(GenTreePtr treeNode);
 
-    void                genMathIntrinsic(GenTreePtr treeNode);
+    void                genIntrinsic(GenTreePtr treeNode);
 
     void                genPutArgStk(GenTreePtr treeNode);
     unsigned            getBaseVarForPutArgStk(GenTreePtr treeNode);
 
+    void                genCompareFloat(GenTreePtr treeNode);
+
+    void                genCompareInt(GenTreePtr treeNode);
+
+#if !defined(_TARGET_64BIT_)
+    void                genCompareLong(GenTreePtr treeNode);
+#endif
+
+#ifdef _TARGET_ARM64_
+    void                genCodeForLdObj(GenTreeOp* treeNode);
+#endif
+
 #ifdef FEATURE_SIMD
     instruction         getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned *ival = nullptr);
-	void				genSIMDScalarMove(var_types type, regNumber target, regNumber src, bool zeroInit);
+    void                genSIMDScalarMove(var_types type, regNumber target, regNumber src, bool zeroInit);
     void                genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitArray(GenTreeSIMD* simdNode);
@@ -132,8 +144,7 @@
     void                genCodeForCpBlkUnroll    (GenTreeCpBlk* cpBlkNode);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    void                genPutStructArgStk(GenTreePtr treeNode
-                                           FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned baseVarNum));
+    void                genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum);
 
     void                genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode, unsigned baseVarNum);
     void                genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode, unsigned baseVarNum);
@@ -158,6 +169,10 @@
     void                genCodeForArrOffset (GenTreeArrOffs* treeNode);
 
     instruction         genGetInsForOper    (genTreeOps oper, var_types type);
+
+    void                genStoreInd(GenTreePtr node);
+
+    bool                genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
 
     void                genCallInstruction(GenTreePtr call);
     

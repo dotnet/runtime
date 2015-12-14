@@ -301,7 +301,7 @@ void                CodeGen::genCodeForBBlist()
 
         /* Figure out which registers hold variables on entry to this block */
 
-        regSet.rsMaskVars       = RBM_NONE;
+        regSet.ClearMaskVars();
         gcInfo.gcRegGCrefSetCur = RBM_NONE;
         gcInfo.gcRegByrefSetCur = RBM_NONE;
 
@@ -340,26 +340,6 @@ void                CodeGen::genCodeForBBlist()
                 VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
             }
         }
-
-#ifdef DEBUG
-        if (compiler->verbose)
-        {
-            printf("\t\t\t\t\t\t\tLive regs: ");
-            if (regSet.rsMaskVars == newLiveRegSet)
-            {
-                printf("(unchanged) ");
-            }
-            else
-            {
-                printRegMaskInt(regSet.rsMaskVars);
-                compiler->getEmitter()->emitDispRegSet(regSet.rsMaskVars);
-                printf(" => ");
-            }
-            printRegMaskInt(newLiveRegSet);
-            compiler->getEmitter()->emitDispRegSet(newLiveRegSet);
-            printf("\n");
-        }
-#endif // DEBUG
 
         regSet.rsMaskVars = newLiveRegSet;
         gcInfo.gcMarkRegSetGCref(newRegGCrefSet DEBUG_ARG(true));
@@ -1377,9 +1357,9 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         genProduceReg(treeNode);
         break;
 
-    case GT_MATH:
+    case GT_INTRINSIC:
         {
-            NYI("GT_MATH");
+            NYI("GT_INTRINSIC");
         }
         genProduceReg(treeNode);
         break;
@@ -1838,7 +1818,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
             }
 #endif // DEBUG
 
-            regSet.rsMaskVars |= genGetRegMask(varDsc);
+            regSet.AddMaskVars(genGetRegMask(varDsc));
         }
         else
         {

@@ -147,6 +147,31 @@ void                RegSet::rsRemoveRegsModified(regMaskTP mask)
     rsModifiedRegsMask &= ~mask;
 }
 
+void RegSet::SetMaskVars(regMaskTP newMaskVars)
+{
+#ifdef DEBUG
+    if (m_rsCompiler->verbose)
+    {
+        printf("\t\t\t\t\t\t\tLive regs: ");
+        if (_rsMaskVars == newMaskVars)
+        {
+            printf("(unchanged) ");
+        }
+        else
+        {
+            printRegMaskInt(_rsMaskVars);
+            m_rsCompiler->getEmitter()->emitDispRegSet(_rsMaskVars);
+            printf(" => ");
+        }
+        printRegMaskInt(newMaskVars);
+        m_rsCompiler->getEmitter()->emitDispRegSet(newMaskVars);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    _rsMaskVars = newMaskVars;
+}
+
 #ifdef DEBUG
 
 RegSet::rsStressRegsType    RegSet::rsStressRegs()
@@ -1440,10 +1465,7 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
     tree->gtFlags &= ~GTF_SPILL;
 #endif // !LEGACY_BACKEND
 
-#ifdef _TARGET_AMD64_
-    assert(tree->InReg());
-    assert(tree->gtRegNum == reg);
-#else
+#if CPU_LONG_USES_REGPAIR
     /* Are we spilling a part of a register pair? */
 
     if  (treeType == TYP_LONG)
@@ -1457,7 +1479,10 @@ void                RegSet::rsSpillTree(regNumber reg, GenTreePtr tree)
         assert(tree->gtFlags & GTF_REG_VAL);
         assert(tree->gtRegNum == reg);
     }
-#endif // _TARGET_AMD64_
+#else
+    assert(tree->InReg());
+    assert(tree->gtRegNum == reg);
+#endif // CPU_LONG_USES_REGPAIR
 
     /* Are any registers free for spillage? */
 

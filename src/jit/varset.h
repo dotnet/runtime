@@ -70,8 +70,18 @@ typedef BitSetOps</*BitSetType*/BitSetShortLongRep,
 
 typedef  BitSetShortLongRep VARSET_TP;
 
-// For the unbounded-width varset implementation, test it a little by allowing the max tracked vars to be than UINT64 can hold.
+// Tested various sizes for max tracked locals. The largest value for which no throughput regression
+// could be measured was 512. Going to 1024 showed the first throughput regressions.
+// We anticipate the larger size will be needed to support better inlining.
+// There were a number of failures when 512 was used for legacy, so we just retain the 128 value
+// for legacy backend.
+ 
+#if !defined(LEGACY_BACKEND)
+const unsigned lclMAX_TRACKED = 512;
+#else
 const unsigned lclMAX_TRACKED = 128;
+#endif
+
 
 #define VARSET_REP_IS_CLASS 0
 
@@ -138,8 +148,7 @@ typedef BitSetOps</*BitSetType*/BitSetShortLongRep,
 
 typedef  BitSetShortLongRep ALLVARSET_TP;
 
-// For the unbounded-width varset implementation, test them a little by allowing the max tracked vars to be than UINT64 can hold.
-const unsigned lclMAX_ALLSET_TRACKED = 128; 
+const unsigned lclMAX_ALLSET_TRACKED = lclMAX_TRACKED; 
 
 #define ALLVARSET_REP_IS_CLASS 0
 

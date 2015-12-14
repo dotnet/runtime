@@ -61,6 +61,7 @@ extern char                    g_szAsmCodeIndent[];
 
 extern DWORD                   g_Mode;
 
+extern char*                    g_pszExeFile;
 extern char                     g_szInputFile[]; // in UTF-8
 extern WCHAR                    g_wszFullInputFile[]; // in UTF-16
 extern char                     g_szOutputFile[]; // in UTF-8
@@ -171,7 +172,11 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     if(strlen(szArg) == 0) return 0;
     if ((strcmp(szArg, "/?") == 0) || (strcmp(szArg, "-?") == 0)) return 1;
 
+#ifdef FEATURE_PAL
+    if(szArg[0] == '-')
+#else
     if((szArg[0] == '/') || (szArg[0] == '-'))
+#endif	
     {
         strncpy_s(szOpt,128, &szArg[1],10);
         szOpt[3] = 0;
@@ -485,13 +490,13 @@ char* ANSItoUTF8(__in __nullterminated char* szANSI)
 int ParseCmdLineW(__in __nullterminated WCHAR* wzCmdLine, __out char** ppszObjFileName)
 {
     int     argc,ret=0;
-    LPWSTR* argv= CommandLineToArgvW(wzCmdLine,&argc);
+    LPWSTR* argv= SegmentCommandLine(wzCmdLine, (DWORD*)&argc);
     char*   szArg = new char[2048];
     for(int i=1; i < argc; i++)
     {
         memset(szArg,0,2048);
         WszWideCharToMultiByte(CP_UTF8,0,argv[i],-1,szArg,2048,NULL,NULL);
-        if(ret = ProcessOneArg(szArg,ppszObjFileName)) break;
+        if((ret = ProcessOneArg(szArg,ppszObjFileName)) != 0) break;
     }
     VDELETE(szArg);
     return ret;
@@ -529,7 +534,7 @@ int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFil
 
     for(int i=1; i < argc; i++)
     {
-        if(ret = ProcessOneArg(argv[i],ppszObjFileName)) break;
+        if((ret = ProcessOneArg(argv[i],ppszObjFileName)) != 0) break;
     }
     VDELETE(szCmdLineUTF);
     return ret;
@@ -544,6 +549,15 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                      int       nCmdShow)
 #endif
 {
+#if defined(FEATURE_CORECLR) && defined(FEATURE_PAL)
+    if (0 != PAL_Initialize(nCmdShow, lpCmdLine))
+    {
+        printError(g_pFile, "Error: Fail to PAL_Initialize\n");
+        exit(1);
+    }
+    g_pszExeFile = lpCmdLine[0];
+#endif
+
     // ildasm does not need to be SO-robust.
     SO_NOT_MAINLINE_FUNCTION;
 
@@ -581,8 +595,10 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
     hConsoleErr = GetStdHandle(STD_ERROR_HANDLE);
 
+#ifndef FEATURE_PAL
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
     g_hResources = LoadLocalizedResourceDLLForSDK(L"ildasmrc.dll");
+#endif
 
     iCommandLineParsed = ParseCmdLineW((wzCommandLine = GetCommandLineW()),&g_pszObjFileName);
 
