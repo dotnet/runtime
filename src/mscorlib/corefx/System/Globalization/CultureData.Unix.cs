@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace System.Globalization
@@ -22,6 +23,7 @@ namespace System.Globalization
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
         /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe bool InitCultureData()
         {
             Contract.Assert(this.sRealName != null);
@@ -86,6 +88,7 @@ namespace System.Globalization
             return true;
         }
 
+        [SecuritySafeCritical]
         internal static bool GetLocaleName(string localeName, out string windowsName)
         {
             // Get the locale name from ICU
@@ -102,6 +105,7 @@ namespace System.Globalization
             return true;
         }
 
+        [SecuritySafeCritical]
         internal static bool GetDefaultLocaleName(out string windowsName)
         {
             // Get the default (system) locale name from ICU
@@ -126,6 +130,7 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
+        [SecuritySafeCritical]
         private string GetLocaleInfo(string localeName, LocaleStringData type)
         {
             Contract.Assert(localeName != null, "[CultureData.GetLocaleInfo] Expected localeName to be not be null");
@@ -151,6 +156,7 @@ namespace System.Globalization
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
+        [SecuritySafeCritical]
         private int GetLocaleInfo(LocaleNumberData type)
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected this.sWindowsName to be populated already");
@@ -174,6 +180,7 @@ namespace System.Globalization
             return value;
         }
 
+        [SecuritySafeCritical]
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected this.sWindowsName to be populated already");
@@ -199,6 +206,7 @@ namespace System.Globalization
             return GetTimeFormatString(false);
         }
 
+        [SecuritySafeCritical]
         private string GetTimeFormatString(bool shortFormat)
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected this.sWindowsName to be populated already");
