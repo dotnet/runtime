@@ -3383,7 +3383,7 @@ namespace System.Data.SqlClient
 
                 try
                 {
-                    codePage = LocaleInterop.GetCodePageForLcid(cultureId);
+                    codePage = Locale.GetCodePageForLcid(cultureId);
 
                     // SqlHot 50001398: CodePage can be zero, but we should defer such errors until
                     //  we actually MUST use the code page (i.e. don't error if no ANSI data is sent).
@@ -3418,7 +3418,7 @@ namespace System.Data.SqlClient
 
                             try
                             {
-                                codePage = LocaleInterop.GetCodePageForLcid(cultureId);
+                                codePage = Locale.GetCodePageForLcid(cultureId);
                                 success = true;
                             }
                             catch (ArgumentException)
@@ -3428,7 +3428,7 @@ namespace System.Data.SqlClient
                         case 0x827:     // Mapping Non-supported Lithuanian code page to supported Lithuanian.
                             try
                             {
-                                codePage = LocaleInterop.GetCodePageForLcid(0x427);
+                                codePage = Locale.GetCodePageForLcid(0x427);
                                 success = true;
                             }
                             catch (ArgumentException)

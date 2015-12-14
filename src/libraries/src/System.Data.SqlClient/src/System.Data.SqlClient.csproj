@@ -16,9 +16,6 @@
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <DefineConstants>$(DefineConstants);WINDOWS_OS</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -148,14 +145,13 @@
     <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="Interop\LocaleInterop.cs" />
-    <Compile Include="Interop\ILocaleApiHelper.cs" />
+    <Compile Include="System\Data\Locale\Locale.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="Interop\LocaleWindowsApiHelper.cs" />
+    <Compile Include="Interop\LocaleMapper.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <Compile Include="Interop\LocaleMapperApiHelper.cs" />
+    <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />

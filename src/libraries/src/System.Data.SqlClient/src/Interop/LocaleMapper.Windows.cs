@@ -1,8 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using System.Collections.Concurrent;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -10,11 +7,8 @@ using System.Text;
 
 namespace System.Data
 {
-    internal class LocaleWindowsApiHelper : ILocaleApiHelper
+    internal static class LocaleMapper
     {
-        // Maps between LCIDs and LocaleName+AnsiCodePages+Encodings
-        private static readonly ConcurrentDictionary<int, Tuple<string, int, Encoding>> s_cachedEncodings = new ConcurrentDictionary<int, Tuple<string, int, Encoding>>();
-
         private const string ApiWinCoreLocalization = "api-ms-win-core-localization-l1-2-0.dll";
         private const string ApiWinCoreLocalizationObsolete = "api-ms-win-core-localization-obsolete-l1-2-0.dll";
 
@@ -33,7 +27,7 @@ namespace System.Data
         private static extern uint LocaleNameToLCID(string lpName, uint dwFlags);
 
 
-        public string LcidToLocaleNameInternal(int lcid)
+        public static string LcidToLocaleNameInternal(int lcid)
         {
             StringBuilder localName = new StringBuilder(LOCALE_NAME_MAX_LENGTH);
 
@@ -51,7 +45,7 @@ namespace System.Data
             }
         }
 
-        public int LocaleNameToAnsiCodePage(string localeName)
+        public static int LocaleNameToAnsiCodePage(string localeName)
         {
             uint ansiCodePage;
             if (GetLocaleInfoEx(localeName, LOCALE_RETURN_NUMBER | LOCALE_IDEFAULTANSICODEPAGE, out ansiCodePage, sizeof(uint)) != 0)
@@ -68,7 +62,7 @@ namespace System.Data
             }
         }
 
-        public int GetLcidForLocaleName(string localeName)
+        public static int GetLcidForLocaleName(string localeName)
         {
             Debug.Assert(localeName != null, "Locale name should never be null");
 
