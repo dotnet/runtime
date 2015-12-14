@@ -82,7 +82,7 @@ namespace pal
     typedef std::string string_t;
     typedef std::stringstream stringstream_t;
     typedef std::ifstream ifstream_t;
-    typedef long hresult_t;
+    typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;
 
