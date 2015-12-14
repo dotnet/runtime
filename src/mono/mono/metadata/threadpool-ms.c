@@ -304,7 +304,12 @@ initialize (void)
 	threads_count = mono_cpu_count () * threads_per_cpu;
 
 	threadpool->limit_worker_min = threadpool->limit_io_min = threads_count;
+
+#if defined (PLATFORM_ANDROID) || defined (HOST_IOS)
+	threadpool->limit_worker_max = threadpool->limit_io_max = CLAMP (threads_count * 100, MIN (threads_count, 200), MAX (threads_count, 200));
+#else
 	threadpool->limit_worker_max = threadpool->limit_io_max = threads_count * 100;
+#endif
 
 	threadpool->counters._.max_working = threadpool->limit_worker_min;
 
