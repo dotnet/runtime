@@ -39,10 +39,13 @@ namespace MultiProjectValidator
             var failedCount = analysisResults.Where((a) => !a.Passed).Count();
             var passedCount = analysisResults.Where((a) => a.Passed).Count();
 
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"{passedCount} Successful Analysis Rules");
-            Console.WriteLine($"{failedCount} Failed Analysis Rules");
 
-            if(failedCount != 0)
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"{failedCount} Failed Analysis Rules");
+            
+            if (failedCount != 0)
             {
                 Console.WriteLine("Failure Messages");
 
@@ -57,6 +60,7 @@ namespace MultiProjectValidator
                     }
                 }
             }
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         private static bool AnyAnalysisFailed(List<AnalysisResult> analysisResults)
