@@ -117,7 +117,7 @@ namespace System.Data.ProviderBase
             {
                 if (-1 != _defaultLocaleID)
                 {
-                    compareInfo = CompareInfo.GetCompareInfo(LocaleInterop.GetLocaleNameForLcid(_defaultLocaleID));
+                    compareInfo = CompareInfo.GetCompareInfo(Locale.GetLocaleNameForLcid(_defaultLocaleID));
                 }
                 if (null == compareInfo)
                 {

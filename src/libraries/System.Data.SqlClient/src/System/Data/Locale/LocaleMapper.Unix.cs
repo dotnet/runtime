@@ -9,25 +9,25 @@ namespace System.Data
     /// <summary>
     /// This a locale mapper for non windows
     /// </summary>
-    internal class LocaleMapperApiHelper : ILocaleApiHelper
+    internal class LocaleMapper
     {
         private static readonly Dictionary<int, LocaleCodePage> _mapper;
-        public string LcidToLocaleNameInternal(int lcid)
+        public static string LcidToLocaleNameInternal(int lcid)
         {
             return _mapper[lcid].LocaleName;
         }
 
-        public int LocaleNameToAnsiCodePage(string localeName)
+        public static int LocaleNameToAnsiCodePage(string localeName)
         {
             return _mapper.FirstOrDefault(t=>t.Value.LocaleName == localeName).Value.CodePage;
         }
 
-        public int GetLcidForLocaleName(string localeName)
+        public static int GetLcidForLocaleName(string localeName)
         {
             return _mapper.FirstOrDefault(t => t.Value.LocaleName == localeName).Key;
         }
 
-        static LocaleMapperApiHelper()
+        static LocaleMapper()
         {
             _mapper = new Dictionary<int, LocaleCodePage>
             {
