@@ -7,6 +7,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Security;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 
@@ -14,12 +15,12 @@ namespace System.IO.IsolatedStorage
 {
     public sealed class IsolatedStorageFile : IDisposable
     {
-        private string m_AppFilesPath;
+        private string _appFilesPath;
 
-        private bool m_bDisposed;
-        private bool m_closed;
+        private bool _disposed;
+        private bool _closed;
 
-        private object m_internalLock = new object();
+        private readonly object _internalLock = new object();
         private static string s_RootFromHost;
         private static string s_IsolatedStorageRoot;
 
@@ -32,7 +33,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                return m_bDisposed;
+                return _disposed;
             }
         }
 
@@ -78,11 +79,11 @@ namespace System.IO.IsolatedStorage
 
         internal void Close()
         {
-            lock (m_internalLock)
+            lock (_internalLock)
             {
-                if (!m_closed)
+                if (!_closed)
                 {
-                    m_closed = true;
+                    _closed = true;
                     GC.SuppressFinalize(this);
                 }
             }
@@ -206,7 +207,7 @@ namespace System.IO.IsolatedStorage
             {
                 // FileSystem APIs return the complete path of the matching files however Iso store only provided the FileName
                 // and hid the IsoStore root. Hence we find all the matching files from the fileSystem and simply return the fileNames.
-                return Directory.EnumerateFiles(m_AppFilesPath, searchPattern).Select(f => Path.GetFileName(f)).ToArray();
+                return Directory.EnumerateFiles(_appFilesPath, searchPattern).Select(f => Path.GetFileName(f)).ToArray();
             }
             catch (UnauthorizedAccessException e)
             {
@@ -235,7 +236,7 @@ namespace System.IO.IsolatedStorage
             {
                 // FileSystem APIs return the complete path of the matching directories however Iso store only provided the directory name
                 // and hid the IsoStore root. Hence we find all the matching directories from the fileSystem and simply return their names.
-                return Directory.EnumerateDirectories(m_AppFilesPath, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m).Length + 1)).ToArray();
+                return Directory.EnumerateDirectories(_appFilesPath, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m).Length + 1)).ToArray();
             }
             catch (UnauthorizedAccessException e)
             {
@@ -505,7 +506,7 @@ namespace System.IO.IsolatedStorage
             IsolatedStorageRoot = FetchOrCreateRoot();
 
             IsolatedStorageFile isf = new IsolatedStorageFile();
-            isf.m_AppFilesPath = IsolatedStorageRoot;
+            isf._appFilesPath = IsolatedStorageRoot;
             return isf;
         }
 
@@ -514,7 +515,7 @@ namespace System.IO.IsolatedStorage
          */
         internal string GetFullPath(string partialPath)
         {
-            Contract.Assert(partialPath != null, "partialPath should be non null");
+            Debug.Assert(partialPath != null, "partialPath should be non null");
 
             int i;
 
@@ -529,7 +530,7 @@ namespace System.IO.IsolatedStorage
 
             partialPath = partialPath.Substring(i);
 
-            return Path.Combine(m_AppFilesPath, partialPath);
+            return Path.Combine(_appFilesPath, partialPath);
         }
 
         /*
@@ -539,7 +540,7 @@ namespace System.IO.IsolatedStorage
         {
             string root = Path.GetPathRoot(path);
 
-            Contract.Assert(!String.IsNullOrEmpty(root), "Path.GetPathRoot returned null or empty for: " + path);
+            Debug.Assert(!String.IsNullOrEmpty(root), "Path.GetPathRoot returned null or empty for: " + path);
 
             try
             {
@@ -584,14 +585,14 @@ namespace System.IO.IsolatedStorage
                 throw new IsolatedStorageException(SR.IsolatedStorage_StoreNotOpen);
             }
 
-            if (m_closed)
+            if (_closed)
                 throw new InvalidOperationException(SR.IsolatedStorage_StoreNotOpen);
         }
 
         public void Dispose()
         {
             Close();
-            m_bDisposed = true;
+            _disposed = true;
         }
 
 
@@ -599,7 +600,7 @@ namespace System.IO.IsolatedStorage
         internal static Exception GetIsolatedStorageException(string exceptionMsg, Exception rootCause)
         {
             IsolatedStorageException e = new IsolatedStorageException(exceptionMsg, rootCause);
-            e.m_UnderlyingException = rootCause;
+            e._underlyingException = rootCause;
             return e;
         }
     }
