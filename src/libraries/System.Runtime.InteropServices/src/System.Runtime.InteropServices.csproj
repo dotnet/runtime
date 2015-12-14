@@ -36,12 +36,17 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
-    <TargetingPackReference Include="System.Core" Condition="'$(TargetGroup)' == 'net46'" />
-    <TargetingPackReference Include="System" Condition="'$(TargetGroup)' == 'net46'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="System.Core"  />
+    <TargetingPackReference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
