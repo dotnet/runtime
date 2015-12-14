@@ -238,6 +238,16 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
     }
     else if (gtIsVtableRef(tree))
     {
+        // Don't propagate type handles that are used as null checks, which are usually in
+        // form of
+        //      *  stmtExpr  void  (top level)
+        //      \--*  indir     int
+        //          \--*  lclVar    ref    V02 loc0
+        if (compCurStmt->gtStmt.gtStmtExpr == tree)
+        {
+            return false;
+        }
+
         objectRefPtr = tree->gtOp.gtOp1;
         propKind = optPropKind::OPK_OBJ_GETTYPE;
     }
