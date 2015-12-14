@@ -3580,6 +3580,7 @@
       <Member Name="GetCustomAttributes(System.Boolean)" />
       <Member Name="GetCustomAttributes(System.Type,System.Boolean)" />
       <Member Name="GetExecutingAssembly" />
+      <Member Name="GetEntryAssembly" />
       <Member Name="GetExportedTypes" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="GetManifestResourceNames" />
       <Member Name="GetManifestResourceStream(System.String)" />
@@ -8417,6 +8418,7 @@
       <Member Name="IsPointerImpl" />
       <Member Name="IsPrimitiveImpl" />
       <Member Name="IsSubclassOf(System.Type)" />
+      <Member Name="IsEquivalentTo(System.Type)" />
       <Member Name="IsValueTypeImpl" />
       <Member Name="MakeArrayType" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="MakeArrayType(System.Int32)" Condition="FEATURE_LEGACYNETCF" />
