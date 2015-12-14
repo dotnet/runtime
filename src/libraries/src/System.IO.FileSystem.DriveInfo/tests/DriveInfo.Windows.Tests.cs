@@ -186,7 +186,6 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [ActiveIssue(1355)]
         [PlatformSpecific(PlatformID.Windows)]
         public void VolumeLabelOnNetworkOrCdRom_Throws_UnauthorizedAccessException()
         {
