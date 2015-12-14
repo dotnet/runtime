@@ -24,7 +24,7 @@
       <Name>System.Diagnostics.Debug</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.CoreCLR.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
