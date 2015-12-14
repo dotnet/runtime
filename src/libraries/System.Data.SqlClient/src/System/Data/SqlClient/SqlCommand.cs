@@ -2259,7 +2259,14 @@ namespace System.Data.SqlClient
 
                         if (null != ds)
                         {
-                            ds.Close();
+                            try
+                            {
+                                ds.Close();
+                            }
+                            catch(Exception exClose)
+                            {
+                                Debug.WriteLine("Received this exception from SqlDataReader.Close() while in another catch block: " + exClose.ToString());
+                            }
                         }
                     }
                     throw;
@@ -2297,7 +2304,14 @@ namespace System.Data.SqlClient
                             _execType = EXECTYPE.PREPAREPENDING; // reset execution type to pending
                         }
 
-                        ds.Close();
+                        try
+                        {
+                            ds.Close();
+                        }
+                        catch (Exception exClose)
+                        {
+                            Debug.WriteLine("Received this exception from SqlDataReader.Close() while in another catch block: " + exClose.ToString());
+                        }
                     }
 
                     throw;
