@@ -881,8 +881,18 @@ monitor_thread (void)
 
 		if (all_waitsleepjoin) {
 			ThreadPoolCounter counter;
-			COUNTER_ATOMIC (counter, { counter._.max_working ++; });
-			hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
+			gboolean limit_worker_max_reached = FALSE;
+
+			COUNTER_ATOMIC (counter, {
+				if (counter._.max_working >= threadpool->limit_worker_max) {
+					limit_worker_max_reached = TRUE;
+					break;
+				}
+				counter._.max_working ++;
+			});
+
+			if (!limit_worker_max_reached)
+				hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
 		}
 
 		threadpool->cpu_usage = mono_cpu_usage (threadpool->cpu_usage_state);
