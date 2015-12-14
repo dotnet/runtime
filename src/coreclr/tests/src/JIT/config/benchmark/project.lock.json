@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -33,10 +33,10 @@
           "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0027": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -347,6 +347,21 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.Numerics/4.0.1-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Globalization": "4.0.10",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Runtime.Numerics.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.4/System.Runtime.Numerics.dll": {}
+        }
+      },
       "System.Runtime.WindowsRuntime/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -436,6 +451,25 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.Tasks.Parallel/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections.Concurrent": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Threading.Tasks": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.Parallel.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Threading.Tasks.Parallel.dll": {}
         }
       },
       "System.Xml.ReaderWriter/4.0.10": {
@@ -636,7 +670,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -666,10 +700,10 @@
           "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0027": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -1000,6 +1034,21 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.Numerics/4.0.1-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Globalization": "4.0.10",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Runtime.Numerics.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.4/System.Runtime.Numerics.dll": {}
+        }
+      },
       "System.Runtime.WindowsRuntime/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1089,6 +1138,25 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.Tasks.Parallel/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections.Concurrent": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Threading.Tasks": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.Parallel.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Threading.Tasks.Parallel.dll": {}
         }
       },
       "System.Xml.ReaderWriter/4.0.10": {
@@ -1292,7 +1360,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1322,10 +1390,10 @@
           "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0027": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0027": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -1656,6 +1724,21 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.Numerics/4.0.1-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Globalization": "4.0.10",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Runtime.Numerics.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.4/System.Runtime.Numerics.dll": {}
+        }
+      },
       "System.Runtime.WindowsRuntime/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1745,6 +1828,25 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.Tasks.Parallel/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections.Concurrent": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Threading.Tasks": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.Parallel.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Threading.Tasks.Parallel.dll": {}
         }
       },
       "System.Xml.ReaderWriter/4.0.10": {
@@ -1949,9 +2051,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0027": {
       "type": "package",
-      "sha512": "47bNAZqRQEQba9EhC4dfWagSkH/jUN8cT6QjxOHMdY7q/G676/tcelkCaymnNXcCMei7qNrTPBxBKlhVQt9/QQ==",
+      "sha512": "Ic8LKByvYV0C/3/4G2mcQ7tigJyQb79c7eagSywTfSLGYJa0sBkzFyVDgXqCOQm/T0EUYOc6Oqj//avSqfHnLQ==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -1963,18 +2065,18 @@
         "lib/net46/xunit.performance.core.XML",
         "lib/net46/xunit.performance.execution.desktop.dll",
         "lib/net46/xunit.performance.execution.desktop.pdb",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0027.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0027.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.nuspec"
       ]
     },
-    "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
+    "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0027": {
       "type": "package",
       "serviceable": true,
-      "sha512": "2J6XPeQ+/faZXR4l1bcxlzCDtHqHnoo1YytQBllfvs4oPnw5DEvmWstb2AcFuyeFjhuiAZ9gezDmoIqFurTqPA==",
+      "sha512": "w/6R/4EBbESpNYyPgp7TDNISOvj8ucrv5FN9X3defsgD1ZAO+4Z+fu9DCZWd78+A0MEQPGIaCKssLgGlzQf6xw==",
       "files": [
-        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0025.nupkg",
-        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0025.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0027.nupkg",
+        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0027.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.analysis.nuspec",
         "tools/MathNet.Numerics.dll",
         "tools/Microsoft.Diagnostics.Tracing.TraceEvent.dll",
@@ -1983,21 +2085,21 @@
         "tools/xunit.performance.analysis.pdb"
       ]
     },
-    "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
+    "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0027": {
       "type": "package",
       "serviceable": true,
-      "sha512": "ru0tFfvyUso/7UmFs7cNelA/uW4VcJsURXZfH6IT5lf2kZH7X2DqByh0S/mDzbea1/zViMe/DRk33U1T+TQeEw==",
+      "sha512": "CMFSRSg26B7Z1dB3IUppS2Ry1aLiCcwyVvK2+BjR0hEIYQ8+PcyhAmnSUxQhKMJ/80ho0HdXhxWbKFB/XmgTWg==",
       "files": [
-        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0025.nupkg",
-        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0025.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0027.nupkg",
+        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0027.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.runner.Windows.nuspec",
         "tools/amd64/KernelTraceControl.dll",
-        "tools/amd64/msdia120.dll",
+        "tools/amd64/msdia140.dll",
         "tools/Microsoft.Diagnostics.Tracing.TraceEvent.dll",
         "tools/ProcDomain.dll",
         "tools/ProcDomain.pdb",
         "tools/x86/KernelTraceControl.dll",
-        "tools/x86/msdia120.dll",
+        "tools/x86/msdia140.dll",
         "tools/xunit.abstractions.dll",
         "tools/xunit.core.dll",
         "tools/xunit.performance.core.dll",
@@ -2775,6 +2877,46 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
+    "System.Runtime.Numerics/4.0.1-beta-23516": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "CiUlA1qetxoQgHBhr/5PwTSqHZ6g5YgwToRwCk1I8AjPC+8MjwnODZV/4X4AGSfTwbu742OvlHEvB7S7UAed+A==",
+      "files": [
+        "lib/dotnet5.4/System.Runtime.Numerics.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Runtime.Numerics.dll",
+        "lib/win8/_._",
+        "lib/wpa81/_._",
+        "ref/dotnet5.2/de/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/es/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/fr/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/it/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/ja/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/ko/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/ru/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/System.Runtime.Numerics.dll",
+        "ref/dotnet5.2/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/zh-hans/System.Runtime.Numerics.xml",
+        "ref/dotnet5.2/zh-hant/System.Runtime.Numerics.xml",
+        "ref/net45/_._",
+        "ref/netcore50/de/System.Runtime.Numerics.xml",
+        "ref/netcore50/es/System.Runtime.Numerics.xml",
+        "ref/netcore50/fr/System.Runtime.Numerics.xml",
+        "ref/netcore50/it/System.Runtime.Numerics.xml",
+        "ref/netcore50/ja/System.Runtime.Numerics.xml",
+        "ref/netcore50/ko/System.Runtime.Numerics.xml",
+        "ref/netcore50/ru/System.Runtime.Numerics.xml",
+        "ref/netcore50/System.Runtime.Numerics.dll",
+        "ref/netcore50/System.Runtime.Numerics.xml",
+        "ref/netcore50/zh-hans/System.Runtime.Numerics.xml",
+        "ref/netcore50/zh-hant/System.Runtime.Numerics.xml",
+        "ref/win8/_._",
+        "ref/wpa81/_._",
+        "System.Runtime.Numerics.4.0.1-beta-23516.nupkg",
+        "System.Runtime.Numerics.4.0.1-beta-23516.nupkg.sha512",
+        "System.Runtime.Numerics.nuspec"
+      ]
+    },
     "System.Runtime.WindowsRuntime/4.0.0": {
       "type": "package",
       "sha512": "IvSI0X1wIgQ2yFCXnV0EJc1FFE4xxzSPqX1r6ikhcLPuKmXjBglB0IrJBmWAK8vaPkyjBIwf7ks2VSdFazXwhA==",
@@ -3002,6 +3144,37 @@
         "System.Threading.Tasks.4.0.10.nupkg",
         "System.Threading.Tasks.4.0.10.nupkg.sha512",
         "System.Threading.Tasks.nuspec"
+      ]
+    },
+    "System.Threading.Tasks.Parallel/4.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "GXDhjPhF3nE4RtDia0W6JR4UMdmhOyt9ibHmsNV6GLRT4HAGqU636Teo4tqvVQOFp2R6b1ffxPXiRaoqtzGxuA==",
+      "files": [
+        "lib/dotnet/System.Threading.Tasks.Parallel.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Threading.Tasks.Parallel.dll",
+        "lib/win8/_._",
+        "lib/wpa81/_._",
+        "ref/dotnet/de/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/es/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/fr/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/it/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/ja/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/ko/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/ru/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/System.Threading.Tasks.Parallel.dll",
+        "ref/dotnet/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/zh-hans/System.Threading.Tasks.Parallel.xml",
+        "ref/dotnet/zh-hant/System.Threading.Tasks.Parallel.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Threading.Tasks.Parallel.dll",
+        "ref/netcore50/System.Threading.Tasks.Parallel.xml",
+        "ref/win8/_._",
+        "ref/wpa81/_._",
+        "System.Threading.Tasks.Parallel.4.0.0.nupkg",
+        "System.Threading.Tasks.Parallel.4.0.0.nupkg.sha512",
+        "System.Threading.Tasks.Parallel.nuspec"
       ]
     },
     "System.Xml.ReaderWriter/4.0.10": {
@@ -3241,14 +3414,18 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.xunit.performance >= 1.0.0-alpha-build0025",
-      "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0025",
-      "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0025",
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-alpha-build0027",
+      "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0027",
+      "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0027",
       "System.Console >= 4.0.0-beta-*",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
+      "System.Runtime.Numerics >= 4.0.1-beta-*",
       "System.Numerics.Vectors >= 4.1.1-beta-*",
       "System.Numerics.Vectors.WindowsRuntime >= 4.0.1-beta-*",
+      "System.Threading >= 4.0.10",
+      "System.Threading.Tasks >= 4.0.10",
+      "System.Threading.Tasks.Parallel >= 4.0.0",
       "xunit >= 2.1.0",
       "xunit.console.netcore >= 1.0.2-prerelease-00128",
       "xunit.runner.utility >= 2.1.0"

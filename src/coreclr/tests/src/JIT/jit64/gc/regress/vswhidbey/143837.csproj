@@ -34,7 +34,7 @@
     <Compile Include="143837.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
+    <None Include="$(JitPackagesConfigFileDirectory)threading+thread\project.json" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>

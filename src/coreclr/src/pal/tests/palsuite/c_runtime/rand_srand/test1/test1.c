@@ -64,11 +64,6 @@ int __cdecl main(int argc, char **argv)
     for(i = 0; i < 10; i++)
     {
         TempRandNumber=rand();      
-        if(RandNumber[i]==TempRandNumber)
-        {
-          Fail("ERROR: rand should return the different value when srand "
-               "is initialized with different value");
-        } 
         if (TempRandNumber < 0 || TempRandNumber > RAND_MAX)
         {
             Fail("2) ERROR: random generated an invalid value: %d", TempRandNumber);

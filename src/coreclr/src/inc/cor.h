@@ -2012,7 +2012,7 @@ typedef enum
 // slot on the caller's stack.
 //
 
-#define COR_REQUIRES_SECOBJ_ATTRIBUTE L"System.Security.DynamicSecurityMethodAttribute"
+#define COR_REQUIRES_SECOBJ_ATTRIBUTE W("System.Security.DynamicSecurityMethodAttribute")
 #define COR_REQUIRES_SECOBJ_ATTRIBUTE_ANSI "System.Security.DynamicSecurityMethodAttribute"
 
 #define COR_COMPILERSERVICE_DISCARDABLEATTRIBUTE L"System.Runtime.CompilerServices.DiscardableAttribute"

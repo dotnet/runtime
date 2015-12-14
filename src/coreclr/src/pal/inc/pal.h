@@ -3642,13 +3642,13 @@ PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryA(
-         IN LPCSTR lpLibFileName);
+        IN LPCSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryW(
-         IN LPCWSTR lpLibFileName);
+        IN LPCWSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
@@ -3667,17 +3667,17 @@ LoadLibraryExW(
         IN DWORD dwFlags);
 
 PALIMPORT
-HMODULE
+void *
 PALAPI
 PAL_LoadLibraryDirect(
-         IN LPCWSTR lpLibFileName);
+        IN LPCWSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
 PALAPI
 PAL_RegisterLibraryDirect(
-         IN HMODULE dl_handle,
-         IN LPCWSTR lpLibFileName);
+        IN void *dl_handle,
+        IN LPCWSTR lpLibFileName);
 
 /*++
 Function:
@@ -6744,6 +6744,11 @@ public:
     static bool IsEnabled();
 };
 
+//
+// NOTE: Catching hardware exceptions are only enabled in the DAC and SOS 
+// builds. A hardware exception in coreclr code will fail fast/terminate
+// the process.
+//
 #ifdef FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 #define HardwareExceptionHolder CatchHardwareExceptionHolder __catchHardwareException;
 #else
@@ -6760,7 +6765,7 @@ extern "C++" {
 // filter to be called during the first pass to better emulate SEH
 // the xplat platforms that only have C++ exception support.
 //
-class NativeExceptionHolderBase : CatchHardwareExceptionHolder
+class NativeExceptionHolderBase
 {
     // Save the address of the holder head so the destructor 
     // doesn't have access the slow (on Linux) TLS value again.
@@ -6870,6 +6875,7 @@ public:
     };                                                                          \
     try                                                                         \
     {                                                                           \
+        HardwareExceptionHolder                                                 \
         auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
         __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \

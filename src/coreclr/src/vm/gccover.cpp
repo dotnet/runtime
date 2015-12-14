@@ -1348,7 +1348,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
 
         // If some other thread removes interrupt points, we abandon epilog testing
         // for this routine since the barrier at the begining of the routine may not
-        // be up anymore, and thus the caller context is now not guarenteed to be correct.  
+        // be up anymore, and thus the caller context is now not guaranteed to be correct.  
         // This should happen only very rarely so is not a big deal.
         if (gcCover->callerThread != pThread)
             gcCover->doingEpilogChecks = false;
