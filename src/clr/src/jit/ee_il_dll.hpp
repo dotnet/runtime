@@ -22,11 +22,9 @@ class CILJit: public ICorJitCompiler
             GUID*   versionIdentifier   /* OUT */
             );
 
-#ifndef RYUJIT_CTPBUILD
     unsigned getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags);
 
     void setRealJit(ICorJitCompiler* realJitCompiler);
-#endif // !RYUJIT_CTPBUILD
 };
 
 /*****************************************************************************

@@ -431,7 +431,7 @@ void                emitter::emitInsSanityCheck(instrDesc *id)
         assert(emitGetInsSC(id) <= 4);
         if (insOptsLSL(id->idInsOpt()))
         {
-            assert(emitGetInsSC(id) > 0);
+            assert((emitGetInsSC(id) > 0) || (id->idReg2() == REG_ZR));  // REG_ZR encodes SP and we allow a shift of zero
         }
         break;
 
@@ -873,6 +873,35 @@ bool           emitter::emitInsMayWriteMultipleRegs(instrDesc *id)
     default:
         return false;
     }
+}
+
+// For the small loads/store instruction we adjust the size 'attr' 
+// depending upon whether we have a load or a store
+//
+emitAttr  emitter::emitInsAdjustLoadStoreAttr(instruction ins, emitAttr attr)
+{
+    if (EA_SIZE(attr) <= EA_4BYTE)
+    {
+        if (emitInsIsLoad(ins))
+        {
+            // The value of 'ins' encodes the size to load 
+            // we use EA_8BYTE here because it is the size we will write (into dataReg)
+            // it is also required when ins is INS_ldrsw
+            //
+            attr = EA_8BYTE;
+        }
+        else
+        {
+            assert(emitInsIsStore(ins));
+
+            // The value of 'ins' encodes the size to store 
+            // we use EA_4BYTE here because it is the size of the register
+            // that we want to display when storing small values 
+            //
+            attr = EA_4BYTE;
+        }
+    }
+    return attr;
 }
 
 // Takes an instrDesc 'id' and uses the instruction 'ins' to determine the 
@@ -1975,6 +2004,28 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false;
 }
 
+// true if this 'imm' can be encoded as the offset in a ldr/str instruction 
+/*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
+{
+    if (imm == 0)
+        return true;                        // Encodable using IF_LS_2A
+
+    if ((imm >= -256) && (imm <= 255))
+        return true;                        // Encodable using IF_LS_2C (or possibly IF_LS_2B)
+
+    if (imm < 0)
+        return false;                       // not encodable
+
+    emitAttr  size  = EA_SIZE(attr);
+    unsigned  scale = NaturalScale_helper(size);
+    ssize_t   mask  = size - 1;             // the mask of low bits that must be zero to encode the immediate
+
+    if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
+        return true;                        // Encodable using IF_LS_2B
+
+    return false;                           // not encodable 
+}
+
 /************************************************************************
  *
  *   A helper method to return the natural scale for an EA 'size'
@@ -2169,6 +2220,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     if (imm < 0)
     {
         imm = -imm;               // convert to unsigned
+    }
+
+    if (imm < 0)  
+    {
+        return false;             // Must be MIN_INT64 
     }
 
     if ((imm & 0xfff) != 0)       // Now the low 12 bits all have to be zero
@@ -4706,6 +4762,60 @@ void                emitter::emitIns_R_R_I(instruction ins,
     appendToCurIG(id);
 }
 
+/*****************************************************************************
+*
+*  Add an instruction referencing two registers and a constant.
+*  Also checks for a large immediate that needs a second instruction
+*  and will load it in reg1
+*
+*  - Supports instructions: add, adds, sub, subs, and, ands, eor and orr
+*  - Requires that reg1 is a general register and not SP or ZR
+*  - Requires that reg1 != reg2
+*/
+void            emitter::emitIns_R_R_Imm(instruction ins,
+                                         emitAttr    attr,
+                                         regNumber   reg1,
+                                         regNumber   reg2,
+                                         ssize_t     imm)
+{
+    assert(isGeneralRegister(reg1));
+    assert(reg1 != reg2);
+
+    bool immFits = true;
+
+    switch (ins)
+    {
+    case INS_add:
+    case INS_adds:
+    case INS_sub:
+    case INS_subs:
+        immFits = emitter::emitIns_valid_imm_for_add(imm, attr);
+        break;
+
+    case INS_ands:
+    case INS_and:
+    case INS_eor:
+    case INS_orr:
+        immFits = emitter::emitIns_valid_imm_for_alu(imm, attr);
+        break;
+
+    default:
+        assert(!"Unsupported instruction in emitIns_R_R_Imm");
+    }
+    
+    if (immFits)
+    {
+        emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+    }
+    else
+    {
+        // Load 'imm' into the reg1 register
+        // then issue:   'ins'  reg1, reg2, reg1
+        //
+        codeGen->instGen_Set_Reg_To_Imm(attr, reg1, imm);
+        emitIns_R_R_R(ins, attr, reg1, reg2, reg1);
+    }
+}
 
 /*****************************************************************************
  *
@@ -5211,6 +5321,7 @@ void                emitter::emitIns_R_R_R_I(instruction ins,
     }
     else if (isAddSub)
     {
+        bool reg2IsSP = (reg2 == REG_SP);
         assert(!isLdSt);
         assert(isValidGeneralDatasize(size));
         assert(isGeneralRegister(reg3));
@@ -5251,7 +5362,17 @@ void                emitter::emitIns_R_R_R_I(instruction ins,
         {
             assert(insOptsNone(opt));
 
-            fmt = IF_DR_3A;
+            if (reg2IsSP)
+            {
+                // To encode the SP register as reg2 we must use the IF_DR_3C encoding
+                // and also specify a LSL of zero (imm == 0)
+                opt = INS_OPTS_LSL; 
+                fmt = IF_DR_3C;
+            }
+            else
+            {
+                fmt = IF_DR_3A;
+            }
         }
         else
         {
@@ -10430,161 +10551,151 @@ void                emitter::emitDispFrameRef(int varx, int disp, int offs, bool
 
 #endif // DEBUG
 
-// this is very similar to emitInsBinary and probably could be folded in to same
-// except the requirements on the incoming parameter are different,
-// ex: the memory op in storeind case must NOT be contained
-void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
+// Generate code for a load or store operation with a potentially complex addressing mode
+// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
+// Since Arm64 does not directly support this complex of an addressing mode
+// we may generates up to three instructions for this for Arm64
+// 
+void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
-    switch (node->OperGet())
+    emitAttr ldstAttr = isVectorRegister(dataReg) ? attr : emitInsAdjustLoadStoreAttr(ins, attr);
+
+    GenTree*  addr = indir->Addr();
+
+    if (addr->isContained())
     {
-    case GT_IND:
+        assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+
+        int    offset = 0;
+        DWORD  lsl    = 0;
+
+        if (addr->OperGet() == GT_LEA)
         {
-            assert(emitInsIsLoad(ins));
-
-            GenTreeIndir* indir = node->AsIndir();
-            GenTree*      addr  = node->gtGetOp1();
-
-            // The value of 'ins' encodes the size to load 
-            // we use EA_8BYTE here because it is the size we want to write (into node->gtRegNum)
-            // it is also required when ins is INS_ldrsw
-            //
-            if (EA_SIZE(attr) < EA_8BYTE)
+            offset = (int) addr->AsAddrMode()->gtOffset;
+            if (addr->AsAddrMode()->gtScale > 0)
             {
-                attr = EA_8BYTE;
-            }
-
-            if (addr->isContained())
-            {
-                assert(addr->OperGet() == GT_LCL_VAR ||
-                       addr->OperGet() == GT_LEA);
-
-                int offset = 0;
-
-                if (addr->OperGet() == GT_LEA)
-                {
-                    offset = (int) addr->AsAddrMode()->gtOffset;
-                }
-                GenTree*  memBase = indir->Base();
-
-                if (indir->HasIndex())
-                {
-                    assert(offset == 0);
-                    GenTree*  index = indir->Index();
-
-                    emitIns_R_R_R(ins, attr, node->gtRegNum, 
-                                  memBase->gtRegNum, index->gtRegNum);
-                }
-                else
-                {
-                    emitIns_R_R_I(ins, attr, node->gtRegNum, 
-                                  memBase->gtRegNum, offset);
-                }
-            }
-            else
-            {
-                codeGen->genConsumeReg(addr);
-                emitIns_R_R(ins, attr, node->gtRegNum, addr->gtRegNum);
+                assert(isPow2(addr->AsAddrMode()->gtScale));
+                BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
             }
         }
-        break;
 
-    case GT_STOREIND:
+        GenTree*  memBase = indir->Base();
+
+        if (indir->HasIndex())
         {
-            assert(emitInsIsStore(ins));
+            GenTree*  index = indir->Index();
 
-            GenTreeIndir* indir   = node->AsIndir();
-            GenTree*      addr    = node->gtGetOp1();
-            GenTree*      data    = node->gtGetOp2();
-            regNumber     dataReg = REG_NA;
-            if (data->isContainedIntOrIImmed())
+            if (offset != 0)
             {
-                assert(data->IsZero());
-                dataReg = REG_ZR;
-            }
-            else
-            {
-                assert(!data->isContained());
-                codeGen->genConsumeReg(data);
-                dataReg = data->gtRegNum;
-            }
+                regMaskTP tmpRegMask = indir->gtRsvdRegs;
+                regNumber tmpReg = genRegNumFromMask(tmpRegMask);
+                noway_assert(tmpReg != REG_NA);
 
-            // The value of 'ins' encodes the size to store 
-            // we use EA_4BYTE here because it is the size of the register
-            // that we want to display when storing small values 
-            //
-            if (EA_SIZE(attr) < EA_4BYTE)
-            {
-                attr = EA_4BYTE;
-            }
-
-            if (addr->isContained())
-            {
-                assert(addr->OperGet() == GT_LCL_VAR_ADDR ||
-                       addr->OperGet() == GT_LEA);
-
-                int offset = 0;
-
-                if (addr->OperGet() == GT_LEA)
+                if (emitIns_valid_imm_for_add(offset, EA_8BYTE))
                 {
-                    offset = (int) addr->AsAddrMode()->gtOffset;
+                    if (lsl > 0)
+                    {
+                        // Generate code to set tmpReg = base + index*scale
+                        emitIns_R_R_R_I(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl, INS_OPTS_LSL);
+                    }
+                    else // no scale 
+                    {
+                        // Generate code to set tmpReg = base + index
+                        emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum);
+                    }
+
+                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+
+                    // Then load/store dataReg from/to [tmpReg + offset]
+                    emitIns_R_R_I(ins, ldstAttr, dataReg, tmpReg, offset);;
                 }
-                GenTree*  memBase = indir->Base();
-
-                if (indir->HasIndex())
+                else // large offset
                 {
-                    assert(offset == 0);
-                    GenTree*  index = indir->Index();
+                    // First load/store tmpReg with the large offset constant
+                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE,  tmpReg, offset);
+                    // Then add the base register
+                    //      rd = rd + base
+                    emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, memBase->gtRegNum);
 
-                    emitIns_R_R_R(ins, attr, dataReg, 
-                                  memBase->gtRegNum, index->gtRegNum);
-                }
-                else
-                {
-                    emitIns_R_R_I(ins, attr, dataReg, 
-                                  memBase->gtRegNum, offset);
+                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+                    noway_assert(tmpReg != index->gtRegNum);
+
+                    // Then load/store dataReg from/to [tmpReg + index*scale]
+                    emitIns_R_R_R_I(ins, ldstAttr, dataReg, tmpReg, index->gtRegNum, lsl, INS_OPTS_LSL);
                 }
             }
-            else
+            else  // (offset == 0)
             {
-                codeGen->genConsumeReg(addr);
-                emitIns_R_R(ins, attr, dataReg, addr->gtRegNum);
+                if (lsl > 0)
+                {
+                    // Then load/store dataReg from/to [memBase + index*scale]
+                    emitIns_R_R_R_I(ins, ldstAttr, dataReg,  memBase->gtRegNum, index->gtRegNum, lsl, INS_OPTS_LSL);
+                }
+                else // no scale
+                {
+                    // Then load/store dataReg from/to [memBase + index]
+                    emitIns_R_R_R(ins, ldstAttr, dataReg, memBase->gtRegNum, index->gtRegNum);
+                }
             }
         }
-        break;
-
-    case GT_STORE_LCL_VAR:
+        else  // no Index register
         {
-            assert(emitInsIsStore(ins));
-
-            GenTreeLclVarCommon* varNode = node->AsLclVarCommon();
-
-            GenTree*  data    = node->gtOp.gtOp1->gtEffectiveVal();
-            regNumber dataReg = REG_NA;
-            if (data->isContainedIntOrIImmed())
+            if (emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(attr)))
             {
-                assert(data->IsZero());
-                dataReg = REG_ZR;
+                // Then load/store dataReg from/to [memBase + offset]
+                emitIns_R_R_I(ins, ldstAttr, dataReg, memBase->gtRegNum, offset);
             }
             else
             {
-                assert(!data->isContained());
-                codeGen->genConsumeReg(data);
-                dataReg = data->gtRegNum;
+                // We require a tmpReg to hold the offset
+                regMaskTP tmpRegMask = indir->gtRsvdRegs;
+                regNumber tmpReg = genRegNumFromMask(tmpRegMask);
+                noway_assert(tmpReg != REG_NA);
+
+                // First load/store tmpReg with the large offset constant
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE,  tmpReg, offset);
+
+                // Then load/store dataReg from/to [memBase + tmpReg]
+                emitIns_R_R_R(ins, ldstAttr, dataReg, memBase->gtRegNum, tmpReg);
             }
-
-            codeGen->inst_set_SV_var(varNode);
-            assert(varNode->gtRegNum == REG_NA); // stack store
-
-            emitIns_S_R(ins, attr, dataReg, 
-                                   varNode->GetLclNum(), 0);
-
-            codeGen->genUpdateLife(varNode);
         }
-        return;
-
-    default:
-        unreached();
     }
+    else  // addr is not contained, so we evaluate it into a register
+    {
+        codeGen->genConsumeReg(addr);
+        // Then load/store dataReg from/to [addrReg]
+        emitIns_R_R(ins, ldstAttr, dataReg, addr->gtRegNum);
+    }
+}
+
+
+// Generates an integer data section constant and returns a field handle representing
+// the data offset to access the constant via a load instruction. 
+// This is called during ngen for any relocatable constants
+//
+CORINFO_FIELD_HANDLE emitter::emitLiteralConst(ssize_t cnsValIn, emitAttr attr /*=EA_8BYTE*/)
+{
+    ssize_t constValue = cnsValIn;
+    void *  cnsAddr    = &constValue;
+    bool    dblAlign;
+
+    if (attr == EA_4BYTE)
+    {        
+        dblAlign = false;
+    }
+    else
+    {
+        assert(attr == EA_8BYTE);
+        dblAlign = true;
+    }
+
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+
+    UNATIVE_OFFSET cnsSize = (attr == EA_4BYTE) ? 4 : 8;
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    return emitComp->eeFindJitDataOffs(cnum);
 }
 
 // Generates a float or double data section constant and returns field handle representing
@@ -10715,7 +10826,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     bool isMulOverflow = false;
     bool isUnsignedMul = false;
     instruction ins2 = INS_invalid;
-    regNumber extraReg = REG_ZR;
+    regNumber extraReg = REG_NA;
     if (dst->gtOverflowEx())
     {
         if (ins == INS_add)
@@ -10730,11 +10841,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             isMulOverflow = true;
             isUnsignedMul = ((dst->gtFlags & GTF_UNSIGNED) != 0);
-            regMaskTP   tmpRegsMask = dst->gtRsvdRegs;
-            assert(genCountBits(tmpRegsMask) >= 1);
-            regMaskTP extraRegMask = genFindLowestBit(tmpRegsMask);
-            tmpRegsMask &= ~extraRegMask;
-            extraReg = genRegNumFromMask(extraRegMask);
             ins2 = isUnsignedMul ? INS_umulh : INS_smulh;
             assert(intConst == nullptr);   // overflow format doesn't support an int constant operand
         }
@@ -10749,22 +10855,55 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     else
     {
-        emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
         if (isMulOverflow)
         {
-            emitIns_R_R_R(ins2, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
             if (isUnsignedMul)
             {
+                assert(genCountBits(dst->gtRsvdRegs) == 1);
+                extraReg = genRegNumFromMask(dst->gtRsvdRegs);
+
+                // Compute the high result
+                emitIns_R_R_R(ins2, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+
                 emitIns_R_I(INS_cmp, EA_8BYTE, extraReg, 0);
+                codeGen->genCheckOverflow(dst);
+
+                // Now multiply without skewing the high result if no overflow.
+                emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
             }
             else
             {
+                // Make sure that we have an internal register
+                assert(genCountBits(dst->gtRsvdRegs) == 2);
+
+                // There will be two bits set in tmpRegsMask.
+                // Remove the bit for 'dst->gtRegNum' from 'tmpRegsMask'
+                regMaskTP tmpRegsMask = dst->gtRsvdRegs & ~genRegMask(dst->gtRegNum);
+                regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask);   // set tmpRegMsk to a one-bit mask
+                extraReg = genRegNumFromMask(tmpRegMask);               // set tmpReg from that mask
+
+                // Make sure the two registers are not the same.
+                assert(extraReg != dst->gtRegNum);
+
+                // Save the high result in a temporary register
+                emitIns_R_R_R(ins2, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+
+                // Now multiply without skewing the high result.
+                emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+
                 emitIns_R_R_I(INS_cmp, EA_8BYTE, extraReg, dst->gtRegNum, 63, INS_OPTS_ASR);
+
+                codeGen->genCheckOverflow(dst);
             }
+        }
+        else
+        {
+            // We can just multiply.
+            emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
         }
     }
 
-    if (dst->gtOverflowEx())
+    if (dst->gtOverflowEx() && !isMulOverflow)
     {
         assert(!varTypeIsFloating(dst));
         codeGen->genCheckOverflow(dst);

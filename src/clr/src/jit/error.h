@@ -77,7 +77,11 @@ extern void DECLSPEC_NORETURN noWayAssertBody(const char * cond, const char * fi
 // Conditionally invoke the noway assert body. The conditional predicate is evaluated using a method on the tlsCompiler.
 // If a noway_assert is hit, we ask the Compiler whether to raise an exception (i.e., conditionally raise exception.)
 // To have backward compatibility between v4.5 and v4.0, in min-opts we take a shot at codegen rather than rethrow.
-extern void noWayAssertBodyConditional();
+extern void noWayAssertBodyConditional(
+#ifdef FEATURE_TRACELOGGING
+        const char * file, unsigned line
+#endif
+);
 extern void noWayAssertBodyConditional(const char * cond, const char * file, unsigned line);
 
 #if !defined(_TARGET_X86_) || !defined(LEGACY_BACKEND)
@@ -158,7 +162,14 @@ extern void notYetImplemented(const char * msg, const char * file, unsigned line
 #define NO_WAY(msg) noWay()
 #define BADCODE(msg) badCode()
 #define BADCODE3(msg, msg2, arg) badCode()
-#define noway_assert(cond) do { if (!(cond)) { noWayAssertBodyConditional(); }  } while (0)
+
+#ifdef FEATURE_TRACELOGGING
+#define NOWAY_ASSERT_BODY_ARGUMENTS __FILE__, __LINE__
+#else
+#define NOWAY_ASSERT_BODY_ARGUMENTS
+#endif
+
+#define noway_assert(cond) do { if (!(cond)) { noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS); } } while (0)
 #define unreached() noWayAssertBody()
 
 #endif

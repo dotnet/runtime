@@ -263,7 +263,6 @@ __declspec(thread)
 static NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
 
 NativeExceptionHolderBase::NativeExceptionHolderBase()
-    : CatchHardwareExceptionHolder()
 {
     m_head = nullptr;
     m_next = nullptr;

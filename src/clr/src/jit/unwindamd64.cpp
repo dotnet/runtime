@@ -479,7 +479,9 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 
         // Prepend the unwindHeader onto the unwind codes
         assert(func->unwindCodeSlot >= offsetof(UNWIND_INFO, UnwindCode));
-        UNWIND_INFO * pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot -= offsetof(UNWIND_INFO, UnwindCode)];
+
+        func->unwindCodeSlot -= offsetof(UNWIND_INFO, UnwindCode);
+        UNWIND_INFO * pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot];
         memcpy(pHeader, &func->unwindHeader, offsetof(UNWIND_INFO, UnwindCode));
 
         unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
