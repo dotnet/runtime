@@ -17,7 +17,6 @@ namespace System.Data.SqlClient
         private SqlConnectionFactory() : base() { }
 
         public static readonly SqlConnectionFactory SingletonInstance = new SqlConnectionFactory();
-        private const string _metaDataXml = "MetaDataXml";
 
         override public DbProviderFactory ProviderFactory
         {

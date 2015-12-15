@@ -45,14 +45,6 @@ namespace System.Data.SqlClient
             CacheConnectionStringProperties();
         }
 
-        private SqlConnection(SqlConnection connection)
-        { // Clone
-            GC.SuppressFinalize(this);
-            CopyFrom(connection);
-            _connectionString = connection._connectionString;
-            CacheConnectionStringProperties();
-        }
-
         // This method will be called once connection string is set or changed. 
         private void CacheConnectionStringProperties()
         {
@@ -135,25 +127,6 @@ namespace System.Data.SqlClient
                 _AsyncCommandInProgress = value;
             }
         }
-
-
-        // Does this connection uses Integrated Security?
-        private bool UsesIntegratedSecurity(SqlConnectionString opt)
-        {
-            return opt != null ? opt.IntegratedSecurity : false;
-        }
-
-        // Does this connection uses old style of clear userID or Password in connection string?
-        private bool UsesClearUserIdOrPassword(SqlConnectionString opt)
-        {
-            bool result = false;
-            if (null != opt)
-            {
-                result = (!ADP.IsEmpty(opt.UserID) || !ADP.IsEmpty(opt.Password));
-            }
-            return result;
-        }
-
 
         internal SqlConnectionString.TypeSystem TypeSystem
         {

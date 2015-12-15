@@ -1565,44 +1565,6 @@ namespace Microsoft.SqlServer.Server
             return MaxTimeScale;
         }
 
-        private static DbType[] s_sxm_rgSqlDbTypeToDbType = {
-            DbType.Int64,           // SqlDbType.BigInt
-            DbType.Binary,          // SqlDbType.Binary
-            DbType.Boolean,         // SqlDbType.Bit
-            DbType.AnsiString,      // SqlDbType.Char
-            DbType.DateTime,        // SqlDbType.DateTime
-            DbType.Decimal,         // SqlDbType.Decimal
-            DbType.Double,          // SqlDbType.Float
-            DbType.Binary,          // SqlDbType.Image
-            DbType.Int32,           // SqlDbType.Int
-            DbType.Currency,        // SqlDbType.Money
-            DbType.String,          // SqlDbType.NChar
-            DbType.String,          // SqlDbType.NText
-            DbType.String,          // SqlDbType.NVarChar
-            DbType.Single,          // SqlDbType.Real
-            DbType.Guid,            // SqlDbType.UniqueIdentifier
-            DbType.DateTime,        // SqlDbType.SmallDateTime
-            DbType.Int16,           // SqlDbType.SmallInt
-            DbType.Currency,        // SqlDbType.SmallMoney
-            DbType.AnsiString,      // SqlDbType.Text
-            DbType.Binary,          // SqlDbType.Timestamp
-            DbType.Byte,            // SqlDbType.TinyInt
-            DbType.Binary,          // SqlDbType.VarBinary
-            DbType.AnsiString,      // SqlDbType.VarChar
-            DbType.Object,          // SqlDbType.Variant
-            DbType.Object,          // SqlDbType.Row
-            DbType.Xml,             // SqlDbType.Xml
-            DbType.String,          // SqlDbType.NVarChar, place holder
-            DbType.String,          // SqlDbType.NVarChar, place holder
-            DbType.String,          // SqlDbType.NVarChar, place holder
-            DbType.Object,          // SqlDbType.Udt
-            DbType.Object,          // SqlDbType.Structured
-            DbType.Date,            // SqlDbType.Date
-            DbType.Time,            // SqlDbType.Time
-            DbType.DateTime2,       // SqlDbType.DateTime2
-            DbType.DateTimeOffset   // SqlDbType.DateTimeOffset
-        };
-
         private void SetDefaultsForType(SqlDbType dbType)
         {
             if (SqlDbType.BigInt <= dbType && SqlDbType.DateTimeOffset >= dbType)

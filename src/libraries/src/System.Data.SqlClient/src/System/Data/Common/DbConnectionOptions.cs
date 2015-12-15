@@ -66,14 +66,12 @@ namespace System.Data.Common
             internal const string Integrated_Security = "integrated security";
             internal const string Password = "password";
             internal const string Persist_Security_Info = "persist security info";
-            internal const string User_ID = "user id";
         };
 
         // known connection string common synonyms
         private static class SYNONYM
         {
             internal const string Pwd = "pwd";
-            internal const string UID = "uid";
         };
 
         private readonly string _usersConnectionString;
