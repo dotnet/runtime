@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Diagnostics.Debug": "4.0.11-rc2-23610",
-    "System.Resources.ResourceManager": "4.0.1-rc2-23610",
-    "System.Runtime": "4.0.21-rc2-23610",
-    "System.Threading": "4.0.11-rc2-23610"
+    "System.Diagnostics.Debug": "4.0.0",
+    "System.Resources.ResourceManager": "4.0.0",
+    "System.Runtime": "4.0.0",
+    "System.Threading": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}
