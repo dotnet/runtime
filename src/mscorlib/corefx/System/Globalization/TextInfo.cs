@@ -86,6 +86,7 @@ namespace System.Globalization
         }
 
         // Currently we don't have native functions to do this, so we do it the hard way
+        [SecuritySafeCritical]
         internal static int IndexOfStringOrdinalIgnoreCase(String source, String value, int startIndex, int count)
         {
             if (count > source.Length || count < 0 || startIndex < 0 || startIndex >= source.Length || startIndex + count > source.Length)
@@ -97,6 +98,7 @@ namespace System.Globalization
         }
 
         // Currently we don't have native functions to do this, so we do it the hard way
+        [SecuritySafeCritical]
         internal static int LastIndexOfStringOrdinalIgnoreCase(String source, String value, int startIndex, int count)
         {
             if (count > source.Length || count < 0 || startIndex < 0 || startIndex > source.Length - 1 || (startIndex - count + 1 < 0))
