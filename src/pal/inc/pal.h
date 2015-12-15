@@ -542,6 +542,15 @@ PAL_EntryPoint(
     IN LPVOID lpParameter);
 
 /// <summary>
+/// This function shuts down PAL WITHOUT exiting the current process.
+/// </summary>
+PALIMPORT
+void
+PALAPI
+PAL_Shutdown(
+    void);
+
+/// <summary>
 /// This function shuts down PAL and exits the current process.
 /// </summary>
 PALIMPORT
@@ -577,23 +586,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-HMODULE
-PALAPI
-PAL_RegisterLibraryW(
-    IN LPCWSTR lpLibFileName);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_UnregisterLibraryW(
-    IN HMODULE hLibModule);
-
-#ifdef UNICODE
-#define PAL_RegisterLibrary PAL_RegisterLibraryW
-#define PAL_UnregisterLibrary PAL_UnregisterLibraryW
-#endif
 
 PALIMPORT
 BOOL
@@ -3694,7 +3686,9 @@ Return value:
     A valid base address if successful.
     0 if failure
 --*/
-void * PAL_LOADLoadPEFile(HANDLE hFile);
+void *
+PALAPI
+PAL_LOADLoadPEFile(HANDLE hFile);
 
 /*++
     PAL_LOADUnloadPEFile
@@ -3708,9 +3702,9 @@ Return value:
     TRUE - success
     FALSE - failure (incorrect ptr, etc.)
 --*/
-
-BOOL PAL_LOADUnloadPEFile(void * ptr);
-
+BOOL 
+PALAPI
+PAL_LOADUnloadPEFile(void * ptr);
 
 #ifdef UNICODE
 #define LoadLibrary LoadLibraryW
