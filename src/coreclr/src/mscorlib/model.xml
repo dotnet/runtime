@@ -7854,10 +7854,7 @@
       <Member Name="#ctor(System.Threading.ThreadStart)" />
       <Member Name="#ctor(System.Threading.ParameterizedThreadStart)" />
       <Member Name="MemoryBarrier" />
-      <Member Name="Abort" />
-      <!--
-      //<Member Name="Abort(System.Object)" />
-      -->
+      <Member Name="Abort" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="Finalize" />
       <Member Name="get_CurrentCulture" />
       <Member Name="get_CurrentThread" />
