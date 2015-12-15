@@ -2451,7 +2451,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
         // Otherwise, this thread calls EEShutDownHelper directly.  First switch to
         // cooperative mode if this is a managed thread
 #endif
-        if (GetThread())
+    if (GetThread())
     {
         GCX_COOP();
         EEShutDownHelper(fIsDllUnloading);

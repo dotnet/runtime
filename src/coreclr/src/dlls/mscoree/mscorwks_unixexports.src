@@ -13,8 +13,7 @@ GetMetaDataPublicInterfaceFromInternal
 ; Obsolete Unix hosting API, to be removed
 ExecuteAssembly
 
-; PAL initialization and module registration
-PAL_InitializeCoreCLR 
+; PAL module registration
 PAL_RegisterModule
 PAL_UnregisterModule
 

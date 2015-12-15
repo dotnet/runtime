@@ -280,13 +280,15 @@ int coreclr_shutdown(
             unsigned int domainId)
 {
     ReleaseHolder<ICLRRuntimeHost2> host(reinterpret_cast<ICLRRuntimeHost2*>(hostHandle));
-    HRESULT hr = host->UnloadAppDomain(domainId,
-                                       true); // Wait until done
+
+    HRESULT hr = host->UnloadAppDomain(domainId, true); // Wait until done
     IfFailRet(hr);
 
     hr = host->Stop();
 
-    // The PAL_Terminate is not called here since it would terminate the current process.
+#ifdef FEATURE_PAL
+    PAL_Shutdown();
+#endif
 
     return hr;
 }
