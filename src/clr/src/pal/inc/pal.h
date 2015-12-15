@@ -569,6 +569,24 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
+/*++
+Function:
+  PAL_SetShutdownCallback
+
+Abstract:
+  Sets a callback that is executed when the PAL is shut down because of
+  ExitProcess, TerminateProcess or PAL_Shutdown but not PAL_Terminate/Ex.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+typedef VOID (*PSHUTDOWN_CALLBACK)(void);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetShutdownCallback(
+    IN PSHUTDOWN_CALLBACK callback);
+
 PALIMPORT
 void
 PALAPI
