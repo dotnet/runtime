@@ -29,6 +29,15 @@ namespace System
             }
         }
 
+        public static string TargetFrameworkName
+        {
+            get
+            {
+                // Forward the value that is set on the current domain.
+                return AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+            }
+        }
+
         /// <summary>
         /// Try to get the value of the switch.
         /// </summary>
