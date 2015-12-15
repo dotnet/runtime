@@ -1,0 +1,89 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+.assembly extern mscorlib {}
+.assembly MCCTest {}
+.module mcc_i12.exe
+
+
+.namespace MCCTest
+{
+  .class MyClass
+  {
+    .method assembly static pinvokeimpl("native_i1c.dll" as "#1" cdecl) 
+        vararg valuetype MCCTest.VType1 Sum(float32) cil managed preservesig {
+    }
+
+    .method private valuetype MCCTest.VType1 GetSum()
+    {
+      .maxstack  64
+      ldc.r4     1
+      ldc.r4     2
+      ldc.r4     3
+      ldc.r4     4
+      ldc.r4     5
+      ldc.r4     6
+      ldc.r4     7
+      ldc.r4     8
+      ldc.r4     9
+      ldc.r4     10
+      ldc.r4     11
+      ldc.r4     12
+      ldc.r4     1
+      neg
+      tail.
+      call       vararg valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32, ..., 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32, 
+                                                                        float32)
+		ret
+	}
+
+    .method public specialname rtspecialname instance void  .ctor()
+    {
+      .maxstack  1
+      ldarg.0
+      call       instance void [mscorlib]System.Object::.ctor()
+      ret
+    } // end of method MyClass::.ctor
+
+    .method private static int32 Main(string[] args)
+    {
+      .entrypoint
+      .maxstack  64
+      .locals init	(
+        [0] class MCCTest.MyClass me,
+        [1] valuetype MCCTest.VType1 res,
+        [2] int32 rc
+      )
+      
+      newobj     instance void MCCTest.MyClass::.ctor()
+      stloc.s    me
+      
+      ldloc.s    me
+      call   instance valuetype MCCTest.VType1 MCCTest.MyClass::GetSum()
+      stloc.s    res
+
+      // Check Result
+      ldloc.s    res
+      ldc.i4     12
+      call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType1, int32)
+      stloc.s    rc
+      
+      ldloc.s    rc
+      ret
+    } // end of method MyClass::Main
+
+  } // end of class MyClass
+
+} // end of namespace MCCTest
