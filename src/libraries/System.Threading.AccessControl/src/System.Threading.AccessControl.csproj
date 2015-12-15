@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="..\dir.settings.targets" />
+  <PropertyGroup>
+    <AssemblyName>System.Threading.AccessControl</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{E3ED83FD-3015-4BD8-A1B8-6294986E6CFA}</ProjectGuid>
+    <IsProjectKLibrary>true</IsProjectKLibrary>
+    <IsTestNetLibrary>true</IsTestNetLibrary>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Runtime.Handles" /> <!-- SafeHandle -->
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime">
+      <Version>4.0.20.0</Version>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices" >
+      <Version>4.0.20.0</Version> <!-- To be compatible with System.Runtime.Handles -->
+    </Reference>      
+    <Reference Include="System.Security.AccessControl" /> <!-- AccessRule, etc. -->
+    <Reference Include="System.Security.Principal.Windows" /> <!-- NTAccout, etc. -->
+    <Reference Include="System.Threading">
+      <Version>4.0.10.0</Version>
+    </Reference>
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />
+    <Compile Include="System\Threading\ThreadingAclExtensions.cs" />
+  </ItemGroup>
+  <Import Project="..\dir.targets" />
+</Project>
