@@ -964,38 +964,6 @@ done:
 	mono_thread_info_suspend_unlock ();
 }
 
-/*
-WARNING:
-If we are trying to suspend a target that is on a critical region
-and running a syscall we risk looping forever if @interrupt_kernel is FALSE.
-So, be VERY carefull in calling this with @interrupt_kernel == FALSE.
-
-Info is not put on a hazard pointer as a suspended thread cannot exit and be freed.
-
-This function MUST be matched with mono_thread_info_finish_suspend or mono_thread_info_finish_suspend_and_resume
-*/
-MonoThreadInfo*
-mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_kernel)
-{
-	MonoThreadInfo *info = NULL;
-
-	THREADS_SUSPEND_DEBUG ("SUSPENDING tid %p\n", (void*)id);
-	/*FIXME: unify this with self-suspend*/
-	g_assert (id != mono_native_thread_id_get ());
-
-	mono_thread_info_suspend_lock ();
-	mono_threads_begin_global_suspend ();
-
-	info = suspend_sync_nolock (id, interrupt_kernel);
-
-	/* XXX this clears HP 1, so we restated it again */
-	// mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, TRUE);
-	mono_threads_end_global_suspend ();
-	mono_thread_info_suspend_unlock ();
-
-	return info;
-}
-
 /**
 Inject an assynchronous call into the target thread. The target thread must be suspended and
 only a single async call can be setup for a given suspend cycle.

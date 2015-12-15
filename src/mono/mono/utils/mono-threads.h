@@ -358,9 +358,6 @@ mono_thread_info_list_head (void);
 THREAD_INFO_TYPE*
 mono_thread_info_lookup (MonoNativeThreadId id);
 
-THREAD_INFO_TYPE*
-mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel);
-
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
