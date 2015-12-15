@@ -1099,7 +1099,7 @@ namespace System.Numerics
 
             // measure the exact bit count
             int c = NumericsHelpers.CbitHighZero((uint)h);
-            int b = value._bits.Length * 32 - c;
+            long b = (long)value._bits.Length * 32 - c;
 
             // extract most significant bits
             ulong x = (h << 32 + c) | (m << c) | (l >> 32 - c);
@@ -1460,13 +1460,28 @@ namespace System.Numerics
             if (bits == null)
                 return sign;
 
-            ulong h = bits[bits.Length - 1];
-            ulong m = bits.Length > 1 ? bits[bits.Length - 2] : 0;
-            ulong l = bits.Length > 2 ? bits[bits.Length - 3] : 0;
+            int length = bits.Length;
+
+            // The maximum exponent for doubles is 1023, which corresponds to a uint bit length of 32.
+            // All BigIntegers with bits[] longer than 32 evaluate to Double.Infinity (or NegativeInfinity).
+            // Cases where the exponent is between 1024 and 1035 are handled in NumericsHelpers.GetDoubleFromParts.
+            const int infinityLength = 1024/kcbitUint;
+
+            if (length > infinityLength)
+            {
+                if (sign == 1)
+                    return Double.PositiveInfinity;
+                else
+                    return Double.NegativeInfinity;
+            }
+
+            ulong h = bits[length - 1];
+            ulong m = length > 1 ? bits[length - 2] : 0;
+            ulong l = length > 2 ? bits[length - 3] : 0;
 
             int z = NumericsHelpers.CbitHighZero((uint)h);
 
-            int exp = (bits.Length - 2) * 32 - z;
+            int exp = (length - 2) * 32 - z;
             ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
 
             return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
