@@ -60,25 +60,10 @@ set(DACCESS_SOURCES
   datatargetadapter.cpp
 )
 
-if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
-  include_directories(amd64)
-
+include_directories(${ARCH_SOURCES_DIR})
   list(APPEND DACCESS_SOURCES
-    amd64/primitives.cpp
+    ${ARCH_SOURCES_DIR}/primitives.cpp
   )
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-  include_directories(arm)
-
-  list(APPEND DACCESS_SOURCES
-    arm/primitives.cpp
-  )
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
-  include_directories(i386)
-
-  list(APPEND DACCESS_SOURCES
-    i386/primitives.cpp
-  )
-endif()
 
 convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 

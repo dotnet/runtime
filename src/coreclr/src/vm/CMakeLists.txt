@@ -108,7 +108,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     perfmap.cpp
     precode.cpp
     prestub.cpp
-    readytoruninfo.cpp
     rejit.cpp
     securitydescriptor.cpp
     securitydescriptorassembly.cpp
@@ -132,6 +131,12 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     win32threadpool.cpp
     zapsig.cpp
 )
+
+if(FEATURE_READYTORUN)
+    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+        readytoruninfo.cpp
+    )
+endif(FEATURE_READYTORUN)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
@@ -338,9 +343,16 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
     )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    set(VM_SOURCES_WKS_ARCH_ASM
+    ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+    ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
+    ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+    ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+    )
 endif()
 
-else()
+else(WIN32)
 
     if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
