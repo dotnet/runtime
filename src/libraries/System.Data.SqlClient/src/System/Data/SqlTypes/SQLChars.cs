@@ -490,17 +490,6 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        private void SetBuffer(char[] buffer)
-        {
-            m_rgchBuf = buffer;
-            _lCurLen = (m_rgchBuf == null) ? x_lNull : (long)m_rgchBuf.Length;
-            m_stream = null;
-            _state = (m_rgchBuf == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
-
-            AssertValid();
-        }
-
-
         // --------------------------------------------------------------
         //	  Static fields, properties
         // --------------------------------------------------------------

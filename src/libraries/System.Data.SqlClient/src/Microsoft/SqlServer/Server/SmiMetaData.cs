@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Data;
 using System.Data.SqlTypes;
-using System.Globalization;
 
 namespace Microsoft.SqlServer.Server
 {
@@ -456,48 +455,6 @@ namespace Microsoft.SqlServer.Server
                 DefaultTime,                   // SqlDbType.Time
                 DefaultDateTime2,              // SqlDbType.DateTime2
                 DefaultDateTimeOffset,         // SqlDbType.DateTimeOffset
-            };
-
-        // static array of type names ordered by corresponding SqlDbType.
-        // NOTE: INDEXED BY SqlDbType ENUM!  MUST UPDATE THIS ARRAY WHEN UPDATING SqlDbType!
-        //   ONLY ACCESS THIS GLOBAL FROM get_TypeName!
-        private static string[] s_typeNameByDatabaseType =
-            {
-                "bigint",               // SqlDbType.BigInt
-                "binary",               // SqlDbType.Binary
-                "bit",                  // SqlDbType.Bit
-                "char",                 // SqlDbType.Char
-                "datetime",             // SqlDbType.DateTime
-                "decimal",              // SqlDbType.Decimal
-                "float",                // SqlDbType.Float
-                "image",                // SqlDbType.Image
-                "int",                  // SqlDbType.Int
-                "money",                // SqlDbType.Money
-                "nchar",                // SqlDbType.NChar
-                "ntext",                // SqlDbType.NText
-                "nvarchar",             // SqlDbType.NVarChar
-                "real",                 // SqlDbType.Real
-                "uniqueidentifier",     // SqlDbType.UniqueIdentifier
-                "smalldatetime",        // SqlDbType.SmallDateTime
-                "smallint",             // SqlDbType.SmallInt
-                "smallmoney",           // SqlDbType.SmallMoney
-                "text",                 // SqlDbType.Text
-                "timestamp",            // SqlDbType.Timestamp
-                "tinyint",              // SqlDbType.TinyInt
-                "varbinary",            // SqlDbType.VarBinary
-                "varchar",              // SqlDbType.VarChar
-                "sql_variant",          // SqlDbType.Variant
-                null,                   // placeholder for 24
-                "xml",                  // SqlDbType.Xml
-                null,                   // placeholder for 26
-                null,                   // placeholder for 27
-                null,                   // placeholder for 28
-                String.Empty,           // SqlDbType.Udt  -- get type name from Type.FullName instead.
-                String.Empty,           // Structured types have user-defined type names.
-                "date",                 // SqlDbType.Date
-                "time",                 // SqlDbType.Time
-                "datetime2",            // SqlDbType.DateTime2
-                "datetimeoffset",       // SqlDbType.DateTimeOffset
             };
 
         // Internal setter to be used by constructors only!  Modifies state!
