@@ -910,7 +910,7 @@ suspend_sync_nolock (MonoNativeThreadId id, gboolean interrupt_kernel)
 		if (sleep_duration == 0)
 			mono_thread_info_yield ();
 		else
-			g_usleep (sleep_duration);
+			mono_thread_info_usleep (sleep_duration);
 
 		sleep_duration += 10;
 	}
@@ -1233,6 +1233,15 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 	MONO_FINISH_BLOCKING;
 
+	return 0;
+}
+
+gint
+mono_thread_info_usleep (guint64 us)
+{
+	MONO_PREPARE_BLOCKING;
+	g_usleep (us);
+	MONO_FINISH_BLOCKING;
 	return 0;
 }
 

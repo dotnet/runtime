@@ -406,6 +406,9 @@ mono_thread_info_yield (void);
 gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
 
+gint
+mono_thread_info_usleep (guint64 us);
+
 gpointer
 mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
 
