@@ -24,9 +24,11 @@ namespace System.Runtime.InteropServices
             {
                 if (null == s_osDescription)
                 {
-                    // Temporarily commenting out code to prevent build break on mirror with TFS.
-                    // Will be changed from TFS mirror.
-                    s_osDescription = "Windows";/*Interop.NtDll.RtlGetVersion();*/
+#if netcore50
+                    s_osDescription = "Microsoft Windows";
+#else
+                    s_osDescription = Interop.NtDll.RtlGetVersion();
+#endif
                 }
 
                 return s_osDescription;
