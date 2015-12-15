@@ -608,6 +608,7 @@ namespace System.Net.Http
                     // set cookies again
                     state.SetCookieOption(forwardUri);
                 }
+                state._requestMessage.RequestUri = forwardUri;
             }
 
             // set the headers again. This is a workaround for libcurl's limitation in handling headers with empty values
