@@ -32,8 +32,16 @@ namespace System
             }
         }
 
-        #region Switch APIs
+        public static string TargetFrameworkName
+        {
+            get
+            {
+                // Forward the value that is set on the current domain.
+                return AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+            }
+        }
 
+        #region Switch APIs
         static AppContext()
         {
             // populate the AppContext with the default set of values
