@@ -904,6 +904,20 @@ HRESULT ValidateObject(Object *objPtr)
 }   // ValidateObject
 
 
+#ifdef FEATURE_DBGIPC_TRANSPORT_VM
+__attribute__((destructor)) 
+void
+ShutdownTransport()
+{
+    if (g_pDbgTransport != NULL)
+    {
+        g_pDbgTransport->Shutdown();
+        g_pDbgTransport = NULL;
+    }
+}
+#endif // FEATURE_DBGIPC_TRANSPORT_VM
+
+
 /* ------------------------------------------------------------------------ *
  * Debugger routines
  * ------------------------------------------------------------------------ */
@@ -2089,6 +2103,10 @@ HRESULT Debugger::Startup(void)
      if (FAILED(hr))
          ThrowHR(hr);
 
+#ifdef FEATURE_PAL
+     PAL_SetShutdownCallback(ShutdownTransport);
+#endif // FEATURE_PAL
+
      bool waitForAttach = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWaitForDebuggerAttach) != 0;
      if (waitForAttach)
      {
@@ -2552,10 +2570,7 @@ void Debugger::StopDebugger(void)
     // clean it up ourselves is just one more place we may AV / deadlock.
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pDbgTransport != NULL)
-    {
-        g_pDbgTransport->Shutdown();
-    }
+    ShutdownTransport();
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     // Ping the helper thread to exit. This will also prevent the helper from servicing new requests.

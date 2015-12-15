@@ -105,45 +105,42 @@ CAllowedObjectTypes aotProcess(otiProcess);
 //
 // The representative IPalObject for this process
 //
-
 IPalObject* CorUnix::g_pobjProcess;
 
 //
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-
 CRITICAL_SECTION g_csProcess;
 
 //
 // List and count of active threads
 //
-
 CPalThread* CorUnix::pGThreadList;
 DWORD g_dwThreadCount;
 
 //
 // The command line and app name for the process
 //
-
 LPWSTR g_lpwstrCmdLine = NULL;
 LPWSTR g_lpwstrAppDir = NULL;
 
-/* Thread ID of thread that has started the ExitProcess process */
+// Thread ID of thread that has started the ExitProcess process 
 Volatile<LONG> terminator = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
 
+// Function to call during PAL/process shutdown
+PSHUTDOWN_CALLBACK g_shutdownCallback = nullptr;
+
 //
 // Key used for associating CPalThread's with the underlying pthread
 // (through pthread_setspecific)
 //
-
 pthread_key_t CorUnix::thObjKey;
 
 #define PROCESS_PELOADER_FILENAME  "clix"
-
 
 static WCHAR W16_WHITESPACE[]= {0x0020, 0x0009, 0x000D, 0};
 static WCHAR W16_WHITESPACE_DQUOTE[]= {0x0020, 0x0009, 0x000D, '"', 0};
@@ -1398,6 +1395,26 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
 
 /*++
 Function:
+  PAL_SetShutdownCallback
+
+Abstract:
+  Sets a callback that is executed when the PAL is shut down because of
+  ExitProcess, TerminateProcess or PAL_Shutdown but not PAL_Terminate/Ex.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetShutdownCallback(
+    IN PSHUTDOWN_CALLBACK callback)
+{
+    _ASSERTE(g_shutdownCallback == nullptr);
+    g_shutdownCallback = callback;
+}
+
+/*++
+Function:
   PROCCleanupProcess
   
   Do all cleanup work for TerminateProcess, but don't terminate the process.
@@ -1407,6 +1424,11 @@ Function:
 --*/
 void PROCCleanupProcess(BOOL bTerminateUnconditionally)
 {
+    if (g_shutdownCallback != nullptr)
+    {
+        g_shutdownCallback();
+    }
+
     /* Declare the beginning of shutdown */
     PALSetShutdownIntent();
 
