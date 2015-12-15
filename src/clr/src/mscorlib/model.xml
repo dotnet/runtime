@@ -162,6 +162,8 @@
     <Type Name="System.AppContext">
       <Member Name="get_BaseDirectory" />
       <Member MemberType="Property" Name="BaseDirectory" />
+      <Member Name="get_TargetFrameworkName" />
+      <Member MemberType="Property" Name="TargetFrameworkName" />
       <Member Name="DefineSwitchDefault(System.String,System.Boolean)" />
       <Member Name="SetSwitch(System.String,System.Boolean)" />
       <Member Name="TryGetSwitch(System.String,System.Boolean@)" />
