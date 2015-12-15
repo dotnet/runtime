@@ -358,9 +358,6 @@ mono_thread_info_list_head (void);
 THREAD_INFO_TYPE*
 mono_thread_info_lookup (MonoNativeThreadId id);
 
-THREAD_INFO_TYPE*
-mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel);
-
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
@@ -408,6 +405,9 @@ mono_thread_info_yield (void);
 
 gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
+
+gint
+mono_thread_info_usleep (guint64 us);
 
 gpointer
 mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
