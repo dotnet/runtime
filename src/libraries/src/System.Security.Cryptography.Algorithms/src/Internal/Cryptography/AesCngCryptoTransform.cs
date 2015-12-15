@@ -17,7 +17,7 @@ namespace Internal.Cryptography
 
             if (cipherIv != null)
             {
-                _iv = cipherIv.CloneByteArray();
+                _iv = cipherIv;
                 _currentIv = new byte[cipherIv.Length];
             }
 
