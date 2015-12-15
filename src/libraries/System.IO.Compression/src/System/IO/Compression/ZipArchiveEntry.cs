@@ -4,14 +4,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO.Compression
 {
     //The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    public class ZipArchiveEntry
+    public partial class ZipArchiveEntry
     {
         #region Fields
 
@@ -23,8 +22,9 @@ namespace System.IO.Compression
         private ZipArchive _archive;
         private readonly Boolean _originallyInArchive;
         private readonly Int32 _diskNumberStart;
+        private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
+        private readonly byte _versionMadeBySpecification;
         private ZipVersionNeededValues _versionToExtract;
-        //Also, always use same for version made by because MSDOS high byte is 0
         private BitFlagValues _generalPurposeBitFlag;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
@@ -65,6 +65,8 @@ namespace System.IO.Compression
             _originallyInArchive = true;
 
             _diskNumberStart = cd.DiskNumberStart;
+            _versionMadeByPlatform = (ZipVersionMadeByPlatform)cd.VersionMadeByCompatibility;
+            _versionMadeBySpecification = cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
@@ -110,7 +112,8 @@ namespace System.IO.Compression
             _originallyInArchive = false;
 
             _diskNumberStart = 0;
-
+            _versionMadeByPlatform = CurrentZipPlatform;
+            _versionMadeBySpecification = 0;
             _versionToExtract = ZipVersionNeededValues.Default; //this must happen before following two assignment
             _generalPurposeBitFlag = 0;
             CompressionMethod = CompressionMethodValues.Deflate;
@@ -250,8 +253,7 @@ namespace System.IO.Compression
         {
             get
             {
-                Contract.Ensures(Contract.Result<String>() != null);
-                return Path.GetFileName(FullName);
+                return ParseFileName(FullName, _versionMadeByPlatform);
             }
         }
 
@@ -564,17 +566,18 @@ namespace System.IO.Compression
                 extraFieldLength = (UInt16)bigExtraFieldLength;
             }
 
-            writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);
-            writer.Write((UInt16)_versionToExtract);
-            writer.Write((UInt16)_versionToExtract);    //this is the version made by field. low byte is version needed, and high byte is 0 for MS DOS
-            writer.Write((UInt16)_generalPurposeBitFlag);
-            writer.Write((UInt16)CompressionMethod);
-            writer.Write(ZipHelper.DateTimeToDosTime(_lastModified.DateTime)); //UInt32
-            writer.Write(_crc32);   //UInt32
-            writer.Write(compressedSizeTruncated);  //UInt32
-            writer.Write(uncompressedSizeTruncated);    //UInt32
-            writer.Write((UInt16)_storedEntryNameBytes.Length);
-            writer.Write(extraFieldLength);    //UInt16
+            writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
+            writer.Write(_versionMadeBySpecification);                          // Version made by Specification (version)  (1 byte)
+            writer.Write((byte)CurrentZipPlatform);                             // Version made by Compatibility (type)     (1 byte)
+            writer.Write((UInt16)_versionToExtract);                            // Minimum version needed to extract        (2 bytes)
+            writer.Write((UInt16)_generalPurposeBitFlag);                       // General Purpose bit flag                 (2 bytes)
+            writer.Write((UInt16)CompressionMethod);                            // The Compression method                   (2 bytes)
+            writer.Write(ZipHelper.DateTimeToDosTime(_lastModified.DateTime));  // File last modification time and date     (4 bytes)
+            writer.Write(_crc32);                                               // CRC-32                                   (4 bytes)
+            writer.Write(compressedSizeTruncated);                              // Compressed Size                          (4 bytes)
+            writer.Write(uncompressedSizeTruncated);                            // Uncompressed Size                        (4 bytes)
+            writer.Write((UInt16)_storedEntryNameBytes.Length);                 // File Name Length                         (2 bytes)
+            writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
 
             // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
             Debug.Assert((_fileComment == null) || (_fileComment.Length <= UInt16.MaxValue));
