@@ -5,3 +5,4 @@ add_library(unixcoreruncommon
     coreruncommon.cpp
 )
 
+target_link_libraries(unixcoreruncommon dl)
