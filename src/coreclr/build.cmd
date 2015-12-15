@@ -31,6 +31,7 @@ if /i "%1" == "/?" goto Usage
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i "%1" == "x86"    (set __BuildArch=x86&&shift&goto Arg_Loop)
 if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
+if /i "%1" == "arm64"    (set __BuildArch=arm64&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
@@ -144,6 +145,9 @@ if defined __MscorlibOnly goto PerformMScorlibBuild
 echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 
+rem arm64 builds currently use private toolset which has not been released yet
+if /i "%__BuildArch%" =="arm64" goto GenVSSolution
+
 :: Set the environment for the native build
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
@@ -174,7 +178,13 @@ exit /b 1
 REM Build CoreCLR
 :BuildCoreCLR
 set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__CoreCLRBuildLog%"
+if /i "%__BuildArch%" == "arm64" (  
+  REM TODO, remove once we have msbuild support for this platform.
+
+  %_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:UseEnv=true /fileloggerparameters:Verbosity=normal;LogFile="%__CoreCLRBuildLog%"
+) else (
+  %_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__CoreCLRBuildLog%"
+)
 IF NOT ERRORLEVEL 1 goto PerformMScorlibBuild
 echo Native component build failed. Refer !__CoreCLRBuildLog! for details.
 exit /b 1
@@ -192,6 +202,8 @@ set Platform=
 
 if defined __MscorlibOnly set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
 
+if /i "%__BuildArch%" =="arm64" set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
+
 :: Set the environment for the managed build
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
@@ -208,6 +220,13 @@ exit /b 1
 
 :CrossGenMscorlib
 if /i "%__BuildArch%" == "x86" (
+  if not defined __DoCrossgen (
+    echo Skipping Crossgen
+    goto PerformTestBuild
+  )
+)
+
+if /i "%__BuildArch%" == "arm64" (
   if not defined __DoCrossgen (
     echo Skipping Crossgen
     goto PerformTestBuild
