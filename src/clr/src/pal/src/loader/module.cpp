@@ -91,27 +91,28 @@ CRITICAL_SECTION module_critsec;
 
 /* always the first, in the in-load-order list */
 MODSTRUCT exe_module; 
-MODSTRUCT *pal_module = NULL;
+MODSTRUCT *pal_module = nullptr;
 
-char * g_szCoreCLRPath = NULL;
+char * g_szCoreCLRPath = nullptr;
 size_t g_cbszCoreCLRPath = MAX_LONGPATH * sizeof(char);
 
 int MaxWCharToAcpLength = 3;
+
 /* static function declarations ***********************************************/
 
-template<class TChar> bool LOADVerifyLibraryPath(const TChar *libraryPath);
-bool LOADConvertLibraryPathWideStringToMultibyteString(
+template<class TChar> static bool LOADVerifyLibraryPath(const TChar *libraryPath);
+static bool LOADConvertLibraryPathWideStringToMultibyteString(
     LPCWSTR wideLibraryPath,
     LPSTR multibyteLibraryPath,
     INT *multibyteLibraryPathLengthRef);
-
 static BOOL LOADValidateModule(MODSTRUCT *module);
 static LPWSTR LOADGetModuleFileName(MODSTRUCT *module);
 static MODSTRUCT *LOADAddModule(void *dl_handle, LPCSTR libraryNameOrPath);
 static void *LOADLoadLibraryDirect(LPCSTR libraryNameOrPath);
+static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain);
 static HMODULE LOADRegisterLibraryDirect(void *dl_handle, LPCSTR libraryNameOrPath, BOOL fDynamic);
 static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic);
-static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved);
+static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved);
 
 /* API function definitions ***************************************************/
 
@@ -126,7 +127,7 @@ PALAPI
 LoadLibraryA(
     IN LPCSTR lpLibFileName)
 {
-    return LoadLibraryExA(lpLibFileName, NULL, 0);
+    return LoadLibraryExA(lpLibFileName, nullptr, 0);
 }
 
 /*++
@@ -140,7 +141,7 @@ PALAPI
 LoadLibraryW(
     IN LPCWSTR lpLibFileName)
 {
-    return LoadLibraryExW(lpLibFileName, NULL, 0);
+    return LoadLibraryExW(lpLibFileName, nullptr, 0);
 }
 
 /*++
@@ -160,16 +161,16 @@ LoadLibraryExA(
     {
         // UNIXTODO: Implement this!
         ASSERT("Needs Implementation!!!");
-        return NULL;
+        return nullptr;
     }
 
-    LPSTR lpstr = NULL;
-    HMODULE hModule = NULL;
+    LPSTR lpstr = nullptr;
+    HMODULE hModule = nullptr;
 
     PERF_ENTRY(LoadLibraryA);
     ENTRY("LoadLibraryExA (lpLibFileName=%p (%s)) \n",
-          (lpLibFileName)?lpLibFileName:"NULL",
-          (lpLibFileName)?lpLibFileName:"NULL");
+          (lpLibFileName) ? lpLibFileName : "NULL",
+          (lpLibFileName) ? lpLibFileName : "NULL");
 
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
@@ -190,7 +191,7 @@ LoadLibraryExA(
 
     /* let LOADLoadLibrary call SetLastError */
  Done:
-    if (lpstr != NULL)
+    if (lpstr != nullptr)
     {
         InternalFree(lpstr);
     }
@@ -218,18 +219,18 @@ LoadLibraryExW(
     {
         // UNIXTODO: Implement this!
         ASSERT("Needs Implementation!!!");
-        return NULL;
+        return nullptr;
     }
     
     CHAR * lpstr;
     INT name_length;
     PathCharString pathstr;
-    HMODULE hModule = NULL;
+    HMODULE hModule = nullptr;
 
     PERF_ENTRY(LoadLibraryExW);
     ENTRY("LoadLibraryExW (lpLibFileName=%p (%S)) \n",
-          lpLibFileName?lpLibFileName:W16_NULLSTRING,
-          lpLibFileName?lpLibFileName:W16_NULLSTRING);
+          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
+          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
 
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
@@ -237,7 +238,7 @@ LoadLibraryExW(
     }
 
     lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
-    if (NULL == lpstr)
+    if (nullptr == lpstr)
     {
         goto done;
     }
@@ -259,110 +260,6 @@ done:
     return hModule;
 }
 
-/*
-Function:
-LoadLibraryDirect
-
-Loads a library using a system call, without registering the library with the module list.
-
-Returns the system handle to the loaded library, or nullptr upon failure (error is set via SetLastError()).
-*/
-void *
-PALAPI
-PAL_LoadLibraryDirect(
-    IN LPCWSTR lpLibFileName)
-{
-    PathCharString pathstr;
-    CHAR * lpstr = NULL;
-    INT name_length;
-    void *dl_handle = NULL;
-
-    PERF_ENTRY(LoadLibraryDirect);
-    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%S)) \n",
-          lpLibFileName?lpLibFileName:W16_NULLSTRING,
-          lpLibFileName?lpLibFileName:W16_NULLSTRING);
-
-    if (!LOADVerifyLibraryPath(lpLibFileName))
-    {
-        goto done;
-    }
-    
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
-    if (NULL == lpstr)
-    {
-        goto done;
-    }
-    if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
-    {
-        goto done;
-    }
-
-    /* do the Dos/Unix conversion on our own copy of the name */
-    FILEDosToUnixPathA(lpstr);
-    pathstr.CloseBuffer(name_length);
-
-    dl_handle = LOADLoadLibraryDirect(lpstr);
-
-done:
-    LOGEXIT("LoadLibraryDirect returns HMODULE %p\n", dl_handle);
-    PERF_EXIT(LoadLibraryDirect);
-    return dl_handle;
-}
-
-/*
-Function:
-RegisterLibraryDirect
-
-Registers a system handle to a loaded library with the module list.
-
-Returns a PAL handle to the loaded library, or nullptr upon failure (error is set via SetLastError()).
-*/
-HMODULE
-PALAPI
-PAL_RegisterLibraryDirect(
-    IN void *dl_handle,
-    IN LPCWSTR lpLibFileName)
-{
-    PathCharString pathstr;
-    CHAR * lpstr = NULL;
-    INT name_length;
-    HMODULE hModule = NULL;
-
-    PERF_ENTRY(RegisterLibraryDirect);
-    ENTRY("RegisterLibraryDirect (lpLibFileName=%p (%S)) \n",
-        lpLibFileName ? lpLibFileName : W16_NULLSTRING,
-        lpLibFileName ? lpLibFileName : W16_NULLSTRING);
-
-    if (!LOADVerifyLibraryPath(lpLibFileName))
-    {
-        goto done;
-    }
-
-    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
-    if (NULL == lpstr)
-    {
-        goto done;
-    }
-    if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
-    {
-        goto done;
-    }
-
-    /* do the Dos/Unix conversion on our own copy of the name */
-    FILEDosToUnixPathA(lpstr);
-    pathstr.CloseBuffer(name_length);
-
-    /* let LOADRegisterLibraryDirect call SetLastError in case of failure */
-    LockModuleList();
-    hModule = LOADRegisterLibraryDirect((void *)dl_handle, lpstr, true /* fDynamic */);
-    UnlockModuleList();
-
-done:
-    LOGEXIT("RegisterLibraryDirect returns HMODULE %p\n", hModule);
-    PERF_EXIT(RegisterLibraryDirect);
-    return hModule;
-}
-
 /*++
 Function:
   GetProcAddress
@@ -376,12 +273,12 @@ GetProcAddress(
     IN LPCSTR lpProcName)
 {
     MODSTRUCT *module;
-    FARPROC ProcAddress = NULL;
+    FARPROC ProcAddress = nullptr;
     LPCSTR symbolName = lpProcName;
 
     PERF_ENTRY(GetProcAddress);
     ENTRY("GetProcAddress (hModule=%p, lpProcName=%p (%s))\n",
-          hModule, lpProcName?lpProcName:"NULL", lpProcName?lpProcName:"NULL");
+          hModule, lpProcName ? lpProcName : "NULL", lpProcName ? lpProcName : "NULL");
 
     LockModuleList();
 
@@ -389,7 +286,7 @@ GetProcAddress(
 
     /* parameter validation */
 
-    if ((lpProcName == NULL) || (*lpProcName == '\0'))
+    if ((lpProcName == nullptr) || (*lpProcName == '\0'))
     {
         TRACE("No function name given\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -443,7 +340,7 @@ GetProcAddress(
 
     // If we aren't looking inside the PAL or we didn't find a PAL_ variant
     // inside the PAL, fall back to a normal search.
-    if (ProcAddress == NULL)
+    if (ProcAddress == nullptr)
     {
         ProcAddress = (FARPROC) dlsym(module->dl_handle, lpProcName);
     }
@@ -460,7 +357,7 @@ GetProcAddress(
             if (libName)
             {
                 module->lib_name = UTIL_MBToWC_Alloc(libName, -1);
-                if (NULL == module->lib_name)
+                if (nullptr == module->lib_name)
                 {
                     ERROR("MBToWC failure; can't save module's full name\n");
                 }
@@ -485,7 +382,6 @@ done:
     return ProcAddress;
 }
 
-
 /*++
 Function:
   FreeLibrary
@@ -497,115 +393,17 @@ PALAPI
 FreeLibrary(
     IN OUT HMODULE hLibModule)
 {
-    MODSTRUCT *module;
     BOOL retval = FALSE;
 
     PERF_ENTRY(FreeLibrary);
     ENTRY("FreeLibrary (hLibModule=%p)\n", hLibModule);
 
-    LockModuleList();
+    retval = LOADFreeLibrary((MODSTRUCT *)hLibModule, TRUE /* fCallDllMain */);
 
-    module = (MODSTRUCT *) hLibModule;
-
-    if (terminator)
-    {
-        /* PAL shutdown is in progress - ignore FreeLibrary calls */
-        retval = TRUE;
-        goto done;
-    }
-
-    if (!LOADValidateModule(module))
-    {
-        TRACE("Can't free invalid module handle %p\n", hLibModule);
-        SetLastError(ERROR_INVALID_HANDLE);
-        goto done;
-    }
-
-    if (module->refcount == -1)
-    {
-        /* special module - never released */
-        retval = TRUE;
-        goto done;
-    }
-
-    module->refcount--;
-    TRACE("Reference count for module %p (named %S) decreases to %d\n",
-            module, MODNAME(module), module->refcount);
-
-    if (module->refcount != 0)
-    {
-        retval = TRUE;
-        goto done;
-    }
-
-    /* Releasing the last reference : call dlclose(), remove module from the
-       process-wide module list */
-
-    TRACE("Reference count for module %p (named %S) now 0; destroying "
-            "module structure.\n", module, MODNAME(module));
-
-    /* unlink the module structure from the list */
-    module->prev->next = module->next;
-    module->next->prev = module->prev;
-
-    /* remove the circular reference so that LOADValidateModule will fail */
-    module->self = NULL;
-
-    /* Call DllMain if the module contains one */
-    if (module->pDllMain)
-    {
-        TRACE("Calling DllMain (%p) for module %S\n",
-                module->pDllMain, 
-                module->lib_name ? module->lib_name : W16_NULLSTRING);
-
-/* reset ENTRY nesting level back to zero while inside the callback... */
-#if _ENABLE_DEBUG_MESSAGES_
-    {
-        int old_level;
-        old_level = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-    
-        {
-            // This module may be foreign to our PAL, so leave our PAL.
-            // If it depends on us, it will re-enter.
-            PAL_LeaveHolder holder;
-            module->pDllMain(module->hinstance, DLL_PROCESS_DETACH, NULL);
-        }
-
-        if (module->hinstance)
-        {
-            PUNREGISTER_MODULE unregisterModule = (PUNREGISTER_MODULE)dlsym(module->dl_handle, "PAL_UnregisterModule");
-            if (unregisterModule != nullptr)
-            {
-                 unregisterModule(module->hinstance);
-            }
-        }
-/* ...and set nesting level back to what it was */
-#if _ENABLE_DEBUG_MESSAGES_
-        DBG_change_entrylevel(old_level);
-    }
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-    }
-
-    if (module->dl_handle && 0 != dlclose(module->dl_handle))
-    {
-        /* report dlclose() failure, but proceed anyway. */
-        WARN("dlclose() call failed! error message is \"%s\"\n", dlerror());
-    }
-
-    /* release all memory */
-    InternalFree(module->lib_name);
-    InternalFree(module);
-
-    retval = TRUE;
-
-done:
-    UnlockModuleList();
     LOGEXIT("FreeLibrary returns BOOL %d\n", retval);
     PERF_EXIT(FreeLibrary);
     return retval;
 }
-
 
 /*++
 Function:
@@ -629,7 +427,6 @@ FreeLibraryAndExitThread(
     PERF_EXIT(FreeLibraryAndExitThread);
 }
 
-
 /*++
 Function:
   GetModuleFileNameA
@@ -652,7 +449,7 @@ GetModuleFileNameA(
 {
     INT name_length;
     DWORD retval = 0;
-    LPWSTR wide_name = NULL;
+    LPWSTR wide_name = nullptr;
 
     PERF_ENTRY(GetModuleFileNameA);
     ENTRY("GetModuleFileNameA (hModule=%p, lpFileName=%p, nSize=%u)\n",
@@ -677,7 +474,7 @@ GetModuleFileNameA(
     /* Convert module name to Ascii, place it in the supplied buffer */
 
     name_length = WideCharToMultiByte(CP_ACP, 0, wide_name, -1, lpFileName,
-                                      nSize, NULL, NULL);
+                                      nSize, nullptr, nullptr);
     if (name_length == 0)
     {
         TRACE("Buffer too small to copy module's file name.\n");
@@ -693,7 +490,6 @@ done:
     PERF_EXIT(GetModuleFileNameA);
     return retval;
 }
-
 
 /*++
 Function:
@@ -717,7 +513,7 @@ GetModuleFileNameW(
 {
     INT name_length;
     DWORD retval = 0;
-    LPWSTR wide_name = NULL;
+    LPWSTR wide_name = nullptr;
 
     PERF_ENTRY(GetModuleFileNameW);
     ENTRY("GetModuleFileNameW (hModule=%p, lpFileName=%p, nSize=%u)\n",
@@ -763,6 +559,109 @@ done:
     return retval;
 }
 
+/*
+Function:
+  PAL_LoadLibraryDirect
+
+  Loads a library using a system call, without registering the library with the module list.
+
+  Returns the system handle to the loaded library, or nullptr upon failure (error is set via SetLastError()).
+*/
+void *
+PALAPI
+PAL_LoadLibraryDirect(
+    IN LPCWSTR lpLibFileName)
+{
+    PathCharString pathstr;
+    CHAR * lpstr = nullptr;
+    INT name_length;
+    void *dl_handle = nullptr;
+
+    PERF_ENTRY(LoadLibraryDirect);
+    ENTRY("LoadLibraryDirect (lpLibFileName=%p (%S)) \n",
+          lpLibFileName ? lpLibFileName : W16_NULLSTRING,
+          lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+
+    if (!LOADVerifyLibraryPath(lpLibFileName))
+    {
+        goto done;
+    }
+    
+    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    if (nullptr == lpstr)
+    {
+        goto done;
+    }
+    if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
+    {
+        goto done;
+    }
+
+    /* do the Dos/Unix conversion on our own copy of the name */
+    FILEDosToUnixPathA(lpstr);
+    pathstr.CloseBuffer(name_length);
+
+    dl_handle = LOADLoadLibraryDirect(lpstr);
+
+done:
+    LOGEXIT("LoadLibraryDirect returns HMODULE %p\n", dl_handle);
+    PERF_EXIT(LoadLibraryDirect);
+    return dl_handle;
+}
+
+/*
+Function:
+  PAL_RegisterLibraryDirect
+
+  Registers a system handle to a loaded library with the module list.
+
+  Returns a PAL handle to the loaded library, or nullptr upon failure (error is set via SetLastError()).
+*/
+HMODULE
+PALAPI
+PAL_RegisterLibraryDirect(
+    IN void *dl_handle,
+    IN LPCWSTR lpLibFileName)
+{
+    PathCharString pathstr;
+    CHAR * lpstr = nullptr;
+    INT name_length;
+    HMODULE hModule = nullptr;
+
+    PERF_ENTRY(RegisterLibraryDirect);
+    ENTRY("RegisterLibraryDirect (lpLibFileName=%p (%S)) \n",
+        lpLibFileName ? lpLibFileName : W16_NULLSTRING,
+        lpLibFileName ? lpLibFileName : W16_NULLSTRING);
+
+    if (!LOADVerifyLibraryPath(lpLibFileName))
+    {
+        goto done;
+    }
+
+    lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    if (nullptr == lpstr)
+    {
+        goto done;
+    }
+    if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
+    {
+        goto done;
+    }
+
+    /* do the Dos/Unix conversion on our own copy of the name */
+    FILEDosToUnixPathA(lpstr);
+    pathstr.CloseBuffer(name_length);
+
+    /* let LOADRegisterLibraryDirect call SetLastError in case of failure */
+    LockModuleList();
+    hModule = LOADRegisterLibraryDirect((void *)dl_handle, lpstr, true /* fDynamic */);
+    UnlockModuleList();
+
+done:
+    LOGEXIT("RegisterLibraryDirect returns HMODULE %p\n", hModule);
+    PERF_EXIT(RegisterLibraryDirect);
+    return hModule;
+}
 
 /*++
 Function:
@@ -773,13 +672,12 @@ Function:
   as part of calling DllMain in the calling module.
 
 --*/
-
 HINSTANCE
 PALAPI
 PAL_RegisterModule(
     IN LPCSTR lpLibFileName)
 {
-    HINSTANCE hinstance = NULL;
+    HINSTANCE hinstance = nullptr;
 
     int err = PAL_InitializeDLL();
     if (err == 0)
@@ -819,113 +717,124 @@ PAL_UnregisterModule(
     PERF_ENTRY(PAL_UnregisterModule);
     ENTRY("PAL_UnregisterModule(hInstance=%p)\n", hInstance);
 
-    // DllMain won't be called because PAL_UnregisterModule didn't
-    // query its address and save it.
-    FreeLibrary(hInstance);
+    LOADFreeLibrary((MODSTRUCT *)hInstance, FALSE /* fCallDllMain */);
 
     LOGEXIT("PAL_UnregisterModule returns\n");
     PERF_EXIT(PAL_UnregisterModule);
 }
 
 /*++
-Function:
-  PAL_RegisterLibraryW
+    PAL_LOADLoadPEFile
 
-  Same as LoadLibraryW, but with only the base name of
-  the library instead of a full filename.
+    Map a PE format file into memory like Windows LoadLibrary() would do.
+    Doesn't apply base relocations if the function is relocated.
+
+Parameters:
+    IN hFile - file to map
+
+Return value:
+    non-NULL - the base address of the mapped image
+    NULL - error, with last error set.
 --*/
-
-HMODULE
+void *
 PALAPI
-PAL_RegisterLibraryW(
-    IN LPCWSTR lpLibFileName)
+PAL_LOADLoadPEFile(HANDLE hFile)
 {
-    HMODULE hModule = NULL;
-    CHAR    lpstr[_MAX_FNAME];
-    INT     cbMultiByteShortName = 0;
+    ENTRY("PAL_LOADLoadPEFile (hFile=%p)\n", hFile);
 
-    static const char LIB_PREFIX[] = PAL_SHLIB_PREFIX;
-    static const char LIB_SUFFIX[] = PAL_SHLIB_SUFFIX;
-    static const int LIB_PREFIX_LENGTH = sizeof(LIB_PREFIX) - 1;
-    static const int LIB_SUFFIX_LENGTH = sizeof(LIB_SUFFIX) - 1;
+    void * loadedBase = MAPMapPEFile(hFile);
 
-    PERF_ENTRY(PAL_RegisterLibraryW);
-    ENTRY("PAL_RegisterLibraryW (lpLibFileName=%p (%S)) \n",
-          lpLibFileName?lpLibFileName:W16_NULLSTRING,
-          lpLibFileName?lpLibFileName:W16_NULLSTRING);
-
-    // First, copy the prefix into the buffer
-    if (strcpy_s(lpstr, sizeof(lpstr), LIB_PREFIX) != SAFECRT_SUCCESS)
+#ifdef _DEBUG
+    if (loadedBase != nullptr)
     {
-        ERROR("strcpy_s failed!\n");
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto Done;
-    }
-
-    // Second, copy the file name, converting to multibyte along the way
-    cbMultiByteShortName = WideCharToMultiByte(CP_ACP, 0, lpLibFileName, -1, 
-                                               lpstr + LIB_PREFIX_LENGTH, 
-                                               _MAX_FNAME - (LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH),
-                                               NULL, NULL);
-
-    if (cbMultiByteShortName == 0)
-    {
-        DWORD dwLastError = GetLastError();
-        if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
+        char* envVar = getenv("PAL_ForcePEMapFailure");
+        if (envVar && strlen(envVar) > 0)
         {
-            if (lstrlenW(lpLibFileName) + LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH < _MAX_FNAME)
-            {
-                ASSERT("Insufficient buffer error returned incorrectly from WideCharToMultiByte!\n");
-            }
-            ERROR("lpLibFileName is larger than _MAX_FNAME (%d)!\n", _MAX_FNAME);
+            TRACE("Forcing failure of PE file map, and retry\n");
+            PAL_LOADUnloadPEFile(loadedBase); // unload it
+            loadedBase = MAPMapPEFile(hFile); // load it again
         }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-        }
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto Done;
     }
+#endif // _DEBUG
 
-    // Last, add the suffix
-    if (strcat_s(lpstr, sizeof(lpstr), LIB_SUFFIX) != SAFECRT_SUCCESS)
-    {
-        ERROR("strcat_s failed!\n");
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto Done;
-    }
-
-    FILEDosToUnixPathA(lpstr);
-
-    hModule = LOADLoadLibrary(lpstr, FALSE);
-
-Done:
-    LOGEXIT("PAL_RegisterLibraryW returns HMODULE %p\n", hModule);
-    PERF_EXIT(PAL_RegisterLibraryW);
-    return hModule;
+    LOGEXIT("PAL_LOADLoadPEFile returns %p\n", loadedBase);
+    return loadedBase;
 }
 
+/*++
+    PAL_LOADUnloadPEFile
+
+    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
+
+Parameters:
+    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
+
+Return value:
+    TRUE - success
+    FALSE - failure (incorrect ptr, etc.)
+--*/
+BOOL 
+PALAPI
+PAL_LOADUnloadPEFile(void * ptr)
+{
+    BOOL retval = FALSE;
+
+    ENTRY("PAL_LOADUnloadPEFile (ptr=%p)\n", ptr);
+
+    if (nullptr == ptr)
+    {
+        ERROR( "Invalid pointer value\n" );
+    }
+    else
+    {
+        retval = MAPUnmapPEFile(ptr);
+    }
+
+    LOGEXIT("PAL_LOADUnloadPEFile returns %d\n", retval);
+    return retval;
+}
 
 /*++
-Function:
-  PAL_UnregisterLibraryW
+    PAL_GetSymbolModuleBase
 
-  Same as FreeLibrary.
+    Get base address of the module containing a given symbol 
+
+Parameters:
+    void *symbol - address of symbol
+
+Return value:
+    module base address
 --*/
-BOOL
+LPCVOID
 PALAPI
-PAL_UnregisterLibraryW(
-    IN OUT HMODULE hLibModule)
+PAL_GetSymbolModuleBase(void *symbol)
 {
-    BOOL retval;
+    LPCVOID retval = nullptr;
 
-    PERF_ENTRY(PAL_UnregisterLibraryW);
-    ENTRY("PAL_UnregisterLibraryW (hLibModule=%p)\n", hLibModule);
+    PERF_ENTRY(PAL_GetPalModuleBase);
+    ENTRY("PAL_GetPalModuleBase\n");
 
-    retval = FreeLibrary(hLibModule);
+    if (symbol == nullptr)
+    {
+        TRACE("Can't get base address. Argument symbol == nullptr\n");
+        SetLastError(ERROR_INVALID_DATA);
+    }
+    else 
+    {
+        Dl_info info;
+        if (dladdr(symbol, &info) != 0)
+        {
+            retval = info.dli_fbase;
+        }
+        else 
+        {
+            TRACE("Can't get base address of the current module\n");
+            SetLastError(ERROR_INVALID_DATA);
+        }        
+    }
 
-    LOGEXIT("PAL_UnregisterLibraryW returns BOOL %d\n", retval);
-    PERF_EXIT(PAL_UnregisterLibraryW);
+    LOGEXIT("PAL_GetPalModuleBase returns %p\n", retval);
+    PERF_EXIT(PAL_GetPalModuleBase);
     return retval;
 }
 
@@ -948,7 +857,7 @@ Return value :
 extern "C"
 BOOL LOADInitializeModules()
 {
-    _ASSERTE(exe_module.prev == NULL);
+    _ASSERTE(exe_module.prev == nullptr);
 
     InternalInitializeCriticalSection(&module_critsec);
 
@@ -956,18 +865,18 @@ BOOL LOADInitializeModules()
     TRACE("Initializing module for main executable\n");
 
     exe_module.self = (HMODULE)&exe_module;
-    exe_module.dl_handle = dlopen(NULL, RTLD_LAZY);
-    if (exe_module.dl_handle == NULL)
+    exe_module.dl_handle = dlopen(nullptr, RTLD_LAZY);
+    if (exe_module.dl_handle == nullptr)
     {
-        ERROR("Executable module will be broken : dlopen(NULL) failed dlerror message is \"%s\" \n", dlerror());
+        ERROR("Executable module will be broken : dlopen(nullptr) failed dlerror message is \"%s\" \n", dlerror());
         return FALSE;
     }
-    exe_module.lib_name = NULL;
+    exe_module.lib_name = nullptr;
     exe_module.refcount = -1;
     exe_module.next = &exe_module;
     exe_module.prev = &exe_module;
-    exe_module.pDllMain = NULL;
-    exe_module.hinstance = NULL;
+    exe_module.pDllMain = nullptr;
+    exe_module.hinstance = nullptr;
     exe_module.threadLibCalls = TRUE;
     return TRUE;
 }
@@ -990,7 +899,7 @@ extern "C"
 BOOL LOADSetExeName(LPWSTR name)
 {
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
-    LPSTR pszExeName = NULL;
+    LPSTR pszExeName = nullptr;
 #endif
     BOOL result = FALSE;
 
@@ -1006,7 +915,7 @@ BOOL LOADSetExeName(LPWSTR name)
     {
         struct stat stat_buf;
         pszExeName = UTIL_WCToMB_Alloc(name, -1);
-        if (NULL == pszExeName)
+        if (nullptr == pszExeName)
         {
             ERROR("WCToMB failure, unable to get full name of exe\n");
             goto exit;
@@ -1037,70 +946,6 @@ exit:
 
 /*++
 Function :
-    LOADFreeModules
-
-    Release all resources held by the module manager (including dlopen handles)
-
-Parameters:
-    BOOL bTerminateUnconditionally: If TRUE, this will avoid calling any DllMains
-
-    (no return value)
---*/
-extern "C"
-void LOADFreeModules(BOOL bTerminateUnconditionally)
-{
-    MODSTRUCT *module;
-
-    if (!exe_module.prev)
-    {
-        ERROR("Module manager not initialized!\n");
-        return;
-    }
-
-    LockModuleList();
-
-    /* Go through the list of modules, release any references we still hold.
-       The list is traversed from newest module to oldest */
-    do
-    {
-        module = exe_module.prev;
-
-        // Call DllMain if the module contains one and if we're supposed
-        // to call DllMains.
-        if (!bTerminateUnconditionally && module->pDllMain)
-        {
-           /* Exception-safe call to DllMain */
-           LOAD_SEH_CallDllMain(module, DLL_PROCESS_DETACH, (LPVOID)-1);
-        }
-
-        /* Remove the current MODSTRUCT from the list, then free its memory */
-        module->prev->next = module->next;
-        module->next->prev = module->prev;
-        module->self = NULL;
-
-        if (module->dl_handle)
-            dlclose( module->dl_handle );
-
-        InternalFree( module->lib_name );
-        module->lib_name = NULL;
-        if (module != &exe_module)
-        {
-            InternalFree( module );
-        }
-    }
-    while (module != &exe_module);
-
-    /* Flag the module manager as uninitialized */
-    exe_module.prev = NULL;
-
-    TRACE("Module manager stopped.\n");
-
-    UnlockModuleList();
-    DeleteCriticalSection(&module_critsec);
-}
-
-/*++
-Function :
     LOADCallDllMain
 
     Call DllMain for all modules (that have one) with the given "fwReason"
@@ -1122,7 +967,7 @@ Notes :
 extern "C"
 void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
 {
-    MODSTRUCT *module = NULL;
+    MODSTRUCT *module = nullptr;
     BOOL InLoadOrder = TRUE; /* true if in load order, false for reverse */
     CPalThread *pThread;
     
@@ -1157,7 +1002,9 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
     LockModuleList();
 
     module = &exe_module;
-    do {
+
+    do
+    {
         if (!InLoadOrder)
             module = module->prev;
 
@@ -1165,33 +1012,178 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
         {
             if (module->pDllMain)
             {
-#if _ENABLE_DEBUG_MESSAGES_
-                /* reset ENTRY nesting level back to zero while inside the callback... */
-                int old_level;
-                old_level = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-                {
-                    // This module may be foreign to our PAL, so leave our PAL.
-                    // If it depends on us, it will re-enter.
-                    PAL_LeaveHolder holder;
-                    module->pDllMain(module->hinstance, dwReason, lpReserved);
-                }
-
-#if _ENABLE_DEBUG_MESSAGES_
-                /* ...and set nesting level back to what it was */
-                DBG_change_entrylevel(old_level);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
+                LOADCallDllMainSafe(module, dwReason, lpReserved);
             }
         }
 
         if (InLoadOrder)
             module = module->next;
+
     } while (module != &exe_module);
 
     UnlockModuleList();
 }
 
+/*++
+Function:
+  LOADFreeLibrary
+
+Parameters:
+  MODSTRUCT * module - module to free
+  BOOL fCallDllMain - if TRUE, call the DllMain function
+
+Returns:
+  TRUE if successful
+
+--*/
+static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain)
+{
+    BOOL retval = FALSE;
+
+    LockModuleList();
+
+    if (terminator)
+    {
+        /* PAL shutdown is in progress - ignore FreeLibrary calls */
+        retval = TRUE;
+        goto done;
+    }
+
+    if (!LOADValidateModule(module))
+    {
+        TRACE("Can't free invalid module %p\n", module);
+        SetLastError(ERROR_INVALID_HANDLE);
+        goto done;
+    }
+
+    if (module->refcount == -1)
+    {
+        /* special module - never released */
+        retval = TRUE;
+        goto done;
+    }
+
+    module->refcount--;
+    TRACE("Reference count for module %p (named %S) decreases to %d\n",
+            module, MODNAME(module), module->refcount);
+
+    if (module->refcount != 0)
+    {
+        retval = TRUE;
+        goto done;
+    }
+
+    /* Releasing the last reference : call dlclose(), remove module from the
+       process-wide module list */
+
+    TRACE("Reference count for module %p (named %S) now 0; destroying module structure\n", 
+        module, MODNAME(module));
+
+    /* unlink the module structure from the list */
+    module->prev->next = module->next;
+    module->next->prev = module->prev;
+
+    /* remove the circular reference so that LOADValidateModule will fail */
+    module->self = nullptr;
+
+    /* Call DllMain if the module contains one */
+    if (fCallDllMain && module->pDllMain)
+    {
+        LOADCallDllMainSafe(module, DLL_PROCESS_DETACH, nullptr);
+    }
+
+    if (module->hinstance)
+    {
+        PUNREGISTER_MODULE unregisterModule = (PUNREGISTER_MODULE)dlsym(module->dl_handle, "PAL_UnregisterModule");
+        if (unregisterModule != nullptr)
+        {
+             unregisterModule(module->hinstance);
+        }
+        module->hinstance = nullptr;
+    }
+
+    if (module->dl_handle && 0 != dlclose(module->dl_handle))
+    {
+        /* report dlclose() failure, but proceed anyway. */
+        WARN("dlclose() call failed! error message is \"%s\"\n", dlerror());
+    }
+
+    /* release all memory */
+    InternalFree(module->lib_name);
+    InternalFree(module);
+
+    retval = TRUE;
+
+done:
+    UnlockModuleList();
+    return retval;
+}
+
+/*++
+Function :
+    LOADCallDllMainSafe
+
+    Exception-safe call to DllMain.
+
+Parameters :
+    MODSTRUCT *module : module whose DllMain must be called
+
+    DWORD dwReason : parameter to pass down to DllMain, one of DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, 
+        DLL_THREAD_ATTACH, DLL_THREAD_DETACH
+
+    LPVOID lpvReserved : parameter to pass down to DllMain,
+        If dwReason is DLL_PROCESS_ATTACH, lpvReserved is NULL for dynamic loads and non-NULL for static loads. 
+        If dwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if DllMain has been called by using FreeLibrary 
+            and non-NULL if DllMain has been called during process termination. 
+
+Returns:
+    BOOL : DllMain's return value
+*/
+static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved)
+{
+#if _ENABLE_DEBUG_MESSAGES_
+    /* reset ENTRY nesting level back to zero while inside the callback... */
+    int old_level = DBG_change_entrylevel(0);
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
+    
+    struct Param
+    {
+        MODSTRUCT *module;
+        DWORD dwReason;
+        LPVOID lpReserved;
+        BOOL ret;
+    } param;
+    param.module = module;
+    param.dwReason = dwReason;
+    param.lpReserved = lpReserved;
+    param.ret = FALSE;
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        TRACE("Calling DllMain (%p) for module %S\n",
+              pParam->module->pDllMain, 
+              pParam->module->lib_name ? pParam->module->lib_name : W16_NULLSTRING);
+        
+        {
+            // This module may be foreign to our PAL, so leave our PAL.
+            // If it depends on us, it will re-enter.
+            PAL_LeaveHolder holder;
+            pParam->ret = pParam->module->pDllMain(pParam->module->hinstance, pParam->dwReason, pParam->lpReserved);
+        }
+    }
+    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+    {
+        WARN("Call to DllMain (%p) got an unhandled exception; ignoring.\n", module->pDllMain);
+    }
+    PAL_ENDTRY
+
+#if _ENABLE_DEBUG_MESSAGES_
+    /* ...and set nesting level back to what it was */
+    DBG_change_entrylevel(old_level);
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
+
+    return param.ret;
+}
 
 /*++
 Function:
@@ -1209,14 +1201,15 @@ DisableThreadLibraryCalls(
     PERF_ENTRY(DisableThreadLibraryCalls);
     ENTRY("DisableThreadLibraryCalls(hLibModule=%p)\n", hLibModule);
 
+    LockModuleList();
+
     if (terminator)
     {
         /* PAL shutdown in progress - ignore DisableThreadLibraryCalls */
         ret = TRUE;
-        goto done_nolock;
+        goto done;
     }
 
-    LockModuleList();
     module = (MODSTRUCT *) hLibModule;
 
     if (!LOADValidateModule(module))
@@ -1234,18 +1227,14 @@ DisableThreadLibraryCalls(
 
 done:
     UnlockModuleList();
-done_nolock:
     LOGEXIT("DisableThreadLibraryCalls returns BOOL %d\n", ret);
     PERF_EXIT(DisableThreadLibraryCalls);
     return ret;
 }
 
-
-/* Static function definitions ************************************************/
-
 // Checks the library path for null or empty string. On error, calls SetLastError() and returns false.
 template<class TChar>
-bool LOADVerifyLibraryPath(const TChar *libraryPath)
+static bool LOADVerifyLibraryPath(const TChar *libraryPath)
 {
     if (libraryPath == nullptr)
     {
@@ -1263,7 +1252,7 @@ bool LOADVerifyLibraryPath(const TChar *libraryPath)
 }
 
 // Converts the wide char library path string into a multibyte-char string. On error, calls SetLastError() and returns false.
-bool LOADConvertLibraryPathWideStringToMultibyteString(
+static bool LOADConvertLibraryPathWideStringToMultibyteString(
     LPCWSTR wideLibraryPath,
     LPSTR multibyteLibraryPath,
     INT *multibyteLibraryPathLengthRef)
@@ -1304,14 +1293,13 @@ Parameters :
 Return value :
     TRUE if module is valid, FALSE otherwise
 
+NOTE :
+    The module lock MUST be owned.
+
 --*/
 static BOOL LOADValidateModule(MODSTRUCT *module)
 {
-    MODSTRUCT *modlist_enum;
-
-    LockModuleList();
-
-    modlist_enum = &exe_module;
+    MODSTRUCT *modlist_enum = &exe_module;
 
     /* enumerate through the list of modules to make sure the given handle is
        really a module (HMODULEs are actually MODSTRUCT pointers) */
@@ -1323,10 +1311,8 @@ static BOOL LOADValidateModule(MODSTRUCT *module)
             if (module->self != module)
             {
                 ERROR("Found corrupt module %p!\n",module);
-                UnlockModuleList();
                 return FALSE;
             }
-            UnlockModuleList();
             TRACE("Module %p is valid (name : %S)\n", module, MODNAME(module));
             return TRUE;
         }
@@ -1335,7 +1321,6 @@ static BOOL LOADValidateModule(MODSTRUCT *module)
     while (modlist_enum != &exe_module);
 
     TRACE("Module %p is NOT valid.\n", module);
-    UnlockModuleList();
     return FALSE;
 }
 
@@ -1431,18 +1416,18 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
 
     /* no match found : try to create a new module structure */
     module = (MODSTRUCT *)InternalMalloc(sizeof(MODSTRUCT));
-    if (!module)
+    if (nullptr == module)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno, strerror(errno));
-        return NULL;
+        return nullptr;
     }
 
     wide_name = UTIL_MBToWC_Alloc(name, -1);
-    if (NULL == wide_name)
+    if (nullptr == wide_name)
     {
         ERROR("couldn't convert name to a wide-character string\n");
         InternalFree(module);
-        return NULL;
+        return nullptr;
     }
 
     module->dl_handle = dl_handle;
@@ -1459,10 +1444,11 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
     module->refcount = 1;
 #endif  // NEED_DLCOMPAT
     module->self = module;
-    module->hinstance = NULL;
+    module->hinstance = nullptr;
     module->threadLibCalls = TRUE;
-    module->next = NULL;
-    module->prev = NULL;
+    module->pDllMain = nullptr;
+    module->next = nullptr;
+    module->prev = nullptr;
 
     module->lib_name = wide_name;
 
@@ -1514,13 +1500,16 @@ static MODSTRUCT *LOADAddModule(void *dl_handle, LPCSTR libraryNameOrPath)
     TRACE("Module doesn't exist : creating %s.\n", libraryNameOrPath);
 
     module = LOADAllocModule(dl_handle, libraryNameOrPath);
-    if (NULL == module)
+    if (nullptr == module)
     {
         ERROR("couldn't create new module\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         dlclose(dl_handle);
         return nullptr;
     }
+
+    /* We now get the address of DllMain if the module contains one. */
+    module->pDllMain = (PDLLMAIN)dlsym(module->dl_handle, "DllMain");
 
     /* Add the new module on to the end of the list */
     module->prev = exe_module.prev;
@@ -1558,17 +1547,14 @@ static HMODULE LOADRegisterLibraryDirect(void *dl_handle, LPCSTR libraryNameOrPa
         return nullptr;
     }
 
-    /* We now get the address of DllMain if the module contains one. */
-    module->pDllMain = (PDLLMAIN)dlsym(module->dl_handle, "DllMain");
-
-    /* If it did contain a DllMain, call it. */
+    /* If the module contains a DllMain, call it. */
     if (module->pDllMain)
     {
         TRACE("Calling DllMain (%p) for module %S\n",
             module->pDllMain,
             module->lib_name ? module->lib_name : W16_NULLSTRING);
 
-        if (NULL == module->hinstance)
+        if (nullptr == module->hinstance)
         {
             PREGISTER_MODULE registerModule = (PREGISTER_MODULE)dlsym(module->dl_handle, "PAL_RegisterModule");
             if (registerModule != nullptr)
@@ -1584,36 +1570,16 @@ static HMODULE LOADRegisterLibraryDirect(void *dl_handle, LPCSTR libraryNameOrPa
             }
         }
 
-        BOOL dllMainRetVal;
-        {
-#if _ENABLE_DEBUG_MESSAGES_
-            /* reset ENTRY nesting level back to zero while inside the callback... */
-            int old_level;
-            old_level = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-            {
-                // This module may be foreign to our PAL, so leave our PAL.
-                // If it depends on us, it will re-enter.
-                PAL_LeaveHolder holder;
-                dllMainRetVal = module->pDllMain(module->hinstance, DLL_PROCESS_ATTACH, fDynamic ? NULL : (LPVOID)-1);
-            }
-
-#if _ENABLE_DEBUG_MESSAGES_
-            /* ...and set nesting level back to what it was */
-            DBG_change_entrylevel(old_level);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-        }
+        BOOL dllMainRetVal = LOADCallDllMainSafe(module, DLL_PROCESS_ATTACH, fDynamic ? nullptr : (LPVOID)-1);
 
         // If DlMain(DLL_PROCESS_ATTACH) returns FALSE, we must immediately unload the module
         if (!dllMainRetVal)
         {
             ERROR("DllMain returned FALSE; unloading module.\n");
-            module->pDllMain = NULL;
+            module->pDllMain = nullptr;
             FreeLibrary((HMODULE)module);
             SetLastError(ERROR_DLL_INIT_FAILED);
-            module = NULL;
-            return nullptr;
+            module = nullptr;
         }
     }
     else
@@ -1641,8 +1607,8 @@ Return value :
 --*/
 static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
 {
-    HMODULE module = NULL;
-    void *dl_handle = NULL;
+    HMODULE module = nullptr;
+    void *dl_handle = nullptr;
 
     // Check whether we have been requested to load 'libc'. If that's the case then use the
     // full name of the library that is defined in <gnu/lib-names.h> by the LIBC_SO constant.
@@ -1674,189 +1640,6 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
 }
 
 /*++
-Function :
-    LOAD_SEH_CallDllMain
-
-    Exception-safe call to DllMain.
-
-Parameters :
-    MODSTRUCT *module : module whose DllMain must be called
-
-    DWORD dwReason : parameter to pass down to DllMain, one of DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, 
-        DLL_THREAD_ATTACH, DLL_THREAD_DETACH
-
-    LPVOID lpvReserved : parameter to pass down to DllMain,
-        If dwReason is DLL_PROCESS_ATTACH, lpvReserved is NULL for dynamic loads and non-NULL for static loads. 
-        If dwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if DllMain has been called by using FreeLibrary 
-            and non-NULL if DllMain has been called during process termination. 
-
-(no return value)
-
-Notes :
-This function is called from LOADFreeModules. Since we get there from
-PAL_Terminate, we can't let exceptions in DllMain go unhandled :
-TerminateProcess would be called, and would have to abort uncleanly because
-termination was already started. So we catch the exception and ignore it;
-we're terminating anyway.
-*/
-static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved)
-{
-#if _ENABLE_DEBUG_MESSAGES_
-    /* reset ENTRY nesting level back to zero while inside the callback... */
-    int old_level = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-    
-    struct Param
-    {
-        MODSTRUCT *module;
-        DWORD dwReason;
-        LPVOID lpReserved;
-    } param;
-    param.module = module;
-    param.dwReason = dwReason;
-    param.lpReserved = lpReserved;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        TRACE("Calling DllMain (%p) for module %S\n",
-              pParam->module->pDllMain, 
-              pParam->module->lib_name ? pParam->module->lib_name : W16_NULLSTRING);
-        
-        {
-            // This module may be foreign to our PAL, so leave our PAL.
-            // If it depends on us, it will re-enter.
-            PAL_LeaveHolder holder;
-            pParam->module->pDllMain(pParam->module->hinstance, pParam->dwReason, pParam->lpReserved);
-        }
-    }
-    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-    {
-        WARN("Call to DllMain (%p) got an unhandled exception; "
-              "ignoring.\n", module->pDllMain);
-    }
-    PAL_ENDTRY
-
-#if _ENABLE_DEBUG_MESSAGES_
-    /* ...and set nesting level back to what it was */
-    DBG_change_entrylevel(old_level);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-}
-
-/*++
-Function:
-  LockModuleList
-
-Abstract
-  Enter the critical section associated to the module list
-
-Parameter
-  void
-
-Return
-  void
---*/
-extern "C"
-void LockModuleList()
-{
-    CPalThread * pThread = 
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    InternalEnterCriticalSection(pThread , &module_critsec);
-}
-
-/*++
-Function:
-  UnlockModuleList
-
-Abstract
-  Leave the critical section associated to the module list
-
-Parameter
-  void
-
-Return
-  void
---*/
-extern "C"
-void UnlockModuleList()
-{
-    CPalThread * pThread = 
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    InternalLeaveCriticalSection(pThread , &module_critsec);
-}
-
-/*++
-    PAL_LOADLoadPEFile
-
-    Map a PE format file into memory like Windows LoadLibrary() would do.
-    Doesn't apply base relocations if the function is relocated.
-
-Parameters:
-    IN hFile - file to map
-
-Return value:
-    non-NULL - the base address of the mapped image
-    NULL - error, with last error set.
---*/
-
-void * PAL_LOADLoadPEFile(HANDLE hFile)
-{
-    ENTRY("PAL_LOADLoadPEFile (hFile=%p)\n", hFile);
-
-    void * loadedBase = MAPMapPEFile(hFile);
-
-#ifdef _DEBUG
-    if (loadedBase != NULL)
-    {
-        char* envVar = getenv("PAL_ForcePEMapFailure");
-        if (envVar && strlen(envVar) > 0)
-        {
-            TRACE("Forcing failure of PE file map, and retry\n");
-            PAL_LOADUnloadPEFile(loadedBase); // unload it
-            loadedBase = MAPMapPEFile(hFile); // load it again
-        }
-    }
-#endif // _DEBUG
-
-    LOGEXIT("PAL_LOADLoadPEFile returns %p\n", loadedBase);
-    return loadedBase;
-}
-
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-
-BOOL PAL_LOADUnloadPEFile(void * ptr)
-{
-    BOOL retval = FALSE;
-
-    ENTRY("PAL_LOADUnloadPEFile (ptr=%p)\n", ptr);
-
-    if (NULL == ptr)
-    {
-        ERROR( "Invalid pointer value\n" );
-    }
-    else
-    {
-        retval = MAPUnmapPEFile(ptr);
-    }
-
-    LOGEXIT("PAL_LOADUnloadPEFile returns %d\n", retval);
-    return retval;
-}
-
-/*++
     LOADInitializeCoreCLRModule
 
     Run the initialization methods for CoreCLR module (the module containing this PAL).
@@ -1882,7 +1665,7 @@ BOOL LOADInitializeCoreCLRModule()
         ERROR("Can not find the CoreDllMain entry point\n");
         return FALSE;
     }
-    return pRuntimeDllMain(module->hinstance, DLL_PROCESS_ATTACH, NULL);
+    return pRuntimeDllMain(module->hinstance, DLL_PROCESS_ATTACH, nullptr);
 }
 
 /*++
@@ -1900,7 +1683,7 @@ Return value :
 --*/
 MODSTRUCT *LOADGetPalLibrary()
 {
-    if (pal_module == NULL)
+    if (pal_module == nullptr)
     {
         // Initialize the pal module (the module containing LOADGetPalLibrary). Assumes that 
         // the PAL is linked into the coreclr module because we use the module name containing 
@@ -1915,11 +1698,11 @@ MODSTRUCT *LOADGetPalLibrary()
         }
         // Stash a copy of the CoreCLR installation path in a global variable.
         // Make sure it's terminated with a slash.
-        if (g_szCoreCLRPath == NULL)
+        if (g_szCoreCLRPath == nullptr)
         {
             g_szCoreCLRPath = (char*) InternalMalloc(g_cbszCoreCLRPath);
 
-            if (g_szCoreCLRPath == NULL)
+            if (g_szCoreCLRPath == nullptr)
             {
                 ERROR("LOADGetPalLibrary: InternalMalloc failed!");
                 goto exit;
@@ -1938,37 +1721,46 @@ exit:
     return pal_module;
 }
 
-// Get base address of the module containing a given symbol 
-PALAPI
-LPCVOID
-PAL_GetSymbolModuleBase(void *symbol)
+/*++
+Function:
+  LockModuleList
+
+Abstract
+  Enter the critical section associated to the module list
+
+Parameter
+  void
+
+Return
+  void
+--*/
+extern "C"
+void LockModuleList()
 {
-    LPCVOID retval = NULL;
+    CPalThread * pThread = 
+        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    PERF_ENTRY(PAL_GetPalModuleBase);
-    ENTRY("PAL_GetPalModuleBase\n");
-
-    if (symbol == NULL)
-    {
-        TRACE("Can't get base address. Argument symbol == NULL\n");
-        SetLastError(ERROR_INVALID_DATA);
-    }
-    else 
-    {
-        Dl_info info;
-        if (dladdr(symbol, &info) != 0)
-        {
-            retval = info.dli_fbase;
-        }
-        else 
-        {
-            TRACE("Can't get base address of the current module\n");
-            SetLastError(ERROR_INVALID_DATA);
-        }        
-    }
-
-    LOGEXIT("PAL_GetPalModuleBase returns %p\n", retval);
-    PERF_EXIT(PAL_GetPalModuleBase);
-    return retval;
+    InternalEnterCriticalSection(pThread, &module_critsec);
 }
 
+/*++
+Function:
+  UnlockModuleList
+
+Abstract
+  Leave the critical section associated to the module list
+
+Parameter
+  void
+
+Return
+  void
+--*/
+extern "C"
+void UnlockModuleList()
+{
+    CPalThread * pThread = 
+        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
+
+    InternalLeaveCriticalSection(pThread, &module_critsec);
+}
