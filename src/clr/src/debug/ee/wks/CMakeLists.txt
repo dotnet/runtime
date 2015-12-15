@@ -17,10 +17,13 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
                    DEPENDS ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
                    COMMENT "Compiling dbghelpers.asm")
 
-#mark obj as source that does not require compile
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj PROPERTIES EXTERNAL_OBJECT TRUE)
-
-add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
+if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  #mark obj as source that does not require compile
+  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj PROPERTIES EXTERNAL_OBJECT TRUE)
+  add_library(cordbee_wks ${CORDBEE_SOURCES_WKS})
+else()
+  add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
+endif()
 
 else ()
 
