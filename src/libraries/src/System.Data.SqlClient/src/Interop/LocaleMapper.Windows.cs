@@ -1,8 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using System.Collections.Concurrent;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -10,11 +7,8 @@ using System.Text;
 
 namespace System.Data
 {
-    internal static class LocaleInterop
+    internal static class LocaleMapper
     {
-        // Maps between LCIDs and LocaleName+AnsiCodePages+Encodings
-        private static readonly ConcurrentDictionary<int, Tuple<string, int, Encoding>> s_cachedEncodings = new ConcurrentDictionary<int, Tuple<string, int, Encoding>>();
-
         private const string ApiWinCoreLocalization = "api-ms-win-core-localization-l1-2-0.dll";
         private const string ApiWinCoreLocalizationObsolete = "api-ms-win-core-localization-obsolete-l1-2-0.dll";
 
@@ -32,12 +26,8 @@ namespace System.Data
         [DllImport(ApiWinCoreLocalization, SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern uint LocaleNameToLCID(string lpName, uint dwFlags);
 
-        static LocaleInterop()
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        }
 
-        private static string LcidToLocaleNameInternal(int lcid)
+        public static string LcidToLocaleNameInternal(int lcid)
         {
             StringBuilder localName = new StringBuilder(LOCALE_NAME_MAX_LENGTH);
 
@@ -55,7 +45,7 @@ namespace System.Data
             }
         }
 
-        private static int LocaleNameToAnsiCodePage(string localeName)
+        public static int LocaleNameToAnsiCodePage(string localeName)
         {
             uint ansiCodePage;
             if (GetLocaleInfoEx(localeName, LOCALE_RETURN_NUMBER | LOCALE_IDEFAULTANSICODEPAGE, out ansiCodePage, sizeof(uint)) != 0)
@@ -72,38 +62,7 @@ namespace System.Data
             }
         }
 
-        private static Tuple<string, int, Encoding> GetDetailsInternal(int lcid)
-        {
-            string localeName = LcidToLocaleNameInternal(lcid);
-            int ansiCodePage = LocaleNameToAnsiCodePage(localeName);
-            return Tuple.Create(localeName, ansiCodePage, Encoding.GetEncoding(ansiCodePage));
-        }
-
-        private static Tuple<string, int, Encoding> GetDetailsForLcid(int lcid)
-        {
-            if (lcid < 0)
-            {
-                throw ADP.ArgumentOutOfRange("lcid");
-            }
-            return s_cachedEncodings.GetOrAdd(lcid, GetDetailsInternal);
-        }
-
-        internal static Encoding GetEncodingForLcid(int lcid)
-        {
-            return GetDetailsForLcid(lcid).Item3;
-        }
-
-        internal static int GetCodePageForLcid(int lcid)
-        {
-            return GetDetailsForLcid(lcid).Item2;
-        }
-
-        internal static string GetLocaleNameForLcid(int lcid)
-        {
-            return GetDetailsForLcid(lcid).Item1;
-        }
-
-        internal static int GetLcidForLocaleName(string localeName)
+        public static int GetLcidForLocaleName(string localeName)
         {
             Debug.Assert(localeName != null, "Locale name should never be null");
 
@@ -121,10 +80,6 @@ namespace System.Data
                 throw new CultureNotFoundException("localeName", localeName, message: null);
             }
         }
-
-        internal static int GetCurrentCultureLcid()
-        {
-            return GetLcidForLocaleName(CultureInfo.CurrentCulture.ToString());
-        }
+        
     }
 }
