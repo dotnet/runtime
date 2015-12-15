@@ -33,8 +33,8 @@ namespace System
         {
             get
             {
-                // Forward the value that is set on the current domain.
-                return AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+                // We are currently hard coding this.
+                return ".NETCore,Version=v5.0";
             }
         }
 
