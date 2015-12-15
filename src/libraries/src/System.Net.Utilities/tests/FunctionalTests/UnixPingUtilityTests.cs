@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -18,9 +19,9 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(50)]
         [InlineData(1000)]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public static void PacketSizeIsRespected(int payloadSize)
+        public static async Task PacketSizeIsRespected(int payloadSize)
         {
-            IPAddress localAddress = TestSettings.GetLocalIPAddress().Result;
+            IPAddress localAddress = await TestSettings.GetLocalIPAddress();
             bool ipv4 = localAddress.AddressFamily == AddressFamily.InterNetwork;
             string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, localAddress.ToString(), ipv4);
             string utilityPath = (localAddress.AddressFamily == AddressFamily.InterNetwork)
