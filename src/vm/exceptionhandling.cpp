@@ -4655,7 +4655,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);                    
+                TerminateProcess(GetCurrentProcess(), 1);
+                UNREACHABLE();
             }
 
             UINT_PTR parentSp = GetSP(&frameContext);
