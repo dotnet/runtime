@@ -2327,6 +2327,7 @@ namespace System {
         /// Finds the time zone id by using 'readlink' on the path to see if tzFilePath is
         /// a symlink to a file 
         /// </summary>
+        [SecuritySafeCritical]
         private static string FindTimeZoneIdUsingReadLink(string tzFilePath)
         {
             string id = null;

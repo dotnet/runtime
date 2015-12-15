@@ -3,18 +3,22 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 internal static partial class Interop
 {
     internal static partial class GlobalizationInterop
     {
+        [SecurityCritical]
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         internal unsafe static extern void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
 
+        [SecurityCritical]
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         internal unsafe static extern void ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
 
+        [SecurityCritical]
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         internal unsafe static extern void ChangeCaseTurkish(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
     }
