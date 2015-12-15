@@ -1323,7 +1323,9 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("BeginThreadAffinity", ThreadNative::BeginThreadAffinity)
     FCFuncElement("EndThreadAffinity", ThreadNative::EndThreadAffinity)
 #endif // FEATURE_CORECLR
+#ifdef FEATURE_LEGACYSURFACE
     FCFuncElement("AbortInternal", ThreadNative::Abort)
+#endif // FEATURE_LEGACYSURFACE
 #ifndef FEATURE_CORECLR
     FCFuncElement("ResetAbortNative", ThreadNative::ResetAbort)
 #endif // FEATURE_CORECLR
