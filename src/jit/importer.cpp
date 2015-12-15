@@ -7179,7 +7179,6 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
                 unsigned lclNum = op->gtLclVarCommon.gtLclNum;
                 // Make sure this struct type stays as struct so that we can return it in registers.
                 lvaTable[lclNum].lvDontPromote = true;
-
                 return op;
             }
 
@@ -13850,7 +13849,14 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     bool restoreType = false;
                     if ((op2->OperGet() == GT_CALL) && (info.compRetType == TYP_STRUCT))
                     {
-                        noway_assert(op2->TypeGet() == TYP_STRUCT); // If not, then impFixupStructReturnType() must have touched it!
+                        // If the op2 type is not TYP_STRUCT, then the impFixupStructReturnType has changed it.
+                        // For System V a single eightbyte struct's type could be normalized to the type of the single eightbyte.
+                        bool isNormalizedType = false;
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                        GenTreeCall* callTreePtr = op2->AsCall();
+                        isNormalizedType = callTreePtr->structDesc.passedInRegisters && (callTreePtr->structDesc.eightByteCount == 1);
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                        noway_assert(op2->TypeGet() == TYP_STRUCT || isNormalizedType);
                         op2->gtType = info.compRetNativeType;
                         restoreType = true;
                     }
