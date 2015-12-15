@@ -55,13 +55,10 @@ namespace System.Security.Cryptography.Hashing.Tests
             using (var keyedHash = new TestKeyedHashAlgorithm())
             {
                 keyedHash.Key = key;
-
                 Assert.NotNull(keyedHash.Key);
 
                 keyedHash.Dispose();
-
-                byte[] ignored;
-                Assert.Throws<NullReferenceException>(() => ignored = keyedHash.Key);
+                Assert.Null(keyedHash.Key);
             }
         }
 
@@ -70,7 +67,11 @@ namespace System.Security.Cryptography.Hashing.Tests
         {
             using (var keyedHash = new TestKeyedHashAlgorithm())
             {
-                Assert.Throws<NullReferenceException>(() => keyedHash.Key = null);
+                keyedHash.Key = new byte[1];
+                Assert.NotNull(keyedHash.Key);
+
+                keyedHash.Key = null;
+                Assert.Null(keyedHash.Key);
             }
         }
 
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography.Hashing.Tests
 
             protected override byte[] HashFinal()
             {
-                return Array.Empty<byte>(); ;
+                return Array.Empty<byte>();
             }
 
             public override void Initialize()

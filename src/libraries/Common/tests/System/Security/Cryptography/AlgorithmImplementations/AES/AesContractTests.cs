@@ -81,8 +81,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     return;
                 }
-                Assert.Throws<ArgumentException>("key", () => aes.CreateEncryptor(key, iv));
-                Assert.Throws<ArgumentException>("key", () => aes.CreateDecryptor(key, iv));
+                Assert.Throws<ArgumentException>("rgbKey", () => aes.CreateEncryptor(key, iv));
+                Assert.Throws<ArgumentException>("rgbKey", () => aes.CreateDecryptor(key, iv));
             }
         }
 
@@ -105,8 +105,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     return;
                 }
-                Assert.Throws<ArgumentException>("iv", () => aes.CreateEncryptor(key, iv));
-                Assert.Throws<ArgumentException>("iv", () => aes.CreateDecryptor(key, iv));
+                Assert.Throws<ArgumentException>("rgbIV", () => aes.CreateEncryptor(key, iv));
+                Assert.Throws<ArgumentException>("rgbIV", () => aes.CreateDecryptor(key, iv));
             }
         }
 
