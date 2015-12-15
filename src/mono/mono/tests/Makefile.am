@@ -363,6 +363,7 @@ BASE_TEST_CS_SRC=		\
 	bug-324535.cs	\
 	modules.cs	\
 	bug-81673.cs	\
+	bug-36848.cs    \
 	bug-81691.cs	\
 	bug-80307.cs	\
 	bug-415577.cs	\
@@ -1197,6 +1198,12 @@ bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-8167
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
+
+EXTRA_DIST += bug-36848-a.cs.cs
+bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
+	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs
+	$(MCS) -r:bug-36848-a.dll -out:bug-36848.exe $(srcdir)/bug-36848.cs
+	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs /define:WITH_STOP
 
 EXTRA_DIST += bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
