@@ -128,7 +128,7 @@ namespace System.Data.SqlTypes
                 }
                 else
                 {
-                    Encoding cpe = LocaleInterop.GetEncodingForLcid(_lcid);
+                    Encoding cpe = Locale.GetEncodingForLcid(_lcid);
                     _value = cpe.GetString(data, index, count);
                 }
             }
@@ -203,7 +203,7 @@ namespace System.Data.SqlTypes
         ///       Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.
         ///    </para>
         /// </devdoc>
-        public SqlString(String data) : this(data, LocaleInterop.GetCurrentCultureLcid(), s_iDefaultFlag)
+        public SqlString(String data) : this(data, Locale.GetCurrentCultureLcid(), s_iDefaultFlag)
         {
         }
 
@@ -277,7 +277,7 @@ namespace System.Data.SqlTypes
             get
             {
                 if (!IsNull)
-                    return new CultureInfo(LocaleInterop.GetLocaleNameForLcid(_lcid));
+                    return new CultureInfo(Locale.GetLocaleNameForLcid(_lcid));
                 else
                     throw new SqlNullValueException();
             }
@@ -287,7 +287,7 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(!IsNull);
             if (_cmpInfo == null)
-                _cmpInfo = (new CultureInfo(LocaleInterop.GetLocaleNameForLcid(_lcid))).CompareInfo;
+                _cmpInfo = (new CultureInfo(Locale.GetLocaleNameForLcid(_lcid))).CompareInfo;
         }
 
         /// <devdoc>
@@ -369,7 +369,7 @@ namespace System.Data.SqlTypes
                 return null;
 
             // Get the CultureInfo
-            Encoding cpe = LocaleInterop.GetEncodingForLcid(_lcid);
+            Encoding cpe = Locale.GetEncodingForLcid(_lcid);
             return cpe.GetBytes(_value);
         }
 
