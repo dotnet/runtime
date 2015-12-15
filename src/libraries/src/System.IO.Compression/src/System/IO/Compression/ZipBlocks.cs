@@ -440,7 +440,8 @@ namespace System.IO.Compression
     internal struct ZipCentralDirectoryFileHeader
     {
         public const UInt32 SignatureConstant = 0x02014B50;
-        public UInt16 VersionMadeBy;
+        public byte VersionMadeByCompatibility;
+        public byte VersionMadeBySpecification;
         public UInt16 VersionNeededToExtract;
         public UInt16 GeneralPurposeBitFlag;
         public UInt16 CompressionMethod;
@@ -468,8 +469,8 @@ namespace System.IO.Compression
 
             if (reader.ReadUInt32() != SignatureConstant)
                 return false;
-
-            header.VersionMadeBy = reader.ReadUInt16();
+            header.VersionMadeBySpecification = reader.ReadByte();
+            header.VersionMadeByCompatibility = reader.ReadByte();
             header.VersionNeededToExtract = reader.ReadUInt16();
             header.GeneralPurposeBitFlag = reader.ReadUInt16();
             header.CompressionMethod = reader.ReadUInt16();
