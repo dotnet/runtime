@@ -5782,6 +5782,11 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoStri
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
+	// mono_remote_class_vtable cannot handle errors well, so force any loading error to occur early
+	mono_class_setup_vtable (klass);
+	if (klass->exception_type)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	tp->custom_type_info = (mono_object_isinst (this_obj, mono_defaults.iremotingtypeinfo_class) != NULL);
 	tp->remote_class = mono_remote_class (domain, class_name, klass);
 
