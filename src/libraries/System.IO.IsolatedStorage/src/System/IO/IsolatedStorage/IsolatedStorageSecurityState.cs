@@ -9,7 +9,7 @@ namespace System.IO.IsolatedStorage
     [SecurityCritical]
     internal class IsolatedStorageSecurityState
     {
-        private string m_RootUserDirectory;
+        private string _rootUserDirectory;
 
         internal static string GetRootUserDirectory()
         {
@@ -27,11 +27,11 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                return m_RootUserDirectory;
+                return _rootUserDirectory;
             }
             set
             {
-                m_RootUserDirectory = value;
+                _rootUserDirectory = value;
             }
         }
 

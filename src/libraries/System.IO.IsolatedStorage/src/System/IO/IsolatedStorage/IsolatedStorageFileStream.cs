@@ -15,10 +15,10 @@ namespace System.IO.IsolatedStorage
     {
         private const String s_BackSlash = "\\";
 
-        private FileStream m_fs;
-        private IsolatedStorageFile m_isf;
-        private String m_GivenPath;
-        private String m_FullPath;
+        private FileStream _fs;
+        private IsolatedStorageFile _isf;
+        private String _givenPath;
+        private String _fullPath;
 
         private IsolatedStorageFileStream() { }
 
@@ -77,14 +77,14 @@ namespace System.IO.IsolatedStorage
                     throw new ArgumentException(SR.IsolatedStorage_FileOpenMode);
             }
 
-            m_isf = isf;
-            m_GivenPath = path;
-            m_FullPath = m_isf.GetFullPath(m_GivenPath);
+            _isf = isf;
+            _givenPath = path;
+            _fullPath = _isf.GetFullPath(_givenPath);
 
             try
             {
-                m_fs = new
-                   FileStream(m_FullPath, mode, access, share, bufferSize,
+                _fs = new
+                   FileStream(_fullPath, mode, access, share, bufferSize,
                        FileOptions.None);
             }
             catch (Exception e)
@@ -92,7 +92,7 @@ namespace System.IO.IsolatedStorage
                 // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
-                // in retail bits we leak the path only under the debugger via IsolatedStorageException.m_underlyingException which
+                // in retail bits we leak the path only under the debugger via IsolatedStorageException._underlyingException which
                 // they can any way look at via IsolatedStorageFile instance as well.
                 throw IsolatedStorageFile.GetIsolatedStorageException("IsolatedStorage_Operation_ISFS", e);
             }
@@ -103,7 +103,7 @@ namespace System.IO.IsolatedStorage
             [Pure]
             get
             {
-                return m_fs.CanRead;
+                return _fs.CanRead;
             }
         }
 
@@ -112,7 +112,7 @@ namespace System.IO.IsolatedStorage
             [Pure]
             get
             {
-                return m_fs.CanWrite;
+                return _fs.CanWrite;
             }
         }
 
@@ -121,7 +121,7 @@ namespace System.IO.IsolatedStorage
             [Pure]
             get
             {
-                return m_fs.CanSeek;
+                return _fs.CanSeek;
             }
         }
 
@@ -129,7 +129,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                return m_fs.Length;
+                return _fs.Length;
             }
         }
 
@@ -137,12 +137,12 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                return m_fs.Position;
+                return _fs.Position;
             }
 
             set
             {
-                m_fs.Position = value;
+                _fs.Position = value;
             }
         }
 
@@ -151,7 +151,7 @@ namespace System.IO.IsolatedStorage
             [SecurityCritical]
             get
             {
-                return m_FullPath;
+                return _fullPath;
             }
         }
 
@@ -161,8 +161,8 @@ namespace System.IO.IsolatedStorage
             {
                 if (disposing)
                 {
-                    if (m_fs != null)
-                        m_fs.Dispose();
+                    if (_fs != null)
+                        _fs.Dispose();
                 }
             }
             finally
@@ -173,54 +173,54 @@ namespace System.IO.IsolatedStorage
 
         public override void Flush()
         {
-            m_fs.Flush();
+            _fs.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            return m_fs.FlushAsync();
+            return _fs.FlushAsync();
         }
 
         public override void SetLength(long value)
         {
-            m_fs.SetLength(value);
+            _fs.SetLength(value);
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return m_fs.Read(buffer, offset, count);
+            return _fs.Read(buffer, offset, count);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Threading.CancellationToken cancellationToken)
         {
-            return m_fs.ReadAsync(buffer, offset, count, cancellationToken);
+            return _fs.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public override int ReadByte()
         {
-            return m_fs.ReadByte();
+            return _fs.ReadByte();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
             // Desktop implementation of IsolatedStorage ensures that in case the size is increased the new memory is zero'ed out.
             // However in this implementation we simply call the FileStream.Seek APIs which have an undefined behavior.
-            return m_fs.Seek(offset, origin);
+            return _fs.Seek(offset, origin);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            m_fs.Write(buffer, offset, count);
+            _fs.Write(buffer, offset, count);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return m_fs.WriteAsync(buffer, offset, count, cancellationToken);
+            return _fs.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override void WriteByte(byte value)
         {
-            m_fs.WriteByte(value);
+            _fs.WriteByte(value);
         }
     }
 }
