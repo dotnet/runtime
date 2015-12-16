@@ -1994,7 +1994,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
     }
 
 #ifdef ALT_JIT
-    if (pfAltJit->contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+    if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         opts.altJit = true;
     }
@@ -2078,7 +2078,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
     {
         static ConfigMethodSet fJitImportBreak;
         fJitImportBreak.ensureInit(CLRConfig::INTERNAL_JitImportBreak);
-        if (fJitImportBreak.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        if (fJitImportBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             assert(!"JitImportBreak reached");
     }
 
@@ -2113,7 +2113,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
             static ConfigMethodSet fNgenDump;
             fNgenDump.ensureInit(CLRConfig::INTERNAL_NgenDump);
 
-            if (fNgenDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 verboseDump = true;
 
             static ConfigDWORD fNgenHashDump;
@@ -2124,7 +2124,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
             static ConfigMethodSet fNgenDumpIR;
             fNgenDumpIR.ensureInit(CLRConfig::INTERNAL_NgenDumpIR);
 
-            if (fNgenDumpIR.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenDumpIR.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 dumpIR = true;
 
             static ConfigDWORD fNgenHashDumpIR;
@@ -2143,7 +2143,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
             static ConfigMethodSet fJitDump;
             fJitDump.ensureInit(CLRConfig::INTERNAL_JitDump);
 
-            if (fJitDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 verboseDump = true;
 
             static ConfigDWORD fJitHashDump;
@@ -2154,7 +2154,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
             static ConfigMethodSet fJitDumpIR;
             fJitDumpIR.ensureInit(CLRConfig::INTERNAL_JitDumpIR);
 
-            if (fJitDumpIR.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitDumpIR.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 dumpIR = true;
 
             static ConfigDWORD fJitHashDumpIR;
@@ -2538,24 +2538,24 @@ void                Compiler::compInitOptions(unsigned compileFlags)
 
             static ConfigMethodSet fNgenGCDump;
             fNgenGCDump.ensureInit(CLRConfig::INTERNAL_NgenGCDump);
-            if (fNgenGCDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenGCDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspGCtbls = true;
 
             static ConfigMethodSet fNgenDisasm;
             fNgenDisasm.ensureInit(CLRConfig::INTERNAL_NgenDisasm);
-            if (fNgenDisasm.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.disAsm = true;
-            if (fNgenDisasm.contains("SPILLED", NULL, NULL))
+            if (fNgenDisasm.contains("SPILLED", NULL))
                 opts.disAsmSpilled = true;
 
             static ConfigMethodSet fNgenUnwindDump;
             fNgenUnwindDump.ensureInit(CLRConfig::INTERNAL_NgenUnwindDump);
-            if (fNgenUnwindDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenUnwindDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspUnwind = true;
 
             static ConfigMethodSet fNgenEHDump;
             fNgenEHDump.ensureInit(CLRConfig::INTERNAL_NgenEHDump);
-            if (fNgenEHDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fNgenEHDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspEHTable = true;
         }
         else 
@@ -2566,32 +2566,32 @@ void                Compiler::compInitOptions(unsigned compileFlags)
 
             static ConfigMethodSet fJitGCDump;
             fJitGCDump.ensureInit(CLRConfig::INTERNAL_JitGCDump);
-            if (fJitGCDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitGCDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspGCtbls = true;
 
             static ConfigMethodSet fJitDisasm;
             fJitDisasm.ensureInit(CLRConfig::INTERNAL_JitDisasm);
-            if (fJitDisasm.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.disAsm = true;
 
-            if (fJitDisasm.contains("SPILLED", NULL, NULL))
+            if (fJitDisasm.contains("SPILLED", NULL))
                 opts.disAsmSpilled = true;
 
             static ConfigMethodSet fJitUnwindDump;
             fJitUnwindDump.ensureInit(CLRConfig::INTERNAL_JitUnwindDump);
-            if (fJitUnwindDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitUnwindDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspUnwind = true;
 
             static ConfigMethodSet fJitEHDump;
             fJitEHDump.ensureInit(CLRConfig::INTERNAL_JitEHDump);
-            if (fJitEHDump.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            if (fJitEHDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspEHTable = true;
         }
 
 #ifdef LATE_DISASM
         static ConfigMethodSet fJitLateDisasm;
         fJitLateDisasm.ensureInit(CLRConfig::INTERNAL_JitLateDisasm);
-        if (fJitLateDisasm.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        if (fJitLateDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
@@ -2649,7 +2649,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
 
     static ConfigMethodSet fJitBreak;
     fJitBreak.ensureInit(CLRConfig::INTERNAL_JitBreak);
-    if (fJitBreak.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+    if (fJitBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         assert(!"JitBreak reached");
 
     static ConfigDWORD fJitHashBreak;
@@ -2660,8 +2660,8 @@ void                Compiler::compInitOptions(unsigned compileFlags)
     static ConfigMethodSet fJitDebugBreak;
     fJitDebugBreak.ensureInit(CLRConfig::INTERNAL_JitDebugBreak);
     if (verbose ||
-        fJitDebugBreak.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig) ||
-        fJitBreak.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        fJitDebugBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args) ||
+        fJitBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         compDebugBreak = true;
     }
@@ -2754,7 +2754,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
 #endif // DEBUGGING_SUPPORT
 
 #ifdef  LATE_DISASM
-    codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
+    codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
 #endif
 
     //-------------------------------------------------------------------------
@@ -2793,19 +2793,19 @@ void                Compiler::compInitOptions(unsigned compileFlags)
         // splitting in the zapper.
         static ConfigMethodSet fJitForceProcedureSplitting;
         fJitForceProcedureSplitting.ensureInit(CLRConfig::INTERNAL_JitForceProcedureSplitting);
-        if (fJitForceProcedureSplitting.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        if (fJitForceProcedureSplitting.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplitting = true;
 
         // JitNoProcedureSplitting will always disable procedure splitting.
         static ConfigMethodSet fJitNoProcedureSplitting;
         fJitNoProcedureSplitting.ensureInit(CLRConfig::INTERNAL_JitNoProcedureSplitting);
-        if (fJitNoProcedureSplitting.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        if (fJitNoProcedureSplitting.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplitting = false;
         //
         // JitNoProcedureSplittingEH will disable procedure splitting in functions with EH.
         static ConfigMethodSet fJitNoProcedureSplittingEH;
         fJitNoProcedureSplittingEH.ensureInit(CLRConfig::INTERNAL_JitNoProcedureSplittingEH);
-        if (fJitNoProcedureSplittingEH.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        if (fJitNoProcedureSplittingEH.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplittingEH = false;
 #endif
     }
@@ -2931,7 +2931,7 @@ bool Compiler::compJitHaltMethod()
 
     static ConfigMethodSet fJitHalt;
     fJitHalt.ensureInit(CLRConfig::INTERNAL_JitHalt);
-    if (fJitHalt.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+    if (fJitHalt.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         return true;
     }
@@ -2977,7 +2977,7 @@ bool            Compiler::compStressCompile(compStressArea  stressArea,
     static ConfigMethodSet fJitStressOnly;
     fJitStressOnly.ensureInit(CLRConfig::INTERNAL_JitStressOnly);
     if (!fJitStressOnly.isEmpty() && 
-        !fJitStressOnly.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+        !fJitStressOnly.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         return false;
     }     
@@ -4123,12 +4123,12 @@ bool Compiler::skipMethod()
 
     static ConfigMethodSet fJitExclude;
     fJitExclude.ensureInit(CLRConfig::INTERNAL_JitExclude);
-    if (fJitExclude.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+    if (fJitExclude.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         return true;
 
     static ConfigMethodSet fJitInclude;
     fJitInclude.ensureInit(CLRConfig::INTERNAL_JitInclude);
-    if (!fJitInclude.isEmpty() && !fJitInclude.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+    if (!fJitInclude.isEmpty() && !fJitInclude.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         return true;
 
     return false;
