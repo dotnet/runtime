@@ -32,7 +32,8 @@
     <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-    
+    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+
     <BuildOS>$(__BuildOS)</BuildOS>
     <BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</BuildOS>
 

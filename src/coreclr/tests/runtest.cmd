@@ -18,6 +18,7 @@ if /i "%1" == "x86"    (set __BuildArch=x86&set __MSBuildBuildArch=x86&shift&got
 
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
+if /i "%1" == "checked"   (set __BuildType=checked&shift&goto Arg_Loop)
 if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "Exclude" (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "Exclude0" (set __Exclude0=%2&shift&shift&goto Arg_Loop)
@@ -153,7 +154,7 @@ echo Usage:
 echo %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [vsversion] CORE_ROOT   where:
 echo.
 echo BuildArch is x64, x86
-echo BuildType can be: Debug, Release
+echo BuildType can be: Debug, Release, Checked
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo Exclude0- Optional parameter - specify location of default exclusion file (defaults to issues.targets if not specified)
 echo                                Set to "" to disable default exclusion file.
