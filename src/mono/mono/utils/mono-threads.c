@@ -910,7 +910,7 @@ suspend_sync_nolock (MonoNativeThreadId id, gboolean interrupt_kernel)
 		if (sleep_duration == 0)
 			mono_thread_info_yield ();
 		else
-			mono_thread_info_usleep (sleep_duration);
+			g_usleep (sleep_duration);
 
 		sleep_duration += 10;
 	}
