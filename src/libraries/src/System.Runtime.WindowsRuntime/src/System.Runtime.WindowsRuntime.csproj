@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <UseECMAKey>true</UseECMAKey>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.WindowsRuntime</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyKeyType>ECMA</AssemblyKeyType>
+    <ClsCompliant>true</ClsCompliant>
+    <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
+    <NoWarn>$(NoWarn)1698</NoWarn>
+    <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
+    <EnableWinRT>true</EnableWinRT>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)'!='netcore50aot'">
+    <DefineConstants>$(DefineConstants);FEATURE_CORECLR;FEATURE_APPX</DefineConstants>
+    <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
+    <FxTransformCoreAssemblyName>mscorlib</FxTransformCoreAssemblyName>
+    <UseInternalApisRefs>true</UseInternalApisRefs>
+    <ExcludeMscorlibDesignTimeRef>true</ExcludeMscorlibDesignTimeRef>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <ItemGroup>
+    <TargetingPackReference Include="Windows" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <TargetingPackReference Include="System.Private.Interop.Extensions"/>
+    <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <TargetingPackReference Include="mscorlib"/>
+    <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.dnxcore50.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.dnxcore50.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
+    <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.dnxcore50.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <Compile Include="System\WindowsRuntimeSystemExtensions.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.netcore50aot.cs" />
+    <Compile Include="System\IO\BufferedStream.cs" />
+    <Compile Include="System\IO\UnmanagedMemoryStreamInternal.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Interop\Interop.manual.cs" />
+    <Compile Include="System\VoidTypeParameter.cs" />
+    <Compile Include="System\InternalHelpers.cs" />
+    <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
+    <Compile Include="System\IO\StreamOperationsImplementation.cs" />
+    <Compile Include="System\IO\WindowsRuntimeStreamExtensions.cs" />
+    <Compile Include="System\IO\WindowsRuntimeStorageExtensions.cs" />
+    <Compile Include="System\IO\WinRtToNetFxStreamAdapter.cs" />
+    <Compile Include="System\IO\WinRtIOHelper.cs" />
+    <Compile Include="System\Resources\WindowsRuntimeResourceManager.cs" />
+    <Compile Include="System\Runtime\InteropServices\HResults.cs" />
+    <Compile Include="System\Runtime\InteropServices\IMarshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\IAgileObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\AsyncInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IBufferByteAccess.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBufferExtensions.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoIdGenerator.cs" />
+    <Compile Include="System\Threading\Tasks\ExceptionDispatchHelper.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncActionAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncActionWithProgressAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncInfoAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncOperationAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncOperationWithProgressAdapter.cs" />
+    <Compile Include="System\Windows\Point.cs" />
+    <Compile Include="System\Windows\Rect.cs" />
+    <Compile Include="System\Windows\Size.cs" />
+    <Compile Include="System\Windows\TokenizerHelper.cs" />
+    <Compile Include="System\Windows\UI\Color.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
