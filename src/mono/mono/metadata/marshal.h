@@ -115,7 +115,10 @@ typedef enum {
 	WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER,
 	/* Subtypes of MONO_WRAPPER_DELEGATE_INVOKE */
 	WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL,
-	WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND
+	WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND,
+	/* Subtypes of MONO_WRAPPER_UNKNOWN */
+	WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG,
+	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
 } WrapperSubtype;
 
 typedef struct {
@@ -183,6 +186,10 @@ typedef struct {
 	MonoMethod *method;
 } RemotingWrapperInfo;
 
+typedef struct {
+	MonoMethodSignature *sig;
+} GsharedvtWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -221,6 +228,8 @@ typedef struct {
 		UnboxWrapperInfo unbox;
 		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
 		RemotingWrapperInfo remoting;
+		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
+		GsharedvtWrapperInfo gsharedvt;
 	} d;
 } WrapperInfo;
 

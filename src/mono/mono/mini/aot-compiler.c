@@ -178,6 +178,7 @@ typedef struct MonoAotCompile {
 	GHashTable *klass_blob_hash;
 	/* Maps MonoMethod* -> blob offset */
 	GHashTable *method_blob_hash;
+	GHashTable *signatures;
 	guint32 *plt_got_info_offsets;
 	guint32 got_offset, llvm_got_offset, plt_offset, plt_got_offset_base, nshared_got_entries;
 	/* Number of GOT entries reserved for trampolines */
@@ -2840,6 +2841,10 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_method_ref (acfg, info->d.synchronized_inner.method, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR)
 				encode_method_ref (acfg, info->d.array_accessor.method, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG)
+				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
+				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
@@ -7121,6 +7126,60 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (!cfg->has_got_slots)
 		InterlockedIncrement (&acfg->stats.methods_without_got_slots);
 
+	if (!cfg->method->wrapper_type)
+		cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, mono_method_signature (cfg->method));
+
+	/* Add gsharedvt wrappers for signatures used by the method */
+	if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT)) {
+		GSList *l;
+
+		for (l = cfg->signatures; l; l = l->next) {
+			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
+
+			if (!g_hash_table_lookup (acfg->signatures, sig) && !mini_is_gsharedvt_variable_signature (sig)) {
+				g_hash_table_insert (acfg->signatures, sig, sig);
+				if (!sig->has_type_parameters) {
+					MonoMethod *wrapper;
+
+					//printf ("%s\n", mono_signature_full_name (sig));
+
+					wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+					add_extra_method (acfg, wrapper);
+					wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+					add_extra_method (acfg, wrapper);
+				} else {
+					/* For signatures creared during generic sharing, convert them to a concrete signature if possible */
+					MonoMethodSignature *copy = mono_metadata_signature_dup (sig);
+					int i;
+					gboolean concrete = TRUE;
+
+					//printf ("%s\n", mono_signature_full_name (sig));
+
+					copy->ret = mini_get_underlying_type (sig->ret);
+					// FIXME: Add more cases
+					if (copy->ret->type == MONO_TYPE_VAR || copy->ret->type == MONO_TYPE_MVAR || copy->ret->type == MONO_TYPE_GENERICINST || copy->ret->type == MONO_TYPE_SZARRAY)
+						concrete = FALSE;
+					for (i = 0; i < sig->param_count; ++i) {
+						copy->params [i] = mini_get_underlying_type (sig->params [i]);
+						if (copy->params [i]->type == MONO_TYPE_VAR || copy->params [i]->type == MONO_TYPE_MVAR || copy->params [i]->type == MONO_TYPE_GENERICINST || copy->params [i]->type == MONO_TYPE_SZARRAY)
+							concrete = FALSE;
+					}
+					if (concrete) {
+						copy->has_type_parameters = 0;
+						sig = copy;
+						if (!g_hash_table_lookup (acfg->signatures, sig)) {
+							g_hash_table_insert (acfg->signatures, sig, sig);
+							MonoMethod *wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+							add_extra_method (acfg, wrapper);
+
+							//printf ("%s\n", mono_method_full_name (wrapper, 1));
+						}
+					}
+				}
+			}
+		}
+	}
+
 	/* 
 	 * FIXME: Instead of this mess, allocate the patches from the aot mempool.
 	 */
@@ -9020,6 +9079,29 @@ collect_methods (MonoAotCompile *acfg)
 		}
 	}
 
+	/* gsharedvt in wrappers */
+	/* Generate a wrapper for each generic signature used in the module */
+	if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT)) {
+		// FIXME: Is this needed ?
+		for (mindex = 0; mindex < image->tables [MONO_TABLE_METHODSPEC].rows; ++mindex) {
+			MonoMethod *method, *wrapper;
+			MonoMethodSignature *sig;
+			guint32 token = MONO_TOKEN_METHOD_SPEC | (mindex + 1);
+
+			method = mono_get_method (acfg->image, token, NULL);
+			// FIXME:
+			g_assert (method);
+
+			sig = mono_method_signature (method);
+			if (!sig->has_type_parameters) {
+				wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+				add_extra_method (acfg, wrapper);
+				wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+				add_extra_method (acfg, wrapper);
+			}
+		}
+	}
+
 	add_generic_instances (acfg);
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
@@ -9314,6 +9396,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->klass_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->method_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	acfg->signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);

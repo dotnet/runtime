@@ -718,7 +718,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 {
 	MonoMethodSignature *sig;
 	guint32 flags;
-	int i, param_count, call_conv;
+	int i, gen_param_count = 0, param_count, call_conv;
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params;
 
@@ -730,7 +730,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	call_conv = flags & 0x0F;
 
 	if (has_gen_params)
-		/* gen_param_count = */ decode_value (p, &p);
+		gen_param_count = decode_value (p, &p);
 	param_count = decode_value (p, &p);
 	if (target && param_count != target->param_count)
 		return NULL;
@@ -740,7 +740,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->hasthis = hasthis;
 	sig->explicit_this = explicit_this;
 	sig->call_convention = call_conv;
-	sig->param_count = param_count;
+	sig->generic_param_count = gen_param_count;
 	sig->ret = decode_type (module, p, &p);
 	for (i = 0; i < param_count; ++i) {
 		if (*p == MONO_TYPE_SENTINEL) {
@@ -971,6 +971,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
 				ref->method = mono_marshal_get_gsharedvt_out_wrapper ();
+			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
+				MonoMethodSignature *sig = decode_signature (module, p, &p);
+				if (!sig)
+					return FALSE;
+				ref->method = mini_get_gsharedvt_in_sig_wrapper (sig);
+			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG) {
+				MonoMethodSignature *sig = decode_signature (module, p, &p);
+				if (!sig)
+					return FALSE;
+				ref->method = mini_get_gsharedvt_out_sig_wrapper (sig);
 			} else {
 				g_assert_not_reached ();
 			}

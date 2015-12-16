@@ -3474,7 +3474,9 @@ register_icalls (void)
 	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", TRUE);
 
 	register_icall_no_wrapper (mono_resolve_iface_call, "mono_resolve_iface_call", "ptr object int ptr ptr");
-	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr");
+	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr ptr");
+	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
+	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);
 	register_icall (mono_init_delegate_virtual, "mono_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);

@@ -3872,7 +3872,7 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMe
  * before calling the runtime invoke wrapper. In this case, the wrapper ignores
  * its METHOD argument.
  * If PASS_RGCTX is TRUE, the signature of the called method is changed to include a 'gpointer rgctx' as the
- * first argument (after 'this').
+ * last argument (after 'this').
  */
 MonoMethod *
 mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean pass_rgctx)

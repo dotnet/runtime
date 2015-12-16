@@ -1328,12 +1328,12 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 }
 
 /*
- * mono_resolve_iface_call:
+ * resolve_iface_call:
  *
  *   Return the executable code for the iface method IMT_METHOD called on THIS.
  */
-gpointer
-mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
+static gpointer
+resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg, gboolean caller_gsharedvt)
 {
 	MonoVTable *vt;
 	gpointer *imt, *vtable_slot;
@@ -1356,10 +1356,8 @@ mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_met
 	addr = compiled_method = mono_compile_method (impl_method);
 	g_assert (addr);
 
-	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
+	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst)
 		generic_virtual = imt_method;
-		need_rgctx_tramp = TRUE;
-	}
 
 	if (generic_virtual || variant_iface) {
 		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
@@ -1369,7 +1367,7 @@ mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_met
 			need_unbox_tramp = TRUE;
 	}
 
-	addr = mini_add_method_trampoline (impl_method, addr, need_rgctx_tramp, need_unbox_tramp);
+	addr = mini_add_method_wrappers_llvmonly (impl_method, addr, caller_gsharedvt, need_unbox_tramp, out_arg);
 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
@@ -1381,22 +1379,19 @@ mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_met
 
 	*vtable_slot = addr;
 
-	if (need_rgctx_tramp && out_rgctx_arg) {
-		MonoMethod *m = impl_method;
-		MonoJitInfo *ji;
-
-		/*
-		 * The exact compiled method might not be shared so it doesn't have an rgctx arg.
-		 */
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)compiled_method, NULL);
-		if (!ji || (ji && ji->has_generic_jit_info)) {
-			if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m->klass->rank && strstr (m->name, "System.Collections.Generic"))
-				m = mono_aot_get_array_helper_from_wrapper (m);
-			*out_rgctx_arg = mini_method_get_rgctx (m);
-		}
-	}
-
 	return addr;
+}
+
+gpointer
+mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
+{
+	return resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, FALSE);
+}
+
+gpointer
+mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
+{
+	return resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE);
 }
 
 static gboolean
@@ -1421,14 +1416,14 @@ is_generic_method_definition (MonoMethod *m)
  *
  *   Return the executable code for calling this_obj->vtable [slot].
  */
-gpointer
-mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method)
+static gpointer
+resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt)
 {
 	MonoVTable *vt;
 	MonoMethod *m, *generic_virtual = NULL;
 	gpointer *vtable_slot;
-	gpointer addr;
-	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
+	gpointer addr, compiled_method;
+	gboolean need_unbox_tramp = FALSE;
 
 	// FIXME: Optimize this
 
@@ -1475,14 +1470,10 @@ mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method)
 
 		m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
-		/* FIXME: only do this if the method is sharable */
-		// FIXME:
-		//g_assert_not_reached ();
-		//need_rgctx_tramp = TRUE;
 	}
 
 	if (generic_virtual) {
-		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
+		if (vt->klass->valuetype)
 			need_unbox_tramp = TRUE;
 	} else {
 		if (m->klass->valuetype)
@@ -1490,14 +1481,42 @@ mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method)
 	}
 
 	// FIXME: This can throw exceptions
-	addr = mono_compile_method (m);
+	addr = compiled_method = mono_compile_method (m);
 	g_assert (addr);
 
-	addr = mini_add_method_trampoline (m, addr, need_rgctx_tramp, need_unbox_tramp);
+	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, out_arg);
+
+	// FIXME: Unify this with mono_resolve_iface_call
 
 	*vtable_slot = addr;
 
+	if (gsharedvt) {
+		/*
+		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
+		 */
+		g_assert (out_arg);
+		g_assert (*out_arg);
+
+		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (imt_method), NULL, -1, FALSE);
+		gpointer *out_wrapper_arg = mini_create_llvmonly_ftndesc (addr, *out_arg);
+
+		addr = out_wrapper;
+		*out_arg = out_wrapper_arg;
+	}
+
 	return addr;
+}
+
+gpointer
+mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
+{
+	return resolve_vcall (this_obj, slot, imt_method, out_rgctx_arg, FALSE);
+}
+
+gpointer
+mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
+{
+	return resolve_vcall (this_obj, slot, imt_method, out_rgctx_arg, TRUE);
 }
 
 /*
@@ -1512,8 +1531,12 @@ mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 	MONO_OBJECT_SETREF (del, target, target);
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-		del->rgctx = mini_method_get_rgctx (method);
+
+	del->method_ptr = mini_add_method_wrappers_llvmonly (method, del->method_ptr, FALSE, FALSE, &del->rgctx);
+	if (!del->rgctx) {
+		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+			del->rgctx = mini_method_get_rgctx (method);
+	}
 }
 
 void
@@ -1526,8 +1549,12 @@ mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *m
 	MONO_OBJECT_SETREF (del, target, target);
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-		del->rgctx = mini_method_get_rgctx (method);
+
+	del->method_ptr = mini_add_method_wrappers_llvmonly (method, del->method_ptr, FALSE, FALSE, &del->rgctx);
+	if (!del->rgctx) {
+		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+			del->rgctx = mini_method_get_rgctx (method);
+	}
 }
 
 MonoObject*

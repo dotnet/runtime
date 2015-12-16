@@ -1169,6 +1169,7 @@ typedef enum {
 	MONO_RGCTX_INFO_TYPE,
 	MONO_RGCTX_INFO_REFLECTION_TYPE,
 	MONO_RGCTX_INFO_METHOD,
+	/* In llvmonly mode, this is a function descriptor */
 	MONO_RGCTX_INFO_GENERIC_METHOD_CODE,
 	MONO_RGCTX_INFO_CLASS_FIELD,
 	MONO_RGCTX_INFO_METHOD_RGCTX,
@@ -1181,8 +1182,10 @@ typedef enum {
 	/* +1 to avoid zero values in rgctx slots */
 	MONO_RGCTX_INFO_FIELD_OFFSET,
 	/* Either the code for a gsharedvt method, or the address for a gsharedvt-out trampoline for the method */
+	/* In llvmonly mode, this is a function descriptor */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE,
 	/* Same for virtual calls */
+	/* In llvmonly mode, this is a function descriptor */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT,
 	/* Same for calli, associated with a signature */
 	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
@@ -1194,6 +1197,7 @@ typedef enum {
 	MONO_RGCTX_INFO_MEMCPY,
 	MONO_RGCTX_INFO_BZERO,
 	/* The address of Nullable<T>.Box () */
+	/* In llvmonly mode, this is a function descriptor */
 	MONO_RGCTX_INFO_NULLABLE_CLASS_BOX,
 	MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX,
 	/* MONO_PATCH_INFO_VCALL_METHOD */

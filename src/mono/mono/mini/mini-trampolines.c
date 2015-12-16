@@ -328,7 +328,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	addr = compiled_method;
 
 	if (add_unbox_tramp) {
-		/* 
+		/*
 		 * The unbox trampolines call the method directly, so need to add
 		 * an rgctx tramp before them.
 		 */
@@ -353,6 +353,8 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 
 		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
 
+		if (mono_llvm_only)
+			g_assert_not_reached ();
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
 
@@ -371,6 +373,129 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 
 	if (add_static_rgctx_tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
+
+	return addr;
+}
+
+/*
+ * mini_create_llvmonly_ftndesc:
+ *
+ *   Create a function descriptor of the form <addr, arg>, which
+ * represents a callee ADDR with ARG as the last argument.
+ * This is used for:
+ * - generic sharing (ARG is the rgctx)
+ * - gsharedvt signature wrappers (ARG is a function descriptor)
+ */
+gpointer
+mini_create_llvmonly_ftndesc (gpointer addr, gpointer arg)
+{
+	gpointer *res;
+
+	// FIXME: Memory management
+	res = g_malloc0 (2 * sizeof (gpointer));
+	res [0] = addr;
+	res [1] = arg;
+
+	return res;
+}
+
+/**
+ * mini_add_method_wrappers_llvmonly:
+ *
+ *   Add unbox/gsharedvt wrappers around COMPILED_METHOD if needed. Return the wrapper address or COMPILED_METHOD
+ * if no wrapper is needed. Set OUT_ARG to the rgctx/extra argument needed to be passed to the returned method.
+ */
+gpointer
+mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg)
+{
+	gpointer addr = compiled_method;
+	gboolean callee_gsharedvt, callee_array_helper;
+	MonoMethod *jmethod = NULL;
+	MonoJitInfo *ji;
+
+	// FIXME: This loads information from AOT (perf problem)
+	ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
+
+	callee_array_helper = FALSE;
+	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+		/*
+		 * generic array helpers.
+		 * Have to replace the wrappers with the original generic instances.
+		 */
+		if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+			callee_array_helper = TRUE;
+			m = info->d.generic_array_helper.method;
+		}
+	} else if (m->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+		/* Same for synchronized inner wrappers */
+		if (info && info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+			m = info->d.synchronized_inner.method;
+		}
+	}
+
+	if (callee_gsharedvt)
+		g_assert (m->is_inflated);
+
+	addr = compiled_method;
+
+	if (add_unbox_tramp) {
+		/* 
+		 * The unbox trampolines call the method directly, so need to add
+		 * an rgctx tramp before them.
+		 */
+		if (mono_aot_only) {
+			addr = mono_aot_get_unbox_trampoline (m);
+		} else {
+			unbox_trampolines ++;
+			addr = mono_arch_get_unbox_trampoline (m, addr);
+		}
+	}
+
+	g_assert (mono_llvm_only);
+	g_assert (out_arg);
+
+	if (ji && !ji->is_trampoline)
+		jmethod = jinfo_get_method (ji);
+	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod))) {
+		MonoMethodSignature *sig, *gsig;
+
+		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
+
+		/* Call from normal/gshared code to gsharedvt code with variable signature */
+		sig = mono_method_signature (m);
+		gsig = mono_method_signature (jmethod);
+
+		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
+
+		/*
+		 * This is a gsharedvt in wrapper, it gets passed a ftndesc for the gsharedvt method as an argument.
+		 */
+		*out_arg = mini_create_llvmonly_ftndesc (compiled_method, mini_method_get_rgctx (m));
+		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
+	}
+
+	if (!(*out_arg) && mono_method_needs_static_rgctx_invoke (m, FALSE))
+		*out_arg = mini_method_get_rgctx (m);
+
+	if (caller_gsharedvt) {
+		/*
+		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
+		 */
+		g_assert (*out_arg);
+
+		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (m), NULL, -1, FALSE);
+		gpointer *out_wrapper_arg = g_malloc0 (2 * sizeof (gpointer));
+		out_wrapper_arg [0] = addr;
+		out_wrapper_arg [1] = *out_arg;
+
+		addr = out_wrapper;
+		*out_arg = out_wrapper_arg;
+	}
 
 	return addr;
 }
