@@ -486,8 +486,6 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		/*
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
-		g_assert (*out_arg);
-
 		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (m), NULL, -1, FALSE);
 		gpointer *out_wrapper_arg = g_malloc0 (2 * sizeof (gpointer));
 		out_wrapper_arg [0] = addr;
