@@ -16,11 +16,11 @@
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'!='net46'">
     <Compile Include="System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -49,6 +49,17 @@
     <Compile Include="System\Numerics\Vector4.cs" />
     <Compile Include="System\Numerics\Vector4_Intrinsics.cs" />
     <Compile Include="System\Numerics\Vector_Operations.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Numerics" />
+    <Compile Include="System\Numerics\Vector.cs" />
+    <Compile Include="System\Numerics\Vector_Operations.cs" />
+    <Compile Include="System\Numerics\ConstantHelper.cs" />
+    <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
+    <Compile Include="System\Numerics\Register.cs" />
+    <Compile Include="System\Numerics\HashCodeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
