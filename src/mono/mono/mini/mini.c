@@ -3408,15 +3408,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;
-		// FIXME:
-		cfg->disable_llvm = TRUE;
-		cfg->exception_message = g_strdup ("gsharedvt");
-#if 0
 		if (!cfg->llvm_only) {
 			cfg->disable_llvm = TRUE;
 			cfg->exception_message = g_strdup ("gsharedvt");
 		}
-#endif
 	}
 
 	if (cfg->gshared) {

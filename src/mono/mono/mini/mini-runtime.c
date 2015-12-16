@@ -2383,6 +2383,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 #endif
 
+	// FIXME: Cache this
 	if (info->needs_rgctx) {
 		MonoMethodSignature *sig = mono_method_signature (method);
 		gpointer rgctx;
@@ -3034,6 +3035,9 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 	if (mono_aot_only)
 		mono_set_generic_sharing_vt_supported (TRUE);
+#else
+	if (mono_llvm_only)
+		mono_set_generic_sharing_vt_supported (TRUE);
 #endif
 
 #ifdef MONO_HAVE_FAST_TLS
@@ -3633,6 +3637,9 @@ mono_set_optimizations (guint32 opts)
 	default_opt_set = TRUE;
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 	mono_set_generic_sharing_vt_supported (mono_aot_only || ((default_opt & MONO_OPT_GSHAREDVT) != 0));
+#else
+	if (mono_llvm_only)
+		mono_set_generic_sharing_vt_supported (TRUE);
 #endif
 }
 

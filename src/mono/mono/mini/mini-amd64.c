@@ -8788,7 +8788,7 @@ mono_arch_opcode_supported (int opcode)
 	}
 }
 
-#if defined(ENABLE_GSHAREDVT)
+#if defined(ENABLE_GSHAREDVT) && defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 
 #include "../../../mono-extensions/mono/mini/mini-amd64-gsharedvt.c"
 
