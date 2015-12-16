@@ -167,6 +167,8 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     // Ensure the metadata is RW.
     EX_TRY
     {
+        // ConvertMetadataToRWForEnC should only ever be called on EnC capable files.
+        _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
         GetFile()->ConvertMetadataToRWForEnC();
     }
     EX_CATCH_HRESULT(hr);
