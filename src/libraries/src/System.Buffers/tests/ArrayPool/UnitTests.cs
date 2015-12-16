@@ -3,12 +3,16 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics.Tracing;
+using System.Threading;
 using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
 {
     public partial class ArrayPoolUnitTests
     {
+        private const int MaxEventWaitTimeoutInMs = 200;
+
         private struct TestStruct
         {
             internal string InternalRef;
@@ -210,6 +214,110 @@ namespace System.Buffers.ArrayPool.Tests
             byte[] rented2 = pool.Rent(16);
             Assert.NotNull(rented1);
             Assert.NotNull(rented2);
+        }
+
+        [Fact]
+        public static void RentingReturningThenRentingABufferShouldNotAllocate()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            byte[] bt = pool.Rent(16);
+            int id = bt.GetHashCode();
+            pool.Return(bt);
+            bt = pool.Rent(16);
+            Assert.Equal(id, bt.GetHashCode());
+        }
+
+        private static void ActionFiresSpecificEvent(Action body, int eventId, AutoResetEvent are)
+        {
+            using (TestEventListener listener = new TestEventListener("System.Buffers.BufferPoolEventSource", EventLevel.Verbose))
+            {
+                listener.RunWithCallback((EventWrittenEventArgs e) =>
+                {
+                    if (e.EventId == eventId)
+                        are.Set();
+                }, body);
+            }
+        }
+
+        [Fact]
+        public static void RentBufferFiresRentedDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() =>
+            {
+                byte[] bt = pool.Rent(16);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 1, are);
+        }
+
+        [Fact]
+        public static void ReturnBufferFiresDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() => 
+            {
+                byte[] bt = pool.Rent(16);
+                pool.Return(bt);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 3, are);
+        }
+
+        [Fact]
+        public static void FirstCallToRentBufferFiresCreatedDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() => 
+            {
+                byte[] bt = pool.Rent(16);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 2, are);
+        }
+
+        [Fact]
+        public static void AllocatingABufferDueToBucketExhaustionFiresDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() => 
+            {
+                byte[] bt = pool.Rent(16);
+                byte[] bt2 = pool.Rent(16);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 2, are);
+        }
+
+        [Fact]
+        public static void RentingBufferOverConfiguredMaximumSizeFiresDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() => 
+            {
+                byte[] bt = pool.Rent(64);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 2, are);
+        }
+        
+        [Fact]
+        public static void ExhaustingBufferBucketFiresDiagnosticEvent()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            ActionFiresSpecificEvent(() => 
+            {
+                byte[] bt = pool.Rent(16);
+                byte[] bt2 = pool.Rent(16);
+                Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
+            }, 4, are);
         }
     }
 }

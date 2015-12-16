@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "System.Diagnostics.Tracing": "4.0.10",
     "System.Runtime": "4.0.21-rc2-23616",
     "System.Runtime.Extensions": "4.0.11-rc2-23616",
     "System.Resources.ResourceManager": "4.0.1-rc2-23616",
