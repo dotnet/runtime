@@ -1789,7 +1789,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         // try to validate next object's header
         if (bDeep 
             && bVerifyNextHeader 
-            && CNameSpace::GetGcRuntimeStructuresValid ()
+            && GCScan::GetGcRuntimeStructuresValid ()
             //NextObj could be very slow if concurrent GC is going on
             && !(GCHeap::IsGCHeapInitialized() && GCHeap::GetGCHeap ()->IsConcurrentGCInProgress ()))
         {
