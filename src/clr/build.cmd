@@ -35,6 +35,7 @@ if /i "%1" == "arm64"    (set __BuildArch=arm64&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
+if /i "%1" == "checked"    (set __BuildType=Checked&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
@@ -292,7 +293,7 @@ echo Usage:
 echo %0 BuildArch BuildType [clean] [vsversion] where:
 echo.
 echo BuildArch can be: x64, x86, arm64
-echo BuildType can be: Debug, Release
+echo BuildType can be: Debug, Release, Checked
 echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015 (default VS2015)
 echo windowsmscorlib - Build mscorlib for Windows

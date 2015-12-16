@@ -198,10 +198,18 @@ endfunction()
 
 # Includes
 
+if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
+endif (CMAKE_CONFIGURATION_TYPES)
+set(CMAKE_C_FLAGS_CHECKED "")
+set(CMAKE_CXX_FLAGS_CHECKED "")
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
+
 if (WIN32)
   # For multi-configuration toolset (as Visual Studio)
   # set the different configuration defines.
-  foreach (Config DEBUG RELEASE RELWITHDEBINFO)
+  foreach (Config DEBUG CHECKED RELEASE RELWITHDEBINFO)
     foreach (Definition IN LISTS CLR_DEFINES_${Config}_INIT)
       set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:${Definition}>)
     endforeach (Definition)
@@ -209,7 +217,7 @@ if (WIN32)
 
 elseif (CLR_CMAKE_PLATFORM_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;RELEASE;RELWITHDEBINFO")
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
 
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
@@ -219,6 +227,9 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
   if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     # First DEBUG
     set_property(DIRECTORY  PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_DEBUG_INIT})
+  elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+    # Then CHECKED
+    set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_CHECKED_INIT})
   elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     # Then RELEASE
     set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_RELEASE_INIT})
@@ -226,7 +237,7 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
     # And then RELWITHDEBINFO
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_RELWITHDEBINFO_INIT})
   else ()
-    message(FATAL_ERROR "Unknown build type! Set CMAKE_BUILD_TYPE to DEBUG, RELEASE, or RELWITHDEBINFO!")
+    message(FATAL_ERROR "Unknown build type! Set CMAKE_BUILD_TYPE to DEBUG, CHECKED, RELEASE, or RELWITHDEBINFO!")
   endif ()
 
 endif(WIN32)
@@ -275,7 +286,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
   # set the CLANG sanitizer flags for debug build
-  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # obtain settings from running enablesanitizers.sh
     string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
     string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
@@ -297,13 +308,16 @@ if (CLR_CMAKE_PLATFORM_UNIX)
       # -fPIC: enable Position Independent Code normally just for shared libraries but required when linking with address sanitizer
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC -O1")
+      set(CMAKE_CXX_FLAGS_CHECKED "${CMAKE_CXX_FLAGS_CHECKED} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC -O1")
 
       set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+      set(CMAKE_EXE_LINKER_FLAGS_CHECKED "${CMAKE_EXE_LINKER_FLAGS_CHECKED} ${CLR_SANITIZE_LINK_FLAGS}")
 
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
       set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+      set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
-  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
 
   add_subdirectory(src/ToolBox/SOS/lldbplugin)
   add_subdirectory(src/pal)
@@ -377,7 +391,7 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386)
 endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 
 add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
-add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/O1>)
+add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 
 if (IS_64BIT_BUILD EQUAL 1)
 # The generator expression in the following command means that the /homeparams option is added only for debug builds
@@ -409,6 +423,11 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
 # Debug build specific flags
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE")
+
+# Checked build specific flags
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF /NOVCFEATURE")
+set(CMAKE_STATIC_LINKER_FLAGS_CHECKED "${CMAKE_STATIC_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF")
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "${CMAKE_EXE_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF")
 
 # Release build specific flags
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF")
@@ -504,8 +523,8 @@ endif (CLR_CMAKE_PLATFORM_UNIX)
 # Libraries
 
 if (WIN32)
-    set(STATIC_MT_CRT_LIB  "libcmt$<$<CONFIG:Debug>:d>.lib")
-    set(STATIC_MT_CPP_LIB  "libcpmt$<$<CONFIG:Debug>:d>.lib")
+    set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
+    set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
 endif(WIN32)
 # Definition directives
 
