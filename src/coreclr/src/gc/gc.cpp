@@ -2988,7 +2988,6 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
                 dprintf (GTC_LOG, ("h%d: Total gen2 size: %Id, est gen2 dead space: %Id (s: %d, allocated: %Id), frag: %Id",
                             heap_number,
                             maxgen_total_size,
-                            (int)(100*dd_surv (dd)),
                             est_maxgen_free, 
                             (int)(dd_surv (dd) * 100),
                             maxgen_allocated,
