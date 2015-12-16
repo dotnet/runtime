@@ -251,6 +251,31 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 	return result;
 }
 
+char*
+mono_signature_full_name (MonoMethodSignature *sig)
+{
+	int i;
+	char *result;
+	GString *res;
+
+	if (!sig)
+		return g_strdup ("<invalid signature>");
+
+	res = g_string_new ("");
+
+	mono_type_get_desc (res, sig->ret, TRUE);
+	g_string_append_c (res, '(');
+	for (i = 0; i < sig->param_count; ++i) {
+		if (i > 0)
+			g_string_append_c (res, ',');
+		mono_type_get_desc (res, sig->params [i], TRUE);
+	}
+	g_string_append_c (res, ')');
+	result = res->str;
+	g_string_free (res, FALSE);
+	return result;
+}
+
 static void
 ginst_get_desc (GString *str, MonoGenericInst *ginst)
 {

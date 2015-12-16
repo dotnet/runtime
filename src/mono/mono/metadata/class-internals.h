@@ -1346,6 +1346,8 @@ MONO_API void mono_class_describe_statics (MonoClass* klass);
 /* method debugging functions, for use inside gdb */
 MONO_API void mono_method_print_code (MonoMethod *method);
 
+char *mono_signature_full_name (MonoMethodSignature *sig);
+
 /*Enum validation related functions*/
 MONO_API gboolean
 mono_type_is_valid_enum_basetype (MonoType * type);
