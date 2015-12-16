@@ -7,6 +7,7 @@ def project = 'dotnet/coreclr'
 // Map of OS's to labels.  TODO: Maybe move this into the Utils
 
 def machineLabelMap = ['Ubuntu':'ubuntu',
+                       'Debian8.2':'debian-82',
                        'OSX':'mac',
                        'Windows_NT':'windows',
                        'FreeBSD': 'freebsd',
@@ -15,6 +16,7 @@ def machineLabelMap = ['Ubuntu':'ubuntu',
                        
 // Map of the build OS to the directory that will have the outputs
 def osGroupMap = ['Ubuntu':'Linux',
+                    'Debian8.2':'Linux',
                     'OSX':'OSX',
                     'Windows_NT':'Windows_NT',
                     'FreeBSD':'FreeBSD',
@@ -22,7 +24,7 @@ def osGroupMap = ['Ubuntu':'Linux',
                     'OpenSUSE13.2': 'Linux']
       
 // Innerloop build OS's
-def osList = ['Ubuntu', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+def osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
 
 def static getBuildJobName(def configuration, def architecture, def os) {
     // If the architecture is x64, do not add that info into the build name.
@@ -140,6 +142,8 @@ def static getBuildJobName(def configuration, def architecture, def os) {
             def triggerByPhraseOnly = true;
             if (os == 'OpenSUSE13.2' && architecture == 'x64') {
                 triggerPhraseString = '(?i).*test\\W+suse.*'
+            } else if (os == 'Debian8.2' && architecture == 'x64') {
+                triggerPhraseString = '(?i).*test\\W+debian.*'
             } else if (architecture == 'x86' && osGroup == 'Linux') {
                 triggerPhraseString = '(?i).*test\\W+x86\\W+linux.*'
             } else if (architecture == 'x86' && osGroup == 'OSX') {
