@@ -1314,7 +1314,7 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 
     *dst = ref;
 
-#ifdef _DEBUG
+#ifdef WRITE_BARRIER_CHECK
     updateGCShadow((Object **)dst, (Object *)ref);     // support debugging write barrier, updateGCShadow only cares that these are pointers
 #endif
     
