@@ -66,7 +66,7 @@
   </PropertyGroup>
   
   <!-- Configuration specific properties -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <DefineConstants>DBG;_DEBUG;_LOGGING;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
@@ -125,6 +125,7 @@
     
     <!-- These are needed by BCLRewriter -->
     <_BuildType Condition="'$(Configuration)' == 'Debug'">chk</_BuildType>
+    <_BuildType Condition="'$(Configuration)' == 'Checked'">chk</_BuildType>
     <_BuildType Condition="'$(Configuration)' == 'Release'">ret</_BuildType>
 
     <!-- These are needed to make sure we have the right set of defines -->
