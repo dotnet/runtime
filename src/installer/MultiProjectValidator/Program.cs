@@ -114,6 +114,9 @@ This tool recursively searches for project.json's from the given root path.
 It then applies a set of analysis rules, determines whether they pass/fail
 and then sets exit code to reflect.
 
+Note:
+Ensure all analyzed project.json have been restored prior to running this tool.
+
 Usage:
 pjvalidate [root path of recursive search]";
 
