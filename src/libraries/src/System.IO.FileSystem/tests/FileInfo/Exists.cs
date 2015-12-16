@@ -79,5 +79,36 @@ namespace System.IO.Tests
             FileInfo di = new FileInfo(fileName);
             Assert.False(di.Exists);
         }
+
+        // In some cases (such as when running without elevated privileges,
+        // the symbolic link may fail to create. Only run this test if it creates
+        // links successfully.
+        [ConditionalFact("CanCreateSymbolicLinks")]
+        public void SymLinksExistIndependentlyOfTarget()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+            File.Delete(path);
+
+            var info = new FileInfo(path);
+            var linkInfo = new FileInfo(linkPath);
+            Assert.True(linkInfo.Exists);
+            Assert.False(info.Exists);
+        }
+
+        private static bool CanCreateSymbolicLinks
+        {
+            get
+            {
+                var path = Path.GetTempFileName();
+                var linkPath = path + ".link";
+                var ret = MountHelper.CreateSymbolicLink(linkPath, path);
+                try { File.Delete(path); } catch { }
+                try { File.Delete(linkPath); } catch { }
+                return ret;
+            }
+        }
     }
 }

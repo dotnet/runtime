@@ -28,6 +28,32 @@ public static class MountHelper
     [DllImport("api-ms-win-core-file-l1-1-0.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
     private static extern bool DeleteVolumeMountPoint(String mountPoint);
 
+    /// <summary>Creates a symbolic link using command line tools</summary>
+    /// <param name="linkPath">The existing file</param>
+    /// <param name="targetPath"></param>
+    public static bool CreateSymbolicLink(string linkPath, string targetPath)
+    {
+        Process symLinkProcess = null;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            symLinkProcess = Process.Start("cmd", string.Format("/c mklink \"{0}\" \"{1}\"", linkPath, targetPath));
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            symLinkProcess = Process.Start("ln", string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath));
+        }
+
+        if (symLinkProcess != null)
+        {
+            symLinkProcess.WaitForExit();
+            return (0 == symLinkProcess.ExitCode);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     public static void Mount(String volumeName, String mountPoint)
     {
 
