@@ -34,5 +34,20 @@ namespace System.Buffers
                 return result;
             }
         }
+
+        internal static int GetPoolId<T>(ArrayPool<T> pool)
+        {
+            return pool.GetHashCode();
+        }
+
+        internal static int GetBufferId<T>(T[] buffer)
+        {
+            return buffer.GetHashCode();
+        }
+
+        internal static int GetBucketId<T>(DefaultArrayPoolBucket<T> bucket)
+        {
+            return bucket.GetHashCode();
+        }
     }
 }

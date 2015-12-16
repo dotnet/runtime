@@ -117,4 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="event_BufferRented" xml:space="preserve">
+    <value>Rented Buffer {0} of size {1} from Pool {2} and Bucket {3}</value>
+  </data>
+  <data name="event_BufferAllocated" xml:space="preserve">
+    <value>Buffer {0} of size {1} created in Pool {2} and Bucket {3} with allocation reason {4}</value>
+  </data>
+  <data name="event_BufferReturned" xml:space="preserve">
+    <value>Returned Buffer {0} to Pool {1}</value>
+  </data>
+  <data name="event_BucketExhausted" xml:space="preserve">
+    <value>Bucket {0}, with {2} maximum buffers, exhausted of all Buffers of size {1} in Pool {3}</value>
+  </data>
 </root>

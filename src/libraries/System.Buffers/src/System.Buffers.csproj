@@ -5,14 +5,16 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
     <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Buffers\ArrayPool.cs" />
-    <Compile Include="System\Buffers\ArrayPoolBucket.cs" />
+    <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
     <Compile Include="System\Buffers\DefaultArrayPool.cs" />
+    <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
     <Compile Include="System\Buffers\Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
