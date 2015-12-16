@@ -38,7 +38,6 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 #include "stringliteralmap.h"
-#include "eventtrace.h"
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
@@ -1420,7 +1419,10 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED 
-    BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable() && !GetAssembly()->IsDomainNeutral();
+    BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable();
+
+    // IsEditAndContinueCapable should already check !GetAssembly()->IsDomainNeutral
+    _ASSERTE(!setEnC || !GetAssembly()->IsDomainNeutral());
 
     // The only way can change Enc is through debugger override.
     if (setEnC)
@@ -1484,8 +1486,11 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, Allo
     if (pModule == NULL)
     {
 #ifdef EnC_SUPPORTED
-        if (IsEditAndContinueCapable(file) && !pAssembly->IsDomainNeutral())
+        if (IsEditAndContinueCapable(pAssembly, file))
         {
+            // IsEditAndContinueCapable should already check !pAssembly->IsDomainNeutral
+            _ASSERTE(!pAssembly->IsDomainNeutral());
+            
             // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
             // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
 
@@ -2178,7 +2183,29 @@ PTR_Module Module::GetPreferredZapModuleForFieldDesc(FieldDesc * pFD)
 }
 #endif // FEATURE_PREJIT
 
+/*static*/
+BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
+{
+    CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            SO_TOLERANT;
+            MODE_ANY;
+            SUPPORTS_DAC;
+        }
+    CONTRACTL_END;
 
+    _ASSERTE(pAssembly != NULL && file != NULL);
+    
+    // Some modules are never EnC-capable
+    return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
+              pAssembly->IsDomainNeutral() ||
+              file->IsSystem() ||
+              file->IsResource() ||
+              file->HasNativeImage() ||
+              file->IsDynamic());
+}
 
 BOOL Module::IsManifest()
 {
