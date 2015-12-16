@@ -554,6 +554,7 @@ enum gc_type
     gc_type_max = 3
 };
 
+#define v_high_memory_load_th 97
 
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
@@ -1384,11 +1385,11 @@ protected:
     int joined_generation_to_condemn (BOOL should_evaluate_elevation, int n_initial, BOOL* blocking_collection
                                         STRESS_HEAP_ARG(int n_original));
 
-    PER_HEAP_ISOLATED
-    size_t min_reclaim_fragmentation_threshold(uint64_t total_mem, uint32_t num_heaps);
+    PER_HEAP
+    size_t min_reclaim_fragmentation_threshold (uint32_t num_heaps);
 
     PER_HEAP_ISOLATED
-    uint64_t min_high_fragmentation_threshold(uint64_t available_mem, uint32_t num_heaps);
+    uint64_t min_high_fragmentation_threshold (uint64_t available_mem, uint32_t num_heaps);
 
     PER_HEAP
     void concurrent_print_time_delta (const char* msg);
@@ -2460,6 +2461,8 @@ protected:
     PER_HEAP
     void compute_new_ephemeral_size();
     PER_HEAP
+    BOOL expand_reused_seg_p();
+    PER_HEAP
     BOOL can_expand_into_p (heap_segment* seg, size_t min_free_size,
                             size_t min_cont_size, allocator* al);
     PER_HEAP
@@ -2982,16 +2985,19 @@ public:
 #ifdef BIT64
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
+#endif //BIT64
 
     PER_HEAP_ISOLATED
-    size_t mem_one_percent;
+    uint32_t high_memory_load_th;
+
+    PER_HEAP_ISOLATED
+    uint64_t mem_one_percent;
 
     PER_HEAP_ISOLATED
     uint64_t total_physical_mem;
 
     PER_HEAP_ISOLATED
     uint64_t available_physical_mem;
-#endif // BIT64
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
@@ -3491,7 +3497,7 @@ protected:
     BOOL dt_high_frag_p (gc_tuning_point tp, int gen_number, BOOL elevate_p=FALSE);
     PER_HEAP
     BOOL 
-    dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number, uint64_t total_mem);
+    dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number);
     PER_HEAP
     BOOL dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem);
     PER_HEAP
