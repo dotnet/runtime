@@ -18,22 +18,22 @@ namespace MultiProjectValidator
             return new ProjectAnalyzer(rules, projectContexts);
         }
 
-        private List<ProjectContext> projectContexts;
-        private List<IAnalysisRule> rules;
+        private List<ProjectContext> _projectContexts;
+        private List<IAnalysisRule> _rules;
         
         private ProjectAnalyzer(List<IAnalysisRule> rules, List<ProjectContext> projectContexts)
         {
-            this.rules = rules;
-            this.projectContexts = projectContexts;
+            _rules = rules;
+            _projectContexts = projectContexts;
         }
 
         public List<AnalysisResult> DoAnalysis()
         {
             var results = new List<AnalysisResult>();
 
-            foreach(var rule in rules)
+            foreach(var rule in _rules)
             {
-                results.Add(rule.Evaluate(projectContexts));
+                results.Add(rule.Evaluate(_projectContexts));
             }
 
             return results;
