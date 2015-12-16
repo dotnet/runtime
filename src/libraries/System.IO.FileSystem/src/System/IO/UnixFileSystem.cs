@@ -43,6 +43,7 @@ namespace System.IO
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
+            // Use Stat (not LStat) since permissions for symbolic links are meaninless and defer to permissions on the target
             Interop.Sys.FileStatus status;
             Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath);
             int newMode = status.Mode & (int)Interop.Sys.Permissions.Mask;

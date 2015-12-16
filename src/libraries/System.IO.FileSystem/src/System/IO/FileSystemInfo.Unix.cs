@@ -228,7 +228,9 @@ namespace System.IO
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.
-            int result = Interop.Sys.Stat(FullPath, out _fileStatus);
+            // Use LStat (rather than Stat) so that information about a symbolic link will be retrieved
+            // (rather than information about the target) if FullPath points to a symbolic link.
+            int result = Interop.Sys.LStat(FullPath, out _fileStatus);
             if (result >= 0)
             {
                 _fileStatusInitialized = 0;

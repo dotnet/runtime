@@ -101,5 +101,52 @@ namespace System.IO.Tests
             Set(path, attr);
             Assert.Equal(FileAttributes.Normal, Get(path));
         }
+
+        // In some cases (such as when running without elevated privileges,
+        // the symbolic link may fail to create. Only run this test if it creates
+        // links successfully.
+        [ConditionalFact("CanCreateSymbolicLinks")]
+        public void SymLinksAreReparsePoints()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+            Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(linkPath));
+        }
+
+        // In some cases (such as when running without elevated privileges,
+        // the symbolic link may fail to create. Only run this test if it creates
+        // links successfully.
+        [ConditionalFact("CanCreateSymbolicLinks")]
+        public void SymLinksDoNotReflectTargetAttributes()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+
+            Set(path, FileAttributes.ReadOnly);
+
+            Assert.Equal(FileAttributes.ReadOnly, Get(path));
+
+            // Can't assume that ReparsePoint is the only attribute because Windows will add Archive automatically
+            // Instead, just make sure that ReparsePoint is present and ReadOnly is not
+            Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(linkPath));
+            Assert.Equal((FileAttributes)0, FileAttributes.ReadOnly & Get(linkPath));
+        }
+
+        private static bool CanCreateSymbolicLinks
+        {
+            get
+            {
+                var path = Path.GetTempFileName();
+                var linkPath = path + ".link";
+                var ret = MountHelper.CreateSymbolicLink(linkPath, path);
+                try { File.Delete(path); } catch { }
+                try { File.Delete(linkPath); } catch { }
+                return ret;
+            }
+        }
     }
 }

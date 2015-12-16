@@ -164,6 +164,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Directory.cs" />
     <Compile Include="Performance\Perf.File.cs" />
