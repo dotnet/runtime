@@ -287,6 +287,23 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet()
+        {
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            Uri targetUri = HttpTestServers.BasicAuthUriForCreds(false, Username, Password);
+            using (var client = new HttpClient(handler))
+            {
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, targetUri, 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    Assert.Equal(targetUri, response.RequestMessage.RequestUri);
+                }
+            }
+        }
+
         [Theory]
         [InlineData(6)]
         public async Task GetAsync_MaxAutomaticRedirectionsNServerHopsNPlus1_Throw(int hops)
