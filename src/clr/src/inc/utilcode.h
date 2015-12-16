@@ -4102,6 +4102,8 @@ public:
 // Class to parse a list of method names and then find a match
 //*****************************************************************************
 
+struct CORINFO_SIG_INFO;
+
 class MethodNamesListBase
 {
     struct MethodName
@@ -4113,6 +4115,8 @@ class MethodNamesListBase
     };
 
     MethodName     *pNames;         // List of names
+
+    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, int numArgs);
 
 public:
     void Init()
@@ -4132,7 +4136,8 @@ public:
 
     void Insert(__in __in_z LPWSTR list);
 
-    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig);
+    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
     bool IsEmpty()
     {
         LIMITED_METHOD_CONTRACT;
@@ -4247,7 +4252,8 @@ public:
         return m_list.IsEmpty();
     }
 
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig);
+    bool contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
 
     inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
     {
