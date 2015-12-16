@@ -404,10 +404,7 @@ namespace System.Collections {
             Contract.Ensures(Contract.Result<Object>() != null);
             Contract.Ensures(((BitArray)Contract.Result<Object>()).Length == this.Length);
 
-            BitArray bitArray = new BitArray(m_array);
-            bitArray._version = _version;
-            bitArray.m_length = m_length;
-            return bitArray;
+            return new BitArray(this);
         }
         
         public Object SyncRoot
