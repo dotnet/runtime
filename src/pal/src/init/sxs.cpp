@@ -15,6 +15,7 @@
 #include "pal/thread.hpp"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
+#include "pal/process.h"
 #include "pal/seh.hpp"
 
 using namespace CorUnix;
@@ -95,7 +96,7 @@ CreateCurrentThreadData()
         if (NO_ERROR != palError)
         {
             ASSERT("Unable to allocate pal thread: error %d - aborting\n", palError);
-            abort();
+            PROCAbort();
         }
     }
 

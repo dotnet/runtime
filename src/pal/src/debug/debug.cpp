@@ -672,7 +672,7 @@ DBGAttachProcess(
     int attchmentCount;
     int savedErrno;
 #if HAVE_PROCFS_CTL
-    int fd;
+    int fd = -1;
     char ctlPath[1024];
 #endif  // HAVE_PROCFS_CTL
 
@@ -822,7 +822,7 @@ DBGDetachProcess(
 {     
     int nbAttachLeft;
 #if HAVE_PROCFS_CTL
-    int fd;
+    int fd = -1;
     char ctlPath[1024];
 #endif  // HAVE_PROCFS_CTL
 
@@ -1253,7 +1253,7 @@ ReadProcessMemory(
     vm_map_t task;
     LONG_PTR bytesToRead;
 #elif HAVE_PROCFS_CTL
-    int fd;
+    int fd = -1;
     char memPath[64];
     off_t offset;
 #elif !HAVE_TTRACE
@@ -1549,7 +1549,7 @@ WriteProcessMemory(
     kern_return_t result;
     vm_map_t task;
 #elif HAVE_PROCFS_CTL
-    int fd;
+    int fd = -1;
     char memPath[64];
     LONG_PTR bytesWritten;
     off_t offset;

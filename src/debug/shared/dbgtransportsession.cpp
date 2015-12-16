@@ -36,7 +36,35 @@ DbgTransportSession *g_pDbgTransport = NULL;
 // No real work done in the constructor. Use Init() instead.
 DbgTransportSession::DbgTransportSession()
 {
+    m_ref = 1;
     m_eState = SS_Closed;
+}
+
+DbgTransportSession::~DbgTransportSession()
+{
+    DbgTransportLog(LC_Proxy, "DbgTransportSession::~DbgTransportSession() called");
+
+    // No other threads are now using session resources. We're free to deallocate them as we wish (if they
+    // were allocated in the first place).
+    if (m_hTransportThread)
+        CloseHandle(m_hTransportThread);
+    if (m_rghEventReadyEvent[IPCET_OldStyle])
+        CloseHandle(m_rghEventReadyEvent[IPCET_OldStyle]);
+    if (m_rghEventReadyEvent[IPCET_DebugEvent])
+        CloseHandle(m_rghEventReadyEvent[IPCET_DebugEvent]);
+    if (m_pEventBuffers)
+        delete [] m_pEventBuffers;
+
+#ifdef RIGHT_SIDE_COMPILE
+    if (m_hSessionOpenEvent)
+        CloseHandle(m_hSessionOpenEvent);
+
+    if (m_hProcessExited)
+        CloseHandle(m_hProcessExited);
+#endif // RIGHT_SIDE_COMPILE
+
+    if (m_fInitStateLock)
+        m_sStateLock.Destroy();
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -59,6 +87,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
 
     // Because of the above memset the embeded classes/structs need to be reinitialized especially
     // the two way pipe; it expects the in/out handles to be -1 instead of 0.
+    m_ref = 1;
     m_pipe = TwoWayPipe();
     m_sStateLock = DbgTransportLock();
 
@@ -124,9 +153,13 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
 
     // Start the transport thread which handles forming and re-forming connections, driving the session
     // state to SS_Open and receiving and initially processing all incoming traffic.
+    AddRef();
     m_hTransportThread = CreateThread(NULL, 0, TransportWorkerStatic, this, 0, NULL);
     if (m_hTransportThread == NULL)
+    {
+        Release();
         return E_OUTOFMEMORY;
+    }
 
     return S_OK;
 }
@@ -178,30 +211,16 @@ void DbgTransportSession::Shutdown()
 #endif // RIGHT_SIDE_COMPILE
     }
 
-    // No other threads are now using session resources. We're free to deallocate them as we wish (if they
-    // were allocated in the first place).
-    if (m_hTransportThread)
-        CloseHandle(m_hTransportThread);
-    if (m_rghEventReadyEvent[IPCET_OldStyle])
-        CloseHandle(m_rghEventReadyEvent[IPCET_OldStyle]);
-    if (m_rghEventReadyEvent[IPCET_DebugEvent])
-        CloseHandle(m_rghEventReadyEvent[IPCET_DebugEvent]);
-    if (m_pEventBuffers)
-        delete [] m_pEventBuffers;
+    // The transport instance is no longer valid
+    Release();
+}
 
-#ifdef RIGHT_SIDE_COMPILE
-    if (m_hSessionOpenEvent)
-        CloseHandle(m_hSessionOpenEvent);
-
-    if (m_hProcessExited)
-    {
-        CloseHandle(m_hProcessExited);
-    }
-#endif // RIGHT_SIDE_COMPILE
-
-    if (m_fInitStateLock)
-        m_sStateLock.Destroy();
-
+// Cleans up the named pipe connection so no tmp files are left behind. Does only
+// the minimum and must be safe to call at any time. Called during PAL ExitProcess,
+// TerminateProcess and for unhandled native exceptions and asserts.
+void DbgTransportSession::AbortConnection()
+{
+    m_pipe.Disconnect();
 }
 
 #ifndef RIGHT_SIDE_COMPILE
@@ -2125,6 +2144,10 @@ void DbgTransportSession::TransportWorker()
             }
         }
     } // Leave m_sStateLock
+
+    // Now release all the resources allocated for the transport now that the
+    // worker thread isn't using them anymore.
+    Release();
 }
 
 // Given a fully initialized debugger event structure, return the size of the structure in bytes (this is not
