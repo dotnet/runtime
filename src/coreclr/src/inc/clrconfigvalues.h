@@ -439,6 +439,7 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JITMinOptsInstrCount, W("JITMinOptsInst
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JITMinOptsLvNumcount, W("JITMinOptsLvNumcount"), "Internal jit control of MinOpts")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JITMinOptsLvRefcount, W("JITMinOptsLvRefcount"), "Internal jit control of MinOpts")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JITBreakOnMinOpts, W("JITBreakOnMinOpts"), "Halt if jit switches to MinOpts")
+CONFIG_STRING_INFO_EX(INTERNAL_JITMinOptsName, W("JITMinOptsName"), "Forces MinOpts for a named function", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary Jit to use")
 #if defined(ALLOW_SXS_JIT)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_AltJitName, W("AltJitName"), "Alternative Jit to use, will fall back to primary jit.", CLRConfig::REGUTIL_default)

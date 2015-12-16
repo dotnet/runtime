@@ -3239,6 +3239,15 @@ void                 Compiler::compSetOptimizationLevel()
             break;
         }
     }
+    
+    if (!theMinOptsValue)
+    {
+        static ConfigMethodSet jitMinOptsName;
+        jitMinOptsName.ensureInit(CLRConfig::INTERNAL_JITMinOptsName);
+
+        if (jitMinOptsName.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
+            theMinOptsValue = true;
+    }
 
     if (compStressCompile(STRESS_MIN_OPTS, 5))
     {
