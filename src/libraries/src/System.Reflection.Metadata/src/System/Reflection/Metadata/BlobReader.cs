@@ -268,6 +268,12 @@ namespace System.Reflection.Metadata
             return *(double*)GetCurrentPointerAndAdvance(sizeof(double));
         }
 
+        public Guid ReadGuid()
+        {
+            const int size = 16;
+            return *(Guid*)GetCurrentPointerAndAdvance(size);
+        }
+
         /// <summary>
         /// Reads <see cref="decimal"/> number.
         /// </summary>
