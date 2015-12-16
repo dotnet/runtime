@@ -141,9 +141,9 @@ typedef enum
 /* Static global. The init function must be called
 before any other functions and if it is not successful, 
 no other functions should be done. */
-static HANDLE pStdIn;
-static HANDLE pStdOut;
-static HANDLE pStdErr;
+static HANDLE pStdIn = INVALID_HANDLE_VALUE;
+static HANDLE pStdOut = INVALID_HANDLE_VALUE;
+static HANDLE pStdErr = INVALID_HANDLE_VALUE;
 
 /*++
 Function : 
@@ -4942,12 +4942,25 @@ void FILECleanupStdHandles(void)
     stdin_handle = pStdIn;
     stdout_handle = pStdOut;
     stderr_handle = pStdErr;
+
     pStdIn = INVALID_HANDLE_VALUE;
     pStdOut = INVALID_HANDLE_VALUE;
     pStdErr = INVALID_HANDLE_VALUE;
-    CloseHandle(stdin_handle);
-    CloseHandle(stdout_handle);
-    CloseHandle(stderr_handle);
+
+    if (stdin_handle != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(stdin_handle);
+    }
+
+    if (stdout_handle != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(stdout_handle);
+    }
+
+    if (stderr_handle != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(stderr_handle);
+    }
 }
 
 

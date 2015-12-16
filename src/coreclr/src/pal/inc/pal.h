@@ -481,9 +481,10 @@ typedef long time_t;
 #define PAL_INITIALIZE_NONE            0x00
 #define PAL_INITIALIZE_SYNC_THREAD     0x01
 #define PAL_INITIALIZE_EXEC_ALLOCATOR  0x02
+#define PAL_INITIALIZE_STD_HANDLES     0x04
 
 // PAL_Initialize() flags
-#define PAL_INITIALIZE                 PAL_INITIALIZE_SYNC_THREAD
+#define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | PAL_INITIALIZE_STD_HANDLES)
 
 // PAL_InitializeDLL() flags - don't start any of the helper threads
 #define PAL_INITIALIZE_DLL             PAL_INITIALIZE_NONE       
@@ -569,16 +570,6 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
-/*++
-Function:
-  PAL_SetShutdownCallback
-
-Abstract:
-  Sets a callback that is executed when the PAL is shut down because of
-  ExitProcess, TerminateProcess or PAL_Shutdown but not PAL_Terminate/Ex.
-
-  NOTE: Currently only one callback can be set at a time.
---*/
 typedef VOID (*PSHUTDOWN_CALLBACK)(void);
 
 PALIMPORT
@@ -586,6 +577,31 @@ VOID
 PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
+
+typedef VOID (*PPAL_STARTUP_CALLBACK)(
+    char *modulePath,
+    HMODULE hModule,
+    PVOID parameter);
+
+PALIMPORT
+DWORD
+PALAPI
+PAL_RegisterForRuntimeStartup(
+    IN DWORD dwProcessId,
+    IN PPAL_STARTUP_CALLBACK pfnCallback,
+    IN PVOID parameter,
+    OUT PVOID *ppUnregisterToken);
+
+PALIMPORT
+DWORD
+PALAPI
+PAL_UnregisterForRuntimeStartup(
+    IN PVOID pUnregisterToken);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_NotifyRuntimeStarted();
 
 PALIMPORT
 void
@@ -632,15 +648,6 @@ PAL_Random(
     IN BOOL bStrong,
     IN OUT LPVOID lpBuffer,
     IN DWORD dwLength);
-
-// This helper will be used *only* by the CoreCLR to determine
-// if an address lies inside CoreCLR or not.
-//
-// This shouldnt be used by any other component that links into the PAL.
-PALIMPORT 
-BOOL
-PALAPI
-PAL_IsIPInCoreCLR(IN PVOID address);
 
 #ifdef PLATFORM_UNIX
 
