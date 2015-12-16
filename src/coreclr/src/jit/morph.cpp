@@ -2029,7 +2029,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         case 2: type = TYP_SHORT; break;
 #if defined (_TARGET_AMD64_)
         case 4: type = TYP_INT;   break;
-#else defined(_TARGET_ARM64_)
+#elif defined(_TARGET_ARM64_)
         case 3:
         case 4: type = TYP_INT;   break;
         case 5: 
