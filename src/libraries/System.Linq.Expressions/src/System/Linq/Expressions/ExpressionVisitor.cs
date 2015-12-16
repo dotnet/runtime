@@ -230,7 +230,8 @@ namespace System.Linq.Expressions
             {
                 return node;
             }
-            else
+
+            if (nodes != null)
             {
                 for (int i = 0; i < count; i++)
                 {
