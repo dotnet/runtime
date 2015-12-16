@@ -4,6 +4,8 @@
 ; 
 ; ==--==
 EXPORTS
+        RegisterForRuntimeStartup
+        UnregisterForRuntimeStartup
 	GetStartupNotificationEvent
 	EnumerateCLRs
 	CloseCLREnumeration
