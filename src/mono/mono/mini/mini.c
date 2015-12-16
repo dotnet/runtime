@@ -2299,7 +2299,10 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 
-	mono_arch_create_vars (cfg);
+	if (COMPILE_LLVM (cfg))
+		mono_llvm_create_vars (cfg);
+	else
+		mono_arch_create_vars (cfg);
 
 	if (cfg->method->save_lmf && cfg->create_lmf_var) {
 		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
@@ -3408,6 +3411,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		// FIXME:
 		cfg->disable_llvm = TRUE;
 		cfg->exception_message = g_strdup ("gsharedvt");
+#if 0
+		if (!cfg->llvm_only) {
+			cfg->disable_llvm = TRUE;
+			cfg->exception_message = g_strdup ("gsharedvt");
+		}
+#endif
 	}
 
 	if (cfg->gshared) {
@@ -3828,6 +3837,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		return cfg;
 	}
 
+	if (cfg->llvm_only && cfg->gsharedvt)
+		mono_ssa_remove_gsharedvt (cfg);
+
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	if (COMPILE_SOFT_FLOAT (cfg))
 		mono_decompose_soft_float (cfg);
@@ -3906,6 +3918,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	{
 		MonoBasicBlock *bb;
 		gboolean need_local_opts;
+
+		if (cfg->gsharedvt)
+			mono_allocate_gsharedvt_vars (cfg);
 
 		if (!COMPILE_LLVM (cfg)) {
 			mono_spill_global_vars (cfg, &need_local_opts);

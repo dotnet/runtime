@@ -1243,7 +1243,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					break;
 				}
 				case OP_VZERO:
-					if (COMPILE_LLVM (cfg))
+					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))
 						break;
 
 					g_assert (ins->klass);
@@ -1320,9 +1320,6 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_OUTARG_VTRETADDR: {
 					MonoCallInst *call = (MonoCallInst*)ins->inst_p1;
-
-					if (COMPILE_LLVM (cfg))
-						break;
 
 					src_var = get_vreg_to_inst (cfg, call->inst.dreg);
 					if (!src_var)
