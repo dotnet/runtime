@@ -1123,30 +1123,6 @@ bool IsWithinCoreCLR(void *pAddr)
     return (pAddr >= s_pLowerBound) && (pAddr < s_pUpperBound);
 }
 
-#if !defined(_MSC_VER) && defined(_WIN64)
-BOOL PALAPI PAL_IsIPInCoreCLR(IN PVOID address)
-{
-    BOOL fIsAddressWithinCoreCLR = FALSE;
-    
-    PERF_ENTRY(PAL_IsIPInCoreCLR);
-    ENTRY("PAL_IsIPInCoreCLR (address=%p)\n", address);
-    
-    if (address != NULL)
-    {
-        if (IsWithinCoreCLR(address))
-        {
-            fIsAddressWithinCoreCLR = TRUE;
-        }
-    }
-    
-    LOGEXIT("PAL_IsIPInCoreCLR returns %d\n", fIsAddressWithinCoreCLR);
-    PERF_EXIT(PAL_IsIPInCoreCLR);
-    
-    return fIsAddressWithinCoreCLR;
-}
-
-#endif //!defined(_MSC_VER) && defined(_WIN64)
-
 extern malloc_zone_t *s_pExecutableHeap; // from heap.cpp in #ifdef CACHE_HEAP_ZONE
 
 #pragma mark - 

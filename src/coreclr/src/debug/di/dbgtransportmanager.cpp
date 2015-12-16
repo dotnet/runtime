@@ -74,6 +74,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(DWORD                   dwPID
        HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID);
        if (hProcess == NULL)
        {
+           transport->Shutdown();
            return HRESULT_FROM_GetLastError();
        }
 
@@ -160,7 +161,6 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
 
     _ASSERTE(!"Trying to release transport that doesn't belong to this DbgTransportTarget");
     pTransport->Shutdown();
-    delete pTransport;
 }
 
 HRESULT DbgTransportTarget::CreateProcess(LPCWSTR lpApplicationName,
@@ -211,7 +211,6 @@ DbgTransportTarget::ProcessEntry::~ProcessEntry()
     m_hProcess = NULL;
 
     m_transport->Shutdown();
-    delete m_transport;
     m_transport = NULL;
 }
 
