@@ -10,7 +10,17 @@ namespace MultiProjectValidator
     {
         public static int Main(string[] args)
         {
-            var rootPath = ParseAndValidateArgs(args);
+
+            string rootPath = null;
+
+            try
+            {
+                rootPath = ParseAndValidateArgs(args);
+            }
+            catch
+            {
+                return 1;
+            }
 
             List<ProjectContext> projects = null;
             try
@@ -20,7 +30,7 @@ namespace MultiProjectValidator
             catch(Exception e)
             {
                 Console.WriteLine("Failed to load projects from path: " + rootPath);
-                Exit(1);
+                return 1;
             }
 
             var analyzer = ProjectAnalyzer.Create(projects);
@@ -80,7 +90,7 @@ namespace MultiProjectValidator
             if (args.Length != 1)
             {
                 PrintHelp();
-                Exit(1);
+                throw new Exception();
             }
 
             string rootPath = args[0];
@@ -88,15 +98,10 @@ namespace MultiProjectValidator
             if (!Directory.Exists(rootPath))
             {
                 Console.WriteLine("Root Directory does not exist: " + rootPath);
-                Exit(1);
+                throw new Exception();
             }
 
             return rootPath;
-        }
-
-        private static void Exit(int code)
-        {
-            Environment.Exit(code);
         }
         
         private static void PrintHelp()

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ProjectModel;
+using System.Text;
+using ProjectSanity.AnalysisRules.DependencyMismatch;
 
 namespace MultiProjectValidator.AnalysisRules
 {
@@ -12,60 +13,71 @@ namespace MultiProjectValidator.AnalysisRules
         {
             var targetGroupedContexts = GroupContextsByTarget(projectContexts);
 
-            var failureMessages = EvaluateTargetContextGroups(targetGroupedContexts);
+            var failureMessages = EvaluateProjectContextTargetGroups(targetGroupedContexts);
             var pass = failureMessages.Count == 0;
 
             var result = new AnalysisResult(failureMessages, pass);
             return result;
         }
 
-        private List<string> EvaluateTargetContextGroups(Dictionary<string, List<ProjectContext>> targetGroupedContexts)
+        private List<string> EvaluateProjectContextTargetGroups(Dictionary<string, List<ProjectContext>> targetGroupedProjectContexts)
         {
             var failureMessages = new List<string>();
 
-            foreach (var target in targetGroupedContexts.Keys)
+            foreach (var target in targetGroupedProjectContexts.Keys)
             {
-                var targetContexts = targetGroupedContexts[target];
+                var targetProjectContextGroup = targetGroupedProjectContexts[target];
 
-                failureMessages.AddRange(EvaluateTargetContextGroup(targetContexts));
+                var groupFailureMessages = EvaluateProjectContextTargetGroup(targetProjectContextGroup);
+
+                if (groupFailureMessages.Count > 0)
+                {
+                    string aggregateFailureMessage = $"Failures for Target {target} {Environment.NewLine}{Environment.NewLine}"
+                                                 + string.Join("", groupFailureMessages);
+
+                    failureMessages.Add(aggregateFailureMessage);
+                }
             }
 
             return failureMessages;
         }
 
-        private List<string> EvaluateTargetContextGroup(List<ProjectContext> targetContexts)
+        private List<string> EvaluateProjectContextTargetGroup(List<ProjectContext> targetProjectContextGroup)
         {
             var failedMessages = new List<string>();
-            var assemblyVersionMap = new Dictionary<string, string>();
 
-            foreach(var context in targetContexts)
+            var dependencyGroups = CreateDependencyGroups(targetProjectContextGroup);
+
+            
+            foreach (var dependencyGroup in dependencyGroups)
             {
-                var libraries = context.LibraryManager.GetLibraries();
-
-                foreach(var library in libraries)
+                if(dependencyGroup.HasConflict)
                 {
-                    var name = library.Identity.Name;
-                    var version = library.Identity.Version.ToString();
-
-                    if (assemblyVersionMap.ContainsKey(name))
-                    {
-                        var existingVersion = assemblyVersionMap[name];
-                        if (!string.Equals(existingVersion, version, StringComparison.OrdinalIgnoreCase))
-                        {
-                            string message = 
-                                $"Dependency mismatch in {context.ProjectFile.ProjectFilePath} for dependency {name}. Versions {version}, {existingVersion}";
-
-                            failedMessages.Add(message);
-                        }
-                    }
-                    else
-                    {
-                        assemblyVersionMap[name] = version;
-                    }
+                    failedMessages.Add(GetDependencyGroupConflictMessage(dependencyGroup));
                 }
             }
 
             return failedMessages;
+        }
+
+        private string GetDependencyGroupConflictMessage(DependencyGroup dependencyGroup)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append($"Conflict for {dependencyGroup.DependencyName} in projects:{Environment.NewLine}");
+            
+            foreach (var version in dependencyGroup.VersionDependencyInfoMap.Keys)
+            {
+                var dependencyInfoList = dependencyGroup.VersionDependencyInfoMap[version];
+                
+                foreach (var dependencyInfo in dependencyInfoList)
+                {
+                    sb.Append($"Version: {dependencyInfo.Version} Path: {dependencyInfo.ProjectPath} {Environment.NewLine}");
+                }
+            }
+            sb.Append(Environment.NewLine);
+
+            return sb.ToString();
         }
 
         private Dictionary<string, List<ProjectContext>> GroupContextsByTarget(List<ProjectContext> projectContexts)
@@ -90,5 +102,39 @@ namespace MultiProjectValidator.AnalysisRules
 
             return targetContextMap;
         }
+
+        private List<DependencyGroup> CreateDependencyGroups(List<ProjectContext> projectContexts)
+        {
+            var libraryNameDependencyGroupMap = new Dictionary<string, DependencyGroup>();
+
+            foreach (var projectContext in projectContexts)
+            {
+                var libraries = projectContext.LibraryManager.GetLibraries();
+
+                foreach (var library in libraries)
+                {
+                    var dependencyInfo = DependencyInfo.Create(projectContext, library);
+
+                    if (libraryNameDependencyGroupMap.ContainsKey(dependencyInfo.Name))
+                    {
+                        var dependencyGroup = libraryNameDependencyGroupMap[dependencyInfo.Name];
+
+                        dependencyGroup.AddEntry(dependencyInfo);
+                    }
+                    else
+                    {
+                        var dependencyGroup = DependencyGroup.CreateWithEntry(dependencyInfo);
+
+                        libraryNameDependencyGroupMap[dependencyInfo.Name] = dependencyGroup;
+                    }
+                }
+            }
+           
+            return libraryNameDependencyGroupMap.Values.ToList();
+        }
+
+       
+
+       
     }
 }
