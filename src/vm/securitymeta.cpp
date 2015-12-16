@@ -67,7 +67,7 @@ void FieldSecurityDescriptor::VerifyDataComputed()
     // now.
     static ConfigMethodSet fieldTransparencyBreak;
     fieldTransparencyBreak.ensureInit(CLRConfig::INTERNAL_Security_TransparencyFieldBreak);
-    if (fieldTransparencyBreak.contains(m_pFD->GetName(), m_pFD->GetApproxEnclosingMethodTable()->GetDebugClassName(), NULL))
+    if (fieldTransparencyBreak.contains(m_pFD->GetName(), m_pFD->GetApproxEnclosingMethodTable()->GetDebugClassName()))
     {
         DebugBreak();
     }
@@ -296,7 +296,7 @@ void MethodSecurityDescriptor::ComputeCriticalTransparentInfo()
     // now.
     static ConfigMethodSet methodTransparencyBreak;
     methodTransparencyBreak.ensureInit(CLRConfig::INTERNAL_Security_TransparencyMethodBreak);
-    if (methodTransparencyBreak.contains(m_pMD->GetName(), pMT->GetDebugClassName(), NULL))
+    if (methodTransparencyBreak.contains(m_pMD->GetName(), pMT->GetDebugClassName()))
     {
         DebugBreak();
     }
