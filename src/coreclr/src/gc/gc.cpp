@@ -4225,7 +4225,7 @@ void* virtual_alloc (size_t size)
     if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
     {
         gc_heap::reserved_memory_limit =
-            CNameSpace::AskForMoreReservedMemory (gc_heap::reserved_memory_limit, requested_size);
+            GCScan::AskForMoreReservedMemory (gc_heap::reserved_memory_limit, requested_size);
         if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
         {
             return 0;
@@ -15134,9 +15134,9 @@ void gc_heap::gc1()
         {
             mark_phase (n, FALSE);
 
-            CNameSpace::GcRuntimeStructuresValid (FALSE);
+            GCScan::GcRuntimeStructuresValid (FALSE);
             plan_phase (n);
-            CNameSpace::GcRuntimeStructuresValid (TRUE);
+            GCScan::GcRuntimeStructuresValid (TRUE);
         }
     }
 
@@ -19102,7 +19102,7 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         // determine the local value and collect the results into the s_fUnpromotedHandles variable in what is
         // effectively an OR operation. As per s_fUnscannedPromotions we can't read the final result until
         // we're safely joined.
-        if (CNameSpace::GcDhUnpromotedHandlesExist(sc))
+        if (GCScan::GcDhUnpromotedHandlesExist(sc))
             s_fUnpromotedHandles = TRUE;
 
         // Synchronize all the threads so we can read our state variables safely. The shared variable
@@ -19178,8 +19178,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         // If the portion of the dependent handle table managed by this worker has handles that could still be
         // promoted perform a rescan. If the rescan resulted in at least one promotion note this fact since it
         // could require a rescan of handles on this or other workers.
-        if (CNameSpace::GcDhUnpromotedHandlesExist(sc))
-            if (CNameSpace::GcDhReScan(sc))
+        if (GCScan::GcDhUnpromotedHandlesExist(sc))
+            if (GCScan::GcDhReScan(sc))
                 s_fUnscannedPromotions = TRUE;
     }
 }
@@ -19197,7 +19197,7 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
 
     // Loop until there are either no more dependent handles that can have their secondary promoted or we've
     // managed to perform a scan without promoting anything new.
-    while (CNameSpace::GcDhUnpromotedHandlesExist(sc) && fUnscannedPromotions)
+    while (GCScan::GcDhUnpromotedHandlesExist(sc) && fUnscannedPromotions)
     {
         // On each iteration of the loop start with the assumption that no further objects have been promoted.
         fUnscannedPromotions = false;
@@ -19209,7 +19209,7 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
             fUnscannedPromotions = true;
 
         // Perform the scan and set the flag if any promotions resulted.
-        if (CNameSpace::GcDhReScan(sc))
+        if (GCScan::GcDhReScan(sc))
             fUnscannedPromotions = true;
     }
 
@@ -19357,7 +19357,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
         if ((condemned_gen_number == max_generation) && (num_sizedrefs > 0))
         {
-            CNameSpace::GcScanSizedRefs(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
+            GCScan::GcScanSizedRefs(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
             fire_mark_event (heap_number, ETW::GC_ROOT_SIZEDREF, (promoted_bytes (heap_number) - last_promoted_bytes));
             last_promoted_bytes = promoted_bytes (heap_number);
 
@@ -19373,7 +19373,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     
         dprintf(3,("Marking Roots"));
 
-        CNameSpace::GcScanRoots(GCHeap::Promote,
+        GCScan::GcScanRoots(GCHeap::Promote,
                                 condemned_gen_number, max_generation,
                                 &sc);
 
@@ -19399,7 +19399,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         {
 
             dprintf(3,("Marking handle table"));
-            CNameSpace::GcScanHandles(GCHeap::Promote,
+            GCScan::GcScanHandles(GCHeap::Promote,
                                       condemned_gen_number, max_generation,
                                       &sc);
             fire_mark_event (heap_number, ETW::GC_ROOT_HANDLES, (promoted_bytes (heap_number) - last_promoted_bytes));
@@ -19466,7 +19466,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // to optimize away further scans. The call to scan_dependent_handles is what will cycle through more
     // iterations if required and will also perform processing of any mark stack overflow once the dependent
     // handle table has been fully promoted.
-    CNameSpace::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
+    GCScan::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
     scan_dependent_handles(condemned_gen_number, &sc, true);
 
 #ifdef MULTIPLE_HEAPS
@@ -19496,7 +19496,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     }
 
     // null out the target of short weakref that were not promoted.
-    CNameSpace::GcShortWeakPtrScan(GCHeap::Promote, condemned_gen_number, max_generation,&sc);
+    GCScan::GcShortWeakPtrScan(GCHeap::Promote, condemned_gen_number, max_generation,&sc);
 
 // MTHTS: keep by single thread
 #ifdef MULTIPLE_HEAPS
@@ -19544,7 +19544,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS
 
     // null out the target of long weakref that were not promoted.
-    CNameSpace::GcWeakPtrScan (GCHeap::Promote, condemned_gen_number, max_generation, &sc);
+    GCScan::GcWeakPtrScan (GCHeap::Promote, condemned_gen_number, max_generation, &sc);
 
 // MTHTS: keep by single thread
 #ifdef MULTIPLE_HEAPS
@@ -19562,7 +19562,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS
     {
         // scan for deleted entries in the syncblk cache
-        CNameSpace::GcWeakPtrScanBySingleThread (condemned_gen_number, max_generation, &sc);
+        GCScan::GcWeakPtrScanBySingleThread (condemned_gen_number, max_generation, &sc);
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
         if (g_fEnableARM)
@@ -22463,14 +22463,14 @@ void gc_heap::plan_phase (int condemned_gen_number)
             {
                 dprintf (2, ("Promoting EE roots for gen %d",
                              condemned_gen_number));
-                CNameSpace::GcPromotionsGranted(condemned_gen_number,
+                GCScan::GcPromotionsGranted(condemned_gen_number,
                                                 max_generation, &sc);
             }
             else if (settings.demotion)
             {
                 dprintf (2, ("Demoting EE roots for gen %d",
                              condemned_gen_number));
-                CNameSpace::GcDemote (condemned_gen_number, max_generation, &sc);
+                GCScan::GcDemote (condemned_gen_number, max_generation, &sc);
             }
         }
 
@@ -22625,7 +22625,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
-            CNameSpace::GcPromotionsGranted(condemned_gen_number,
+            GCScan::GcPromotionsGranted(condemned_gen_number,
                                             max_generation, &sc);
             if (condemned_gen_number >= (max_generation -1))
             {
@@ -24093,7 +24093,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     }
 
     dprintf(3,("Relocating roots"));
-    CNameSpace::GcScanRoots(GCHeap::Relocate,
+    GCScan::GcScanRoots(GCHeap::Relocate,
                             condemned_gen_number, max_generation, &sc);
 
     verify_pins_with_post_plug_info("after reloc stack");
@@ -24146,7 +24146,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
 // MTHTS
     {
         dprintf(3,("Relocating handle table"));
-        CNameSpace::GcScanHandles(GCHeap::Relocate,
+        GCScan::GcScanHandles(GCHeap::Relocate,
                                   condemned_gen_number, max_generation, &sc);
     }
 
@@ -24870,7 +24870,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
         // determine the local value and collect the results into the s_fUnpromotedHandles variable in what is
         // effectively an OR operation. As per s_fUnscannedPromotions we can't read the final result until
         // we're safely joined.
-        if (CNameSpace::GcDhUnpromotedHandlesExist(sc))
+        if (GCScan::GcDhUnpromotedHandlesExist(sc))
             s_fUnpromotedHandles = TRUE;
 
         // Synchronize all the threads so we can read our state variables safely. The following shared
@@ -24940,8 +24940,8 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
         // If the portion of the dependent handle table managed by this worker has handles that could still be
         // promoted perform a rescan. If the rescan resulted in at least one promotion note this fact since it
         // could require a rescan of handles on this or other workers.
-        if (CNameSpace::GcDhUnpromotedHandlesExist(sc))
-            if (CNameSpace::GcDhReScan(sc))
+        if (GCScan::GcDhUnpromotedHandlesExist(sc))
+            if (GCScan::GcDhReScan(sc))
                 s_fUnscannedPromotions = TRUE;
     }
 }
@@ -24955,7 +24955,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
     // Scan dependent handles repeatedly until there are no further promotions that can be made or we made a
     // scan without performing any new promotions.
-    while (CNameSpace::GcDhUnpromotedHandlesExist(sc) && fUnscannedPromotions)
+    while (GCScan::GcDhUnpromotedHandlesExist(sc) && fUnscannedPromotions)
     {
         // On each iteration of the loop start with the assumption that no further objects have been promoted.
         fUnscannedPromotions = false;
@@ -24967,7 +24967,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
             fUnscannedPromotions = true;
 
         // Perform the scan and set the flag if any promotions resulted.
-        if (CNameSpace::GcDhReScan (sc))
+        if (GCScan::GcDhReScan (sc))
             fUnscannedPromotions = true;
     }
 
@@ -25480,7 +25480,7 @@ void gc_heap::background_mark_phase ()
         dprintf(3,("BGC: stack marking"));
         sc.concurrent = TRUE;
 
-        CNameSpace::GcScanRoots(background_promote_callback,
+        GCScan::GcScanRoots(background_promote_callback,
                                 max_generation, max_generation,
                                 &sc);
     }
@@ -25597,7 +25597,7 @@ void gc_heap::background_mark_phase ()
 
         if (num_sizedrefs > 0)
         {
-            CNameSpace::GcScanSizedRefs(background_promote, max_generation, max_generation, &sc);
+            GCScan::GcScanSizedRefs(background_promote, max_generation, max_generation, &sc);
 
             enable_preemptive (current_thread);
 
@@ -25614,7 +25614,7 @@ void gc_heap::background_mark_phase ()
         }
 
         dprintf (3,("BGC: handle table marking"));
-        CNameSpace::GcScanHandles(background_promote,
+        GCScan::GcScanHandles(background_promote,
                                   max_generation, max_generation,
                                   &sc);
         //concurrent_print_time_delta ("concurrent marking handle table");
@@ -25746,7 +25746,7 @@ void gc_heap::background_mark_phase ()
         dprintf (GTC_LOG, ("FM: h%d: loh: %Id, soh: %Id", heap_number, total_loh_size, total_soh_size));
 
         dprintf (2, ("nonconcurrent marking stack roots"));
-        CNameSpace::GcScanRoots(background_promote,
+        GCScan::GcScanRoots(background_promote,
                                 max_generation, max_generation,
                                 &sc);
         //concurrent_print_time_delta ("nonconcurrent marking stack roots");
@@ -25757,7 +25757,7 @@ void gc_heap::background_mark_phase ()
 //        finalize_queue->LeaveFinalizeLock();
 
         dprintf (2, ("nonconcurrent marking handle table"));
-        CNameSpace::GcScanHandles(background_promote,
+        GCScan::GcScanHandles(background_promote,
                                   max_generation, max_generation,
                                   &sc);
         //concurrent_print_time_delta ("nonconcurrent marking handle table");
@@ -25779,7 +25779,7 @@ void gc_heap::background_mark_phase ()
         // required and will also perform processing of any mark stack overflow once the dependent handle
         // table has been fully promoted.
         dprintf (2, ("1st dependent handle scan and process mark overflow"));
-        CNameSpace::GcDhInitialScan(background_promote, max_generation, max_generation, &sc);
+        GCScan::GcDhInitialScan(background_promote, max_generation, max_generation, &sc);
         background_scan_dependent_handles (&sc);
         //concurrent_print_time_delta ("1st nonconcurrent dependent handle scan and process mark overflow");
         concurrent_print_time_delta ("NR 1st Hov");
@@ -25801,7 +25801,7 @@ void gc_heap::background_mark_phase ()
         }
 
         // null out the target of short weakref that were not promoted.
-        CNameSpace::GcShortWeakPtrScan(background_promote, max_generation, max_generation,&sc);
+        GCScan::GcShortWeakPtrScan(background_promote, max_generation, max_generation,&sc);
 
         //concurrent_print_time_delta ("bgc GcShortWeakPtrScan");
         concurrent_print_time_delta ("NR GcShortWeakPtrScan");
@@ -25850,7 +25850,7 @@ void gc_heap::background_mark_phase ()
 #endif //MULTIPLE_HEAPS
 
     // null out the target of long weakref that were not promoted.
-    CNameSpace::GcWeakPtrScan (background_promote, max_generation, max_generation, &sc);
+    GCScan::GcWeakPtrScan (background_promote, max_generation, max_generation, &sc);
     concurrent_print_time_delta ("NR GcWeakPtrScan");
 
 #ifdef MULTIPLE_HEAPS
@@ -25860,7 +25860,7 @@ void gc_heap::background_mark_phase ()
     {
         dprintf (2, ("calling GcWeakPtrScanBySingleThread"));
         // scan for deleted entries in the syncblk cache
-        CNameSpace::GcWeakPtrScanBySingleThread (max_generation, max_generation, &sc);
+        GCScan::GcWeakPtrScanBySingleThread (max_generation, max_generation, &sc);
         concurrent_print_time_delta ("NR GcWeakPtrScanBySingleThread");
 #ifdef MULTIPLE_HEAPS
         dprintf(2, ("Starting BGC threads for end of background mark phase"));
@@ -33279,7 +33279,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         // limit its scope to handle table verification.
         ScanContext sc;
         sc.thread_number = heap_number;
-        CNameSpace::VerifyHandleTable(max_generation, max_generation, &sc);
+        GCScan::VerifyHandleTable(max_generation, max_generation, &sc);
     }
 
 #ifdef MULTIPLE_HEAPS
@@ -33349,7 +33349,7 @@ HRESULT GCHeap::Shutdown ()
 {
     deleteGCShadow();
 
-    CNameSpace::GcRuntimeStructuresValid (FALSE);
+    GCScan::GcRuntimeStructuresValid (FALSE);
 
     // Cannot assert this, since we use SuspendEE as the mechanism to quiesce all
     // threads except the one performing the shutdown.
@@ -33580,7 +33580,7 @@ HRESULT GCHeap::Initialize ()
 
     if (hr == S_OK)
     {
-        CNameSpace::GcRuntimeStructuresValid (TRUE);
+        GCScan::GcRuntimeStructuresValid (TRUE);
 
 #ifdef GC_PROFILING
         if (CORProfilerTrackGC())
