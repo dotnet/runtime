@@ -2229,6 +2229,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			info->compiled_method = NULL;
 		}
 
+		MonoMethodSignature *sig = mono_method_signature (method);
+		MonoType *ret_type;
+
 		/*
 		 * We want to avoid AOTing 1000s of runtime-invoke wrappers when running
 		 * in full-aot mode, so we use a slower, but more generic wrapper if
@@ -2236,8 +2239,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 */
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		if (!mono_llvm_only && (mono_aot_only || debug_options.dyn_runtime_invoke)) {
-			MonoType *ret_type;
-			MonoMethodSignature *sig = mono_method_signature (method);
 			gboolean supported = TRUE;
 			int i;
 
@@ -2257,51 +2258,49 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 			if (supported)
 				info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
-
-			ret_type = sig->ret;
-			if (info->dyn_call_info) {
-				switch (ret_type->type) {
-				case MONO_TYPE_VOID:
-					break;
-				case MONO_TYPE_I1:
-				case MONO_TYPE_U1:
-				case MONO_TYPE_I2:
-				case MONO_TYPE_U2:
-				case MONO_TYPE_I4:
-				case MONO_TYPE_U4:
-				case MONO_TYPE_I:
-				case MONO_TYPE_U:
-				case MONO_TYPE_I8:
-				case MONO_TYPE_U8:
-				case MONO_TYPE_BOOLEAN:
-				case MONO_TYPE_CHAR:
-				case MONO_TYPE_R4:
-				case MONO_TYPE_R8:
-					info->ret_box_class = mono_class_from_mono_type (ret_type);
-					break;
-				case MONO_TYPE_PTR:
-					info->ret_box_class = mono_defaults.int_class;
-					break;
-				case MONO_TYPE_STRING:
-				case MONO_TYPE_CLASS:
-				case MONO_TYPE_ARRAY:
-				case MONO_TYPE_SZARRAY:
-				case MONO_TYPE_OBJECT:
-					break;
-				case MONO_TYPE_GENERICINST:
-					if (!MONO_TYPE_IS_REFERENCE (ret_type))
-						info->ret_box_class = mono_class_from_mono_type (ret_type);
-					break;
-				case MONO_TYPE_VALUETYPE:
-					info->ret_box_class = mono_class_from_mono_type (ret_type);
-					break;
-				default:
-					g_assert_not_reached ();
-					break;
-				}
-			}
 		}
 #endif
+
+		ret_type = sig->ret;
+		switch (ret_type->type) {
+		case MONO_TYPE_VOID:
+			break;
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			info->ret_box_class = mono_class_from_mono_type (ret_type);
+			break;
+		case MONO_TYPE_PTR:
+			info->ret_box_class = mono_defaults.int_class;
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (!MONO_TYPE_IS_REFERENCE (ret_type))
+				info->ret_box_class = mono_class_from_mono_type (ret_type);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			info->ret_box_class = mono_class_from_mono_type (ret_type);
+			break;
+		default:
+			g_assert_not_reached ();
+			break;
+		}
 
 		if (!info->dyn_call_info)
 			info->runtime_invoke = mono_jit_compile_method (invoke);
