@@ -10,8 +10,8 @@ namespace MultiProjectValidator
 
         public AnalysisResult(List<string> messages, bool passed)
         {
-            this._messages = messages;
-            this._passed = passed;
+            _messages = messages;
+            _passed = passed;
         }
 
         public List<string> Messages
