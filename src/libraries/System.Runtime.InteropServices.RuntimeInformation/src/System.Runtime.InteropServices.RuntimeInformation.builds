@@ -14,7 +14,7 @@
       <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
