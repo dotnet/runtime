@@ -2031,28 +2031,13 @@ protected:
         return (IsEditAndContinueCapable()) && ((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0); 
     }
 
-    BOOL IsEditAndContinueCapable(); 
+    BOOL IsEditAndContinueCapable();
     
     BOOL IsIStream() { LIMITED_METHOD_CONTRACT; return GetFile()->IsIStream(); }
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_file->IsSystem(); }
 
-    static BOOL IsEditAndContinueCapable(PEFile *file) 
-    { 
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_ANY;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
-
-
-        // Some modules are never EnC-capable
-        return ! (file->IsSystem() || file->IsResource() || file->HasNativeImage() || file->IsDynamic());
-    }
+    static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file);
 
     void EnableEditAndContinue()
     {
