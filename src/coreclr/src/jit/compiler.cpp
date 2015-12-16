@@ -3782,14 +3782,14 @@ void                 Compiler::compCompile(void * * methodCodePtr,
         bool doRangeAnalysis = true;
 
 #ifdef DEBUG
-        static ConfigDWORD fJitDoOptConfig[6];
+        static ConfigDWORD fJitDoOptConfig[7];
         doSsa           =                    (fJitDoOptConfig[0].val(CLRConfig::INTERNAL_JitDoSsa)           != 0);
-        doEarlyProp     = doSsa           && (fJitDoOptConfig[1].val(CLRConfig::INTERNAL_JitDoEarlyProp)  != 0);
-        doValueNum      = doSsa           && (fJitDoOptConfig[1].val(CLRConfig::INTERNAL_JitDoValueNumber)   != 0);
-        doLoopHoisting  = doValueNum      && (fJitDoOptConfig[2].val(CLRConfig::INTERNAL_JitDoLoopHoisting)  != 0);
-        doCopyProp      = doValueNum      && (fJitDoOptConfig[3].val(CLRConfig::INTERNAL_JitDoCopyProp)      != 0);
-        doAssertionProp = doValueNum      && (fJitDoOptConfig[4].val(CLRConfig::INTERNAL_JitDoAssertionProp) != 0);
-        doRangeAnalysis = doAssertionProp && (fJitDoOptConfig[5].val(CLRConfig::INTERNAL_JitDoRangeAnalysis) != 0);
+        doEarlyProp     = doSsa           && (fJitDoOptConfig[1].val(CLRConfig::INTERNAL_JitDoEarlyProp)     != 0);
+        doValueNum      = doSsa           && (fJitDoOptConfig[2].val(CLRConfig::INTERNAL_JitDoValueNumber)   != 0);
+        doLoopHoisting  = doValueNum      && (fJitDoOptConfig[3].val(CLRConfig::INTERNAL_JitDoLoopHoisting)  != 0);
+        doCopyProp      = doValueNum      && (fJitDoOptConfig[4].val(CLRConfig::INTERNAL_JitDoCopyProp)      != 0);
+        doAssertionProp = doValueNum      && (fJitDoOptConfig[5].val(CLRConfig::INTERNAL_JitDoAssertionProp) != 0);
+        doRangeAnalysis = doAssertionProp && (fJitDoOptConfig[6].val(CLRConfig::INTERNAL_JitDoRangeAnalysis) != 0);
 #endif
 
         if (doSsa)
