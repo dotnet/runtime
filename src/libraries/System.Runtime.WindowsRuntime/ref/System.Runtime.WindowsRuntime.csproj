@@ -15,8 +15,8 @@
     <NoWarn>1698</NoWarn>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.3</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.3</NuGetTargetMoniker>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.4</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.WindowsRuntime.cs" />
