@@ -439,7 +439,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
                 // heap.
                 gc_heap* hp = gc_heap::g_heaps [hn];
                 SC.thread_number = hn;
-                CNameSpace::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
+                GCScan::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
 
                 // The finalizer queue is also a source of roots
                 SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
@@ -447,7 +447,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             }
 #else
             // Ask the vm to go over all of the roots
-            CNameSpace::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
+            GCScan::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
 
             // The finalizer queue is also a source of roots
             SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
@@ -456,7 +456,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 #endif // MULTIPLE_HEAPS
             // Handles are kept independent of wks/svr/concurrent builds
             SC.dwEtwRootKind = kEtwGCRootKindHandle;
-            CNameSpace::GcScanHandlesForProfilerAndETW(max_generation, &SC);
+            GCScan::GcScanHandlesForProfilerAndETW(max_generation, &SC);
 
             // indicate that regular handle scanning is over, so we can flush the buffered roots
             // to the profiler.  (This is for profapi only.  ETW will flush after the
@@ -476,7 +476,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             // GcScanDependentHandlesForProfiler double-checks
             // CORProfilerTrackConditionalWeakTableElements() before calling into the profiler
 
-            CNameSpace::GcScanDependentHandlesForProfilerAndETW(max_generation, &SC);
+            GCScan::GcScanDependentHandlesForProfilerAndETW(max_generation, &SC);
 
             // indicate that dependent handle scanning is over, so we can flush the buffered roots
             // to the profiler.  (This is for profapi only.  ETW will flush after the

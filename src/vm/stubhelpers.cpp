@@ -62,7 +62,7 @@ void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextO
 }
 	CONTRACTL_END;
 
-	_ASSERTE(CNameSpace::GetGcRuntimeStructuresValid());
+	_ASSERTE(GCScan::GetGcRuntimeStructuresValid());
 
 	// validate the object - there's no need to validate next object's
 	// header since we validate the next object explicitly below

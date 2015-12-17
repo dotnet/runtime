@@ -7161,7 +7161,7 @@ void DacDbiInterfaceImpl::GetGCHeapInformation(COR_HEAPINFO * pHeapInfo)
     DD_ENTER_MAY_THROW;
     
     size_t heapCount = 0;
-    pHeapInfo->areGCStructuresValid = CNameSpace::GetGcRuntimeStructuresValid();
+    pHeapInfo->areGCStructuresValid = GCScan::GetGcRuntimeStructuresValid();
     
 #ifdef FEATURE_SVR_GC
     if (GCHeap::IsServerHeap())

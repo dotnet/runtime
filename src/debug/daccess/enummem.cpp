@@ -403,7 +403,7 @@ HRESULT ClrDataAccess::DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF
         return status;
     }
     
-    if (!CNameSpace::GetGcRuntimeStructuresValid ())
+    if (!GCScan::GetGcRuntimeStructuresValid ())
     {
         // GC is in progress, don't dump this object
         return S_OK;
@@ -461,7 +461,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
         return S_OK;
     }
 
-    if (!CNameSpace::GetGcRuntimeStructuresValid ())
+    if (!GCScan::GetGcRuntimeStructuresValid ())
     {
         // GC is in progress, don't dump this object
         return S_OK;
