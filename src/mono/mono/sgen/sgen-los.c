@@ -293,8 +293,6 @@ free_los_section_memory (LOSObject *obj, size_t size)
 	add_free_chunk ((LOSFreeChunks*)obj, size);
 }
 
-static int pagesize;
-
 void
 sgen_los_free_object (LOSObject *obj)
 {
@@ -312,8 +310,7 @@ sgen_los_free_object (LOSObject *obj)
 	free (obj);
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
-		if (!pagesize)
-			pagesize = mono_pagesize ();
+		int pagesize = mono_pagesize ();
 		size += sizeof (LOSObject);
 		size = SGEN_ALIGN_UP_TO (size, pagesize);
 		sgen_free_os_memory (obj, size, SGEN_ALLOC_HEAP);
@@ -370,8 +367,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
 		size_t alloc_size = size;
-		if (!pagesize)
-			pagesize = mono_pagesize ();
+		int pagesize = mono_pagesize ();
 		alloc_size += sizeof (LOSObject);
 		alloc_size = SGEN_ALIGN_UP_TO (alloc_size, pagesize);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
