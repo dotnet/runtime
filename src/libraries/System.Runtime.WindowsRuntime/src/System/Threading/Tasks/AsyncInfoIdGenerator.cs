@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
         /// We want to avoid ending up with the same ID as a Windows-implemented async info.
         /// At the same time we want to be reproducable. So we use a random generator with a fixed seed.
         /// </summary>
-        private static Random idGenerator = new Random(19830118);
+        private static Random s_idGenerator = new Random(19830118);
 
 
         /// <summary>
@@ -31,9 +31,9 @@ namespace System.Threading.Tasks
         /// <returns>A new unique IAsyncInfo Id.</returns>
         internal static UInt32 CreateNext()
         {
-            lock (idGenerator)
+            lock (s_idGenerator)
             {
-                Int32 newId = idGenerator.Next(1, (Int32)InvalidId);  // Valid IDs will be larger than zero and smaller than InvalidId
+                Int32 newId = s_idGenerator.Next(1, (Int32)InvalidId);  // Valid IDs will be larger than zero and smaller than InvalidId
                 return unchecked((UInt32)newId);
             }
         }

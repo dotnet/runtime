@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -17,13 +18,13 @@ namespace System.Threading.Tasks
     internal sealed class AsyncInfoToTaskBridge<TResult, TProgress> : TaskCompletionSource<TResult>
     {
         /// <summary>The CancellationToken associated with this operation.</summary>
-        private readonly CancellationToken m_ct;
+        private readonly CancellationToken _ct;
 
         /// <summary>A registration for cancellation that needs to be disposed of when the operation completes.</summary>
-        private CancellationTokenRegistration m_ctr;
+        private CancellationTokenRegistration _ctr;
 
         /// <summary>A flag set to true as soon as the completion callback begins to execute.</summary>
-        private bool m_completing;
+        private bool _completing;
 
         internal AsyncInfoToTaskBridge(CancellationToken cancellationToken)
         {
@@ -32,8 +33,8 @@ namespace System.Threading.Tasks
 
             if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
                 System.Threading.Tasks.Task.AddToActiveTasks(this.Task);
-                
-            m_ct = cancellationToken;
+
+            _ct = cancellationToken;
         }
 
         /// <summary>The synchronization object to use for protecting the state of this bridge.</summary>
@@ -52,37 +53,34 @@ namespace System.Threading.Tasks
 
             try
             {
-                if (m_ct.CanBeCanceled && !m_completing)
+                if (_ct.CanBeCanceled && !_completing)
                 { // benign race on m_completing... it's ok if it's not up-to-date.
-
-                    var ctr = m_ct.Register(ai => ((IAsyncInfo)ai).Cancel(), asyncInfo); // delegate cached by compiler
+                    var ctr = _ct.Register(ai => ((IAsyncInfo)ai).Cancel(), asyncInfo); // delegate cached by compiler
 
                     // The operation may already be completing by this time, in which case
                     // we might need to dispose of our new cancellation registration here.
                     bool disposeOfCtr = false;
                     lock (StateLock)
                     {
-                        if (m_completing)
+                        if (_completing)
                             disposeOfCtr = true;
                         else
-                            m_ctr = ctr; // under lock to avoid torn writes
+                            _ctr = ctr; // under lock to avoid torn writes
                     }
 
                     if (disposeOfCtr)
                         ctr.TryDeregister();
                 }
-
             }
             catch (Exception ex)
             {
-
                 // We do not want exceptions propagating out of the AsTask / GetAwaiter calls, as the
                 // Completed handler will instead store the exception into the returned Task.
                 // Such exceptions should cause the Completed handler to be invoked synchronously and thus the Task should already be completed.
 
                 if (!base.Task.IsFaulted)
                 {
-                    Contract.Assert(false, String.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
+                    Debug.Assert(false, String.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
                     base.TrySetException(ex);
                 }
             }
@@ -91,28 +89,24 @@ namespace System.Threading.Tasks
         /// <summary>Bridge to Completed handler on IAsyncAction.</summary>
         internal void CompleteFromAsyncAction(IAsyncAction asyncInfo, AsyncStatus asyncStatus)
         {
-
             Complete(asyncInfo, null, asyncStatus);
         }
 
         /// <summary>Bridge to Completed handler on IAsyncActionWithProgress{TProgress}.</summary>
         internal void CompleteFromAsyncActionWithProgress(IAsyncActionWithProgress<TProgress> asyncInfo, AsyncStatus asyncStatus)
         {
-
             Complete(asyncInfo, null, asyncStatus);
         }
 
         /// <summary>Bridge to Completed handler on IAsyncOperation{TResult}.</summary>
         internal void CompleteFromAsyncOperation(IAsyncOperation<TResult> asyncInfo, AsyncStatus asyncStatus)
         {
-
             Complete(asyncInfo, ai => ((IAsyncOperation<TResult>)ai).GetResults(), asyncStatus); // delegate cached by compiler
         }
 
         /// <summary>Bridge to Completed handler on IAsyncOperationWithProgress{TResult,TProgress}.</summary>
         internal void CompleteFromAsyncOperationWithProgress(IAsyncOperationWithProgress<TResult, TProgress> asyncInfo, AsyncStatus asyncStatus)
         {
-
             // delegate cached by compiler:
             Complete(asyncInfo, ai => ((IAsyncOperationWithProgress<TResult, TProgress>)ai).GetResults(), asyncStatus);
         }
@@ -129,7 +123,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                Contract.Assert(asyncInfo.Status == asyncStatus,
+                Debug.Assert(asyncInfo.Status == asyncStatus,
                                 "asyncInfo.Status does not match asyncStatus; are we dealing with a faulty IAsyncInfo implementation?");
 
                 // Assuming a correct underlying implementation, the task should not have been
@@ -137,7 +131,7 @@ namespace System.Threading.Tasks
                 // with the operation or the task, as something is horked.
                 bool taskAlreadyCompleted = Task.IsCompleted;
 
-                Contract.Assert(!taskAlreadyCompleted, "Expected the task to not yet be completed.");
+                Debug.Assert(!taskAlreadyCompleted, "Expected the task to not yet be completed.");
 
                 if (taskAlreadyCompleted)
                     throw new InvalidOperationException(SR.InvalidOperation_InvalidAsyncCompletion);
@@ -146,9 +140,9 @@ namespace System.Threading.Tasks
                 CancellationTokenRegistration ctr;
                 lock (StateLock)
                 {
-                    m_completing = true;
-                    ctr = m_ctr; // under lock to avoid torn reads
-                    m_ctr = default(CancellationTokenRegistration);
+                    _completing = true;
+                    ctr = _ctr; // under lock to avoid torn reads
+                    _ctr = default(CancellationTokenRegistration);
                 }
                 ctr.TryDeregister(); // It's ok if we end up unregistering a not-initialized registration; it'll just be a nop.
 
@@ -159,7 +153,7 @@ namespace System.Threading.Tasks
                                             || asyncStatus == AsyncStatus.Canceled
                                             || asyncStatus == AsyncStatus.Error;
 
-                    Contract.Assert(terminalState, "The async operation should be in a terminal state.");
+                    Debug.Assert(terminalState, "The async operation should be in a terminal state.");
 
                     if (!terminalState)
                         throw new InvalidOperationException(SR.InvalidOperation_InvalidAsyncCompletion);
@@ -174,23 +168,19 @@ namespace System.Threading.Tasks
                         // Defend against a faulty IAsyncInfo implementation:
                         if (error == null)
                         {
-                            Contract.Assert(false, "IAsyncInfo.Status == Error, but ErrorCode returns a null Exception (implying S_OK).");
+                            Debug.Assert(false, "IAsyncInfo.Status == Error, but ErrorCode returns a null Exception (implying S_OK).");
                             error = new InvalidOperationException(SR.InvalidOperation_InvalidAsyncCompletion);
                         }
                         else
                         {
                             error = RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(asyncInfo.ErrorCode);
                         }
-
                     }
                     else if (asyncStatus == AsyncStatus.Completed && getResultsFunction != null)
                     {
-
                         try
                         {
-
                             result = getResultsFunction(asyncInfo);
-
                         }
                         catch (Exception resultsEx)
                         {
@@ -202,7 +192,7 @@ namespace System.Threading.Tasks
 
                     // Nothing to retrieve for a canceled operation or for a completed operation with no result.
 
-                    // Complete the task based on the previously retrieved results:                
+                    // Complete the task based on the previously retrieved results:
                     bool success = false;
 
                     switch (asyncStatus)
@@ -212,36 +202,32 @@ namespace System.Threading.Tasks
                             break;
 
                         case AsyncStatus.Error:
-                            Contract.Assert(error != null, "The error should have been retrieved previously.");
+                            Debug.Assert(error != null, "The error should have been retrieved previously.");
                             success = base.TrySetException(error);
                             break;
 
                         case AsyncStatus.Canceled:
-                            success = base.TrySetCanceled(m_ct.IsCancellationRequested ? m_ct : new CancellationToken(true));
+                            success = base.TrySetCanceled(_ct.IsCancellationRequested ? _ct : new CancellationToken(true));
                             break;
                     }
 
-                    Contract.Assert(success, "Expected the outcome to be successfully transfered to the task.");
-
+                    Debug.Assert(success, "Expected the outcome to be successfully transfered to the task.");
                 }
                 catch (Exception exc)
                 {
-
                     // This really shouldn't happen, but could in a variety of misuse cases
-                    // such as a faulty underlying IAsyncInfo implementation.                
-                    Contract.Assert(false, string.Format("Unexpected exception in Complete: {0}", exc.ToString()));
+                    // such as a faulty underlying IAsyncInfo implementation.
+                    Debug.Assert(false, string.Format("Unexpected exception in Complete: {0}", exc.ToString()));
 
                     // For these cases, store the exception into the task so that it makes its way
                     // back to the caller.  Only if something went horribly wrong and we can't store the exception
                     // do we allow it to be propagated out to the invoker of the Completed handler.
                     if (!base.TrySetException(exc))
                     {
-
-                        Contract.Assert(false, "The task was already completed and thus the exception couldn't be stored.");
+                        Debug.Assert(false, "The task was already completed and thus the exception couldn't be stored.");
                         throw;
                     }
                 }
-
             }
             finally
             {
@@ -251,7 +237,5 @@ namespace System.Threading.Tasks
                     Marshal.ReleaseComObject(asyncInfo);
             }
         }  // private void Complete(..)
-
     }  // class AsyncInfoToTaskBridge<TResult, TProgress>
-
 }  // namespace

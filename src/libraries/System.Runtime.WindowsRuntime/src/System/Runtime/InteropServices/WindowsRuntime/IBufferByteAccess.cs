@@ -6,16 +6,15 @@ using GUID = System.Runtime.InteropServices.GuidAttribute;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    /// <summary>
-    /// WinRT's <code>IBufferByteAccess</code> interface definition.
-    /// </summary>
     [ComImport]
     [GUID("905a0fef-bc53-11df-8c49-001e4fc686da")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    interface IBufferByteAccess
+    /// <summary>
+    /// WinRT's <code>IBufferByteAccess</code> interface definition.
+    /// </summary>
+    internal interface IBufferByteAccess
     {
         // This needs to be a function - MCG doesn't support properties/events for [ComImport] interface yet
-        [SecurityCritical]
         IntPtr GetBuffer();
     }  // interface IBufferByteAccess
 }  // namespace

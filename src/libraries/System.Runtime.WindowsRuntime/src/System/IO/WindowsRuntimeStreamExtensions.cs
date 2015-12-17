@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -21,10 +22,10 @@ namespace System.IO
 
         private const Int32 DefaultBufferSize = 16384;  // = 0x4000 = 16 KBytes.
 
-        private static ConditionalWeakTable<Object, Stream> WinRtToNetFxAdapterMap
+        private static ConditionalWeakTable<Object, Stream> s_winRtToNetFxAdapterMap
                  = new ConditionalWeakTable<Object, Stream>();
 
-        private static ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> NetFxToWinRtAdapterMap
+        private static ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
                  = new ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter>();
 
         #endregion Constants and static Fields
@@ -40,21 +41,21 @@ namespace System.IO
         {
             TValue valueInMap;
 
-            Contract.Assert(key != null);
+            Debug.Assert(key != null);
 
             bool hasValueForKey = map.TryGetValue(key, out valueInMap);
 
-            Contract.Assert(hasValueForKey);
+            Debug.Assert(hasValueForKey);
 
             if (valueMayBeWrappedInBufferedStream)
             {
                 BufferedStream bufferedValueInMap = valueInMap as BufferedStream;
-                Contract.Assert(Object.ReferenceEquals(value, valueInMap)
+                Debug.Assert(Object.ReferenceEquals(value, valueInMap)
                                 || (bufferedValueInMap != null && Object.ReferenceEquals(value, bufferedValueInMap.UnderlyingStream)));
             }
             else
             {
-                Contract.Assert(Object.ReferenceEquals(value, valueInMap));
+                Debug.Assert(Object.ReferenceEquals(value, valueInMap));
             }
         }
 #endif  // DEBUG
@@ -150,7 +151,7 @@ namespace System.IO
                     throw new ObjectDisposedException("windowsRuntimeStream", SR.ObjectDisposed_CannotPerformOperation);
 
 #if DEBUG  // In Chk builds, verify that the original managed stream is correctly entered into the NetFx->WinRT map:
-                AssertMapContains(NetFxToWinRtAdapterMap, wrappedNetFxStream, sAdptr,
+                AssertMapContains(s_netFxToWinRtAdapterMap, wrappedNetFxStream, sAdptr,
                                   valueMayBeWrappedInBufferedStream: false);
 #endif  // DEBUG
 
@@ -160,12 +161,12 @@ namespace System.IO
             // We have a real WinRT stream.
 
             Stream adapter;
-            bool adapterExists = WinRtToNetFxAdapterMap.TryGetValue(windowsRuntimeStream, out adapter);
+            bool adapterExists = s_winRtToNetFxAdapterMap.TryGetValue(windowsRuntimeStream, out adapter);
 
             // There is already an adapter:
             if (adapterExists)
             {
-                Contract.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
+                Debug.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
                                 || (adapter is WinRtToNetFxStreamAdapter));
 
                 if (forceBufferSize)
@@ -185,14 +186,14 @@ namespace System.IO
         // Separate method so we only pay for closure allocation if this code is executed:
         private static Stream WinRtToNetFxAdapterMap_GetValue(Object winRtStream)
         {
-            return WinRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => WinRtToNetFxStreamAdapter.Create(wrtStr));
+            return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => WinRtToNetFxStreamAdapter.Create(wrtStr));
         }
 
 
         // Separate method so we only pay for closure allocation if this code is executed:
         private static Stream WinRtToNetFxAdapterMap_GetValue(Object winRtStream, Int32 bufferSize)
         {
-            return WinRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => new BufferedStream(WinRtToNetFxStreamAdapter.Create(wrtStr), bufferSize));
+            return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => new BufferedStream(WinRtToNetFxStreamAdapter.Create(wrtStr), bufferSize));
         }
 
 
@@ -211,8 +212,8 @@ namespace System.IO
                                 ? WinRtToNetFxAdapterMap_GetValue(windowsRuntimeStream)
                                 : WinRtToNetFxAdapterMap_GetValue(windowsRuntimeStream, bufferSize);
 
-            Contract.Assert(adapter != null);
-            Contract.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
+            Debug.Assert(adapter != null);
+            Debug.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
                                 || (adapter is WinRtToNetFxStreamAdapter));
 
             if (forceBufferSize)
@@ -247,7 +248,7 @@ namespace System.IO
             Object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IInputStream winRtStream = adapter as IInputStream;
-            Contract.Assert(winRtStream != null);
+            Debug.Assert(winRtStream != null);
 
             return winRtStream;
         }
@@ -268,7 +269,7 @@ namespace System.IO
             Object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IOutputStream winRtStream = adapter as IOutputStream;
-            Contract.Assert(winRtStream != null);
+            Debug.Assert(winRtStream != null);
 
             return winRtStream;
         }
@@ -289,7 +290,7 @@ namespace System.IO
             Object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IRandomAccessStream winRtStream = adapter as IRandomAccessStream;
-            Contract.Assert(winRtStream != null);
+            Debug.Assert(winRtStream != null);
 
             return winRtStream;
         }
@@ -318,8 +319,8 @@ namespace System.IO
                 if (wrappedWinRtStream == null)
                     throw new ObjectDisposedException("stream", SR.ObjectDisposed_CannotPerformOperation);
 
-#if DEBUG  // In Chk builds, verify that the original WinRT stream is correctly entered into the WinRT->NetFx map:            
-                AssertMapContains(WinRtToNetFxAdapterMap, wrappedWinRtStream, sAdptr, valueMayBeWrappedInBufferedStream: true);
+#if DEBUG  // In Chk builds, verify that the original WinRT stream is correctly entered into the WinRT->NetFx map:
+                AssertMapContains(s_winRtToNetFxAdapterMap, wrappedWinRtStream, sAdptr, valueMayBeWrappedInBufferedStream: true);
 #endif  // DEBUG
                 return wrappedWinRtStream;
             }
@@ -328,7 +329,7 @@ namespace System.IO
 
             // See if the managed stream already has an adapter:
             NetFxToWinRtStreamAdapter adapter;
-            bool adapterExists = NetFxToWinRtAdapterMap.TryGetValue(stream, out adapter);
+            bool adapterExists = s_netFxToWinRtAdapterMap.TryGetValue(stream, out adapter);
 
             // There is already an adapter:
             if (adapterExists)
@@ -349,9 +350,9 @@ namespace System.IO
 
             // Get the adapter for managed stream again (it may have been created concurrently).
             // If none exists yet, create a new one:
-            NetFxToWinRtStreamAdapter adapter = NetFxToWinRtAdapterMap.GetValue(stream, (str) => NetFxToWinRtStreamAdapter.Create(str));
+            NetFxToWinRtStreamAdapter adapter = s_netFxToWinRtAdapterMap.GetValue(stream, (str) => NetFxToWinRtStreamAdapter.Create(str));
 
-            Contract.Assert(adapter != null);
+            Debug.Assert(adapter != null);
             adapter.SetWonInitializationRace();
 
             return adapter;

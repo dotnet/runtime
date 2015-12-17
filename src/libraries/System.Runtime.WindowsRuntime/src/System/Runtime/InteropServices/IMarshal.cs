@@ -5,13 +5,13 @@ using System;
 
 namespace System.Runtime.InteropServices
 {
-    /// <summary>
-    /// Managed declaration of the IMarshal COM interface.
-    /// </summary>
     [Guid("00000003-0000-0000-c000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
-    interface IMarshal
+    /// <summary>
+    /// Managed declaration of the IMarshal COM interface.
+    /// </summary>
+    internal interface IMarshal
     {
         void GetUnmarshalClass([In] ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlFlags, out Guid pCid);
 

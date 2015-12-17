@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics.Contracts;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Runtime.WindowsRuntime.Internal
 {
@@ -42,7 +42,7 @@ namespace System.Runtime.WindowsRuntime.Internal
 
     internal class Helpers
     {
-        static Task s_completedTask = null;
+        private static Task s_completedTask = null;
 
         internal static Task CompletedTask
         {

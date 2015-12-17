@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Security;
 using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Windows.Input;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -80,7 +80,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT NotifyCollectionChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        [SecurityCritical]
         static internal IntPtr ConvertToNative(NotifyCollectionChangedEventArgs managedArgs)
         {
             if (managedArgs == null)
@@ -97,7 +96,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a WinRT NotifyCollectionChangedEventArgs and creates a new
         // managed NotifyCollectionChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        [SecurityCritical]
         static internal NotifyCollectionChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
@@ -144,7 +142,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts PropertyName from a managed PropertyChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT PropertyChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        [SecurityCritical]
         static internal IntPtr ConvertToNative(PropertyChangedEventArgs managedArgs)
         {
             if (managedArgs == null)
@@ -156,7 +153,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a WinRT PropertyChangedEventArgs and creates a new
         // managed PropertyChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        [SecurityCritical]
         static internal PropertyChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
@@ -176,13 +172,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyCollectionChangedToManagedAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         internal event NotifyCollectionChangedEventHandler CollectionChanged
         {
             // void CollectionChanged.add(NotifyCollectionChangedEventHandler)
-            [SecurityCritical]
             add
             {
                 INotifyCollectionChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyCollectionChanged_WinRT>(this);
@@ -197,7 +192,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // void CollectionChanged.remove(NotifyCollectionChangedEventHandler)
-            [SecurityCritical]
             remove
             {
                 INotifyCollectionChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyCollectionChanged_WinRT>(this);
@@ -218,21 +212,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyCollectionChangedToWinRTAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of INotifyCollectionChanged, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>> m_weakTable =
+        private static ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>> s_weakTable =
             new ConditionalWeakTable<INotifyCollectionChanged, EventRegistrationTokenTable<NotifyCollectionChangedEventHandler>>();
 
         // EventRegistrationToken CollectionChanged.add(NotifyCollectionChangedEventHandler value)
-        [SecurityCritical]
         internal EventRegistrationToken add_CollectionChanged(NotifyCollectionChangedEventHandler value)
         {
             INotifyCollectionChanged _this = JitHelpers.UnsafeCast<INotifyCollectionChanged>(this);
-            EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventRegistrationToken token = table.AddEventHandler(value);
             _this.CollectionChanged += value;
@@ -241,11 +234,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void CollectionChanged.remove(EventRegistrationToken token)
-        [SecurityCritical]
         internal void remove_CollectionChanged(EventRegistrationToken token)
         {
             INotifyCollectionChanged _this = JitHelpers.UnsafeCast<INotifyCollectionChanged>(this);
-            EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             NotifyCollectionChangedEventHandler handler = table.ExtractHandler(token);
             if (handler != null)
@@ -262,13 +254,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyPropertyChangedToManagedAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         internal event PropertyChangedEventHandler PropertyChanged
         {
             // void PropertyChanged.add(PropertyChangedEventHandler)
-            [SecurityCritical]
             add
             {
                 INotifyPropertyChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyPropertyChanged_WinRT>(this);
@@ -283,7 +274,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // void PropertyChanged.remove(PropertyChangedEventHandler)
-            [SecurityCritical]
             remove
             {
                 INotifyPropertyChanged_WinRT _this = JitHelpers.UnsafeCast<INotifyPropertyChanged_WinRT>(this);
@@ -304,21 +294,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyPropertyChangedToWinRTAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of INotifyCollectionChanged, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>> m_weakTable =
+        private static ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>> s_weakTable =
             new ConditionalWeakTable<INotifyPropertyChanged, EventRegistrationTokenTable<PropertyChangedEventHandler>>();
 
         // EventRegistrationToken PropertyChanged.add(PropertyChangedEventHandler value)
-        [SecurityCritical]
         internal EventRegistrationToken add_PropertyChanged(PropertyChangedEventHandler value)
         {
             INotifyPropertyChanged _this = JitHelpers.UnsafeCast<INotifyPropertyChanged>(this);
-            EventRegistrationTokenTable<PropertyChangedEventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventRegistrationToken token = table.AddEventHandler(value);
             _this.PropertyChanged += value;
@@ -327,11 +316,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void PropertyChanged.remove(EventRegistrationToken token)
-        [SecurityCritical]
         internal void remove_PropertyChanged(EventRegistrationToken token)
         {
             INotifyPropertyChanged _this = JitHelpers.UnsafeCast<INotifyPropertyChanged>(this);
-            EventRegistrationTokenTable<PropertyChangedEventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             PropertyChangedEventHandler handler = table.ExtractHandler(token);
             if (handler != null)
@@ -342,18 +330,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 
     // This is a set of stub methods implementing the support for the managed ICommand
-    // interface on WinRT objects that support the WinRT ICommand_WinRT. 
+    // interface on WinRT objects that support the WinRT ICommand_WinRT.
     // Used by the interop mashaling infrastructure.
     // Instances of this are really RCWs of ICommand_WinRT (not ICommandToManagedAdapter or any ICommand).
-    [SecurityCritical]
     internal sealed class ICommandToManagedAdapter /*: System.Windows.Input.ICommand*/
     {
-        private static ConditionalWeakTable<EventHandler, EventHandler<object>> m_weakTable =
+        private static ConditionalWeakTable<EventHandler, EventHandler<object>> s_weakTable =
             new ConditionalWeakTable<EventHandler, EventHandler<object>>();
 
         private ICommandToManagedAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         private event EventHandler CanExecuteChanged
@@ -371,7 +358,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 // value is of type System.EventHandler, but ICommand_WinRT (and thus WindowsRuntimeMarshal.AddEventHandler)
                 // expects an instance of EventHandler<object>. So we get/create a wrapper of value here.
-                EventHandler<object> handler_WinRT = m_weakTable.GetValue(value, ICommandAdapterHelpers.CreateWrapperHandler);
+                EventHandler<object> handler_WinRT = s_weakTable.GetValue(value, ICommandAdapterHelpers.CreateWrapperHandler);
                 WindowsRuntimeMarshal.AddEventHandler<EventHandler<object>>(addMethod, removeMethod, handler_WinRT);
             }
 
@@ -388,7 +375,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 // expects an instance of EventHandler<object>. So we get/create a wrapper of value here.
 
                 // Also we do a value check rather than an instance check to ensure that different instances of the same delegates are treated equal.
-                EventHandler<object> handler_WinRT = ICommandAdapterHelpers.GetValueFromEquivalentKey(m_weakTable , value, ICommandAdapterHelpers.CreateWrapperHandler);
+                EventHandler<object> handler_WinRT = ICommandAdapterHelpers.GetValueFromEquivalentKey(s_weakTable, value, ICommandAdapterHelpers.CreateWrapperHandler);
                 WindowsRuntimeMarshal.RemoveEventHandler<EventHandler<object>>(removeMethod, handler_WinRT);
             }
         }
@@ -410,25 +397,24 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // interface on managed objects that support the managed ICommand interface.
     // Used by the interop mashaling infrastructure.
     // Instances of this are really CCWs of ICommand (not ICommandToWinRTAdapter or any ICommand_WinRT).
-    [SecurityCritical]
     internal sealed class ICommandToWinRTAdapter /*: ICommand_WinRT*/
     {
         private ICommandToWinRTAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
         // Since here the class can be an arbitrary implementation of ICommand, we have to keep the EventRegistrationTokenTable's
         // separately, associated with the implementations using ConditionalWeakTable.
-        private static ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>> m_weakTable =
+        private static ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>> s_weakTable =
             new ConditionalWeakTable<ICommand, EventRegistrationTokenTable<EventHandler>>();
 
         // EventRegistrationToken PropertyChanged.add(EventHandler<object> value)
         private EventRegistrationToken add_CanExecuteChanged(EventHandler<object> value)
         {
             ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
-            EventRegistrationTokenTable<EventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventHandler handler = ICommandAdapterHelpers.CreateWrapperHandler(value);
             EventRegistrationToken token = table.AddEventHandler(handler);
@@ -441,7 +427,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private void remove_CanExecuteChanged(EventRegistrationToken token)
         {
             ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
-            EventRegistrationTokenTable<EventHandler> table = m_weakTable.GetOrCreateValue(_this);
+            EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
             EventHandler handler = table.ExtractHandler(token);
             if (handler != null)
@@ -461,7 +447,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             ICommand _this = JitHelpers.UnsafeCast<ICommand>(this);
             _this.Execute(parameter);
         }
-
     }
 
     // A couple of ICommand adapter helpers need to be transparent, and so are in their own type

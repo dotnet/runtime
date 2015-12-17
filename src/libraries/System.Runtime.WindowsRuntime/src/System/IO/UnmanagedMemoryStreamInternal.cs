@@ -2,18 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.WindowsRuntime.Internal;
+using System.Runtime;
 using System.Security;
 using System.Threading;
-using System.Diagnostics.Contracts;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.IO
 {
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal enum FileAccess
     {
         // Specifies read access to the file. Data can be read from the file and
@@ -25,43 +25,42 @@ namespace System.IO
         Write = 2,
 
         // Specifies read and write access to the file. Data can be written to the
-        // file and the file pointer can be moved. Data can also be read from the 
+        // file and the file pointer can be moved. Data can also be read from the
         // file.
         ReadWrite = 3,
     }
 
     /*
-     * This class is used to access a contiguous block of memory, likely outside 
-     * the GC heap (or pinned in place in the GC heap, but a MemoryStream may 
+     * This class is used to access a contiguous block of memory, likely outside
+     * the GC heap (or pinned in place in the GC heap, but a MemoryStream may
      * make more sense in those cases).  It's great if you have a pointer and
      * a length for a section of memory mapped in by someone else and you don't
-     * want to copy this into the GC heap.  UnmanagedMemoryStream assumes these 
+     * want to copy this into the GC heap.  UnmanagedMemoryStream assumes these
      * two things:
      *
      * 1) All the memory in the specified block is readable or writable,
      *    depending on the values you pass to the constructor.
      * 2) The lifetime of the block of memory is at least as long as the lifetime
      *    of the UnmanagedMemoryStream.
-     * 3) You clean up the memory when appropriate.  The UnmanagedMemoryStream 
+     * 3) You clean up the memory when appropriate.  The UnmanagedMemoryStream
      *    currently will do NOTHING to free this memory.
      * 4) All calls to Write and WriteByte may not be threadsafe currently.
      *
-     * It may become necessary to add in some sort of 
-     * DeallocationMode enum, specifying whether we unmap a section of memory, 
-     * call free, run a user-provided delegate to free the memory, etc etc.  
+     * It may become necessary to add in some sort of
+     * DeallocationMode enum, specifying whether we unmap a section of memory,
+     * call free, run a user-provided delegate to free the memory, etc etc.
      * We'll suggest user write a subclass of UnmanagedMemoryStream that uses
      * a SafeHandle subclass to hold onto the memory.
-     * Check for problems when using this in the negative parts of a 
+     * Check for problems when using this in the negative parts of a
      * process's address space.  We may need to use unsigned longs internally
      * and change the overflow detection logic.
      */
     internal class UnmanagedMemoryStream : Stream
     {
-        // BUGBUG: Consider removing this restriction, or making in 
+        // BUGBUG: Consider removing this restriction, or making in
         // Int64.MaxValue and ensuring we never wrap around to positive.
         private const long UnmanagedMemStreamMaxLength = Int64.MaxValue;
 
-        [SecurityCritical]
         private unsafe byte* _mem;
         private long _length;
         private long _capacity;
@@ -70,7 +69,6 @@ namespace System.IO
         internal bool _isOpen;
 
         // Needed for subclasses that need to map a file, etc.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected UnmanagedMemoryStream()
         {
             unsafe
@@ -80,13 +78,11 @@ namespace System.IO
             _isOpen = false;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
             Initialize(pointer, length, length, FileAccess.Read, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access)
         {
             Initialize(pointer, length, capacity, access, false);
@@ -95,19 +91,16 @@ namespace System.IO
         // We must create one of these without doing a security check.  This
         // class is created while security is trying to start up.  Plus, doing
         // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             Initialize(pointer, length, capacity, access, skipSecurityCheck);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
             Initialize(pointer, length, capacity, access, false);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             if (pointer == null)
@@ -159,7 +152,7 @@ namespace System.IO
             _isOpen = false;
             unsafe { _mem = null; }
 
-            // Stream allocates WaitHandles for async calls. So for correctness 
+            // Stream allocates WaitHandles for async calls. So for correctness
             // call base.Dispose(disposing) for better perf, avoiding waiting
             // for the finalizers to run on those types.
             base.Dispose(disposing);
@@ -218,7 +211,6 @@ namespace System.IO
 
         public unsafe byte* PositionPointer
         {
-            [System.Security.SecurityCritical]  // auto-generated_required
             get
             {
                 // Use a temp to avoid a race
@@ -229,13 +221,12 @@ namespace System.IO
                 if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
                 return ptr;
             }
-            [System.Security.SecurityCritical]  // auto-generated_required
             set
             {
                 if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
 
                 // Note: subtracting pointers returns an Int64.  Working around
-                // to avoid hitting compiler warning CS0652 on this line. 
+                // to avoid hitting compiler warning CS0652 on this line.
                 if (new IntPtr(value - _mem).ToInt64() > UnmanagedMemStreamMaxLength)
                     throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
                 if (value < _mem)
@@ -247,7 +238,6 @@ namespace System.IO
 
         internal unsafe byte* Pointer
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 return _mem;
@@ -270,7 +260,7 @@ namespace System.IO
             if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
             if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-            // Use a local variable to avoid a race where another thread 
+            // Use a local variable to avoid a race where another thread
             // changes our position after we decide we can read some bytes.
             long pos = Interlocked.Read(ref _position);
             long len = Interlocked.Read(ref _length);
@@ -283,7 +273,7 @@ namespace System.IO
             int nInt = (int)n; // Safe because n <= count, which is an Int32
             if (nInt < 0)
                 nInt = 0;  // _position could be beyond EOF
-            Contract.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
+            Debug.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
 
             unsafe
             {
@@ -344,7 +334,7 @@ namespace System.IO
             }
 
             long finalPos = Interlocked.Read(ref _position);
-            Contract.Assert(finalPos >= 0, "_position >= 0");
+            Debug.Assert(finalPos >= 0, "_position >= 0");
             return finalPos;
         }
 
@@ -404,7 +394,7 @@ namespace System.IO
                 throw new NotSupportedException(SR.IO_FixedCapacity);
             }
 
-            // Check to see whether we are now expanding the stream and must 
+            // Check to see whether we are now expanding the stream and must
             // zero any memory in the middle.
             if (pos > len)
             {
@@ -447,7 +437,7 @@ namespace System.IO
                 if (n > _capacity)
                     throw new NotSupportedException(SR.IO_FixedCapacity);
 
-                // Check to see whether we are now expanding the stream and must 
+                // Check to see whether we are now expanding the stream and must
                 // zero any memory in the middle.
                 if (pos > len)
                 {

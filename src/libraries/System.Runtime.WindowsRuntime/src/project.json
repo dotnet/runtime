@@ -1,10 +1,11 @@
 {
   "frameworks": {
-    "dnxcore50":{
+    "dotnet5.3":{
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23616",
         "Microsoft.TargetingPack.Private.WinRT":"1.0.0",
-        "System.ObjectModel":"4.0.0",
+        "System.Diagnostics.Debug":"4.0.10",
+        "System.ObjectModel":"4.0.0"
       }
     },
     "netcore50": {

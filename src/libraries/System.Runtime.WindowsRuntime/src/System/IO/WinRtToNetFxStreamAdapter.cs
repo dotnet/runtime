@@ -3,20 +3,19 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
+using System.Runtime.InteropServices;
+using System.Runtime.WindowsRuntime.Internal;
 using System.Threading.Tasks;
+using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.IO
 {
     /// <summary>
     /// A <code>Stream</code> used to wrap a Windows Runtime stream to expose it as a managed steam.
     /// </summary>
-    [ComVisible(true)]
     internal class WinRtToNetFxStreamAdapter : Stream, IDisposable
     {
         #region Construction
@@ -84,10 +83,10 @@ namespace System.IO
                              );
             Contract.EndContractBlock();
 
-            this.winRtStream = winRtStream;
-            this.canRead = canRead;
-            this.canWrite = canWrite;
-            this.canSeek = canSeek;
+            _winRtStream = winRtStream;
+            _canRead = canRead;
+            _canWrite = canWrite;
+            _canSeek = canSeek;
         }
 
         #endregion Construction
@@ -95,13 +94,13 @@ namespace System.IO
 
         #region Instance variables
 
-        private Byte[] oneByteBuffer = null;
-        private bool leaveUnderlyingStreamOpen = true;
+        private Byte[] _oneByteBuffer = null;
+        private bool _leaveUnderlyingStreamOpen = true;
 
-        private Object winRtStream;
-        private readonly bool canRead;
-        private readonly bool canWrite;
-        private readonly bool canSeek;
+        private Object _winRtStream;
+        private readonly bool _canRead;
+        private readonly bool _canWrite;
+        private readonly bool _canSeek;
 
         #endregion Instance variables
 
@@ -117,18 +116,18 @@ namespace System.IO
         /// </summary>
         internal void SetWonInitializationRace()
         {
-            leaveUnderlyingStreamOpen = false;
+            _leaveUnderlyingStreamOpen = false;
         }
 
 
         public TWinRtStream GetWindowsRuntimeStream<TWinRtStream>() where TWinRtStream : class
         {
-            Object wrtStr = winRtStream;
+            Object wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 return null;
 
-            Contract.Assert(wrtStr is TWinRtStream,
+            Debug.Assert(wrtStr is TWinRtStream,
                             String.Format("Attempted to get the underlying WinRT stream typed as \"{0}\"," +
                                           " but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{1}\".",
                                           typeof(TWinRtStream).ToString(), wrtStr.GetType().ToString()));
@@ -141,9 +140,9 @@ namespace System.IO
         {
             get
             {
-                Byte[] obb = oneByteBuffer;
+                Byte[] obb = _oneByteBuffer;
                 if (obb == null)  // benign race for multiple init
-                    oneByteBuffer = obb = new Byte[1];
+                    _oneByteBuffer = obb = new Byte[1];
                 return obb;
             }
         }
@@ -152,7 +151,7 @@ namespace System.IO
 #if DEBUG
         private static void AssertValidStream(Object winRtStream)
         {
-            Contract.Assert(winRtStream != null,
+            Debug.Assert(winRtStream != null,
                             "This to-NetFx Stream adapter must not be disposed and the underlying WinRT stream must be of compatible type for this operation");
         }
 #endif  // DEBUG
@@ -160,7 +159,7 @@ namespace System.IO
 
         private TWinRtStream EnsureNotDisposed<TWinRtStream>() where TWinRtStream : class
         {
-            Object wrtStr = winRtStream;
+            Object wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 throw new ObjectDisposedException(SR.ObjectDisposed_CannotPerformOperation);
@@ -171,21 +170,21 @@ namespace System.IO
 
         private void EnsureNotDisposed()
         {
-            if (winRtStream == null)
+            if (_winRtStream == null)
                 throw new ObjectDisposedException(SR.ObjectDisposed_CannotPerformOperation);
         }
 
 
         private void EnsureCanRead()
         {
-            if (!canRead)
+            if (!_canRead)
                 throw new NotSupportedException(SR.NotSupported_CannotReadFromStream);
         }
 
 
         private void EnsureCanWrite()
         {
-            if (!canWrite)
+            if (!_canWrite)
                 throw new NotSupportedException(SR.NotSupported_CannotWriteToStream);
         }
 
@@ -197,14 +196,14 @@ namespace System.IO
         protected override void Dispose(bool disposing)
         {
             // WinRT streams should implement IDisposable (IClosable in WinRT), but let's be defensive:
-            if (disposing && winRtStream != null && !leaveUnderlyingStreamOpen)
+            if (disposing && _winRtStream != null && !_leaveUnderlyingStreamOpen)
             {
-                IDisposable disposableWinRtStream = winRtStream as IDisposable;  // benign race on winRtStream
+                IDisposable disposableWinRtStream = _winRtStream as IDisposable;  // benign race on winRtStream
                 if (disposableWinRtStream != null)
                     disposableWinRtStream.Dispose();
             }
 
-            winRtStream = null;
+            _winRtStream = null;
             base.Dispose(disposing);
         }
 
@@ -213,7 +212,7 @@ namespace System.IO
         {
             [Pure]
             get
-            { return (canRead && winRtStream != null); }
+            { return (_canRead && _winRtStream != null); }
         }
 
 
@@ -221,7 +220,7 @@ namespace System.IO
         {
             [Pure]
             get
-            { return (canWrite && winRtStream != null); }
+            { return (_canWrite && _winRtStream != null); }
         }
 
 
@@ -229,7 +228,7 @@ namespace System.IO
         {
             [Pure]
             get
-            { return (canSeek && winRtStream != null); }
+            { return (_canSeek && _winRtStream != null); }
         }
 
         #endregion Simple overrides
@@ -243,7 +242,7 @@ namespace System.IO
             {
                 IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
-                if (!canSeek)
+                if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUseLength_StreamNotSeekable);
 
 #if DEBUG
@@ -267,7 +266,7 @@ namespace System.IO
             {
                 IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
-                if (!canSeek)
+                if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUsePosition_StreamNotSeekable);
 
 #if DEBUG
@@ -291,7 +290,7 @@ namespace System.IO
 
                 IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
-                if (!canSeek)
+                if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUsePosition_StreamNotSeekable);
 
 #if DEBUG
@@ -307,7 +306,7 @@ namespace System.IO
         {
             IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
-            if (!canSeek)
+            if (!_canSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotSeekInStream);
 
 #if DEBUG
@@ -348,10 +347,10 @@ namespace System.IO
                             if (offset >= 0)
                                 throw new IOException(SR.IO_CannotSeekBeyondInt64MaxValue);
 
-                            Contract.Assert(offset < 0);
+                            Debug.Assert(offset < 0);
 
                             UInt64 absOffset = (offset == Int64.MinValue) ? ((UInt64)Int64.MaxValue) + 1 : (UInt64)(-offset);
-                            Contract.Assert(absOffset <= size);
+                            Debug.Assert(absOffset <= size);
 
                             UInt64 np = size - absOffset;
                             if (np > (UInt64)Int64.MaxValue)
@@ -361,7 +360,7 @@ namespace System.IO
                         }
                         else
                         {
-                            Contract.Assert(size <= (UInt64)Int64.MaxValue);
+                            Debug.Assert(size <= (UInt64)Int64.MaxValue);
 
                             Int64 s = unchecked((Int64)size);
 
@@ -394,7 +393,7 @@ namespace System.IO
 
             IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
-            if (!canSeek)
+            if (!_canSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotSeekInStream);
 
             EnsureCanWrite();
@@ -479,7 +478,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if FEATURE_CORECLR
+#if dotnet53
         public override Int32 EndRead(IAsyncResult asyncResult)
 #else
         public Int32 EndRead(IAsyncResult asyncResult)
@@ -518,7 +517,7 @@ namespace System.IO
                 // Done:
 
                 Int64 bytesCompleted = streamAsyncResult.BytesCompleted;
-                Contract.Assert(bytesCompleted <= unchecked((Int64)Int32.MaxValue));
+                Debug.Assert(bytesCompleted <= unchecked((Int64)Int32.MaxValue));
 
                 return (Int32)bytesCompleted;
             }
@@ -589,7 +588,7 @@ namespace System.IO
         #region Writing
 
 
-#if FEATURE_CORECLR
+#if dotnet53
         public override IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
 #else
         public IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
@@ -640,7 +639,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if FEATURE_CORECLR
+#if dotnet53
         public override void EndWrite(IAsyncResult asyncResult)
 #else
         public void EndWrite(IAsyncResult asyncResult)
@@ -753,7 +752,7 @@ namespace System.IO
             IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
 
             // Calling Flush in a non-writable stream is a no-op, not an error:
-            if (!canWrite)
+            if (!_canWrite)
                 return;
 
 #if DEBUG
@@ -791,7 +790,7 @@ namespace System.IO
             IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
 
             // Calling Flush in a non-writable stream is a no-op, not an error:
-            if (!canWrite)
+            if (!_canWrite)
                 return Helpers.CompletedTask;
 
 #if DEBUG
@@ -818,7 +817,7 @@ namespace System.IO
             Contract.Requires(offset >= 0);
             Contract.Requires(count >= 0);
             Contract.Requires(buffer.Length - offset >= count);
-            Contract.Requires(canRead);
+            Contract.Requires(_canRead);
 
             IInputStream wrtStr = EnsureNotDisposed<IInputStream>();
 
@@ -845,7 +844,7 @@ namespace System.IO
 
                 WinRtIOHelper.EnsureResultsInUserBuffer(userBuffer, resultBuffer);
 
-                Contract.Assert(resultBuffer.Length <= unchecked((UInt32)Int32.MaxValue));
+                Debug.Assert(resultBuffer.Length <= unchecked((UInt32)Int32.MaxValue));
                 return (Int32)resultBuffer.Length;
             }
             catch (Exception ex)

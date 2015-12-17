@@ -7,6 +7,7 @@ internal static partial class Interop
     {
         internal const string Advapi32 = "advapi32.dll";
         internal const string BCrypt = "BCrypt.dll";
+        internal const string Combase = "combase.dll";
         internal const string Console_L1 = "api-ms-win-core-console-l1-1-0.dll";
         internal const string Console_L2 = "api-ms-win-core-console-l2-1-0.dll";
         internal const string CoreFile_L1 = "api-ms-win-core-file-l1-1-0.dll";
@@ -14,6 +15,7 @@ internal static partial class Interop
         internal const string CoreFile_L2 = "api-ms-win-core-file-l2-1-0.dll";
         internal const string Crypt32 = "crypt32.dll";
         internal const string Debug = "api-ms-win-core-debug-l1-1-0.dll";
+        internal const string Error_L1 = "api-ms-win-core-winrt-error-l1-1-0.dll";
         internal const string ErrorHandling = "api-ms-win-core-errorhandling-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string Heap = "api-ms-win-core-heap-obsolete-l1-1-0.dll";
@@ -41,6 +43,7 @@ internal static partial class Interop
         internal const string Psapi_Obsolete = "api-ms-win-core-psapi-obsolete-l1-1-0.dll";
         internal const string Registry_L1 = "api-ms-win-core-registry-l1-1-0.dll";
         internal const string Registry_L2 = "api-ms-win-core-registry-l2-1-0.dll";
+        internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";
         // TODO #4661: Move all calls to Secur32 and replace with Sspi.
         internal const string Secur32 = "sspicli.dll";
         internal const string SecurityBase = "api-ms-win-security-base-l1-1-0.dll";
@@ -48,10 +51,10 @@ internal static partial class Interop
         internal const string SecurityLsa = "api-ms-win-security-lsalookup-l2-1-0.dll";
         internal const string SecurityLsaPolicy = "api-ms-win-security-lsapolicy-l1-1-0";
         internal const string SecuritySddl = "api-ms-win-security-sddl-l1-1-0";
+        internal const string ServiceCore = "api-ms-win-service-core-l1-1-1.dll";
         internal const string ServiceMgmt_L1 = "api-ms-win-service-management-l1-1-0.dll";
         internal const string ServiceMgmt_L2 = "api-ms-win-service-management-l2-1-0.dll";
         internal const string ServiceWinSvc = "api-ms-win-service-winsvc-l1-1-0.dll";
-        internal const string ServiceCore = "api-ms-win-service-core-l1-1-1.dll";
         internal const string Sspi = "sspicli.dll";
         internal const string Synch = "api-ms-win-core-synch-l1-1-0.dll";
         internal const string SystemInfo_L1_1 = "api-ms-win-core-sysinfo-l1-1-0.dll";

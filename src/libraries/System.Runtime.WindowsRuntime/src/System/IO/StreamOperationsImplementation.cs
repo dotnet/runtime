@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
 
@@ -41,7 +42,7 @@ namespace System.IO
             buffer.Length = 0;
 
             MemoryStream memStream = stream as MemoryStream;
-            Contract.Assert(memStream != null);
+            Debug.Assert(memStream != null);
 
             try
             {
@@ -97,7 +98,7 @@ namespace System.IO
                 Byte[] data;
                 Int32 offset;
                 bool managedBufferAssert = dataBuffer.TryGetUnderlyingData(out data, out offset);
-                Contract.Assert(managedBufferAssert);
+                Debug.Assert(managedBufferAssert);
 
                 // Init tracking values:
                 bool done = cancelToken.IsCancellationRequested;
@@ -122,9 +123,9 @@ namespace System.IO
                     {
                         // We assume that cancelToken.IsCancellationRequested is has been set and simply proceed.
                         // (we check cancelToken.IsCancellationRequested later)
-                        Contract.Assert(cancelToken.IsCancellationRequested);
+                        Debug.Assert(cancelToken.IsCancellationRequested);
 
-                        // This is because if the cancellation came after we read some bytes we want to return the results we got instead 
+                        // This is because if the cancellation came after we read some bytes we want to return the results we got instead
                         // of an empty cancelled task, so if we have not yet read anything at all, then we can throw cancellation:
                         if (bytesCompleted == 0 && bytesRead == 0)
                             throw;
@@ -133,7 +134,7 @@ namespace System.IO
                     // Update target buffer:
                     dataBuffer.Length = (UInt32)bytesCompleted;
 
-                    Contract.Assert(bytesCompleted <= bytesRequested);
+                    Debug.Assert(bytesCompleted <= bytesRequested);
 
                     // Check if we are done:
                     done = options == InputStreamOptions.Partial  // If no complete read was requested, any amount of data is OK
@@ -144,7 +145,7 @@ namespace System.IO
                     // Call user Progress handler:
                     if (progressListener != null)
                         progressListener.Report(dataBuffer.Length);
-                }  // while (!done)    
+                }  // while (!done)
 
                 // If we got here, then no error was detected. Return the results buffer:
                 return dataBuffer;
@@ -153,7 +154,7 @@ namespace System.IO
             return AsyncInfo.Run<IBuffer, UInt32>(readOperation);
         }  // ReadAsync_AbstractStream
 
-        #endregion ReadAsync implementations  
+        #endregion ReadAsync implementations
 
 
         #region WriteAsync implementations
@@ -178,7 +179,7 @@ namespace System.IO
                     if (cancelToken.IsCancellationRequested)  // CancellationToken is non-nullable
                         return 0;
 
-                    Contract.Assert(buffer.Length <= Int32.MaxValue);
+                    Debug.Assert(buffer.Length <= Int32.MaxValue);
 
                     Int32 bytesToWrite = (Int32)buffer.Length;
 
@@ -216,7 +217,7 @@ namespace System.IO
 
             // Construct and run the async operation:
             return AsyncInfo.Run<UInt32, UInt32>(writeOperation);
-        }  // WriteAsync_AbstractStream     
+        }  // WriteAsync_AbstractStream
 
         #endregion WriteAsync implementations
 

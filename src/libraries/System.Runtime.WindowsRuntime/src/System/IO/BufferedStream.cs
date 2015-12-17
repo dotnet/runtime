@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Runtime.InteropServices;
 using System.Runtime.WindowsRuntime.Internal;
+using System.Threading;
 #if FEATURE_ASYNC_IO
 using System.Collections.ObjectModel;
 using System.Security;
@@ -22,10 +23,10 @@ namespace System.IO
     /// down underlying stream accesses when it is not needed. If you always read & write for sizes
     /// greater than the internal buffer size, then this class may not even allocate the internal buffer.
     /// See a large comment in Write for the details of the write buffer heuristic.
-    /// 
+    ///
     /// This class buffers reads & writes in a shared buffer.
     /// (If you maintained two buffers separately, one operation would always trash the other buffer
-    /// anyways, so we might as well use one buffer.) 
+    /// anyways, so we might as well use one buffer.)
     /// The assumption here is you will almost always be doing a series of reads or writes, but rarely
     /// alternate between the two of them on the same stream.
     ///
@@ -47,10 +48,9 @@ namespace System.IO
     /// faster than IO operations on the underlying stream (if this was not true, using buffering is never appropriate).
     /// The max size of this "shadow" buffer is limited as to not allocate it on the LOH.
     /// Shadowing is always transient. Even when using this technique, this class still guarantees that the number of
-    /// bytes cached (not yet written to the target stream or not yet consumed by the user) is never larger than the 
+    /// bytes cached (not yet written to the target stream or not yet consumed by the user) is never larger than the
     /// actual specified buffer size.
     /// </summary>
-    [ComVisible(true)]
     internal sealed class BufferedStream : Stream
     {
         private const Int32 _DefaultBufferSize = 4096;
@@ -97,8 +97,8 @@ namespace System.IO
 
             Contract.EndContractBlock();
 
-            Contract.Assert(!(stream is MemoryStream), "MemoryStream shouldn't be wrapped in a BufferedStream!");
-            Contract.Assert(!(stream is BufferedStream), "BufferedStream shouldn't be wrapped in another BufferedStream!");
+            Debug.Assert(!(stream is MemoryStream), "MemoryStream shouldn't be wrapped in a BufferedStream!");
+            Debug.Assert(!(stream is BufferedStream), "BufferedStream shouldn't be wrapped in another BufferedStream!");
 
             _stream = stream;
             _bufferSize = bufferSize;
@@ -161,8 +161,8 @@ namespace System.IO
         private const Int32 MaxShadowBufferSize = 81920;  // Make sure not to get to the Large Object Heap.
         private void EnsureShadowBufferAllocated()
         {
-            Contract.Assert(_buffer != null);
-            Contract.Assert(_bufferSize > 0);
+            Debug.Assert(_buffer != null);
+            Debug.Assert(_bufferSize > 0);
 
             // Already have shadow buffer?
             if (_buffer.Length != _bufferSize || _bufferSize >= MaxShadowBufferSize)
@@ -176,7 +176,7 @@ namespace System.IO
 
         private void EnsureBufferAllocated()
         {
-            Contract.Assert(_bufferSize > 0);
+            Debug.Assert(_bufferSize > 0);
 
             // BufferedStream is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
@@ -245,7 +245,7 @@ namespace System.IO
                 EnsureNotClosed();
                 EnsureCanSeek();
 
-                Contract.Assert(!(_writePos > 0 && _readPos != _readLen), "Read and Write buffers cannot both have data in them at the same time.");
+                Debug.Assert(!(_writePos > 0 && _readPos != _readLen), "Read and Write buffers cannot both have data in them at the same time.");
                 return _stream.Position + (_readPos - _readLen + _writePos);
             }
             set
@@ -305,7 +305,7 @@ namespace System.IO
             if (_writePos > 0)
             {
                 FlushWrite();
-                Contract.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
+                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                 return;
             }
 
@@ -326,7 +326,7 @@ namespace System.IO
                 if (_stream.CanWrite || _stream is BufferedStream)
                     _stream.Flush();
 
-                Contract.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
+                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                 return;
             }
 
@@ -343,7 +343,7 @@ namespace System.IO
         if (cancellationToken.IsCancellationRequested)
             return Task.FromCancellation<Int32>(cancellationToken);
 
-        EnsureNotClosed();        
+        EnsureNotClosed();
 
         return FlushAsyncInternal(cancellationToken, this, _stream, _writePos, _readPos, _readLen);
     }
@@ -351,13 +351,13 @@ namespace System.IO
 
     private static async Task FlushAsyncInternal(CancellationToken cancellationToken,
                                                  BufferedStream _this, Stream stream, Int32 writePos, Int32 readPos, Int32 readLen) {
-        
+
         // We bring instance fields down as local parameters to this async method becasue BufferedStream is derived from MarshalByRefObject.
         // Field access would be from the async state machine i.e., not via the this pointer and would require runtime checking to see
         // if we are talking to a remote object, whcih is currently very slow (Dev11 bug #365921).
         // Field access from whithin Asserts is, of course, irrelevant.
-        Contract.Assert(stream != null);        
-        
+        Debug.Assert(stream != null);
+
         SemaphoreSlim sem = _this.EnsureAsyncActiveSemaphoreInitialized();
         await sem.WaitAsync().ConfigureAwait(false);
         try {
@@ -365,9 +365,9 @@ namespace System.IO
             if (writePos > 0) {
 
                 await _this.FlushWriteAsync(cancellationToken).ConfigureAwait(false);
-                Contract.Assert(_this._writePos == 0 && _this._readPos == 0 && _this._readLen == 0);
+                Debug.Assert(_this._writePos == 0 && _this._readPos == 0 && _this._readLen == 0);
                 return;
-            }        
+            }
 
             if (readPos < readLen) {
 
@@ -375,7 +375,7 @@ namespace System.IO
                 // We can either throw away the buffer resulting in date loss (!) or ignore the Flush. (We cannot throw becasue it
                 // would be a breaking change.) We opt into ignoring the Flush in that situation.
                 if (!stream.CanSeek)
-                    return;                                   
+                    return;
 
                 _this.FlushRead();  // not async; it uses Seek, but there's no SeekAsync
 
@@ -385,16 +385,16 @@ namespace System.IO
                 if (stream.CanRead || stream is BufferedStream)
                     await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-                Contract.Assert(_this._writePos == 0 && _this._readPos == 0 && _this._readLen == 0);
+                Debug.Assert(_this._writePos == 0 && _this._readPos == 0 && _this._readLen == 0);
                 return;
-            }            
+            }
 
             // We had no data in the buffer, but we still need to tell the underlying stream to flush.
             if (stream.CanWrite || stream is BufferedStream)
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             // There was nothing in the buffer:
-            Contract.Assert(_this._writePos == 0 && _this._readPos == _this._readLen);
+            Debug.Assert(_this._writePos == 0 && _this._readPos == _this._readLen);
 
         } finally {
             sem.Release();
@@ -403,12 +403,12 @@ namespace System.IO
 #endif  // !FEATURE_PAL && FEATURE_ASYNC_IO
 
 
-        // Reading is done in blocks, but someone could read 1 byte from the buffer then write. 
-        // At that point, the underlying stream's pointer is out of sync with this stream's position. 
+        // Reading is done in blocks, but someone could read 1 byte from the buffer then write.
+        // At that point, the underlying stream's pointer is out of sync with this stream's position.
         // All write  functions should call this function to ensure that the buffered data is not lost.
         private void FlushRead()
         {
-            Contract.Assert(_writePos == 0, "BufferedStream: Write buffer must be empty in FlushRead!");
+            Debug.Assert(_writePos == 0, "BufferedStream: Write buffer must be empty in FlushRead!");
 
             if (_readPos - _readLen != 0)
                 _stream.Seek(_readPos - _readLen, SeekOrigin.Current);
@@ -420,9 +420,9 @@ namespace System.IO
 
         private void ClearReadBufferBeforeWrite()
         {
-            // This is called by write methods to clear the read buffer.            
+            // This is called by write methods to clear the read buffer.
 
-            Contract.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
+            Debug.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
 
             // No READ data in the buffer:
             if (_readPos == _readLen)
@@ -432,7 +432,7 @@ namespace System.IO
             }
 
             // Must have READ data.
-            Contract.Assert(_readPos < _readLen);
+            Debug.Assert(_readPos < _readLen);
 
             // If the underlying stream cannot seek, FlushRead would end up throwing NotSupported.
             // However, since the user did not call a method that is intuitively expected to seek, a better message is in order.
@@ -446,9 +446,9 @@ namespace System.IO
 
         private void FlushWrite()
         {
-            Contract.Assert(_readPos == 0 && _readLen == 0,
+            Debug.Assert(_readPos == 0 && _readLen == 0,
                             "BufferedStream: Read buffer must be empty in FlushWrite!");
-            Contract.Assert(_buffer != null && _bufferSize >= _writePos,
+            Debug.Assert(_buffer != null && _bufferSize >= _writePos,
                             "BufferedStream: Write buffer must be allocated and write position must be in the bounds of the buffer in FlushWrite!");
 
             _stream.Write(_buffer, 0, _writePos);
@@ -460,9 +460,9 @@ namespace System.IO
 #if !FEATURE_PAL && FEATURE_ASYNC_IO
     private async Task FlushWriteAsync(CancellationToken cancellationToken) {
 
-        Contract.Assert(_readPos == 0 && _readLen == 0,
+        Debug.Assert(_readPos == 0 && _readLen == 0,
                         "BufferedStream: Read buffer must be empty in FlushWrite!");
-        Contract.Assert(_buffer != null && _bufferSize >= _writePos,
+        Debug.Assert(_buffer != null && _bufferSize >= _writePos,
                         "BufferedStream: Write buffer must be allocated and write position must be in the bounds of the buffer in FlushWrite!");
 
         await _stream.WriteAsync(_buffer, 0, _writePos, cancellationToken).ConfigureAwait(false);
@@ -475,12 +475,12 @@ namespace System.IO
         private Int32 ReadFromBuffer(Byte[] array, Int32 offset, Int32 count)
         {
             Int32 readBytes = _readLen - _readPos;
-            Contract.Assert(readBytes >= 0);
+            Debug.Assert(readBytes >= 0);
 
             if (readBytes == 0)
                 return 0;
 
-            Contract.Assert(readBytes > 0);
+            Debug.Assert(readBytes > 0);
 
             if (readBytes > count)
                 readBytes = count;
@@ -527,8 +527,8 @@ namespace System.IO
 
             // Reading again for more data may cause us to block if we're using a device with no clear end of file,
             // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-            // process's standard output, this can lead to deadlocks involving two processes.              
-            // BUT - this is a breaking change. 
+            // process's standard output, this can lead to deadlocks involving two processes.
+            // BUT - this is a breaking change.
             // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
             // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
             if (bytesFromBuffer == count)
@@ -542,7 +542,7 @@ namespace System.IO
             }
 
             // So the READ buffer is empty.
-            Contract.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos);
             _readPos = _readLen = 0;
 
             // If there was anything in the WRITE buffer, clear it.
@@ -587,28 +587,28 @@ namespace System.IO
 
         // Previous version incorrectly threw NotSupported instead of ObjectDisposed. We keep that behaviour for back-compat.
         // EnsureNotClosed();
-        if (_stream == null)  __Error.ReadNotSupported(); 
+        if (_stream == null)  __Error.ReadNotSupported();
         EnsureCanRead();
 
         Int32 bytesFromBuffer = 0;
         // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
-        // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this 
-        // an Async operation.      
+        // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
+        // an Async operation.
         SemaphoreSlim sem = base.EnsureAsyncActiveSemaphoreInitialized();
         Task semaphoreLockTask = sem.WaitAsync();
         if (semaphoreLockTask.Status == TaskStatus.RanToCompletion) {
 
             bool completeSynchronously = true;
             try {
-            
+
                 Exception error;
                 bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out error);
 
                 // If we satistied enough data from the buffer, we can complete synchronously.
                 // Reading again for more data may cause us to block if we're using a device with no clear end of file,
                 // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-                // process's standard output, this can lead to deadlocks involving two processes.              
-                // BUT - this is a breaking change. 
+                // process's standard output, this can lead to deadlocks involving two processes.
+                // BUT - this is a breaking change.
                 // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
                 // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
                 completeSynchronously = (bytesFromBuffer == count || error != null);
@@ -617,10 +617,10 @@ namespace System.IO
 
                     SynchronousAsyncResult asyncResult = (error == null)
                                                 ? new SynchronousAsyncResult(bytesFromBuffer, state)
-                                                : new SynchronousAsyncResult(error, state, isWrite: false);            
+                                                : new SynchronousAsyncResult(error, state, isWrite: false);
                     if (callback != null)
                         callback(asyncResult);
-            
+
                     return asyncResult;
                 }
             } finally {
@@ -631,7 +631,7 @@ namespace System.IO
 
         // Delegate to the async implementation.
         return BeginReadFromUnderlyingStream(buffer, offset + bytesFromBuffer, count - bytesFromBuffer, callback, state,
-                                             bytesFromBuffer, semaphoreLockTask);        
+                                             bytesFromBuffer, semaphoreLockTask);
     }
 
 
@@ -649,26 +649,26 @@ namespace System.IO
         if (asyncResult == null)
             throw new ArgumentNullException("asyncResult");
         Contract.Ensures(Contract.Result<Int32>() >= 0);
-        Contract.EndContractBlock();      
-        
+        Contract.EndContractBlock();
+
         var sAR = asyncResult as SynchronousAsyncResult;
         if (sAR != null)
             return SynchronousAsyncResult.EndRead(asyncResult);
         return TaskToApm.End<Int32>(asyncResult);
     }
-    
+
 
     private Task<Int32> LastSyncCompletedReadTask(Int32 val) {
 
         Task<Int32> t = _lastSyncCompletedReadTask;
-        Contract.Assert(t == null || t.Status == TaskStatus.RanToCompletion);
+        Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion);
 
         if (t != null && t.Result == val)
             return t;
-        
+
         t = Task.FromResult<Int32>(val);
         _lastSyncCompletedReadTask = t;
-        return t;        
+        return t;
     }
 
 
@@ -682,7 +682,7 @@ namespace System.IO
             throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
         if (buffer.Length - offset < count)
             throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
-        Contract.EndContractBlock();        
+        Contract.EndContractBlock();
 
         // Fast path check for cancellation already requested
         if (cancellationToken.IsCancellationRequested)
@@ -690,10 +690,10 @@ namespace System.IO
 
         EnsureNotClosed();
         EnsureCanRead();
-        
+
         Int32 bytesFromBuffer = 0;
         // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
-        // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this 
+        // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
         // an Async operation.
         SemaphoreSlim sem = base.EnsureAsyncActiveSemaphoreInitialized();
         Task semaphoreLockTask = sem.WaitAsync();
@@ -707,11 +707,11 @@ namespace System.IO
                 // If we satistied enough data from the buffer, we can complete synchronously.
                 // Reading again for more data may cause us to block if we're using a device with no clear end of file,
                 // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-                // process's standard output, this can lead to deadlocks involving two processes.              
-                // BUT - this is a breaking change. 
+                // process's standard output, this can lead to deadlocks involving two processes.
+                // BUT - this is a breaking change.
                 // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
                 // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-                completeSynchronously = (bytesFromBuffer == count || error != null);                
+                completeSynchronously = (bytesFromBuffer == count || error != null);
 
                 if (completeSynchronously) {
 
@@ -745,21 +745,21 @@ namespace System.IO
 
         // Same conditions validated with exceptions in ReadAsync:
         // (These should be Contract.Requires(..) but that method had some issues in async methods; using Assert(..) for now.)
-        Contract.Assert(array != null);
-        Contract.Assert(offset >= 0);
-        Contract.Assert(count >= 0);
-        Contract.Assert(array.Length - offset >= count);
-        Contract.Assert(_stream != null);
-        Contract.Assert(_stream.CanRead);
-        Contract.Assert(_bufferSize > 0);
-        Contract.Assert(semaphoreLockTask != null);
-                    
-        // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.        
+        Debug.Assert(array != null);
+        Debug.Assert(offset >= 0);
+        Debug.Assert(count >= 0);
+        Debug.Assert(array.Length - offset >= count);
+        Debug.Assert(_stream != null);
+        Debug.Assert(_stream.CanRead);
+        Debug.Assert(_bufferSize > 0);
+        Debug.Assert(semaphoreLockTask != null);
+
+        // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
         await semaphoreLockTask.ConfigureAwait(false);
         try {
 
             // The buffer might have been changed by another async task while we were waiting on the semaphore.
-            // Check it now again.            
+            // Check it now again.
             Int32 bytesFromBuffer = ReadFromBuffer(array, offset, count);
             if (bytesFromBuffer == count)
                 return bytesAlreadySatisfied + bytesFromBuffer;
@@ -770,12 +770,12 @@ namespace System.IO
                 bytesAlreadySatisfied += bytesFromBuffer;
             }
 
-            Contract.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos);
             _readPos = _readLen = 0;
 
             // If there was anything in the WRITE buffer, clear it.
             if (_writePos > 0)
-                await FlushWriteAsync(cancellationToken).ConfigureAwait(false);  // no Begin-End read version for Flush. Use Async.            
+                await FlushWriteAsync(cancellationToken).ConfigureAwait(false);  // no Begin-End read version for Flush. Use Async.
 
             // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
             if (count >= _bufferSize) {
@@ -795,7 +795,7 @@ namespace System.IO
                 EnsureBeginEndAwaitableAllocated();
                 _stream.BeginRead(_buffer, 0, _bufferSize, BeginEndAwaitableAdapter.Callback, _beginEndAwaitable);
                 _readLen = _stream.EndRead(await _beginEndAwaitable);
-            } else {                
+            } else {
                 _readLen = await _stream.ReadAsync(_buffer, 0, _bufferSize, cancellationToken).ConfigureAwait(false);
             }
 
@@ -892,7 +892,7 @@ namespace System.IO
             // buffer space without filling it up completely, the heuristic will always tell us to use the buffer. It will also
             // tell us to use the buffer in cases where the current write would fill the buffer, but the remaining data is small
             // enough such that subsequent operations can use the buffer again.
-            // 
+            //
             // Algorithm:
             // Determine whether or not to buffer according to the heuristic (below).
             // If we decided to use the buffer:
@@ -930,7 +930,7 @@ namespace System.IO
             //
             //     +---------------------------------------+---------------------------------------+
             //     |             current buffer            | next iteration's "future" buffer      |
-            //     +---------------------------------------+---------------------------------------+ 
+            //     +---------------------------------------+---------------------------------------+
             //     |0| | | | | | | | | |1| | | | | | | | | |2| | | | | | | | | |3| | | | | | | | | |
             //     |0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|0|1|2|3|4|5|6|7|8|9|
             //     +-----------+-------------------+-------------------+---------------------------+
@@ -941,7 +941,7 @@ namespace System.IO
             // available buffer, i.e. if count < (_bufferSize - _writePos).
             #endregion Write algorithm comment
 
-            Contract.Assert(_writePos < _bufferSize);
+            Debug.Assert(_writePos < _bufferSize);
 
             Int32 totalUserBytes;
             bool useBuffer;
@@ -957,29 +957,29 @@ namespace System.IO
 
                 if (_writePos < _bufferSize)
                 {
-                    Contract.Assert(count == 0);
+                    Debug.Assert(count == 0);
                     return;
                 }
 
-                Contract.Assert(count >= 0);
-                Contract.Assert(_writePos == _bufferSize);
-                Contract.Assert(_buffer != null);
+                Debug.Assert(count >= 0);
+                Debug.Assert(_writePos == _bufferSize);
+                Debug.Assert(_buffer != null);
 
                 _stream.Write(_buffer, 0, _writePos);
                 _writePos = 0;
 
                 WriteToBuffer(array, ref offset, ref count);
 
-                Contract.Assert(count == 0);
-                Contract.Assert(_writePos < _bufferSize);
+                Debug.Assert(count == 0);
+                Debug.Assert(_writePos < _bufferSize);
             }
             else
             {  // if (!useBuffer)
                // Write out the buffer if necessary.
                 if (_writePos > 0)
                 {
-                    Contract.Assert(_buffer != null);
-                    Contract.Assert(totalUserBytes >= _bufferSize);
+                    Debug.Assert(_buffer != null);
+                    Debug.Assert(totalUserBytes >= _bufferSize);
 
                     // Try avoiding extra write to underlying stream by combining previously buffered data with current user data:
                     if (totalUserBytes <= (_bufferSize + _bufferSize) && totalUserBytes <= MaxShadowBufferSize)
@@ -1023,8 +1023,8 @@ namespace System.IO
             EnsureCanWrite();
 
             // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
-            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this 
-            // an Async operation.        
+            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
+            // an Async operation.
             SemaphoreSlim sem = base.EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync();
             if (semaphoreLockTask.Status == TaskStatus.RanToCompletion)
@@ -1037,7 +1037,7 @@ namespace System.IO
                         ClearReadBufferBeforeWrite();
 
                     // If the write completely fits into the buffer, we can complete synchronously.
-                    Contract.Assert(_writePos < _bufferSize);
+                    Debug.Assert(_writePos < _bufferSize);
                     completeSynchronously = (count < _bufferSize - _writePos);
 
                     if (completeSynchronously)
@@ -1045,7 +1045,7 @@ namespace System.IO
 
                         Exception error;
                         WriteToBuffer(buffer, ref offset, ref count, out error);
-                        Contract.Assert(count == 0);
+                        Debug.Assert(count == 0);
 
                         SynchronousAsyncResult asyncResult = (error == null)
                                                     ? new SynchronousAsyncResult(state)
@@ -1116,7 +1116,7 @@ namespace System.IO
             EnsureCanWrite();
 
             // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
-            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this 
+            // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
             // an Async operation.
             SemaphoreSlim sem = base.EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync();
@@ -1130,7 +1130,7 @@ namespace System.IO
                     if (_writePos == 0)
                         ClearReadBufferBeforeWrite();
 
-                    Contract.Assert(_writePos < _bufferSize);
+                    Debug.Assert(_writePos < _bufferSize);
 
                     // If the write completely fits into the buffer, we can complete synchronously:
                     completeSynchronously = (count < _bufferSize - _writePos);
@@ -1140,7 +1140,7 @@ namespace System.IO
 
                         Exception error;
                         WriteToBuffer(buffer, ref offset, ref count, out error);
-                        Contract.Assert(count == 0);
+                        Debug.Assert(count == 0);
 
                         return (error == null)
                                     ? Task.CompletedTask
@@ -1164,21 +1164,21 @@ namespace System.IO
         /// rather than calling the base Stream which implements the one in terms of the other. This allows BufferedStream
         /// to affect the semantics of the stream it wraps as little as possible. At the same time, we want to share as
         /// much code between the APM and the Async pattern implementations as possible. This method is called by both with
-        /// a corresponding useApmPattern value. Recall that Task implements IAsyncResult.</summary>    
+        /// a corresponding useApmPattern value. Recall that Task implements IAsyncResult.</summary>
         private async Task WriteToUnderlyingStreamAsync(Byte[] array, Int32 offset, Int32 count,
                                                         CancellationToken cancellationToken,
                                                         Task semaphoreLockTask, bool useApmPattern)
         {
 
             // (These should be Contract.Requires(..) but that method had some issues in async methods; using Assert(..) for now.)
-            Contract.Assert(array != null);
-            Contract.Assert(offset >= 0);
-            Contract.Assert(count >= 0);
-            Contract.Assert(array.Length - offset >= count);
-            Contract.Assert(_stream != null);
-            Contract.Assert(_stream.CanWrite);
-            Contract.Assert(_bufferSize > 0);
-            Contract.Assert(semaphoreLockTask != null);
+            Debug.Assert(array != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(array.Length - offset >= count);
+            Debug.Assert(_stream != null);
+            Debug.Assert(_stream.CanWrite);
+            Debug.Assert(_bufferSize > 0);
+            Debug.Assert(semaphoreLockTask != null);
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
 
@@ -1208,13 +1208,13 @@ namespace System.IO
                     if (_writePos < _bufferSize)
                     {
 
-                        Contract.Assert(count == 0);
+                        Debug.Assert(count == 0);
                         return;
                     }
 
-                    Contract.Assert(count >= 0);
-                    Contract.Assert(_writePos == _bufferSize);
-                    Contract.Assert(_buffer != null);
+                    Debug.Assert(count >= 0);
+                    Debug.Assert(_writePos == _bufferSize);
+                    Debug.Assert(_buffer != null);
 
                     if (useApmPattern)
                     {
@@ -1230,8 +1230,8 @@ namespace System.IO
 
                     WriteToBuffer(array, ref offset, ref count);
 
-                    Contract.Assert(count == 0);
-                    Contract.Assert(_writePos < _bufferSize);
+                    Debug.Assert(count == 0);
+                    Debug.Assert(_writePos < _bufferSize);
 
                 }
                 else
@@ -1241,8 +1241,8 @@ namespace System.IO
                     if (_writePos > 0)
                     {
 
-                        Contract.Assert(_buffer != null);
-                        Contract.Assert(totalUserBytes >= _bufferSize);
+                        Debug.Assert(_buffer != null);
+                        Debug.Assert(totalUserBytes >= _bufferSize);
 
                         // Try avoiding extra write to underlying stream by combining previously buffered data with current user data:
                         if (totalUserBytes <= (_bufferSize + _bufferSize) && totalUserBytes <= MaxShadowBufferSize)
@@ -1316,7 +1316,7 @@ namespace System.IO
 
             _buffer[_writePos++] = value;
 
-            Contract.Assert(_writePos < _bufferSize);
+            Debug.Assert(_writePos < _bufferSize);
         }
 
 
@@ -1339,12 +1339,12 @@ namespace System.IO
             if (_readLen - _readPos > 0 && origin == SeekOrigin.Current)
             {
                 // If we have bytes in the READ buffer, adjust the seek offset to account for the resulting difference
-                // between this stream's position and the underlying stream's position.            
+                // between this stream's position and the underlying stream's position.
                 offset -= (_readLen - _readPos);
             }
 
             Int64 oldPos = Position;
-            Contract.Assert(oldPos == _stream.Position + (_readPos - _readLen));
+            Debug.Assert(oldPos == _stream.Position + (_readPos - _readLen));
 
             Int64 newPos = _stream.Seek(offset, origin);
 
@@ -1365,7 +1365,7 @@ namespace System.IO
                 _readPos = _readLen = 0;
             }
 
-            Contract.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
             return newPos;
         }
 

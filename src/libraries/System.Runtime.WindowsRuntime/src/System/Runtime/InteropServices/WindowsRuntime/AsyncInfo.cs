@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -163,7 +164,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             var asyncInfo = new TaskToAsyncActionAdapter(isCanceled: false);
 
             asyncInfo.DangerousSetError(error);
-            Contract.Assert(asyncInfo.Status == AsyncStatus.Error);
+            Debug.Assert(asyncInfo.Status == AsyncStatus.Error);
 
             return asyncInfo;
         }
@@ -178,7 +179,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             var asyncInfo = new TaskToAsyncActionWithProgressAdapter<TProgress>(isCanceled: false);
 
             asyncInfo.DangerousSetError(error);
-            Contract.Assert(asyncInfo.Status == AsyncStatus.Error);
+            Debug.Assert(asyncInfo.Status == AsyncStatus.Error);
 
             return asyncInfo;
         }
@@ -193,7 +194,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             var asyncInfo = new TaskToAsyncOperationAdapter<TResult>(default(TResult));
 
             asyncInfo.DangerousSetError(error);
-            Contract.Assert(asyncInfo.Status == AsyncStatus.Error);
+            Debug.Assert(asyncInfo.Status == AsyncStatus.Error);
 
             return asyncInfo;
         }
@@ -208,7 +209,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             var asyncInfo = new TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>(default(TResult));
 
             asyncInfo.DangerousSetError(error);
-            Contract.Assert(asyncInfo.Status == AsyncStatus.Error);
+            Debug.Assert(asyncInfo.Status == AsyncStatus.Error);
 
             return asyncInfo;
         }

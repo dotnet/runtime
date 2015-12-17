@@ -3,14 +3,15 @@
 
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Windows.Foundation;
 using System.Runtime.WindowsRuntime.Internal;
+using System.Threading.Tasks;
+using System.Threading;
+using Windows.Foundation;
 
-using Internal.Threading.Tasks;
 using Internal.Interop;
+using Internal.Threading.Tasks;
 
 namespace System
 {
@@ -94,8 +95,8 @@ namespace System
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
                 Task innerTask = wrapper.Task;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);
 
                 if (!innerTask.IsCompleted)
                 {
@@ -176,8 +177,8 @@ namespace System
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
                 Task<TResult> innerTask = wrapper.Task as Task<TResult>;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
@@ -202,7 +203,7 @@ namespace System
                     return Helpers.TaskFromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
-            // Benign race: source may complete here. Things still work, just not taking the fast path.        
+            // Benign race: source may complete here. Things still work, just not taking the fast path.
 
             // Source is not a NetFx-to-WinRT adapter, but a native future. Hook up the task:
             var bridge = new AsyncInfoToTaskBridge<TResult>(cancellationToken);
@@ -280,8 +281,8 @@ namespace System
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
                 Task innerTask = wrapper.Task;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
@@ -394,8 +395,8 @@ namespace System
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
                 Task<TResult> innerTask = wrapper.Task as Task<TResult>;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
@@ -426,7 +427,7 @@ namespace System
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
 
-            // Forward progress reports:        
+            // Forward progress reports:
             if (progress != null)
                 ConcatenateProgress(source, progress);
 
