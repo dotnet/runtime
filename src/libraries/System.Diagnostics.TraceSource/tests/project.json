@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Diagnostics.Process": "4.0.0-rc2-23614",
+    "System.Diagnostics.Process": "4.0.0-rc2-23616",
     "System.IO": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
