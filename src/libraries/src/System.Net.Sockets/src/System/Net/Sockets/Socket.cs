@@ -4231,7 +4231,7 @@ namespace System.Net.Sockets
                     {
                         InternalBind(new IPEndPoint(IPAddress.Any, 0));
                     }
-                    else
+                    else if (endPointSnapshot.AddressFamily != AddressFamily.Unix)
                     {
                         InternalBind(new IPEndPoint(IPAddress.IPv6Any, 0));
                     }

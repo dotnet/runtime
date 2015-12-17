@@ -27,7 +27,8 @@
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="SocketTestServerAPMMock.cs" />
-    
+    <Compile Include="UnixDomainSocketTest.cs" />
+
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
       <Link>SocketCommon\Configuration.cs</Link>
@@ -77,7 +78,7 @@
       <Name>System.Net.Sockets</Name>
     </ProjectReference>
   </ItemGroup>
-  
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
