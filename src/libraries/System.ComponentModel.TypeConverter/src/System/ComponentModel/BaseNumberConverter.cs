@@ -87,10 +87,8 @@ namespace System.ComponentModel
                     {
                         return this.FromString(text.Substring(1), 16);
                     }
-                    else if (this.AllowHex && text.StartsWith("0x")
-                             || text.StartsWith("0X")
-                             || text.StartsWith("&h")
-                             || text.StartsWith("&H"))
+                    else if (this.AllowHex && text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                             || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase))
                     {
                         return this.FromString(text.Substring(2), 16);
                     }
