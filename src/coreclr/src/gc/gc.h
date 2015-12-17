@@ -615,6 +615,12 @@ public:
     // static if since restricting for all heaps is fine
     virtual size_t GetValidSegmentSize(BOOL large_seg = FALSE) = 0;
 
+    static BOOL IsLargeObject(MethodTable *mt) {
+        WRAPPER_NO_CONTRACT;
+
+        return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
+    }
+
     static unsigned GetMaxGeneration() {
         LIMITED_METHOD_DAC_CONTRACT;  
         return max_generation;
