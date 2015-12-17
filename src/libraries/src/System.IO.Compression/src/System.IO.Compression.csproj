@@ -14,9 +14,10 @@
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
-    <DefineConstants>$(DefineConstants);FEATURE_ZLIB</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' != 'net46'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
@@ -25,25 +26,29 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\Crc32Helper.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipCustomStreams.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipVersionNeededValues.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
     <Compile Include="System\IO\Compression\Deflater.cs" />
-    <Compile Include="System\IO\Compression\Crc32Helper.cs" />
     <Compile Include="System\IO\Compression\DeflateStream.cs" />
     <Compile Include="System\IO\Compression\GZipStream.cs" />
     <Compile Include="System\IO\Compression\Inflater.cs" />
-    <Compile Include="System\IO\Compression\ZipArchive.cs" />
-    <Compile Include="System\IO\Compression\ZipArchiveEntry.cs" />
-    <Compile Include="System\IO\Compression\ZipArchiveMode.cs" />
-    <Compile Include="System\IO\Compression\ZipBlocks.cs" />
-    <Compile Include="System\IO\Compression\ZipCustomStreams.cs" />
-    <Compile Include="System\IO\Compression\ZipHelper.cs" />
-    <Compile Include="System\IO\Compression\ZipVersionNeededValues.cs" />
     <Compile Include="System\IO\Compression\ZLibException.cs" />
     <Compile Include="System\IO\Compression\ZLibNative.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\IO\Compression\ZLibNative.Windows.cs" />
     <Compile Include="Interop\Interop.zlib.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -56,6 +61,10 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
