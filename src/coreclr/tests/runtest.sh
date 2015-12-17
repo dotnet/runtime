@@ -649,11 +649,18 @@ if [ ! -d "$testRootDir" ]; then
     exit $EXIT_CODE_EXCEPTION
 fi
 
+    
+# Copy native interop test libraries over to the mscorlib path in
+# order for interop tests to run on linux.
+cp $mscorlibDir/bin/* $mscorlibDir   
+
 xunit_output_begin
 create_core_overlay
 copy_test_native_bin_to_test_root
 load_unsupported_tests
 load_failing_tests
+
+ 
 
 cd "$testRootDir"
 if [ -z "$testDirectories" ]
