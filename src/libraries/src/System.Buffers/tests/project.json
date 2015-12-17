@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.21-rc2-23614",
-    "System.Runtime.Extensions": "4.0.11-rc2-23614",
-    "System.Resources.ResourceManager": "4.0.1-rc2-23614",
-    "System.Threading": "4.0.11-rc2-23614",
+    "System.Runtime": "4.0.21-rc2-23616",
+    "System.Runtime.Extensions": "4.0.11-rc2-23616",
+    "System.Resources.ResourceManager": "4.0.1-rc2-23616",
+    "System.Threading": "4.0.11-rc2-23616",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

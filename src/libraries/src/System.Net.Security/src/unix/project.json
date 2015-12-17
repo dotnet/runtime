@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Diagnostics.Contracts": "4.0.0-rc2-23614",
+    "System.Diagnostics.Contracts": "4.0.0-rc2-23616",
     "System.Globalization.Extensions": "4.0.0",
-    "System.Threading": "4.0.0-rc2-23614",
-    "System.Threading.ThreadPool": "4.0.10-rc2-23614",
-    "System.Net.Primitives": "4.0.10-rc2-23614",
-    "System.Security.Cryptography.OpenSsl": "4.0.0-rc2-23614",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-rc2-23614",
+    "System.Threading": "4.0.0-rc2-23616",
+    "System.Threading.ThreadPool": "4.0.10-rc2-23616",
+    "System.Net.Primitives": "4.0.10-rc2-23616",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-rc2-23616",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-rc2-23616",
     "System.Security.Principal": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc2-23614"
+    "System.Security.Principal.Windows": "4.0.0-rc2-23616"
   },
   "frameworks": {
     "dnxcore50": {}
