@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.CoreCLR", "src\System.Threading.Tasks.CoreCLR.csproj", "{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks", "src\System.Threading.Tasks.csproj", "{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Tests", "tests\System.Threading.Tasks.Tests.csproj", "{B6C09633-D161-499A-8FE1-46B2D53A16E7}"
 EndProject
