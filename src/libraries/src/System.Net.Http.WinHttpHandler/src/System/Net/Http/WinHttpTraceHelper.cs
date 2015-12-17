@@ -43,6 +43,16 @@ namespace System.Net.Http
             Debug.WriteLine(message);
         }
 
+        public static void Trace(string format, object arg0)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0);
+        }
+
         public static void Trace(string format, object arg0, object arg1, object arg2)
         {
             if (!IsTraceEnabled())

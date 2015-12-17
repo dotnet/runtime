@@ -43,6 +43,37 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]
+        [InlineData(CookieUsePolicy.UseSpecifiedCookieContainer, "cookieName2", "cookieValue2")]
+        public async Task GetAsync_RedirectResponseHasCookie_CookieSentToFinalUri(
+            CookieUsePolicy cookieUsePolicy,
+            string cookieName,
+            string cookieValue)
+        {
+            Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, 1);
+            var handler = new WinHttpHandler();
+            handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
+            handler.CookieUsePolicy = cookieUsePolicy;
+            if (cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
+            {
+                handler.CookieContainer = new CookieContainer();
+            }
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                client.DefaultRequestHeaders.Add(
+                    "X-SetCookie",
+                    string.Format("{0}={1};Path=/", cookieName, cookieValue));
+                using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
+                {
+                    string responseText = await httpResponse.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.True(JsonMessageContainsKeyValue(responseText, cookieName, cookieValue));
+                }
+            }            
+        }
+
         [Fact]
         [OuterLoop]
         public async Task SendAsync_SlowServerAndCancel_ThrowsTaskCanceledException()
@@ -74,5 +105,12 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 Assert.IsType<HttpRequestException>(ag.InnerException);
             }
         }
+
+        public static bool JsonMessageContainsKeyValue(string message, string key, string value)
+        {
+            // TODO: Merge with System.Net.Http TestHelper class as part of GitHub Issue #4989.
+            string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
+            return message.Contains(pattern);
+        }      
     }
 }
