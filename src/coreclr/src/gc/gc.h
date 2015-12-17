@@ -254,7 +254,7 @@ struct ProfilingScanContext : ScanContext
         fProfilerPinned = fProfilerPinnedParam;
         pvEtwContext = NULL;
 #ifdef FEATURE_CONSERVATIVE_GC
-        // To not confuse CNameSpace::GcScanRoots
+        // To not confuse GCScan::GcScanRoots
         promotion = g_pConfig->GetGCConservative();
 #endif
     }
