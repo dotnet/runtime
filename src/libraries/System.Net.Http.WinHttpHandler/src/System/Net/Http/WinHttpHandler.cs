@@ -45,7 +45,6 @@ namespace System.Net.Http
     public class WinHttpHandler : HttpMessageHandler
 #endif
     {
-        private const string HeaderNameCookie = "Cookie";
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private object _lockObject = new object();
@@ -595,21 +594,6 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
-        internal static string GetCookieHeader(Uri uri, CookieContainer cookies)
-        {
-            string cookieHeader = null;
-
-            Debug.Assert(cookies != null);
-
-            string cookieValues = cookies.GetCookieHeader(uri);
-            if (!string.IsNullOrEmpty(cookieValues))
-            {
-                cookieHeader = string.Format(CultureInfo.InvariantCulture, "{0}: {1}", HeaderNameCookie, cookieValues);
-            }
-
-            return cookieHeader;
-        }
-
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
@@ -620,7 +604,7 @@ namespace System.Net.Http
             // Manually add cookies.
             if (cookies != null)
             {
-                string cookieHeader = GetCookieHeader(requestMessage.RequestUri, cookies);
+                string cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
                 {
                     requestHeadersBuffer.AppendLine(cookieHeader);
@@ -854,6 +838,13 @@ namespace System.Net.Http
                         bool receivedResponse = await InternalReceiveResponseHeadersAsync(state).ConfigureAwait(false);
                         if (receivedResponse)
                         {
+                            // If we're manually handling cookies, we need to add them to the container after
+                            // each response has been received.
+                            if (state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
+                            {
+                                WinHttpCookieContainerAdapter.AddResponseCookiesToContainer(state);
+                            }
+
                             _authHelper.CheckResponseForAuthentication(
                                 state,
                                 ref proxyAuthScheme,
@@ -1274,6 +1265,9 @@ namespace System.Net.Http
             SafeWinHttpHandle requestHandle,
             Interop.WinHttp.WINHTTP_STATUS_CALLBACK callback)
         {
+            // TODO: Issue #5036. Having the status callback use WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS
+            // isn't strictly necessary. However, some of the notification flags are required.
+            // This will be addressed this as part of WinHttpHandler performance improvements.
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,
                 callback,

@@ -65,6 +65,9 @@
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs">
       <Link>ProductionCode\WinHttpChannelBinding.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs">
+      <Link>ProductionCode\WinHttpCookieContainerAdapter.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs">
       <Link>ProductionCode\WinHttpHandler.cs</Link>
     </Compile>

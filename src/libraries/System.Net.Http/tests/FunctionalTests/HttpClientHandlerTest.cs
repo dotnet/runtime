@@ -34,8 +34,14 @@ namespace System.Net.Http.Functional.Tests
         public readonly static object[][] HeaderValueAndUris = {
             new object[] { "X-CustomHeader", "x-value", HttpTestServers.RemoteEchoServer },
             new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RemoteEchoServer },
-            new object[] { "X-CustomHeader", "x-value", HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
-            new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
+            new object[] { "X-CustomHeader", "x-value", HttpTestServers.RedirectUriForDestinationUri(
+                secure:false,
+                destinationUri:HttpTestServers.RemoteEchoServer,
+                hops:1) },
+            new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RedirectUriForDestinationUri(
+                secure:false,
+                destinationUri:HttpTestServers.RemoteEchoServer,
+                hops:1) },
         };
         public readonly static object[][] Http2Servers = HttpTestServers.Http2Servers;
 
@@ -202,7 +208,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = _credential;
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.BasicAuthUriForCreds(false, Username, Password);
+                Uri uri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -215,7 +221,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient())
             {
-                Uri uri = HttpTestServers.BasicAuthUriForCreds(false, Username, Password);
+                Uri uri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -230,7 +236,10 @@ namespace System.Net.Http.Functional.Tests
             handler.AllowAutoRedirect = false;
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, 1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                    secure:false,
+                    destinationUri:HttpTestServers.RemoteEchoServer,
+                    hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -246,7 +255,10 @@ namespace System.Net.Http.Functional.Tests
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, 1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                    secure:false,
+                    destinationUri:HttpTestServers.RemoteEchoServer,
+                    hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -262,7 +274,10 @@ namespace System.Net.Http.Functional.Tests
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.SecureRemoteEchoServer, 1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                    secure:false,
+                    destinationUri:HttpTestServers.SecureRemoteEchoServer,
+                    hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -278,7 +293,10 @@ namespace System.Net.Http.Functional.Tests
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(true, HttpTestServers.RemoteEchoServer, 1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                    secure:true,
+                    destinationUri:HttpTestServers.RemoteEchoServer,
+                    hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -292,10 +310,10 @@ namespace System.Net.Http.Functional.Tests
         {
             var handler = new HttpClientHandler();
             handler.AllowAutoRedirect = true;
-            Uri targetUri = HttpTestServers.BasicAuthUriForCreds(false, Username, Password);
+            Uri targetUri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
             using (var client = new HttpClient(handler))
             {
-                Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, targetUri, 1);
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(secure:false, destinationUri:targetUri, hops:1);
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -314,9 +332,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => 
                     client.GetAsync(HttpTestServers.RedirectUriForDestinationUri(
-                        false,
-                        HttpTestServers.RemoteEchoServer,
-                        hops + 1)));
+                        secure:false,
+                        destinationUri:HttpTestServers.RemoteEchoServer,
+                        hops:(hops + 1))));
             }
         }
 
@@ -327,7 +345,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Credentials = _credential;
             using (var client = new HttpClient(handler))
             {
-                Uri redirectUri = HttpTestServers.RedirectUriForCreds(false, Username, Password);
+                Uri redirectUri = HttpTestServers.RedirectUriForCreds(secure:false, userName:Username, password:Password);
                 using (HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
@@ -338,8 +356,8 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK()
         {
-            Uri uri = HttpTestServers.BasicAuthUriForCreds(false, Username, Password);
-            Uri redirectUri = HttpTestServers.RedirectUriForCreds(false, Username, Password);
+            Uri uri = HttpTestServers.BasicAuthUriForCreds(secure:false, userName:Username, password:Password);
+            Uri redirectUri = HttpTestServers.RedirectUriForCreds(secure:false, userName:Username, password:Password);
             _output.WriteLine(uri.AbsoluteUri);
             _output.WriteLine(redirectUri.AbsoluteUri);
             var credentialCache = new CredentialCache();
@@ -371,12 +389,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("cookiename", "cookievalue")]
-        public async Task GetAsync_SetCookieContainer_CookieSent(string name, string value)
+        [InlineData("cookieName1", "cookieValue1")]
+        public async Task GetAsync_SetCookieContainer_CookieSent(string cookieName, string cookieValue)
         {
             var handler = new HttpClientHandler();
             var cookieContainer = new CookieContainer();
-            cookieContainer.Add(HttpTestServers.RemoteEchoServer, new Cookie(name, value));
+            cookieContainer.Add(HttpTestServers.RemoteEchoServer, new Cookie(cookieName, cookieValue));
             handler.CookieContainer = cookieContainer;
             using (var client = new HttpClient(handler))
             {
@@ -385,9 +403,32 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
                     string responseText = await httpResponse.Content.ReadAsStringAsync();
                     _output.WriteLine(responseText);
-                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, "Cookie", name + "=" + value));
+                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, cookieName, cookieValue));
                 }
             }
+        }
+
+        [ActiveIssue(4960, PlatformID.AnyUnix)]
+        [Theory]
+        [InlineData("cookieName1", "cookieValue1")]
+        public async Task GetAsync_RedirectResponseHasCookie_CookieSentToFinalUri(string cookieName, string cookieValue)
+        {
+            Uri uri = HttpTestServers.RedirectUriForDestinationUri(
+                secure:false,
+                destinationUri:HttpTestServers.RemoteEchoServer,
+                hops:1);
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add(
+                    "X-SetCookie",
+                    string.Format("{0}={1};Path=/", cookieName, cookieValue));
+                using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
+                {
+                    string responseText = await httpResponse.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, cookieName, cookieValue));
+                }
+            }            
         }
 
         [Theory, MemberData("HeaderValueAndUris")]
