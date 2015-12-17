@@ -1,14 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
+using System.Runtime.InteropServices;
+using System.Runtime.WindowsRuntime.Internal;
 using System.Threading.Tasks;
+using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.IO
 {
@@ -142,12 +143,12 @@ namespace System.IO
             Contract.Requires(stream.CanRead || stream.CanWrite || stream.CanSeek);
             Contract.EndContractBlock();
 
-            Contract.Assert(!stream.CanRead || (stream.CanRead && this is IInputStream));
-            Contract.Assert(!stream.CanWrite || (stream.CanWrite && this is IOutputStream));
-            Contract.Assert(!stream.CanSeek || (stream.CanSeek && this is IRandomAccessStream));
+            Debug.Assert(!stream.CanRead || (stream.CanRead && this is IInputStream));
+            Debug.Assert(!stream.CanWrite || (stream.CanWrite && this is IOutputStream));
+            Debug.Assert(!stream.CanSeek || (stream.CanSeek && this is IRandomAccessStream));
 
-            this.readOptimization = readOptimization;
-            this.managedStream = stream;
+            _readOptimization = readOptimization;
+            _managedStream = stream;
         }
 
         #endregion Construction
@@ -155,9 +156,9 @@ namespace System.IO
 
         #region Instance variables
 
-        private Stream managedStream = null;
-        private bool leaveUnderlyingStreamOpen = true;
-        private readonly StreamReadOperationOptimization readOptimization;
+        private Stream _managedStream = null;
+        private bool _leaveUnderlyingStreamOpen = true;
+        private readonly StreamReadOperationOptimization _readOptimization;
 
         #endregion Instance variables
 
@@ -173,19 +174,19 @@ namespace System.IO
         /// </summary>
         internal void SetWonInitializationRace()
         {
-            leaveUnderlyingStreamOpen = false;
+            _leaveUnderlyingStreamOpen = false;
         }
 
 
         public Stream GetManagedStream()
         {
-            return managedStream;
+            return _managedStream;
         }
 
 
         private Stream EnsureNotDisposed()
         {
-            Stream str = managedStream;
+            Stream str = _managedStream;
 
             if (str == null)
             {
@@ -205,13 +206,13 @@ namespace System.IO
         /// <summary>Implements IDisposable.Dispose (IClosable.Close in WinRT)</summary>
         void IDisposable.Dispose()
         {
-            Stream str = managedStream;
+            Stream str = _managedStream;
             if (str == null)
                 return;
 
-            managedStream = null;
+            _managedStream = null;
 
-            if (!leaveUnderlyingStreamOpen)
+            if (!_leaveUnderlyingStreamOpen)
                 str.Dispose();
         }
 
@@ -257,7 +258,7 @@ namespace System.IO
             Stream str = EnsureNotDisposed();
 
             IAsyncOperationWithProgress<IBuffer, UInt32> readAsyncOperation;
-            switch (readOptimization)
+            switch (_readOptimization)
             {
                 case StreamReadOperationOptimization.MemoryStream:
                     readAsyncOperation = StreamOperationsImplementation.ReadAsync_MemoryStream(str, buffer, count);
@@ -273,7 +274,7 @@ namespace System.IO
                 //    break;
 
                 default:
-                    Contract.Assert(false, "We should never get here. Someone forgot to handle an input stream optimisation option.");
+                    Debug.Assert(false, "We should never get here. Someone forgot to handle an input stream optimisation option.");
                     readAsyncOperation = null;
                     break;
             }
@@ -342,9 +343,9 @@ namespace System.IO
             Stream str = EnsureNotDisposed();
             Int64 pos = unchecked((Int64)position);
 
-            Contract.Assert(str != null);
-            Contract.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
-            Contract.Assert(0 <= pos && pos <= Int64.MaxValue, "Unexpected pos=" + pos + ".");
+            Debug.Assert(str != null);
+            Debug.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
+            Debug.Assert(0 <= pos && pos <= Int64.MaxValue, "Unexpected pos=" + pos + ".");
 
             str.Seek(pos, SeekOrigin.Begin);
         }
@@ -415,9 +416,9 @@ namespace System.IO
 
                 Int64 val = unchecked((Int64)value);
 
-                Contract.Assert(str != null);
-                Contract.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
-                Contract.Assert(0 <= val && val <= Int64.MaxValue, "Unexpected val=" + val + ".");
+                Debug.Assert(str != null);
+                Debug.Assert(str.CanSeek, "The underlying str is expected to support Seek, but it does not.");
+                Debug.Assert(0 <= val && val <= Int64.MaxValue, "Unexpected val=" + val + ".");
 
                 str.SetLength(val);
             }

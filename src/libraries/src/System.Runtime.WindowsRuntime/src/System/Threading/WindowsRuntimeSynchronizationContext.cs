@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,17 +18,15 @@ using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
-
 #if FEATURE_APPX
     #region class WinRTSynchronizationContextFactory
 
     [FriendAccessAllowed]
-    [SecurityCritical]
     internal sealed class WinRTSynchronizationContextFactory : WinRTSynchronizationContextFactoryBase
     {
         //
         // It's important that we always return the same SynchronizationContext object for any particular ICoreDispatcher
-        // object, as long as any existing instance is still reachable.  This allows reference equality checks against the 
+        // object, as long as any existing instance is still reachable.  This allows reference equality checks against the
         // SynchronizationContext to determine if two instances represent the same dispatcher.  Async frameworks rely on this.
         // To accomplish this, we use a ConditionalWeakTable to track which instances of WinRTSynchronizationContext are bound
         // to each ICoreDispatcher instance.
@@ -35,10 +34,9 @@ namespace System.Threading
         private static readonly ConditionalWeakTable<CoreDispatcher, WinRTSynchronizationContext> s_contextCache =
             new ConditionalWeakTable<CoreDispatcher, WinRTSynchronizationContext>();
 
-        [SecurityCritical]
         public override SynchronizationContext Create(object dispatcherObj)
         {
-            Contract.Assert(dispatcherObj != null);
+            Debug.Assert(dispatcherObj != null);
 
             //
             // Get the RCW for the dispatcher
@@ -48,8 +46,8 @@ namespace System.Threading
             //
             // The dispatcher is supposed to belong to this thread
             //
-            Contract.Assert(dispatcher == CoreWindow.GetForCurrentThread().Dispatcher);
-            Contract.Assert(dispatcher.HasThreadAccess);
+            Debug.Assert(dispatcher == CoreWindow.GetForCurrentThread().Dispatcher);
+            Debug.Assert(dispatcher.HasThreadAccess);
 
             //
             // Get the WinRTSynchronizationContext instance that represents this CoreDispatcher.
@@ -65,54 +63,52 @@ namespace System.Threading
 
     internal sealed class WinRTSynchronizationContext : SynchronizationContext
     {
-        private readonly CoreDispatcher m_dispatcher;
+        private readonly CoreDispatcher _dispatcher;
 
         internal WinRTSynchronizationContext(CoreDispatcher dispatcher)
         {
-            m_dispatcher = dispatcher;
+            _dispatcher = dispatcher;
         }
 
         #region class WinRTSynchronizationContext.Invoker
 
         private class Invoker
         {
-            private readonly ExecutionContext m_executionContext;
-            private readonly SendOrPostCallback m_callback;
-            private readonly object m_state;
+            private readonly ExecutionContext _executionContext;
+            private readonly SendOrPostCallback _callback;
+            private readonly object _state;
 
-            static readonly ContextCallback s_contextCallback = new ContextCallback(InvokeInContext);
+            private static readonly ContextCallback s_contextCallback = new ContextCallback(InvokeInContext);
 
-            delegate void DelEtwFireThreadTransferSendObj(object id, int kind, string info, bool multiDequeues);
-            delegate void DelEtwFireThreadTransferObj(object id, int kind, string info);
-            static DelEtwFireThreadTransferSendObj s_EtwFireThreadTransferSendObj;
-            static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveObj;
-            static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveHandledObj;
-            static volatile bool s_TriedGetEtwDelegates;
+            private delegate void DelEtwFireThreadTransferSendObj(object id, int kind, string info, bool multiDequeues);
+            private delegate void DelEtwFireThreadTransferObj(object id, int kind, string info);
+            private static DelEtwFireThreadTransferSendObj s_EtwFireThreadTransferSendObj;
+            private static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveObj;
+            private static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveHandledObj;
+            private static volatile bool s_TriedGetEtwDelegates;
 
-            [SecurityCritical]
             public Invoker(SendOrPostCallback callback, object state)
             {
-                m_executionContext = ExecutionContext.FastCapture();
-                m_callback = callback;
-                m_state = state;
+                _executionContext = ExecutionContext.FastCapture();
+                _callback = callback;
+                _state = state;
 
                 if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                     EtwFireThreadTransferSendObj(this);
             }
 
-            [SecurityCritical]
             public void Invoke()
             {
                 if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                     EtwFireThreadTransferReceiveObj(this);
 
-                if (m_executionContext == null)
+                if (_executionContext == null)
                     InvokeCore();
                 else
-                    ExecutionContext.Run(m_executionContext, s_contextCallback, this, preserveSyncCtx: true);
+                    ExecutionContext.Run(_executionContext, s_contextCallback, this, preserveSyncCtx: true);
 
                 // If there was an ETW event that fired at the top of the winrt event handling loop, ETW listeners could
-                // use it as a marker of completion of the previous request. Since such an event does not exist we need to 
+                // use it as a marker of completion of the previous request. Since such an event does not exist we need to
                 // fire the "done handling off-thread request" event in order to enable correct work item assignment.
                 if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                     EtwFireThreadTransferReceiveHandledObj(this);
@@ -127,7 +123,7 @@ namespace System.Threading
             {
                 try
                 {
-                    m_callback(m_state);
+                    _callback(_state);
                 }
                 catch (Exception ex)
                 {
@@ -202,7 +198,7 @@ namespace System.Threading
                 throw new ArgumentNullException("d");
             Contract.EndContractBlock();
 
-            var ignored = m_dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
+            var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
         }
 
         [SecuritySafeCritical]
@@ -213,10 +209,9 @@ namespace System.Threading
 
         public override SynchronizationContext CreateCopy()
         {
-            return new WinRTSynchronizationContext(m_dispatcher);
+            return new WinRTSynchronizationContext(_dispatcher);
         }
     }
     #endregion class WinRTSynchronizationContext
 #endif //FEATURE_APPX
-
 }  // namespace

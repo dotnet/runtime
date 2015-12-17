@@ -1,14 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.WindowsRuntime.Internal;
 using System.Security;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -74,19 +75,18 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // This object handles IMarshal calls for us:
         [ThreadStatic]
-        private static IMarshal winRtMarshalProxy = null;
+        private static IMarshal s_winRtMarshalProxy = null;
 
         private static void EnsureHasMarshalProxy()
         {
-            if (winRtMarshalProxy != null)
+            if (s_winRtMarshalProxy != null)
                 return;
 
             try
             {
-
                 IMarshal proxy;
-                Int32 hr = Interop.mincore_PInvokes.RoGetBufferMarshaler(out proxy);
-                winRtMarshalProxy = proxy;
+                Int32 hr = Interop.mincore.RoGetBufferMarshaler(out proxy);
+                s_winRtMarshalProxy = proxy;
 
                 if (hr != HResults.S_OK)
                 {
@@ -97,7 +97,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 if (proxy == null)
                     throw new NullReferenceException(String.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
-
             }
             catch (DllNotFoundException ex)
             {
@@ -112,14 +111,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Fields
 
-        private Byte[] data = null;
-        private Int32 dataStartOffs = 0;
-        private Int32 usefulDataLength = 0;
-        private Int32 maxDataCapacity = 0;
-        private GCHandle pinHandle;
+        private Byte[] _data = null;
+        private Int32 _dataStartOffs = 0;
+        private Int32 _usefulDataLength = 0;
+        private Int32 _maxDataCapacity = 0;
+        private GCHandle _pinHandle;
 
         // Pointer to data[dataStartOffs] when data is pinned:
-        private IntPtr dataPtr = IntPtr.Zero;
+        private IntPtr _dataPtr = IntPtr.Zero;
 
         #endregion Fields
 
@@ -133,11 +132,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             Contract.EndContractBlock();
 
-            this.data = new Byte[capacity];
-            this.dataStartOffs = 0;
-            this.usefulDataLength = 0;
-            this.maxDataCapacity = capacity;
-            this.dataPtr = IntPtr.Zero;
+            _data = new Byte[capacity];
+            _dataStartOffs = 0;
+            _usefulDataLength = 0;
+            _maxDataCapacity = capacity;
+            _dataPtr = IntPtr.Zero;
         }
 
 
@@ -152,11 +151,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
             Contract.EndContractBlock();
 
-            this.data = data;
-            this.dataStartOffs = offset;
-            this.usefulDataLength = length;
-            this.maxDataCapacity = capacity;
-            this.dataPtr = IntPtr.Zero;
+            _data = data;
+            _dataStartOffs = offset;
+            _usefulDataLength = length;
+            _maxDataCapacity = capacity;
+            _dataPtr = IntPtr.Zero;
         }
 
         #endregion Constructors
@@ -166,8 +165,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal void GetUnderlyingData(out Byte[] underlyingDataArray, out Int32 underlyingDataArrayStartOffset)
         {
-            underlyingDataArray = this.data;
-            underlyingDataArrayStartOffset = this.dataStartOffs;
+            underlyingDataArray = _data;
+            underlyingDataArrayStartOffset = _dataStartOffs;
         }
 
 
@@ -183,11 +182,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 try
                 {
                     // Pin the the data array:
-                    gcHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
-                    buffPtr = gcHandle.AddrOfPinnedObject() + dataStartOffs;
+                    gcHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+                    buffPtr = gcHandle.AddrOfPinnedObject() + _dataStartOffs;
 
                     // Store the pin IFF it has not been assigned:
-                    ptrWasStored = (Interlocked.CompareExchange(ref dataPtr, buffPtr, IntPtr.Zero) == IntPtr.Zero);
+                    ptrWasStored = (Interlocked.CompareExchange(ref _dataPtr, buffPtr, IntPtr.Zero) == IntPtr.Zero);
                 }
                 finally
                 {
@@ -200,11 +199,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     }
                     else
                     {
-                        if (pinHandle.IsAllocated)
-                            pinHandle.Free();
+                        if (_pinHandle.IsAllocated)
+                            _pinHandle.Free();
 
                         // Make sure we keep track of the handle
-                        this.pinHandle = gcHandle;
+                        _pinHandle = gcHandle;
                     }
                 }
             }
@@ -215,8 +214,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         ~WindowsRuntimeBuffer()
         {
-            if (pinHandle.IsAllocated)
-                pinHandle.Free();
+            if (_pinHandle.IsAllocated)
+                _pinHandle.Free();
         }
 
         #endregion Helpers
@@ -226,7 +225,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         UInt32 IBuffer.Capacity
         {
-            get { return unchecked((UInt32)maxDataCapacity); }
+            get { return unchecked((UInt32)_maxDataCapacity); }
         }
 
 
@@ -234,7 +233,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             get
             {
-                return unchecked((UInt32)usefulDataLength);
+                return unchecked((UInt32)_usefulDataLength);
             }
 
             set
@@ -247,8 +246,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
 
                 // Capacity is ensured to not exceed Int32.MaxValue, so Length is within this limit and this cast is safe:
-                Contract.Assert(((IBuffer)this).Capacity <= Int32.MaxValue);
-                usefulDataLength = unchecked((Int32)value);
+                Debug.Assert(((IBuffer)this).Capacity <= Int32.MaxValue);
+                _usefulDataLength = unchecked((Int32)value);
             }
         }
 
@@ -257,11 +256,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Implementation of IBufferByteAccess
 
-        [SecurityCritical]
         unsafe IntPtr IBufferByteAccess.GetBuffer()
         {
             // Get pin handle:
-            IntPtr buffPtr = Volatile.Read(ref dataPtr);
+            IntPtr buffPtr = Volatile.Read(ref _dataPtr);
 
             // If we are already pinned, return the pointer and have a nice day:
             if (buffPtr != IntPtr.Zero)
@@ -279,42 +277,42 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         void IMarshal.DisconnectObject(UInt32 dwReserved)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.DisconnectObject(dwReserved);
+            s_winRtMarshalProxy.DisconnectObject(dwReserved);
         }
 
 
         void IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags, out UInt32 pSize)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
+            s_winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
         }
 
 
         void IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlFlags, out Guid pCid)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
+            s_winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
         }
 
 
         void IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
+            s_winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
         }
 
 
         void IMarshal.ReleaseMarshalData(IntPtr pStm)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.ReleaseMarshalData(pStm);
+            s_winRtMarshalProxy.ReleaseMarshalData(pStm);
         }
 
 
         void IMarshal.UnmarshalInterface(IntPtr pStm, ref Guid riid, out IntPtr ppv)
         {
             EnsureHasMarshalProxy();
-            winRtMarshalProxy.UnmarshalInterface(pStm, ref riid, out ppv);
+            s_winRtMarshalProxy.UnmarshalInterface(pStm, ref riid, out ppv);
         }
         #endregion Implementation of IMarshal
 

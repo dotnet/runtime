@@ -1,54 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <UseECMAKey>true</UseECMAKey>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <UseECMAKey>true</UseECMAKey>
     <AssemblyName>System.Runtime.WindowsRuntime</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyKeyType>ECMA</AssemblyKeyType>
     <ClsCompliant>true</ClsCompliant>
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <NoWarn>$(NoWarn)1698</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
-    <EnableWinRT>true</EnableWinRT>
+    <TargetPackageFramework Condition="'$(TargetPackageFramework)'==''">dotnet5.3</TargetPackageFramework>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)'!='netcore50aot'">
-    <DefineConstants>$(DefineConstants);FEATURE_CORECLR;FEATURE_APPX</DefineConstants>
-    <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
-    <FxTransformCoreAssemblyName>mscorlib</FxTransformCoreAssemblyName>
-    <UseInternalApisRefs>true</UseInternalApisRefs>
-    <ExcludeMscorlibDesignTimeRef>true</ExcludeMscorlibDesignTimeRef>
+  <PropertyGroup Condition="'$(TargetGroup)'==''">
+    <DefineConstants>$(DefineConstants);dotnet53;FEATURE_APPX</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <ItemGroup>
-    <TargetingPackReference Include="Windows" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <TargetingPackReference Include="System.Private.Interop.Extensions"/>
     <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport"/>
+    <TargetingPackReference Include="Windows" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <TargetingPackReference Include="mscorlib"/>
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj"/>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
-    <Compile Include="System\IO\StreamOperationAsyncResult.dnxcore50.cs" />
-    <Compile Include="System\WindowsRuntimeSystemExtensions.dnxcore50.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.dotnet53.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.dotnet53.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
-    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.dnxcore50.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.dotnet53.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
+    </Compile>
+
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="System\WindowsRuntimeSystemExtensions.cs" />
@@ -58,7 +50,15 @@
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interop\Interop.manual.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ResolveLocaleName.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.ResolveLocaleName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="System\VoidTypeParameter.cs" />
     <Compile Include="System\InternalHelpers.cs" />
     <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />

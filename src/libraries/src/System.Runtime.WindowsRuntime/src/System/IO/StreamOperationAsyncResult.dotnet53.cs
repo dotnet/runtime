@@ -5,11 +5,11 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace System.IO
 {
-    partial class StreamOperationAsyncResult
+    internal partial class StreamOperationAsyncResult
     {
         private void ThrowWithIOExceptionDispatchInfo(Exception e)
         {
-            WinRtIOHelper.NativeExceptionToIOExceptionInfo(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(completedOperation.ErrorCode)).Throw();
+            WinRtIOHelper.NativeExceptionToIOExceptionInfo(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(_completedOperation.ErrorCode)).Throw();
         }
     }
 }

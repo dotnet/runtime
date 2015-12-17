@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -11,7 +12,6 @@ using Windows.Foundation;
 
 namespace System
 {
-
     /// <summary>Provides extension methods in the System namespace for working with the Windows Runtime.<br />
     /// Currently contains:<br />
     /// <ul>
@@ -91,14 +91,12 @@ namespace System
             var wrapper = source as TaskToAsyncActionAdapter;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-
                 Task innerTask = wrapper.Task;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);
 
                 if (!innerTask.IsCompleted)
                 {
-
                     // The race here is benign: If the task completes here, the concatination is useless, but not damaging.
                     if (cancellationToken.CanBeCanceled && wrapper.CancelTokenSource != null)
                         ConcatenateCancelTokens(cancellationToken, wrapper.CancelTokenSource, innerTask);
@@ -141,7 +139,6 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static TaskAwaiter<TResult> GetAwaiter<TResult>(this IAsyncOperation<TResult> source)
         {
-
             return AsTask(source).GetAwaiter();
         }
 
@@ -151,7 +148,6 @@ namespace System
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task<TResult> AsTask<TResult>(this IAsyncOperation<TResult> source)
         {
-
             return AsTask(source, CancellationToken.None);
         }
 
@@ -162,7 +158,6 @@ namespace System
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task<TResult> AsTask<TResult>(this IAsyncOperation<TResult> source, CancellationToken cancellationToken)
         {
-
             if (source == null)
                 throw new ArgumentNullException("source");
 
@@ -172,14 +167,12 @@ namespace System
             var wrapper = source as TaskToAsyncOperationAdapter<TResult>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-
                 Task<TResult> innerTask = wrapper.Task as Task<TResult>;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
-
                     // The race here is benign: If the task completes here, the concatination is useless, but not damaging.
                     if (cancellationToken.CanBeCanceled && wrapper.CancelTokenSource != null)
                         ConcatenateCancelTokens(cancellationToken, wrapper.CancelTokenSource, innerTask);
@@ -201,7 +194,7 @@ namespace System
                     return Task.FromCancellation<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
             }
 
-            // Benign race: source may complete here. Things still work, just not taking the fast path.        
+            // Benign race: source may complete here. Things still work, just not taking the fast path.
 
             // Source is not a NetFx-to-WinRT adapter, but a native future. Hook up the task:
             var bridge = new AsyncInfoToTaskBridge<TResult, VoidValueTypeParameter>(cancellationToken);
@@ -223,7 +216,6 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static TaskAwaiter GetAwaiter<TProgress>(this IAsyncActionWithProgress<TProgress> source)
         {
-
             return AsTask(source).GetAwaiter();
         }
 
@@ -233,7 +225,6 @@ namespace System
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source)
         {
-
             return AsTask(source, CancellationToken.None, null);
         }
 
@@ -244,7 +235,6 @@ namespace System
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source, CancellationToken cancellationToken)
         {
-
             return AsTask(source, cancellationToken, null);
         }
 
@@ -255,7 +245,6 @@ namespace System
         /// <returns>The Task representing the asynchronous operation.</returns>
         public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source, IProgress<TProgress> progress)
         {
-
             return AsTask(source, CancellationToken.None, progress);
         }
 
@@ -268,7 +257,6 @@ namespace System
         public static Task AsTask<TProgress>(this IAsyncActionWithProgress<TProgress> source,
                                              CancellationToken cancellationToken, IProgress<TProgress> progress)
         {
-
             if (source == null)
                 throw new ArgumentNullException("source");
 
@@ -278,14 +266,12 @@ namespace System
             var wrapper = source as TaskToAsyncActionWithProgressAdapter<TProgress>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-
                 Task innerTask = wrapper.Task;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
-
                     // The race here is benign: If the task completes here, the concatinations are useless, but not damaging.
 
                     if (cancellationToken.CanBeCanceled && wrapper.CancelTokenSource != null)
@@ -337,7 +323,6 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static TaskAwaiter<TResult> GetAwaiter<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source)
         {
-
             return AsTask(source).GetAwaiter();
         }
 
@@ -347,7 +332,6 @@ namespace System
         /// <returns>The Task representing the started asynchronous operation.</returns>
         public static Task<TResult> AsTask<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source)
         {
-
             return AsTask(source, CancellationToken.None, null);
         }
 
@@ -359,7 +343,6 @@ namespace System
         public static Task<TResult> AsTask<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source,
                                                                CancellationToken cancellationToken)
         {
-
             return AsTask(source, cancellationToken, null);
         }
 
@@ -371,7 +354,6 @@ namespace System
         public static Task<TResult> AsTask<TResult, TProgress>(this IAsyncOperationWithProgress<TResult, TProgress> source,
                                                                IProgress<TProgress> progress)
         {
-
             return AsTask(source, CancellationToken.None, progress);
         }
 
@@ -393,14 +375,12 @@ namespace System
             var wrapper = source as TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
             {
-
                 Task<TResult> innerTask = wrapper.Task as Task<TResult>;
-                Contract.Assert(innerTask != null);
-                Contract.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
+                Debug.Assert(innerTask != null);
+                Debug.Assert(innerTask.Status != TaskStatus.Created);  // Is WaitingForActivation a legal state at this moment?
 
                 if (!innerTask.IsCompleted)
                 {
-
                     // The race here is benign: If the task completes here, the concatinations are useless, but not damaging.
 
                     if (cancellationToken.CanBeCanceled && wrapper.CancelTokenSource != null)
@@ -428,7 +408,7 @@ namespace System
 
             // Benign race: source may complete here. Things still work, just not taking the fast path.
 
-            // Forward progress reports:        
+            // Forward progress reports:
             if (progress != null)
                 ConcatenateProgress(source, progress);
 
@@ -451,7 +431,6 @@ namespace System
 
         public static IAsyncAction AsAsyncAction(this Task source)
         {
-
             if (source == null)
                 throw new ArgumentNullException("source");
 
@@ -463,7 +442,6 @@ namespace System
 
         public static IAsyncOperation<TResult> AsAsyncOperation<TResult>(this Task<TResult> source)
         {
-
             if (source == null)
                 throw new ArgumentNullException("source");
 
@@ -475,7 +453,7 @@ namespace System
 
         #endregion Converters from System.Threading.Tasks.Task to Windows.Foundation.IAsyncInfo (and interfaces that derive from it)
 
-        static void CommonlyUsedGenericInstantiations()
+        private static void CommonlyUsedGenericInstantiations()
         {
             // This method is an aid for NGen to save common generic
             // instantiations into the ngen image.
@@ -488,9 +466,7 @@ namespace System
             ((IAsyncOperationWithProgress<ulong, ulong>)null).AsTask();
             ((IAsyncOperationWithProgress<string, ulong>)null).AsTask();
         }
-
     }  // class WindowsRuntimeSystemExtensions
-
 }  // namespace
 
 // WindowsRuntimeExtensions.cs

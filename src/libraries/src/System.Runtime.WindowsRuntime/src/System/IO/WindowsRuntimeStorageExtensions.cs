@@ -4,13 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Streams;
+using Windows.Storage;
 
 namespace System.IO
 {
@@ -19,7 +20,7 @@ namespace System.IO
     /// </summary>
     public static class WindowsRuntimeStorageExtensions
     {
-        #region Extensions on IStorageFile for retreaving a managed Stream    
+        #region Extensions on IStorageFile for retreaving a managed Stream
 
         [CLSCompliant(false)]
         public static Task<Stream> OpenStreamForReadAsync(this IStorageFile windowsRuntimeFile)
@@ -193,12 +194,12 @@ namespace System.IO
                                                            .AsTask().ConfigureAwait(continueOnCapturedContext: false);
                     UInt64 fileSize = fileProperties.Size;
 
-                    Contract.Assert(fileSize <= Int64.MaxValue, ".NET streams assume that file sizes are not larger than Int64.MaxValue,"
+                    Debug.Assert(fileSize <= Int64.MaxValue, ".NET streams assume that file sizes are not larger than Int64.MaxValue,"
                                                               + " so we are not supporting the situation where this is not the case.");
                     offset = checked((Int64)fileSize);
                 }
 
-                // Now open a file with the correct options:            
+                // Now open a file with the correct options:
 
                 Stream managedStream = await OpenStreamForWriteAsyncCore(windowsRuntimeFile, offset).ConfigureAwait(continueOnCapturedContext: false);
                 return managedStream;

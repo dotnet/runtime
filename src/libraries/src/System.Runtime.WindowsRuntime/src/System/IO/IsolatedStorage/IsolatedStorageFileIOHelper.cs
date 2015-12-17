@@ -12,7 +12,6 @@ namespace System.IO.IsolatedStorage
     [FriendAccessAllowed]
     internal class IsolatedStorageFileIOHelper : IsolatedStorageFileIOHelperBase
     {
-        [SecurityCritical]
         internal override void UnsafeMoveFile(string sourceFileFullPath, string destinationFileFullPath)
         {
             if (Directory.Exists(destinationFileFullPath))

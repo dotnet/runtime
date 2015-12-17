@@ -2,15 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Resources;
-using System.Security;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 using System.Collections.Generic;
-using System.Text; // For UriEncode
+using System.Diagnostics;
 using System.Globalization;
-using Windows.ApplicationModel;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text; // For UriEncode
 using Windows.ApplicationModel.Resources.Core;
+using Windows.ApplicationModel;
 using Windows.Foundation.Collections;
 using Windows.Storage;
 
@@ -18,14 +18,13 @@ namespace System.Resources
 {
 #if FEATURE_APPX
     [FriendAccessAllowed]
-    [SecurityCritical]
     // Please see the comments regarding thread safety preceding the implementations
     // of Initialize() and GetString() below.
     internal sealed class WindowsRuntimeResourceManager : WindowsRuntimeResourceManagerBase
     {
-        private ResourceMap m_resourceMap;
-        private ResourceContext m_clonedResourceContext;
-        private string m_clonedResourceContextFallBackList;
+        private ResourceMap _resourceMap;
+        private ResourceContext _clonedResourceContext;
+        private string _clonedResourceContextFallBackList;
 
         private static char[] s_charCultureSeparator;
 
@@ -133,8 +132,7 @@ namespace System.Resources
         // no such culture exists.
         private static CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
         {
-
-            StringBuilder localeNameBuffer = new StringBuilder(Interop.mincore_PInvokes.LOCALE_NAME_MAX_LENGTH);
+            StringBuilder localeNameBuffer = new StringBuilder(Interop.mincore.LOCALE_NAME_MAX_LENGTH);
 
             for (int i = 0; i < languages.Count; i++)
             {
@@ -143,9 +141,8 @@ namespace System.Resources
                     return new CultureInfo(languages[i]);
                 }
 
-                if (Interop.mincore_PInvokes.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
+                if (Interop.mincore.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
                 {
-
                     string localeName = localeNameBuffer.ToString();
 
                     if (CultureData.GetCultureData(localeName, true) != null)
@@ -221,13 +218,13 @@ namespace System.Resources
                 s_dependentPackageInfoList = dependentPackageInfoList;
             }
 
-            Contract.Assert(s_dependentPackageInfoList != null);
+            Debug.Assert(s_dependentPackageInfoList != null);
         }
 
         private static void GlobalResourceContextChanged(object sender, IMapChangedEventArgs<string> e)
         {
-            Contract.Assert(s_globalResourceContextFallBackList != null);
-            Contract.Assert(s_globalResourceContext != null);
+            Debug.Assert(s_globalResourceContextFallBackList != null);
+            Debug.Assert(s_globalResourceContext != null);
 
             List<String> languages = new List<string>(s_globalResourceContext.Languages);
 
@@ -237,35 +234,35 @@ namespace System.Resources
 
         private static bool LibpathMatchesPackagepath(String libpath, String packagepath)
         {
-            Contract.Assert(libpath != null);
-            Contract.Assert(packagepath != null);
+            Debug.Assert(libpath != null);
+            Debug.Assert(packagepath != null);
 
             return packagepath.Length < libpath.Length &&
                    String.Compare(packagepath, 0,
                                   libpath, 0,
                                   packagepath.Length,
                                   StringComparison.OrdinalIgnoreCase) == 0 &&
-                // Ensure wzPackagePath is not just a prefix, but a path prefix
-                // This says: packagepath is c:\foo || c:\foo\
+                   // Ensure wzPackagePath is not just a prefix, but a path prefix
+                   // This says: packagepath is c:\foo || c:\foo\
                    (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\"));
         }
 
-#if FEATURE_CORECLR
+#if dotnet53
         /* Returns true if libpath is path to an ni image and if the path contains packagename as a subfolder */
         private static bool LibpathContainsPackagename(String libpath, String packagename)
         {
-            Contract.Assert(libpath != null);
-            Contract.Assert(packagename != null);
-            
-            return libpath.IndexOf("\\" + packagename + "\\", StringComparison.OrdinalIgnoreCase) >= 0 && 
+            Debug.Assert(libpath != null);
+            Debug.Assert(packagename != null);
+
+            return libpath.IndexOf("\\" + packagename + "\\", StringComparison.OrdinalIgnoreCase) >= 0 &&
                    (libpath.EndsWith("ni.dll", StringComparison.OrdinalIgnoreCase) || libpath.EndsWith("ni.exe", StringComparison.OrdinalIgnoreCase));
         }
 #endif
 
         private static string FindPackageSimpleNameForFilename(string libpath)
         {
-            Contract.Assert(libpath != null);
-            Contract.Assert(s_currentPackageInfo.Path != null); // Set in InitializeStatics()
+            Debug.Assert(libpath != null);
+            Debug.Assert(s_currentPackageInfo.Path != null); // Set in InitializeStatics()
             // s_currentPackageInfo.Name may be null (see note below)
 
             if (LibpathMatchesPackagepath(libpath, s_currentPackageInfo.Path))
@@ -282,11 +279,11 @@ namespace System.Resources
                 }
             }
 
-#if FEATURE_CORECLR
+#if dotnet53
             /* On phone libpath is usually ni path and not IL path as we do not touch the IL on phone.
-               On Phone NI images are no longer under package root. Due to this above logic fails to 
-               find the package to which the library belongs. We assume that NI paths usually have 
-               package name as subfolder in its path. Based on this assumption we can find the package 
+               On Phone NI images are no longer under package root. Due to this above logic fails to
+               find the package to which the library belongs. We assume that NI paths usually have
+               package name as subfolder in its path. Based on this assumption we can find the package
                to which an NI belongs. Below code does that.
               */
             if (LibpathContainsPackagename(libpath, s_currentPackageInfo.FullName))
@@ -294,7 +291,7 @@ namespace System.Resources
             else // Look at dependent packages
             {
                 // s_dependentPackageInfoList is empty (but non-null) if there are no dependent packages.
-                foreach(PackageInfo dependentPackageInfo in s_dependentPackageInfoList)
+                foreach (PackageInfo dependentPackageInfo in s_dependentPackageInfoList)
                 {
                     if (LibpathContainsPackagename(libpath, dependentPackageInfo.FullName))
                         return dependentPackageInfo.Name;
@@ -316,11 +313,10 @@ namespace System.Resources
         // Only returns true if the function succeeded completely.
         // Outputs exceptionInfo since it may be needed for debugging purposes
         // if an exception is thrown by one of Initialize's callees.
-        [SecurityCritical]
         public override bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo)
         {
-            Contract.Assert(libpath != null);
-            Contract.Assert(reswFilename != null);
+            Debug.Assert(libpath != null);
+            Debug.Assert(reswFilename != null);
             exceptionInfo = null;
 
             if (InitializeStatics())
@@ -341,7 +337,7 @@ namespace System.Resources
                 {
                     string packageSimpleName = FindPackageSimpleNameForFilename(libpath);
 
-#if FEATURE_CORECLR
+#if dotnet53
                     // If we have found a simple package name for the assembly, lets make sure it is not *.resource.dll that
                     // an application may have packaged in its AppX. This is to enforce AppX apps to use PRI resources.
                     if (packageSimpleName != null)
@@ -354,7 +350,7 @@ namespace System.Resources
                             packageSimpleName = null;
                         }
                     }
-#endif //  FEATURE_CORECLR
+#endif //  dotnet53
                     if (packageSimpleName != null)
                     {
                         ResourceMap packageResourceMap = null;
@@ -370,9 +366,9 @@ namespace System.Resources
                                 // named "reswFilename/*" for the package we are looking up.
 
                                 reswFilename = UriUtility.UriEncode(reswFilename);
-                                m_resourceMap = packageResourceMap.GetSubtree(reswFilename);
+                                _resourceMap = packageResourceMap.GetSubtree(reswFilename);
 
-                                if (m_resourceMap == null)
+                                if (_resourceMap == null)
                                 {
                                     exceptionInfo = new PRIExceptionInfo();
                                     exceptionInfo._PackageSimpleName = packageSimpleName;
@@ -380,14 +376,14 @@ namespace System.Resources
                                 }
                                 else
                                 {
-                                    m_clonedResourceContext = s_globalResourceContext.Clone();
+                                    _clonedResourceContext = s_globalResourceContext.Clone();
 
-                                    if (m_clonedResourceContext != null)
+                                    if (_clonedResourceContext != null)
                                     {
                                         // Will need to be changed the first time it is used. But we can't set it to "" since we will take a lock on it.
-                                        m_clonedResourceContextFallBackList = ReadOnlyListToString(m_clonedResourceContext.Languages);
+                                        _clonedResourceContextFallBackList = ReadOnlyListToString(_clonedResourceContext.Languages);
 
-                                        if (m_clonedResourceContextFallBackList != null)
+                                        if (_clonedResourceContextFallBackList != null)
                                             return true;
                                     }
                                 }
@@ -402,8 +398,8 @@ namespace System.Resources
 
         private static IReadOnlyList<string> StringToReadOnlyList(string s)
         {
-            Contract.Assert(s != null);
-            Contract.Assert(s_charCultureSeparator != null);
+            Debug.Assert(s != null);
+            Debug.Assert(s_charCultureSeparator != null);
 
             List<string> newList = new List<string>(s.Split(s_charCultureSeparator));
             return newList.AsReadOnly();
@@ -411,7 +407,7 @@ namespace System.Resources
 
         private static string ReadOnlyListToString(IReadOnlyList<string> list)
         {
-            Contract.Assert(list != null);
+            Debug.Assert(list != null);
 
             return String.Join(";", list);
         }
@@ -429,7 +425,7 @@ namespace System.Resources
         // which is global for the whole app
         public override bool SetGlobalResourceContextDefaultCulture(CultureInfo ci)
         {
-            Contract.Assert(ci != null);
+            Debug.Assert(ci != null);
             InitializeStaticGlobalResourceContext(null);
 
             if (s_globalResourceContext == null)
@@ -472,12 +468,11 @@ namespace System.Resources
         // continue to be thread-safe.
 
         // Throws exceptions
-        [SecurityCritical]
         public override String GetString(String stringName,
                  String startingCulture, String neutralResourcesCulture)
         {
-            Contract.Assert(stringName != null);
-            Contract.Assert(m_resourceMap != null); // Should have been initialized by now
+            Debug.Assert(stringName != null);
+            Debug.Assert(_resourceMap != null); // Should have been initialized by now
 
             ResourceCandidate resourceCandidate = null;
 
@@ -486,15 +481,15 @@ namespace System.Resources
             if (startingCulture == null && neutralResourcesCulture == null)
             {
 #pragma warning disable 618
-                resourceCandidate = m_resourceMap.GetValue(stringName);
+                resourceCandidate = _resourceMap.GetValue(stringName);
 #pragma warning restore 618
             }
             else
             {
-                Contract.Assert(m_clonedResourceContext != null); // Should have been initialized by now
-                Contract.Assert(m_clonedResourceContextFallBackList != null); // Should have been initialized by now
-                Contract.Assert(s_globalResourceContextFallBackList != null); // Should have been initialized by now
-                Contract.Assert(s_globalResourceContextFallBackList.Length > 0); // Should never be empty
+                Debug.Assert(_clonedResourceContext != null); // Should have been initialized by now
+                Debug.Assert(_clonedResourceContextFallBackList != null); // Should have been initialized by now
+                Debug.Assert(s_globalResourceContextFallBackList != null); // Should have been initialized by now
+                Debug.Assert(s_globalResourceContextFallBackList.Length > 0); // Should never be empty
 
                 // We need to modify the culture fallback list used by the Modern Resource Manager
                 // The starting culture has to be looked up first, and neutral resources culture has
@@ -507,7 +502,7 @@ namespace System.Resources
                        s_globalResourceContextFallBackList + // Our tests do not test this line of code, so be extra careful if you modify or move it.
                     (neutralResourcesCulture == null ? "" : ";" + neutralResourcesCulture);
 
-                lock (m_clonedResourceContext)
+                lock (_clonedResourceContext)
                 {
                     // s_globalResourceContextFallBackList may have changed on another thread by now.
                     // We cannot prevent that from happening because it may have happened on a native
@@ -515,13 +510,13 @@ namespace System.Resources
                     // The worst that can happen is that a string is unexpectedly missing
                     // or in the wrong language.
 
-                    if (!String.Equals(newResourceFallBackList, m_clonedResourceContextFallBackList, StringComparison.Ordinal))
+                    if (!String.Equals(newResourceFallBackList, _clonedResourceContextFallBackList, StringComparison.Ordinal))
                     {
-                        m_clonedResourceContext.Languages = StringToReadOnlyList(newResourceFallBackList);
-                        m_clonedResourceContextFallBackList = newResourceFallBackList;
+                        _clonedResourceContext.Languages = StringToReadOnlyList(newResourceFallBackList);
+                        _clonedResourceContextFallBackList = newResourceFallBackList;
                     }
 
-                    resourceCandidate = m_resourceMap.GetValue(stringName, m_clonedResourceContext);
+                    resourceCandidate = _resourceMap.GetValue(stringName, _clonedResourceContext);
                 }
             }
 

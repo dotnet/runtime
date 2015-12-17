@@ -3,8 +3,8 @@
 
 using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.InteropServices;
 using Windows.Storage.Streams;
 
 namespace System.IO

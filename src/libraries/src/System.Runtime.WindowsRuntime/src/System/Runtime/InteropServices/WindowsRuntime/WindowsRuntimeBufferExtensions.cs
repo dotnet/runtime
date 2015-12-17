@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.WindowsRuntime.Internal;
 using Windows.Foundation;
 using Windows.Storage.Streams;
-using System.Runtime.WindowsRuntime.Internal;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -75,8 +76,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// Copies the contents of <code>source</code> to <code>destination</code> starting at offset 0.
         /// This method does <em>NOT</em> update <code>destination.Length</code>.
         /// </summary>
-        /// <param name="source">Array to copy data from.</param>    
-        /// <param name="destination">The buffer to copy to.</param>    
+        /// <param name="source">Array to copy data from.</param>
+        /// <param name="destination">The buffer to copy to.</param>
         [CLSCompliant(false)]
         public static void CopyTo(this Byte[] source, IBuffer destination)
         {
@@ -239,9 +240,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (srcIsManaged && destIsManaged)
             {
-                Contract.Assert(count <= Int32.MaxValue);
-                Contract.Assert(sourceIndex <= Int32.MaxValue);
-                Contract.Assert(destinationIndex <= Int32.MaxValue);
+                Debug.Assert(count <= Int32.MaxValue);
+                Debug.Assert(sourceIndex <= Int32.MaxValue);
+                Debug.Assert(destinationIndex <= Int32.MaxValue);
 
                 Array.Copy(srcDataArr, srcDataOffs + (Int32)sourceIndex, destDataArr, destDataOffs + (Int32)destinationIndex, (Int32)count);
                 return;
@@ -251,8 +252,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (srcIsManaged)
             {
-                Contract.Assert(count <= Int32.MaxValue);
-                Contract.Assert(sourceIndex <= Int32.MaxValue);
+                Debug.Assert(count <= Int32.MaxValue);
+                Debug.Assert(sourceIndex <= Int32.MaxValue);
 
                 destPtr = destination.GetPointerAtOffset(destinationIndex);
                 Marshal.Copy(srcDataArr, srcDataOffs + (Int32)sourceIndex, destPtr, (Int32)count);
@@ -261,8 +262,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (destIsManaged)
             {
-                Contract.Assert(count <= Int32.MaxValue);
-                Contract.Assert(destinationIndex <= Int32.MaxValue);
+                Debug.Assert(count <= Int32.MaxValue);
+                Debug.Assert(destinationIndex <= Int32.MaxValue);
 
                 srcPtr = source.GetPointerAtOffset(sourceIndex);
                 Marshal.Copy(srcPtr, destDataArr, destDataOffs + (Int32)destinationIndex, (Int32)count);
@@ -282,7 +283,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// <summary>
         /// If the specified <code>IBuffer</code> is backed by a managed array, this method will return <code>true</code> and
         /// set <code>underlyingDataArray</code> to refer to that array
-        /// and <code>underlyingDataArrayStartOffset</code> to the value at which the buffer data begins in that array. 
+        /// and <code>underlyingDataArrayStartOffset</code> to the value at which the buffer data begins in that array.
         /// If the specified <code>IBuffer</code> is <em>not</em> backed by a managed array, this method will return <code>false</code>.
         /// This method is required by managed APIs that wish to use the buffer's data with other managed APIs that use
         /// arrays without a need for a memory copy.
@@ -440,7 +441,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             Int32 originInStream = streamData.Offset;
 
-            Contract.Assert(underlyingStream.Length <= Int32.MaxValue);
+            Debug.Assert(underlyingStream.Length <= Int32.MaxValue);
 
             Int32 buffCapacity = Math.Min(length, underlyingStream.Capacity - positionInStream);
             Int32 buffLength = Math.Max(0, Math.Min(length, ((Int32)underlyingStream.Length) - positionInStream));
@@ -463,7 +464,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Int32 dataOffs;
             if (source.TryGetUnderlyingData(out dataArr, out dataOffs))
             {
-                Contract.Assert(source.Capacity < Int32.MaxValue);
+                Debug.Assert(source.Capacity < Int32.MaxValue);
                 return new MemoryStream(dataArr, dataOffs, (Int32)source.Capacity, true);
             }
 
@@ -515,20 +516,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // we must keep around a reference to the IBuffer from which we got the memory pointer. Otherwise the ref count
             // of the underlying COM object may drop to zero and the memory may get freed.
 
-            private IBuffer sourceBuffer;
+            private IBuffer _sourceBuffer;
 
             internal unsafe WindowsRuntimeBufferUnmanagedMemoryStream(IBuffer sourceBuffer, Byte* dataPtr)
 
                 : base(dataPtr, (Int64)sourceBuffer.Length, (Int64)sourceBuffer.Capacity, FileAccess.ReadWrite)
             {
-                this.sourceBuffer = sourceBuffer;
+                _sourceBuffer = sourceBuffer;
             }
         }  // class WindowsRuntimeBufferUnmanagedMemoryStream
 
         private static IntPtr GetPointerAtOffset(this IBuffer buffer, UInt32 offset)
         {
-            Contract.Assert(0 <= offset);
-            Contract.Assert(offset < buffer.Capacity);
+            Debug.Assert(0 <= offset);
+            Debug.Assert(offset < buffer.Capacity);
 
             unsafe
             {
@@ -546,12 +547,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return;
             }
 
-            Contract.Assert(count <= Int32.MaxValue);
+            Debug.Assert(count <= Int32.MaxValue);
             Int32 bCount = (Int32)count;
 
 
             // Copy via buffer.
-            // Note: if becomes perf critical, we will port the routine that 
+            // Note: if becomes perf critical, we will port the routine that
             // copies the data without using Marshal (and byte[])
             Byte[] tmp = new Byte[bCount];
             Marshal.Copy(src, tmp, 0, bCount);
