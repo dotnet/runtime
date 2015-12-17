@@ -32,7 +32,7 @@ bool pal::find_coreclr(pal::string_t& recv)
         return true;
     }
      
-    candidate.assign("/usr/local/share/dotnet/cli/runtime/coreclr");
+    candidate.assign("/usr/local/share/dotnet/runtime/coreclr");
     if (coreclr_exists_in_dir(candidate)) {
         recv.assign(candidate);
         return true;
