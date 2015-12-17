@@ -39,6 +39,11 @@ namespace System.Data.SqlClient
         internal bool _supressStateChangeForReconnection;
         private int _reconnectCount;
 
+        // Transient Fault handling flag. This is needed to convey to the downstream mechanism of connection establishment, if Transient Fault handling should be used or not
+        // The downstream handling of Connection open is the same for idle connection resiliency. Currently we want to apply transient fault handling only to the connections opened
+        // using SqlConnection.Open() method. 
+        internal bool _applyTransientFaultHandling = false;
+
         public SqlConnection(string connectionString) : this()
         {
             ConnectionString = connectionString;    // setting connection string first so that ConnectionOption is available
@@ -890,6 +895,9 @@ namespace System.Data.SqlClient
 
         private bool TryOpen(TaskCompletionSource<DbConnectionInternal> retry)
         {
+            SqlConnectionString connectionOptions = (SqlConnectionString)ConnectionOptions;
+            _applyTransientFaultHandling = (retry == null && connectionOptions != null && connectionOptions.ConnectRetryCount > 0);
+
             if (ForceNewConnection)
             {
                 if (!InnerConnection.TryReplaceConnection(this, ConnectionFactory, retry, UserConnectionOptions))
