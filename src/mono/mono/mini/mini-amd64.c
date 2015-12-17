@@ -495,7 +495,8 @@ typedef enum {
 typedef struct {
 	gint16 offset;
 	gint8  reg;
-	ArgStorage storage;
+	ArgStorage storage : 8;
+	gboolean is_gsharedvt_return_value : 1;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
@@ -1198,6 +1199,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 		if (mini_is_gsharedvt_type (ret_type)) {
 			cinfo->ret.storage = ArgValuetypeAddrInIReg;
+			cinfo->ret.is_gsharedvt_return_value = 1;
 			break;
 		}
 		/* fall through */
@@ -1213,6 +1215,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	case MONO_TYPE_MVAR:
 		g_assert (mini_is_gsharedvt_type (ret_type));
 		cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		cinfo->ret.is_gsharedvt_return_value = 1;
 		break;
 	case MONO_TYPE_VOID:
 		break;
@@ -7241,6 +7244,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			case ArgValuetypeAddrInIReg:
 				if (ainfo->pair_storage [0] == ArgInIReg)
 					amd64_mov_membase_reg (code, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, ainfo->pair_regs [0],  sizeof (gpointer));
+				break;
+			case ArgGSharedVtInReg:
+				amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg, 8);
 				break;
 			default:
 				break;
