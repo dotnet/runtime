@@ -123,10 +123,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
 	SgenDescriptor desc = 0;
-	size_t stored_size = obj_size;
-
-	stored_size += SGEN_ALLOC_ALIGN - 1;
-	stored_size &= ~(SGEN_ALLOC_ALIGN - 1);
+	size_t stored_size = SGEN_ALIGN_UP (obj_size);
 
 	for (i = 0; i < numbits; ++i) {
 		if (bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
