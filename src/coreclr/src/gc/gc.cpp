@@ -3666,10 +3666,16 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
     }
 
 #ifdef FEATURE_BASICFREEZE
-    if (!seg && (size_t)(entry->seg1) & ro_in_entry)
+    // TODO: This was originally written assuming that the seg_mapping_table would always contain entries for ro 
+    // segments whenever the ro segment falls into the [g_lowest_address,g_highest_address) range.  I.e., it had an 
+    // extra "&& (size_t)(entry->seg1) & ro_in_entry" expression.  However, at the moment, grow_brick_card_table does 
+    // not correctly go through the ro segments and add them back to the seg_mapping_table when the [lowest,highest) 
+    // range changes.  We should probably go ahead and modify grow_brick_card_table and put back the 
+    // "&& (size_t)(entry->seg1) & ro_in_entry" here.
+    if (!seg)
     {
         seg = ro_segment_lookup (o);
-        if (!in_range_for_segment (o, seg))
+        if (seg && !in_range_for_segment (o, seg))
             seg = 0;
     }
 #endif //FEATURE_BASICFREEZE
@@ -3708,22 +3714,46 @@ public:
         if (this == NULL)
             return;
 
-        BOOL fSmallObjectHeapPtr = FALSE, fLargeObjectHeapPtr = FALSE;
-        fSmallObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this, TRUE);
-        if (!fSmallObjectHeapPtr)
-            fLargeObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this);
+        MethodTable * pMT = GetMethodTable();
 
-        _ASSERTE(fSmallObjectHeapPtr || fLargeObjectHeapPtr);
-        _ASSERTE(GetMethodTable()->GetBaseSize() >= 8);
+        _ASSERTE(pMT->SanityCheck());
+
+        bool noRangeChecks =
+            (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_NO_RANGE_CHECKS) == EEConfig::HEAPVERIFY_NO_RANGE_CHECKS;
+
+        BOOL fSmallObjectHeapPtr = FALSE, fLargeObjectHeapPtr = FALSE;
+        if (!noRangeChecks)
+        {
+            fSmallObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this, TRUE);
+            if (!fSmallObjectHeapPtr)
+                fLargeObjectHeapPtr = GCHeap::GetGCHeap()->IsHeapPointer(this);
+
+            _ASSERTE(fSmallObjectHeapPtr || fLargeObjectHeapPtr);
+        }
 
 #ifdef FEATURE_STRUCTALIGN
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
+#ifdef FEATURE_64BIT_ALIGNMENT
+        if (pMT->RequiresAlign8())
+        {
+            _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
+        }
+#endif // FEATURE_64BIT_ALIGNMENT
+
 #ifdef VERIFY_HEAP
-        if (bDeep)
+        if (bDeep && (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC))
             GCHeap::GetGCHeap()->ValidateObjectMember(this);
 #endif
+        if (fSmallObjectHeapPtr)
+        {
+#ifdef FEATURE_BASICFREEZE
+            _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT) || GCHeap::GetGCHeap()->IsInFrozenSegment(this));
+#else
+            _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT));
+#endif
+        }
     }
 
     void ValidatePromote(ScanContext *sc, uint32_t flags)
@@ -6716,12 +6746,21 @@ uint32_t* translate_mark_array (uint32_t* ma)
 }
 
 // from and end must be page aligned addresses. 
-void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only/*=TRUE*/)
+void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only/*=TRUE*/
+#ifdef FEATURE_BASICFREEZE
+                                , BOOL read_only/*=FALSE*/
+#endif // FEATURE_BASICFREEZE
+                                )
 {
     if(!gc_can_use_concurrent)
         return;
 
-    assert (from == align_on_mark_word (from));
+#ifdef FEATURE_BASICFREEZE
+    if (!read_only)
+#endif // FEATURE_BASICFREEZE
+    {
+        assert (from == align_on_mark_word (from));
+    }
     assert (end == align_on_mark_word (end));
 
 #ifdef BACKGROUND_GC
@@ -8766,7 +8805,11 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     uint8_t* range_end = 0;
     if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
     {
-        clear_mark_array (range_beg, align_on_mark_word (range_end), FALSE);
+        clear_mark_array (range_beg, align_on_mark_word (range_end), FALSE
+#ifdef FEATURE_BASICFREEZE
+            , TRUE
+#endif // FEATURE_BASICFREEZE
+            );
     }
 }
 
@@ -20364,10 +20407,9 @@ void gc_heap::seg_clear_mark_bits (heap_segment* seg)
     }
 }
 
+#ifdef FEATURE_BASICFREEZE
 void gc_heap::sweep_ro_segments (heap_segment* start_seg)
 {
-    UNREFERENCED_PARAMETER(start_seg);
-#if 0
     //go through all of the segment in range and reset the mark bit
     //TODO works only on small object segments
 
@@ -20394,7 +20436,7 @@ void gc_heap::sweep_ro_segments (heap_segment* start_seg)
             {
                 clear_mark_array (max (heap_segment_mem (seg), lowest_address),
                               min (heap_segment_allocated (seg), highest_address),
-                              false); // read_only segments need the mark clear
+                              FALSE); // read_only segments need the mark clear
             }
 #else //MARK_ARRAY
             seg_clear_mark_bits (seg);
@@ -20404,8 +20446,8 @@ void gc_heap::sweep_ro_segments (heap_segment* start_seg)
         }
         seg = heap_segment_next (seg);
     }
-#endif //0 
 }
+#endif // FEATURE_BASICFREEZE
 
 #ifdef FEATURE_LOH_COMPACTION
 inline
@@ -21212,11 +21254,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #endif //MARK_LIST
 
+#ifdef FEATURE_BASICFREEZE
     if ((generation_start_segment (condemned_gen1) != ephemeral_heap_segment) &&
         ro_segments_in_range)
     {
         sweep_ro_segments (generation_start_segment (condemned_gen1));
     }
+#endif // FEATURE_BASICFREEZE
 
 #ifndef MULTIPLE_HEAPS
     if (shigh != (uint8_t*)0)
@@ -23171,6 +23215,26 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
         return tree;
 }
 
+#ifdef FEATURE_BASICFREEZE
+bool gc_heap::frozen_object_p (Object* obj)
+{
+#ifdef MULTIPLE_HEAPS
+    ptrdiff_t delta = 0;
+    heap_segment* pSegment = segment_of ((uint8_t*)obj, delta);
+#else //MULTIPLE_HEAPS
+    heap_segment* pSegment = gc_heap::find_segment ((uint8_t*)obj, FALSE);
+    _ASSERTE(pSegment);
+#endif //MULTIPLE_HEAPS
+
+    return heap_segment_read_only_p(pSegment);
+}
+#endif // FEATURE_BASICFREEZE
+
+#ifdef FEATURE_REDHAWK
+// TODO: this was added on RH, we have not done perf runs to see if this is the right
+// thing to do for other versions of the CLR.
+inline
+#endif // FEATURE_REDHAWK
 void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
@@ -23229,7 +23293,11 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
     }
 
 #ifdef FEATURE_LOH_COMPACTION
-    if (loh_compacted_p)
+    if (loh_compacted_p
+#ifdef FEATURE_BASICFREEZE
+        && !frozen_object_p((Object*)old_address)
+#endif // FEATURE_BASICFREEZE
+        )
     {
         *pold_address = old_address + loh_node_relocation_distance (old_address);
     }
@@ -25081,7 +25149,7 @@ BOOL gc_heap::commit_mark_array_new_seg (gc_heap* hp,
 {
     UNREFERENCED_PARAMETER(hp); // compiler bug? -- this *is*, indeed, referenced
 
-    uint8_t* start = (uint8_t*)seg;
+    uint8_t* start = (heap_segment_read_only_p(seg) ? heap_segment_mem(seg) : (uint8_t*)seg);
     uint8_t* end = heap_segment_reserved (seg);
 
     uint8_t* lowest = hp->background_saved_lowest_address;
@@ -25178,7 +25246,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
 
 BOOL gc_heap::commit_mark_array_with_check (heap_segment* seg, uint32_t* new_mark_array_addr)
 {
-    uint8_t* start = (uint8_t*)seg;
+    uint8_t* start = (heap_segment_read_only_p(seg) ? heap_segment_mem(seg) : (uint8_t*)seg);
     uint8_t* end = heap_segment_reserved (seg);
 
 #ifdef MULTIPLE_HEAPS
@@ -25205,11 +25273,13 @@ BOOL gc_heap::commit_mark_array_with_check (heap_segment* seg, uint32_t* new_mar
 
 BOOL gc_heap::commit_mark_array_by_seg (heap_segment* seg, uint32_t* mark_array_addr)
 {
-    dprintf (GC_TABLE_LOG, ("seg: %Ix->%Ix; MA: %Ix", 
-                            seg, 
-                            heap_segment_reserved (seg),
-                            mark_array_addr));
-    return commit_mark_array_by_range ((uint8_t*)seg, heap_segment_reserved (seg), mark_array_addr);
+    dprintf (GC_TABLE_LOG, ("seg: %Ix->%Ix; MA: %Ix",
+        seg,
+        heap_segment_reserved (seg),
+        mark_array_addr));
+    uint8_t* start = (heap_segment_read_only_p (seg) ? heap_segment_mem (seg) : (uint8_t*)seg);
+
+    return commit_mark_array_by_range (start, heap_segment_reserved (seg), mark_array_addr);
 }
 
 BOOL gc_heap::commit_mark_array_bgc_init (uint32_t* mark_array_addr)
@@ -25259,7 +25329,7 @@ BOOL gc_heap::commit_mark_array_bgc_init (uint32_t* mark_array_addr)
                 }
                 else
                 {
-                    uint8_t* start = max (lowest_address, (uint8_t*)seg);
+                    uint8_t* start = max (lowest_address, heap_segment_mem (seg));
                     uint8_t* end = min (highest_address, heap_segment_reserved (seg));
                     if (commit_mark_array_by_range (start, end, mark_array))
                     {
@@ -25375,7 +25445,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
     if ((flags & heap_segment_flags_ma_committed) ||
         (flags & heap_segment_flags_ma_pcommitted))
     {
-        uint8_t* start = (uint8_t*)seg;
+        uint8_t* start = (heap_segment_read_only_p(seg) ? heap_segment_mem(seg) : (uint8_t*)seg);
         uint8_t* end = heap_segment_reserved (seg);
 
         if (flags & heap_segment_flags_ma_pcommitted)
@@ -31204,11 +31274,13 @@ void gc_heap::background_sweep()
     current_bgc_state = bgc_sweep_soh;
     verify_soh_segment_list();
 
+#ifdef FEATURE_BASICFREEZE
     if ((generation_start_segment (gen) != ephemeral_heap_segment) &&
         ro_segments_in_range)
     {
         sweep_ro_segments (generation_start_segment (gen));
     }
+#endif // FEATURE_BASICFREEZE
 
     //TODO BACKGROUND_GC: can we move this to where we switch to the LOH?
     if (current_c_gc_state != c_gc_state_planning)
@@ -36824,7 +36896,13 @@ inline void testGCShadow(Object** ptr)
 
         if(*shadow!=INVALIDGCVALUE)
         {
-        _ASSERTE(!"Pointer updated without using write barrier");
+#ifdef FEATURE_BASICFREEZE
+            // Write barriers for stores of references to frozen objects may be optimized away.
+            if (!gc_heap::frozen_object_p(*ptr))
+#endif // FEATURE_BASICFREEZE
+            {
+                _ASSERTE(!"Pointer updated without using write barrier");
+            }
         }
         /*
         else
