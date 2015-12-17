@@ -2985,7 +2985,7 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
         // Now we can get other important information about the heap
         gcheapData->g_max_generation = GCHeap::GetMaxGeneration();
         gcheapData->bServerMode = GCHeap::IsServerHeap();
-        gcheapData->bGcStructuresValid = CNameSpace::GetGcRuntimeStructuresValid();
+        gcheapData->bGcStructuresValid = GCScan::GetGcRuntimeStructuresValid();
         if (GCHeap::IsServerHeap())
         {
 #if !defined (FEATURE_SVR_GC)

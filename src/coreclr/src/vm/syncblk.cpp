@@ -2525,7 +2525,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
         //rest of the DWORD is SyncBlk Index
         if (!(bits & BIT_SBLK_IS_HASHCODE))
         {
-            if (bVerifySyncBlkIndex  && CNameSpace::GetGcRuntimeStructuresValid ())
+            if (bVerifySyncBlkIndex  && GCScan::GetGcRuntimeStructuresValid ())
             {
                 DWORD sbIndex = bits & MASK_SYNCBLOCKINDEX;
                 ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);             
