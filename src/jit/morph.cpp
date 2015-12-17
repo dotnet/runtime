@@ -5790,7 +5790,7 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
 #ifdef _TARGET_AMD64_
 
                 unsigned typeSize = 0;
-                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(TYP_STRUCT, argx->gtLdObj.gtClass, nullptr, false);
+                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(TYP_STRUCT, argx->gtLdObj.gtClass, &typeSize, false);
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 // On System V the args could be a 2 eightbyte struct that is passed in two registers.
