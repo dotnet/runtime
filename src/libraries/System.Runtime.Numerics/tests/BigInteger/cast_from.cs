@@ -549,10 +549,21 @@ namespace System.Numerics.Tests
             bigInteger += BigInteger.One;
             VerifyDoubleExplicitCastFromBigInteger(Double.MaxValue, bigInteger);
 
+            // Double Explicit Cast from BigInteger: Double.MinValue - 1
+            bigInteger = new BigInteger(Double.MinValue);
+            bigInteger -= BigInteger.One;
+            VerifyDoubleExplicitCastFromBigInteger(Double.MinValue, bigInteger);
+
             // Double Explicit Cast from BigInteger: Random value > Double.MaxValue
             bigInteger = GenerateRandomBigIntegerGreaterThan(Double.MaxValue, s_random);
             bigInteger *= 2;
             VerifyDoubleExplicitCastFromBigInteger(Double.PositiveInfinity, bigInteger);
+
+            // Double Explicit Cast from BigInteger: Random value < -Double.MaxValue
+            VerifyDoubleExplicitCastFromBigInteger(Double.NegativeInfinity, -bigInteger);
+
+            // Double Explicit Cast from BigInteger: very large values (more than Int32.MaxValue bits) should be infinity
+            DoubleExplicitCastFromLargeBigIntegerTests(128, 1);
 
             // Double Explicit Cast from BigInteger: value < Double.MaxValue but can not be accurately represented in a Double
             bigInteger = new BigInteger(9007199254740993);
@@ -561,6 +572,13 @@ namespace System.Numerics.Tests
             // Double Explicit Cast from BigInteger: Double.MinValue < value but can not be accurately represented in a Double
             bigInteger = new BigInteger(-9007199254740993);
             VerifyDoubleExplicitCastFromBigInteger(-9007199254740992, bigInteger);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunDoubleExplicitCastFromLargeBigIntegerTests()
+        {
+            DoubleExplicitCastFromLargeBigIntegerTests(0, 5, 64, 4);
         }
 
         [Fact]
@@ -686,7 +704,32 @@ namespace System.Numerics.Tests
                 Assert.Throws<OverflowException>(() => VerifyDecimalExplicitCastFromBigInteger(value, bigInteger));
             }
         }
-        
+
+        /// <summary>
+        /// Test cast to Double on Very Large BigInteger more than (1 &lt&lt Int.MaxValue)
+        /// Tested BigInteger are: +/-pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
+        /// Expected double is positive and negative infinity
+        /// Note: 
+        /// ToString() can not operate such large values
+        /// </summary>
+        private static void DoubleExplicitCastFromLargeBigIntegerTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
+        {
+            BigInteger init = BigInteger.One << startShift;
+
+            for (int i = 0; i < smallShiftLoopLimit; i++)
+            {
+                BigInteger temp = init << ((i + 1) * smallShift);
+
+                for (int j = 0; j < bigShiftLoopLimit; j++)
+                {
+                    temp = temp << Int32.MaxValue;
+                    VerifyDoubleExplicitCastFromBigInteger(Double.PositiveInfinity, temp);
+                    VerifyDoubleExplicitCastFromBigInteger(Double.NegativeInfinity, -temp);
+                }
+
+            }
+        }
+
         private static BigInteger GenerateRandomNegativeBigInteger(Random random)
         {
             BigInteger bigInteger;
