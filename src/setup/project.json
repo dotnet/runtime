@@ -1,0 +1,29 @@
+{
+  "description": "Abstractions for reading `.deps` files.",
+  "version": "1.0.0-*",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dotnet/cli"
+  },
+  "compilationOptions": {
+    "warningsAsErrors": true
+  },
+  "dependencies": {
+    "Newtonsoft.Json": "7.0.1"
+  },
+  "frameworks": {
+    "dnx451": {},
+    "dnxcore50": {
+      "dependencies": {
+        "System.Runtime": "4.0.21-rc2-23618",
+        "System.Dynamic.Runtime": "4.0.11-rc2-23616"
+      }
+    }
+  },
+  "scripts": {
+    "postcompile": [
+       "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
+       "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
+    ]
+  }
+}
