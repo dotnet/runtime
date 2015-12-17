@@ -8,6 +8,9 @@
     <Project Include="System.Collections.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
+    <Project Include="System.Collections.csproj" Condition="'$(TargetsWindows)' == 'true'">
+      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
