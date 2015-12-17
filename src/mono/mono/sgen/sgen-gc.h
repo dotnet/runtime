@@ -146,12 +146,16 @@ extern int current_collection_generation;
 
 extern unsigned int sgen_global_stop_count;
 
+#define SGEN_ALIGN_UP_TO(val,align)	(((val) + (align - 1)) & ~(align - 1))
+#define SGEN_ALIGN_DOWN_TO(val,align)	((val) & ~(align - 1))
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
 /* s must be non-negative */
 #define SGEN_CAN_ALIGN_UP(s)		((s) <= SIZE_MAX - (SGEN_ALLOC_ALIGN - 1))
-#define SGEN_ALIGN_UP(s)		(((s)+(SGEN_ALLOC_ALIGN-1)) & ~(SGEN_ALLOC_ALIGN-1))
+#define SGEN_ALIGN_UP(s)		SGEN_ALIGN_UP_TO(s, SGEN_ALLOC_ALIGN)
+#define SGEN_ALIGN_DOWN(s)		SGEN_ALIGN_DOWN_TO(s, SGEN_ALLOC_ALIGN)
 
 #if SIZEOF_VOID_P == 4
 #define ONE_P 1
