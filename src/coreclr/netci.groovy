@@ -2,41 +2,54 @@
 
 import jobs.generation.Utilities;
 
-def project = 'dotnet/coreclr'
-
-// Map of OS's to labels.  TODO: Maybe move this into the Utils
-
-def machineLabelMap = ['Ubuntu':'ubuntu',
-                       'Debian8.2':'debian-82',
-                       'OSX':'mac',
-                       'Windows_NT':'windows',
-                       'FreeBSD': 'freebsd',
-                       'CentOS7.1': 'centos-71',
-                       'OpenSUSE13.2': 'openSuSE-132']
+def project = GithubProject
                        
-// Map of the build OS to the directory that will have the outputs
-def osGroupMap = ['Ubuntu':'Linux',
-                    'Debian8.2':'Linux',
-                    'OSX':'OSX',
-                    'Windows_NT':'Windows_NT',
-                    'FreeBSD':'FreeBSD',
-                    'CentOS7.1': 'Linux',
-                    'OpenSUSE13.2': 'Linux']
+def static getOSGroup(def os) {
+    def osGroupMap = ['Ubuntu':'Linux',
+        'Debian8.2':'Linux',
+        'OSX':'OSX',
+        'Windows_NT':'Windows_NT',
+        'FreeBSD':'FreeBSD',
+        'CentOS7.1': 'Linux',
+        'OpenSUSE13.2': 'Linux']
+    def osGroup = osGroupMap.get(os, null) 
+    assert osGroup != null : "Could not find os group for ${os}"
+    return osGroupMap[os]
+}
       
 // Innerloop build OS's
 def osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+
+def static setMachineAffinity(def job, def os, def architecture) {
+    if (architecture == 'arm64' && os == 'Windows_NT') {
+        // For cross compilation
+        job.with {
+            label('arm64')
+        }
+    } else {
+        return Utilities.setMachineAffinity(job, os);
+    }
+}
 
 def static getBuildJobName(def configuration, def architecture, def os) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
     
-    if (architecture == 'x64') {
-        return configuration.toLowerCase() + '_' + os.toLowerCase()
-    }
-    else {
-        // Massage names a bit
-        return architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+    switch (architecture) {
+        case 'x64':
+            // For now we leave x64 off of the name for compatibility with other jobs
+            return configuration.toLowerCase() + '_' + os.toLowerCase()
+        case 'arm64':
+        case 'arm':
+            // These are cross builds
+            return architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+        case 'x86':
+            return architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+        default:
+            println("Unknown architecture: ${architecture}");
+            assert false
+            break
     }
 }
 
@@ -46,209 +59,237 @@ def static getBuildJobName(def configuration, def architecture, def os) {
 // builds will do a couple extra steps.
 // **************************
 
-// Loop over the options and build up the innerloop build matrix
-// Default architecture is x64.  Right now that isn't built into the
-// build name.  We'll need to change that eventually, but for now leave as is.
-// x86 builds have the new build name
-
-['x64', 'x86'].each { architecture ->
-    ['Debug', 'Release'].each { configuration ->
-        osList.each { os ->
-            // Calculate names
-            def lowerConfiguration = configuration.toLowerCase()
-            
-            // Calculate job name
-            def jobName = getBuildJobName(configuration, architecture, os)
-            def buildCommands = [];
-            
-            def osGroup = osGroupMap[os]
-            
-            // Calculate the build commands
+// Adds a trigger for the PR build if one is needed.  If isFlowJob is true, then this is the
+// flow job that rolls up the build and test for non-windows OS's
+def static addPRTrigger(def job, def architecture, def os, def configuration, isFlowJob) {
+    def osGroup = getOSGroup(os)
+    switch (architecture) {
+        case 'x64':
+            switch (os) {
+                case 'OpenSUSE13.2':
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+suse.*')
+                    break
+                case 'Debian8.2':
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+debian.*')
+                    break
+                case 'Ubuntu':
+                case 'OSX':
+                    // Only add the trigger for the flow job
+                    if (isFlowJob) {
+                        Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                    }
+                    break
+                case 'CentOS7.1':
+                case 'OpenSUSE13.2':
+                    assert !isFlowJob
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    break
+                case 'Windows_NT':
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                    break
+                default:
+                    println("Unknown os: ${os}");
+                    // assert false
+                    break
+            }
+            break
+        case 'arm64':
+        case 'arm':
+            if (os == 'Ubuntu') {
+                Utilities.addGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+            }
+            // No arm64 triggers yet for other OS's
+            break
+        case 'x86':
+            // For windows, x86 runs by default
             if (os == 'Windows_NT') {
-                // On Windows we build the mscorlibs too.
-                buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
-                
-                // If x64, we run tests
-                if (architecture == 'x64') {
-                    buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
-                }
-                
-                // Build the mscorlib for the other OS's
-                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
-                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
-                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
-                // Zip up the tests directory so that we don't use so much space/time copying
-                // 10s of thousands of files around.
-                buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
             }
-            else {
-                // On other OS's we skipmscorlib but run the pal tests
-                buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
-                buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
-            }
-            
-            // Create the new job
-            def newCommitJob = job(Utilities.getFullJobName(project, jobName, false)) {
-                // Set the label.
-                label(machineLabelMap[os])
-                steps {
-                    if (os == 'Windows_NT') {
-                        buildCommands.each { buildCommand ->
-                            batchFile(buildCommand)
-                        }
-                    }
-                    else {
-                        buildCommands.each { buildCommand ->
-                            shell(buildCommand)
-                        }
-                    }
-                }
-            }
-
-            // Add commit job options
-            Utilities.addScm(newCommitJob, project)
-            Utilities.addStandardNonPRParameters(newCommitJob)
-            
-            // Add a push trigger.  Do not enable the push trigger for non-windows x86,
-            // which do not work at the moment.
-            if (architecture == 'x64' || osGroup == 'Windows_NT') {
-                Utilities.addGithubPushTrigger(newCommitJob)
-            }
-            
-            // Create the new PR job
-            
-            def newPRJob = job(Utilities.getFullJobName(project, jobName, true)) {
-                // Set the label.
-                label(machineLabelMap[os])
-                steps {
-                    if (os == 'Windows_NT') {
-                        buildCommands.each { buildCommand ->
-                            batchFile(buildCommand)
-                        }
-                    }
-                    else {
-                        buildCommands.each { buildCommand ->
-                            shell(buildCommand)
-                        }
-                    }
-                }
-            }
-            
-            // Add a PR trigger.  For some OS's, create an explicit trigger
-            // PR's are run for everything except SuSE by default.  Add on-demand triggers 
-            // for everything else.  This probably deserves a bit of cleanup eventually once we
-            // have an easy way to do regex trigger phrases, to put in some more structured test phrases.
-            def triggerPhraseString = ''
-            def triggerByPhraseOnly = true;
-            if (os == 'OpenSUSE13.2' && architecture == 'x64') {
-                triggerPhraseString = '(?i).*test\\W+suse.*'
-            } else if (os == 'Debian8.2' && architecture == 'x64') {
-                triggerPhraseString = '(?i).*test\\W+debian.*'
-            } else if (architecture == 'x86' && osGroup == 'Linux') {
-                triggerPhraseString = '(?i).*test\\W+x86\\W+linux.*'
-            } else if (architecture == 'x86' && osGroup == 'OSX') {
-                triggerPhraseString = '(?i).*test\\W+x86\\W+osx.*'
-            } else if (architecture == 'x86' && osGroup == 'FreeBSD') {
-                triggerPhraseString = '(?i).*test\\W+x86\\W+freebsd.*'
-            }
-            Utilities.addGithubPRTrigger(newPRJob, "${os} ${architecture} ${configuration} Build", triggerPhraseString, triggerByPhraseOnly)
-            Utilities.addPRTestSCM(newPRJob, project)
-            Utilities.addStandardPRParameters(newPRJob, project)
-            
-            // Add common options:
-            
-            [newPRJob, newCommitJob].each { newJob ->
-                Utilities.addStandardOptions(newJob)
-                
-                // Instead of packing up all the 
-                if (osGroup == 'Windows_NT' && architecture == 'x64') {
-                    Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
-                } else if (osGroup != 'Windows_NT') {
-                    // Add .NET results for the 
-                    Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
-                }
-            }
-        } // os
-    } // configuration
-} // architecture
-
-// Ubuntu cross compiled arm and arm64 builds
-// Scheduled for nightly and on-demand PR for now
-// Cross compiled OS names go here
-['Ubuntu'].each { os ->
-    [true, false].each { isPR ->
-        ['Debug', 'Release'].each { configuration ->
-            def lowerConfiguration = configuration.toLowerCase()
-            
-            // Create the new job
-            def newArm64Job = job(Utilities.getFullJobName(project, "arm64_cross_${os.toLowerCase()}_${lowerConfiguration}", isPR)) {
-                // Set the label.
-                label(machineLabelMap[os])
-                steps {
-                    shell("""
-    echo \"Using rootfs in /opt/aarch64-linux-gnu-root\"
-    ROOTFS_DIR=/opt/aarch64-linux-gnu-root ./build.sh skipmscorlib arm64 cross verbose ${lowerConfiguration}""")
-                }
-            }
-            
-            if (!isPR) {
-                // Add rolling job options
-                Utilities.addScm(newArm64Job, project)
-                Utilities.addStandardNonPRParameters(newArm64Job)
-                Utilities.addPeriodicTrigger(newArm64Job, '@daily')
-                Utilities.addArchival(newArm64Job, "bin/Product/**")
-            }
-            else {
-                // Add PR job options
-                Utilities.addPRTestSCM(newArm64Job, project)
-                Utilities.addStandardPRParameters(newArm64Job, project)
-                Utilities.addGithubPRTrigger(newArm64Job, "Arm64 ${os} cross ${configuration} Build", '(?i).*test\\W+arm.*', true /* trigger by phrase only */)
-            }
-            
-            // Create the new job
-            def newArmJob = job(Utilities.getFullJobName(project, "arm_cross_${os.toLowerCase()}_${lowerConfiguration}", isPR)) {
-                // Set the label.
-                label(machineLabelMap[os])
-                steps {
-                    shell("""
-    echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
-    ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}""")
-                }
-            }
-            
-            if (!isPR) {
-                // Add rolling job options
-                Utilities.addScm(newArmJob, project)
-                Utilities.addStandardNonPRParameters(newArmJob)
-                Utilities.addPeriodicTrigger(newArmJob, '@daily')
-                Utilities.addArchival(newArmJob, "bin/Product/**")
-            }
-            else {
-                // Add PR job options
-                Utilities.addPRTestSCM(newArmJob, project)
-                Utilities.addStandardPRParameters(newArmJob, project)
-                Utilities.addGithubPRTrigger(newArmJob, "Arm ${os} cross ${configuration} Build", '(?i).*test\\W+arm.*', true /* trigger by phrase only */)
-            }
-            
-            [newArmJob, newArm64Job].each { newJob ->
-                Utilities.addStandardOptions(newJob)
-            }
-        }
+            // default trigger
+            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${architecture}\\W+${osGroup}.*")
+            break
+        default:
+            println("Unknown architecture: ${architecture}");
+            assert false
+            break
     }
 }
 
-// Create the Linux coreclr test leg for debug and release.
-// Architectures
-['x64', 'x86'].each { architecture ->
-    // Put the OS's supported for coreclr cross testing here
-    ['Ubuntu'].each { os ->
-        [true, false].each { isPR ->
-            ['Debug', 'Release'].each { configuration ->
+[true, false].each { isPR ->
+    ['arm', 'arm64', 'x64', 'x86'].each { architecture ->
+        ['Debug', 'Release'].each { configuration ->
+            osList.each { os ->
+                // Skip totally unimplemented (in CI) configurations.
+                switch (architecture) {
+                    case 'arm64':
+                        // Windows or cross compiled Ubuntu
+                        if (os != 'Windows_NT' && os != 'Ubuntu') {
+                            println("Skipping ${os} ${architecture}")
+                            return
+                        }
+                        break
+                    case 'arm':
+                        // Only Ubuntu cross implemented
+                        if (os != 'Ubuntu') {
+                            println("Skipping ${os} ${architecture}")
+                            return
+                        }
+                        break
+                    case 'x86':
+                        // Skip non-windows
+                        if (os != 'Windows_NT') {
+                            println("Skipping ${os} ${architecture}")
+                            return
+                        }
+                        break
+                    case 'x64':
+                        // Everything implemented
+                        break
+                    default:
+                        println("Unknown architecture: ${architecture}");
+                        assert false
+                        break
+                }
                 
+                // Calculate names
                 def lowerConfiguration = configuration.toLowerCase()
-                def osGroup = osGroupMap[os]
+                def jobName = getBuildJobName(configuration, architecture, os)
+                
+                // Create the new job
+                def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {}
+
+                setMachineAffinity(newJob, os, architecture)
+                // Add all the standard options
+                Utilities.standardJobSetup(newJob, project, isPR)
+                if (isPR) {
+                    addPRTrigger(newJob, architecture, os, configuration, false)
+                }
+                else {
+                    Utilities.addGithubPushTrigger(newJob)
+                }
+                
+                def buildCommands = [];
+                def osGroup = getOSGroup(os)
+                
+                // Calculate the build steps, archival, and xunit results
+                switch (os) {
+                    case 'Windows_NT':
+                        switch (architecture) {
+                            case 'x64':
+                            case 'x86':
+                                buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
+                                
+                                // TEMPORARY. Don't run tests for PR jobs on x86
+                                if (architecture == 'x86' && !isPR) {
+                                    buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                }
+                                
+                                // Run the rest of the build    
+                                // Build the mscorlib for the other OS's
+                                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
+                                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
+                                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
+                                
+                                // Zip up the tests directory so that we don't use so much space/time copying
+                                // 10s of thousands of files around.
+                                buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                                
+                                // For windows, pull full test results and test drops for x86/x64
+                                Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
+                                // TEMPORARY. Don't run tests for PR jobs on x86
+                                if (architecture == 'x86' && !isPR) {
+                                    Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
+                                }
+                                break
+                            case 'arm64':
+                                buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
+                                // Add archival.  No xunit results for x64 windows
+                                Utilities.addArchival(newJob, "bin/Product/**")
+                                break
+                            default:
+                                println("Unknown architecture: ${architecture}");
+                                assert false
+                                break
+                        }
+                        break
+                    case 'Ubuntu':
+                    case 'Debian8.2':
+                    case 'OSX':
+                    case 'FreeBSD':
+                    case 'CentOS7.1':
+                    case 'OpenSUSE13.2':
+                        switch (architecture) {
+                            case 'x64':
+                            case 'x86':
+                                // On other OS's we skipmscorlib but run the pal tests
+                                buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
+                                
+                                // Basic archiving of the build
+                                Utilities.addArchival(newJob, "bin/Product/**")
+                                // And pal tests
+                                Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
+                                break
+                            case 'arm64':
+                                // We don't run the cross build except on Ubuntu
+                                assert os == 'Ubuntu'
+                                
+                                buildCommands += """echo \"Using rootfs in /opt/aarch64-linux-gnu-root\"
+                                    ROOTFS_DIR=/opt/aarch64-linux-gnu-root ./build.sh skipmscorlib arm64 cross verbose ${lowerConfiguration}"""
+                                    
+                                // Basic archiving of the build, no pal tests
+                                Utilities.addArchival(newJob, "bin/Product/**")
+                                break
+                            case 'arm':
+                                // We don't run the cross build except on Ubuntu
+                                assert os == 'Ubuntu'
+                                
+                                buildCommands += """echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
+                                    ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}"""
+                                    
+                                // Basic archiving of the build, no pal tests
+                                Utilities.addArchival(newJob, "bin/Product/**")
+                                break
+                            default:
+                                println("Unknown architecture: ${architecture}");
+                                assert false
+                                break
+                        }
+                        break
+                    default:
+                        println("Unknown os: ${os}");
+                        assert false
+                        break
+                }
+                
+                newJob.with {
+                    steps {
+                        if (os == 'Windows_NT') {
+                            buildCommands.each { buildCommand ->
+                                batchFile(buildCommand)
+                            }
+                        }
+                        else {
+                            buildCommands.each { buildCommand ->
+                                shell(buildCommand)
+                            }
+                        }
+                    }
+                }
+            } // os
+        } // configuration
+    } // architecture
+} // isPR
+
+// Create the Linux/OSX coreclr test leg for debug and release.
+[true, false].each { isPR ->
+    // Architectures.  x64 only at this point
+    ['x64'].each { architecture ->
+        // Put the OS's supported for coreclr cross testing here
+        ['Ubuntu', 'OSX'].each { os ->
+            ['Debug', 'Release'].each { configuration ->
+                def lowerConfiguration = configuration.toLowerCase()
+                def osGroup = getOSGroup(os)
                 def jobName = getBuildJobName(configuration, architecture, os) + "_tst"
                 def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
                     Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os), isPR)
@@ -256,14 +297,11 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                     Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt'), isPR)
                 
                 def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
-                    // Set the label.
-                    label(machineLabelMap[os])
-                    
                     // Add parameters for the inputs
                     
                     parameters {
                         stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR windows test binaries from')
-                        stringParam('CORECLR_LINUX_BUILD', '', 'Build number to copy CoreCLR linux binaries from')
+                        stringParam('CORECLR_BUILD', '', "Build number to copy CoreCLR ${osGroup} binaries from")
                     }
                     
                     steps {
@@ -274,7 +312,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         copyArtifacts(inputCoreCLRBuildName) {
                             excludePatterns('**/testResults.xml', '**/*.ni.dll')
                             buildSelector {
-                                buildNumber('${CORECLR_LINUX_BUILD}')
+                                buildNumber('${CORECLR_BUILD}')
                             }
                         }
                         
@@ -288,20 +326,24 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         }
                         
                         // Corefx native components
-                        copyArtifacts("dotnet_corefx_linux_nativecomp_debug") {
+                        def corefxNativeCompBinaries = 
+                        copyArtifacts("dotnet_corefx/nativecomp_${os.toLowerCase()}_release") {
                             includePatterns('bin/**')
                             buildSelector {
                                 latestSuccessful(true)
                             }
                         }
                         
-                        // Corefx linux binaries
-                        copyArtifacts("dotnet_corefx_linux_debug") {
-                            includePatterns('bin/Linux*/**')
+                        // CoreFX Linux binaries
+                        copyArtifacts("dotnet_corefx/${os.toLowerCase()}_release_bld") {
+                            includePatterns('bin/build.pack')
                             buildSelector {
                                 latestSuccessful(true)
                             }
                         }
+                        
+                        // Unpack the corefx binaries
+                        shell("unpacker ./bin/build.pack ./bin")
                         
                         // Unzip the tests first.  Exit with 0
                         shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
@@ -310,25 +352,16 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         shell("""
     ./tests/runtest.sh \\
         --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
-        --testNativeBinDir=\"\${WORKSPACE}/bin/obj/Linux.${architecture}.${configuration}/tests\" \\
-        --coreClrBinDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.${configuration}\" \\
-        --mscorlibDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.${configuration}\" \\
-        --coreFxBinDir=\"\${WORKSPACE}/bin/Linux.AnyCPU.Debug\" \\
-        --coreFxNativeBinDir=\"\${WORKSPACE}/bin/Linux.${architecture}.Debug\"""")
+        --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
+        --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+        --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
+        --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Debug\" \\
+        --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Debug\"""")
                     }
                 }
                 
-                if (!isPR) {
-                    // Add rolling job options
-                    Utilities.addScm(newJob, project)
-                    Utilities.addStandardNonPRParameters(newJob)
-                }
-                else {
-                    // Add PR job options
-                    Utilities.addPRTestSCM(newJob, project)
-                    Utilities.addStandardPRParameters(newJob, project)
-                }
-                Utilities.addStandardOptions(newJob)
+                setMachineAffinity(newJob, os, architecture)
+                Utilities.standardJobSetup(newJob, project, isPR)
                 Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                 
                 // Create a build flow to join together the build and tests required to run this
@@ -339,26 +372,16 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
                 def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                     buildFlow("""
-// Grab the checked out git commit hash so that it can be passed to the child
-// builds.
-// Temporarily output the properties for diagnosis of issues with the statement below
-out.println 'Triggered Parameters Map:'
-out.println params
-out.println 'Build Object Properties:'
-build.properties.each { out.println \"\$it.key -> \$it.value\" }
-// globalParams = params + [GitBranchOrCommit: build.environment.get('GIT_COMMIT')]
-globalParams = params
 // Build the input jobs in parallel
 parallel (
-    { linuxBuildJob = build(globalParams, '${inputCoreCLRBuildName}') },
+    { coreclrBuildJob = build(globalParams, '${inputCoreCLRBuildName}') },
     { windowsBuildJob = build(globalParams, '${inputWindowTestsBuildName}') }
 )
     
 // And then build the test build
-build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number, 
+build(globalParams + [CORECLR_BUILD: coreclrBuildJob.build.number, 
                 CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
 """)
-
                     // Needs a workspace
                     configure {
                         def buildNeedsWorkspace = it / 'buildNeedsWorkspace'
@@ -366,185 +389,13 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
                     }
                 }
 
+                Utilities.standardJobSetup(newFlowJob, project, isPR)
                 if (isPR) {
-                    Utilities.addPRTestSCM(newFlowJob, project)
-                    Utilities.addStandardPRParameters(newFlowJob, project)
-                    if (architecture == 'x64') {
-                        if (configuration == 'Release') {
-                            // Tests will be run on x64 Release by default (no trigger phase required).
-                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test",
-                            "(?i).*test\\W+ubuntu\\W+release.*", false /* trigger by phrase only */)
-                        } else {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+debug.*", true /* trigger by phrase only */)
-                        }
-                    } else if (architecture == 'x86') {
-                        if (configuration == 'Release') {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+x86.*", true /* trigger by phrase only */)
-                        } else {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+x86\\W+debug.*", true /* trigger by phrase only */)
-                        }
-                    }
+                    addPRTrigger(newFlowJob, architecture, os, configuration, true)
                 }
                 else {
-                    Utilities.addScm(newFlowJob, project)
-                    Utilities.addStandardNonPRParameters(newFlowJob)
-                    if (architecture == 'x64') {
-                        Utilities.addGithubPushTrigger(newFlowJob)
-                    }
+                    Utilities.addGithubPushTrigger(newFlowJob)
                 }
-                
-                Utilities.addStandardOptions(newFlowJob)
-            }
-        }
-    }
-}
-
-// Create the OS X coreclr test leg for debug.
-// Architectures
-['x64'].each { architecture ->
-    // Put the OS's supported for coreclr cross testing here
-    ['OSX'].each { os ->
-        [true, false].each { isPR ->
-            ['Debug', 'Release'].each { configuration ->
-                
-                def lowerConfiguration = configuration.toLowerCase()
-                def osGroup = osGroupMap[os]
-                def jobName = getBuildJobName(configuration, architecture, os) + "_tst"
-                def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
-                    Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os), isPR)
-                def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                    Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt'), isPR)
-                
-                def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
-                    // Set the label.
-                    label(machineLabelMap[os])
-                    
-                    // Add parameters for the inputs
-                    
-                    parameters {
-                        stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR windows test binaries from')
-                        stringParam('CORECLR_OSX_BUILD', '', 'Build number to copy CoreCLR OS X binaries from')
-                    }
-                    
-                    steps {
-                        // Set up the copies
-                        
-                        // Coreclr build we are trying to test
-                        
-                        copyArtifacts(inputCoreCLRBuildName) {
-                            excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                            buildSelector {
-                                buildNumber('${CORECLR_OSX_BUILD}')
-                            }
-                        }
-                        
-                        // Coreclr build containing the tests and mscorlib
-                        
-                        copyArtifacts(inputWindowTestsBuildName) {
-                            excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                            buildSelector {
-                                buildNumber('${CORECLR_WINDOWS_BUILD}')
-                            }
-                        }
-                        
-                        // Corefx native components
-                        copyArtifacts("dotnet_corefx_mac_nativecomp_debug") {
-                            includePatterns('bin/**')
-                            buildSelector {
-                                latestSuccessful(true)
-                            }
-                        }
-                        
-                        // Corefx os x binaries
-                        copyArtifacts("dotnet_corefx_mac_debug") {
-                            includePatterns('bin/OSX*/**')
-                            buildSelector {
-                                latestSuccessful(true)
-                            }
-                        }
-                        
-                        // Unzip the tests first.  Exit with 0
-                        shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
-                        
-                        // Execute the tests
-                        shell("""
-    ./tests/runtest.sh \\
-        --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
-        --testNativeBinDir=\"\${WORKSPACE}/bin/obj/OSX.${architecture}.${configuration}/tests\" \\
-        --coreClrBinDir=\"\${WORKSPACE}/bin/Product/OSX.${architecture}.${configuration}\" \\
-        --mscorlibDir=\"\${WORKSPACE}/bin/Product/OSX.${architecture}.${configuration}\" \\
-        --coreFxBinDir=\"\${WORKSPACE}/bin/OSX.AnyCPU.Debug\" \\
-        --coreFxNativeBinDir=\"\${WORKSPACE}/bin/OSX.${architecture}.Debug\"""")
-                    }
-                }
-                
-                if (!isPR) {
-                    // Add rolling job options
-                    Utilities.addScm(newJob, project)
-                    Utilities.addStandardNonPRParameters(newJob)
-                }
-                else {
-                    // Add PR job options
-                    Utilities.addPRTestSCM(newJob, project)
-                    Utilities.addStandardPRParameters(newJob, project)
-                }
-                Utilities.addStandardOptions(newJob)
-                Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
-                
-                // Create a build flow to join together the build and tests required to run this
-                // test.
-                // Windows CoreCLR build and OS X CoreCLR build (in parallel) ->
-                // OS X CoreCLR test
-                def flowJobName = getBuildJobName(configuration, architecture, os) + "_flow"
-                def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
-                def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
-                    buildFlow("""
-// Grab the checked out git commit hash so that it can be passed to the child
-// builds.
-// Temporarily output the properties for diagnosis of issues with the statement below
-out.println 'Triggered Parameters Map:'
-out.println params
-out.println 'Build Object Properties:'
-build.properties.each { out.println \"\$it.key -> \$it.value\" }
-// globalParams = params + [GitBranchOrCommit: build.environment.get('GIT_COMMIT')]
-globalParams = params
-// Build the input jobs in parallel
-parallel (
-    { osxBuildJob = build(globalParams, '${inputCoreCLRBuildName}') },
-    { windowsBuildJob = build(globalParams, '${inputWindowTestsBuildName}') }
-)
-    
-// And then build the test build
-build(globalParams + [CORECLR_OSX_BUILD: osxBuildJob.build.number, 
-                CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
-""")
-
-                    // Needs a workspace
-                    configure {
-                        def buildNeedsWorkspace = it / 'buildNeedsWorkspace'
-                        buildNeedsWorkspace.setValue('true')
-                    }
-                }
-
-                if (isPR) {
-                    Utilities.addPRTestSCM(newFlowJob, project)
-                    Utilities.addStandardPRParameters(newFlowJob, project)
-                    if (configuration == 'Release') {
-                        // Tests will be run on x64 Release by default (no trigger phase required).
-                        Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+release.*", false /* trigger by phrase only */)
-                    } else {
-                        Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+debug.*", true /* trigger by phrase only */)
-                    }
-                }
-                else {
-                    Utilities.addScm(newFlowJob, project)
-                    Utilities.addStandardNonPRParameters(newFlowJob)
-                    if (architecture == 'x64') {
-                        Utilities.addGithubPushTrigger(newFlowJob)
-                    }
-                }
-                
-                Utilities.addStandardOptions(newFlowJob)
             }
         }
     }
