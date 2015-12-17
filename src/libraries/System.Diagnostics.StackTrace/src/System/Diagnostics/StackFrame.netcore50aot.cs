@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Reflection;
 using Internal.Diagnostics;
 using Internal.Runtime.Augments;
@@ -68,7 +71,7 @@ namespace System.Diagnostics
         private void EnsureSourceFileInfo()
         {
             //this isn't thread-safe and that is OK
-            if(!_fetchedFileInfo && _includeFileInfo)
+            if (!_fetchedFileInfo && _includeFileInfo)
             {
                 StackTraceHelper.TryGetSourceLineInfo(_ip, out _fileName, out _lineNumber, out _columnNumber);
                 //Even if we didn't get all the data, this is the best we'll get and we shouldn't try again
