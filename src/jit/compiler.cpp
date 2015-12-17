@@ -2754,7 +2754,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
 #endif // DEBUGGING_SUPPORT
 
 #ifdef  LATE_DISASM
-    codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+    codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
 #endif
 
     //-------------------------------------------------------------------------
