@@ -9,17 +9,20 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.IO.Packaging</RootNamespace>
     <AssemblyName>System.IO.Packaging</AssemblyName>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\IO\Packaging\CompressionOption.cs" />
     <Compile Include="System\IO\Packaging\ContentType.cs" />
     <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
@@ -46,6 +49,10 @@
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="WindowsBase" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
