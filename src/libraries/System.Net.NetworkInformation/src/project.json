@@ -3,11 +3,11 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Linq": "4.0.0",
     "System.Net.Primitives": "4.0.10",
-    "System.Net.Sockets": "4.1.0-rc2-23610",
-    "System.Security.Principal.Windows": "4.0.0-rc2-23610",
+    "System.Net.Sockets": "4.1.0-rc2-23614",
+    "System.Security.Principal.Windows": "4.0.0-rc2-23614",
     "System.Threading": "4.0.0",
-    "System.Threading.Thread": "4.0.0-rc2-23610",
-    "System.Threading.ThreadPool": "4.0.10-rc2-23610"
+    "System.Threading.Thread": "4.0.0-rc2-23614",
+    "System.Threading.ThreadPool": "4.0.10-rc2-23614"
   },
   "frameworks": {
     "dnxcore50": {}

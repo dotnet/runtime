@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Linq.Expressions": "4.0.10-rc2-23610",
-    "System.Runtime": "4.0.20-rc2-23610",
+    "System.Linq.Expressions": "4.0.10-rc2-23614",
+    "System.Runtime": "4.0.20-rc2-23614",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
