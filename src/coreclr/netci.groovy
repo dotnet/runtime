@@ -355,8 +355,8 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
         --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
         --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
         --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-        --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Debug\" \\
-        --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Debug\"""")
+        --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
+        --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\"""")
                     }
                 }
                 
