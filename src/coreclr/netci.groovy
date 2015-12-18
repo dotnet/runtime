@@ -226,7 +226,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                                 buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
                                 
                                 // Basic archiving of the build
-                                Utilities.addArchival(newJob, "bin/Product/**")
+                                Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
                                 // And pal tests
                                 Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                                 break
