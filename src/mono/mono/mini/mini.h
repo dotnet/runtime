@@ -2947,6 +2947,8 @@ gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoM
 									 gint32 vcall_offset, gboolean calli);
 MonoMethod* mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig);
 MonoMethod* mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig);
+MonoMethodSignature* mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count);
+MonoMethod* mono_get_runtime_invoke_wrapper_gsharedvt (gboolean has_this, gboolean has_ret, int param_count);
 
 /* SIMD support */
 

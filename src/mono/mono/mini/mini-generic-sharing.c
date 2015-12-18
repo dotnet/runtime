@@ -1285,6 +1285,31 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	return res;
 }
 
+MonoMethodSignature*
+mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
+{
+	MonoMethodSignature *sig = g_malloc0 (sizeof (MonoMethodSignature) + (32 * sizeof (MonoType*)));
+	int i, pindex;
+
+	sig->ret = &mono_defaults.void_class->byval_arg;
+	sig->sentinelpos = -1;
+	pindex = 0;
+	if (has_this)
+		/* this */
+		sig->params [pindex ++] = &mono_defaults.int_class->byval_arg;
+	if (has_ret)
+		/* vret */
+		sig->params [pindex ++] = &mono_defaults.int_class->byval_arg;
+	for (i = 0; i < param_count; ++i)
+		/* byref arguments */
+		sig->params [pindex ++] = &mono_defaults.int_class->byval_arg;
+	/* extra arg */
+	sig->params [pindex ++] = &mono_defaults.int_class->byval_arg;
+	sig->param_count = pindex;
+
+	return sig;
+}
+
 /*
  * mini_get_gsharedvt_wrapper:
  *
