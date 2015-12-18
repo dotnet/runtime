@@ -27,7 +27,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType>None</DebugType>
+    <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="vars2.cs" />
