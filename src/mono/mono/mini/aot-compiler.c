@@ -3574,7 +3574,6 @@ add_wrappers (MonoAotCompile *acfg)
 				for (i = 0; i < 16; ++i) {
 					sig = mini_get_gsharedvt_out_sig_wrapper_signature ((variants & 1) > 0, (variants & 2) > 0, i);
 					add_extra_method (acfg, mono_marshal_get_runtime_invoke_for_sig (sig));
-					printf ("X: %s\n", mono_method_full_name (mono_marshal_get_runtime_invoke_for_sig (sig), 1));
 
 					g_free (sig);
 				}
