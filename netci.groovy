@@ -374,12 +374,12 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     buildFlow("""
 // Build the input jobs in parallel
 parallel (
-    { coreclrBuildJob = build(globalParams, '${inputCoreCLRBuildName}') },
-    { windowsBuildJob = build(globalParams, '${inputWindowTestsBuildName}') }
+    { coreclrBuildJob = build(params, '${inputCoreCLRBuildName}') },
+    { windowsBuildJob = build(params, '${inputWindowTestsBuildName}') }
 )
     
 // And then build the test build
-build(globalParams + [CORECLR_BUILD: coreclrBuildJob.build.number, 
+build(params + [CORECLR_BUILD: coreclrBuildJob.build.number, 
                 CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
 """)
                     // Needs a workspace
