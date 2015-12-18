@@ -36,7 +36,7 @@ namespace System.Net.Security
         {
             get
             {
-                throw new NotImplementedException();
+                return true;
             }
         }
     }
