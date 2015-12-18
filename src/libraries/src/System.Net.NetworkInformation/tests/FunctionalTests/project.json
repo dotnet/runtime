@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Net.Primitives": "4.0.10-rc2-23610",
+    "System.Net.Primitives": "4.0.10-rc2-23614",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
