@@ -111,6 +111,7 @@ typedef struct {
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_cache;
 	GHashTable *runtime_invoke_vtype_cache;
+	GHashTable *runtime_invoke_sig_cache;
 
 	/*
 	 * indexed by SignaturePointerPair

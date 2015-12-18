@@ -3596,6 +3596,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 	int i;
 	int *tmp_nullable_locals;
 	gboolean void_ret = FALSE;
+	gboolean string_ctor = method && method->string_ctor;
 
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
@@ -3609,7 +3610,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 	}
 
 	if (sig->hasthis) {
-		if (method->string_ctor) {
+		if (string_ctor) {
 			if (mono_gc_is_moving ()) {
 				mono_mb_emit_ptr (mb, &string_dummy);
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -3719,7 +3720,7 @@ handle_enum:
 
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
-		if (!method->string_ctor)
+		if (!string_ctor)
 			void_ret = TRUE;
 		break;
 	case MONO_TYPE_BOOLEAN:
@@ -3784,7 +3785,7 @@ handle_enum:
 }
 
 static void
-emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMethod *method,
+emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoImage *image, MonoMethod *method,
 						  MonoMethodSignature *sig, MonoMethodSignature *callsig,
 						  gboolean virtual_, gboolean need_direct_wrapper)
 {
@@ -3826,7 +3827,7 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMe
 	labels [2] = mono_mb_emit_branch (mb, CEE_LEAVE);
 
 	/* Add a try clause around the call */
-	clause = (MonoExceptionClause *)mono_image_alloc0 (target_klass->image, sizeof (MonoExceptionClause));
+	clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
 	clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
 	clause->data.catch_class = mono_defaults.exception_class;
 	clause->try_offset = labels [1];
@@ -4016,7 +4017,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean
 	param_names [3] = "method";
 	mono_mb_set_param_names (mb, param_names);
 
-	emit_runtime_invoke_body (mb, target_klass, method, sig, callsig, virtual_, need_direct_wrapper);
+	emit_runtime_invoke_body (mb, target_klass->image, method, sig, callsig, virtual_, need_direct_wrapper);
 #endif
 
 	if (need_direct_wrapper) {
@@ -4190,6 +4191,105 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	mono_mb_free (mb);
 
 	return method;
+}
+
+/*
+ * mono_marshal_get_runtime_invoke_for_sig:
+ *
+ *   Return a runtime invoke wrapper for a given signature.
+ */
+MonoMethod *
+mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *csig, *callsig;
+	MonoMethodBuilder *mb;
+	MonoImage *image;
+	GHashTable *cache = NULL;
+	GHashTable **cache_table = NULL;
+	MonoMethod *res = NULL;
+	char *name;
+	const char *param_names [16];
+	WrapperInfo *info;
+
+	/* A simplified version of mono_marshal_get_runtime_invoke */
+
+	image = mono_defaults.corlib;
+
+	callsig = mono_marshal_get_runtime_invoke_sig (sig);
+
+	cache_table = &image->wrapper_caches.runtime_invoke_sig_cache;
+
+	cache = get_cache (cache_table, (GHashFunc)mono_signature_hash,
+					   (GCompareFunc)runtime_invoke_signature_equal);
+
+	/* from mono_marshal_find_in_cache */
+	mono_marshal_lock ();
+	res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+	mono_marshal_unlock ();
+
+	if (res) {
+		g_free (callsig);
+		return res;
+	}
+
+	/* Make a copy of the signature from the image mempool */
+	callsig = mono_metadata_signature_dup_full (image, callsig);
+
+	csig = mono_metadata_signature_alloc (image, 4);
+	csig->ret = &mono_defaults.object_class->byval_arg;
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &mono_defaults.int_class->byval_arg;
+	csig->pinvoke = 1;
+#if TARGET_WIN32
+	/* This is called from runtime code so it has to be cdecl */
+	csig->call_convention = MONO_CALL_C;
+#endif
+
+	name = mono_signature_to_name (callsig, "runtime_invoke_sig");
+	mb = mono_mb_new (mono_defaults.object_class, name,  MONO_WRAPPER_RUNTIME_INVOKE);
+	g_free (name);
+
+#ifndef DISABLE_JIT
+	param_names [0] = "this";
+	param_names [1] = "params";
+	param_names [2] = "exc";
+	param_names [3] = "method";
+	mono_mb_set_param_names (mb, param_names);
+
+	emit_runtime_invoke_body (mb, image, NULL, sig, callsig, FALSE, FALSE);
+#endif
+
+	/* taken from mono_mb_create_and_cache */
+	mono_marshal_lock ();
+	res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+	mono_marshal_unlock ();
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
+	info->d.runtime_invoke.sig = callsig;
+
+	/* Somebody may have created it before us */
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
+
+		mono_marshal_lock ();
+		res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+		if (!res) {
+			res = newm;
+			g_hash_table_insert (cache, callsig, res);
+		} else {
+			mono_free_method (newm);
+		}
+		mono_marshal_unlock ();
+	}
+
+	/* end mono_mb_create_and_cache */
+
+	mono_mb_free (mb);
+
+	return res;
 }
 
 #ifndef DISABLE_JIT

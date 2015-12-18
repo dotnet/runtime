@@ -352,6 +352,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual, gboole
 MonoMethod*
 mono_marshal_get_runtime_invoke_dynamic (void);
 
+MonoMethod *
+mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig);
+
 MonoMethodSignature*
 mono_marshal_get_string_ctor_signature (MonoMethod *method);
 
