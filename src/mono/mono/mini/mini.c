@@ -2299,10 +2299,14 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 
+#ifdef ENABLE_LLVM
 	if (COMPILE_LLVM (cfg))
 		mono_llvm_create_vars (cfg);
 	else
 		mono_arch_create_vars (cfg);
+#else
+	mono_arch_create_vars (cfg);
+#endif
 
 	if (cfg->method->save_lmf && cfg->create_lmf_var) {
 		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
