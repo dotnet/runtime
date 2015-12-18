@@ -21,7 +21,6 @@ namespace System.Net.Security.Tests
                 () => stream.AuthenticateAsClientAsync("host", null, protocol, false));
         }
 
-        [ActiveIssue(5037, PlatformID.AnyUnix)]
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
@@ -50,7 +49,6 @@ namespace System.Net.Security.Tests
                     false));
         }
 
-        [ActiveIssue(5037, PlatformID.AnyUnix)]
         [Fact]
         public async Task SslStream_AuthenticateAsClient_AllSupported_Success()
         {
@@ -62,7 +60,6 @@ namespace System.Net.Security.Tests
                 false);
         }
 
-        [ActiveIssue(5037, PlatformID.AnyUnix)]
         [Fact]
         public async Task SslStream_AuthenticateAsClient_None_Success()
         {
@@ -70,7 +67,6 @@ namespace System.Net.Security.Tests
             await stream.AuthenticateAsClientAsync("host", null, SslProtocols.None, false);
         }
 
-        [ActiveIssue(5037, PlatformID.AnyUnix)]
         [Fact]
         public async Task SslStream_AuthenticateAsClient_Default_Success()
         {
