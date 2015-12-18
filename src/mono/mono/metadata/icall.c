@@ -5830,13 +5830,22 @@ ves_icall_System_Environment_get_MachineName (void)
 	g_free (buf);
 	return result;
 #elif !defined(DISABLE_SOCKETS)
-	gchar buf [256];
 	MonoString *result;
-
-	if (gethostname (buf, sizeof (buf)) == 0)
+	char *buf;
+	int n;
+#if defined _SC_HOST_NAME_MAX
+	n = sysconf (_SC_HOST_NAME_MAX);
+	if (n == -1)
+#endif
+	n = 512;
+	buf = g_malloc (n+1);
+	
+	if (gethostname (buf, n) == 0){
+		buf [n] = 0;
 		result = mono_string_new (mono_domain_get (), buf);
-	else
+	} else
 		result = NULL;
+	g_free (buf);
 	
 	return result;
 #else
