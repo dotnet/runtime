@@ -1046,6 +1046,7 @@ get_wrapper_shared_type (MonoType *t)
 	switch (t->type) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
 		return &mono_defaults.object_class->byval_arg;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_ISSTRUCT (t))

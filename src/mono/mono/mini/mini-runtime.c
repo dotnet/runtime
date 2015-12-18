@@ -2305,7 +2305,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (!info->dyn_call_info) {
-			if (FALSE && mono_llvm_only) {
+			if (mono_llvm_only) {
 				gboolean supported = TRUE;
 				int i;
 
@@ -2318,6 +2318,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 				if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
 					supported = FALSE;
+
+#ifndef ENABLE_GSHAREDVT
+				supported = FALSE;
+#endif
 
 				if (supported) {
 					/* Invoke a gsharedvt out wrapper instead */

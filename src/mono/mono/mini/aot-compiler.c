@@ -7172,11 +7172,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 					copy->ret = mini_get_underlying_type (sig->ret);
 					// FIXME: Add more cases
-					if (copy->ret->type == MONO_TYPE_VAR || copy->ret->type == MONO_TYPE_MVAR || copy->ret->type == MONO_TYPE_GENERICINST || copy->ret->type == MONO_TYPE_SZARRAY)
+					if (copy->ret->type == MONO_TYPE_VAR || copy->ret->type == MONO_TYPE_MVAR || copy->ret->type == MONO_TYPE_GENERICINST)
 						concrete = FALSE;
 					for (i = 0; i < sig->param_count; ++i) {
 						copy->params [i] = mini_get_underlying_type (sig->params [i]);
-						if (copy->params [i]->type == MONO_TYPE_VAR || copy->params [i]->type == MONO_TYPE_MVAR || copy->params [i]->type == MONO_TYPE_GENERICINST || copy->params [i]->type == MONO_TYPE_SZARRAY)
+						if (copy->params [i]->type == MONO_TYPE_VAR || copy->params [i]->type == MONO_TYPE_MVAR || copy->params [i]->type == MONO_TYPE_GENERICINST)
 							concrete = FALSE;
 					}
 					if (concrete) {
@@ -9741,6 +9741,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		return 1;
 	}
 #endif
+
+#if defined(ENABLE_GSHAREDVT)
+	if (acfg->aot_opts.llvm_only) {
+		acfg->opts |= MONO_OPT_GSHAREDVT;
+		opts |= MONO_OPT_GSHAREDVT;
+	}
+#endif
+
 	if (opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
