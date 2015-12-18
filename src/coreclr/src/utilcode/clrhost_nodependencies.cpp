@@ -398,9 +398,6 @@ const NoThrow nothrow = { 0 };
 // use standard heap functions for address santizier
 #else
 
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void * __cdecl
 operator new(size_t n)
 {
@@ -422,9 +419,6 @@ operator new(size_t n)
     return result;
 }
 
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void * __cdecl
 operator new[](size_t n)
 {
@@ -448,9 +442,6 @@ operator new[](size_t n)
 
 #endif // HAS_ADDRESS_SANITIZER
 
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void * __cdecl operator new(size_t n, const NoThrow&)
 {
 #ifdef HAS_ADDRESS_SANITIZER
@@ -471,9 +462,6 @@ void * __cdecl operator new(size_t n, const NoThrow&)
     return result;
 }
 
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void * __cdecl operator new[](size_t n, const NoThrow&)
 {
 #ifdef HAS_ADDRESS_SANITIZER
@@ -497,9 +485,6 @@ void * __cdecl operator new[](size_t n, const NoThrow&)
 #ifdef HAS_ADDRESS_SANITIZER
 // use standard heap functions for address santizier
 #else
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void __cdecl
 operator delete(void *p) NOEXCEPT
 {
@@ -513,9 +498,6 @@ operator delete(void *p) NOEXCEPT
     TRASH_LASTERROR;
 }
 
-#ifdef __llvm__
-__attribute__((visibility("hidden")))
-#endif
 void __cdecl
 operator delete[](void *p) NOEXCEPT
 {
