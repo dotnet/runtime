@@ -128,10 +128,10 @@ namespace System.Net.Primitives.Functional.Tests
         {
             CookieCollection cc = CreateCookieCollection1();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc[-1]); //Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc[cc.Count]); //Index >= Count
+            Assert.Throws<ArgumentOutOfRangeException>(() => cc[-1]); // Index < 0
+            Assert.Throws<ArgumentOutOfRangeException>(() => cc[cc.Count]); // Index >= Count
 
-            Assert.Null(cc["invalidname"]);
+            Assert.Null(cc["no such name"]);
         }
 
         [Fact]
@@ -146,6 +146,44 @@ namespace System.Net.Primitives.Functional.Tests
         {
             ICollection cc = new CookieCollection();
             Assert.Equal(cc, cc.SyncRoot);
+        }
+        
+        [Fact]
+        public static void CopyTo_Success()
+        {
+            ICollection cc = CreateCookieCollection1();
+            Array cookies = new object[cc.Count];
+            cc.CopyTo(cookies, 0);
+            Assert.Equal(cc.Count, cookies.Length);
+        }
+
+        [Fact]
+        public static void Enumerator_Index_Invalid()
+        {
+            CookieCollection cc = CreateCookieCollection1();
+            IEnumerator enumerator = cc.GetEnumerator();
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Index < 0
+
+            enumerator.MoveNext(); enumerator.MoveNext(); enumerator.MoveNext();
+            enumerator.MoveNext(); enumerator.MoveNext(); enumerator.MoveNext();
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Index >= count
+
+            enumerator.Reset();
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Index should be -1
+        }
+
+        [Fact]
+        public static void Enumerator_Version_Invalid()
+        {
+            CookieCollection cc = CreateCookieCollection1();
+            IEnumerator enumerator = cc.GetEnumerator();
+            enumerator.MoveNext();
+
+            cc.Add(new Cookie("name5", "value"));
+            Assert.NotNull(enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext()); // Enumerator out of sync
         }
     }
 }
