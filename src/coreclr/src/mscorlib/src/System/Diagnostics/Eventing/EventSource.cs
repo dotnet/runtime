@@ -1436,6 +1436,7 @@ namespace System.Diagnostics.Tracing
 #endif
             }
             m_eventSourceEnabled = false;
+            m_eventSourceDisposed = true;
         }
         /// <summary>
         /// Finalizer for EventSource
@@ -3030,11 +3031,7 @@ namespace System.Diagnostics.Tracing
 
         private bool IsDisposed 
         {
-#if FEATURE_MANAGED_ETW
-            get { return m_provider == null || m_provider.m_disposed; }
-#else
-            get { return false; } // ETW is not present (true means that the EventSource is "off" / broken)
-#endif // FEATURE_MANAGED_ETW
+            get { return m_eventSourceDisposed; }
         }
 
         [SecuritySafeCritical]
@@ -4060,6 +4057,8 @@ namespace System.Diagnostics.Tracing
 
         private EventSourceSettings m_config;      // configuration information
 
+        private bool m_eventSourceDisposed;              // has Dispose been called.
+        
         // Enabling bits
         private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
         internal EventLevel m_level;                    // highest level enabled by any output dispatcher
