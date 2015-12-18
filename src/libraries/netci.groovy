@@ -8,6 +8,7 @@ def project = GithubProject
 
 // Map of os -> osGroup.
 def osGroupMap = ['Ubuntu':'Linux',
+                  'Debian8.2':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'FreeBSD':'FreeBSD',
@@ -16,6 +17,7 @@ def osGroupMap = ['Ubuntu':'Linux',
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu' : 'ubuntu.14.04-x64',
+                             'Debian8.2' : 'ubuntu.14.04-x64',
                              'FreeBSD' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'ubuntu.14.04-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64']
@@ -118,7 +120,7 @@ def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : '
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configuration ->
         innerLoopNonWindowsOSs.each { os ->
