@@ -6,7 +6,8 @@
     "url": "git://github.com/dotnet/cli"
   },
   "compilationOptions": {
-    "warningsAsErrors": true
+    "warningsAsErrors": true,
+    "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
     "Newtonsoft.Json": "7.0.1"
