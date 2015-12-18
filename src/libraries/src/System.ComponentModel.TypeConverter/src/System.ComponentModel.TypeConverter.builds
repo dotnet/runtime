@@ -5,6 +5,9 @@
     <Project Include="System.ComponentModel.TypeConverter.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
+    <Project Include="System.ComponentModel.TypeConverter.csproj" Condition="'$(TargetsWindows)' == 'true'">
+      <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
