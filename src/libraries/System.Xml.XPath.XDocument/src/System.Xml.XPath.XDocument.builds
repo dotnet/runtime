@@ -5,6 +5,9 @@
     <Project Include="System.Xml.XPath.XDocument.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
+    <Project Include="System.Xml.XPath.XDocument.csproj" Condition="'$(TargetsWindows)' == 'true'">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
