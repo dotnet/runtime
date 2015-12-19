@@ -48,7 +48,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int DataPointer { get; private set; }
 
-        internal DebugDirectoryEntry(
+        public DebugDirectoryEntry(
             uint stamp,
             ushort majorVersion,
             ushort minorVersion,

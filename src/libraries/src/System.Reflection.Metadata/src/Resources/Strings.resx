@@ -324,4 +324,19 @@
   <data name="SequencePointValueOutOfRange" xml:space="preserve">
     <value>Sequence point value is out of range.</value>
   </data>
+  <data name="InvalidDirectoryRVA" xml:space="preserve">
+    <value>Invalid directory relative virtual address.</value>
+  </data>
+  <data name="InvalidDirectorySize" xml:space="preserve">
+    <value>Invalid directory size.</value>
+  </data>
+  <data name="InvalidDebugDirectoryEntryCharacteristics" xml:space="preserve">
+    <value>The value of field Characteristics in debug directory entry must be zero.</value>
+  </data>
+  <data name="UnexpectedCodeViewDataSignature" xml:space="preserve">
+    <value>Unexpected CodeView data signature value.</value>
+  </data>
+  <data name="InvalidPathPadding" xml:space="preserve">
+    <value>The path must be padded with NUL characters.</value>
+  </data>
 </root>

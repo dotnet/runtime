@@ -462,14 +462,14 @@ namespace System.Reflection.PortableExecutable
             int position;
             if (!PEHeaders.TryGetDirectoryOffset(debugDirectory, out position))
             {
-                throw new BadImageFormatException();
+                throw new BadImageFormatException(SR.InvalidDirectoryRVA);
             }
 
             const int entrySize = 0x1c;
 
             if (debugDirectory.Size % entrySize != 0)
             {
-                throw new BadImageFormatException();
+                throw new BadImageFormatException(SR.InvalidDirectorySize);
             }
 
             using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(position, debugDirectory.Size))
@@ -484,7 +484,7 @@ namespace System.Reflection.PortableExecutable
                     int characteristics = reader.ReadInt32();
                     if (characteristics != 0)
                     {
-                        throw new BadImageFormatException();
+                        throw new BadImageFormatException(SR.InvalidDebugDirectoryEntryCharacteristics);
                     }
 
                     uint stamp = reader.ReadUInt32();
@@ -525,7 +525,7 @@ namespace System.Reflection.PortableExecutable
                     reader.ReadByte() != (byte)'D' ||
                     reader.ReadByte() != (byte)'S')
                 {
-                    throw new BadImageFormatException();
+                    throw new BadImageFormatException(SR.UnexpectedCodeViewDataSignature);
                 }
 
                 Guid guid = reader.ReadGuid();
@@ -537,7 +537,7 @@ namespace System.Reflection.PortableExecutable
                 {
                     if (reader.ReadByte() != 0)
                     {
-                        throw new BadImageFormatException();
+                        throw new BadImageFormatException(SR.InvalidPathPadding);
                     }
                 }
 
