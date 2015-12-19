@@ -1846,13 +1846,6 @@ major_free_swept_blocks (size_t allowance)
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
-#if SIZEOF_VOID_P != 8
-	{
-		int i, num_empty_blocks_orig, num_blocks, arr_length;
-		void *block;
-		void **empty_block_arr;
-		void **rebuild_next;
-
 #ifdef TARGET_WIN32
 		/*
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
@@ -1860,6 +1853,13 @@ major_free_swept_blocks (size_t allowance)
 		 */
 		return;
 #endif
+
+#if SIZEOF_VOID_P != 8
+	{
+		int i, num_empty_blocks_orig, num_blocks, arr_length;
+		void *block;
+		void **empty_block_arr;
+		void **rebuild_next;
 
 		if (num_empty_blocks <= section_reserve)
 			return;
