@@ -3493,6 +3493,10 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 #endif
 
+		if (!skip && acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT) && mini_gsharedvt_runtime_invoke_supported (sig))
+			/* Supported by the gsharedvt based runtime-invoke wrapper */
+			skip = TRUE;
+
 		if (!skip) {
 			//printf ("%s\n", mono_method_full_name (method, TRUE));
 			add_method (acfg, get_runtime_invoke (acfg, method, FALSE));

@@ -2141,6 +2141,22 @@ typedef struct {
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
+gboolean
+mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig)
+{
+	gboolean supported = TRUE;
+	int i;
+
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *t = sig->params [i];
+
+		if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+			supported = FALSE;
+	}
+
+	return supported;
+}
+
 static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method)
 {
@@ -2230,15 +2246,9 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
-			gboolean supported = TRUE;
-			int i;
+			gboolean supported;
 
-			for (i = 0; i < sig->param_count; ++i) {
-				MonoType *t = sig->params [i];
-
-				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
-					supported = FALSE;
-			}
+			supported = mini_gsharedvt_runtime_invoke_supported (sig);
 
 			if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
 				supported = FALSE;
