@@ -1,25 +1,107 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <!-- Setting default TargetGroup before importing dir.prop -->
-    <TargetGroup Condition="'$(TargetGroup)' == ''">net46</TargetGroup>
-  </PropertyGroup>
-
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
+    <ProjectGuid>{EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyVersion>4.0.21.0</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)'!='netcore50'">
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
-
-  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcore50'">
+    <DefineConstants>$(DefineConstants);PROJECTN</DefineConstants>
+    <!-- Need to remove reference to System.Reflection.TypeExtensions
+    which is included transitively via System.Reflection -->
+    <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <AdditionalProperties>TargetGroup=$(TargetGroup)</AdditionalProperties>
+    </ProjectReference>
+    <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
   </ItemGroup>
-
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
+    <Compile Include="System\Diagnostics\Tracing\ActivityTracker.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventActivityOptions.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventDescriptor.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventProvider.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSource.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSourceException.cs" />
+    <Compile Include="System\Diagnostics\Tracing\StubEnvironment.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\PropertyValue.cs" />
+    <Compile Include="System\Diagnostics\Tracing\Winmeta.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\ConcurrentSet.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\ConcurrentSetItem.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\DataCollector.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EmptyStruct.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EnumerableTypeInfo.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EnumHelper.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventDataAttribute.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventFieldAttribute.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventFieldFormat.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventIgnoreAttribute.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventPayload.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventSourceActivity.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\EventSourceOptions.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\FieldMetadata.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\InvokeTypeInfo.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\NameInfo.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\PropertyAnalysis.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\SimpleEventTypes.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\SimpleTypeInfos.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\Statics.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingDataCollector.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingDataType.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingEventSource.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingEventTraits.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingEventTypes.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingMetadataCollector.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TraceLoggingTypeInfo.cs" />
+    <Compile Include="System\Diagnostics\Tracing\TraceLogging\TypeAnalysis.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Common\Interop\mincore\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Interop.GetCurrentProcessId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
+      <Link>Common\Interop\Interop.GetCurrentThreadId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventRegister.cs">
+      <Link>Common\Interop\Interop.EventRegister.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventUnregister.cs">
+      <Link>Common\Interop\Interop.EventUnregister.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventWrite.cs">
+      <Link>Common\Interop\Interop.EventWrite.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventSetInformation.cs">
+      <Link>Common\Interop\Interop.EventSetInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventWriteTransfer.cs">
+      <Link>Common\Interop\Interop.EventWriteTransfer.cs</Link>
+    </Compile>
+    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50'" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
