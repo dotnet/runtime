@@ -78,6 +78,24 @@ Functions that can be called from both coop or preept modes.
 	assert_gc_neutral_mode ();	\
 } while (0);
 
+/* In a GC critical region, the thread is not allowed to switch to GC safe mode.
+ * For example if the thread is about to call a method that will manipulate managed objects.
+ * The GC critical region must only occur in unsafe mode.
+ */
+#define MONO_PREPARE_GC_CRITICAL_REGION					\
+	MON_REQ_GC_UNSAFE_MODE						\
+	do {								\
+		void* __critical_gc_region_cookie = critical_gc_region_begin()
+
+#define MONO_FINISH_GC_CRITICAL_REGION			\
+	critical_gc_region_end(__critical_gc_region_cookie);	\
+	} while(0)
+
+/* Verify that the thread is not currently in a GC critical region. */
+#define MONO_REQ_GC_NOT_CRITICAL do {			\
+		assert_not_in_gc_critical_region();	\
+	} while(0)
+
 // Use when writing a pointer from one image or imageset to another.
 #define CHECKED_METADATA_WRITE_PTR(ptr, val) do {    \
     check_metadata_store (&(ptr), (val));    \
@@ -116,6 +134,10 @@ void assert_gc_safe_mode (void);
 void assert_gc_unsafe_mode (void);
 void assert_gc_neutral_mode (void);
 
+void* critical_gc_region_begin(void);
+void critical_gc_region_end(void* token);
+void assert_not_in_gc_critical_region(void);
+
 void checked_build_init (void);
 void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
 
@@ -131,6 +153,12 @@ void check_metadata_store_local(void *from, void *to);
 #define MONO_REQ_GC_NEUTRAL_MODE
 #define MONO_REQ_API_ENTRYPOINT
 #define MONO_REQ_RUNTIME_ENTRYPOINT
+
+#define MONO_PREPARE_GC_CRITICAL_REGION
+#define MONO_FINISH_GC_CRITICAL_REGION
+
+#define MONO_REQ_GC_NOT_CRITICAL
+
 
 #define CHECKED_MONO_INIT()
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta)

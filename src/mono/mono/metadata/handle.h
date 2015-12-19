@@ -45,16 +45,14 @@ struct _MonoHandleStorage {
 #else
 
 static inline void
-mono_handle_check_in_critical_section (const gchar* file, const gint lineno)
+mono_handle_check_in_critical_section ()
 {
-	MonoThreadInfo *info = (MonoThreadInfo*) mono_thread_info_current_unchecked ();
-	if (info && !info->inside_critical_region)
-		g_error ("Assertion at %s:%d: mono_handle_check_in_critical_section failed", file, lineno);
+	MONO_REQ_GC_UNSAFE_MODE;
 }
 
-#define mono_handle_obj(handle) (mono_handle_check_in_critical_section (__FILE__, __LINE__), (handle)->obj)
+#define mono_handle_obj(handle) (mono_handle_check_in_critical_section (), (handle)->obj)
 
-#define mono_handle_assign(handle,rawptr) do { mono_handle_check_in_critical_section (__FILE__, __LINE__); (handle)->obj = (rawptr); } while (0)
+#define mono_handle_assign(handle,rawptr) do { mono_handle_check_in_critical_section (); (handle)->obj = (rawptr); } while (0)
 
 #endif
 
@@ -84,31 +82,31 @@ mono_handle_domain (MonoHandle handle)
 #define MONO_HANDLE_SETREF(handle,fieldname,value)			\
 	do {								\
 		MonoHandle __value = (MonoHandle) (value);		\
-		MONO_PREPARE_CRITICAL;					\
+		MONO_PREPARE_GC_CRITICAL_REGION;					\
 		MONO_OBJECT_SETREF (mono_handle_obj ((handle)), fieldname, mono_handle_obj (__value)); \
-		MONO_FINISH_CRITICAL;					\
+		MONO_FINISH_GC_CRITICAL_REGION;					\
 	} while (0)
 
 #define MONO_HANDLE_SET(handle,fieldname,value)	\
 	do {	\
-		MONO_PREPARE_CRITICAL;	\
+		MONO_PREPARE_GC_CRITICAL_REGION;	\
 		mono_handle_obj ((handle))->fieldname = (value);	\
-		MONO_FINISH_CRITICAL;	\
+		MONO_FINISH_GC_CRITICAL_REGION;	\
 	} while (0)
 
 #define MONO_HANDLE_ARRAY_SETREF(handle,index,value)			\
 	do {								\
 		MonoHandle __value = (MonoHandle) (value);		\
-		MONO_PREPARE_CRITICAL;					\
+		MONO_PREPARE_GC_CRITICAL_REGION;					\
 		mono_array_setref (mono_handle_obj ((handle)), (index), mono_handle_obj (__value)); \
-		MONO_FINISH_CRITICAL;					\
+		MONO_FINISH_GC_CRITICAL_REGION;					\
 	} while (0)
 
 #define MONO_HANDLE_ARRAY_SET(handle,type,index,value)	\
 	do {	\
-		MONO_PREPARE_CRITICAL;	\
+		MONO_PREPARE_GC_CRITICAL_REGION;	\
 		mono_array_set (mono_handle_obj ((handle)), (type), (index), (value));	\
-		MONO_FINISH_CRITICAL;	\
+		MONO_FINISH_GC_CRITICAL_REGION;	\
 	} while (0)
 
 /* handle arena specific functions */

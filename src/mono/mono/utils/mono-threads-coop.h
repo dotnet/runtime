@@ -13,6 +13,8 @@
 #include <config.h>
 #include <glib.h>
 
+#include "checked-build.h"
+
 G_BEGIN_DECLS
 
 /* JIT specific interface */
@@ -58,6 +60,7 @@ mono_threads_safepoint (void)
 }
 
 #define MONO_PREPARE_BLOCKING	\
+	MONO_REQ_GC_NOT_CRITICAL;		\
 	do {	\
 		gpointer __dummy;	\
 		gpointer __blocking_cookie = mono_threads_prepare_blocking (&__dummy)
