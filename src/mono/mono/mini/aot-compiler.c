@@ -3566,7 +3566,7 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 		/* These are used by mono_jit_runtime_invoke () to calls gsharedvt out wrappers */
-		{
+		if (acfg->aot_opts.llvm_only) {
 			int variants;
 
 			/* Create simplified signatures which match the signature used by the gsharedvt out wrappers */
