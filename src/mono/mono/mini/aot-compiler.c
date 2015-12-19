@@ -9094,29 +9094,6 @@ collect_methods (MonoAotCompile *acfg)
 		}
 	}
 
-	/* gsharedvt in wrappers */
-	/* Generate a wrapper for each generic signature used in the module */
-	if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT)) {
-		// FIXME: Is this needed ?
-		for (mindex = 0; mindex < image->tables [MONO_TABLE_METHODSPEC].rows; ++mindex) {
-			MonoMethod *method, *wrapper;
-			MonoMethodSignature *sig;
-			guint32 token = MONO_TOKEN_METHOD_SPEC | (mindex + 1);
-
-			method = mono_get_method (acfg->image, token, NULL);
-			// FIXME:
-			g_assert (method);
-
-			sig = mono_method_signature (method);
-			if (!sig->has_type_parameters) {
-				wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
-				add_extra_method (acfg, wrapper);
-				wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
-				add_extra_method (acfg, wrapper);
-			}
-		}
-	}
-
 	add_generic_instances (acfg);
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
