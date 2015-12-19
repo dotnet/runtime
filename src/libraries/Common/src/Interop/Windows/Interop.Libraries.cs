@@ -15,6 +15,7 @@ internal static partial class Interop
         internal const string Crypt32 = "crypt32.dll";
         internal const string Debug = "api-ms-win-core-debug-l1-1-0.dll";
         internal const string ErrorHandling = "api-ms-win-core-errorhandling-l1-1-0.dll";
+        internal const string Eventing = "api-ms-win-eventing-provider-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string Heap = "api-ms-win-core-heap-obsolete-l1-1-0.dll";
         internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
