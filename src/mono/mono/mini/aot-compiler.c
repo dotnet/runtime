@@ -7212,8 +7212,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		/* These only need out wrappers */
 		add_gsharedvt_wrappers (acfg, mono_method_signature (cfg->method), FALSE, TRUE);
 
-	//cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, mono_method_signature (cfg->method));
-
 	/* Add gsharedvt wrappers for signatures used by the method */
 	if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT)) {
 		GSList *l;

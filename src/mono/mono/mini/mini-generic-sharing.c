@@ -1041,16 +1041,22 @@ get_wrapper_shared_type (MonoType *t)
 		return &mono_defaults.int_class->this_arg;
 	t = mini_get_underlying_type (t);
 
-	// FIXME: Merge more types (objref/int etc).
-
 	switch (t->type) {
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-		return &mono_defaults.object_class->byval_arg;
+	case MONO_TYPE_PTR:
+		return &mono_defaults.int_class->byval_arg;
+		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_ISSTRUCT (t))
-			return &mono_defaults.object_class->byval_arg;
+			return &mono_defaults.int_class->byval_arg;
+		break;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I8:
+		return &mono_defaults.int_class->byval_arg;
+#endif
 	default:
 		break;
 	}
