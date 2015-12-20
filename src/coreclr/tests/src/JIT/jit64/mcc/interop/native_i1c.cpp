@@ -4,8 +4,10 @@
 #include <stdarg.h>
 #include "native.h"
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wvarargs"
+#endif
 
 MCC_API VType1 __cdecl sum(float first, ...) {
     VType1 result;
@@ -52,4 +54,6 @@ MCC_API VType1 __cdecl sum(float first, ...) {
     return result;
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
