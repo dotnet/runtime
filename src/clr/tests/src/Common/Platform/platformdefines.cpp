@@ -31,7 +31,6 @@ LPSTR HackyConvertToSTR(LPWSTR pwszInput)
 {
 	size_t cchInput;
 	LPSTR  pszOutput;
-	LPWSTR pStr;
 
 	if (NULL == pwszInput) return NULL;
 
@@ -49,7 +48,7 @@ LPSTR HackyConvertToSTR(LPWSTR pwszInput)
 
 error_t TP_scpy_s(LPWSTR strDestination, size_t sizeInWords, LPCWSTR strSource)
 {
-	int cnt;
+	size_t cnt;
 	// copy sizeInBytes bytes of strSource into strDestination
 
 	if (NULL == strDestination || NULL == strSource) return 1;
@@ -189,7 +188,7 @@ void TP_ZeroMemory(LPVOID buffer, size_t sizeInBytes)
 	if (NULL == buffer) return;
 
 	bBuf = (BYTE*)buffer;
-	for(int i=0; i<sizeInBytes; i++)
+	for(size_t i=0; i<sizeInBytes; i++)
 	{
 		bBuf[i] = 0;
 	}
@@ -197,7 +196,7 @@ void TP_ZeroMemory(LPVOID buffer, size_t sizeInBytes)
 
 error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix)
 {
-	int len;
+	size_t len;
 	int tmpNum;
 
 	// only support radix == 10 and only positive numbers
@@ -226,11 +225,10 @@ error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix)
 
 	// convert num into a string (backwards)
 	buffer[len] = '\0';
-	len--;
-	while(0 < num && 0 <= len)
+	while(0 < num && 0 < len)
 	{
+        len--;
 		buffer[len] = (WCHAR)((num % 10) + '0');
-		len--;
 		num /= 10;
 	}
 

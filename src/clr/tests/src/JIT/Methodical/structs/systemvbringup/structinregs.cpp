@@ -319,12 +319,12 @@ EXPORT(void) InvokeCallback20(PFNACTION20 callback, S20 s)
 
 EXPORT(void) InvokeCallback28(PFNACTION28 callback, S28 s)
 {
-    printf("Native S28: %X object, %d\n", (unsigned int)s.x, s.y);
+    printf("Native S28: %p object, %d\n", s.x, s.y);
     callback(s);
 }
 EXPORT(void) InvokeCallback29(PFNACTION29 callback, S29 s)
 {
-    printf("Native S29: %d, %X object\n", s.x, (unsigned int)s.y);
+    printf("Native S29: %d, %p object\n", s.x, s.y);
     callback(s);
 }
 
@@ -463,13 +463,13 @@ EXPORT(S20) InvokeCallback20R(PFNACTION20 callback, S20 s)
 
 EXPORT(S28) InvokeCallback28R(PFNACTION28 callback, S28 s)
 {
-    printf("Native S28: %X object, %d\n", (unsigned int)s.x, s.y);
+    printf("Native S28: %p object, %d\n", s.x, s.y);
     callback(s);
     return s;
 }
 EXPORT(S29) InvokeCallback29R(PFNACTION29 callback, S29 s)
 {
-    printf("Native S29: %d, %X object\n", s.x, (unsigned int)s.y);
+    printf("Native S29: %d, %p object\n", s.x, s.y);
     callback(s);
     return s;
 }

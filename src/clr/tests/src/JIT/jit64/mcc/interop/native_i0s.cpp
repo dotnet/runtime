@@ -20,7 +20,7 @@ MCC_API MyValueType WINAPI  sum(
     unsigned __int64 a10, unsigned __int64 a11, unsigned __int64 a12) {
     MyValueType result;
 
-    result.sum = a01 + a02 + a03 + a04 + a05 + a06 + a07 + a08 + a09 + a10 + a11 + a12;
+    result.sum = static_cast<__int64>(a01 + a02 + a03 + a04 + a05 + a06 + a07 + a08 + a09 + a10 + a11 + a12);
     result.count = 12;
     result.average = (double)result.sum / result.count;
     result.dummy1 = result.sum;
