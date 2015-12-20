@@ -274,7 +274,7 @@ DWORD STDMETHODCALLTYPE UtilExecutionEngine::WaitForEvent(EVENT_COOKIE event, DW
 DWORD STDMETHODCALLTYPE UtilExecutionEngine::WaitForSingleObject(HANDLE handle, DWORD dwMilliseconds) 
 {
     _ASSERTE(handle);
-    return WaitForSingleObject(handle, dwMilliseconds);
+    return WaitForSingleObjectEx(handle, dwMilliseconds, FALSE);
 }
 
 SEMAPHORE_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::ClrCreateSemaphore(DWORD dwInitial, DWORD dwMax) 
