@@ -8,16 +8,6 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        /// <summary>
-        /// Make sure to keep in sync with EventProvider.EventData.
-        /// </summary>
-        public struct EventData
-        {
-            internal unsafe ulong Ptr;
-            internal uint Size;
-            internal uint Reserved;
-        }
-
         [DllImport(Interop.Libraries.Eventing)]
         internal unsafe static extern int EventWriteTransfer(
                 ulong registrationHandle,
@@ -25,7 +15,7 @@ internal static partial class Interop
                 Guid* activityId,
                 Guid* relatedActivityId,
                 int userDataCount,
-                EventData* userData
+                void* userData
                 );
     }
 }

@@ -17,6 +17,6 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
-    "dotnet5.4": {}
+    "dnxcore50": {}
   }
 }

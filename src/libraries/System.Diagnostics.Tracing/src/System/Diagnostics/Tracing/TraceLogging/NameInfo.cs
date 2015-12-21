@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using Interlocked = System.Threading.Interlocked;
@@ -21,7 +24,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal static void ReserveEventIDsBelow(int eventId)
         {
-            for (; ; )
+            for(;;)
             {
                 int snapshot = lastIdentity;
                 int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;
