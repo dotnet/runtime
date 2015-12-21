@@ -37,8 +37,25 @@ namespace Microsoft.Extensions.DependencyModel
             return new DependencyContext(
                 compileTargetProperty.Key,
                 runtimeTargetProperty.Key.Substring(compileTargetProperty.Key.Length + 1),
+                ReadCompilationOptions((JObject)root[DependencyContextStrings.CompilationOptionsPropertName]),
                 ReadLibraries((JObject)runtimeTargetProperty.Value, true, libraryStubs),
                 ReadLibraries((JObject)compileTargetProperty.Value, false, libraryStubs)
+                );
+        }
+
+        private CompilationOptions ReadCompilationOptions(JObject compilationOptionsObject)
+        {
+            return new CompilationOptions(
+                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>(),
+                compilationOptionsObject[DependencyContextStrings.LanguageVersionPropertyName]?.Value<string>(),
+                compilationOptionsObject[DependencyContextStrings.PlatformPropertyName]?.Value<string>(),
+                compilationOptionsObject[DependencyContextStrings.AllowUnsafePropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.WarningsAsErrorsPropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.OptimizePropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.KeyFilePropertyName]?.Value<string>(),
+                compilationOptionsObject[DependencyContextStrings.DelaySignPropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.PublicSignPropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.EmitEntryPointPropertyName]?.Value<bool>()
                 );
         }
 
@@ -50,7 +67,7 @@ namespace Microsoft.Extensions.DependencyModel
         private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, DependencyContextReader.LibraryStub> libraryStubs)
         {
             var nameWithVersion = property.Name;
-            DependencyContextReader.LibraryStub stub;
+            LibraryStub stub;
 
             if (!libraryStubs.TryGetValue(nameWithVersion, out stub))
             {
