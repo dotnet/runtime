@@ -114,6 +114,7 @@ namespace Tests.Expressions
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/coreclr/issues/2315", PlatformID.AnyUnix)]
+        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_Call()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -403,7 +404,8 @@ namespace Tests.Expressions
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2315", PlatformID.AnyUnix)] 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2315", PlatformID.AnyUnix)]
+        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_MemberAccess()
         {
             var exprs = default(IEnumerable<Expression>);
