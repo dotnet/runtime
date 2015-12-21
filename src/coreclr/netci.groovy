@@ -99,7 +99,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                 case 'Ubuntu':
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
                     break
-                case 'Windows_NT'
+                case 'Windows_NT':
                     // Set up a private trigger
                     Utilities.addPrivateGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build",
                         "(?i).*test\\W+${architecture}\\W+${osGroup}.*", ['Microsoft*dotnet-coreclr', 'Microsoft*dotnet-corefx'], null)
