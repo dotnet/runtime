@@ -144,7 +144,7 @@ public:
     static void ObjectRefCallback(void* context, void* objectRefUNSAFE);
 
     ProfToEEInterfaceImpl();
-    ~ProfToEEInterfaceImpl();
+    virtual ~ProfToEEInterfaceImpl();
     HRESULT Init();
 
     // IUnknown

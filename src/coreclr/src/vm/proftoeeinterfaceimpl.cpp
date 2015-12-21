@@ -1157,6 +1157,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
             (ObjectID *) arrObjRef);
     }
 
+#ifdef FEATURE_EVENT_TRACE
     if (s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
                                      TRACE_LEVEL_INFORMATION, 
@@ -1170,6 +1171,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
             (Object **) arrObjRef);
 
     }
+#endif // FEATURE_EVENT_TRACE
 
     // If the data was not allocated on the stack, need to clean it up.
     if ((arrObjRef != NULL) && !bOnStack)
@@ -1298,6 +1300,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
             RootReference2((BYTE *)*ppObject, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
     }
 
+#ifdef FEATURE_EVENT_TRACE
     // Notify ETW of the root
     if (s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
@@ -1313,6 +1316,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
             dwFlags,        // dwGCFlags
             dwEtwRootFlags);
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 
@@ -4792,11 +4796,15 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
         LL_INFO1000, 
         "**PROF: ForceGC.\n"));        
 
+#ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
     // this thread before forcing the GC (to work around Jupiter issues where it's
     // expected this thread is already managed before starting the GC).
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
-
+#else // !FEATURE_EVENT_TRACE
+    HRESULT hr = E_FAIL;
+#endif // FEATURE_EVENT_TRACE
+ 
     // If a Thread object was just created for this thread, remember the fact that it
     // was a ForceGC() thread, so we can be more lenient when doing
     // COR_PRF_CALLBACKSTATE_INCALLBACK later on from other APIs
@@ -6799,6 +6807,8 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     return SWA_ABORT;
 }
 
+#ifdef _TARGET_X86_
+
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
 // HelperMethodFrames are intialized. However, sometimes we need to be able to specify
@@ -6859,8 +6869,6 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
     return FALSE;
 }
 
-
-#ifdef _TARGET_X86_
 //---------------------------------------------------------------------------------------
 //
 // Implements the COR_PRF_SNAPSHOT_X86_OPTIMIZED algorithm called by DoStackSnapshot. 
@@ -7212,13 +7220,13 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     return E_NOTIMPL;
 #endif
 
-#ifndef FEATURE_HIJACK
+#if !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
 
     // DoStackSnapshot needs Thread::Suspend/ResumeThread functionality.
     // On platforms w/o support for these APIs return E_NOTIMPL.
     return E_NOTIMPL;
 
-#else // FEATURE_HIJACK
+#else // !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
 
     CONTRACTL
     {
@@ -7405,7 +7413,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
             _ASSERTE(!"Profiler trying to walk destroyed thread");
             EEPOLICY_HANDLE_FATAL_ERROR(CORPROF_E_STACKSNAPSHOT_INVALID_TGT_THREAD);
         }
-        
+
         // Thread::SuspendThread() ensures that no one else should try to suspend us
         // while we're suspending pThreadToSnapshot.
         //
@@ -7656,7 +7664,7 @@ Cleanup:
 
     return hr;
 
-#endif //  FEATURE_HIJACK
+#endif // !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
 }
 
 
@@ -9053,8 +9061,6 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EETriggers, (LF_CORPROF, LL_INFO1000,  "**PROF: EnumNgenModuleMethodsInliningThisMethod.\n"));
-
-    typedef DPTR(class MethodDesc)   PTR_MethodDesc;
 
     if (ppEnum == NULL)
     {

@@ -502,12 +502,14 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 #endif //MULTIPLE_HEAPS
         }
 
+#ifdef FEATURE_EVENT_TRACE
         // **** Done! Indicate to ETW helpers that the heap walk is done, so any buffers
         // should be flushed into the ETW stream
         if (fShouldWalkHeapObjectsForEtw || fShouldWalkHeapRootsForEtw)
         {
             ETW::GCLog::EndHeapDump(&profilerWalkHeapContext);
         }
+#endif // FEATURE_EVENT_TRACE
     }
 }
 #endif // defined(GC_PROFILING)
