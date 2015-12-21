@@ -329,9 +329,16 @@ namespace ETW
         static BOOL ShouldWalkStaticsAndCOMForEtw();
         static VOID WalkStaticsAndCOMForETW();
         static VOID EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext);
+#ifdef FEATURE_EVENT_TRACE        
         static VOID BeginMovedReferences(size_t * pProfilingContext);
         static VOID MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static VOID EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
+#else
+        // TODO: Need to be implemented for PROFILING_SUPPORTED.
+        static VOID BeginMovedReferences(size_t * pProfilingContext) {};
+        static VOID MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE) {};
+        static VOID EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE) {};
+#endif // FEATURE_EVENT_TRACE        
         static VOID SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
     };
 };
