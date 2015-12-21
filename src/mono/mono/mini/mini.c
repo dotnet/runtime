@@ -3708,7 +3708,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* Should be done before branch opts */
 	if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
 		mono_local_cprop (cfg);
-
+	/*
+	 * Should be done after cprop which can do strength reduction on
+	 * some of these ops, after propagating immediates.
+	 */
+	if (cfg->has_emulated_ops)
+		mono_local_emulate_ops (cfg);
 	if (cfg->opt & MONO_OPT_BRANCH)
 		mono_optimize_branches (cfg);
 

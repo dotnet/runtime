@@ -519,8 +519,6 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	}
 
 	if (emulate) {
-		MonoJitICallInfo *info = NULL;
-
 #if SIZEOF_REGISTER == 8
 		if (decompose_long_opcode (cfg, ins, &repl))
 			emulate = FALSE;
@@ -529,33 +527,8 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			emulate = FALSE;
 #endif
 
-		if (emulate)
-			info = mono_find_jit_opcode_emulation (ins->opcode);
-		if (info) {
-			MonoInst **args;
-			MonoInst *call;
-
-			/* Create dummy MonoInst's for the arguments */
-			g_assert (!info->sig->hasthis);
-			g_assert (info->sig->param_count <= MONO_MAX_SRC_REGS);
-
-			args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * info->sig->param_count);
-			if (info->sig->param_count > 0) {
-				int sregs [MONO_MAX_SRC_REGS];
-				int num_sregs, i;
-				num_sregs = mono_inst_get_src_registers (ins, sregs);
-				g_assert (num_sregs == info->sig->param_count);
-				for (i = 0; i < num_sregs; ++i) {
-					MONO_INST_NEW (cfg, args [i], OP_ARG);
-					args [i]->dreg = sregs [i];
-				}
-			}
-
-			call = mono_emit_jit_icall_by_info (cfg, info, args);
-			call->dreg = ins->dreg;
-
-			NULLIFY_INS (ins);
-		}
+		if (emulate && mono_find_jit_opcode_emulation (ins->opcode))
+			cfg->has_emulated_ops = TRUE;
 	}
 
 	if (ins->opcode == OP_NOP) {
@@ -1884,5 +1857,89 @@ mono_decompose_soft_float (MonoCompile *cfg)
 }
 
 #endif
+
+void
+mono_local_emulate_ops (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	gboolean inlined_wrapper = FALSE;
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *ins;
+
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			int op_noimm = mono_op_imm_to_op (ins->opcode);
+			MonoJitICallInfo *info;
+
+			/*
+			 * Emulation can't handle _IMM ops. If this is an imm opcode we need
+			 * to check whether its non-imm counterpart is emulated and, if so,
+			 * decompose it back to its non-imm counterpart.
+			 */
+			if (op_noimm != -1)
+				info = mono_find_jit_opcode_emulation (op_noimm);
+			else
+				info = mono_find_jit_opcode_emulation (ins->opcode);
+
+			if (info) {
+				MonoInst **args;
+				MonoInst *call;
+				MonoBasicBlock *first_bb;
+
+				/* Create dummy MonoInst's for the arguments */
+				g_assert (!info->sig->hasthis);
+				g_assert (info->sig->param_count <= MONO_MAX_SRC_REGS);
+
+				if (op_noimm != -1)
+					mono_decompose_op_imm (cfg, bb, ins);
+
+				args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * info->sig->param_count);
+				if (info->sig->param_count > 0) {
+					int sregs [MONO_MAX_SRC_REGS];
+					int num_sregs, i;
+					num_sregs = mono_inst_get_src_registers (ins, sregs);
+					g_assert (num_sregs == info->sig->param_count);
+					for (i = 0; i < num_sregs; ++i) {
+						MONO_INST_NEW (cfg, args [i], OP_ARG);
+						args [i]->dreg = sregs [i];
+					}
+				}
+
+				/* We emit the call on a separate dummy basic block */
+				cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+			        first_bb = cfg->cbb;
+
+				call = mono_emit_jit_icall_by_info (cfg, info, args);
+				call->dreg = ins->dreg;
+
+				/* Replace ins with the emitted code and do the necessary bb linking */
+				if (cfg->cbb->code || (cfg->cbb != first_bb)) {
+					MonoInst *saved_prev = ins->prev;
+
+					mono_replace_ins (cfg, bb, ins, &ins->prev, first_bb, cfg->cbb);
+					first_bb->code = first_bb->last_ins = NULL;
+					first_bb->in_count = first_bb->out_count = 0;
+					cfg->cbb = first_bb;
+
+					/* ins is hanging, continue scanning the emitted code */
+					ins = saved_prev;
+				} else {
+					g_error ("Failed to emit emulation code");
+				}
+				inlined_wrapper = TRUE;
+			}
+		}
+	}
+
+	/*
+	 * Avoid rerunning these passes by emitting directly the exception checkpoint
+	 * at IR level, instead of inlining the icall wrapper. FIXME
+	 */
+	if (inlined_wrapper) {
+		mono_decompose_long_opts (cfg);
+		if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
+			mono_local_cprop (cfg);
+	}
+}
 
 #endif /* DISABLE_JIT */
