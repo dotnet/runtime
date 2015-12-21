@@ -79,3 +79,4 @@ install (FILES cor.h
                gcinfoencoder.h
                gcinfotypes.h
                DESTINATION inc)
+install (TARGETS corguids DESTINATION lib)

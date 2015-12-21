@@ -289,7 +289,6 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
 // See code:#LoadUnloadCallbackSynchronization.
 CRITSEC_COOKIE ProfilingAPIUtility::s_csStatus = NULL;
 
-#ifndef FEATURE_PAL
 
 SidBuffer * ProfilingAPIUtility::s_pSidBuffer = NULL;
 
@@ -337,8 +336,6 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
         GetCurrentProcessId(),
         iStringResource);
 }
-
-#endif // !FEATURE_PAL
 
 //---------------------------------------------------------------------------------------
 //
