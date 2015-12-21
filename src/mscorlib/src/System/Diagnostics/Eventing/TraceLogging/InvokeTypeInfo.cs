@@ -13,20 +13,20 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// TraceLogging: An implementation of TraceLoggingTypeInfo that works
     /// for arbitrary types. It writes all public instance properties of
-    /// the type. Implemented using Delegate.CreateDelegate(property.Getter).
+    /// the type.
     /// </summary>
     /// <typeparam name="ContainerType">
     /// Type from which to read values.
     /// </typeparam>
-    internal sealed class InvokeTypeInfo<ContainerType>
-        : TraceLoggingTypeInfo<ContainerType>
+    internal sealed class InvokeTypeInfo : TraceLoggingTypeInfo
     {
         private readonly PropertyAnalysis[] properties;
-        private readonly PropertyAccessor<ContainerType>[] accessors;
 
         public InvokeTypeInfo(
+            Type type,
             TypeAnalysis typeAnalysis)
             : base(
+                type,
                 typeAnalysis.name,
                 typeAnalysis.level,
                 typeAnalysis.opcode,
@@ -34,14 +34,7 @@ namespace System.Diagnostics.Tracing
                 typeAnalysis.tags)
         {
             if (typeAnalysis.properties.Length != 0)
-            {
                 this.properties = typeAnalysis.properties;
-                this.accessors = new PropertyAccessor<ContainerType>[this.properties.Length];
-                for (int i = 0; i < this.accessors.Length; i++)
-                {
-                    this.accessors[i] = PropertyAccessor<ContainerType>.Create(this.properties[i]);
-                }
-            }
         }
 
         public override void WriteMetadata(
@@ -70,15 +63,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        public override void WriteData(
-            TraceLoggingDataCollector collector,
-            ref ContainerType value)
+        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            if (this.accessors != null)
+            if (this.properties != null)
             {
-                foreach (var accessor in this.accessors)
+                foreach (var property in this.properties)
                 {
-                    accessor.Write(collector, ref value);
+                    property.typeInfo.WriteData(collector, property.getter(value));
                 }
             }
         }
@@ -91,7 +82,7 @@ namespace System.Diagnostics.Tracing
                 var memebersValues = new List<object>();
                 for (int i = 0; i < this.properties.Length; i++)
                 {
-                    var propertyValue = accessors[i].GetData((ContainerType)value);
+                    var propertyValue = properties[i].propertyInfo.GetValue(value);
                     membersNames.Add(properties[i].name);
                     memebersValues.Add(properties[i].typeInfo.GetData(propertyValue));
                 }
@@ -99,19 +90,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return null;
-        }
-
-        public override void WriteObjectData(
-            TraceLoggingDataCollector collector,
-            object valueObj)
-        {
-            if (this.accessors != null)
-            {
-                var value = valueObj == null
-                    ? default(ContainerType)
-                    : (ContainerType)valueObj;
-                this.WriteData(collector, ref value);
-            }
         }
     }
 }
