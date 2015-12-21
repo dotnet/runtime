@@ -3,8 +3,6 @@
   <Import Project="BuildValues.props" />
 
   <ItemGroup>
-    <!-- System.Runtime.WindowsRuntime depends on some internal-only paths, disable from corefx build for now -->
-    <ExcludeProjects Include="System.Runtime.WindowsRuntime\ref\System.Runtime.WindowsRuntime.csproj" />
     <Project Include="*\ref\**\*.*proj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\src\*.builds" Exclude="@(ExcludeProjects)" />
     <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)" />

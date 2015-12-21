@@ -23,10 +23,6 @@
     <Compile Include="System.Runtime.WindowsRuntime.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferencePath Include="$(ExternalAPIsPath)\NetFX\Contracts\DesignTimeFacades\mscorlib.dll" />
-    <ReferencePath Include="$(ExternalAPIsPath)\Windows\8.0\ref\Windows.winmd" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
