@@ -11,7 +11,7 @@ Intro to .NET Core
 Learn about .NET Core
 ====================
 
-- [[WIP] Official .NET Core Docs](http://dotnet.readthedocs.org)
+- [[WIP] Official .NET Core Docs](http://dotnet.github.io/docs/)
 
 Get .NET Core
 =============
@@ -46,11 +46,15 @@ Build CoreCLR from Source
 - [Building CoreCLR on Linux](building/linux-instructions.md)
 - [Building CoreCLR on OS X](building/osx-instructions.md)
 - [Building CoreCLR on Windows](building/windows-instructions.md)
-- [Debugging CoreCLR on Windows](building/windows-debugging-instructions.md)
+
+Testing and Debugging CoreCLR
+=============================
+
+- [Debugging CoreCLR](building/debugging-instructions.md)
 - [Testing Changes on Windows](building/windows-test-instructions.md)
 - [Testing Changes on Linux, OS X, and FreeBSD](building/unix-test-instructions.md)
 - [Testing with CoreFX](building/testing-with-corefx.md)
-- [Creating a Custom DNX](building/custom-dnx-instructions.md)
+- [.NET Performance Data Collection Script](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect)
 
 Book of the Runtime
 ===================
