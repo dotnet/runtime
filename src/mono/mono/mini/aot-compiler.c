@@ -95,6 +95,7 @@ static ReadOnlyValue *readonly_values;
 typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
+	char *data_outfile;
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
@@ -186,6 +187,7 @@ typedef struct MonoAotCompile {
 	guint32 num_trampoline_got_entries;
 	guint32 tramp_page_size;
 
+	guint32 table_offsets [MONO_AOT_TABLE_NUM];
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
@@ -230,6 +232,7 @@ typedef struct MonoAotCompile {
 	gboolean has_jitted_code;
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
+	gboolean blob_closed;
 	MonoClass **typespec_classes;
 	GString *llc_args;
 	GString *as_args;
@@ -244,6 +247,9 @@ typedef struct MonoAotCompile {
 	GHashTable *objc_selector_to_index;
 	FILE *logfile;
 	FILE *instances_logfile;
+	FILE *data_outfile;
+	int datafile_offset;
+	int gc_name_offset;
 } MonoAotCompile;
 
 typedef struct {
@@ -2298,6 +2304,8 @@ add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 static guint32
 add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 {
+	g_assert (!acfg->blob_closed);
+
 	if (acfg->blob.alloc_size == 0)
 		stream_init (&acfg->blob);
 
@@ -2322,6 +2330,24 @@ add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len,
 	return add_stream_data (&acfg->blob, (char*)data, data_len);
 }
 
+/* Emit a table of data into the aot image */
+static void
+emit_aot_data (MonoAotCompile *acfg, MonoAotFileTable table, const char *symbol, guint8 *data, int size)
+{
+	if (acfg->data_outfile) {
+		acfg->table_offsets [(int)table] = acfg->datafile_offset;
+		fwrite (data,1, size, acfg->data_outfile);
+		acfg->datafile_offset += size;
+	} else if (acfg->llvm) {
+		mono_llvm_emit_aot_data (symbol, data, size);
+	} else {
+		emit_section_change (acfg, RODATA_SECT, 0);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
+		emit_bytes (acfg, data, size);
+	}
+}
+
 /*
  * emit_offset_table:
  *
@@ -2331,7 +2357,7 @@ add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len,
  * a given entry. Returns the size of the table.
  */
 static guint32
-emit_offset_table (MonoAotCompile *acfg, const char *symbol, int noffsets, int group_size, gint32 *offsets)
+emit_offset_table (MonoAotCompile *acfg, const char *symbol, MonoAotFileTable table, int noffsets, int group_size, gint32 *offsets)
 {
 	gint32 current_offset;
 	int i, buf_size, ngroups, index_entry_size;
@@ -2390,14 +2416,7 @@ emit_offset_table (MonoAotCompile *acfg, const char *symbol, int noffsets, int g
 
 	g_assert (p - buf <= buf_size);
 
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data (symbol, buf, p - buf);
-	} else {
-		emit_section_change (acfg, RODATA_SECT, 1);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_bytes (acfg, buf, p - buf);
-	}
+	emit_aot_data (acfg, table, symbol, buf, p - buf);
 
 	g_free (buf);
 	g_free (data_buf);
@@ -6714,6 +6733,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mode = MONO_AOT_MODE_FULL;
 			opts->llvm = TRUE;
 			opts->llvm_only = TRUE;
+		} else if (str_begins_with (arg, "data-outfile=")) {
+			opts->data_outfile = g_strdup (arg + strlen ("data-outfile="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -7921,7 +7942,7 @@ emit_info (MonoAotCompile *acfg)
 		}
 	}
 
-	acfg->stats.offsets_size += emit_offset_table (acfg, "method_info_offsets", acfg->nmethods, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "method_info_offsets", MONO_AOT_TABLE_METHOD_INFO_OFFSETS, acfg->nmethods, 10, offsets);
 
 	g_free (offsets);
 }
@@ -8134,7 +8155,6 @@ static void
 emit_extra_methods (MonoAotCompile *acfg)
 {
 	int i, table_size, buf_size;
-	char symbol [256];
 	guint8 *p, *buf;
 	guint32 *info_offsets;
 	guint32 hash;
@@ -8240,15 +8260,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	g_assert (p - buf <= buf_size);
 
 	/* Emit the table */
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data ("extra_method_table", buf, p - buf);
-	} else {
-		sprintf (symbol, "extra_method_table");
-		emit_section_change (acfg, RODATA_SECT, 0);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_bytes (acfg, buf, p - buf);
-	}
+	emit_aot_data (acfg, MONO_AOT_TABLE_EXTRA_METHOD_TABLE, "extra_method_table", buf, p - buf);
 
 	/* 
 	 * Emit a table reverse mapping method indexes to their index in extra_method_info.
@@ -8263,15 +8275,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		encode_int (get_method_index (acfg, method), p, &p);
 		encode_int (info_offsets [i], p, &p);
 	}
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data ("extra_method_info_offsets", buf, p - buf);
-	} else {
-		sprintf (symbol, "extra_method_info_offsets");
-		emit_section_change (acfg, RODATA_SECT, 0);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_bytes (acfg, buf, p - buf);
-	}
+	emit_aot_data (acfg, MONO_AOT_TABLE_EXTRA_METHOD_INFO_OFFSETS, "extra_method_info_offsets", buf, p - buf);
 }	
 
 static void
@@ -8316,7 +8320,7 @@ emit_exception_info (MonoAotCompile *acfg)
 		g_free (seq_points_aot_file);
 	}
 
-	acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", acfg->nmethods, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", MONO_AOT_TABLE_EX_INFO_OFFSETS, acfg->nmethods, 10, offsets);
 	g_free (offsets);
 }
 
@@ -8370,7 +8374,7 @@ emit_class_info (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
 		offsets [i] = emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
 
-	acfg->stats.offsets_size += emit_offset_table (acfg, "class_info_offsets", acfg->image->tables [MONO_TABLE_TYPEDEF].rows, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "class_info_offsets", MONO_AOT_TABLE_CLASS_INFO_OFFSETS, acfg->image->tables [MONO_TABLE_TYPEDEF].rows, 10, offsets);
 	g_free (offsets);
 }
 
@@ -8388,7 +8392,6 @@ emit_class_name_table (MonoAotCompile *acfg)
 	GPtrArray *table;
 	char *full_name;
 	guint8 *buf, *p;
-	char symbol [256];
 	ClassNameTableEntry *entry, *new_entry;
 
 	/*
@@ -8452,22 +8455,13 @@ emit_class_name_table (MonoAotCompile *acfg)
 	}
 	g_assert (p - buf <= buf_size);
 
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data ("class_name_table", buf, p - buf);
-	} else {
-		sprintf (symbol, "class_name_table");
-		emit_section_change (acfg, RODATA_SECT, 0);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_bytes (acfg, buf, p - buf);
-	}
+	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME, "class_name_table", buf, p - buf);
 }
 
 static void
 emit_image_table (MonoAotCompile *acfg)
 {
 	int i, buf_size;
-	char symbol [256];
 	guint8 *buf, *p;
 
 	/*
@@ -8507,15 +8501,7 @@ emit_image_table (MonoAotCompile *acfg)
 	}
 	g_assert (p - buf <= buf_size);
 
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data ("image_table", buf, p - buf);
-	} else {
-		sprintf (symbol, "image_table");
-		emit_section_change (acfg, RODATA_SECT, 1);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_bytes (acfg, buf, p - buf);
-	}
+	emit_aot_data (acfg, MONO_AOT_TABLE_IMAGE_TABLE, "image_table", buf, p - buf);
 
 	g_free (buf);
 }
@@ -8585,7 +8571,7 @@ emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 	/* Emit got_info_offsets table */
 
 	/* No need to emit offsets for the got plt entries, the plt embeds them directly */
-	acfg->stats.offsets_size += emit_offset_table (acfg, llvm ? "llvm_got_info_offsets" : "got_info_offsets", llvm ? acfg->llvm_got_offset : first_plt_got_patch, 10, (gint32*)got_info_offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, llvm ? "llvm_got_info_offsets" : "got_info_offsets", llvm ? MONO_AOT_TABLE_LLVM_GOT_INFO_OFFSETS : MONO_AOT_TABLE_GOT_INFO_OFFSETS, llvm ? acfg->llvm_got_offset : first_plt_got_patch, 10, (gint32*)got_info_offsets);
 }
 
 static void
@@ -8750,7 +8736,7 @@ emit_mem_end (MonoAotCompile *acfg)
 }
 
 static void
-init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info, int gc_name_offset)
+init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 {
 	int i;
 
@@ -8762,7 +8748,10 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info, int gc_name_off
 	info->flags = acfg->flags;
 	info->opts = acfg->opts;
 	info->simd_opts = acfg->simd_opts;
-	info->gc_name_index = gc_name_offset;
+	info->gc_name_index = acfg->gc_name_offset;
+	info->datafile_size = acfg->datafile_offset;
+	for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+		info->table_offsets [i] = acfg->table_offsets [i];
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		info->num_trampolines [i] = acfg->num_trampolines [i];
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -8810,20 +8799,25 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
-	symbols [sindex ++] = "blob";
-	symbols [sindex ++] = "class_name_table";
-	symbols [sindex ++] = "class_info_offsets";
-	symbols [sindex ++] = "method_info_offsets";
-	symbols [sindex ++] = "ex_info_offsets";
-	symbols [sindex ++] = "extra_method_info_offsets";
-	symbols [sindex ++] = "extra_method_table";
-	symbols [sindex ++] = "got_info_offsets";
-	if (acfg->llvm)
-		symbols [sindex ++] = "llvm_got_info_offsets";
-	else
-		symbols [sindex ++] = NULL;
+	if (acfg->data_outfile) {
+		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+			symbols [sindex ++] = NULL;
+	} else {
+		symbols [sindex ++] = "blob";
+		symbols [sindex ++] = "class_name_table";
+		symbols [sindex ++] = "class_info_offsets";
+		symbols [sindex ++] = "method_info_offsets";
+		symbols [sindex ++] = "ex_info_offsets";
+		symbols [sindex ++] = "extra_method_info_offsets";
+		symbols [sindex ++] = "extra_method_table";
+		symbols [sindex ++] = "got_info_offsets";
+		if (acfg->llvm)
+			symbols [sindex ++] = "llvm_got_info_offsets";
+		else
+			symbols [sindex ++] = NULL;
+		symbols [sindex ++] = "image_table";
+	}
 	symbols [sindex ++] = "mem_end";
-	symbols [sindex ++] = "image_table";
 	symbols [sindex ++] = "assembly_guid";
 	symbols [sindex ++] = "runtime_version";
 	if (acfg->num_trampoline_got_entries) {
@@ -8892,7 +8886,10 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->generic_tramp_num);
 	emit_int32 (acfg, info->tramp_page_size);
 	emit_int32 (acfg, info->nshared_got_entries);
+	emit_int32 (acfg, info->datafile_size);
 
+	for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+		emit_int32 (acfg, info->table_offsets [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, info->num_trampolines [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -8932,8 +8929,6 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 static void
 emit_file_info (MonoAotCompile *acfg)
 {
-	int gc_name_offset;
-	const char *gc_name;
 	char *build_info;
 	MonoAotFileInfo *info;
 
@@ -8950,15 +8945,8 @@ emit_file_info (MonoAotCompile *acfg)
 	/* Emit a string holding the assembly name */
 	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
 
-	/*
-	 * The managed allocators are GC specific, so can't use an AOT image created by one GC
-	 * in another.
-	 */
-	gc_name = mono_gc_get_gc_name ();
-	gc_name_offset = add_to_blob (acfg, (guint8*)gc_name, strlen (gc_name) + 1);
-
 	info = g_new0 (MonoAotFileInfo, 1);
-	init_aot_file_info (acfg, info, gc_name_offset);
+	init_aot_file_info (acfg, info);
 
 	if (acfg->llvm)
 		mono_llvm_emit_aot_file_info (info, acfg->has_jitted_code);
@@ -8969,19 +8957,9 @@ emit_file_info (MonoAotCompile *acfg)
 static void
 emit_blob (MonoAotCompile *acfg)
 {
-	char symbol [128];
+	acfg->blob_closed = TRUE;
 
-	if (acfg->llvm) {
-		mono_llvm_emit_aot_data ("blob", (guint8*)acfg->blob.data, acfg->blob.index);
-		return;
-	}
-
-	sprintf (symbol, "blob");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-
-	emit_bytes (acfg, (guint8*)acfg->blob.data, acfg->blob.index);
+	emit_aot_data (acfg, MONO_AOT_TABLE_BLOB, "blob", (guint8*)acfg->blob.data, acfg->blob.index);
 }
 
 static void
@@ -9737,6 +9715,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
+	if (acfg->aot_opts.data_outfile) {
+		acfg->data_outfile = fopen (acfg->aot_opts.data_outfile, "w+");
+		if (!acfg->data_outfile) {
+			aot_printerrf (acfg, "Unable to create file '%s': %s\n", acfg->aot_opts.data_outfile, strerror (errno));
+			return 1;
+		}
+		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_SEPARATE_DATA);
+	}
+
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
 #if !defined(ENABLE_GSHAREDVT)
@@ -10018,13 +10005,22 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_got (acfg);
 
-	emit_file_info (acfg);
+	{
+		/*
+		 * The managed allocators are GC specific, so can't use an AOT image created by one GC
+		 * in another.
+		 */
+		const char *gc_name = mono_gc_get_gc_name ();
+		acfg->gc_name_offset = add_to_blob (acfg, (guint8*)gc_name, strlen (gc_name) + 1);
+	}
 
 	emit_blob (acfg);
 
 	emit_objc_selectors (acfg);
 
 	emit_globals (acfg);
+
+	emit_file_info (acfg);
 
 	if (acfg->dwarf) {
 		emit_dwarf_info (acfg);
@@ -10038,6 +10034,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* The bin writer already emits this */
 		fprintf (acfg->fp, "\n.section	.note.GNU-stack,\"\",@progbits\n");
 	}
+
+	if (acfg->aot_opts.data_outfile)
+		fclose (acfg->data_outfile);
 
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {

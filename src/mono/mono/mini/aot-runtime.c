@@ -120,6 +120,8 @@ typedef struct MonoAotModule {
 	guint32 *method_info_offsets;
 	guint32 *ex_info_offsets;
 	guint32 *class_info_offsets;
+	guint32 *got_info_offsets;
+	guint32 *llvm_got_info_offsets;
 	guint32 *methods_loaded;
 	guint16 *class_name_table;
 	guint32 *extra_method_table;
@@ -132,6 +134,8 @@ typedef struct MonoAotModule {
 	/* Points to the mono EH data created by LLVM */
 	guint8 *mono_eh_frame;
 
+	/* Points to the data tables if MONO_AOT_FILE_FLAG_SEPARATE_DATA is set */
+	gpointer tables [MONO_AOT_TABLE_NUM];
 	/* Points to the trampolines */
 	guint8 *trampolines [MONO_AOT_TRAMP_NUM];
 	/* The first unused trampoline of each kind */
@@ -1657,14 +1661,33 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+/* Load the separate aot data file for ASSEMBLY */
+static guint8*
+open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
+{
+	MonoFileMap *map;
+	char *filename;
+	guint8 *data;
+
+	/*
+	 * Use <assembly name>.aotdata as the default implementation if no callback is given
+	 */
+	filename = g_strdup_printf ("%s.aotdata", assembly->image->name);
+	map = mono_file_map_open (filename);
+	g_assert (map);
+	data = mono_file_map (info->datafile_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (map), 0, ret_handle);
+	g_assert (data);
+
+	return data;
+}
+
 static gboolean
-check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
+check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char **out_msg)
 {
 	char *build_info;
 	char *msg = NULL;
 	gboolean usable = TRUE;
 	gboolean full_aot, safepoints;
-	guint8 *blob;
 	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, info->assembly_guid)) {
@@ -1719,8 +1742,6 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 		msg = g_strdup_printf ("compiled with unsupported SIMD extensions");
 		usable = FALSE;
 	}
-
-	blob = (guint8 *)info->blob;
 
 	if (info->gc_name_index != -1) {
 		char *gc_name = (char*)&blob [info->gc_name_index];
@@ -1852,9 +1873,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gpointer *globals = NULL;
 	MonoAotFileInfo *info = NULL;
 	int i, version;
-	guint8 *blob;
 	gboolean do_load_image = TRUE;
 	int align_double, align_int64;
+	guint8 *aot_data = NULL;
 
 	if (mono_compile_aot)
 		return;
@@ -1931,7 +1952,18 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		msg = g_strdup_printf ("wrong file format version (expected %d got %d)", MONO_AOT_FILE_VERSION, version);
 		usable = FALSE;
 	} else {
-		usable = check_usable (assembly, info, &msg);
+		guint8 *blob;
+		void *handle;
+
+		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
+			aot_data = open_aot_data (assembly, info, &handle);
+
+			blob = aot_data + info->table_offsets [MONO_AOT_TABLE_BLOB];
+		} else {
+			blob = (guint8 *)info->blob;
+		}
+
+		usable = check_usable (assembly, info, blob, &msg);
 	}
 
 	if (!usable) {
@@ -1955,8 +1987,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_assert (info->long_align == align_int64);
 	g_assert (info->generic_tramp_num == MONO_TRAMPOLINE_NUM);
 
-	blob = (guint8 *)info->blob;
-
 	amodule = g_new0 (MonoAotModule, 1);
 	amodule->aot_name = aot_name;
 	amodule->assembly = assembly;
@@ -1969,8 +1999,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->sofile = sofile;
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	amodule->extra_methods = g_hash_table_new (NULL, NULL);
-	amodule->blob = blob;
 	amodule->shared_got = g_new0 (gpointer, info->nshared_got_entries);
+
+	if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
+		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+			amodule->tables [i] = aot_data + info->table_offsets [i];
+	}
 
 	mono_os_mutex_init_recursive (&amodule->mutex);
 
@@ -1979,7 +2013,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		guint32 table_len, i;
 		char *table = NULL;
 
-		table = (char *)info->image_table;
+		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA)
+			table = amodule->tables [MONO_AOT_TABLE_IMAGE_TABLE];
+		else
+			table = (char *)info->image_table;
 		g_assert (table);
 
 		table_len = *(guint32*)table;
@@ -2017,12 +2054,27 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	amodule->jit_code_start = (guint8 *)info->jit_code_start;
 	amodule->jit_code_end = (guint8 *)info->jit_code_end;
-	amodule->method_info_offsets = (guint32 *)info->method_info_offsets;
-	amodule->ex_info_offsets = (guint32 *)info->ex_info_offsets;
-	amodule->class_info_offsets = (guint32 *)info->class_info_offsets;
-	amodule->class_name_table = (guint16 *)info->class_name_table;
-	amodule->extra_method_table = (guint32 *)info->extra_method_table;
-	amodule->extra_method_info_offsets = (guint32 *)info->extra_method_info_offsets;
+	if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
+		amodule->blob = amodule->tables [MONO_AOT_TABLE_BLOB];
+		amodule->method_info_offsets = amodule->tables [MONO_AOT_TABLE_METHOD_INFO_OFFSETS];
+		amodule->ex_info_offsets = amodule->tables [MONO_AOT_TABLE_EX_INFO_OFFSETS];
+		amodule->class_info_offsets = amodule->tables [MONO_AOT_TABLE_CLASS_INFO_OFFSETS];
+		amodule->class_name_table = amodule->tables [MONO_AOT_TABLE_CLASS_NAME];
+		amodule->extra_method_table = amodule->tables [MONO_AOT_TABLE_EXTRA_METHOD_TABLE];
+		amodule->extra_method_info_offsets = amodule->tables [MONO_AOT_TABLE_EXTRA_METHOD_INFO_OFFSETS];
+		amodule->got_info_offsets = amodule->tables [MONO_AOT_TABLE_GOT_INFO_OFFSETS];
+		amodule->llvm_got_info_offsets = amodule->tables [MONO_AOT_TABLE_LLVM_GOT_INFO_OFFSETS];
+	} else {
+		amodule->blob = info->blob;
+		amodule->method_info_offsets = (guint32 *)info->method_info_offsets;
+		amodule->ex_info_offsets = (guint32 *)info->ex_info_offsets;
+		amodule->class_info_offsets = (guint32 *)info->class_info_offsets;
+		amodule->class_name_table = (guint16 *)info->class_name_table;
+		amodule->extra_method_table = (guint32 *)info->extra_method_table;
+		amodule->extra_method_info_offsets = (guint32 *)info->extra_method_info_offsets;
+		amodule->got_info_offsets = info->got_info_offsets;
+		amodule->llvm_got_info_offsets = info->llvm_got_info_offsets;
+	}
 	amodule->unbox_trampolines = (guint32 *)info->unbox_trampolines;
 	amodule->unbox_trampolines_end = (guint32 *)info->unbox_trampolines_end;
 	amodule->unbox_trampoline_addresses = (guint32 *)info->unbox_trampoline_addresses;
@@ -3567,10 +3619,10 @@ decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean
 
 	if (llvm) {
 		got = amodule->llvm_got;
-		got_info_offsets = (guint32 *)amodule->info.llvm_got_info_offsets;
+		got_info_offsets = (guint32 *)amodule->llvm_got_info_offsets;
 	} else {
 		got = amodule->got;
-		got_info_offsets = (guint32 *)amodule->info.got_info_offsets;
+		got_info_offsets = (guint32 *)amodule->got_info_offsets;
 	}
 
 	patches = (MonoJumpInfo *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
