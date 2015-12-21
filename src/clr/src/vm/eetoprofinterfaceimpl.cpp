@@ -370,6 +370,11 @@ EEToProfInterfaceImpl::CHashTableImpl::CHashTableImpl(ULONG iBuckets)
     WRAPPER_NO_CONTRACT;
 }
 
+EEToProfInterfaceImpl::CHashTableImpl::~CHashTableImpl()
+{
+    WRAPPER_NO_CONTRACT;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Comparison function for hash table of ClassIDs

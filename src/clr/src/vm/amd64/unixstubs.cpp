@@ -27,6 +27,21 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
+    void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID)    
+    {
+        PORTABILITY_ASSERT("Implement for PAL");
+    }
+
+    void ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID)
+    {
+        PORTABILITY_ASSERT("Implement for PAL");
+    }
+
+    void ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID)
+    {
+        PORTABILITY_ASSERT("Implement for PAL");
+    }
+
     DWORD getcpuid(DWORD arg, unsigned char result[16])
     {
         DWORD eax;

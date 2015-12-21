@@ -38,9 +38,7 @@ enum ProfAPIFaultFlags
 };
 #endif // _DEBUG
 
-#ifndef FEATURE_PAL
 class SidBuffer;
-#endif // !FEATURE_PAL
 
 //---------------------------------------------------------------------------------------
 // Static-only class to coordinate initialization of the various profiling API
@@ -83,11 +81,9 @@ private:
         kAttachLoad,
     };
 
-#ifndef FEATURE_PAL
     // Allocated lazily the first time it's needed, and then remains allocated until the
     // process exits.
     static SidBuffer * s_pSidBuffer;
-#endif // !FEATURE_PAL
 
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
     static CRITSEC_COOKIE s_csStatus;
@@ -107,9 +103,7 @@ private:
     static HRESULT ProfilerCLSIDFromString(__inout_z LPWSTR wszClsid, CLSID * pClsid);
     static HRESULT AttemptLoadProfilerForStartup();
 
-#ifndef FEATURE_PAL
     static void AppendSupplementaryInformation(int iStringResource, SString * pString);
-#endif // !FEATURE_PAL
 
     static void LogProfEventVA(
         int iStringResourceID, 
