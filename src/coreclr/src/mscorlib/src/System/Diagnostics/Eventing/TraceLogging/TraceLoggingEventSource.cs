@@ -17,6 +17,7 @@
 
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
+using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 #endif
 
 using System;
@@ -120,8 +121,7 @@ namespace System.Diagnostics.Tracing
             }
 
             var options = new EventSourceOptions();
-            var data = new EmptyStruct();
-            this.WriteImpl(eventName, ref options, ref data, null, null);
+            this.WriteImpl(eventName, ref options, null, null, null, SimpleEventTypes<EmptyStruct>.Instance);
         }
 
         /// <summary>
@@ -148,8 +148,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            var data = new EmptyStruct();
-            this.WriteImpl(eventName, ref options, ref data, null, null);
+            this.WriteImpl(eventName, ref options, null, null, null, SimpleEventTypes<EmptyStruct>.Instance);
         }
 
         /// <summary>
@@ -182,7 +181,7 @@ namespace System.Diagnostics.Tracing
             }
 
             var options = new EventSourceOptions();
-            this.WriteImpl(eventName, ref options, ref data, null, null);
+            this.WriteImpl(eventName, ref options, data, null, null, SimpleEventTypes<T>.Instance);
         }
 
         /// <summary>
@@ -219,7 +218,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            this.WriteImpl(eventName, ref options, ref data, null, null);
+            this.WriteImpl(eventName, ref options, data, null, null, SimpleEventTypes<T>.Instance);
         }
 
         /// <summary>
@@ -258,7 +257,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            this.WriteImpl(eventName, ref options, ref data, null, null);
+            this.WriteImpl(eventName, ref options, data, null, null, SimpleEventTypes<T>.Instance);
         }
 
         /// <summary>
@@ -311,9 +310,10 @@ namespace System.Diagnostics.Tracing
                 this.WriteImpl(
                     eventName,
                     ref options,
-                    ref data,
+                    data,
                     pActivity,
-                    relatedActivityId == Guid.Empty ? null : pRelated);
+                    relatedActivityId == Guid.Empty ? null : pRelated,
+                    SimpleEventTypes<T>.Instance);
             }
         }
 
@@ -354,7 +354,7 @@ namespace System.Diagnostics.Tracing
             string eventName,
             ref EventSourceOptions options,
             TraceLoggingEventTypes eventTypes,
-             Guid* activityID, 
+             Guid* activityID,
              Guid* childActivityID,
             params object[] values)
         {
@@ -412,12 +412,12 @@ namespace System.Diagnostics.Tracing
         /// </param>
         [SecuritySafeCritical]
         private unsafe void WriteMultiMergeInner(
-        string eventName,
-        ref EventSourceOptions options,
-        TraceLoggingEventTypes eventTypes,
-        Guid* activityID, 
-        Guid* childActivityID,
-        params object[] values)
+            string eventName,
+            ref EventSourceOptions options,
+            TraceLoggingEventTypes eventTypes,
+            Guid* activityID,
+            Guid* childActivityID,
+            params object[] values)
         {
             int identity = 0;
             byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tracing
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
-#if !ES_BUILD_PCL
+#if (!ES_BUILD_PCL && !PROJECTN)
                 System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -470,10 +470,12 @@ namespace System.Diagnostics.Tracing
 
                     for (int i = 0; i < eventTypes.typeInfos.Length; i++)
                     {
-                        eventTypes.typeInfos[i].WriteObjectData(TraceLoggingDataCollector.Instance, values[i]);
+                        var info = eventTypes.typeInfos[i];
+                        info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(values[i]));
                     }
 
                     this.WriteEventRaw(
+                        eventName,
                         ref descriptor,
                         activityID,
                         childActivityID,
@@ -584,6 +586,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     this.WriteEventRaw(
+                        eventName,
                         ref descriptor,
                         activityID,
                         childActivityID,
@@ -594,17 +597,16 @@ namespace System.Diagnostics.Tracing
         }
 
         [SecuritySafeCritical]
-        private unsafe void WriteImpl<T>(
+        private unsafe void WriteImpl(
             string eventName,
             ref EventSourceOptions options,
-            ref T data,
+            object data,
             Guid* pActivityId,
-            Guid* pRelatedActivityId)
+            Guid* pRelatedActivityId,
+            TraceLoggingEventTypes eventTypes)
         {
             try
             {
-                var eventTypes = SimpleEventTypes<T>.Instance;
-
                 fixed (EventSourceOptions* pOptions = &options)
                 {
                     EventDescriptor descriptor;
@@ -629,7 +631,7 @@ namespace System.Diagnostics.Tracing
                         descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
-#if !ES_BUILD_PCL
+#if (!ES_BUILD_PCL && !PROJECTN)
                         System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
@@ -663,9 +665,11 @@ namespace System.Diagnostics.Tracing
                                 pins,
                                 pinCount);
 
-                            eventTypes.typeInfo.WriteData(TraceLoggingDataCollector.Instance, ref data);
-                            
+                            var info = eventTypes.typeInfos[0];
+                            info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(data));
+
                             this.WriteEventRaw(
+                                eventName,
                                 ref descriptor,
                                 pActivityId,
                                 pRelatedActivityId,
@@ -675,17 +679,17 @@ namespace System.Diagnostics.Tracing
                             // TODO enable filtering for listeners.
                             if (m_Dispatchers != null)
                             {
-                                var eventData = (EventPayload)(eventTypes.typeInfo.GetData(data));
+                                var eventData = (EventPayload)(eventTypes.typeInfos[0].GetData(data));
                                 WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, eventData);
                             }
 
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             if (ex is EventSourceException)
                                 throw;
                             else
-                                ThrowEventSourceException(ex);
+                                ThrowEventSourceException(eventName, ex);
                         }
                         finally
                         {
@@ -699,7 +703,7 @@ namespace System.Diagnostics.Tracing
                 if (ex is EventSourceException)
                     throw;
                 else
-                    ThrowEventSourceException(ex);
+                    ThrowEventSourceException(eventName, ex);
             }
         }
 
@@ -727,7 +731,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
         }
 
-#if !ES_BUILD_PCL
+#if (!ES_BUILD_PCL && !PROJECTN)
         [System.Runtime.ConstrainedExecution.ReliabilityContract(
             System.Runtime.ConstrainedExecution.Consistency.WillNotCorruptState,
             System.Runtime.ConstrainedExecution.Cer.Success)]
@@ -761,9 +765,13 @@ namespace System.Diagnostics.Tracing
                         if (!byte.TryParse(etwTrait, out traitNum))
                         {
                             if (etwTrait == "GROUP")
+                            {
                                 traitNum = 1;
+                            }
                             else
-                                throw new ArgumentException(Environment.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
+                            {
+                                throw new ArgumentException(Resources.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
+                            }
                         }
                         string value = m_traits[i + 1];
                         int lenPos = traitMetaData.Count;
@@ -776,7 +784,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
                 providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
-                int startPos = providerMetadata.Length-traitMetaData.Count;
+                int startPos = providerMetadata.Length - traitMetaData.Count;
                 foreach (var b in traitMetaData)
                     providerMetadata[startPos++] = b;
             }
@@ -803,16 +811,22 @@ namespace System.Diagnostics.Tracing
                     if (value[i] != ' ')        // Skip spaces between bytes.  
                     {
                         if (!(i + 1 < value.Length))
-                            throw new ArgumentException(Environment.GetResourceString("EvenHexDigits"), "traits");
+                        {
+                            throw new ArgumentException(Resources.GetResourceString("EvenHexDigits"), "traits");
+                        }
                         metaData.Add((byte)(HexDigit(value[i]) * 16 + HexDigit(value[i + 1])));
                         i++;
                     }
                 }
             }
             else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation). 
+            {
                 metaData.AddRange(Encoding.UTF8.GetBytes(value));
+            }
             else
-                throw new ArgumentException(Environment.GetResourceString("IllegalValue", value), "traits");
+            {
+                throw new ArgumentException(Resources.GetResourceString("IllegalValue", value), "traits");
+            }
 
             return metaData.Count - startPos;
         }
@@ -823,12 +837,19 @@ namespace System.Diagnostics.Tracing
         private static int HexDigit(char c)
         {
             if ('0' <= c && c <= '9')
+            {
                 return (c - '0');
+            }
             if ('a' <= c)
-                c = unchecked((char) (c - ('a' - 'A')));        // Convert to lower case
+            {
+                c = unchecked((char)(c - ('a' - 'A')));        // Convert to lower case
+            }
             if ('A' <= c && c <= 'F')
+            {
                 return (c - 'A' + 10);
-            throw new ArgumentException(Environment.GetResourceString("BadHexDigit", c), "traits");
+            }
+            
+            throw new ArgumentException(Resources.GetResourceString("BadHexDigit", c), "traits");
         }
 
         private NameInfo UpdateDescriptor(

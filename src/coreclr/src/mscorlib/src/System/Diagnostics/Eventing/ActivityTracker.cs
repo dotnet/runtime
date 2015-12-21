@@ -12,7 +12,7 @@ using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
-#else    
+#else
 using System.Threading.Tasks;
 namespace System.Diagnostics.Tracing
 #endif
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tracing
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
         /// It updates CurrentActivityId to track.   
         /// 
-        /// It returns true if the Start should be logged, otherwise (if it is illegal recurision) it return false. 
+        /// It returns true if the Start should be logged, otherwise (if it is illegal recursion) it return false. 
         /// 
         /// The start event should use as its activity ID the CurrentActivityId AFTER calling this routine and its
         /// RelatedActivityID the CurrentActivityId BEFORE calling this routine (the creator).  
@@ -64,12 +64,10 @@ namespace System.Diagnostics.Tracing
                 if (m_checkedForEnable)
                     return;
                 m_checkedForEnable = true;
-#if ES_BUILD_STANDALONE
-                Enable();           // Enable it unconditionally.  
-#else
-                if (System.Threading.Tasks.TplEtwProvider.Log.IsEnabled(EventLevel.Informational, System.Threading.Tasks.TplEtwProvider.Keywords.TasksFlowActivityIds))
-                     Enable();
-#endif
+                if (TplEtwProvider.Log.IsEnabled(EventLevel.Informational, TplEtwProvider.Keywords.TasksFlowActivityIds))
+                    Enable();
+                if (m_current == null)
+                    return;
             }
 
 
@@ -124,7 +122,7 @@ namespace System.Diagnostics.Tracing
 
             // Remember the current ID so we can log it 
             activityId = newActivity.ActivityId;
-
+            
             if (etwLog.Debug)
             {
                 etwLog.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
@@ -144,7 +142,7 @@ namespace System.Diagnostics.Tracing
                 return;
 
             var fullActivityName = NormalizeActivityName(providerName, activityName, task);
-
+            
             var etwLog = TplEtwProvider.Log;
             if (etwLog.Debug)
             {
@@ -215,7 +213,7 @@ namespace System.Diagnostics.Tracing
                     }
                     return;
                 }
-                // We failed to stop it.  We must have hit a race condition to stop it.  Just start over and try again.  
+                // We failed to stop it.  We must have hit a race to stop it.  Just start over and try again.  
             }
         }
 
@@ -227,7 +225,17 @@ namespace System.Diagnostics.Tracing
         {
             if (m_current == null)
             {
-                m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
+                // Catch the not Implemented 
+                try
+                {
+                    m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
+                }
+                catch (NotImplementedException) {
+#if (!ES_BUILD_PCL && ! PROJECTN)
+                    // send message to debugger without delay
+                    System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
+#endif
+                } 
             }
         }
 
@@ -375,10 +383,10 @@ namespace System.Diagnostics.Tracing
                     {
                         // TODO FIXME - differentiate between AD inside PCL
                         int appDomainID = 0;
-#if !ES_BUILD_STANDALONE
+#if (!ES_BUILD_STANDALONE && !PROJECTN)
                         appDomainID = System.Threading.Thread.GetDomainID();
 #endif
-                        // We start with the appdomain number to make this unique among appdomains.                      
+                        // We start with the appdomain number to make this unique among appdomains.
                         activityPathGuidOffsetStart = AddIdToGuid(outPtr, activityPathGuidOffsetStart, (uint)appDomainID);
                     }
 
@@ -608,7 +616,7 @@ namespace System.Diagnostics.Tracing
         #endregion
     }
 
-#if ES_BUILD_STANDALONE
+#if ES_BUILD_STANDALONE || PROJECTN
     /******************************** SUPPORT *****************************/
     /// <summary>
     /// This is supplied by the framework.   It is has the semantics that the value is copied to any new Tasks that is created
@@ -617,12 +625,17 @@ namespace System.Diagnostics.Tracing
     /// only get your thread local copy which means that you never have races.  
     /// </summary>
     /// 
-    [EventSource(Name="Microsoft.Tasks.Nuget")]
+#if ES_BUILD_STANDALONE
+    [EventSource(Name = "Microsoft.Tasks.Nuget")]
+#else
+    [EventSource(Name = "System.Diagnostics.Tracing.TplEtwProvider")]
+#endif
     internal class TplEtwProvider : EventSource
     {
         public class Keywords
         {
-            public const EventKeywords Debug = (EventKeywords) 1;
+            public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
+            public const EventKeywords Debug = (EventKeywords)0x20000;
         }
 
         public static TplEtwProvider Log = new TplEtwProvider();
@@ -635,13 +648,9 @@ namespace System.Diagnostics.Tracing
 #endif
 
 #if ES_BUILD_AGAINST_DOTNET_V35 || ES_BUILD_PCL || NO_ASYNC_LOCAL
-
+    // In these cases we don't have any Async local support.   Do nothing.   
     internal sealed class AsyncLocalValueChangedArgs<T>
     {
-        public AsyncLocalValueChangedArgs()
-        {
-        }
-
         public T PreviousValue { get { return default(T); } }
         public T CurrentValue { get { return default(T); } }
 
@@ -649,26 +658,13 @@ namespace System.Diagnostics.Tracing
 
     internal sealed class AsyncLocal<T>
     {
-        public AsyncLocal()
-        {
+        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) { 
+            throw new NotImplementedException("AsyncLocal only available on V4.6 and above");
         }
-
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler)
-        {
-
-        }
-
         public T Value
         {
-            get
-            {
-                object obj = null;  // TODO FIX 
-                return (obj == null) ? default(T) : (T)obj;
-            }
-            set
-            {
-                // TODO FIX 
-            }
+            get { return default(T); }
+            set { }
         }
     }
 #endif
