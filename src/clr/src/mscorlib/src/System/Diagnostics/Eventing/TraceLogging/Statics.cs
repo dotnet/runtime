@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Encoding = System.Text.Encoding;
 
+using Microsoft.Reflection;
+
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 namespace Microsoft.Diagnostics.Tracing
@@ -213,7 +215,7 @@ namespace System.Diagnostics.Tracing
                     return TraceLoggingDataType.Int8;
                 case EventSourceFieldFormat.Unsigned:
                     return TraceLoggingDataType.UInt8;
-#endif 
+#endif
                 default:
                     return MakeDataType(native, format);
             }
@@ -343,7 +345,7 @@ namespace System.Diagnostics.Tracing
                     return IntPtrType;
                 case EventSourceFieldFormat.Unsigned:
                     return UIntPtrType;
-#endif 
+#endif
                 default:
                     return MakeDataType(native, format);
             }
@@ -366,52 +368,32 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsValueType(Type type)
         {
-            bool result;
-#if ES_BUILD_PCL
-            result = type.GetTypeInfo().IsValueType;
-#else
-            result = type.IsValueType;
-#endif
+            bool result = type.IsValueType();
             return result;
         }
 
         public static bool IsEnum(Type type)
         {
-            bool result;
-#if ES_BUILD_PCL
-            result = type.GetTypeInfo().IsEnum;
-#else
-            result = type.IsEnum;
-#endif
+            bool result = type.IsEnum();
             return result;
         }
 
         public static IEnumerable<PropertyInfo> GetProperties(Type type)
         {
-            IEnumerable<PropertyInfo> result;
-#if ES_BUILD_PCL
-            result = type.GetRuntimeProperties();
-#else
-            result = type.GetProperties();
-#endif
+            IEnumerable<PropertyInfo> result = type.GetProperties();
             return result;
         }
 
         public static MethodInfo GetGetMethod(PropertyInfo propInfo)
         {
-            MethodInfo result;
-#if ES_BUILD_PCL
-            result = propInfo.GetMethod;
-#else
-            result = propInfo.GetGetMethod();
-#endif
+            MethodInfo result = propInfo.GetGetMethod();
             return result;
         }
 
         public static MethodInfo GetDeclaredStaticMethod(Type declaringType, string name)
         {
             MethodInfo result;
-#if ES_BUILD_PCL
+#if (ES_BUILD_PCL || PROJECTN)
             result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
 #else
             result = declaringType.GetMethod(
@@ -426,7 +408,7 @@ namespace System.Diagnostics.Tracing
             Type attributeType)
         {
             bool result;
-#if ES_BUILD_PCL
+#if (ES_BUILD_PCL || PROJECTN)
             result = propInfo.IsDefined(attributeType);
 #else
             var attributes = propInfo.GetCustomAttributes(
@@ -441,7 +423,7 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType result = null;
-#if ES_BUILD_PCL
+#if (ES_BUILD_PCL || PROJECTN)
             foreach (var attrib in propInfo.GetCustomAttributes<AttributeType>(false))
             {
                 result = attrib;
@@ -461,7 +443,7 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType result = null;
-#if ES_BUILD_PCL
+#if (ES_BUILD_PCL || PROJECTN)
             foreach (var attrib in type.GetTypeInfo().GetCustomAttributes<AttributeType>(false))
             {
                 result = attrib;
@@ -479,11 +461,7 @@ namespace System.Diagnostics.Tracing
 
         public static Type[] GetGenericArguments(Type type)
         {
-#if ES_BUILD_PCL
-            return type.GenericTypeArguments;
-#else
             return type.GetGenericArguments();
-#endif
         }
 
         public static Type FindEnumerableElementType(Type type)
@@ -496,19 +474,19 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-#if ES_BUILD_PCL
-            var ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
+#if (ES_BUILD_PCL || PROJECTN)
+                var ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
 #else
                 var ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
 #endif
 
                 foreach (var ifaceType in ifaceTypes)
                 {
-#if ES_BUILD_PCL
-                if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
-                {
-                    continue;
-                }
+#if (ES_BUILD_PCL || PROJECTN)
+                    if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
+                    {
+                        continue;
+                    }
 #endif
 
                     if (elementType != null)
@@ -527,19 +505,13 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsGenericMatch(Type type, object openType)
         {
-            bool isGeneric;
-#if ES_BUILD_PCL
-            isGeneric = type.IsConstructedGenericType;
-#else
-            isGeneric = type.IsGenericType;
-#endif
-            return isGeneric && type.GetGenericTypeDefinition() == (Type)openType;
+            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type)openType;
         }
 
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
         {
             Delegate result;
-#if ES_BUILD_PCL
+#if (ES_BUILD_PCL || PROJECTN)
             result = methodInfo.CreateDelegate(
                 delegateType);
 #else
@@ -550,279 +522,203 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        public static TraceLoggingTypeInfo GetTypeInfoInstance(Type dataType, List<Type> recursionCheck)
-        {
-            TraceLoggingTypeInfo result;
-
-            if (dataType == typeof(Int32))
-            {
-                result = TraceLoggingTypeInfo<Int32>.Instance;
-            }
-            else if (dataType == typeof(Int64))
-            {
-                result = TraceLoggingTypeInfo<Int64>.Instance;
-            }
-            else if (dataType == typeof(String))
-            {
-                result = TraceLoggingTypeInfo<String>.Instance;
-            }
-            else
-            {
-                var getInstanceInfo = Statics.GetDeclaredStaticMethod(
-                    typeof(TraceLoggingTypeInfo<>).MakeGenericType(dataType),
-                    "GetInstance");
-                var typeInfoObj = getInstanceInfo.Invoke(null, new object[] { recursionCheck });
-                result = (TraceLoggingTypeInfo)typeInfoObj;
-            }
-
-            return result;
-        }
-
-        public static TraceLoggingTypeInfo<DataType> CreateDefaultTypeInfo<DataType>(
+        public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
+            Type dataType,
             List<Type> recursionCheck)
         {
             TraceLoggingTypeInfo result;
-            var dataType = typeof(DataType);
 
             if (recursionCheck.Contains(dataType))
             {
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_RecursiveTypeDefinition"));
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_RecursiveTypeDefinition"));
             }
 
             recursionCheck.Add(dataType);
 
             var eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
             if (eventAttrib != null ||
-                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null)
+                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
+                IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
             {
                 var analysis = new TypeAnalysis(dataType, eventAttrib, recursionCheck);
-                result = new InvokeTypeInfo<DataType>(analysis);
+                result = new InvokeTypeInfo(dataType, analysis);
             }
             else if (dataType.IsArray)
             {
                 var elementType = dataType.GetElementType();
                 if (elementType == typeof(Boolean))
                 {
-                    result = new BooleanArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Boolean();
                 }
                 else if (elementType == typeof(Byte))
                 {
-                    result = new ByteArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Byte();
                 }
                 else if (elementType == typeof(SByte))
                 {
-                    result = new SByteArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.SByte();
                 }
                 else if (elementType == typeof(Int16))
                 {
-                    result = new Int16ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Int16();
                 }
                 else if (elementType == typeof(UInt16))
                 {
-                    result = new UInt16ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.UInt16();
                 }
                 else if (elementType == typeof(Int32))
                 {
-                    result = new Int32ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Int32();
                 }
                 else if (elementType == typeof(UInt32))
                 {
-                    result = new UInt32ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.UInt32();
                 }
                 else if (elementType == typeof(Int64))
                 {
-                    result = new Int64ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Int64();
                 }
                 else if (elementType == typeof(UInt64))
                 {
-                    result = new UInt64ArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.UInt64();
                 }
                 else if (elementType == typeof(Char))
                 {
-                    result = new CharArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Char();
                 }
                 else if (elementType == typeof(Double))
                 {
-                    result = new DoubleArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Double();
                 }
                 else if (elementType == typeof(Single))
                 {
-                    result = new SingleArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Single();
                 }
                 else if (elementType == typeof(IntPtr))
                 {
-                    result = new IntPtrArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.IntPtr();
                 }
                 else if (elementType == typeof(UIntPtr))
                 {
-                    result = new UIntPtrArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.UIntPtr();
                 }
                 else if (elementType == typeof(Guid))
                 {
-                    result = new GuidArrayTypeInfo();
+                    result = ScalarArrayTypeInfo.Guid();
                 }
                 else
                 {
-                    result = (TraceLoggingTypeInfo<DataType>)CreateInstance(
-                        typeof(ArrayTypeInfo<>).MakeGenericType(elementType),
-                        GetTypeInfoInstance(elementType, recursionCheck));
+                    result = new ArrayTypeInfo(dataType, TraceLoggingTypeInfo.GetInstance(elementType, recursionCheck));
                 }
-            }
-            else if (Statics.IsEnum(dataType))
-            {
-                var underlyingType = Enum.GetUnderlyingType(dataType);
-                if (underlyingType == typeof(Int32))
-                {
-                    result = new EnumInt32TypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(UInt32))
-                {
-                    result = new EnumUInt32TypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(Byte))
-                {
-                    result = new EnumByteTypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(SByte))
-                {
-                    result = new EnumSByteTypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(Int16))
-                {
-                    result = new EnumInt16TypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(UInt16))
-                {
-                    result = new EnumUInt16TypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(Int64))
-                {
-                    result = new EnumInt64TypeInfo<DataType>();
-                }
-                else if (underlyingType == typeof(UInt64))
-                {
-                    result = new EnumUInt64TypeInfo<DataType>();
-                }
-                else
-                {
-                    // Unexpected
-                    throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedEnumType", dataType.Name, underlyingType.Name));
-                }
-            }
-            else if (dataType == typeof(String))
-            {
-                result = new StringTypeInfo();
-            }
-            else if (dataType == typeof(Boolean))
-            {
-                result = new BooleanTypeInfo();
-            }
-            else if (dataType == typeof(Byte))
-            {
-                result = new ByteTypeInfo();
-            }
-            else if (dataType == typeof(SByte))
-            {
-                result = new SByteTypeInfo();
-            }
-            else if (dataType == typeof(Int16))
-            {
-                result = new Int16TypeInfo();
-            }
-            else if (dataType == typeof(UInt16))
-            {
-                result = new UInt16TypeInfo();
-            }
-            else if (dataType == typeof(Int32))
-            {
-                result = new Int32TypeInfo();
-            }
-            else if (dataType == typeof(UInt32))
-            {
-                result = new UInt32TypeInfo();
-            }
-            else if (dataType == typeof(Int64))
-            {
-                result = new Int64TypeInfo();
-            }
-            else if (dataType == typeof(UInt64))
-            {
-                result = new UInt64TypeInfo();
-            }
-            else if (dataType == typeof(Char))
-            {
-                result = new CharTypeInfo();
-            }
-            else if (dataType == typeof(Double))
-            {
-                result = new DoubleTypeInfo();
-            }
-            else if (dataType == typeof(Single))
-            {
-                result = new SingleTypeInfo();
-            }
-            else if (dataType == typeof(DateTime))
-            {
-                result = new DateTimeTypeInfo();
-            }
-            else if (dataType == typeof(Decimal))
-            {
-                result = new DecimalTypeInfo();
-            }
-            else if (dataType == typeof(IntPtr))
-            {
-                result = new IntPtrTypeInfo();
-            }
-            else if (dataType == typeof(UIntPtr))
-            {
-                result = new UIntPtrTypeInfo();
-            }
-            else if (dataType == typeof(Guid))
-            {
-                result = new GuidTypeInfo();
-            }
-            else if (dataType == typeof(TimeSpan))
-            {
-                result = new TimeSpanTypeInfo();
-            }
-            else if (dataType == typeof(DateTimeOffset))
-            {
-                result = new DateTimeOffsetTypeInfo();
-            }
-            else if (dataType == typeof(EmptyStruct))
-            {
-                result = new NullTypeInfo<EmptyStruct>();
-            }
-            else if (IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
-            {
-                var args = GetGenericArguments(dataType);
-                result = (TraceLoggingTypeInfo<DataType>)CreateInstance(
-                    typeof(KeyValuePairTypeInfo<,>).MakeGenericType(args[0], args[1]),
-                    recursionCheck);
-            }
-            else if (IsGenericMatch(dataType, typeof(Nullable<>)))
-            {
-                var args = GetGenericArguments(dataType);
-                result = (TraceLoggingTypeInfo<DataType>)CreateInstance(
-                    typeof(NullableTypeInfo<>).MakeGenericType(args[0]),
-                    recursionCheck);
             }
             else
             {
-                var elementType = FindEnumerableElementType(dataType);
-                if (elementType != null)
+                if (Statics.IsEnum(dataType))
+                    dataType = Enum.GetUnderlyingType(dataType);
+
+                if (dataType == typeof(String))
                 {
-                    result = (TraceLoggingTypeInfo<DataType>)CreateInstance(
-                        typeof(EnumerableTypeInfo<,>).MakeGenericType(dataType, elementType),
-                        GetTypeInfoInstance(elementType, recursionCheck));
+                    result = new StringTypeInfo();
+                }
+                else if (dataType == typeof(Boolean))
+                {
+                    result = ScalarTypeInfo.Boolean();
+                }
+                else if (dataType == typeof(Byte))
+                {
+                    result = ScalarTypeInfo.Byte();
+                }
+                else if (dataType == typeof(SByte))
+                {
+                    result = ScalarTypeInfo.SByte();
+                }
+                else if (dataType == typeof(Int16))
+                {
+                    result = ScalarTypeInfo.Int16();
+                }
+                else if (dataType == typeof(UInt16))
+                {
+                    result = ScalarTypeInfo.UInt16();
+                }
+                else if (dataType == typeof(Int32))
+                {
+                    result = ScalarTypeInfo.Int32();
+                }
+                else if (dataType == typeof(UInt32))
+                {
+                    result = ScalarTypeInfo.UInt32();
+                }
+                else if (dataType == typeof(Int64))
+                {
+                    result = ScalarTypeInfo.Int64();
+                }
+                else if (dataType == typeof(UInt64))
+                {
+                    result = ScalarTypeInfo.UInt64();
+                }
+                else if (dataType == typeof(Char))
+                {
+                    result = ScalarTypeInfo.Char();
+                }
+                else if (dataType == typeof(Double))
+                {
+                    result = ScalarTypeInfo.Double();
+                }
+                else if (dataType == typeof(Single))
+                {
+                    result = ScalarTypeInfo.Single();
+                }
+                else if (dataType == typeof(DateTime))
+                {
+                    result = new DateTimeTypeInfo();
+                }
+                else if (dataType == typeof(Decimal))
+                {
+                    result = new DecimalTypeInfo();
+                }
+                else if (dataType == typeof(IntPtr))
+                {
+                    result = ScalarTypeInfo.IntPtr();
+                }
+                else if (dataType == typeof(UIntPtr))
+                {
+                    result = ScalarTypeInfo.UIntPtr();
+                }
+                else if (dataType == typeof(Guid))
+                {
+                    result = ScalarTypeInfo.Guid();
+                }
+                else if (dataType == typeof(TimeSpan))
+                {
+                    result = new TimeSpanTypeInfo();
+                }
+                else if (dataType == typeof(DateTimeOffset))
+                {
+                    result = new DateTimeOffsetTypeInfo();
+                }
+                else if (dataType == typeof(EmptyStruct))
+                {
+                    result = new NullTypeInfo();
+                }
+                else if (IsGenericMatch(dataType, typeof(Nullable<>)))
+                {
+                    result = new NullableTypeInfo(dataType, recursionCheck);
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("EventSource_NonCompliantTypeError", dataType.Name));
+                    var elementType = FindEnumerableElementType(dataType);
+                    if (elementType != null)
+                    {
+                        result = new EnumerableTypeInfo(dataType, TraceLoggingTypeInfo.GetInstance(elementType, recursionCheck));
+                    }
+                    else
+                    {
+                        throw new ArgumentException(Resources.GetResourceString("EventSource_NonCompliantTypeError", dataType.Name));
+                    }
                 }
             }
 
-            return (TraceLoggingTypeInfo<DataType>)result;
+            return result;
         }
 
         #endregion
