@@ -1,6 +1,15 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+
+#if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
+#else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -147,6 +156,16 @@ namespace System.Diagnostics.Tracing
         {
             collector.AddBinary((string)value.ReferenceValue);
         }
+        
+        public override object GetData(object value)
+        {
+            if(value == null)
+            {
+                return "";
+            }
+            
+            return value;
+        }
     }
 
     /// <summary>
@@ -249,7 +268,7 @@ namespace System.Diagnostics.Tracing
             : base(type)
         {
             var typeArgs = type.GenericTypeArguments;
-            Debug.Assert(typeArgs.Length == 1);
+            Contract.Assert(typeArgs.Length == 1);
             this.valueInfo = TraceLoggingTypeInfo.GetInstance(typeArgs[0], recursionCheck);
             this.hasValueGetter = PropertyValue.GetPropertyGetter(type.GetTypeInfo().GetDeclaredProperty("HasValue"));
             this.valueGetter = PropertyValue.GetPropertyGetter(type.GetTypeInfo().GetDeclaredProperty("Value"));

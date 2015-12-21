@@ -9,13 +9,6 @@ internal static partial class Interop
     internal static partial class mincore
     {
         [DllImport(Interop.Libraries.Eventing)]
-        internal extern static uint EventSetInformation(ulong registrationHandle, EVENT_INFO_CLASS informationClass, IntPtr eventInformation, uint informationLength);
-
-        internal enum EVENT_INFO_CLASS
-        {
-            BinaryTrackInfo,
-            SetEnableAllKeywords, // obsolete
-            SetTraits,
-        }
+        internal extern static int EventSetInformation(ulong registrationHandle, int informationClass, IntPtr eventInformation, int informationLength);
     }
 }

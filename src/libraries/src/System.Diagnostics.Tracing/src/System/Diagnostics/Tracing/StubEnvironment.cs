@@ -1,4 +1,6 @@
-﻿// Copyright (c) Microsoft Corporation.  All rights reserved
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 
@@ -28,7 +30,7 @@ namespace System.Diagnostics.Tracing.Internal
                 return string.Format(fmt, args);
 
             string sargs = String.Empty;
-            foreach (var arg in args)
+            foreach(var arg in args)
             {
                 if (sargs != String.Empty)
                     sargs += ", ";
@@ -203,6 +205,8 @@ namespace Microsoft.Reflection
         public static bool IsEnum(this Type type) { return type.IsEnum; }
         public static bool IsAbstract(this Type type) { return type.IsAbstract; }
         public static bool IsSealed(this Type type) { return type.IsSealed; }
+        public static bool IsValueType(this Type type) { return type.IsValueType; }
+        public static bool IsGenericType(this Type type) { return type.IsGenericType; }
         public static Type BaseType(this Type type) { return type.BaseType; }
         public static Assembly Assembly(this Type type) { return type.Assembly; }
         public static TypeCode GetTypeCode(this Type type) { return Type.GetTypeCode(type); }
@@ -217,9 +221,14 @@ namespace Microsoft.Reflection
         public static bool IsEnum(this Type type) { return type.GetTypeInfo().IsEnum; }
         public static bool IsAbstract(this Type type) { return type.GetTypeInfo().IsAbstract; }
         public static bool IsSealed(this Type type) { return type.GetTypeInfo().IsSealed; }
+        public static bool IsValueType(this Type type) { return type.GetTypeInfo().IsValueType; }
+        public static bool IsGenericType(this Type type) { return type.IsConstructedGenericType; }
         public static Type BaseType(this Type type) { return type.GetTypeInfo().BaseType; }
         public static Assembly Assembly(this Type type) { return type.GetTypeInfo().Assembly; }
-
+        public static IEnumerable<PropertyInfo> GetProperties(this Type type) { return type.GetTypeInfo().DeclaredProperties; }
+        public static MethodInfo GetGetMethod(this PropertyInfo propInfo) { return propInfo.GetMethod; }
+        public static Type[] GetGenericArguments(this Type type) { return type.GenericTypeArguments; }
+        
         public static MethodInfo[] GetMethods(this Type type, BindingFlags flags)
         {
             // Minimal implementation to cover only the cases we need
@@ -331,7 +340,7 @@ namespace Microsoft.Reflection
 }
 
 // Defining some no-ops in PCL builds
-#if ES_BUILD_PCL
+#if ES_BUILD_PCL || PROJECTN
 namespace System.Security
 {
     class SuppressUnmanagedCodeSecurityAttribute : Attribute { }
@@ -346,5 +355,18 @@ namespace System.Security.Permissions
         public PermissionSetAttribute(System.Security.SecurityAction action) { }
         public bool Unrestricted { get; set; }
     }
+}
+#endif
+
+#if PROJECTN
+namespace System
+{
+    public static class AppDomain
+    {
+        public static int GetCurrentThreadId()
+        {
+            return (int)Interop.mincore.GetCurrentThreadId();
+        }
+    }    
 }
 #endif

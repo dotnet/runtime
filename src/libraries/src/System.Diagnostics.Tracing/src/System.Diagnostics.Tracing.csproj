@@ -34,8 +34,10 @@
     <Compile Include="System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventProvider.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSource_ProjectN.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSourceException.cs" />
     <Compile Include="System\Diagnostics\Tracing\StubEnvironment.cs" />
+    <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Diagnostics\Tracing\TraceLogging\PropertyValue.cs" />
     <Compile Include="System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
