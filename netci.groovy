@@ -75,7 +75,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                 case 'Ubuntu':
                 case 'OSX':
                     // Only add the trigger for the flow job and only for Release, since Debug is too slow
-                    if (isFlowJob && configuration == 'Debug') {
+                    if (isFlowJob && configuration == 'Release') {
                         Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
                     }
                     break
