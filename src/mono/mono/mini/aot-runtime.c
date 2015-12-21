@@ -211,6 +211,11 @@ static mono_mutex_t aot_page_mutex;
 
 static MonoAotModule *mscorlib_aot_module;
 
+/* Embedding API hooks to load the AOT data for AOT images compiled with MONO_AOT_FILE_FLAG_SEPARATE_DATA */
+static MonoLoadAotDataFunc aot_data_load_func;
+static MonoFreeAotDataFunc aot_data_free_func;
+static gpointer aot_data_func_user_data;
+
 static void
 init_plt (MonoAotModule *info);
 
@@ -1661,6 +1666,14 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+void
+mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, gpointer user_data)
+{
+	aot_data_load_func = load_func;
+	aot_data_free_func = free_func;
+	aot_data_func_user_data = user_data;
+}
+
 /* Load the separate aot data file for ASSEMBLY */
 static guint8*
 open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
@@ -1669,13 +1682,19 @@ open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
 	char *filename;
 	guint8 *data;
 
+	if (aot_data_load_func) {
+		data = aot_data_load_func (assembly, info->datafile_size, aot_data_func_user_data, ret_handle);
+		g_assert (data);
+		return data;
+	}
+
 	/*
 	 * Use <assembly name>.aotdata as the default implementation if no callback is given
 	 */
 	filename = g_strdup_printf ("%s.aotdata", assembly->image->name);
 	map = mono_file_map_open (filename);
 	g_assert (map);
-	data = mono_file_map (info->datafile_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (map), 0, ret_handle);
+	data = mono_file_map (info->datafile_size, MONO_MMAP_READ, mono_file_map_fd (map), 0, ret_handle);
 	g_assert (data);
 
 	return data;
