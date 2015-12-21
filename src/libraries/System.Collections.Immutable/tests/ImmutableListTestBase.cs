@@ -394,6 +394,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue(5067, PlatformID.Windows)]
         public void BinarySearch()
         {
             var basis = new List<int>(Enumerable.Range(1, 50).Select(n => n * 2));
@@ -419,6 +420,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue(5067, PlatformID.Windows)]
         public void BinarySearchPartialSortedList()
         {
             var reverseSorted = ImmutableArray.CreateRange(Enumerable.Range(1, 150).Select(n => n * 2).Reverse());
