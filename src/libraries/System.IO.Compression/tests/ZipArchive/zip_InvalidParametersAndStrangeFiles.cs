@@ -91,18 +91,13 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Fact]
-        public static async Task UnsupportedCompression()
-        {
-            //lzma compression method
-            await UnsupportedCompressionRoutine(ZipTest.bad("LZMA.zip"), true);
-
-            await UnsupportedCompressionRoutine(ZipTest.bad("invalidDeflate.zip"), false);
-        }
-
-        private static async Task UnsupportedCompressionRoutine(String filename, Boolean throwsOnOpen)
+        [Theory]
+        [InlineData("LZMA.zip", true)]
+        [InlineData("invalidDeflate.zip", false)]
+        public static async Task UnsupportedCompressionRoutine(String zipname, Boolean throwsOnOpen)
         {
             // using (ZipArchive archive = ZipFile.OpenRead(filename))
+            string filename = ZipTest.bad(zipname);
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
             {
                 ZipArchiveEntry e = archive.Entries[0];
@@ -144,6 +139,7 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<InvalidDataException>(() => e.Open()); //"Should throw on open"
             }
         }
+
         [Fact]
         public static async Task InvalidDates()
         {
