@@ -185,7 +185,6 @@
       </PropertyGroup>
       
       <PropertyGroup Condition="'$(_BUILDOPT)' == 'no opt'">
-        <CDefines>$(CDefines);WRITE_BARRIER_CHECK=1</CDefines> 
         <Optimize>false</Optimize> 
       </PropertyGroup>
     </When>
