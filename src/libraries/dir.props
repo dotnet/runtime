@@ -216,7 +216,7 @@
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
     <Configuration>$(ConfigurationGroup)</Configuration>
     <Configuration Condition="'$(TargetGroup)'!=''">$(TargetGroup)_$(Configuration)</Configuration>
-    <Configuration Condition="'$(OSGroup)'!='' and '$(OSGroup)'!='Windows_NT'">$(OSGroup)_$(Configuration)</Configuration>
+    <Configuration Condition="'$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)_$(Configuration)</Configuration>
   </PropertyGroup>
 
   <!--
@@ -233,7 +233,7 @@
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
 
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50aot'))">netcore50aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
@@ -269,6 +269,10 @@
 
   <!-- Setup properties per OSGroup -->
   <Choose>
+    <When Condition="'$(OSGroup)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
@@ -411,7 +415,7 @@
 
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
-    <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true')">true</SkipTests>
+    <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
   </PropertyGroup>
 
   <PropertyGroup>

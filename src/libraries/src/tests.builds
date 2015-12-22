@@ -2,8 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="*\test*\**\*.csproj" />
-    <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" />
+    <Project Include="*\test*\**\*.csproj">
+      <OSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</OSGroup>
+    </Project>
+    <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'">
+      <OSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</OSGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
