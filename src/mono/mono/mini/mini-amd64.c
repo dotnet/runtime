@@ -2044,7 +2044,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgGSharedVtOnStack)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
@@ -2371,6 +2371,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 
 		t = mini_get_underlying_type (t);
+		//XXX what about ArgGSharedVtOnStack here?
 		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call) {
 			if (!t->byref) {
 				if (t->type == MONO_TYPE_R4)
@@ -2432,6 +2433,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call)
 				/* Already emitted above */
 				break;
+			//FIXME what about ArgGSharedVtOnStack ?
 			if (ainfo->storage == ArgOnStack && call->tail_call) {
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
