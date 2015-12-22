@@ -32,6 +32,8 @@
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj"/>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj"/>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj"/>
     <Compile Include="System\IO\StreamOperationAsyncResult.dotnet53.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.dotnet53.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
@@ -41,7 +43,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
     </Compile>
-
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="System\WindowsRuntimeSystemExtensions.cs" />
