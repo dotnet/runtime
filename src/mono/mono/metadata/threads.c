@@ -149,6 +149,9 @@ static MonoGHashTable *threads=NULL;
  */
 static GHashTable *contexts = NULL;
 
+/* Cleanup queue for contexts. */
+static MonoReferenceQueue *context_queue;
+
 /*
  * Threads which are starting up and they are not in the 'threads' hash yet.
  * When handle_store is called for a thread, it will be removed from this hash table.
@@ -2576,6 +2579,31 @@ ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
 	mono_gc_wbarrier_generic_store_atomic (ptr, value);
 }
 
+static void
+free_context (void *user_data)
+{
+	ContextStaticData *data = user_data;
+
+	mono_threads_lock ();
+
+	/*
+	 * There is no guarantee that, by the point this reference queue callback
+	 * has been invoked, the GC handle associated with the object will fail to
+	 * resolve as one might expect. So if we don't free and remove the GC
+	 * handle here, free_context_static_data_helper () could end up resolving
+	 * a GC handle to an actually-dead context which would contain a pointer
+	 * to an already-freed static data segment, resulting in a crash when
+	 * accessing it.
+	 */
+	g_hash_table_remove (contexts, GUINT_TO_POINTER (data->gc_handle));
+
+	mono_threads_unlock ();
+
+	mono_gchandle_free (data->gc_handle);
+	mono_free_static_data (data->static_data);
+	g_free (data);
+}
+
 void
 ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContext *ctx)
 {
@@ -2586,9 +2614,23 @@ ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppConte
 	if (!contexts)
 		contexts = g_hash_table_new (NULL, NULL);
 
-	context_adjust_static_data (ctx);
+	if (!context_queue)
+		context_queue = mono_gc_reference_queue_new (free_context);
+
 	gpointer gch = GUINT_TO_POINTER (mono_gchandle_new_weakref (&ctx->obj, FALSE));
 	g_hash_table_insert (contexts, gch, gch);
+
+	/*
+	 * We use this intermediate structure to contain a duplicate pointer to
+	 * the static data because we can't rely on being able to resolve the GC
+	 * handle in the reference queue callback.
+	 */
+	ContextStaticData *data = g_new0 (ContextStaticData, 1);
+	data->gc_handle = GPOINTER_TO_UINT (gch);
+	ctx->data = data;
+
+	context_adjust_static_data (ctx);
+	mono_gc_reference_queue_add (context_queue, &ctx->obj, data);
 
 	mono_threads_unlock ();
 
@@ -2601,9 +2643,7 @@ ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContex
 	/*
 	 * NOTE: Since finalizers are unreliable for the purposes of ensuring
 	 * cleanup in exceptional circumstances, we don't actually do any
-	 * cleanup work here. We instead do this when we iterate the `contexts`
-	 * hash table. The only purpose of this finalizer, at the moment, is to
-	 * notify the profiler.
+	 * cleanup work here. We instead do this via a reference queue.
 	 */
 
 	//g_print ("Releasing context %d in domain %d\n", ctx->context_id, ctx->domain_id);
@@ -3869,6 +3909,7 @@ context_adjust_static_data (MonoAppContext *ctx)
 	if (context_static_info.offset || context_static_info.idx > 0) {
 		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (context_static_info.idx, context_static_info.offset, 0);
 		mono_alloc_static_data (&ctx->static_data, offset, FALSE);
+		ctx->data->static_data = ctx->static_data;
 	}
 }
 
@@ -3887,21 +3928,17 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 /*
  * LOCKING: requires that threads_mutex is held
  */
-static gboolean
+static void
 alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
-	uint32_t gch = GPOINTER_TO_INT (key);
-	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (GPOINTER_TO_INT (key));
 
-	if (!ctx) {
-		mono_gchandle_free (gch);
-		return TRUE; // Remove this key/value pair
-	}
+	if (!ctx)
+		return;
 
 	guint32 offset = GPOINTER_TO_UINT (user);
 	mono_alloc_static_data (&ctx->static_data, offset, FALSE);
-
-	return FALSE; // Don't remove it
+	ctx->data->static_data = ctx->static_data;
 }
 
 static StaticDataFreeList*
@@ -3993,7 +4030,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
 	} else {
 		if (contexts != NULL)
-			g_hash_table_foreach_remove (contexts, alloc_context_static_data_helper, GUINT_TO_POINTER (offset));
+			g_hash_table_foreach (contexts, alloc_context_static_data_helper, GUINT_TO_POINTER (offset));
 
 		ACCESS_SPECIAL_STATIC_OFFSET (offset, type) = SPECIAL_STATIC_OFFSET_TYPE_CONTEXT;
 	}
@@ -4047,16 +4084,13 @@ free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 /*
  * LOCKING: requires that threads_mutex is held
  */
-static gboolean
+static void
 free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
-	uint32_t gch = GPOINTER_TO_INT (key);
-	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (GPOINTER_TO_INT (key));
 
-	if (!ctx) {
-		mono_gchandle_free (gch);
-		return TRUE; // Remove this key/value pair
-	}
+	if (!ctx)
+		return;
 
 	OffsetSize *data = (OffsetSize *)user;
 	int idx = ACCESS_SPECIAL_STATIC_OFFSET (data->offset, index);
@@ -4064,12 +4098,10 @@ free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 	char *ptr;
 
 	if (!ctx->static_data || !ctx->static_data [idx])
-		return FALSE; // Don't remove this key/value pair
+		return;
 
 	ptr = ((char*) ctx->static_data [idx]) + off;
 	mono_gc_bzero_atomic (ptr, data->size);
-
-	return FALSE; // Don't remove this key/value pair
 }
 
 static void
@@ -4098,7 +4130,7 @@ do_free_special_slot (guint32 offset, guint32 size)
 			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
 	} else {
 		if (contexts != NULL)
-			g_hash_table_foreach_remove (contexts, free_context_static_data_helper, &data);
+			g_hash_table_foreach (contexts, free_context_static_data_helper, &data);
 	}
 
 	if (!mono_runtime_is_shutting_down ()) {
