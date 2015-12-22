@@ -9,53 +9,35 @@ namespace System.IO.Compression.Tests
 {
     public class zip_ReadTests 
     {
-        [Fact]
-        public static async Task ReadNormal()
+        [Theory]
+        [InlineData("normal.zip", "normal")]
+        [InlineData("fake64.zip", "small")]
+        [InlineData("empty.zip", "empty")]
+        [InlineData("appended.zip", "small")]
+        [InlineData("prepended.zip", "small")]
+        [InlineData("emptydir.zip", "emptydir")]
+        [InlineData("small.zip", "small")]
+        [InlineData("unicode.zip", "unicode")]
+        public static async Task ReadNormal(string zipFile, string zipFolder)
         {
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("normal.zip"), ZipTest.zfolder("normal"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("fake64.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("empty.zip"), ZipTest.zfolder("empty"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("appended.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("prepended.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("emptydir.zip"), ZipTest.zfolder("emptydir"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("small.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
-            {
-                await ZipTest.IsZipSameAsDirAsync(
-                    ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"), ZipArchiveMode.Read);
-            }
+            await ZipTest.IsZipSameAsDirAsync(ZipTest.zfile(zipFile), ZipTest.zfolder(zipFolder), ZipArchiveMode.Read);
         }
 
-        [Fact]
-        public static async Task ReadStreaming()
+        [Theory]
+        [InlineData("normal.zip", "normal")]
+        [InlineData("fake64.zip", "small")]
+        [InlineData("empty.zip", "empty")]
+        [InlineData("appended.zip", "small")]
+        [InlineData("prepended.zip", "small")]
+        [InlineData("emptydir.zip", "emptydir")]
+        [InlineData("small.zip", "small")]
+        [InlineData("unicode.zip", "unicode")]
+        public static async Task TestStreamingRead(string zipFile, string zipFolder)
         {
-            //don't include large, because that means loading the whole thing in memory
-
-            await TestStreamingRead(ZipTest.zfile("normal.zip"), ZipTest.zfolder("normal"));
-            await TestStreamingRead(ZipTest.zfile("fake64.zip"), ZipTest.zfolder("small"));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
-            {
-                await TestStreamingRead(ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"));
-            }
-            await TestStreamingRead(ZipTest.zfile("empty.zip"), ZipTest.zfolder("empty"));
-            await TestStreamingRead(ZipTest.zfile("appended.zip"), ZipTest.zfolder("small"));
-            await TestStreamingRead(ZipTest.zfile("prepended.zip"), ZipTest.zfolder("small"));
-            await TestStreamingRead(ZipTest.zfile("emptydir.zip"), ZipTest.zfolder("emptydir"));
-        }
-
-        private static async Task TestStreamingRead(String zipFile, String directory)
-        {
-            using (var stream = await StreamHelpers.CreateTempCopyStream(zipFile))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile(zipFile)))
             {
                 Stream wrapped = new WrappedStream(stream, true, false, false, null);
-                ZipTest.IsZipSameAsDir(wrapped, directory, ZipArchiveMode.Read, false, false);
+                ZipTest.IsZipSameAsDir(wrapped, ZipTest.zfolder(zipFolder), ZipArchiveMode.Read, false, false);
                 Assert.False(wrapped.CanRead, "Wrapped stream should be closed at this point"); //check that it was closed
             }
         }
