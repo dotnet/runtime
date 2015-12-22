@@ -3,11 +3,18 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Diagnostics.Process.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>Linux</OSGroup>
     </Project>
-    <Project Include="facade\System.Diagnostics.Process.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    <Project Include="System.Diagnostics.Process.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Diagnostics.Process.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="facade\System.Diagnostics.Process.csproj">
+      <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

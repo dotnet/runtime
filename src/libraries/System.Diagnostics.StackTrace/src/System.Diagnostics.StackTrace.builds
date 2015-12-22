@@ -2,17 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.Diagnostics.StackTrace.csproj" />
     <Project Include="System.Diagnostics.StackTrace.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
-    </Project>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Project Include="System.Diagnostics.StackTrace.csproj">
-      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+      <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Diagnostics.StackTrace.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

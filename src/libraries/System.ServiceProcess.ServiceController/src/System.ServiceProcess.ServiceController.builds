@@ -3,11 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.ServiceProcess.ServiceController.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.ServiceProcess.ServiceController.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    <Project Include="facade\System.ServiceProcess.ServiceController.csproj">
+      <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+
