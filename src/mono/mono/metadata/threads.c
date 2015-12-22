@@ -208,7 +208,7 @@ static void abort_thread_internal (MonoInternalThread *thread, gboolean can_rais
 static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (MonoInternalThread *thread);
 
-static MonoException* mono_thread_execute_interruption ();
+static MonoException* mono_thread_execute_interruption (void);
 static void ref_stack_destroy (gpointer rs);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
@@ -1300,15 +1300,40 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 	mono_thread_set_name_internal (this_obj, name, TRUE);
 }
 
+/*
+ * ves_icall_System_Threading_Thread_GetPriority_internal:
+ * @param this_obj: The MonoInternalThread on which to operate.
+ *
+ * Gets the priority of the given thread.
+ * @return: The priority of the given thread.
+ */
 int
 ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
 {
-	return ThreadPriority_Lowest;
+	gint32 priority;
+	MonoInternalThread *internal = this_obj->internal_thread;
+
+	LOCK_THREAD (internal);
+	priority = GetThreadPriority (internal->handle) + 2;
+	UNLOCK_THREAD (internal);
+	return priority;
 }
 
+/* 
+ * ves_icall_System_Threading_Thread_SetPriority_internal:
+ * @param this_obj: The MonoInternalThread on which to operate.
+ * @param priority: The priority to set.
+ *
+ * Sets the priority of the given thread.
+ */
 void
 ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priority)
 {
+	MonoInternalThread *internal = this_obj->internal_thread;
+
+	LOCK_THREAD (internal);
+	SetThreadPriority (internal->handle, priority - 2);
+	UNLOCK_THREAD (internal);
 }
 
 /* If the array is already in the requested domain, we just return it,

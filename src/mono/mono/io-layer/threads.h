@@ -33,5 +33,8 @@ gpointer wapi_get_current_thread_handle (void);
 
 char* wapi_current_thread_desc (void);
 
+extern gint32 GetThreadPriority (gpointer handle);
+extern gboolean SetThreadPriority (gpointer handle, gint32 priority);
+
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */
