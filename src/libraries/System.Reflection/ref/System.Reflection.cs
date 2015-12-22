@@ -33,6 +33,7 @@ namespace System.Reflection
         public virtual System.Type GetType(string name) { return default(System.Type); }
         public virtual System.Type GetType(string name, bool throwOnError, bool ignoreCase) { return default(System.Type); }
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { return default(System.Reflection.Assembly); }
+        public static System.Reflection.Assembly GetEntryAssembly() { return default(System.Reflection.Assembly); }
         public virtual string Location { get { return default(string); } }
         public override string ToString() { return default(string); }
     }

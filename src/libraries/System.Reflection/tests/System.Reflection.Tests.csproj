@@ -36,6 +36,7 @@
     <Compile Include="Assembly\Assembly_LocationTests.cs" />
     <Compile Include="Assembly\Assembly_ModulesTests.cs" />
     <Compile Include="Assembly\Assembly_ToStringTests.cs" />
+    <Compile Include="Assembly\Assembly_GetEntryAssembly.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfo_FieldTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfo_InvokeTests.cs" />
@@ -83,6 +84,7 @@
     <Compile Include="TypeInfo\TypeInfo_GenericTypeParametersTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_ImplementedInterfacesTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_IsAssignableFromTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_IsEquivalentTo.cs" />
     <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
   </ItemGroup>
