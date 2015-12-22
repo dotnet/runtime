@@ -1,4 +1,4 @@
-@echo off
+echo off
 setlocal EnableDelayedExpansion
 
 :: Set the default arguments for build
@@ -65,6 +65,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildTyp
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__GeneratedIntermediatesDir=%__IntermediatesDir%\Generated"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -197,6 +198,27 @@ exit /b 1
 
 REM Build CoreCLR
 :BuildCoreCLR
+:: Run Steps to Generate ETW specific infrastructure the 
+if exist "%__GeneratedIntermediatesDir%" rd /s /q "%__GeneratedIntermediatesDir%" ::Ensure there are no stale files in the Generated Directory
+md "%__GeneratedIntermediatesDir%"
+md "%__GeneratedIntermediatesDir%\inc"
+set "genetw=%__SourceDir%\scripts\genWinEtw.py"
+
+mc -h "%__GeneratedIntermediatesDir%\inc" -r "%__GeneratedIntermediatesDir%" -b -co -um -p FireEtw "%__SourceDir%\VM\ClrEtwAll.man"
+IF ERRORLEVEL 1 goto FailedToGenEtwMetadata 
+
+echo generating clretwallmain.h and etmdummy.h
+"%PythonPath%"  "%genetw%" --man "%__SourceDir%\VM\ClrEtwAll.man" --exc "%__SourceDir%\VM\ClrEtwAllMeta.lst" --eventheader "%__GeneratedIntermediatesDir%\inc\ClrEtwAll.h" --macroheader "%__GeneratedIntermediatesDir%\inc\clretwallmain.h" --dummy "%__GeneratedIntermediatesDir%\inc\etmdummy.h" 
+IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata 
+
+goto BuildVM
+
+:FailedToGenEtwMetadata
+echo Failed to generate ETW specific files.
+exit /b %ERRORLEVEL%
+
+:BuildVM
+
 set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 if /i "%__BuildArch%" == "arm64" (  
   REM TODO, remove once we have msbuild support for this platform.
