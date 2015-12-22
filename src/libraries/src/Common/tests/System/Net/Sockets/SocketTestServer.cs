@@ -12,9 +12,9 @@ namespace System.Net.Sockets.Tests
 
         protected abstract int Port { get; }
 
-        public static SocketTestServer SocketTestServerFactory(EndPoint endpoint)
+        public static SocketTestServer SocketTestServerFactory(EndPoint endpoint, ProtocolType protocolType = ProtocolType.Tcp)
         {
-            return SocketTestServerFactory(DefaultNumConnections, DefaultReceiveBufferSize, endpoint);
+            return SocketTestServerFactory(DefaultNumConnections, DefaultReceiveBufferSize, endpoint, protocolType);
         }
 
         public static SocketTestServer SocketTestServerFactory(IPAddress address, out int port)
@@ -25,13 +25,15 @@ namespace System.Net.Sockets.Tests
         public static SocketTestServer SocketTestServerFactory(
             int numConnections,
             int receiveBufferSize,
-            EndPoint localEndPoint)
+            EndPoint localEndPoint,
+            ProtocolType protocolType = ProtocolType.Tcp)
         {
             return SocketTestServerFactory(
                 s_implementationType,
                 numConnections,
                 receiveBufferSize,
-                localEndPoint);
+                localEndPoint,
+                protocolType);
         }
 
         public static SocketTestServer SocketTestServerFactory(
@@ -52,14 +54,15 @@ namespace System.Net.Sockets.Tests
             SocketImplementationType type,
             int numConnections,
             int receiveBufferSize,
-            EndPoint localEndPoint)
+            EndPoint localEndPoint,
+            ProtocolType protocolType = ProtocolType.Tcp)
         {
             switch (type)
             {
                 case SocketImplementationType.APM:
                     return new SocketTestServerAPM(numConnections, receiveBufferSize, localEndPoint);
                 case SocketImplementationType.Async:
-                    return new SocketTestServerAsync(numConnections, receiveBufferSize, localEndPoint);
+                    return new SocketTestServerAsync(numConnections, receiveBufferSize, localEndPoint, protocolType);
                 default:
                     throw new ArgumentOutOfRangeException("type");
             }

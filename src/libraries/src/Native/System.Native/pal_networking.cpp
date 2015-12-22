@@ -1863,6 +1863,10 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palProtocolType, int* pl
 
     switch (palProtocolType)
     {
+        case PAL_PT_UNSPECIFIED:
+            *platformProtocolType = 0;
+            return true;
+
         case PAL_PT_ICMP:
             *platformProtocolType = IPPROTO_ICMP;
             return true;
