@@ -49,9 +49,24 @@ function LocateCMake
   return $newestCMakePath
 }
 
+function LocatePython
+{
+  $errorMsg = "python is a pre-requisite to build this repository but it was not found on the path. Please install Python 2.7.9 from https://www.python.org/downloads/ and ensure it is on your path."
+  $inPathPath = (get-command python.exe -ErrorAction SilentlyContinue).Path
+  if ($inPathPath -eq $null) {
+    Throw $errorMsg
+  }
+  return $inPathPath
+}
+
+
 try {
   $cmakePath = LocateCMake
   [System.Console]::WriteLine("set CMakePath=" + $cmakePath)
+
+  $pythonPath = LocatePython
+  [System.Console]::WriteLine("set PythonPath=" + $pythonPath)
+
 }
 catch {
   [System.Console]::Error.WriteLine($_.Exception.Message)

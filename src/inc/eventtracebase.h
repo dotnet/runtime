@@ -294,14 +294,9 @@ extern "C" {
         EtwCallout(RegHandle, Descriptor, NumberOfArguments, EventData)
 #endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
 
-#include <clretwallmain.h>
-
-#elif defined(__LINUX__)
-
-#include "clrallevents.h"
-#else
-#error "A tracing System has not been enabled for this Platform"
 #endif //!FEATURE_PAL
+
+#include "clretwallmain.h"
 
 // The bulk type event is too complex for MC.exe to auto-generate proper code.
 // Use code:BulkTypeEventLogger instead.

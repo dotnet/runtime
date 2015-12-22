@@ -1,3 +1,4 @@
+include_directories($ENV{__GeneratedIntermediatesDir}/inc)
 include_directories("inc")
 include_directories("strongname/inc")
 include_directories("inc/winrt")
