@@ -87,9 +87,12 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                 case 'Windows_NT':
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
                     break
+                case 'FreeBSD':
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    break
                 default:
                     println("Unknown os: ${os}");
-                    // assert false
+                    assert false
                     break
             }
             break
@@ -105,8 +108,10 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
             if (os == 'Windows_NT') {
                 Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
             }
-            // default trigger
-            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${architecture}\\W+${osGroup}.*")
+            else {
+                // default trigger
+                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${architecture}\\W+${osGroup}.*")
+            }
             break
         default:
             println("Unknown architecture: ${architecture}");
@@ -180,7 +185,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
                                 
                                 // TEMPORARY. Don't run tests for PR jobs on x86
-                                if (architecture == 'x86' && !isPR) {
+                                if (architecture == 'x64' || !isPR) {
                                     buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
                                 }
                                 
