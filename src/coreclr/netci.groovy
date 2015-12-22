@@ -98,10 +98,16 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
             break
         case 'arm64':
         case 'arm':
-            if (os == 'Ubuntu') {
-                Utilities.addGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+            switch (os) {
+                case 'Ubuntu':
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+                    break
+                case 'Windows_NT':
+                    // Set up a private trigger
+                    Utilities.addPrivateGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build",
+                        "(?i).*test\\W+${architecture}\\W+${osGroup}.*", ['Microsoft*dotnet-coreclr', 'Microsoft*dotnet-corefx'], null)
+                    break
             }
-            // No arm64 triggers yet for other OS's
             break
         case 'x86':
             // For windows, x86 runs by default
