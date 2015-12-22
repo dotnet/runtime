@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Registry": "4.0.0-rc2-23614",
+    "Microsoft.Win32.Registry": "4.0.0-rc2-23616",
     "System.Collections": "4.0.10",
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",

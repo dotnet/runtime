@@ -1,19 +1,19 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.0-rc2-23614",
-    "System.Diagnostics.Contracts": "4.0.0-rc2-23614",
-    "System.Diagnostics.Tracing": "4.0.0-rc2-23614",
-    "System.Runtime": "4.0.20-rc2-23614",
-    "System.Runtime.Extensions": "4.0.10-rc2-23614",
-    "System.Resources.ResourceManager": "4.0.0-rc2-23614",
-    "System.Threading": "4.0.0-rc2-23614",
-    "System.Threading.Tasks": "4.0.0-rc2-23614",
-    "System.Runtime.InteropServices": "4.0.20-rc2-23614",
-    "System.Runtime.Handles": "4.0.0-rc2-23614",
-    "System.Globalization": "4.0.0-rc2-23614",
-    "System.Diagnostics.Debug": "4.0.10-rc2-23614",
-    "System.Security.Principal.Windows": "4.0.0-rc2-23614",
-    "System.Net.Primitives": "4.0.10-rc2-23614"
+    "System.Collections": "4.0.0-rc2-23616",
+    "System.Diagnostics.Contracts": "4.0.0-rc2-23616",
+    "System.Diagnostics.Tracing": "4.0.0-rc2-23616",
+    "System.Runtime": "4.0.20-rc2-23616",
+    "System.Runtime.Extensions": "4.0.10-rc2-23616",
+    "System.Resources.ResourceManager": "4.0.0-rc2-23616",
+    "System.Threading": "4.0.0-rc2-23616",
+    "System.Threading.Tasks": "4.0.0-rc2-23616",
+    "System.Runtime.InteropServices": "4.0.20-rc2-23616",
+    "System.Runtime.Handles": "4.0.0-rc2-23616",
+    "System.Globalization": "4.0.0-rc2-23616",
+    "System.Diagnostics.Debug": "4.0.10-rc2-23616",
+    "System.Security.Principal.Windows": "4.0.0-rc2-23616",
+    "System.Net.Primitives": "4.0.10-rc2-23616"
   },
   "frameworks": {
     "dnxcore50": {}
