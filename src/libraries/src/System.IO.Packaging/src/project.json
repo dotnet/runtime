@@ -1,14 +1,20 @@
 {
-  "dependencies": {
-    "System.Collections": "4.0.10",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.IO.Compression": "4.0.0",
-    "System.IO.FileSystem": "4.0.0",
-    "System.IO.FileSystem.Primitives": "4.0.0",
-    "System.Runtime": "4.0.20",
-    "System.Xml.ReaderWriter": "4.0.0"
-  },
   "frameworks": {
-    "dnxcore50": {}
+    "dotnet5.4": {
+      "dependencies": {
+        "System.Collections": "4.0.10",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.IO.Compression": "4.0.0",
+        "System.IO.FileSystem": "4.0.0",
+        "System.IO.FileSystem.Primitives": "4.0.0",
+        "System.Runtime": "4.0.0",
+        "System.Xml.ReaderWriter": "4.0.0"
+      }
+    },
+    "net46":{
+      "dependencies": {
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0",
+      }
+    }
   }
 }
