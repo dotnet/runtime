@@ -1,7 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="FilterProjects">
+    <PropertyGroup>
+      <FilterToOSGroup Condition="'$(FilterToOSGroup)'=='' and '$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)</FilterToOSGroup>
+    </PropertyGroup>
 
-  <Target Name="BuildAllProjects">
+    <ItemGroup>
+      <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
+      <Project>
+        <AdditionalProperties Condition="'%(Project.TargetGroup)'!=''">TargetGroup=%(Project.TargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <FilterToOSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</FilterToOSGroup>
+      </Project>
+      <Project>
+        <AdditionalProperties Condition="'%(Project.OSGroup)'!=''">OSGroup=%(Project.OSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <!-- If a project isn't setting the OSGroup via metadata then undefine it so that the globally set OSGroup doesn't override empty OSGroup -->
+        <UndefineProperties Condition="'%(Project.OSGroup)'==''">$(UndefineProperties);OSGroup</UndefineProperties>
+      </Project>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(FilterToOSGroup)'!=''">
+      <ProjectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)'=='$(FilterToOSGroup)' or '%(Project.OSGroup)'=='AnyOS' or '%(Project.OSGroup)'==''" />
+
+      <Project Remove="@(Project)" />
+      <Project Include="@(ProjectsToBuild)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="DumpTargets" DependsOnTargets="FilterProjects">
+        <MSBuild Targets="$(DefaultBuildAllTarget)"
+             Projects="@(Project)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             ContinueOnError="ErrorAndContinue" />
+  </Target>
+
+  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
       <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
     </PropertyGroup>
@@ -25,7 +64,7 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="GetFilesToPackage"
+  <Target Name="GetFilesToPackage" DependsOnTargets="FilterProjects"
           Returns="@(FilesToPackage)">
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
@@ -40,7 +79,7 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="CleanAllProjects">
+  <Target Name="CleanAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
       <DefaultCleanAllTarget Condition="'$(DefaultCleanAllTarget)'==''">Clean</DefaultCleanAllTarget>
     </PropertyGroup>
@@ -64,7 +103,7 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="RestoreAllProjectPackages">
+  <Target Name="RestoreAllProjectPackages" DependsOnTargets="FilterProjects">
     <Message Importance="High" Text="Restoring project packages..." />
 
     <PropertyGroup>

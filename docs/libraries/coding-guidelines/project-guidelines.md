@@ -23,12 +23,12 @@ Below is a list of all the various options we pivot the project builds on.
 - **Version:** Potentially multiple versions at the same time.
 
 ##Full Repo build pass
-**Build Parameters:** *Flavor, Architecture, OS*<BR/>
-For each combination of build parameters there should be a full build pass over the entire repo. For each OS the build pass should be performed on that OS.
+**Build Parameters:** *Flavor, Architecture*<BR/>
+For each combination of build parameters there should be a full build pass over the entire repo.
 
 ##Project build pass
-**Project Parameters:** *Platform Runtime, Target Framework, Version*<BR/>
-These are optional for specific projects and don't require a full build pass but instead should be scoped to individual projects within the most appropriate full build pass.
+**Optional Build Parameters:** *OS, Platform Runtime, Target Framework, Version*<BR/>
+These are optional build parameters for specific projects and don't require a full build pass but instead should be scoped to individual projects within the most appropriate full build pass.
 
 #Project configuration conventions
 For each unique configuration needed for a given library project a configuration property group should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
@@ -36,9 +36,9 @@ For each unique configuration needed for a given library project a configuration
 
 - `$(Platform) -> AnyCPU* | x86 | x64 | ARM | ARM64`
 - `$(Configuration) -> $(OSGroup)_$(TargetGroup)_$(ConfigurationGroup)`
-- `$(OSGroup) -> [Empty]* | Windows | Linux | OSX | FreeBSD`
-- `$(TargetGroup) -> [Empty]* | <TargetFrameworkMoniker> | <RuntimeIdentifier> | <Version> | <TFM><RID>`
- - `$(PackageTargetFramework) -> netstandard | netcore50 | net46 | dnxcore50`
+- `$(OSGroup) -> [Empty]/AnyOS* | Windows | Linux | OSX | FreeBSD`
+- `$(TargetGroup) -> [Empty]* | <PackageTargetFramework> | <PackageTargetRuntime> | <Version> | <PackageTargetFramework><PackageTargetRuntime>`
+ - `$(PackageTargetFramework) -> netstandard1.x/(currently dotnet5.x) | netcore50 | net46 | dnxcore50`
  - `$(PackageTargetRuntime) -> aot`
  - For more information on various targets see also [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md)
 - `$(ConfigurationGroup) -> Debug* | Release`
@@ -52,7 +52,7 @@ Project configurations for a pure IL library project which targets the defaults.
 ```
 Project configurations with a unique implementation for each OS
 ```
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
@@ -60,6 +60,8 @@ Project configurations with a unique implementation for each OS
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
 ```
 Project configurations that are unique for a few different target frameworks and runtimes
 ```
@@ -71,30 +73,74 @@ Project configurations that are unique for a few different target frameworks and
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
 ```
 ## Project .builds file
-To drive the Project build pass we have a *.builds project that will multiplex the various optional build parameters we have for all the various configurtions within a given build pass.
+To drive the Project build pass we have a `.builds` project file that will multiplex the various optional build parameters we have for all the various configurtions within a given build pass.
 
-Below is an example for System.Linq.Expressions where it only builds for the windows full build passes and needs a unique build for various target frameworks.
+####*Examples*
+
+Project configurations for pure IL library project
 ```
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties> 
+  <ItemGroup>
+    <Project Include="System.Reflection.Metadata.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+```
+Project configurations with a unique implementation for each OS
+```
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>FreeBSD</OSGroup>
     </Project>
-    <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Linux</OSGroup>
     </Project>
-    <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties> 
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>OSX</OSGroup>
     </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="facade\System.IO.FileSystem.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+
+```
+Project configurations that are unique for a few different target frameworks and runtimes
+```
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.Linq.Expressions.csproj" />
     <Project Include="Facade\System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Linq.Expressions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="System.Linq.Expressions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
 ```
+
 ##Facades projects
 Facade projects are unique in that they don't have any code and instead are generated by finding a contract reference assembly with the matching identity and generating type forwards for all the types to where they live in the implementation assemblies (aka facade seeds). There are also partial facades which contain some type forwards as well as some code definitions. Ideally all the various build configurations would be contained in the one csproj file per library but given the unique nature of facades and the fact they are usually a complete fork of everything in the project file it is recommended to create a matching csproj under a Facade directory (<library>\src\Facade\<library>.csproj) and reference that from your .builds file, as in the System.Linq.Expressions example.
 
