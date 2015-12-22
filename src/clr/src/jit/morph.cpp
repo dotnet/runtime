@@ -6190,7 +6190,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     GenTreePtr paramAssignmentInsertionPoint = last;
 
     // Process early args. They may contain both setup statements for late args and actual args.
-    int earlyArgIndex = 0;
+    // Early args don't include 'this' arg. We need to account for that so that the call to gtArgEntryByArgNum
+    // below has the correct second argument.
+    int earlyArgIndex = (thisArg == nullptr) ? 0 : 1;
     for (GenTreeArgList* earlyArgs = recursiveTailCall->gtCallArgs;
          earlyArgs != nullptr;
          (earlyArgIndex++, earlyArgs = earlyArgs->Rest()))
