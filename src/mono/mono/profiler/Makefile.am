@@ -22,7 +22,11 @@ endif
 lib_LTLIBRARIES = libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la libmono-profiler-log-static.la $(vtune_lib)
 
 if PLATFORM_DARWIN
+if BITCODE
+libmono_profiler_log_la_LDFLAGS = -no-undefined
+else
 libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
+endif
 endif
 if PLATFORM_ANDROID
 libmono_profiler_log_la_LDFLAGS = -avoid-version
@@ -58,8 +62,14 @@ endif
 
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+if BITCODE
+libmono_profiler_aot_la_LDFLAGS = -no-undefined
+endif
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+if BITCODE
+libmono_profiler_iomap_la_LDFLAGS = -no-undefined
+endif
 libmono_profiler_log_la_SOURCES = proflog.c
 libmono_profiler_log_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(Z_LIBS)
 if HAVE_VTUNE
