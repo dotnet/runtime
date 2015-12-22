@@ -243,6 +243,10 @@ mono_sgen_LDADD = \
 
 mono_sgen_LDFLAGS = $(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
 
+if BITCODE
+libmonoldflags += -no-undefined
+endif
+
 # if SUPPORT_SGEN
 # 
 # mono_LDADD = $(mono_sgen_LDADD)
