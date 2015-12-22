@@ -16,7 +16,7 @@ public static class SqMtx
 #if DEBUG
     public const int Iterations = 1;
 #else
-    public const int Iterations = 1000;
+    public const int Iterations = 4000;
 #endif
 
     const int MatrixSize = 40;
@@ -71,18 +71,13 @@ public static class SqMtx
     public static void Test() {
         foreach (var iteration in Benchmark.Iterations) {
             using (iteration.StartMeasurement()) {
-                for (int i = 0; i < Iterations; i++) {
-                   Bench();
-                }
+                Bench();
             }
         }
     }
 
     static bool TestBase() {
-        bool result = true;
-        for (int i = 0; i < Iterations; i++) {
-            result &= Bench();
-        }
+        bool result = Bench();
         return result;
     }
 
