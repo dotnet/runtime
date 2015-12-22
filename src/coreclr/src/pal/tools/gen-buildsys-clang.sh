@@ -43,8 +43,8 @@ generator="Unix Makefiles"
 for i in "${@:5}"; do
     upperI="$(echo $i | awk '{print toupper($0)}')"
     case $upperI in
-      # Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
-      DEBUG | RELEASE | RELWITHDEBINFO | MINSIZEREL)
+      # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO, MINSIZEREL.
+      DEBUG | CHECKED | RELEASE | RELWITHDEBINFO | MINSIZEREL)
       buildtype=$upperI
       ;;
       COVERAGE)
