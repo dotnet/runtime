@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
 
         public byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag)
         {
-            throw new NotImplementedException();
+            return X500NameEncoder.X500DistinguishedNameEncode(distinguishedName, flag);
         }
 
         public string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)

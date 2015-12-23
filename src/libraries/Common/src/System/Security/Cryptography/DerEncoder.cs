@@ -1,11 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Numerics;
+using System.Text;
 
 namespace System.Security.Cryptography
 {
@@ -17,6 +16,7 @@ namespace System.Security.Cryptography
     {
         private const byte ConstructedFlag = 0x20;
         private const byte ConstructedSequenceTag = ConstructedFlag | (byte)DerSequenceReader.DerTag.Sequence;
+        private const byte ConstructedSetTag = ConstructedFlag | (byte)DerSequenceReader.DerTag.Set;
 
         private static byte[] EncodeLength(int length)
         {
@@ -445,6 +445,49 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode a character string as a UTF8String value.
+        /// </summary>
+        /// <param name="chars">The characters to be encoded.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeUtf8String(char[] chars)
+        {
+            Debug.Assert(chars != null);
+
+            return SegmentedEncodeUtf8String(chars, 0, chars.Length);
+        }
+
+        /// <summary>
+        /// Encode a substring as a UTF8String value.
+        /// </summary>
+        /// <param name="chars">The characters whose substring is to be encoded.</param>
+        /// <param name="offset">The character offset into <paramref name="chars"/> at which to start.</param>
+        /// <param name="count">The total number of characters from <paramref name="chars"/> to read.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeUtf8String(char[] chars, int offset, int count)
+        {
+            Debug.Assert(chars != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(offset <= chars.Length);
+            Debug.Assert(count >= 0);
+            Debug.Assert(count <= chars.Length - offset);
+
+            // ITU-T X.690 says that ISO/IEC 10646 Annex D should be used; but no announcers
+            // or escape sequences, and each character shall be encoded in the smallest number of
+            // bytes possible.
+            //
+            // Thankfully, that's just Encoding.UTF8.
+
+            byte[] encodedBytes = System.Text.Encoding.UTF8.GetBytes(chars, offset, count);
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.UTF8String },
+                EncodeLength(encodedBytes.Length),
+                encodedBytes,
+            };
+        }
+
+        /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents, but leave
         /// the value in a segmented form (to be included in a larger SEQUENCE).
         /// </summary>
@@ -463,6 +506,180 @@ namespace System.Security.Cryptography
                 data,
             };
         }
+
+        /// <summary>
+        /// Make a constructed SET of the byte-triplets of the contents, but leave
+        /// the value in a segmented form (to be included in a larger SEQUENCE).
+        /// </summary>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one set.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] ConstructSegmentedSet(params byte[][][] items)
+        {
+            Debug.Assert(items != null);
+
+            byte[] data = ConcatenateArrays(items);
+
+            return new byte[][]
+            {
+                new byte[] { ConstructedSetTag },
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
+        /// Test to see if the input characters contains only characters permitted by the ASN.1
+        /// PrintableString restricted character set.
+        /// </summary>
+        /// <param name="chars">The characters to test.</param>
+        /// <returns>
+        /// <c>true</c> if all of the characters in <paramref name="chars"/> are valid PrintableString characters,
+        /// <c>false</c> otherwise.
+        /// </returns>
+        internal static bool IsValidPrintableString(char[] chars)
+        {
+            Debug.Assert(chars != null);
+
+            return IsValidPrintableString(chars, 0, chars.Length);
+        }
+
+        /// <summary>
+        /// Test to see if the input substring contains only characters permitted by the ASN.1
+        /// PrintableString restricted character set.
+        /// </summary>
+        /// <param name="chars">The character string to test.</param>
+        /// <param name="offset">The starting character position within <paramref name="chars"/>.</param>
+        /// <param name="count">The number of characters from <paramref name="chars"/> to read.</param>
+        /// <returns>
+        /// <c>true</c> if all of the indexed characters in <paramref name="chars"/> are valid PrintableString
+        /// characters, <c>false</c> otherwise.
+        /// </returns>
+        internal static bool IsValidPrintableString(char[] chars, int offset, int count)
+        {
+            Debug.Assert(chars != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(offset <= chars.Length);
+            Debug.Assert(count >= 0);
+            Debug.Assert(count <= chars.Length - offset);
+
+            int end = count + offset;
+
+            for (int i = offset; i < end; i++)
+            {
+                if (!IsPrintableStringCharacter(chars[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Encode a character string as a PrintableString value.
+        /// </summary>
+        /// <param name="chars">The characters to be encoded.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodePrintableString(char[] chars)
+        {
+            Debug.Assert(chars != null);
+
+            return SegmentedEncodePrintableString(chars, 0, chars.Length);
+        }
+
+        /// <summary>
+        /// Encode a substring as a PrintableString value.
+        /// </summary>
+        /// <param name="chars">The character string whose substring is to be encoded.</param>
+        /// <param name="offset">The character offset into <paramref name="chars"/> at which to start.</param>
+        /// <param name="count">The total number of characters from <paramref name="chars"/> to read.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodePrintableString(char[] chars, int offset, int count)
+        {
+            Debug.Assert(chars != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(offset <= chars.Length);
+            Debug.Assert(count >= 0);
+            Debug.Assert(count <= chars.Length);
+            Debug.Assert(offset + count <= chars.Length);
+
+            Debug.Assert(IsValidPrintableString(chars, offset, count));
+
+            // ITU-T X.690 (08/2015) 8.23.5 says to encode PrintableString as ISO/IEC 2022 using an implicit
+            // context of G0=6 (ANSI/ASCII) and no explicit escape sequences are allowed.
+            //
+            // That's a long-winded way of saying that it's just ASCII.  Since we've already established
+            // that it fits the PrintableString character restrictions, we can just convert char to byte.
+            byte[] encodedString = new byte[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                encodedString[i] = (byte)chars[i + offset];
+            }
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.PrintableString },
+                EncodeLength(encodedString.Length),
+                encodedString,
+            };
+        }
+
+        /// <summary>
+        /// Encode a string of characters as a IA5String value.
+        /// </summary>
+        /// <param name="chars">The characters to be encoded.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeIA5String(char[] chars)
+        {
+            Debug.Assert(chars != null);
+
+            return SegmentedEncodeIA5String(chars, 0, chars.Length);
+        }
+
+        /// <summary>
+        /// Encode a substring as a IA5String value.
+        /// </summary>
+        /// <param name="chars">The characters whose substring is to be encoded.</param>
+        /// <param name="offset">The character offset into <paramref name="chars"/> at which to start.</param>
+        /// <param name="count">The total number of characters from <paramref name="chars"/> to read.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeIA5String(char[] chars, int offset, int count)
+        {
+            Debug.Assert(chars != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(offset <= chars.Length);
+            Debug.Assert(count >= 0);
+            Debug.Assert(count <= chars.Length);
+            Debug.Assert(offset + count <= chars.Length);
+
+            // ITU-T X.690 (08/2015) 8.23.5 says to encode IA5String as ISO/IEC 2022 using an implicit
+            // context of G0=6 (ANSI/ASCII) and no explicit escape sequences are allowed.
+            //
+            // That's a long-winded way of saying that it's just ASCII 0x00-0x7F.
+            byte[] encodedString = new byte[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                char c = chars[i + offset];
+
+                // IA5 is ASCII 0x00-0x7F.
+                if (c > 127)
+                {
+                    throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
+                }
+
+                encodedString[i] = (byte)c;
+            }
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.IA5String },
+                EncodeLength(encodedString.Length),
+                encodedString,
+            };
+        }
+
 
         /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
@@ -587,6 +804,40 @@ namespace System.Security.Cryptography
             }
 
             encodedData.AddRange(littleEndianBytes);
+        }
+
+        private static bool IsPrintableStringCharacter(char c)
+        {
+            // ITU-T X.680 (11/2008)
+            // 41.4 (PrintableString)
+
+            // Latin Capital, Latin Small, Digits
+            if ((c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9'))
+            {
+                return true;
+            }
+
+            // Individually included characters
+            switch (c)
+            {
+                case ' ':
+                case '\'':
+                case '(':
+                case ')':
+                case '+':
+                case ',':
+                case '-':
+                case '.':
+                case '/':
+                case ':':
+                case '=':
+                case '?':
+                    return true;
+            }
+
+            return false;
         }
 
         private static byte[] ConcatenateArrays(byte[][][] segments)
