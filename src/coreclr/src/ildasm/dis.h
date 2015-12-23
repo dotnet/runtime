@@ -85,6 +85,7 @@ char* DumpUnicodeString(void* GUICookie,
 
 void TokenSigInit(IMDInternalImport *pImport);
 void TokenSigDelete();
+bool IsSpecialNumber(const char*);
 
 
 //---------------- see DMAN.CPP--------------------------------------------------
