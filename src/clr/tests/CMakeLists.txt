@@ -17,7 +17,7 @@ endif()
 # Compile options
 
 if (WIN32)
-    add_compile_options(-wd4820)
+    add_compile_options(-wd4100 -wd4514 -wd4668 -wd4710 -wd4711 -wd4820)
 endif()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
