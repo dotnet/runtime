@@ -5,6 +5,7 @@
     "System.Runtime.Extensions": "4.0.10-beta-*",
     "System.Collections": "4.0.10-beta-*",
     "System.Runtime.InteropServices": "4.0.21-beta-*",
+    "System.IO": "4.0.11-beta-*",
     "System.IO.FileSystem": "4.0.1-beta-*",
     "System.Globalization": "4.0.11-beta-*",
     "System.Reflection": "4.1.0-beta-*",
