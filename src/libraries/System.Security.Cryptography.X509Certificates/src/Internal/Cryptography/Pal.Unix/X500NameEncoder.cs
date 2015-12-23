@@ -155,7 +155,7 @@ namespace Internal.Cryptography.Pal
         {
             if (string.IsNullOrEmpty(rdnValue))
             {
-                return false;
+                return true;
             }
 
             if (IsQuotableWhitespace(rdnValue[0]) ||
