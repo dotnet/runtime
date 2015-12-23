@@ -7558,7 +7558,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	info = &module->aot_info;
 
 	/* Create an LLVM type to represent MonoAotFileInfo */
-	nfields = 2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 14 + 4;
+	nfields = 2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 15 + 5;
 	eltypes = g_new (LLVMTypeRef, nfields);
 	tindex = 0;
 	eltypes [tindex ++] = LLVMInt32Type ();
@@ -7567,9 +7567,10 @@ emit_aot_file_info (MonoLLVMModule *module)
 	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i)
 		eltypes [tindex ++] = LLVMPointerType (LLVMInt8Type (), 0);
 	/* Scalars */
-	for (i = 0; i < 14; ++i)
+	for (i = 0; i < 15; ++i)
 		eltypes [tindex ++] = LLVMInt32Type ();
 	/* Arrays */
+	eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TABLE_NUM);
 	for (i = 0; i < 4; ++i)
 		eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TRAMP_NUM);
 	g_assert (tindex == nfields);
@@ -7627,9 +7628,9 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "extra_method_table");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "got_info_offsets");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "llvm_got_info_offsets");
+	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "image_table");
 	/* Not needed (mem_end) */
 	fields [tindex ++] = LLVMConstNull (eltype);
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "image_table");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "assembly_guid");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "runtime_version");
 	if (info->trampoline_size [0]) {
@@ -7682,7 +7683,9 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->generic_tramp_num, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->tramp_page_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->nshared_got_entries, FALSE);
+	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->datafile_size, FALSE);
 	/* Arrays */
+	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->table_offsets, MONO_AOT_TABLE_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->num_trampolines, MONO_AOT_TRAMP_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->trampoline_got_offset_base, MONO_AOT_TRAMP_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->trampoline_size, MONO_AOT_TRAMP_NUM);

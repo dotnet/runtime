@@ -2775,6 +2775,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i, pindex;
 	MonoMethodSignature *sig = dinfo->sig;
+	int buffer_offset = 0;
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
@@ -2848,6 +2849,22 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		    if (MONO_TYPE_IS_REFERENCE (t)) {
 				p->regs [greg ++] = PTR_TO_GREG(*(arg));
 				break;
+			} else if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+					MonoClass *klass = mono_class_from_mono_type (t);
+					guint8 *nullable_buf;
+					int size;
+
+					size = mono_class_value_size (klass, NULL);
+					nullable_buf = p->buffer + buffer_offset;
+					buffer_offset += size;
+					g_assert (buffer_offset <= 256);
+
+					/* The argument pointed to by arg is either a boxed vtype or null */
+					mono_nullable_init (nullable_buf, (MonoObject*)arg, klass);
+
+					arg = (gpointer*)nullable_buf;
+					/* Fall though */
+
 			} else {
 				/* Fall through */
 			}

@@ -233,6 +233,7 @@ typedef struct {
 	mgreg_t regs [PARAM_REGS];
 	mgreg_t res;
 	guint8 *ret;
+	guint8 buffer [256];
 } DynCallArgs;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->gregs [AMD64_RAX] = (gsize)exc; } while (0)
