@@ -1,13 +1,18 @@
 {
   "frameworks": {
+    "dotnet5.4": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23607"
+      }
+    },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23604"
+        "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc2-23607"
       }
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0-rc2-23530"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
       }
     }
   }
