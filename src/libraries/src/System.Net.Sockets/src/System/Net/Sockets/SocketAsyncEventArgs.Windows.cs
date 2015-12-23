@@ -133,18 +133,18 @@ namespace System.Net.Sockets
             {
                 overlapped = boundHandle.AllocateNativeOverlapped(_preAllocatedOverlapped);
                 GlobalLog.Print(
-                    "SocketAsyncEventArgs#" + Logging.HashString(this) +
-                    "::boundHandle#" + Logging.HashString(boundHandle) +
+                    "SocketAsyncEventArgs#" + LoggingHash.HashString(this) +
+                    "::boundHandle#" + LoggingHash.HashString(boundHandle) +
                     "::AllocateNativeOverlapped(m_PreAllocatedOverlapped=" +
-                    Logging.HashString(_preAllocatedOverlapped) +
+                    LoggingHash.HashString(_preAllocatedOverlapped) +
                     "). Returned = " + ((IntPtr)overlapped).ToString("x"));
             }
             else
             {
                 overlapped = boundHandle.AllocateNativeOverlapped(CompletionPortCallback, this, null);
                 GlobalLog.Print(
-                    "SocketAsyncEventArgs#" + Logging.HashString(this) +
-                    "::boundHandle#" + Logging.HashString(boundHandle) +
+                    "SocketAsyncEventArgs#" + LoggingHash.HashString(this) +
+                    "::boundHandle#" + LoggingHash.HashString(boundHandle) +
                     "::AllocateNativeOverlapped(pinData=null)" +
                     "). Returned = " + ((IntPtr)overlapped).ToString("x"));
             }
@@ -866,9 +866,9 @@ namespace System.Net.Sockets
                 {
                     _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _buffer);
                     GlobalLog.Print(
-                        "SocketAsyncEventArgs#" + Logging.HashString(this) +
+                        "SocketAsyncEventArgs#" + LoggingHash.HashString(this) +
                         "::SetupOverlappedSingle: new PreAllocatedOverlapped pinSingleBuffer=true, non-null buffer: " +
-                        Logging.HashString(_preAllocatedOverlapped));
+                        LoggingHash.HashString(_preAllocatedOverlapped));
 
                     _pinnedSingleBuffer = _buffer;
                     _pinnedSingleBufferOffset = _offset;
@@ -883,9 +883,9 @@ namespace System.Net.Sockets
                 {
                     _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, null);
                     GlobalLog.Print(
-                        "SocketAsyncEventArgs#" + Logging.HashString(this) +
+                        "SocketAsyncEventArgs#" + LoggingHash.HashString(this) +
                         "::SetupOverlappedSingle: new PreAllocatedOverlapped pinSingleBuffer=true, null buffer: " +
-                        Logging.HashString(_preAllocatedOverlapped));
+                        LoggingHash.HashString(_preAllocatedOverlapped));
 
                     _pinnedSingleBuffer = null;
                     _pinnedSingleBufferOffset = 0;
@@ -901,9 +901,9 @@ namespace System.Net.Sockets
             {
                 _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _acceptBuffer);
                 GlobalLog.Print(
-                    "SocketAsyncEventArgs#" + Logging.HashString(this) +
+                    "SocketAsyncEventArgs#" + LoggingHash.HashString(this) +
                     "::SetupOverlappedSingle: new PreAllocatedOverlapped pinSingleBuffer=false: " +
-                    Logging.HashString(_preAllocatedOverlapped));
+                    LoggingHash.HashString(_preAllocatedOverlapped));
 
                 _pinnedAcceptBuffer = _acceptBuffer;
                 _ptrAcceptBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_acceptBuffer, 0);
@@ -939,8 +939,8 @@ namespace System.Net.Sockets
             // Pin buffers and fill in WSABuffer descriptor pointers and lengths.
             _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _objectsToPin);
             GlobalLog.Print(
-                "SocketAsyncEventArgs#" + Logging.HashString(this) + "::SetupOverlappedMultiple: new PreAllocatedOverlapped." +
-                Logging.HashString(_preAllocatedOverlapped));
+                "SocketAsyncEventArgs#" + LoggingHash.HashString(this) + "::SetupOverlappedMultiple: new PreAllocatedOverlapped." +
+                LoggingHash.HashString(_preAllocatedOverlapped));
 
             for (int i = 0; i < tempList.Length; i++)
             {
@@ -983,8 +983,8 @@ namespace System.Net.Sockets
             // Pin buffers.
             _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _objectsToPin);
             GlobalLog.Print(
-                "SocketAsyncEventArgs#" + Logging.HashString(this) + "::SetupOverlappedSendPackets: new PreAllocatedOverlapped: " +
-                Logging.HashString(_preAllocatedOverlapped));
+                "SocketAsyncEventArgs#" + LoggingHash.HashString(this) + "::SetupOverlappedSendPackets: new PreAllocatedOverlapped: " +
+                LoggingHash.HashString(_preAllocatedOverlapped));
 
             // Get pointer to native descriptor.
             _ptrSendPacketsDescriptor = Marshal.UnsafeAddrOfPinnedArrayElement(_sendPacketsDescriptor, 0);
@@ -1025,17 +1025,17 @@ namespace System.Net.Sockets
             switch (_pinState)
             {
                 case PinState.SingleAcceptBuffer:
-                    Logging.Dump(Logging.Sockets, _currentSocket, "FinishOperation(" + _completedOperation + "Async)", _acceptBuffer, 0, size);
+                    SocketsEventSource.Dump(_completedOperation, _acceptBuffer, 0, size);
                     break;
 
                 case PinState.SingleBuffer:
-                    Logging.Dump(Logging.Sockets, _currentSocket, "FinishOperation(" + _completedOperation + "Async)", _buffer, _offset, size);
+                    SocketsEventSource.Dump(_completedOperation, _buffer, _offset, size);
                     break;
 
                 case PinState.MultipleBuffer:
                     foreach (WSABuffer wsaBuffer in _wsaBufferArray)
                     {
-                        Logging.Dump(Logging.Sockets, _currentSocket, "FinishOperation(" + _completedOperation + "Async)", wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        SocketsEventSource.Dump(_completedOperation, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -1057,12 +1057,12 @@ namespace System.Net.Sockets
                     if (spe._buffer != null && spe._count > 0)
                     {
                         // This element is a buffer.
-                        Logging.Dump(Logging.Sockets, _currentSocket, "FinishOperation(" + _completedOperation + "Async)Buffer", spe._buffer, spe._offset, Math.Min(spe._count, size));
+                        SocketsEventSource.Dump(_completedOperation, spe._buffer, spe._offset, Math.Min(spe._count, size));
                     }
                     else if (spe._filePath != null)
                     {
                         // This element is a file.
-                        Logging.PrintInfo(Logging.Sockets, _currentSocket, "FinishOperation(" + _completedOperation + "Async)", SR.Format(SR.net_log_socket_not_logged_file, spe._filePath));
+                        SocketsEventSource.Log.NotLoggedFile(spe._filePath, LoggingHash.HashInt(_currentSocket), _completedOperation);
                     }
                 }
             }

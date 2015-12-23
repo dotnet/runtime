@@ -53,7 +53,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, "value");
                 CheckDisposedOrStarted();
 
-                if (Logging.On) Logging.PrintInfo(Logging.Http, this, "BaseAddress: '" + _baseAddress + "'");
+                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.UriBaseAddress(this, _baseAddress.ToString());
 
                 _baseAddress = value;
             }
@@ -110,13 +110,13 @@ namespace System.Net.Http
         public HttpClient(HttpMessageHandler handler, bool disposeHandler)
             : base(handler, disposeHandler)
         {
-            if (Logging.On) Logging.Enter(Logging.Http, this, ".ctor", handler);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", handler);
 
             _timeout = s_defaultTimeout;
             _maxResponseContentBufferSize = HttpContent.MaxBufferSize;
             _pendingRequestsCts = new CancellationTokenSource();
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
         }
 
         #endregion Constructors
@@ -395,7 +395,7 @@ namespace System.Net.Http
                 catch (Exception e)
                 {
                     // Make sure we catch any exception, otherwise the task will catch it and throw in the finalizer.
-                    if (Logging.On) Logging.Exception(Logging.Http, this, "SendAsync", e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, "SendAsync", e);
                     tcs.TrySetException(e);
                 }
             });
@@ -406,7 +406,7 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            if (Logging.On) Logging.Enter(Logging.Http, this, "CancelPendingRequests", "");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, "CancelPendingRequests", "");
 
             // With every request we link this cancellation token source.
             CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts,
@@ -415,7 +415,7 @@ namespace System.Net.Http
             currentCts.Cancel();
             currentCts.Dispose();
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, "CancelPendingRequests", "");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, "CancelPendingRequests", "");
         }
 
         #endregion Advanced Send Overloads
@@ -503,7 +503,7 @@ namespace System.Net.Http
                     // Make sure we catch any exception, otherwise the task will catch it and throw in the finalizer.
                     response.Dispose();
                     tcs.TrySetException(e);
-                    if (Logging.On) Logging.Exception(Logging.Http, this, "SendAsync", e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, "SendAsync", e);
                 }
             });
         }
@@ -621,7 +621,7 @@ namespace System.Net.Http
         private void SetTaskCompleted(HttpRequestMessage request, CancellationTokenSource cancellationTokenSource,
             TaskCompletionSource<HttpResponseMessage> tcs, HttpResponseMessage response)
         {
-            if (Logging.On) Logging.PrintInfo(Logging.Http, this, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_client_send_completed, Logging.GetObjectLogHash(request), Logging.GetObjectLogHash(response), response));
+            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.ClientSendCompleted(this, response, request);
             tcs.TrySetResult(response);
             cancellationTokenSource.Dispose();
         }
@@ -643,12 +643,12 @@ namespace System.Net.Http
 
             if (cancellationTokenSource.IsCancellationRequested)
             {
-                if (Logging.On) Logging.PrintError(Logging.Http, this, method, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_client_send_canceled, Logging.GetObjectLogHash(request)));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, this, method, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_client_send_canceled, LoggingHash.GetObjectLogHash(request)));
             }
             else
             {
                 Debug.Assert(e != null);
-                if (Logging.On) Logging.PrintError(Logging.Http, this, method, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_client_send_error, Logging.GetObjectLogHash(request), e));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, this, method, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_client_send_error, LoggingHash.GetObjectLogHash(request), e));
             }
         }
 

@@ -31,18 +31,14 @@ namespace System.Net
                             }
 
                             SecurityPackageInfoClass[] securityPackages = new SecurityPackageInfoClass[moduleCount];
-                            if (Logging.On)
-                            {
-                                Logging.PrintInfo(Logging.Web, SR.net_log_sspi_enumerating_security_packages);
-                            }
 
                             int i;
                             for (i = 0; i < moduleCount; i++)
                             {
                                 securityPackages[i] = new SecurityPackageInfoClass(arrayBaseHandle, i);
-                                if (Logging.On)
+                                if (SecurityEventSource.Log.IsEnabled())
                                 {
-                                    Logging.PrintInfo(Logging.Web, "    " + securityPackages[i].Name);
+                                    SecurityEventSource.Log.EnumerateSecurityPackages(securityPackages[i].Name);
                                 }
                             }
 
@@ -82,9 +78,9 @@ namespace System.Net
                 }
             }
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_package_not_found, packageName));
+                SecurityEventSource.Log.SspiPackageNotFound(packageName);
             }
 
             if (throwIfMissing)
@@ -98,13 +94,9 @@ namespace System.Net
         public static SafeFreeCredentials AcquireDefaultCredential(SSPIInterface secModule, string package, Interop.Secur32.CredentialUse intent)
         {
             GlobalLog.Print("SSPIWrapper::AcquireDefaultCredential(): using " + package);
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(
-                    Logging.Web,
-                    "AcquireDefaultCredential(" +
-                    "package = " + package + ", " +
-                    "intent  = " + intent + ")");
+                SecurityEventSource.Log.AcquireDefaultCredential(package, intent);
             }
 
             SafeFreeCredentials outCredential = null;
@@ -116,9 +108,9 @@ namespace System.Net
                 GlobalLog.Print("SSPIWrapper::AcquireDefaultCredential(): error " + Interop.MapSecurityStatus((uint)errorCode));
 #endif
 
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireDefaultCredential()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
+                    NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_operation_failed_with_error, "AcquireDefaultCredential()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                 }
 
                 throw new Win32Exception(errorCode);
@@ -130,13 +122,9 @@ namespace System.Net
         {
             GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#2(): using " + package);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "AcquireCredentialsHandle(" +
-                    "package  = " + package + ", " +
-                    "intent   = " + intent + ", " +
-                    "authdata = " + authdata + ")");
+                SecurityEventSource.AcquireCredentialsHandle(package, intent, authdata);
             }
 
             SafeFreeCredentials credentialsHandle = null;
@@ -150,9 +138,9 @@ namespace System.Net
 #if TRACE_VERBOSE
                 GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#2(): error " + Interop.MapSecurityStatus((uint)errorCode));
 #endif
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
+                    NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                 }
 
                 throw new Win32Exception(errorCode);
@@ -162,13 +150,9 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.Secur32.CredentialUse intent, ref SafeSspiAuthDataHandle authdata)
         {
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "AcquireCredentialsHandle(" +
-                    "package  = " + package + ", " +
-                    "intent   = " + intent + ", " +
-                    "authdata = " + authdata + ")");
+                SecurityEventSource.AcquireCredentialsHandle(package, intent, authdata);
             }
 
             SafeFreeCredentials credentialsHandle = null;
@@ -176,9 +160,9 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
+                    NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                 }
 
                 throw new Win32Exception(errorCode);
@@ -191,13 +175,9 @@ namespace System.Net
         {
             GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): using " + package);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "AcquireCredentialsHandle(" +
-                    "package = " + package + ", " +
-                    "intent  = " + intent + ", " +
-                    "scc     = " + scc + ")");
+                SecurityEventSource.AcquireCredentialsHandle(package, intent, scc);
             }
 
             SafeFreeCredentials outCredential = null;
@@ -213,9 +193,9 @@ namespace System.Net
                 GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): error " + Interop.MapSecurityStatus((uint)errorCode));
 #endif
 
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
+                    NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                 }
 
                 throw new Win32Exception(errorCode);
@@ -229,21 +209,19 @@ namespace System.Net
 
         internal static int InitializeSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.Secur32.ContextFlags inFlags, Interop.Secur32.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.Secur32.ContextFlags outFlags)
         {
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "InitializeSecurityContext(" +
-                    "credential = " + credential.ToString() + ", " +
-                    "context = " + Logging.ObjectToString(context) + ", " +
-                    "targetName = " + targetName + ", " +
-                    "inFlags = " + inFlags + ")");
+                SecurityEventSource.Log.InitializeSecurityContext(credential.ToString(),
+                    LoggingHash.ObjectToString(context),
+                    targetName,
+                    inFlags);
             }
 
             int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffer, outputBuffer, ref outFlags);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_context_input_buffer, "InitializeSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode));
+                SecurityEventSource.Log.SecurityContextInputBuffer("InitializeSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -251,21 +229,19 @@ namespace System.Net
 
         internal static int InitializeSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.Secur32.ContextFlags inFlags, Interop.Secur32.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.Secur32.ContextFlags outFlags)
         {
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "InitializeSecurityContext(" +
-                    "credential = " + credential.ToString() + ", " +
-                    "context = " + Logging.ObjectToString(context) + ", " +
-                    "targetName = " + targetName + ", " +
-                    "inFlags = " + inFlags + ")");
+                SecurityEventSource.Log.InitializeSecurityContext(credential.ToString(),
+                    LoggingHash.ObjectToString(context),
+                    targetName,
+                    inFlags);
             }
 
             int errorCode = secModule.InitializeSecurityContext(credential, ref context, targetName, inFlags, datarep, inputBuffers, outputBuffer, ref outFlags);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_context_input_buffers, "InitializeSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode));
+                SecurityEventSource.Log.SecurityContextInputBuffers("InitializeSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -273,20 +249,16 @@ namespace System.Net
 
         internal static int AcceptSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.Secur32.ContextFlags inFlags, Interop.Secur32.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.Secur32.ContextFlags outFlags)
         {
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "AcceptSecurityContext(" +
-                    "credential = " + credential.ToString() + ", " +
-                    "context = " + Logging.ObjectToString(context) + ", " +
-                    "inFlags = " + inFlags + ")");
+                SecurityEventSource.Log.AcceptSecurityContext(credential.ToString(), LoggingHash.ObjectToString(context), inFlags);
             }
 
             int errorCode = secModule.AcceptSecurityContext(ref credential, ref context, inputBuffer, inFlags, datarep, outputBuffer, ref outFlags);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_context_input_buffer, "AcceptSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode));
+                SecurityEventSource.Log.SecurityContextInputBuffer("AcceptSecurityContext", (inputBuffer == null ? 0 : inputBuffer.size), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -294,20 +266,16 @@ namespace System.Net
 
         internal static int AcceptSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.Secur32.ContextFlags inFlags, Interop.Secur32.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.Secur32.ContextFlags outFlags)
         {
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web,
-                    "AcceptSecurityContext(" +
-                    "credential = " + credential.ToString() + ", " +
-                    "context = " + Logging.ObjectToString(context) + ", " +
-                    "inFlags = " + inFlags + ")");
+                SecurityEventSource.Log.AcceptSecurityContext(credential.ToString(), LoggingHash.ObjectToString(context), inFlags);
             }
 
             int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, outputBuffer, ref outFlags);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_context_input_buffers, "AcceptSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode));
+                SecurityEventSource.Log.SecurityContextInputBuffers("AcceptSecurityContext", (inputBuffers == null ? 0 : inputBuffers.Length), outputBuffer.size, (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -317,9 +285,9 @@ namespace System.Net
         {
             int errorCode = secModule.CompleteAuthToken(ref context, inputBuffers);
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_operation_returned_something, "CompleteAuthToken()", (Interop.SecurityStatus)errorCode));
+                SecurityEventSource.Log.OperationReturnedSomething("CompleteAuthToken()", (Interop.SecurityStatus)errorCode);
             }
 
             return errorCode;
@@ -462,15 +430,15 @@ namespace System.Net
                         GlobalLog.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), "SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
                     }
 
-                    if (errorCode != 0 && Logging.On)
+                    if (errorCode != 0 && NetEventSource.Log.IsEnabled())
                     {                         
                         if (errorCode == Interop.Secur32.SEC_I_RENEGOTIATE)
                         {
-                            Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_returned_something, op, "SEC_I_RENEGOTIATE"));
+                            NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE"));
                         }
                         else
                         {
-                            Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, op, String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
+                            NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_operation_failed_with_error, op, String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                         }
                     }
 
@@ -501,7 +469,7 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Leave("QueryContextChannelBinding", Logging.HashString(result));
+            GlobalLog.Leave("QueryContextChannelBinding", LoggingHash.HashString(result));
             return result;
         }
 
@@ -637,7 +605,7 @@ namespace System.Net
                     sspiHandle.Dispose();
                 }
             }
-            GlobalLog.Leave("QueryContextAttributes", Logging.ObjectToString(attribute));
+            GlobalLog.Leave("QueryContextAttributes", LoggingHash.ObjectToString(attribute));
             return attribute;
         }
 

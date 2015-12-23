@@ -40,7 +40,7 @@ namespace System.Net.Http
             {
                 _start = content.Position;
             }
-            if (Logging.On) Logging.Associate(Logging.Http, this, content);
+            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, content);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)

@@ -48,15 +48,15 @@ namespace System.Net.Http
             {
                 CheckDisposed();
 
-                if (Logging.On)
+                if (HttpEventSource.Log.IsEnabled())
                 {
                     if (value == null)
                     {
-                        Logging.PrintInfo(Logging.Http, this, SR.net_http_log_content_null);
+                        HttpEventSource.ContentNull(this);
                     }
                     else
                     {
-                        Logging.Associate(Logging.Http, this, value);
+                        HttpEventSource.Associate(this, value);
                     }
                 }
 
@@ -128,16 +128,16 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri requestUri)
         {
-            if (Logging.On) Logging.Enter(Logging.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
             InitializeValues(method, requestUri);
-            if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1057:StringUriOverloadsCallSystemUriOverloads",
             Justification = "It is OK to provide 'null' values. A Uri instance is created from 'requestUri' if it is != null.")]
         public HttpRequestMessage(HttpMethod method, string requestUri)
         {
-            if (Logging.On) Logging.Enter(Logging.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
 
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
@@ -151,7 +151,7 @@ namespace System.Net.Http
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
         }
 
         public override string ToString()

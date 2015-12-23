@@ -92,7 +92,7 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()");
+            GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
@@ -141,12 +141,12 @@ namespace System.Net
                 }
             }
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
+                SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
             }
 
-            GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
 
             return result;
         }      
