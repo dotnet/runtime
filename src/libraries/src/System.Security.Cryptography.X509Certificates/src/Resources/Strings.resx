@@ -258,4 +258,10 @@
   <data name="Cryptography_TooBroadFilePermissions" xml:space="preserve">
     <value>Invalid file permissions. The file '{0}' must not be readable or writable by anyone other than the owner.</value>
   </data>
+  <data name="Cryptography_Invalid_X500Name" xml:space="preserve">
+    <value>The string contains an invalid X500 name attribute key, oid, value or delimiter.</value>
+  </data>
+  <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
+    <value>The string contains a character not in the 7 bit ASCII character set.</value>
+  </data>
 </root>
