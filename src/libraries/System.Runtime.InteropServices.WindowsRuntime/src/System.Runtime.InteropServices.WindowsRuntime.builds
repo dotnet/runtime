@@ -3,10 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Runtime.InteropServices.WindowsRuntime.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+      <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.WindowsRuntime.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
+      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.WindowsRuntime.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
