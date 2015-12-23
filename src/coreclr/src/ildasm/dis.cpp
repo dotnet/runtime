@@ -1600,7 +1600,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 float fd = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optmizier will
                 // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
-                if(((__int32&)fd == v)&&(strchr(szf,'#') == NULL))
+                if(((__int32&)fd == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s (%2.2X %2.2X %2.2X %2.2X)",
@@ -1639,7 +1639,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 double df = strtod(szf, &pch); //atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optmizier will
                 // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
-                if(((__int64&)df == v)&&(strchr(szf,'#') == NULL))
+                if (((__int64&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)",
@@ -2789,3 +2789,9 @@ static BOOL ConvToLiteral(__inout __nullterminated char* retBuff, const WCHAR* s
     return ret;
 }
 
+bool IsSpecialNumber(const char* szf)
+{
+    return (strchr(szf, '#') != NULL)
+        || (strstr(szf, "nan") != NULL) || (strstr(szf, "NAN") != NULL)
+        || (strstr(szf, "inf") != NULL) || (strstr(szf, "INF") != NULL);
+}

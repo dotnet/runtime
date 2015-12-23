@@ -2041,7 +2041,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     float df = (float)atof(str);
                     // Must compare as underlying bytes, not floating point otherwise optmizier will
                     // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
-                    if((*(ULONG*)&df != (ULONG)GET_UNALIGNED_VAL32(dataPtr))||(strchr(str,'#') != NULL))
+                    if((*(ULONG*)&df != (ULONG)GET_UNALIGNED_VAL32(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64,"0x%08X",(ULONG)GET_UNALIGNED_VAL32(dataPtr));
                     appendStr(out,str);
                     dataPtr +=4;
@@ -2060,7 +2060,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     double df = strtod(str, &pch);
                     // Must compare as underlying bytes, not floating point otherwise optmizier will
                     // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
-                    if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||(strchr(str,'#') != NULL))
+                    if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64, "0x%I64X",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
                     appendStr(out,str);
                     dataPtr +=8;
@@ -2733,7 +2733,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 float df = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optmizier will
                 // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
-                if((*(ULONG*)&df == MDDV.m_ulValue)&&(strchr(szf,'#') == NULL))
+                if((*(ULONG*)&df == MDDV.m_ulValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float32"),szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%08X)",KEYWORD("float32"),MDDV.m_ulValue);
@@ -2748,7 +2748,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 szf[31]=0;
                 // Must compare as underlying bytes, not floating point otherwise optmizier will
                 // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
-                if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&(strchr(szf,'#') == NULL))
+                if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float64"),szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), " = %s(0x%I64X) // %s",KEYWORD("float64"),MDDV.m_ullValue,szf);
