@@ -4691,6 +4691,20 @@ bool                GenTree::OperMayThrow()
 
         return true;
 
+    case GT_INTRINSIC:
+        // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
+        // Report it as may throw.
+        // Note: Some of the rest of the existing intrinsics could potentially throw an exception (for example
+        //       the array and string element access ones). They are handled differently than the GetType intrinsic
+        //       and are not marked with GTF_EXCEPT. If these are revisited at some point to be marked as GTF_EXCEPT, 
+        //       the code below might need to be specialized to handle them properly.
+        if ((this->gtFlags & GTF_EXCEPT) != 0)
+        {
+            return true;
+        }
+
+        break;
+
     case GT_ARR_BOUNDS_CHECK:
     case GT_ARR_ELEM:
     case GT_ARR_INDEX:
