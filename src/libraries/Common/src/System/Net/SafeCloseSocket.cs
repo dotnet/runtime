@@ -96,7 +96,7 @@ namespace System.Net.Sockets
             SafeCloseSocket ret = new SafeCloseSocket();
             CreateSocket(socket, ret);
 
-            GlobalLog.Print("SafeCloseSocket#" + Logging.HashString(ret) + "::CreateSocket()");
+            GlobalLog.Print("SafeCloseSocket#" + LoggingHash.HashString(ret) + "::CreateSocket()");
 
             return ret;
         }
@@ -139,8 +139,8 @@ namespace System.Net.Sockets
         protected override bool ReleaseHandle()
         {
             GlobalLog.Print(
-                "SafeCloseSocket#" + Logging.HashString(this) + "::ReleaseHandle() m_InnerSocket=" +
-                _innerSocket == null ? "null" : Logging.HashString(_innerSocket));
+                "SafeCloseSocket#" + LoggingHash.HashString(this) + "::ReleaseHandle() m_InnerSocket=" +
+                _innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket));
 
             _released = true;
             InnerSafeCloseSocket innerSocket = _innerSocket == null ? null : Interlocked.Exchange<InnerSafeCloseSocket>(ref _innerSocket, null);
@@ -163,8 +163,8 @@ namespace System.Net.Sockets
         internal void CloseAsIs()
         {
             GlobalLog.Print(
-                "SafeCloseSocket#" + Logging.HashString(this) + "::CloseAsIs() m_InnerSocket=" +
-                _innerSocket == null ? "null" : Logging.HashString(_innerSocket));
+                "SafeCloseSocket#" + LoggingHash.HashString(this) + "::CloseAsIs() m_InnerSocket=" +
+                _innerSocket == null ? "null" : LoggingHash.HashString(_innerSocket));
 
 #if DEBUG
             // If this throws it could be very bad.

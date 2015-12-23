@@ -93,7 +93,7 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("CertificateValidationPal.Windows SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()");
+            GlobalLog.Enter("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
@@ -114,12 +114,12 @@ namespace System.Net
                 }
             }
 
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
+                SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
             }
 
-            GlobalLog.Leave("CertificateValidationPal.Windows SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
 
             return result;
         }
@@ -162,7 +162,7 @@ namespace System.Net
 
                                 X500DistinguishedName x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
-                                GlobalLog.Print("SecureChannel#" + Logging.HashString(securityContext) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
+                                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
                             }
                         }
                     }
@@ -231,9 +231,9 @@ namespace System.Net
                                 return null;
                             }
 
-                            if (Logging.On)
+                            if (NetEventSource.Log.IsEnabled())
                             {
-                                Logging.PrintError(Logging.Web, SR.Format(SR.net_log_open_store_failed, storeLocation, exception));
+                                NetEventSource.PrintError(NetEventSource.ComponentType.Security, SR.Format(SR.net_log_open_store_failed, storeLocation, exception));
                             }
 
                             throw;

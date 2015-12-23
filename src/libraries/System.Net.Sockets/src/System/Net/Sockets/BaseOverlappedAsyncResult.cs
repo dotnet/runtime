@@ -30,7 +30,7 @@ namespace System.Net.Sockets
         internal unsafe SocketError CheckAsyncCallOverlappedResult(SocketError errorCode)
         {
             GlobalLog.Print(
-                "BaseOverlappedAsyncResult#" + Logging.HashString(this) +
+                "BaseOverlappedAsyncResult#" + LoggingHash.HashString(this) +
                 "::CheckAsyncCallOverlappedResult(" + errorCode.ToString() + ")");
 
             if (errorCode == SocketError.Success || errorCode == SocketError.IOPending)

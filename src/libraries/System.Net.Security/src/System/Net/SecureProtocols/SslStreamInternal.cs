@@ -488,7 +488,7 @@ namespace System.Net.Security
             // ERROR - examine what kind
             ProtocolToken message = new ProtocolToken(null, errorCode);
 
-            GlobalLog.Print("SecureChannel#" + Logging.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
+            GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
 
             if (message.Renegotiate)
             {

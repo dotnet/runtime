@@ -137,7 +137,7 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + Logging.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
+                GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
                 resultSize = 0;
             }
             else

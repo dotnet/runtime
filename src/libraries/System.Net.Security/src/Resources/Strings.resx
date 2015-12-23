@@ -219,76 +219,76 @@
   <data name="net_log_exception" xml:space="preserve">
     <value>Exception in {0}::{1} - {2}.</value>
   </data>
-  <data name="net_log_sspi_enumerating_security_packages" xml:space="preserve">
+  <data name="event_EnumerateSecurityPackages" xml:space="preserve">
     <value>Enumerating security packages:</value>
   </data>
-  <data name="net_log_sspi_security_package_not_found" xml:space="preserve">
+  <data name="event_SspiPackageNotFound" xml:space="preserve">
     <value>Security package '{0}' was not found.</value>
   </data>
-  <data name="net_log_sspi_security_context_input_buffer" xml:space="preserve">
+  <data name="event_SecurityContextInputBuffer" xml:space="preserve">
     <value>{0}(In-Buffer length={1}, Out-Buffer length={2}, returned code={3}).</value>
   </data>
-  <data name="net_log_sspi_security_context_input_buffers" xml:space="preserve">
+  <data name="event_SecurityContextInputBuffers" xml:space="preserve">
     <value>{0}(In-Buffers count={1}, Out-Buffer length={2}, returned code={3}).</value>
   </data>
-  <data name="net_log_sspi_selected_cipher_suite" xml:space="preserve">
+  <data name="event_SspiSelectedCipherSuite" xml:space="preserve">
     <value>{0}(Protocol={1}, Cipher={2} {3} bit strength, Hash={4} {5} bit strength, Key Exchange={6} {7} bit strength).</value>
   </data>
-  <data name="net_log_remote_certificate" xml:space="preserve">
+  <data name="event_RemoteCertificate" xml:space="preserve">
     <value>Remote certificate: {0}.</value>
   </data>
-  <data name="net_log_locating_private_key_for_certificate" xml:space="preserve">
+  <data name="event_LocatingPrivateKey" xml:space="preserve">
     <value>Locating the private key for the certificate: {0}.</value>
   </data>
-  <data name="net_log_cert_is_of_type_2" xml:space="preserve">
+  <data name="event_CertIsType2" xml:space="preserve">
     <value>Certificate is of type X509Certificate2 and contains the private key.</value>
   </data>
-  <data name="net_log_found_cert_in_store" xml:space="preserve">
+  <data name="event_FoundCertInStore" xml:space="preserve">
     <value>Found the certificate in the {0} store.</value>
   </data>
-  <data name="net_log_did_not_find_cert_in_store" xml:space="preserve">
+  <data name="event_NotFoundCertInStore" xml:space="preserve">
     <value>Cannot find the certificate in either the LocalMachine store or the CurrentUser store.</value>
   </data>
   <data name="net_log_open_store_failed" xml:space="preserve">
     <value>Opening Certificate store {0} failed, exception: {1}.</value>
   </data>
-  <data name="net_log_got_certificate_from_delegate" xml:space="preserve">
+  <data name="event_CertificateFromDelegate" xml:space="preserve">
     <value>Got a certificate from the client delegate.</value>
   </data>
-  <data name="net_log_no_delegate_and_have_no_client_cert" xml:space="preserve">
+  <data name="event_NoDelegateNoClientCert" xml:space="preserve">
     <value>Client delegate did not provide a certificate; and there are not other user-provided certificates. Need to attempt a session restart.</value>
   </data>
-  <data name="net_log_no_delegate_but_have_client_cert" xml:space="preserve">
+  <data name="event_NoDelegateButClientCert" xml:space="preserve">
     <value>Client delegate did not provide a certificate; but there are other user-provided certificates.</value>
   </data>
-  <data name="net_log_attempting_restart_using_cert" xml:space="preserve">
+  <data name="event_AttemptingRestartUsingCert" xml:space="preserve">
     <value>Attempting to restart the session using the user-provided certificate: {0}.</value>
   </data>
-  <data name="net_log_no_issuers_try_all_certs" xml:space="preserve">
+  <data name="event_NoIssuersTryAllCerts" xml:space="preserve">
     <value>We have user-provided certificates. The server has not specified any issuers, so try all the certificates.</value>
   </data>
-  <data name="net_log_server_issuers_look_for_matching_certs" xml:space="preserve">
+  <data name="event_LookForMatchingCerts" xml:space="preserve">
     <value>We have user-provided certificates. The server has specified {0} issuer(s). Looking for certificates that match any of the issuers.</value>
   </data>
-  <data name="net_log_selected_cert" xml:space="preserve">
+  <data name="event_SelectedCert" xml:space="preserve">
     <value>Selected certificate: {0}.</value>
   </data>
-  <data name="net_log_n_certs_after_filtering" xml:space="preserve">
+  <data name="event_CertsAfterFiltering" xml:space="preserve">
     <value>Left with {0} client certificates to choose from.</value>
   </data>
-  <data name="net_log_finding_matching_certs" xml:space="preserve">
+  <data name="event_FindingMatchingCerts" xml:space="preserve">
     <value>Trying to find a matching certificate in the certificate store.</value>
   </data>
-  <data name="net_log_using_cached_credential" xml:space="preserve">
+  <data name="event_UsingCachedCredential" xml:space="preserve">
     <value>Using the cached credential handle.</value>
   </data>
-  <data name="net_log_remote_cert_user_declared_valid" xml:space="preserve">
+  <data name="event_RemoteCertDeclaredValid" xml:space="preserve">
     <value>Remote certificate was verified as valid by the user.</value>
   </data>
-  <data name="net_log_remote_cert_user_declared_invalid" xml:space="preserve">
+  <data name="event_RemoteCertUserDeclaredInvalid" xml:space="preserve">
     <value>Remote certificate was verified as invalid by the user.</value>
   </data>
-  <data name="net_log_remote_cert_has_no_errors" xml:space="preserve">
+  <data name="event_RemoteCertHasNoErrors" xml:space="preserve">
     <value>Remote certificate has no errors.</value>
   </data>
   <data name="net_log_remote_cert_has_errors" xml:space="preserve">
@@ -300,7 +300,7 @@
   <data name="net_log_remote_cert_name_mismatch" xml:space="preserve">
     <value>Certificate name mismatch.</value>
   </data>
-  <data name="net_log_operation_returned_something" xml:space="preserve">
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
     <value>{0} returned {1}.</value>
   </data>
   <data name="net_log_operation_failed_with_error" xml:space="preserve">

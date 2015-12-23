@@ -78,7 +78,7 @@ namespace System.Net.Http.Headers
                     return qualityValue;
                 }
                 // If the stored value is an invalid quality value, just return null and log a warning. 
-                if (Logging.On) Logging.PrintError(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_invalid_quality, qualityParameter.Value));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_invalid_quality, qualityParameter.Value));
             }
             return null;
         }
@@ -306,7 +306,7 @@ namespace System.Net.Http.Headers
             }
             catch (FormatException e)
             {
-                if (Logging.On) Logging.PrintError(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_wrong_email_format, value, e.Message));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_wrong_email_format, value, e.Message));
             }
             return false;
         }

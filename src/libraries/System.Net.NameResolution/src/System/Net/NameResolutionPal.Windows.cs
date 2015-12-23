@@ -157,7 +157,7 @@ namespace System.Net
                 if (IPAddress.TryParse(hostName, out address))
                 {
                     IPHostEntry ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
-                    if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "GetHostByName", ipHostEntry);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", ipHostEntry);
                     return ipHostEntry;
                 }
 

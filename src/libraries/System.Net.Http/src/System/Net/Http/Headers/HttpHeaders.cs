@@ -813,7 +813,7 @@ namespace System.Net.Http.Headers
                 {
                     if (!TryParseAndAddRawHeaderValue(name, info, rawValue, true))
                     {
-                        if (Logging.On) Logging.PrintWarning(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_invalid_value, name, rawValue));
+                        if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Log.HeadersInvalidValue(name, rawValue);
                     }
                 }
             }
@@ -835,7 +835,7 @@ namespace System.Net.Http.Headers
             {
                 if (!TryParseAndAddRawHeaderValue(name, info, rawValue, true))
                 {
-                    if (Logging.On) Logging.PrintWarning(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_invalid_value, name, rawValue));
+                    if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Log.HeadersInvalidValue(name, rawValue);
                 }
             }
         }
@@ -1169,7 +1169,7 @@ namespace System.Net.Http.Headers
         {
             if (HttpRuleParser.ContainsInvalidNewLine(value))
             {
-                if (Logging.On) Logging.PrintError(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_no_newlines, name, value));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_headers_no_newlines, name, value));
                 return true;
             }
             return false;
