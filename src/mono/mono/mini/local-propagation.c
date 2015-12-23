@@ -167,8 +167,7 @@ mono_local_cprop (MonoCompile *cfg)
 	gint32 *def_index;
 	int max;
 	int filter = FILTER_IL_SEQ_POINT;
-
-restart:
+	int initial_max_vregs = cfg->next_vreg;
 
 	max = cfg->next_vreg;
 	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
@@ -393,8 +392,23 @@ restart:
 			}
 
 			/* Do strength reduction here */
-			if (mono_strength_reduction_ins (cfg, bb, ins, &spec))
-				goto restart;
+			if (mono_strength_reduction_ins (cfg, bb, ins, &spec) && max < cfg->next_vreg) {
+				MonoInst **defs_prev = defs;
+				gint32 *def_index_prev = def_index;
+				guint32 prev_max = max;
+				guint32 additional_vregs = cfg->next_vreg - initial_max_vregs;
+
+				/* We have more vregs so we need to reallocate defs and def_index arrays */
+				max  = initial_max_vregs + additional_vregs * 2;
+				defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * max);
+				def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * max);
+
+				/* Keep the entries for the previous vregs, zero the rest */
+				memcpy (defs, defs_prev, sizeof (MonoInst*) * prev_max);
+				memset (defs + prev_max, 0, sizeof (MonoInst*) * (max - prev_max));
+				memcpy (def_index, def_index_prev, sizeof (guint32) * prev_max);
+				memset (def_index + prev_max, 0, sizeof (guint32) * (max - prev_max));
+			}
 
 			if (spec [MONO_INST_DEST] != ' ') {
 				MonoInst *def = defs [ins->dreg];
