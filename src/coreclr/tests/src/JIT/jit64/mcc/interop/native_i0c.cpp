@@ -8,8 +8,8 @@
 MCC_API VType0 __cdecl sum(unsigned __int64 first, ...) {
     VType0 result;
 
-    unsigned int count = 0;
-    unsigned __int64 sum = 0;
+    int count = 0;
+    __int64 sum = 0;
     unsigned __int64 val = first;
     va_list args;
 
