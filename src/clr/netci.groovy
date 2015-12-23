@@ -105,7 +105,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                 case 'Windows_NT':
                     // Set up a private trigger
                     Utilities.addPrivateGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${architecture}\\W+${osGroup}.*", ['Microsoft*dotnet-coreclr', 'Microsoft*dotnet-corefx'], null)
+                        "(?i).*test\\W+${architecture}\\W+${osGroup}.*", null, ['jashook', 'RussKeldorph', 'gkhanna79', 'briansul', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard'])
                     break
             }
             break
