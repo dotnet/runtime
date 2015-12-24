@@ -21,7 +21,6 @@
 .assembly b21220
 {
   .custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) 
-  .permissionset reqrefuse = {[mscorlib]System.Security.Permissions.PermissionSetAttribute = {property string 'Name' = string('SkipVerification')}}
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }

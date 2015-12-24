@@ -11,7 +11,6 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly heap_ovf.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public			heap_ovf {

@@ -16,7 +16,6 @@
   //                                                                                  bool) = ( 01 00 00 01 00 00 ) 
   
   
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'refloc_o.exe'
 // MVID: {3CF0A869-1266-4091-97CF-DEFA0C36E038}

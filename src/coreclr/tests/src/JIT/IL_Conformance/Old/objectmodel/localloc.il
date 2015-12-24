@@ -10,7 +10,6 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly localloc.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public			_localloc {
