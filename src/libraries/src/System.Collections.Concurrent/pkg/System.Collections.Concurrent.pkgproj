@@ -8,6 +8,7 @@
     <ProjectReference Include="..\ref\System.Collections.Concurrent.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
+    <!-- reference .CSProj rather than .builds since we don't need the desktop facade -->
     <ProjectReference Include="..\src\System.Collections.Concurrent.csproj"/>
 
     <InboxOnTargetFramework Include="MonoAndroid10" />
