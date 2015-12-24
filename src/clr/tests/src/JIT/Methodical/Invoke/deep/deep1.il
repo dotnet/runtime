@@ -13,7 +13,6 @@
 }
 .assembly 'deep'// as "deep"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'deep.exe'
 // MVID: {AA806490-3696-4693-BEEE-68E449C58639}

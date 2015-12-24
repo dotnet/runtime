@@ -9,7 +9,6 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly 'ldobj' {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
                         }
 
 

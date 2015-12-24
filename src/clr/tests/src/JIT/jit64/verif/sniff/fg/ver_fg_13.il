@@ -13,8 +13,6 @@
 .assembly test 
 {
   .custom instance void [mscorlib]System.Security.AllowPartiallyTrustedCallersAttribute::.ctor() = ( 01 00 01 00 00 ) 
-//  .permissionset reqrefuse
-//             = {[mscorlib]System.Security.Permissions.PermissionSetAttribute = {property string 'Name' = string('SkipVerification')}}
 
 }
 

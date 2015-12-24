@@ -8,13 +8,6 @@
 
 .assembly 'test' {
   .custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 02 00 00 )  .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 )
-	.permissionset reqrefuse =
-	{
-		[mscorlib]System.Security.Permissions.SecurityPermissionAttribute =
-		{
-			property bool 'SkipVerification' = bool(true)
-		}
-	}
 }
 
 .method public static int32 Main()
