@@ -53,13 +53,13 @@
     <ClCompile Include="..\gccommon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\env\gcenv.windows.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\env\common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gcenv.cpp">
+    <ClCompile Include="gcenv.ee.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gcenv.windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

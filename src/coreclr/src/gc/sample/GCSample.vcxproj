@@ -83,7 +83,8 @@
     <ClInclude Include="gcenv.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gcenv.cpp" />
+    <ClCompile Include="gcenv.ee.cpp" />
+    <ClCompile Include="gcenv.windows.cpp" />
     <ClCompile Include="GCSample.cpp" />
     <ClCompile Include="..\gccommon.cpp" />
     <ClCompile Include="..\gceewks.cpp" />
@@ -94,7 +95,6 @@
     <ClCompile Include="..\handletablecore.cpp" />
     <ClCompile Include="..\handletablescan.cpp" />
     <ClCompile Include="..\objecthandle.cpp" />
-    <ClCompile Include="..\env\gcenv.windows.cpp" />
     <ClCompile Include="..\env\common.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

@@ -652,14 +652,14 @@ public:
     }
 #endif
 
-    void SetThreadId()
+    void SetToCurrentThread()
     {
         WRAPPER_NO_CONTRACT;
 
         m_FiberPtrId = ClrTeb::GetFiberPtrId();
     }
 
-    BOOL IsSameThread() const
+    bool IsCurrentThread() const
     {
         WRAPPER_NO_CONTRACT;
 
@@ -668,13 +668,13 @@ public:
 
     
 #ifdef _DEBUG
-    BOOL IsUnknown() const
+    bool IsUnknown() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_FiberPtrId == NULL;
     }
 #endif
-    void ResetThreadId()
+    void Clear()
     {
         LIMITED_METHOD_CONTRACT;
         m_FiberPtrId = NULL;

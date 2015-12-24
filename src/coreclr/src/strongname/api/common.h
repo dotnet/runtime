@@ -270,6 +270,9 @@ namespace Loader
 #if STRONGNAME_IN_VM
 
 // src/vm
+#include "gcenv.interlocked.h"
+#include "gcenv.interlocked.inl"
+
 #include "util.hpp"
 #include "ibclogger.h"
 #include "eepolicy.h"
