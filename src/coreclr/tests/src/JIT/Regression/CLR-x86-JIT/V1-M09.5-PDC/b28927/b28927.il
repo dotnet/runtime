@@ -18,7 +18,6 @@
 }
 .assembly b14777
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 
 }
 .class public _ldtoken 

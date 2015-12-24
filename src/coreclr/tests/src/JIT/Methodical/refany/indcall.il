@@ -12,7 +12,6 @@
 {
 
   
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'bug.exe'
 .namespace JitTest

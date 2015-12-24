@@ -6,7 +6,6 @@
 
 
 .assembly ldloc_stloc.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public value sealed vclass{

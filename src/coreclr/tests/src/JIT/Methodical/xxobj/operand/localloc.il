@@ -6,7 +6,6 @@
 }
 .assembly extern mscorlib { }
 .assembly 'localloc' {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .namespace JitTest
 {
