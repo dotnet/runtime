@@ -346,7 +346,11 @@ namespace System.Collections.Generic {
             for (int i = buckets[targetBucket]; i >= 0; i = entries[i].next) {
                 if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key)) {
                     if (add) { 
+#if FEATURE_CORECLR
+                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+#else
                         ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AddingDuplicate);
+#endif
                     }
                     entries[i].value = value;
                     version++;
