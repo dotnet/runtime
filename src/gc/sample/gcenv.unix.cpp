@@ -115,6 +115,7 @@ void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
     }
 }
 
+#if 0
 void CLREventStatic::CreateManualEvent(bool bInitialState)
 {
     // TODO: Implement
@@ -195,6 +196,12 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     }
 
     return result;
+}
+#endif // 0
+
+void DestroyThread(Thread * pThread)
+{
+    // TODO: implement
 }
 
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
@@ -328,6 +335,7 @@ int32_t g_TrapReturningThreads;
 
 bool g_fFinalizerRunOnShutDown;
 
+#if 0
 #ifdef _MSC_VER
 __declspec(thread)
 #else
@@ -361,10 +369,46 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pThread->m_pNext = g_pThreadList;
     g_pThreadList = pThread;
 }
-
+#endif // 0
 void DestroyThread(Thread * pThread)
 {
     // TODO: Implement
+}
+
+#if 0 
+void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
+{
+    GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
+
+    // TODO: Implement
+}
+
+void GCToEEInterface::RestartEE(bool bFinishedGC)
+{
+    // TODO: Implement
+
+    GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
+}
+
+void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+{
+    // TODO: Implement - Scan stack roots
+}
+
+void GCToEEInterface::GcStartWork(int condemned, int max_gen)
+{
+}
+
+void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
+{
+}
+
+void GCToEEInterface::GcBeforeBGCSweepWork()
+{
+}
+
+void GCToEEInterface::GcDone(int condemned)
+{
 }
 
 void FinalizerThread::EnableFinalization()
@@ -372,6 +416,20 @@ void FinalizerThread::EnableFinalization()
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization
 }
+
+bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
+{
+    // TODO: Implement for background GC
+    return false;
+}
+
+bool IsGCSpecialThread()
+{
+    // TODO: Implement for background GC
+    return false;
+}
+
+#endif // 0
 
 bool PalHasCapability(PalCapability capability)
 {
@@ -423,14 +481,6 @@ VirtualUnlock(
     return false;
 }
 
-
-WINBASEAPI
-VOID
-WINAPI
-FlushProcessWriteBuffers()
-{
-    // TODO: Implement
-}
 
 const int tccSecondsToMillieSeconds = 1000;
 const int tccSecondsToMicroSeconds = 1000000;

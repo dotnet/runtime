@@ -67,7 +67,7 @@ inline void* HndInterlockedCompareExchangeHandle(OBJECTHANDLE handle, OBJECTREF 
 
     // store the pointer
     
-    void* ret = FastInterlockCompareExchangePointer(reinterpret_cast<_UNCHECKED_OBJECTREF volatile*>(handle), value, oldValue);
+    void* ret = Interlocked::CompareExchangePointer(reinterpret_cast<_UNCHECKED_OBJECTREF volatile*>(handle), value, oldValue);
 
     if (ret == oldValue)
         HndLogSetEvent(handle, value);
@@ -101,7 +101,7 @@ inline BOOL HndFirstAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     _UNCHECKED_OBJECTREF null = NULL;
 
     // store the pointer if we are the first ones here
-    BOOL success = (NULL == FastInterlockCompareExchangePointer(reinterpret_cast<_UNCHECKED_OBJECTREF volatile*>(handle),
+    BOOL success = (NULL == Interlocked::CompareExchangePointer(reinterpret_cast<_UNCHECKED_OBJECTREF volatile*>(handle),
                                                                 value,
                                                                 null));
 

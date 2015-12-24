@@ -22,7 +22,7 @@
 
 #include <new>
 
-#ifndef WIN32
+#ifdef PLATFORM_UNIX
 #include <pthread.h>
 #endif
 

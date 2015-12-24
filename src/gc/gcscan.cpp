@@ -270,13 +270,13 @@ void GCScan::GcRuntimeStructuresValid (BOOL bValid)
     if (!bValid)
     {
         int32_t result;
-        result = FastInterlockIncrement ((LONG*)&m_GcStructuresInvalidCnt);
+        result = Interlocked::Increment (&m_GcStructuresInvalidCnt);
         _ASSERTE (result > 0);
     }
     else
     {
         int32_t result;
-        result = FastInterlockDecrement ((LONG*)&m_GcStructuresInvalidCnt);
+        result = Interlocked::Decrement (&m_GcStructuresInvalidCnt);
         _ASSERTE (result >= 0);
     }
 }

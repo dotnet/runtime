@@ -195,7 +195,8 @@ set(VM_SOURCES_WKS
     finalizerthread.cpp
     frameworkexceptionloader.cpp
     gccover.cpp
-    gcenv.cpp
+    gcenv.ee.cpp
+    gcenv.os.cpp
     gchelpers.cpp
     genmeth.cpp
     ../gc/gceesvr.cpp
