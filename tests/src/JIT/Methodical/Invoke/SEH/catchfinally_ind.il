@@ -13,7 +13,6 @@
 }
 .assembly 'catchfinally'// as "catchfinally"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'catchfinally.exe'
 // MVID: {15FE650F-7944-4B46-86D7-2ECCFDC924C2}

@@ -18,7 +18,6 @@
   //                                                                                  bool) = ( 01 00 00 01 00 00 ) 
   
   
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'objref.exe'
 // MVID: {4F6CDA4F-13A9-40C8-ADF8-98FBBEF21260}

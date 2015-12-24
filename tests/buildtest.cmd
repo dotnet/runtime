@@ -51,6 +51,7 @@ if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=Debug
 if not defined __BuildOS set __BuildOS=Windows_NT
 
+set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 :: We have different managed and native intermediate dirs because the managed bits will include
 :: the configuration information deeper in the intermediates path.

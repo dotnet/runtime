@@ -17,7 +17,6 @@
 }
 .assembly jumps // as "jumps"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
                         }
 .module jumps.exe
 .namespace MS

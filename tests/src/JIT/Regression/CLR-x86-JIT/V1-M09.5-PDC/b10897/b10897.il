@@ -9,7 +9,6 @@
 }
 .assembly b10897
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 // ----------------------------------
