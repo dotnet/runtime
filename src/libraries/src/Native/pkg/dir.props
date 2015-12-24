@@ -1,0 +1,13 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- common properties that point to output of native build.  Can be overriden in case of 
+         a coordinating build that produces all packages from OS-specific native builds -->
+    <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)native</BuildNativePath>
+    <CentOSNativePath Condition="'$(CentOSNativePath)' == ''">$(BuildNativePath)</CentOSNativePath>
+    <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
+    <UbuntuNativePath Condition="'$(UbuntuNativePath)' == ''">$(BuildNativePath)</UbuntuNativePath>
+
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+  </PropertyGroup>
+</Project>
