@@ -53,6 +53,12 @@ namespace System {
             throw new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), "value");
         }
 
+#if FEATURE_CORECLR
+        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key) {
+            throw new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicateWithKey", key));
+        }
+#endif
+
         internal static void ThrowKeyNotFoundException() {
             throw new System.Collections.Generic.KeyNotFoundException();
         }
