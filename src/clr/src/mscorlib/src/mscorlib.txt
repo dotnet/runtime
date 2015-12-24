@@ -121,6 +121,9 @@ Access_Void = Cannot create an instance of void.
 Arg_TypedReference_Null = The TypedReference must be initialized.
 Argument_AddingDuplicate__ = Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'
 Argument_AddingDuplicate = An item with the same key has already been added.
+#if FEATURE_CORECLR
+Argument_AddingDuplicateWithKey = An item with the same key has already been added. Key: {0}
+#endif // FEATURE_CORECLR
 Argument_MethodDeclaringTypeGenericLcg = Method '{0}' has a generic declaring type '{1}'. Explicitly provide the declaring type to GetTokenFor. 
 Argument_MethodDeclaringTypeGeneric = Cannot resolve method {0} because the declaring type of the method handle {1} is generic. Explicitly provide the declaring type to GetMethodFromHandle. 
 Argument_FieldDeclaringTypeGeneric = Cannot resolve field {0} because the declaring type of the field handle {1} is generic. Explicitly provide the declaring type to GetFieldFromHandle.
