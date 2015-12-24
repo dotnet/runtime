@@ -7,7 +7,8 @@
             $(Clrbase)\src\inc;
             $(Clrbase)\src\md\inc;
             $(Clrbase)\src\md\compiler;
-            $(Clrbase)\src\vm
+            $(Clrbase)\src\vm;
+            $(Clrbase)\src\gc\env
         </UserIncludes>
 
         <UserIncludes Condition="'$(StrongnameInVm)' == 'true'">
