@@ -3178,7 +3178,8 @@ dnl
 SGEN_DEFINES=
 AC_ARG_WITH(sgen, [  --with-sgen=yes,no             Extra Generational GC, default=yes],[buildsgen=$with_sgen],[buildsgen=yes])
 if test x$buildsgen = xyes; then
-   SGEN_DEFINES="-DHAVE_SGEN_GC -DHAVE_MOVING_COLLECTOR"
+   AC_DEFINE(HAVE_MOVING_COLLECTOR, 1, [Moving collector])
+   SGEN_DEFINES="-DHAVE_SGEN_GC"
    gc_msg="sgen and $gc_msg"
 fi
 AC_SUBST(SGEN_DEFINES)
