@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
+    <ProjectReference Include="..\src\System.Reflection.Metadata.builds">
       <SupportedFramework>net45;netcore45;dnxcore50;wpa81</SupportedFramework>
     </ProjectReference>
     <!-- Support targets that were supported in previous package versions -->
-    <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
+    <ProjectReference Include="..\src\System.Reflection.Metadata.builds">
       <PackageTargetPath>lib/portable-net45+win8</PackageTargetPath>
       <PackageTargetFramework>portable-net45+win8</PackageTargetFramework>
     </ProjectReference>
