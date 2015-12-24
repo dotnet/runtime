@@ -680,8 +680,8 @@ DWORD Thread::StartThread()
 
     DWORD dwRetVal = (DWORD) -1;
 #ifdef _DEBUG
-    _ASSERTE (m_Creater.IsSameThread());
-    m_Creater.ResetThreadId();
+    _ASSERTE (m_Creater.IsCurrentThread());
+    m_Creater.Clear();
 #endif
 #ifdef FEATURE_INCLUDE_ALL_INTERFACES
     HostComHolder<IHostTask> pHostTask(GetHostTaskWithAddRef());
@@ -1922,7 +1922,7 @@ Thread::Thread()
 #ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
     dbg_m_cSuspendedThreadsWithoutOSLock = 0;
-    m_Creater.ResetThreadId();
+    m_Creater.Clear();
     m_dwUnbreakableLockCount = 0;
 #endif
 
@@ -3132,7 +3132,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     FastInterlockIncrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
 
 #ifdef _DEBUG
-    m_Creater.SetThreadId();
+    m_Creater.SetToCurrentThread();
 #endif
 
     return TRUE;
@@ -3188,7 +3188,7 @@ BOOL Thread::CreateNewHostTask(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, v
     FastInterlockIncrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
 
 #ifdef _DEBUG
-    m_Creater.SetThreadId();
+    m_Creater.SetToCurrentThread();
 #endif
 
     return TRUE;
@@ -11202,7 +11202,7 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
     }
     else
     {
-        return (s_pThreadStore->m_holderthreadid.IsSameThread());
+        return (s_pThreadStore->m_holderthreadid.IsCurrentThread());
     }
 }
 

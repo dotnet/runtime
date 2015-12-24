@@ -288,7 +288,6 @@ namespace Loader
     } LoadFlag;
 }
 
-
 // src/inc
 #include "utilcode.h"
 #include "log.h"
@@ -297,6 +296,9 @@ namespace Loader
 #include "lazycow.h"
 
 // src/vm
+#include "gcenv.interlocked.h"
+#include "gcenv.interlocked.inl"
+
 #include "util.hpp"
 #include "ibclogger.h"
 #include "eepolicy.h"

@@ -177,4 +177,3 @@ install (TARGETS coreclr DESTINATION .)
 if(WIN32)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb DESTINATION PDB)
 endif(WIN32)
-

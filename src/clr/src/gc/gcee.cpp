@@ -379,15 +379,11 @@ size_t GCHeap::GetLastGCDuration(int generation)
     return dd_gc_elapsed_time (hp->dynamic_data_of (generation));
 }
 
+size_t GetHighPrecisionTimeStamp();
+
 size_t GCHeap::GetNow()
 {
-#ifdef MULTIPLE_HEAPS
-    gc_heap* hp = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return hp->get_time_now();
+    return GetHighPrecisionTimeStamp();
 }
 
 #if defined(GC_PROFILING) //UNIXTODO: Enable this for FEATURE_EVENT_TRACE
