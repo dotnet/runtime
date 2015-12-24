@@ -1,16 +1,13 @@
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
-  <Import Project="BuildValues.props" />
 
   <ItemGroup>
-    <Project Include="*\ref\**\*.*proj" Exclude="@(ExcludeProjects)" />
-    <Project Include="*\src\*.builds" Exclude="@(ExcludeProjects)" />
-    <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)" />
-    <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
+    <Project Include="ref.builds" />
+    <Project Include="src.builds" />
+    <Project Include="tests.builds" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
-
   <Import Project="..\dir.traversal.targets" />
 
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
