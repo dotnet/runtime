@@ -9,7 +9,10 @@
 
   <ItemGroup>
     <Project Include="src\dirs.proj" />
-    <Project Include="src\packages.builds" />
+    <Project Include="src\packages.builds">
+      <!-- When we do a traversal build we build all libraries prior to building packages -->
+      <AdditionalProperties>BuildPackageLibraryReferences=false</AdditionalProperties>
+    </Project>
     <Project Include="src\post.msbuild" />
   </ItemGroup>
 

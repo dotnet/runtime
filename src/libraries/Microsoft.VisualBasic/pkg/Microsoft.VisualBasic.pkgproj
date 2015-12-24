@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\Microsoft.VisualBasic.csproj">
       <SupportedFramework>net45;netcore45;dnxcore50;wpa81</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\Microsoft.VisualBasic.vbproj" />
+    <ProjectReference Include="..\src\Microsoft.VisualBasic.builds" />
     
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>

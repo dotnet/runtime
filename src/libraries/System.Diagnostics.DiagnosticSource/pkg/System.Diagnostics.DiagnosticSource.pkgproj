@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.builds">
       <SupportedFramework>net45;netcore45;dnxcore50;wpa81</SupportedFramework>
     </ProjectReference>
     <!-- Support downlevel targets -->
-    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.builds">
       <PackageTargetPath>lib/portable-net45+win8+wpa81</PackageTargetPath>
       <PackageTargetFramework>portable-net45+win8+wpa81</PackageTargetFramework>
     </ProjectReference>
