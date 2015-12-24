@@ -291,7 +291,8 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	gboolean first = TRUE, first_non_hidden = TRUE;
 	MonoDebugSourceLocation *location;
 
-	g_assert (method->token);
+	if (!method->token)
+		return NULL;
 
 	idx = mono_metadata_token_index (method->token);
 
