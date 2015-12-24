@@ -87,13 +87,13 @@ boehm_static_libraries = libmini-static.la $(boehm_static_libs)
 boehm_binaries  = mono-boehm
 endif
 
-# The mono executable uses sgen, while libmono remains boehm
 if SUPPORT_SGEN
 mono_bin_suffix = sgen
+libmono_suffix = sgen
 else
 mono_bin_suffix = boehm
-endif
 libmono_suffix = boehm
+endif
 
 if DISABLE_EXECUTABLES
 else
