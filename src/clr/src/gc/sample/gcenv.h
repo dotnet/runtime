@@ -28,8 +28,6 @@ typedef wchar_t WCHAR;
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
 
-#define MAX_LONGPATH 1024
-
 //
 // Thread
 //
