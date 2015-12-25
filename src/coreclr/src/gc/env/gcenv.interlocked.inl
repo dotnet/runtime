@@ -137,7 +137,11 @@ template <typename T>
 __forceinline T Interlocked::ExchangePointer(T volatile * destination, T value)
 {
 #ifdef _MSC_VER
+#ifdef BIT64
     return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+#else
+    return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
+#endif
 #else
     return (T)(TADDR)__sync_swap((void* volatile *)destination, value);
 #endif
@@ -147,7 +151,11 @@ template <typename T>
 __forceinline T Interlocked::ExchangePointer(T volatile * destination, std::nullptr_t value)
 {
 #ifdef _MSC_VER
+#ifdef BIT64
     return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+#else
+    return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
+#endif
 #else
     return (T)(TADDR)__sync_swap((void* volatile *)destination, value);
 #endif
@@ -165,7 +173,11 @@ template <typename T>
 __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T exchange, T comparand)
 {
 #ifdef _MSC_VER
+#ifdef BIT64
     return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, exchange, comparand);
+#else
+    return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
+#endif
 #else
     return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
 #endif
@@ -175,7 +187,11 @@ template <typename T>
 __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T exchange, std::nullptr_t comparand)
 {
 #ifdef _MSC_VER
+#ifdef BIT64
     return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, exchange, comparand);
+#else
+    return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
+#endif
 #else
     return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
 #endif
