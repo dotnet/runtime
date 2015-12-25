@@ -5064,9 +5064,8 @@ void set_thread_group_affinity_for_heap(int heap_number, GCThreadAffinity* affin
 {
     affinity->Group = GCThreadAffinity::None;
     affinity->Processor = GCThreadAffinity::None;
-    GROUP_AFFINITY ga;
-    uint16_t gn, gpn;
 
+    uint16_t gn, gpn;
     CPUGroupInfo::GetGroupForProcessor((uint16_t)heap_number, &gn, &gpn);
 
     int bit_number = 0;
@@ -5075,8 +5074,8 @@ void set_thread_group_affinity_for_heap(int heap_number, GCThreadAffinity* affin
         if (bit_number == gpn)
         {
             dprintf(3, ("using processor group %d, mask %x%Ix for heap %d\n", gn, mask, heap_number));
-            *affinity->Processor = gpn;
-            *affinity->Group = gn;
+            affinity->Processor = gpn;
+            affinity->Group = gn;
             heap_select::set_cpu_group_for_heap(heap_number, (uint8_t)gn);
             heap_select::set_group_proc_for_heap(heap_number, (uint8_t)gpn);
             if (NumaNodeInfo::CanEnableGCNumaAware())
@@ -5104,8 +5103,8 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
 {
     affinity->Group = GCThreadAffinity::None;
     affinity->Processor = GCThreadAffinity::None;
-    DWORD_PTR pmask, smask;
 
+    uintptr_t pmask, smask;
     if (GCToOSInterface::GetCurrentProcessAffinityMask(&pmask, &smask))
     {
         pmask &= smask;
@@ -5119,7 +5118,6 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
                 {
                     dprintf (3, ("Using processor %d for heap %d\n", proc_number, heap_number));
                     affinity->Processor = proc_number;
-                    SetThreadAffinityMask(gc_thread, mask);
                     heap_select::set_proc_no_for_heap(heap_number, proc_number);
                     if (NumaNodeInfo::CanEnableGCNumaAware())
                     { // have the processor number, find the numa node
