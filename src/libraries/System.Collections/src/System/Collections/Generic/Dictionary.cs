@@ -307,7 +307,7 @@ namespace System.Collections.Generic
                 {
                     if (add)
                     {
-                        throw new ArgumentException(SR.Argument_AddingDuplicate);
+                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                     }
                     entries[i].value = value;
                     version++;

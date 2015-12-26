@@ -977,7 +977,7 @@ namespace System.Collections.Generic
             bool ret = base.AddIfNotPresent(item);
             if (!ret)
             {
-                throw new ArgumentException(SR.Argument_AddingDuplicate);
+                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, item));
             }
             return ret;
         }

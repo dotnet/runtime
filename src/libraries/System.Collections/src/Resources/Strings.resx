@@ -145,7 +145,7 @@
     <value>At least one object must implement IComparable.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added.</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Invalid_Array_Type" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
