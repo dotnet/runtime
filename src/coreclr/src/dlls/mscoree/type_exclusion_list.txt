@@ -18,6 +18,7 @@ _PEB
 _RTL_CRITICAL_SECTION_DEBUG
 _TEB
 _XSTATE_CONTEXT
+_JUMP_BUFFER
 $_s__RTTIBaseClassArray$_extraBytes_4
 $_s__RTTIBaseClassArray$_extraBytes_8
 CVirtualThunks::tagThunkCode
