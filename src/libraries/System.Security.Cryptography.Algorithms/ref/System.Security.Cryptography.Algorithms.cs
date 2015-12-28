@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
     public abstract partial class Aes : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Aes() { }
+        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public static System.Security.Cryptography.Aes Create() { return default(System.Security.Cryptography.Aes); }
     }
     public abstract partial class DeriveBytes : System.IDisposable
@@ -22,7 +24,7 @@ namespace System.Security.Cryptography
     }
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
-        protected ECDsa() {}
+        protected ECDsa() { }
         protected abstract byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
         protected abstract byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
         public virtual byte[] SignData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
@@ -34,36 +36,71 @@ namespace System.Security.Cryptography
         public bool VerifyData(System.IO.Stream data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(bool); }
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
     }
+    public partial class HMACMD5 : System.Security.Cryptography.HMAC
+    {
+        public HMACMD5() { }
+        public HMACMD5(byte[] key) { }
+        public override int HashSize { get { return default(int); } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override byte[] HashFinal() { return default(byte[]); }
+        public override void Initialize() { }
+    }
     public partial class HMACSHA1 : System.Security.Cryptography.HMAC
     {
         public HMACSHA1() { }
         public HMACSHA1(byte[] key) { }
+        public override int HashSize { get { return default(int); } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override byte[] HashFinal() { return default(byte[]); }
+        public override void Initialize() { }
     }
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC
     {
         public HMACSHA256() { }
         public HMACSHA256(byte[] key) { }
+        public override int HashSize { get { return default(int); } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override byte[] HashFinal() { return default(byte[]); }
+        public override void Initialize() { }
     }
     public partial class HMACSHA384 : System.Security.Cryptography.HMAC
     {
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
+        public override int HashSize { get { return default(int); } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override byte[] HashFinal() { return default(byte[]); }
+        public override void Initialize() { }
     }
     public partial class HMACSHA512 : System.Security.Cryptography.HMAC
     {
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
+        public override int HashSize { get { return default(int); } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] rgb, int ib, int cb) { }
+        protected override byte[] HashFinal() { return default(byte[]); }
+        public override void Initialize() { }
     }
-    public sealed partial class IncrementalHash : IDisposable
+    public sealed partial class IncrementalHash : System.IDisposable
     {
-        private IncrementalHash() { }
-        public HashAlgorithmName AlgorithmName { get { return default(HashAlgorithmName); } }
+        internal IncrementalHash() { }
+        public System.Security.Cryptography.HashAlgorithmName AlgorithmName { get { return default(System.Security.Cryptography.HashAlgorithmName); } }
         public void AppendData(byte[] data) { }
         public void AppendData(byte[] data, int offset, int count) { }
-        public byte[] GetHashAndReset() { return default(byte[]); }
+        public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(System.Security.Cryptography.IncrementalHash); }
+        public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { return default(System.Security.Cryptography.IncrementalHash); }
         public void Dispose() { }
-        public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm) { return default(IncrementalHash); }
-        public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key) { return default(IncrementalHash); }
+        public byte[] GetHashAndReset() { return default(byte[]); }
     }
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
@@ -182,9 +219,9 @@ namespace System.Security.Cryptography
         protected SHA512() { }
         public static System.Security.Cryptography.SHA512 Create() { return default(System.Security.Cryptography.SHA512); }
     }
-    public abstract class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
+    public abstract partial class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
     {
-        protected TripleDES() {}
+        protected TripleDES() { }
         public override byte[] Key { get { return default(byte[]); } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
