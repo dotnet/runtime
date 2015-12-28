@@ -15,6 +15,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/mono-threads.h>
 
 #define HANDLES_PER_CHUNK (16 - 2)
 
@@ -196,11 +197,11 @@ mono_handle_arena_deinitialize (MonoHandleArena **arena_stack)
 MonoHandleArena*
 mono_handle_arena_current (void)
 {
-	g_assert_not_reached ();
+	return (MonoHandleArena*) mono_thread_info_current ()->handle_arena;
 }
 
 MonoHandleArena**
 mono_handle_arena_current_addr (void)
 {
-	g_assert_not_reached ();
+	return (MonoHandleArena**) &mono_thread_info_current ()->handle_arena;
 }
