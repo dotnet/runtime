@@ -1,13 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
-// 
-
-//
-// GenericPrincipal.cs
-//
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -48,7 +41,6 @@ namespace System.Security.Principal
         /// <summary>
         /// helper method to add roles 
         /// </summary>
-        [SecuritySafeCritical]
         void AddIdentityWithRoles(IIdentity identity, string[] roles)
         {
             ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
