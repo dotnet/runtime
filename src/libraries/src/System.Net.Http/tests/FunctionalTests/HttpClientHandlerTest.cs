@@ -408,7 +408,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(4960, PlatformID.AnyUnix)]
         [Theory]
         [InlineData("cookieName1", "cookieValue1")]
         public async Task GetAsync_RedirectResponseHasCookie_CookieSentToFinalUri(string cookieName, string cookieValue)
