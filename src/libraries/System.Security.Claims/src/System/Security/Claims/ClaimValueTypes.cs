@@ -2,13 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
 
-
-// 
-
-//
-// ClaimValueTypes.cs
-//
-
 using System.Runtime.InteropServices;
 
 namespace System.Security.Claims
@@ -16,7 +9,6 @@ namespace System.Security.Claims
     /// <summary>
     /// Defines the claim value types of the framework.
     /// </summary>
-    [ComVisible(false)]
     public static class ClaimValueTypes
     {
         const string XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";

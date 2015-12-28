@@ -2,13 +2,10 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="facade\System.Security.Claims.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </Project>
     <Project Include="System.Security.Claims.csproj">
       <AdditionalProperties>TargetGroup=</AdditionalProperties>
     </Project>
-    <Project Include="System.Security.Claims.csproj">
+    <Project Include="System.Security.Claims.csproj" Condition="'$(TargetsWindows)' == 'true'">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>

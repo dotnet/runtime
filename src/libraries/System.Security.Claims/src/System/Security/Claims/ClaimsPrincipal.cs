@@ -2,13 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
 
-
-// 
-
-//
-// ClaimPrincipal.cs
-//
-
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
@@ -20,7 +13,6 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
-    [ComVisible(true)]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -63,7 +55,6 @@ namespace System.Security.Claims
             {
                 return s_identitySelector;
             }
-            [SecurityCritical]
             set
             {
                 s_identitySelector = value;
@@ -76,7 +67,6 @@ namespace System.Security.Claims
             {
                 return s_principalSelector;
             }
-            [SecurityCritical]
             set
             {
                 s_principalSelector = value;
@@ -183,7 +173,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="identity">the <see cref="ClaimsIdentity"/>add.</param>
         /// <exception cref="ArgumentNullException">if 'identity' is null.</exception>
-        [SecurityCritical]
         public virtual void AddIdentity(ClaimsIdentity identity)
         {
             if (identity == null)
@@ -201,7 +190,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="identities">Enumeration of ClaimsIdentities to add.</param>
         /// <exception cref="ArgumentNullException">if 'identities' is null.</exception>
-        [SecurityCritical]
         public virtual void AddIdentities(IEnumerable<ClaimsIdentity> identities)
         {
             if (identities == null)

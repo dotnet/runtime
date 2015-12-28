@@ -1,47 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="..\dir.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);PROJECTK</DefineConstants>
-    <IsProjectNLibrary>true</IsProjectNLibrary>
-    <IsNETCoreForCoreCLRLibrary>true</IsNETCoreForCoreCLRLibrary>
-    <IsProjectKLibrary>true</IsProjectKLibrary>
-    <IsTestNetLibrary>true</IsTestNetLibrary>
     <AssemblyName>System.Security.Claims</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
     <ProjectGuid>{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}</ProjectGuid>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.IO" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime">
-      <Version>4.0.20.0</Version>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Principal" />
-  </ItemGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  
+  <ItemGroup Condition="'$(TargetGroup)'==''" >
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
     <Compile Include="System\Security\Claims\ClaimsPrincipal.cs" />
     <Compile Include="System\Security\Claims\ClaimTypes.cs" />
     <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
     <Compile Include="System\Security\Claims\GenericIdentity.cs" />
-    <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+    <Compile Include="System\Security\Claims\GenericPrincipal.cs" /> 
+  </ItemGroup>  
+  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>  
+  <ItemGroup>
+    <None Include="project.json" />
   </ItemGroup>
-  <Import Project="..\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -1,13 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
-// 
-
-//
-// ClaimsIdentity.cs
-//
-
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
@@ -21,7 +14,6 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
-    [ComVisible(true)]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -288,7 +280,6 @@ namespace System.Security.Claims
         {
             get { return _bootstrapContext; }
 
-            [SecurityCritical]
             set
             { _bootstrapContext = value; }
         }
@@ -400,7 +391,6 @@ namespace System.Security.Claims
         /// <param name="claim">the <see cref="Claim"/>add.</param>
         /// <remarks>If <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claim' is null.</exception>
-        [SecurityCritical]
         public virtual void AddClaim(Claim claim)
         {
             if (claim == null)
@@ -426,7 +416,6 @@ namespace System.Security.Claims
         /// <param name="claims">Enumeration of claims to add.</param>
         /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
-        [SecurityCritical]
         public virtual void AddClaims(IEnumerable<Claim> claims)
         {
             if (claims == null)
@@ -461,7 +450,6 @@ namespace System.Security.Claims
         /// <remarks> It is possible that a <see cref="Claim"/> returned from <see cref="Claims"/> cannot be removed. This would be the case for 'External' claims that are provided by reference.
         /// <para>object.ReferenceEquals is used to 'match'.</para>
         /// </remarks>  
-        [SecurityCritical]
         public virtual bool TryRemoveClaim(Claim claim)
         {
             if (claim == null)
@@ -491,7 +479,6 @@ namespace System.Security.Claims
         /// <para>object.ReferenceEquals is used to 'match'.</para>
         /// </remarks>
         /// <exception cref="InvalidOperationException">if 'claim' cannot be removed.</exception>
-        [SecurityCritical]
         public virtual void RemoveClaim(Claim claim)
         {
             if (!TryRemoveClaim(claim))
@@ -508,7 +495,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="claims">a <see cref="IEnumerable<Claim>"/> to add to </param>
         /// <remarks>private only call from constructor, adds to internal list.</remarks>
-        [SecuritySafeCritical]
         private void SafeAddClaims(IEnumerable<Claim> claims)
         {
             foreach (Claim claim in claims)
@@ -531,7 +517,6 @@ namespace System.Security.Claims
         /// Adds claim to intenal list. Calling Claim.Clone if Claim.Subject != this.
         /// </summary>
         /// <remarks>private only call from constructor, adds to internal list.</remarks>
-        [SecuritySafeCritical]
         private void SafeAddClaim(Claim claim)
         {
             if (claim == null)

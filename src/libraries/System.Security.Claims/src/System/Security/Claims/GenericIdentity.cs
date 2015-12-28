@@ -1,15 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
-// 
-
-//
-// GenericIdentity.cs
-//
-// A generic identity
-//
-
 using System;
 using System.Diagnostics.Contracts;
 using System.Security.Claims;
@@ -24,7 +15,6 @@ namespace System.Security.Principal
         private string m_name;
         private string m_type;
 
-        [SecuritySafeCritical]
         public GenericIdentity(string name)
         {
             if (name == null)
@@ -37,7 +27,6 @@ namespace System.Security.Principal
             AddNameClaim();
         }
 
-        [SecuritySafeCritical]
         public GenericIdentity(string name, string type)
         {
             if (name == null)
@@ -106,7 +95,6 @@ namespace System.Security.Principal
         }
 
 
-        [SecuritySafeCritical]
         private void AddNameClaim()
         {
             if (m_name != null)
