@@ -432,6 +432,12 @@ check_image_set_may_reference_image_set (MonoImageSet *from, MonoImageSet *to)
 	{
 		gboolean seen = FALSE;
 
+		// If TO set includes corlib, the FROM set may
+		// implicitly reference corlib, even if it's not
+		// present in the set explicitly.
+		if (to->images[to_idx] == mono_defaults.corlib)
+			seen = TRUE;
+
 		// For each item in to->images, scan over from->images looking for it.
 		for (from_idx = 0; !seen && from_idx < from->nimages; from_idx++)
 		{
