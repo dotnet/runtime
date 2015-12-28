@@ -163,7 +163,7 @@ if /i "%__BuildArch%" == "arm64"  (
 
 REM TODO, remove once the toolset is open.
 if /i "%__BuildArch%" == "arm64" set PATH=%PATH%;%__ToolsetDir%\cpp\bin
-if /i "%__BuildArch%" == "arm64" set LIB=%__ToolsetDir%\OS\lib
+if /i "%__BuildArch%" == "arm64" set LIB=%__ToolsetDir%\OS\lib;%__ToolsetDir%\cpp\lib
 if /i "%__BuildArch%" == "arm64" set INCLUDE=%__ToolsetDir%\cpp\inc;%__ToolsetDir%\OS\inc\Windows;%__ToolsetDir%\OS\inc\Windows\crt;%__ToolsetDir%\cpp\inc\vc;%__ToolsetDir%\OS\inc\win8;
 
 if /i "%__BuildArch%" == "arm64" goto GenVSSolution
