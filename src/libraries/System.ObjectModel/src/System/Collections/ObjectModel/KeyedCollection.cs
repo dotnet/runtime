@@ -254,7 +254,7 @@ namespace System.Collections.ObjectModel
             {
                 if (Contains(key))
                 {
-                    throw new ArgumentException(SR.Argument_AddingDuplicate);
+                    throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
 
                 _keyCount++;

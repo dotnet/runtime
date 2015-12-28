@@ -127,7 +127,7 @@
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added.</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_IdnBadLabelSize" xml:space="preserve">
     <value>IDN labels must be between 1 and 63 characters long.</value>

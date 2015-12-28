@@ -165,7 +165,7 @@ namespace System.Collections.Generic
             if (key == null) throw new ArgumentNullException("key");
             int i = Array.BinarySearch<TKey>(_keys, 0, _size, key, _comparer);
             if (i >= 0)
-                throw new ArgumentException(SR.Argument_AddingDuplicate);
+                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
             Insert(~i, key, value);
         }
 
