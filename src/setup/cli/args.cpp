@@ -26,18 +26,6 @@ void display_help()
 
 bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args)
 {
-    // Read trace environment variable
-    pal::string_t trace_str;
-    if (pal::getenv(_X("COREHOST_TRACE"), &trace_str))
-    {
-        auto trace_val = pal::xtoi(trace_str.c_str());
-        if (trace_val > 0)
-        {
-            trace::enable();
-            trace::info(_X("Tracing enabled"));
-        }
-    }
-
     // Get the full name of the application
     if (!pal::get_own_executable_path(&args.own_path) || !pal::realpath(&args.own_path))
     {
