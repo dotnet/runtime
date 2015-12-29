@@ -262,7 +262,7 @@ namespace System.Net.Security
                 object chkCertificateOrBytes = _remoteCertificateOrBytes;
                 if (chkCertificateOrBytes != null && chkCertificateOrBytes.GetType() == typeof(byte[]))
                 {
-                    return (X509Certificate)(_remoteCertificateOrBytes = new X509Certificate((byte[])chkCertificateOrBytes));
+                    return (X509Certificate)(_remoteCertificateOrBytes = new X509Certificate2((byte[])chkCertificateOrBytes));
                 }
                 else
                 {
