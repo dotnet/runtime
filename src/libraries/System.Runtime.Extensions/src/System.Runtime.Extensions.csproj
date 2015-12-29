@@ -141,7 +141,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
