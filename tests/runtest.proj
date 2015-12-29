@@ -183,6 +183,34 @@ using CoreclrTestLib%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
 {
+        internal class _Global
+        {
+            internal static bool runningInWindows%3B
+            internal static string reportBase%3B
+            internal static string testBinaryBase%3B
+            internal static string coreRoot%3B
+
+            static _Global()
+            {
+                reportBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
+                testBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
+                coreRoot = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
+
+                if (String.IsNullOrEmpty(reportBase)) {
+                    throw new ArgumentException("Environment variable XunitTestReportDirBase is not set")%3B
+                }
+
+                if (String.IsNullOrEmpty(testBinaryBase)) {
+                    throw new ArgumentException("Environment variable XunitTestBinBase is not set")%3B
+                }
+
+                if (String.IsNullOrEmpty(coreRoot)) {
+                    throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
+                }
+
+                runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
+            }
+        }
 
 ]]>
       </_XunitProlog>
@@ -210,35 +238,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
         <_XunitFact >
           <![CDATA[
-             
+
         public class %(AllCommands._ClassName)
         {
-            static bool runningInWindows%3B
-            static string reportBase%3B
-            static string testBinaryBase%3B
-            static string coreRoot%3B
-
-            static %(AllCommands._ClassName)()
-            {
-                reportBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
-                testBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
-                coreRoot = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
-
-                if (String.IsNullOrEmpty(reportBase)) {
-                    throw new ArgumentException("Environment variable XunitTestReportDirBase is not set")%3B
-                }
-
-                if (String.IsNullOrEmpty(testBinaryBase)) {
-                    throw new ArgumentException("Environment variable XunitTestBinBase is not set")%3B
-                }
-
-                if (String.IsNullOrEmpty(coreRoot)) {
-                    throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
-                }
-
-                runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
-            }
-
             [Fact]
             public void %(AllCommands._FactName)()
             {
@@ -252,15 +254,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 {
                   CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
                   string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
-                  outputFile = System.IO.Path.GetFullPath(reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
-                  errorFile = System.IO.Path.GetFullPath(reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
-                  testExecutable = System.IO.Path.GetFullPath(testBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  outputFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
+                  errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
+                  testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
 
-                  if (!runningInWindows) {
+                  if (!_Global.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
                   }
 
-                  System.IO.Directory.CreateDirectory(reportBase + testSubfolder)%3B
+                  System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
                   ret = wrapper.RunTest(testExecutable, outputFile, errorFile)%3B
                 }
@@ -275,7 +277,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                                                  : System.IO.File.ReadAllText(errorFile) + "\n\n" +
                                                    "Raw output:      " + outputFile + "\n" +
                                                    "To run the test:\n" +
-                                                   "> set CORE_ROOT=" + coreRoot + "\n" +
+                                                   "> set CORE_ROOT=" + _Global.coreRoot + "\n" +
                                                    "> " + testExecutable + "\n"%3B
 
                     Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, msg)%3B
