@@ -22,7 +22,7 @@ namespace System.Net
 
         internal static IPHostEntry InternalGetHostByName(string hostName, bool includeIPv6)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "GetHostByName", hostName);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", hostName);
             IPHostEntry ipHostEntry = null;
 
             GlobalLog.Print("Dns.GetHostByName: " + hostName);
@@ -68,7 +68,7 @@ namespace System.Net
                 ipHostEntry = NameResolutionPal.GetHostByName(hostName);
             }
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "GetHostByName", ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", ipHostEntry);
             return ipHostEntry;
         } // GetHostByName
 
@@ -101,9 +101,9 @@ namespace System.Net
                     if (errorCode == SocketError.Success)
                         return hostEntry;
 
-                    if (Logging.On)
+                    if (NetEventSource.Log.IsEnabled())
                     {
-                        Logging.Exception(Logging.Sockets, "DNS",
+                        NetEventSource.Exception(NetEventSource.ComponentType.Socket, "DNS",
                         "InternalGetHostByAddress", new InternalSocketException(errorCode, nativeErrorCode));
                     }
 
@@ -333,46 +333,46 @@ namespace System.Net
 
         private static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback requestCallback, object stateObject)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "BeginGetHostEntry", hostNameOrAddress);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", hostNameOrAddress);
             IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, false, requestCallback, stateObject);
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "BeginGetHostEntry", asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", asyncResult);
             return asyncResult;
         } // BeginResolve
 
         private static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback requestCallback, object stateObject)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "BeginGetHostEntry", address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", address);
             IAsyncResult asyncResult = HostResolutionBeginHelper(address, true, true, requestCallback, stateObject);
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "BeginGetHostEntry", asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", asyncResult);
             return asyncResult;
         } // BeginResolve
 
         private static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "EndGetHostEntry", asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostEntry", asyncResult);
             IPHostEntry ipHostEntry = HostResolutionEndHelper(asyncResult);
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "EndGetHostEntry", ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostEntry", ipHostEntry);
             return ipHostEntry;
         } // EndResolve()
 
         private static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "BeginGetHostAddresses", hostNameOrAddress);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostAddresses", hostNameOrAddress);
             IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, true, requestCallback, state);
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "BeginGetHostAddresses", asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostAddresses", asyncResult);
             return asyncResult;
         } // BeginResolve
 
         private static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
-            if (Logging.On) Logging.Enter(Logging.Sockets, "DNS", "EndGetHostAddresses", asyncResult);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostAddresses", asyncResult);
             IPHostEntry ipHostEntry = HostResolutionEndHelper(asyncResult);
 
-            if (Logging.On) Logging.Exit(Logging.Sockets, "DNS", "EndGetHostAddresses", ipHostEntry);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostAddresses", ipHostEntry);
             return ipHostEntry.AddressList;
         } // EndResolveToAddresses
 

@@ -154,12 +154,12 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (Logging.On) Logging.Enter(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", null);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
         }
 
         public Task<string> ReadAsStringAsync()
@@ -429,7 +429,7 @@ namespace System.Net.Http
                         {
                             // Make sure we catch any exception, otherwise the task will catch it and throw in the finalizer.
                             tcs.TrySetException(e);
-                            if (Logging.On) Logging.Exception(Logging.Http, this, "LoadIntoBufferAsync", e);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, "LoadIntoBufferAsync", e);
                         }
                     });
                 }
@@ -573,7 +573,7 @@ namespace System.Net.Http
         {
             if (task == null)
             {
-                if (Logging.On) Logging.PrintError(Logging.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
                 throw new InvalidOperationException(SR.net_http_content_no_task_returned);
             }
         }
