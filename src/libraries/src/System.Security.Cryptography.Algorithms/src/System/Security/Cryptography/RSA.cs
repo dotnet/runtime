@@ -19,24 +19,6 @@ namespace System.Security.Cryptography
         protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
         protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
 
-        //Implementing this in the derived class. This was implemented in AsymmetricAlgorithm
-        // earlier. Now it is expected that class deriving from AsymmetricAlgorithm will implement this
-        protected KeySizes[] _legalKeySizesValue;
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                if (null != _legalKeySizesValue)
-                {
-                    return _legalKeySizesValue.CloneKeySizesArray();
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             if (data == null)
