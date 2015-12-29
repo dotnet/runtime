@@ -3872,21 +3872,12 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     if (!pDE->m_evalDuringException)
     {
         // Signal to the helper thread that we're done with our func eval.  Start by creating a DebuggerFuncEvalComplete
-        // object. Give it an address at which to create the patch, which is a chunk of memory inside of our
+        // object. Give it an address at which to create the patch, which is a chunk of memory specified by our
         // DebuggerEval big enough to hold a breakpoint instruction.
 #ifdef _TARGET_ARM_
-        dest = (BYTE*)((DWORD)&(pDE->m_breakpointInstruction) | THUMB_CODE);
+        dest = (BYTE*)((DWORD)&(pDE->m_bpInfoSegment->m_breakpointInstruction) | THUMB_CODE);
 #else
-        dest = &(pDE->m_breakpointInstruction);
-#endif
-
-        // Here is kind of a cheat... we make sure that the address that we patch and jump to is actually also the ptr
-        // to our DebuggerEval. This works because m_breakpointInstruction is the first field of the DebuggerEval
-        // struct.
-#ifdef _TARGET_ARM_
-        _ASSERTE((((DWORD)dest) & ~THUMB_CODE) == (DWORD)pDE);
-#else
-        _ASSERTE(dest == pDE);
+        dest = &(pDE->m_bpInfoSegment->m_breakpointInstruction);
 #endif
 
         //
