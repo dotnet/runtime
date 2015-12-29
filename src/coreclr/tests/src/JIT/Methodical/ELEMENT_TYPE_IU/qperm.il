@@ -15,7 +15,6 @@
 }
 .assembly 'qsort'// as "qsort"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'qsort.exe'
 // MVID: {D2333E3D-2CA6-4703-8D46-E41A46BDF801}

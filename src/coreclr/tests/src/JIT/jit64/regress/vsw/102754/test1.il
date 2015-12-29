@@ -20,12 +20,6 @@
 {
 
 
-  .permissionset reqmin
-            "<PermissionSet class=\"System.Security.PermissionSe"
-  + "t\"\r\nversion=\"1\">\r\n<IPermission class=\"System.Security.Permis"
-  + "sions.SecurityPermission, mscorlib, Cult"
-  + "ure=neutral, PublicKeyToken=b77a5c561934e089\"\r\nversion=\"1\"\r\n"
-  + "Flags=\"SkipVerification\"/>\r\n</PermissionSet>\r\n"
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }

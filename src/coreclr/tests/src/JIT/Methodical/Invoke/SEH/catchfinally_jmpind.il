@@ -13,7 +13,6 @@
 }
 .assembly 'catchfinally_tail'// as "catchfinally_tail"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .module 'catchfinally_tail.exe'
 // MVID: {CCB52291-4072-427C-8C14-2780C164EB2B}

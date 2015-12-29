@@ -10,7 +10,6 @@
 .assembly extern mscorlib { }
 .assembly 'sizeof'
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .namespace JitTest

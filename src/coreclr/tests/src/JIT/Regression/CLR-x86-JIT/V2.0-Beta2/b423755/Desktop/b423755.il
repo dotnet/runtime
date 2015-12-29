@@ -9,13 +9,6 @@
 }
 
 .assembly 'test' {
-	.permissionset reqrefuse =
-	{
-		[mscorlib]System.Security.Permissions.SecurityPermissionAttribute =
-		{
-			property bool 'SkipVerification' = bool(true)
-		}
-	}
 }
 
 .method public static int32 Main()

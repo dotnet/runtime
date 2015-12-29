@@ -14,7 +14,6 @@
 }
 .assembly 'call' // as "call"
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
                         }
 .module call.exe
 // MVID: {CF1D567F-C985-45B8-8028-219BDC43D791}
