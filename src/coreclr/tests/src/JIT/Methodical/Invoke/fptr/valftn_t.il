@@ -17,7 +17,6 @@
 
   //                                                                                  bool) = ( 01 00 00 01 00 00 ) 
   
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
   
 }
 .module 'bug.exe'
