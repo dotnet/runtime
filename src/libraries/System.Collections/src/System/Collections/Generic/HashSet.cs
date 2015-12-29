@@ -115,13 +115,19 @@ namespace System.Collections.Generic
             var otherAsHashSet = collection as HashSet<T>;
             if (otherAsHashSet != null && AreEqualityComparersEqual(this, otherAsHashSet))
             {
+                if (otherAsHashSet._buckets == null)
+                {
+                    // Source hasn't initialized buckets yet, so neither need this.
+                    Debug.Assert(otherAsHashSet._slots == null);
+                    return;
+                }
+
                 _buckets = (int[])otherAsHashSet._buckets.Clone();
                 _slots = (Slot[])otherAsHashSet._slots.Clone();
 
                 _count = otherAsHashSet._count;
                 _lastIndex = otherAsHashSet._lastIndex;
                 _freeList = otherAsHashSet._freeList;
-                _version = otherAsHashSet._version;
 
                 // _comparer is already the same
             }
