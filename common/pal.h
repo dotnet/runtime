@@ -49,12 +49,14 @@
 #endif
 
 #if defined(_WIN32)
-#define LIBCORECLR_NAME L"coreclr.dll"
+#define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
 #elif defined(__APPLE__)
-#define LIBCORECLR_NAME "libcoreclr.dylib"
+#define MAKE_LIBNAME(NAME) (_X("lib") _X(NAME) _X(".dylib"))
 #else
-#define LIBCORECLR_NAME "libcoreclr.so"
+#define MAKE_LIBNAME(NAME) (_X("lib") _X(NAME) _X(".so"))
 #endif
+
+#define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
@@ -64,6 +66,11 @@
 namespace pal
 {
 #if defined(_WIN32)
+    #ifdef COREHOST_MAKE_DLL
+        #define SHARED_API extern "C" __declspec(dllexport)
+    #else
+        #define SHARED_API
+    #endif
 
     typedef wchar_t char_t;
     typedef std::wstring string_t;
@@ -89,6 +96,12 @@ namespace pal
     void to_palstring(const char* str, pal::string_t* out);
     void to_stdstring(const pal::char_t* str, std::string* out);
 #else
+    #ifdef COREHOST_MAKE_DLL
+        #define SHARED_API extern "C"
+    #else
+        #define SHARED_API
+    #endif
+
     typedef char char_t;
     typedef std::string string_t;
     typedef std::stringstream stringstream_t;

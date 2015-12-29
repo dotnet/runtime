@@ -8,16 +8,18 @@
 #include "utils.h"
 #include "coreclr.h"
 
+SHARED_API const pal::char_t* g_LIBHOST_NAME = MAKE_LIBNAME("clihost");
+
 enum StatusCode
 {
-    Failure                = 0x87FF0000,
-    InvalidArgFailure      = Failure | 0x1,
-    CoreClrResolveFailure  = Failure | 0x2,
-    CoreClrBindFailure     = Failure | 0x3,
-    CoreClrInitFailure     = Failure | 0x4,
-    CoreClrExeFailure      = Failure | 0x5,
-    ResolverInitFailure    = Failure | 0x6,
-    ResolverResolveFailure = Failure | 0x7,
+    // 0x80 prefix to distinguish from corehost main's error codes.
+    InvalidArgFailure      = 0x81,
+    CoreClrResolveFailure  = 0x82,
+    CoreClrBindFailure     = 0x83,
+    CoreClrInitFailure     = 0x84,
+    CoreClrExeFailure      = 0x85,
+    ResolverInitFailure    = 0x86,
+    ResolverResolveFailure = 0x87,
 };
 
 // ----------------------------------------------------------------------
@@ -223,11 +225,7 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
     return exit_code;
 }
 
-#if defined(_WIN32)
-int __cdecl wmain(const int argc, const pal::char_t* argv[])
-#else
-int main(const int argc, const pal::char_t* argv[])
-#endif
+SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
     // Take care of arguments
     arguments_t args;
