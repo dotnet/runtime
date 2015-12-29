@@ -130,8 +130,6 @@
   .method private hidebysig static valuetype TailcallVerify.ValueType3Bytes 
           Caller1() cil managed
   {
-    .permissionset demand
-               = {[mscorlib]System.Security.Permissions.FileIOPermissionAttribute = {property bool 'Unrestricted' = bool(true)}}
     // Code size       52 (0x34)
     .maxstack  8
     IL_0000:  ldc.i4.0

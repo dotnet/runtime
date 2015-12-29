@@ -4,7 +4,6 @@
 .assembly extern legacy library mscorlib {}
 
 .assembly dup.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public _dup {

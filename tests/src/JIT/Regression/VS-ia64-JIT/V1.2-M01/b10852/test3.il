@@ -17,13 +17,6 @@
 {
 
 
-  .permissionset reqmin
-            "<PermissionSet class=\"System.Security.PermissionSe"
-  + "t\"\r\n               version=\"1\">\r\n   <IPermission class=\"Syst"
-  + "em.Security.Permissions.SecurityPermission, mscorlib, Versio"
-  + "n=1.1.3300.0, Culture=neutral, PublicKeyToken=b77a5c561934e0"
-  + "89\"\r\n                version=\"1\"\r\n                Flags=\"Ski"
-  + "pVerification\"/>\r\n</PermissionSet>\r\n"
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }

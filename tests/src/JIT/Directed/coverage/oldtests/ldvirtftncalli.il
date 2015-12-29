@@ -10,7 +10,6 @@
 }
 .assembly 'ldvirtftncalli'
 {
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 .class private auto ansi beforefieldinit A
        extends [mscorlib]System.Object

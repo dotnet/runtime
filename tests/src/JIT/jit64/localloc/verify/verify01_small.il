@@ -9,8 +9,6 @@
 .assembly eh01
 {
   .custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 01 00 00 ) 
-  .permissionset reqrefuse
-             = {[mscorlib]System.Security.Permissions.PermissionSetAttribute = {property string 'Name' = string('SkipVerification')}}
 }
 
 .class private auto ansi beforefieldinit LocallocTest

@@ -5,7 +5,6 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly initobj.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public value sealed valClass{
