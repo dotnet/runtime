@@ -105,13 +105,17 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         "PLATFORM_RESOURCE_ROOTS",
         "AppDomainCompatSwitch",
         // TODO: pipe this from corehost.json
-        "SERVER_GC"
+        "SERVER_GC",
     };
 
     auto tpa_paths_cstr = pal::to_stdstring(probe_paths.tpa);
     auto app_base_cstr = pal::to_stdstring(args.app_dir);
     auto native_dirs_cstr = pal::to_stdstring(probe_paths.native);
     auto culture_dirs_cstr = pal::to_stdstring(probe_paths.culture);
+
+    // Workaround for dotnet/cli Issue #488 and #652
+    pal::string_t server_gc;
+    std::string server_gc_cstr = (pal::getenv(_X("COREHOST_SERVER_GC"), &server_gc)) ? pal::to_stdstring(server_gc) : "1";
 
     const char* property_values[] = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -127,7 +131,7 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         // AppDomainCompatSwitch
         "UseLatestBehaviorWhenTFMNotSpecified",
         // SERVER_GC
-        "1"
+        server_gc_cstr.c_str(),
     };
 
     size_t property_size = sizeof(property_keys) / sizeof(property_keys[0]);
