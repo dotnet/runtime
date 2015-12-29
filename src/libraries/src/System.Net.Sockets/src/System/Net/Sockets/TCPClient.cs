@@ -23,23 +23,23 @@ namespace System.Net.Sockets
         public TcpClient()
             : this(AddressFamily.InterNetwork)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "TcpClient", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
             }
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
             }
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient(AddressFamily family)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "TcpClient", family);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpClient", family);
             }
 
             // Validate parameter
@@ -51,25 +51,25 @@ namespace System.Net.Sockets
             _family = family;
 
             initialize();
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
             }
         }
 
         // Used by TcpListener.Accept().
         internal TcpClient(Socket acceptedSocket)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "TcpClient", acceptedSocket);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpClient", acceptedSocket);
             }
 
             Client = acceptedSocket;
             _active = true;
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
             }
         }
 
@@ -115,15 +115,15 @@ namespace System.Net.Sockets
 
         internal IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "BeginConnect", host);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", host);
             }
 
             IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
             }
 
             return result;
@@ -131,15 +131,15 @@ namespace System.Net.Sockets
 
         internal IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "BeginConnect", address);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", address);
             }
 
             IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
             }
 
             return result;
@@ -147,15 +147,15 @@ namespace System.Net.Sockets
 
         internal IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "BeginConnect", addresses);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", addresses);
             }
 
             IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
             }
 
             return result;
@@ -163,16 +163,16 @@ namespace System.Net.Sockets
 
         internal void EndConnect(IAsyncResult asyncResult)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "EndConnect", asyncResult);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "EndConnect", asyncResult);
             }
 
             Client.EndConnect(asyncResult);
             _active = true;
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "EndConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "EndConnect", null);
             }
         }
 
@@ -209,9 +209,9 @@ namespace System.Net.Sockets
         // Returns the stream used to read and write data to the remote host.
         public NetworkStream GetStream()
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "GetStream", "");
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "GetStream", "");
             }
 
             if (_cleanedUp)
@@ -228,9 +228,9 @@ namespace System.Net.Sockets
                 _dataStream = new NetworkStream(Client, true);
             }
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "GetStream", _dataStream);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "GetStream", _dataStream);
             }
 
             return _dataStream;
@@ -241,16 +241,16 @@ namespace System.Net.Sockets
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "Dispose", "");
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Dispose", "");
             }
 
             if (_cleanedUp)
             {
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exit(Logging.Sockets, this, "Dispose", "");
+                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Dispose", "");
                 }
 
                 return;
@@ -288,9 +288,9 @@ namespace System.Net.Sockets
             }
 
             _cleanedUp = true;
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "Dispose", "");
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Dispose", "");
             }
         }
 

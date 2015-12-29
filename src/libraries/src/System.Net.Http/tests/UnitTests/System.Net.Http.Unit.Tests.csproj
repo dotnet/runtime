@@ -9,6 +9,7 @@
     <RootNamespace>System.Net.Http.Unit.Tests</RootNamespace>
     <AssemblyName>System.Net.Http.Unit.Tests</AssemblyName>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -326,8 +327,14 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
       <Link>Common\System\Net\HttpVersion.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging.cs">
-      <Link>ProductionCode\Logging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
+      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
+      <Link>Common\System\Net\Logging\HttpEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

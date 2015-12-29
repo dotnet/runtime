@@ -302,7 +302,7 @@ namespace System.Net.Http
 
         private void HandleAsyncException(string method, Exception ex)
         {
-            if (Logging.On) Logging.Exception(Logging.Http, this, method, ex);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, method, ex);
             TaskCompletionSource<object> lastTcs = CleanupAsync();
             lastTcs.TrySetException(ex);
         }

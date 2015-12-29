@@ -22,19 +22,19 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (Logging.On) Logging.Enter(Logging.Http, this, ".ctor", handler);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", handler);
 
             if (handler == null)
             {
                 throw new ArgumentNullException("handler");
             }
 
-            if (Logging.On) Logging.Associate(Logging.Http, this, handler);
+            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, handler);
 
             _handler = handler;
             _disposeHandler = disposeHandler;
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
         }
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -46,13 +46,13 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (Logging.On)
-                Logging.Enter(Logging.Http, this, "SendAsync",
-    Logging.GetObjectLogHash(request) + ": " + request);
+            if (NetEventSource.Log.IsEnabled())
+                NetEventSource.Enter(NetEventSource.ComponentType.Http, this, "SendAsync",
+    LoggingHash.GetObjectLogHash(request) + ": " + request);
 
             Task<HttpResponseMessage> task = _handler.SendAsync(request, cancellationToken);
 
-            if (Logging.On) Logging.Exit(Logging.Http, this, "SendAsync", task);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, "SendAsync", task);
 
             return task;
         }

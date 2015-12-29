@@ -20,9 +20,9 @@ namespace System.Net.Sockets
         // Initializes a new instance of the TcpListener class with the specified local end point.
         public TcpListener(IPEndPoint localEP)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "TcpListener", localEP);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpListener", localEP);
             }
 
             if (localEP == null)
@@ -31,9 +31,9 @@ namespace System.Net.Sockets
             }
             _serverSocketEP = localEP;
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "TcpListener", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpListener", null);
             }
         }
 
@@ -41,9 +41,9 @@ namespace System.Net.Sockets
         // and port.
         public TcpListener(IPAddress localaddr, int port)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "TcpListener", localaddr);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpListener", localaddr);
             }
 
             if (localaddr == null)
@@ -57,9 +57,9 @@ namespace System.Net.Sockets
 
             _serverSocketEP = new IPEndPoint(localaddr, port);
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "TcpListener", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpListener", null);
             }
         }
 
@@ -122,9 +122,9 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException("backlog");
             }
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "Start", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Start", null);
             }
 
             GlobalLog.Print("TCPListener::Start()");
@@ -137,9 +137,9 @@ namespace System.Net.Sockets
             // Already listening.
             if (_active)
             {
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exit(Logging.Sockets, this, "Start", null);
+                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Start", null);
                 }
 
                 return;
@@ -158,18 +158,18 @@ namespace System.Net.Sockets
             }
 
             _active = true;
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "Start", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Start", null);
             }
         }
 
         // Closes the network connection.
         public void Stop()
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "Stop", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Stop", null);
             }
 
             GlobalLog.Print("TCPListener::Stop()");
@@ -188,9 +188,9 @@ namespace System.Net.Sockets
                 _serverSocket.ExclusiveAddressUse = true;
             }
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "Stop", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Stop", null);
             }
         }
 
@@ -207,9 +207,9 @@ namespace System.Net.Sockets
 
         internal IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "BeginAcceptSocket", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginAcceptSocket", null);
             }
 
             if (!_active)
@@ -218,9 +218,9 @@ namespace System.Net.Sockets
             }
 
             IAsyncResult result = _serverSocket.BeginAccept(callback, state);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "BeginAcceptSocket", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginAcceptSocket", null);
             }
 
             return result;
@@ -228,9 +228,9 @@ namespace System.Net.Sockets
 
         internal Socket EndAcceptSocket(IAsyncResult asyncResult)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "EndAcceptSocket", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "EndAcceptSocket", null);
             }
 
             if (asyncResult == null)
@@ -248,9 +248,9 @@ namespace System.Net.Sockets
             // This will throw ObjectDisposedException if Stop() has been called.
             Socket socket = asyncSocket.EndAccept(asyncResult);
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "EndAcceptSocket", socket);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "EndAcceptSocket", socket);
             }
 
             return socket;
@@ -258,9 +258,9 @@ namespace System.Net.Sockets
 
         internal IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "BeginAcceptTcpClient", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginAcceptTcpClient", null);
             }
 
             if (!_active)
@@ -269,9 +269,9 @@ namespace System.Net.Sockets
             }
 
             IAsyncResult result = _serverSocket.BeginAccept(callback, state);
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "BeginAcceptTcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginAcceptTcpClient", null);
             }
 
             return result;
@@ -279,9 +279,9 @@ namespace System.Net.Sockets
 
         internal TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Sockets, this, "EndAcceptTcpClient", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "EndAcceptTcpClient", null);
             }
 
             if (asyncResult == null)
@@ -299,9 +299,9 @@ namespace System.Net.Sockets
             // This will throw ObjectDisposedException if Stop() has been called.
             Socket socket = asyncSocket.EndAccept(asyncResult);
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Sockets, this, "EndAcceptTcpClient", socket);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "EndAcceptTcpClient", socket);
             }
 
             return new TcpClient(socket);

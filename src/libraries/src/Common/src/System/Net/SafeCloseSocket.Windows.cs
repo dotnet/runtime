@@ -46,7 +46,7 @@ namespace System.Net.Sockets
                     if (_iocpBoundHandle == null)
                     {
                         // Bind the socket native _handle to the ThreadPool.
-                        GlobalLog.Print("SafeCloseSocket#" + Logging.HashString(this) + "::BindToCompletionPort() calling ThreadPool.BindHandle()");
+                        GlobalLog.Print("SafeCloseSocket#" + LoggingHash.HashString(this) + "::BindToCompletionPort() calling ThreadPool.BindHandle()");
 
                         try
                         {

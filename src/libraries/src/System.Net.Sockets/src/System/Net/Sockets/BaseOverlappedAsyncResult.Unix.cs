@@ -20,8 +20,8 @@ namespace System.Net.Sockets
             : base(socket, asyncState, asyncCallback)
         {
             GlobalLog.Print(
-                "BaseOverlappedAsyncResult#" + Logging.HashString(this) +
-                "(Socket#" + Logging.HashString(socket) + ")");
+                "BaseOverlappedAsyncResult#" + LoggingHash.HashString(this) +
+                "(Socket#" + LoggingHash.HashString(socket) + ")");
         }
 
         public void CompletionCallback(int numBytes, SocketError errorCode)
