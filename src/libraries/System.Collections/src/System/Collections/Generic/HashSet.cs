@@ -115,43 +115,69 @@ namespace System.Collections.Generic
             var otherAsHashSet = collection as HashSet<T>;
             if (otherAsHashSet != null && AreEqualityComparersEqual(this, otherAsHashSet))
             {
-                if (otherAsHashSet._buckets == null)
-                {
-                    // Source hasn't initialized buckets yet, so neither need this.
-                    Debug.Assert(otherAsHashSet._slots == null);
-                    return;
-                }
-
-                _buckets = (int[])otherAsHashSet._buckets.Clone();
-                _slots = (Slot[])otherAsHashSet._slots.Clone();
-
-                _count = otherAsHashSet._count;
-                _lastIndex = otherAsHashSet._lastIndex;
-                _freeList = otherAsHashSet._freeList;
-
-                // _comparer is already the same
+                CopyFrom(otherAsHashSet);
             }
             else
             {
                 // to avoid excess resizes, first set size based on collection's count. Collection
                 // may contain duplicates, so call TrimExcess if resulting hashset is larger than
                 // threshold
-                int suggestedCapacity = 0;
                 ICollection<T> coll = collection as ICollection<T>;
-                if (coll != null)
-                {
-                    suggestedCapacity = coll.Count;
-                }
+                int suggestedCapacity = coll == null ? 0 : coll.Count;
                 Initialize(suggestedCapacity);
 
                 this.UnionWith(collection);
+
+                if (_count > 0 && _slots.Length / _count > ShrinkThreshold)
+                {
+                    TrimExcess();
+                }
+            }
+        }
+
+        // Initializes the HashSet from another HashSet with the same element type and
+        // equality comparer.
+        private void CopyFrom(HashSet<T> source)
+        {
+            int count = source._count;
+            if (count == 0)
+            {
+                // As well as short-circuiting on the rest of the work done,
+                // this avoids errors from trying to access otherAsHashSet._buckets
+                // or otherAsHashSet._slots when they aren't initialized.
+                return;
             }
 
-            if ((_count == 0 && _slots.Length > HashHelpers.GetMinPrime()) ||
-                (_count > 0 && _slots.Length / _count > ShrinkThreshold))
+            int capacity = source._buckets.Length;
+            int threshold = HashHelpers.ExpandPrime(count + 1);
+
+            if (threshold >= capacity)
             {
-                TrimExcess();
+                _buckets = (int[])source._buckets.Clone();
+                _slots = (Slot[])source._slots.Clone();
+
+                _lastIndex = source._lastIndex;
+                _freeList = source._freeList;
             }
+            else
+            {
+                int lastIndex = source._lastIndex;
+                Slot[] slots = source._slots;
+                Initialize(count);
+                int index = 0;
+                for (int i = 0; i < lastIndex; ++i)
+                {
+                    int hashCode = slots[i].hashCode;
+                    if (hashCode >= 0)
+                    {
+                        AddValue(index, hashCode, slots[i].value);
+                        ++index;
+                    }
+                }
+                Debug.Assert(index == count);
+                _lastIndex = index;
+            }
+            _count = count;
         }
 
         #endregion
@@ -1080,6 +1106,27 @@ namespace System.Collections.Generic
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             return true;
+        }
+
+        // Add value at known index with known hash code. Used only
+        // when constructing from another HashSet.
+        private void AddValue(int index, int hashCode, T value)
+        {
+            int bucket = hashCode % _buckets.Length;
+
+#if DEBUG
+            Debug.Assert(InternalGetHashCode(value) == hashCode);
+            for (int i = _buckets[bucket] - 1; i >= 0; i = _slots[i].next)
+            {
+                Debug.Assert(!_comparer.Equals(_slots[i].value, value));
+            }
+#endif
+
+            Debug.Assert(_freeList == -1);
+            _slots[index].hashCode = hashCode;
+            _slots[index].value = value;
+            _slots[index].next = _buckets[bucket] - 1;
+            _buckets[bucket] = index + 1;
         }
 
         /// <summary>
