@@ -348,7 +348,7 @@ namespace System.Net
         }
     }
 
-    internal class CredentialHostKey
+    internal class CredentialHostKey : IEquatable<CredentialHostKey>
     {
         public readonly string Host;
         public readonly string AuthenticationType;
@@ -393,23 +393,25 @@ namespace System.Net
             return _hashCode;
         }
 
-        public override bool Equals(object comparand)
+        public bool Equals(CredentialHostKey other)
         {
-            CredentialHostKey comparedCredentialKey = comparand as CredentialHostKey;
-
-            if (comparand == null)
+            if (other == null)
             {
-                // This covers also the compared == null case
                 return false;
             }
 
             bool equals =
-                string.Equals(AuthenticationType, comparedCredentialKey.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(Host, comparedCredentialKey.Host, StringComparison.OrdinalIgnoreCase) &&
-                Port == comparedCredentialKey.Port;
+                string.Equals(AuthenticationType, other.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
+                Port == other.Port;
 
-            GlobalLog.Print("CredentialKey::Equals(" + ToString() + ", " + comparedCredentialKey.ToString() + ") returns " + equals.ToString());
+            GlobalLog.Print("CredentialKey::Equals(" + ToString() + ", " + other.ToString() + ") returns " + equals.ToString());
             return equals;
+        }
+
+        public override bool Equals(object comparand)
+        {
+            return Equals(comparand as CredentialHostKey);
         }
 
         public override string ToString()
@@ -418,7 +420,7 @@ namespace System.Net
         }
     }
 
-    internal class CredentialKey
+    internal class CredentialKey : IEquatable<CredentialKey>
     {
         public readonly Uri UriPrefix;
         public readonly int UriPrefixLength = -1;
@@ -490,23 +492,25 @@ namespace System.Net
             return _hashCode;
         }
 
-        public override bool Equals(object comparand)
+        public bool Equals(CredentialKey other)
         {
-            CredentialKey comparedCredentialKey = comparand as CredentialKey;
-
-            if (comparand == null)
+            if (other == null)
             {
-                // This covers also the compared==null case
                 return false;
             }
 
             bool equals =
-                string.Equals(AuthenticationType, comparedCredentialKey.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
-                UriPrefix.Equals(comparedCredentialKey.UriPrefix);
+                string.Equals(AuthenticationType, other.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
+                UriPrefix.Equals(other.UriPrefix);
 
-            GlobalLog.Print("CredentialKey::Equals(" + ToString() + ", " + comparedCredentialKey.ToString() + ") returns " + equals.ToString());
+            GlobalLog.Print("CredentialKey::Equals(" + ToString() + ", " + other.ToString() + ") returns " + equals.ToString());
 
             return equals;
+        }
+
+        public override bool Equals(object comparand)
+        {
+            return Equals(comparand as CredentialKey);
         }
 
         public override string ToString()
