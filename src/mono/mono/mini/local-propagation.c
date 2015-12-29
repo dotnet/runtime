@@ -365,7 +365,7 @@ restart:
 
 					// We allocated a new vreg, so need to restart
 					goto restart;
-				} else if (power2 > 0) {
+				} else if (power2 > 0 && power2 < 31) {
 					int r1 = mono_alloc_ireg (cfg);
 
 					NEW_BIALU_IMM (cfg, tmp1, OP_ISHR_IMM, r1, ins->sreg1, 31);
