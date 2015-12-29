@@ -185,20 +185,6 @@ namespace Internal.Cryptography.Pal
             return new OpenSslX509StoreProvider(coll);
         }
 
-        private static IStorePal PfxToCollection(OpenSslPkcs12Reader pfx, string password)
-        {
-            pfx.Decrypt(password);
-
-            X509Certificate2Collection coll = new X509Certificate2Collection();
-
-            foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
-            {
-                coll.Add(new X509Certificate2(certPal));
-            }
-
-            return new OpenSslX509StoreProvider(coll);
-        }
-
         private static IStorePal CloneStore(X509Certificate2Collection seed)
         {
             X509Certificate2Collection coll = new X509Certificate2Collection();
