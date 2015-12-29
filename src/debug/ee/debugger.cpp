@@ -1390,11 +1390,14 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 {
     WRAPPER_NO_CONTRACT;
 
+    // Allocate the breakpoint instruction info in executable memory.
+    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
+
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_breakpointInstruction[0] = 0x16;
+    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
 #if defined(_TARGET_ARM_)
-    USHORT *bp = (USHORT*)&m_breakpointInstruction;
+    USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
 #endif // _TARGET_ARM_
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
@@ -1468,9 +1471,12 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, Thread * pThread, Thread::ThreadA
 {
     WRAPPER_NO_CONTRACT;
 
+    // Allocate the breakpoint instruction info in executable memory.
+    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
+
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_breakpointInstruction[0] = 0x16;
+    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
     m_thread = pThread;
     m_evalType = DB_IPCE_FET_RE_ABORT;
     m_methodToken = mdMethodDefNil;
@@ -15354,7 +15360,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
-    DebuggerEval *pDE = new (interopsafeEXEC, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
+    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
 
     if (pDE == NULL)
     {
@@ -15486,7 +15492,7 @@ HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortReque
 
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
-    DebuggerEval *pDE = new (interopsafeEXEC, nothrow) DebuggerEval(filterContext, pThread, requester);
+    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pThread, requester);
 
     if (pDE == NULL)
     {
@@ -15676,7 +15682,8 @@ HRESULT Debugger::FuncEvalCleanup(DebuggerEval *debuggerEvalKey)
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: pDE:%08x 0x%08x, id=0x%x\n",
          pDE, pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
-    DeleteInteropSafeExecutable(pDE);
+    DeleteInteropSafeExecutable(pDE->m_bpInfoSegment);
+    DeleteInteropSafe(pDE);
 
     return S_OK;
 }
@@ -16562,33 +16569,32 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 
 DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
 {
-    DebuggerHeapExecutableMemoryPage *currPage = pages;
-    while (currPage != NULL)
+    while (m_pages != NULL)
     {
-        currPage = currPage->GetNextPage();
+        DebuggerHeapExecutableMemoryPage *temp = m_pages->GetNextPage();
 
         // Free this page
-        INDEBUG(BOOL ret =) VirtualFree(currPage, 0, MEM_RELEASE);
+        INDEBUG(BOOL ret =) VirtualFree(m_pages, 0, MEM_RELEASE);
         ASSERT(ret == TRUE);
 
-        pages = currPage;
+        m_pages = temp;
     }
 
-    ASSERT(pages == NULL);
+    ASSERT(m_pages == NULL);
 }
 
-void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numBytes)
+void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
 {
-    if (numBytes > DBG_MAX_EXECUTABLE_ALLOC_SIZE)
+    if (numberOfBytes > DBG_MAX_EXECUTABLE_ALLOC_SIZE)
     {
         ASSERT(!"Allocating more than DBG_MAX_EXECUTABLE_ALLOC_SIZE at once is unsupported and breaks our assumptions.");
         return NULL;
     }
 
-    if (numBytes == 0)
+    if (numberOfBytes == 0)
     {
         // Should we allocate anything in this case?
-        ASSERT(!"Allocate called with 0 for numBytes!");
+        ASSERT(!"Allocate called with 0 for numberOfBytes!");
         return NULL;
     }
 
@@ -16596,7 +16602,7 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numBytes)
 
     int chunkToUse = -1;
     DebuggerHeapExecutableMemoryPage *pageToAllocateOn = NULL;
-    for (DebuggerHeapExecutableMemoryPage *currPage = pages; currPage != NULL; currPage = currPage->GetNextPage())
+    for (DebuggerHeapExecutableMemoryPage *currPage = m_pages; currPage != NULL; currPage = currPage->GetNextPage())
     {
         if (CheckPageForAvailability(currPage, &chunkToUse))
         {
@@ -16622,15 +16628,16 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numBytes)
         }
     }
 
-    void* addr = ChangePageUsage(pageToAllocateOn, chunkToUse, true /* allocate */);
-    return addr;
+    return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
 int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 {
+    ASSERT(addr != NULL);
+
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
 
-    DebuggerHeapExecutableMemoryPage *pageToFreeIn = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->d.startOfPage;
+    DebuggerHeapExecutableMemoryPage *pageToFreeIn = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.startOfPage;
 
     if (pageToFreeIn == NULL)
     {
@@ -16638,12 +16645,12 @@ int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
         return -1;
     }
 
-    int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->d.chunkNumber;
+    int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.chunkNumber;
 
     // Sanity check: assert that the address really represents the start of a chunk.
     ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
 
-    ChangePageUsage(pageToFreeIn, chunkNum, false /* indicates free */);
+    ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
 
     return 0;
 }
@@ -16652,14 +16659,11 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
 {
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-    // Make sure new page is aligned to 4096.
-    ASSERT(((uint64_t)newPageAddr & 0xFFF) == 0);
-
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
-    newPage->SetNextPage(pages);
+    newPage->SetNextPage(m_pages);
 
     // Add the new page to the linked list of pages
-    pages = newPage;
+    m_pages = newPage;
     return newPage;
 }
 
@@ -16683,10 +16687,10 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
         // Start i at 62 because first chunk is reserved
         for (int i = 62; i >= 0; i--)
         {
-            uint64_t mask = ((unsigned long long)1 << i);
+            uint64_t mask = ((uint64_t)1 << i);
             if ((mask & occupancy) == 0)
             {
-                *chunkToUse = 64-i-1;
+                *chunkToUse = 64 - i - 1;
                 break;
             }
         }
@@ -16695,15 +16699,17 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
     return true;
 }
 
-void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNum, bool allocateOrFree)
+void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
 {
-    uint64_t mask = (uint64_t)0x1 << (64 - chunkNum - 1);
+    ASSERT(action == ChangePageUsageAction::ALLOCATE || action == ChangePageUsageAction::FREE);
+
+    uint64_t mask = (uint64_t)0x1 << (64 - chunkNumber - 1);
 
     uint64_t prevOccupancy = page->GetPageOccupancy();
-    uint64_t newOccupancy = allocateOrFree ? (prevOccupancy | mask) : (prevOccupancy ^ mask);
+    uint64_t newOccupancy = (action == ChangePageUsageAction::ALLOCATE) ? (prevOccupancy | mask) : (prevOccupancy ^ mask);
     page->SetPageOccupancy(newOccupancy);
 
-    return page->GetPointerToChunk(chunkNum);
+    return page->GetPointerToChunk(chunkNumber);
 }
 
 /* ------------------------------------------------------------------------ *
@@ -16795,7 +16801,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifdef FEATURE_PAL
-    m_execMemAllocator = new DebuggerHeapExecutableMemoryAllocator();
+    m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
     ASSERT(m_execMemAllocator != NULL);
     if (m_execMemAllocator == NULL)
     {
