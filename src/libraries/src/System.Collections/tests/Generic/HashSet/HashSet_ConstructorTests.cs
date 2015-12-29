@@ -328,6 +328,16 @@ namespace Tests
             driver.VerifyHashSet_NegativeTests();
         }
 
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Fresh_HashSet()
+        {
+            HashSet<int> source = new HashSet<int>();
+            HashSet<int> hashSet = new HashSet<int>(source);
+
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, new int[0]);
+            driver.VerifyHashSetTests();
+        }
+
         #endregion
     }
 }
