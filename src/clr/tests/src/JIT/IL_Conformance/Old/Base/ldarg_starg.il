@@ -4,7 +4,6 @@
 .assembly extern legacy library mscorlib {}
 
 .assembly ldarg_starg.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .class public ldarg_starg {

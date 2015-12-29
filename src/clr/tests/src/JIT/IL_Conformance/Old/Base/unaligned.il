@@ -4,7 +4,6 @@
 .assembly extern legacy library mscorlib {}
 
 .assembly unaligned.exe{
-  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
 }
 
 .method public static int32 main(class [mscorlib]System.String[]) {
