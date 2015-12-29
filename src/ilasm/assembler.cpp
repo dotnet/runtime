@@ -2274,7 +2274,7 @@ void Assembler::EmitSecurityInfo(mdToken            token,
     mdTypeRef           tkTypeRef;
     BinStr             *pSig;
     char               *szMemberName;
-    DWORD               dwErrorIndex;
+    DWORD               dwErrorIndex = 0;
 
     if (pPermissions) {
 
@@ -2320,18 +2320,15 @@ void Assembler::EmitSecurityInfo(mdToken            token,
                                                        uCount,
                                                        &dwErrorIndex)))
             {
+                _ASSERT(uCount >= dwErrorIndex);
                 if (dwErrorIndex == uCount)
                 {
                     report->error("Failed to define security attribute set for 0x%08X\n", token);
                 }
                 else
                 {
-                    _ASSERT(uCount > dwErrorIndex);
-                    if (uCount > dwErrorIndex)
-                    {
-                        report->error("Failed to define security attribute set for 0x%08X\n  (error in permission %u)\n",
-                                      token, uCount - dwErrorIndex);
-                    }
+                    report->error("Failed to define security attribute set for 0x%08X\n  (error in permission %u)\n",
+                                  token, uCount - dwErrorIndex);
                 }
             }
             delete [] pAttrs;
