@@ -117,17 +117,18 @@ bool pal::get_own_executable_path(pal::string_t* recv)
 }
 #endif
 
+// Returns true only if an env variable can be read successfully to be non-empty.
 bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 {
+    recv->clear();
+
     auto result = ::getenv(name);
     if (result != nullptr)
     {
         recv->assign(result);
     }
 
-    // We don't return false. Windows does have a concept of an error reading the variable,
-    // but Unix just returns null, which we treat as the variable not existing.
-    return true;
+    return (recv->length() > 0);
 }
 
 bool pal::realpath(pal::string_t* path)
