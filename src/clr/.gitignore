@@ -273,3 +273,6 @@ Makefile
 
 # Cross compilation
 cross/rootfs/*
+
+#python import files
+*.pyc

@@ -1,4 +1,5 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories($ENV{__GeneratedIntermediatesDir})
 
 if(WIN32)
     # remove /ltcg from resource-only libraries
@@ -13,15 +14,6 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)
 
 add_library(clretwrc SHARED
   clretwrc.rc
-)
-
-#Compile clretwall.man file to create clretwall.rc resource file
-add_custom_command(
-  TARGET clretwrc 
-  PRE_BUILD
-  COMMAND mc -h ${CMAKE_CURRENT_BINARY_DIR} -r ${CMAKE_CURRENT_BINARY_DIR} -b -co -um -p FireEtw ${VM_DIR}/ClrEtwAll.man
-  DEPENDS ${VM_DIR}/ClrEtwAll.man
-  COMMENT "MessageCompile ${VM_DIR}/ClrEtwAll.man"
 )
 
 # add the install targets
