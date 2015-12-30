@@ -115,7 +115,7 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
 
     // Workaround for dotnet/cli Issue #488 and #652
     pal::string_t server_gc;
-    std::string server_gc_cstr = (pal::getenv(_X("COREHOST_SERVER_GC"), &server_gc)) ? pal::to_stdstring(server_gc) : "1";
+    std::string server_gc_cstr = (pal::getenv(_X("COREHOST_SERVER_GC"), &server_gc) && !server_gc.empty()) ? pal::to_stdstring(server_gc) : "1";
 
     const char* property_values[] = {
         // TRUSTED_PLATFORM_ASSEMBLIES
