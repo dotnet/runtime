@@ -141,9 +141,9 @@ namespace System.Collections.Generic
                 T[] els = EnumerableHelpers.ToArray(collection, out count);
                 if (count > 0)
                 {
-                    Array.Sort(els, 0, count, _comparer);
+                    comparer = _comparer; // If comparer is null, sets it to Comparer<T>.Default
+                    Array.Sort(els, 0, count, comparer);
                     int index = 1;
-                    comparer = _comparer; // Avoid repeated field access of _comparer for the following loop
                     for (int i = 1; i < count; i++)
                     {
                         if (comparer.Compare(els[i], els[i - 1]) != 0)
