@@ -5,28 +5,26 @@
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
-    <NugetTargetFrameworkMoniker>DNXCore,Version=v5.0</NugetTargetFrameworkMoniker>
-    <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
-    <PostFilterNugetReferences>true</PostFilterNugetReferences>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.1</PackageTargetFramework>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot'">true</SkipCommonResourcesIncludes>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'"/>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
@@ -75,7 +73,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
@@ -139,6 +137,22 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+    <Compile Include="$(CommonPath)\System\SR.Core.cs">
+      <Link>Common\System\SR.Core.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
+      <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.cs">
+      <Link>Common\System\Runtime\InteropServices\Marshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
