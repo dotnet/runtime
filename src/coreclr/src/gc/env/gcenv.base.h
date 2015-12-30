@@ -137,7 +137,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
   extern "C" void __dmb(const unsigned __int32 _Type);
   #pragma intrinsic(__dmb)
-  #define MemoryBarrier() { __dmb(_ARM_BARRIER_SY); }
+  #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
  #elif defined(_AMD64_)
   
