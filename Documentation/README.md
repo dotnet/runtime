@@ -38,6 +38,7 @@ Coding Guidelines
 - [CLR Coding Guide](coding-guidelines/clr-code-guide.md)
 - [CLR JIT Coding Conventions](coding-guidelines/clr-jit-coding-conventions.md)
 - [Cross Platform Performance and Eventing Design](coding-guidelines/cross-platform-performance-and-eventing.md)
+- [Adding New Events to the VM](coding-guidelines/EventLogging.md)
 
 Build CoreCLR from Source
 =========================
