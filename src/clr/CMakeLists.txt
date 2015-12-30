@@ -394,10 +394,10 @@ if (WIN32)
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
   add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 
-  if (IS_64BIT_BUILD EQUAL 1)
+ if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   # The generator expression in the following command means that the /homeparams option is added only for debug builds
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
-  endif (IS_64BIT_BUILD EQUAL 1)
+  endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
   # Linker flags
   #
