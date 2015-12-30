@@ -114,11 +114,11 @@ namespace System.Net.Sockets
             {
                 if (size > -1)
                 {
-                    SocketsEventSource.Dump(SocketsEventSource.MethodType.PostCompletion, pinnedBuffer, (int)Math.Min(size, (long)_buffer.Length));
+                    SocketsEventSource.Dump(pinnedBuffer, (int)Math.Min(size, (long)_buffer.Length));
                 }
                 else
                 {
-                    SocketsEventSource.Dump(SocketsEventSource.MethodType.PostCompletion, pinnedBuffer, (int)_buffer.Length);
+                    SocketsEventSource.Dump(pinnedBuffer, (int)_buffer.Length);
                 }
             }
         }

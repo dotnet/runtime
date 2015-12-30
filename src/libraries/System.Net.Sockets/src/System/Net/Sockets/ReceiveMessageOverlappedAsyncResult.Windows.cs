@@ -164,7 +164,7 @@ namespace System.Net.Sockets
             {
                 GlobalLog.AssertFormat("ReceiveMessageOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
             }
-            SocketsEventSource.Dump(SocketsEventSource.MethodType.PostCompletion, _wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
+            SocketsEventSource.Dump(_wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
         }
     }
 }

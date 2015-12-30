@@ -157,9 +157,9 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (Logging.On)
+                        if (NetEventSource.Log.IsEnabled())
                         {
-                            Logging.Exception(Logging.Web, "AddressChangeListener", "AddressChangedCallback", nie);
+                            NetEventSource.Exception(NetEventSource.ComponentType.NetworkInformation, "AddressChangeListener", "AddressChangedCallback", nie);
                         }
                     }
 

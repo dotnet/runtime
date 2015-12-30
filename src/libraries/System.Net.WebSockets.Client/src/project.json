@@ -4,7 +4,7 @@
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Tools": "4.0.0",
-    "System.Net.Primitives": "4.0.0",
+    "System.Net.Primitives": "4.0.10",
     "System.Net.WebHeaderCollection": "4.0.0",
     "System.Net.WebSockets": "4.0.0-rc2-23616",
     "System.Resources.ResourceManager": "4.0.0",

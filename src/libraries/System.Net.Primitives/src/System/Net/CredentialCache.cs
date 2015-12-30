@@ -447,7 +447,7 @@ namespace System.Net
 
         public override string ToString()
         {
-            return "[" + Host.Length.ToString(NumberFormatInfo.InvariantInfo) + "]:" + Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + Logging.ObjectToString(AuthenticationType);
+            return "[" + Host.Length.ToString(NumberFormatInfo.InvariantInfo) + "]:" + Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + LoggingHash.ObjectToString(AuthenticationType);
         }
     }
 
@@ -551,7 +551,7 @@ namespace System.Net
 
         public override string ToString()
         {
-            return "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + Logging.ObjectToString(UriPrefix) + ":" + Logging.ObjectToString(AuthenticationType);
+            return "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + LoggingHash.ObjectToString(UriPrefix) + ":" + LoggingHash.ObjectToString(AuthenticationType);
         }
     }
 }

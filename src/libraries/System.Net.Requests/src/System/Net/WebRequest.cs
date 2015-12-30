@@ -42,9 +42,9 @@ namespace System.Net
         //     Newly created WebRequest.
         private static WebRequest Create(Uri requestUri, bool useUriBase)
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.Web, "WebRequest", "Create", requestUri.ToString());
+                NetEventSource.Enter(NetEventSource.ComponentType.Requests, "WebRequest", "Create", requestUri.ToString());
             }
 
             string LookupUri;
@@ -106,16 +106,16 @@ namespace System.Net
             {
                 // We found a match, so just call the creator and return what it does.
                 webRequest = Current.Creator.Create(requestUri);
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exit(Logging.Web, "WebRequest", "Create", webRequest);
+                    NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", webRequest);
                 }
                 return webRequest;
             }
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.Web, "WebRequest", "Create", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", null);
             }
 
             // Otherwise no match, throw an exception.

@@ -123,7 +123,7 @@ namespace System.Net.Sockets
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {
-                        SocketsEventSource.Dump(SocketsEventSource.MethodType.PostCompletion, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        SocketsEventSource.Dump(wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -132,7 +132,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    SocketsEventSource.Dump(SocketsEventSource.MethodType.PostCompletion, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
+                    SocketsEventSource.Dump(_singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
                 }
             }
         }
