@@ -14,7 +14,6 @@
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">/DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">/EXE</_OutputTypeArgument>
       <_IlasmSwitches>/QUIET /NOLOGO</_IlasmSwitches>
-      <_IlasmSwitches Condition="'$(KeyOriginatorFile)' != ''">$(_IlasmSwitches) /KEY=$(KeyOriginatorFile)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) /FOLD</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) /STACK=$(SizeOfStackReserve)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) /DEBUG</_IlasmSwitches>
