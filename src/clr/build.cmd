@@ -49,6 +49,8 @@ if /i "%1" == "vs2015" (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "docrossgen" (set __DoCrossgen=1&shift&goto Arg_Loop)
 
+if /i "%1" == "priority" (set __TestPriority=%2&shift&shift&goto Arg_Loop)
+
 if /i "%1" == "/toolset_dir" (set __ToolsetDir=%2&shift&shift&goto Arg_Loop)
 
 echo Invalid commandline argument: %1
@@ -294,7 +296,14 @@ if defined __SkipTestBuild (
 echo.
 echo Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-call %__ProjectDir%\tests\buildtest.cmd
+set __BuildtestArgs=
+
+if defined __TestPriority (
+    set "__BuildtestArgs=Priority %__TestPriority%"
+)
+
+call %__ProjectDir%\tests\buildtest.cmd %__BuildtestArgs%
+
 IF NOT ERRORLEVEL 1 goto SuccessfulBuild
 echo Test binaries build failed. Refer !__TestManagedBuildLog! for details.
 exit /b 1
@@ -323,4 +332,5 @@ echo linuxmscorlib - Build mscorlib for Linux
 echo osxmscorlib - Build mscorlib for OS X
 echo skiptestbuild - Skip building tests
 echo toolset_dir - toolset directory -- Arm64 use only.
+echo Priority (N) where N is a number that signifies the set of tests that will be built and consequently run.
 exit /b 1
