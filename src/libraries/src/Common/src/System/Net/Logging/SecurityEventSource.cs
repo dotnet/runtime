@@ -15,37 +15,36 @@ namespace System.Net
         LocalizationResources = "FxResources.System.Net.Security.SR")]
     internal sealed partial class SecurityEventSource : EventSource
     {
-        private const int ENUMERATE_SECURITY_PACKAGES_ID = 1;
-        private const int SSPI_PACKAGE_NOT_FOUND_ID = 2;
-        private const int ACQUIRE_DEFAULT_CREDENTIAL_ID = 3;
-        private const int ACQUIRE_CREDENTIALS_HANDLE_ID = 4;
-        private const int SECURE_CHANNEL_CTOR_ID = 5;
-        private const int LOCATING_PRIVATE_KEY_ID = 6;
-        private const int CERT_IS_TYPE_2_ID = 7;
-        private const int FOUND_CERT_IN_STORE_ID = 8;
-        private const int NOT_FOUND_CERT_IN_STORE_ID = 9;
-        private const int INITIALIZE_SECURITY_CONTEXT_ID = 10;
-        private const int SECURITY_CONTEXT_INPUT_BUFFER_ID = 11;
-        private const int SECURITY_CONTEXT_INPUT_BUFFERS_ID = 12;
-        private const int ACCEPT_SECURITY_CONTEXT_ID = 13;
-        private const int OPERATION_RETURNED_SOMETHING_ID = 14;
-        private const int REMOTE_CERTIFICATE_ID = 15;
-        private const int CERTIFICATE_FROM_DELEGATE_ID = 16;
-        private const int NO_DELEGATE_NO_CLIENT_CERT_ID = 17;
-        private const int NO_DELEGATE_BUT_CLIENT_CERT_ID = 18;
-        private const int ATTEMPTING_RESTART_USING_CERT_ID = 19;
-        private const int NO_ISSUERS_TRY_ALL_CERTS_ID = 20;
-        private const int LOOK_FOR_MATCHING_CERTS_ID = 21;
-        private const int SELECTED_CERT_ID = 22;
-        private const int CERTS_AFTER_FILTERING_ID = 23;
-        private const int FINDING_MATCHING_CERTS_ID = 24;
-        private const int USING_CACHED_CREDENTIAL_ID = 25;
-        private const int SSPI_SELECTED_CIPHER_SUITE_ID = 26;
-        private const int REMOTE_CERTIFICATE_ERROR_ID = 27;
-        private const int REMOTE_CERTIFICATE_VALID_ID = 28;
-        private const int REMOTE_CERTIFICATE_SUCCESS_ID = 29;
-        private const int REMOTE_CERTIFICATE_INVALID_ID = 30;
-
+        private const int EnumerateSecurityPackagesId = 1;
+        private const int SspiPackageNotFoundId = 2;
+        private const int AcquireDefaultCredentialId = 3;
+        private const int AcquireCredentialsHandleId = 4;
+        private const int SecureChannelCtorId = 5;
+        private const int LocatingPrivateKeyId = 6;
+        private const int CertIsType2Id = 7;
+        private const int FoundCertInStoreId = 8;
+        private const int NotFoundCertInStoreId = 9;
+        private const int InitializeSecurityContextId = 10;
+        private const int SecurityContextInputBufferId = 11;
+        private const int SecurityContextInputBuffersId = 12;
+        private const int AcceptSecuritContextId = 13;
+        private const int OperationReturnedSomethingId = 14;
+        private const int RemoteCertificateId = 15;
+        private const int CertificateFromDelegateId = 16;
+        private const int NoDelegateNoClientCertId = 17;
+        private const int NoDelegateButClientCertId = 18;
+        private const int AttemptingRestartUsingCertId = 19;
+        private const int NoIssuersTryAllCertsId = 20;
+        private const int LookForMatchingCertsId = 21;
+        private const int SelectedCertId = 22;
+        private const int CertsAfterFilteringId = 23;
+        private const int FindingMatchingCertsId = 24;
+        private const int UsingCachedCredentialId = 25;
+        private const int SspiSelectedCipherSuitId = 26;
+        private const int RemoteCertificateErrorId = 27;
+        private const int RemoteVertificateValidId = 28;
+        private const int RemoteCertificateSuccesId = 29;
+        private const int REmoteCertificateInvalidId = 30;
 
         private readonly static SecurityEventSource s_log = new SecurityEventSource();
         private SecurityEventSource() { }
@@ -57,7 +56,7 @@ namespace System.Net
             }
         }
 
-        [Event(ENUMERATE_SECURITY_PACKAGES_ID, Keywords = Keywords.Default,
+        [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void EnumerateSecurityPackages(string securityPackage)
         {
@@ -65,15 +64,17 @@ namespace System.Net
             {
                 return;
             }
+
             string arg1Str = "";
             if (securityPackage != null)
             {
                 arg1Str = securityPackage;
             }
-            s_log.WriteEvent(ENUMERATE_SECURITY_PACKAGES_ID, arg1Str);
+
+            s_log.WriteEvent(EnumerateSecurityPackagesId, arg1Str);
         }
 
-        [Event(SSPI_PACKAGE_NOT_FOUND_ID, Keywords = Keywords.Default,
+        [Event(SspiPackageNotFoundId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void SspiPackageNotFound(string packageName)
         {
@@ -81,38 +82,44 @@ namespace System.Net
             {
                 return;
             }
+
             string arg1Str = "";
             if (packageName != null)
             {
                 arg1Str = packageName;
             }
-            s_log.WriteEvent(SSPI_PACKAGE_NOT_FOUND_ID, arg1Str);
+
+            s_log.WriteEvent(SspiPackageNotFoundId, arg1Str);
         }
 
         [NonEvent]
-        internal static void SecureChannelCtor(object secureChannel,
-                                                string hostname,
-                                                X509CertificateCollection clientCertificates,
-                                                 EncryptionPolicy encryptionPolicy)
+        internal static void SecureChannelCtor(
+                                            object secureChannel,
+                                            string hostname,
+                                            X509CertificateCollection clientCertificates,
+                                            EncryptionPolicy encryptionPolicy)
         {
             if (!s_log.IsEnabled())
             {
                 return;
             }
+
             int clientCertificatesCount = 0;
             string arg1Str = "";
             if (clientCertificates != null)
             {
                 clientCertificatesCount = clientCertificates.Count;
             }
+
             if (hostname != null)
             {
                 arg1Str = hostname;
             }
+
             s_log.SecureChannelCtor(arg1Str, LoggingHash.HashInt(secureChannel), clientCertificatesCount, encryptionPolicy);
         }
 
-        [Event(SECURE_CHANNEL_CTOR_ID, Keywords = Keywords.Default,
+        [Event(SecureChannelCtorId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal unsafe void SecureChannelCtor(string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy)
         {
@@ -120,10 +127,11 @@ namespace System.Net
             {
                 return;
             }
+
             fixed (char* arg1Ptr = hostname)
             {
-                const int SIZEDATA = 4;
-                EventData* dataDesc = stackalloc EventSource.EventData[SIZEDATA];
+                const int SizeData = 4;
+                EventData* dataDesc = stackalloc EventSource.EventData[SizeData];
                 dataDesc[0].DataPointer = (IntPtr)(arg1Ptr);
                 dataDesc[0].Size = (hostname.Length + 1) * sizeof(char);
                 dataDesc[1].DataPointer = (IntPtr)(&secureChannelHash);
@@ -133,11 +141,11 @@ namespace System.Net
                 dataDesc[3].DataPointer = (IntPtr)(&encryptionPolicy);
                 dataDesc[3].Size = sizeof(int);
 
-                WriteEventCore(SECURE_CHANNEL_CTOR_ID, SIZEDATA, dataDesc);
+                WriteEventCore(SecureChannelCtorId, SizeData, dataDesc);
             }
         }
 
-        [Event(LOCATING_PRIVATE_KEY_ID, Keywords = Keywords.Default,
+        [Event(LocatingPrivateKeyId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void LocatingPrivateKey(string x509Certificate, int secureChannelHash)
         {
@@ -145,10 +153,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(LOCATING_PRIVATE_KEY_ID, x509Certificate, secureChannelHash);
+
+            WriteEvent(LocatingPrivateKeyId, x509Certificate, secureChannelHash);
         }
 
-        [Event(CERT_IS_TYPE_2_ID, Keywords = Keywords.Default,
+        [Event(CertIsType2Id, Keywords = Keywords.Default,
     Level = EventLevel.Informational)]
         internal void CertIsType2(int secureChannelHash)
         {
@@ -156,10 +165,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(CERT_IS_TYPE_2_ID, secureChannelHash);
+
+            WriteEvent(CertIsType2Id, secureChannelHash);
         }
 
-        [Event(FOUND_CERT_IN_STORE_ID, Keywords = Keywords.Default,
+        [Event(FoundCertInStoreId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void FoundCertInStore(string store, int secureChannelHash)
         {
@@ -167,10 +177,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(FOUND_CERT_IN_STORE_ID, store, secureChannelHash);
+
+            WriteEvent(FoundCertInStoreId, store, secureChannelHash);
         }
 
-        [Event(NOT_FOUND_CERT_IN_STORE_ID, Keywords = Keywords.Default,
+        [Event(NotFoundCertInStoreId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void NotFoundCertInStore(int secureChannelHash)
         {
@@ -178,10 +189,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(NOT_FOUND_CERT_IN_STORE_ID, secureChannelHash);
+
+            WriteEvent(NotFoundCertInStoreId, secureChannelHash);
         }
 
-        [Event(REMOTE_CERTIFICATE_ID, Keywords = Keywords.Default,
+        [Event(RemoteCertificateId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void RemoteCertificate(string remoteCertificate)
         {
@@ -189,11 +201,12 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(REMOTE_CERTIFICATE_ID, remoteCertificate);
+
+            WriteEvent(RemoteCertificateId, remoteCertificate);
         }
 
 
-        [Event(CERTIFICATE_FROM_DELEGATE_ID, Keywords = Keywords.Default,
+        [Event(CertificateFromDelegateId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void CertificateFromDelegate(int secureChannelHash)
         {
@@ -201,10 +214,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(CERTIFICATE_FROM_DELEGATE_ID, secureChannelHash);
+
+            WriteEvent(CertificateFromDelegateId, secureChannelHash);
         }
 
-        [Event(NO_DELEGATE_NO_CLIENT_CERT_ID, Keywords = Keywords.Default,
+        [Event(NoDelegateNoClientCertId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void NoDelegateNoClientCert(int secureChannelHash)
         {
@@ -212,10 +226,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(NO_DELEGATE_NO_CLIENT_CERT_ID, secureChannelHash);
+
+            WriteEvent(NoDelegateNoClientCertId, secureChannelHash);
         }
 
-        [Event(NO_DELEGATE_BUT_CLIENT_CERT_ID, Keywords = Keywords.Default,
+        [Event(NoDelegateButClientCertId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void NoDelegateButClientCert(int secureChannelHash)
         {
@@ -223,10 +238,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(NO_DELEGATE_BUT_CLIENT_CERT_ID, secureChannelHash);
+
+            WriteEvent(NoDelegateButClientCertId, secureChannelHash);
         }
 
-        [Event(ATTEMPTING_RESTART_USING_CERT_ID, Keywords = Keywords.Default,
+        [Event(AttemptingRestartUsingCertId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void AttemptingRestartUsingCert(string clientCertificate, int secureChannelHash)
         {
@@ -234,10 +250,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(ATTEMPTING_RESTART_USING_CERT_ID, clientCertificate, secureChannelHash);
+
+            WriteEvent(AttemptingRestartUsingCertId, clientCertificate, secureChannelHash);
         }
 
-        [Event(NO_ISSUERS_TRY_ALL_CERTS_ID, Keywords = Keywords.Default,
+        [Event(NoIssuersTryAllCertsId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void NoIssuersTryAllCerts(int secureChannelHash)
         {
@@ -245,10 +262,11 @@ namespace System.Net
             {
                 return;
             }
-            WriteEvent(NO_ISSUERS_TRY_ALL_CERTS_ID, secureChannelHash);
+
+            WriteEvent(NoIssuersTryAllCertsId, secureChannelHash);
         }
 
-        [Event(LOOK_FOR_MATCHING_CERTS_ID, Keywords = Keywords.Default,
+        [Event(LookForMatchingCertsId, Keywords = Keywords.Default,
 Level = EventLevel.Informational)]
         internal void LookForMatchingCerts(int issuersCount, int secureChannelHash)
         {
@@ -256,10 +274,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(LOOK_FOR_MATCHING_CERTS_ID, issuersCount, secureChannelHash);
+
+            WriteEvent(LookForMatchingCertsId, issuersCount, secureChannelHash);
         }
 
-        [Event(SELECTED_CERT_ID, Keywords = Keywords.Default,
+        [Event(SelectedCertId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void SelectedCert(string clientCertificate, int secureChannelHash)
         {
@@ -267,10 +286,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(SELECTED_CERT_ID, clientCertificate, secureChannelHash);
+
+            WriteEvent(SelectedCertId, clientCertificate, secureChannelHash);
         }
 
-        [Event(CERTS_AFTER_FILTERING_ID, Keywords = Keywords.Default,
+        [Event(CertsAfterFilteringId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void CertsAfterFiltering(int filteredCertsCount, int secureChannelHash)
         {
@@ -278,10 +298,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(CERTS_AFTER_FILTERING_ID, filteredCertsCount, secureChannelHash);
+
+            WriteEvent(CertsAfterFilteringId, filteredCertsCount, secureChannelHash);
         }
 
-        [Event(FINDING_MATCHING_CERTS_ID, Keywords = Keywords.Default,
+        [Event(FindingMatchingCertsId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void FindingMatchingCerts(int secureChannelHash)
         {
@@ -289,10 +310,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(FINDING_MATCHING_CERTS_ID, secureChannelHash);
+
+            WriteEvent(FindingMatchingCertsId, secureChannelHash);
         }
 
-        [Event(USING_CACHED_CREDENTIAL_ID, Keywords = Keywords.Default,
+        [Event(UsingCachedCredentialId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
         internal void UsingCachedCredential(int secureChannelHash)
         {
@@ -300,28 +322,31 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(USING_CACHED_CREDENTIAL_ID, secureChannelHash);
+
+            WriteEvent(UsingCachedCredentialId, secureChannelHash);
         }
 
-        [Event(SSPI_SELECTED_CIPHER_SUITE_ID, Keywords = Keywords.Default,
+        [Event(SspiSelectedCipherSuitId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void SspiSelectedCipherSuite(string process,
-                                                        SslProtocols sslProtocol,
-                                                        CipherAlgorithmType cipherAlgorithm,
-                                                        int cipherStrength,
-                                                        HashAlgorithmType hashAlgorithm,
-                                                        int hashStrength,
-                                                        ExchangeAlgorithmType keyExchangeAlgorithm,
-                                                        int keyExchangeStrength)
+        internal unsafe void SspiSelectedCipherSuite(
+                                                string process,
+                                                SslProtocols sslProtocol,
+                                                CipherAlgorithmType cipherAlgorithm,
+                                                int cipherStrength,
+                                                HashAlgorithmType hashAlgorithm,
+                                                int hashStrength,
+                                                ExchangeAlgorithmType keyExchangeAlgorithm,
+                                                int keyExchangeStrength)
         {
             if (!s_log.IsEnabled())
             {
                 return;
             }
+
             fixed (char* arg1Ptr = process)
             {
-                const int SIZEDATA = 8;
-                EventData* dataDesc = stackalloc EventSource.EventData[SIZEDATA];
+                const int SizeData = 8;
+                EventData* dataDesc = stackalloc EventSource.EventData[SizeData];
                 dataDesc[0].DataPointer = (IntPtr)(arg1Ptr);
                 dataDesc[0].Size = (process.Length + 1) * sizeof(char);
                 dataDesc[1].DataPointer = (IntPtr)(&sslProtocol);
@@ -338,11 +363,11 @@ Level = EventLevel.Informational)]
                 dataDesc[3].Size = sizeof(int);
                 dataDesc[4].DataPointer = (IntPtr)(&keyExchangeStrength);
                 dataDesc[4].Size = sizeof(int);
-                WriteEventCore(SSPI_SELECTED_CIPHER_SUITE_ID, SIZEDATA, dataDesc);
+                WriteEventCore(SspiSelectedCipherSuitId, SizeData, dataDesc);
             }
         }
 
-        [Event(REMOTE_CERTIFICATE_ERROR_ID, Keywords = Keywords.Default,
+        [Event(RemoteCertificateErrorId, Keywords = Keywords.Default,
             Level = EventLevel.Verbose)]
         internal void RemoteCertificateError(int secureChannelHash, string message)
         {
@@ -350,10 +375,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(REMOTE_CERTIFICATE_ERROR_ID, secureChannelHash, message);
+
+            WriteEvent(RemoteCertificateErrorId, secureChannelHash, message);
         }
 
-        [Event(REMOTE_CERTIFICATE_VALID_ID, Keywords = Keywords.Default,
+        [Event(RemoteVertificateValidId, Keywords = Keywords.Default,
             Level = EventLevel.Verbose)]
         internal void RemoteCertDeclaredValid(int secureChannelHash)
         {
@@ -361,10 +387,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(REMOTE_CERTIFICATE_VALID_ID, secureChannelHash);
+
+            WriteEvent(RemoteVertificateValidId, secureChannelHash);
         }
 
-        [Event(REMOTE_CERTIFICATE_SUCCESS_ID, Keywords = Keywords.Default,
+        [Event(RemoteCertificateSuccesId, Keywords = Keywords.Default,
             Level = EventLevel.Verbose)]
         internal void RemoteCertHasNoErrors(int secureChannelHash)
         {
@@ -372,10 +399,11 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(REMOTE_CERTIFICATE_SUCCESS_ID, secureChannelHash);
+
+            WriteEvent(RemoteCertificateSuccesId, secureChannelHash);
         }
 
-        [Event(REMOTE_CERTIFICATE_INVALID_ID, Keywords = Keywords.Default,
+        [Event(REmoteCertificateInvalidId, Keywords = Keywords.Default,
             Level = EventLevel.Verbose)]
         internal void RemoteCertUserDeclaredInvalid(int secureChannelHash)
         {
@@ -383,7 +411,8 @@ Level = EventLevel.Informational)]
             {
                 return;
             }
-            WriteEvent(REMOTE_CERTIFICATE_INVALID_ID, secureChannelHash);
+
+            WriteEvent(REmoteCertificateInvalidId, secureChannelHash);
         }
 
         public class Keywords

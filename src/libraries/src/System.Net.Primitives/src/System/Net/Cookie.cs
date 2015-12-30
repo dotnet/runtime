@@ -720,7 +720,7 @@ namespace System.Net
 #if !NETNative_SystemNetHttp
                 if (GlobalLog.IsEnabled && value != CookieVariant.Rfc2965)
                 {
-                    GlobalLog.AssertFormat("Cookie#{0}::set_Variant()|value:{1}", Logging.HashString(this), value);
+                    GlobalLog.AssertFormat("Cookie#{0}::set_Variant()|value:{1}", LoggingHash.HashString(this), value);
                 }
 #endif
                 _cookieVariant = value;

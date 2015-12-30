@@ -1375,7 +1375,7 @@ namespace System.Net.Sockets
             }
             if (s_loggingEnabled)
             {
-                SocketsEventSource.Dump(SocketsEventSource.MethodType.Send, buffer, offset, size);
+                SocketsEventSource.Dump(buffer, offset, size);
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Send", bytesTransferred);
             }
             return bytesTransferred;
@@ -1462,7 +1462,7 @@ namespace System.Net.Sockets
             }
             if (s_loggingEnabled)
             {
-                SocketsEventSource.Dump(SocketsEventSource.MethodType.SendTo, buffer, offset, size);
+                SocketsEventSource.Dump(buffer, offset, size);
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "SendTo", bytesTransferred);
             }
             return bytesTransferred;
@@ -1585,7 +1585,7 @@ namespace System.Net.Sockets
             }
             if (s_loggingEnabled)
             {
-                SocketsEventSource.Dump(SocketsEventSource.MethodType.Receive, buffer, offset, bytesTransferred);
+                SocketsEventSource.Dump(buffer, offset, bytesTransferred);
             }
             if (s_loggingEnabled)
             {
@@ -1896,7 +1896,7 @@ namespace System.Net.Sockets
             }
             if (s_loggingEnabled)
             {
-                SocketsEventSource.Dump(SocketsEventSource.MethodType.ReceiveFrom, buffer, offset, size);
+                SocketsEventSource.Dump(buffer, offset, size);
             }
             if (s_loggingEnabled)
             {
