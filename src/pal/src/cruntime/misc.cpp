@@ -38,6 +38,9 @@ Abstract:
 #if defined(_AMD64_) || defined(_x86_)
 #include <xmmintrin.h>
 #endif // defined(_AMD64_) || defined(_x86_)
+#if defined(_DEBUG)
+#include <assert.h>
+#endif //defined(_DEBUG)
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
@@ -634,3 +637,24 @@ void MiscUnsetenv(const char *name)
     }
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 }
+
+#if defined(_DEBUG)
+
+/*++
+Function:
+PAL_memcpy
+
+Overlapping buffer-safe version of memcpy.
+See MSDN doc for memcpy
+--*/
+void *PAL_memcpy (void *dest, const void *src, size_t count)
+{
+    UINT_PTR x = (UINT_PTR)dest, y = (UINT_PTR)src;
+    assert((x + count <= y) || (y + count <= x));
+    
+    void *ret;
+    #undef memcpy
+    ret = memcpy(dest, src, count);
+    return ret;
+}
+#endif //DEBUG
