@@ -3418,6 +3418,7 @@
       "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0027",
       "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0027",
       "System.Console >= 4.0.0-beta-*",
+      "System.Linq >= 4.0.0",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
       "System.Runtime.Numerics >= 4.0.1-beta-*",
