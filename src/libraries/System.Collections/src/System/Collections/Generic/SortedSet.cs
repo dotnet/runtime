@@ -143,6 +143,7 @@ namespace System.Collections.Generic
                 {
                     Array.Sort(els, 0, count, _comparer);
                     int index = 1;
+                    comparer = _comparer; // Avoid repeated field access of _comparer for the following loop
                     for (int i = 1; i < count; i++)
                     {
                         if (comparer.Compare(els[i], els[i - 1]) != 0)
