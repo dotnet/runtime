@@ -67,7 +67,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildTyp
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__GeneratedIntermediatesDir=%__IntermediatesDir%\Generated"
+set "__GeneratedIntermediatesDir=%__IntermediatesDir%\Generated_latest" ::use this variable to locate dynamically generated files, the actual location though will be different
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -80,7 +80,6 @@ echo.
 
 :: MSBuild projects would need a rebuild
 set __MSBCleanBuildArgs=/t:rebuild
-
 
 :: Cleanup the previous output for the selected configuration
 if exist "%__BinDir%" rd /s /q "%__BinDir%"
@@ -131,7 +130,7 @@ exit /b 1
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
+::       assembly.
 if /i "%__VSVersion%" =="vs2015" goto MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
@@ -200,19 +199,24 @@ exit /b 1
 
 REM Build CoreCLR
 :BuildCoreCLR
-:: Run Steps to Generate ETW specific infrastructure the 
-if exist "%__GeneratedIntermediatesDir%" rd /s /q "%__GeneratedIntermediatesDir%" ::Ensure there are no stale files in the Generated Directory
-md "%__GeneratedIntermediatesDir%"
-md "%__GeneratedIntermediatesDir%\inc"
+:: Run Steps to Generate ETW specific infrastructure the
+if  exist "%__GeneratedIntermediatesDir%" rd /s /q "%__GeneratedIntermediatesDir%" ::Ensure there are no stale files in the Generated Directory
+md  "%__GeneratedIntermediatesDir%"
+md  "%__GeneratedIntermediatesDir%\inc"
 set "genetw=%__SourceDir%\scripts\genWinEtw.py"
 
 mc -h "%__GeneratedIntermediatesDir%\inc" -r "%__GeneratedIntermediatesDir%" -b -co -um -p FireEtw "%__SourceDir%\VM\ClrEtwAll.man"
-IF ERRORLEVEL 1 goto FailedToGenEtwMetadata 
+IF ERRORLEVEL 1 goto FailedToGenEtwMetadata
 
 echo generating clretwallmain.h and etmdummy.h
-"%PythonPath%"  "%genetw%" --man "%__SourceDir%\VM\ClrEtwAll.man" --exc "%__SourceDir%\VM\ClrEtwAllMeta.lst" --eventheader "%__GeneratedIntermediatesDir%\inc\ClrEtwAll.h" --macroheader "%__GeneratedIntermediatesDir%\inc\clretwallmain.h" --dummy "%__GeneratedIntermediatesDir%\inc\etmdummy.h" 
-IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata 
+"%PythonPath%"  "%genetw%" --man "%__SourceDir%\VM\ClrEtwAll.man" --exc "%__SourceDir%\VM\ClrEtwAllMeta.lst" --eventheader "%__GeneratedIntermediatesDir%\inc\ClrEtwAll.h" --macroheader "%__GeneratedIntermediatesDir%\inc\clretwallmain.h" --dummy "%__GeneratedIntermediatesDir%\inc\etmdummy.h"
+IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata
 
+set "__GeneratedIntermediatesDirPresent=%__IntermediatesDir%\Generated" ::do not use this variable, it is used below to support incremental build
+"%PythonPath%" -c "import sys;sys.path.insert(0,r\"%__SourceDir%\scripts\"); from Utilities import *;UpdateDirectory(r\"%__GeneratedIntermediatesDirPresent%\",r\"%__GeneratedIntermediatesDir%\")"
+IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata
+
+set __GeneratedIntermediatesDir="%__GeneratedIntermediatesDirPresent%"
 goto BuildVM
 
 :FailedToGenEtwMetadata
@@ -222,7 +226,7 @@ exit /b %ERRORLEVEL%
 :BuildVM
 
 set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-if /i "%__BuildArch%" == "arm64" (  
+if /i "%__BuildArch%" == "arm64" (
   REM TODO, remove once we have msbuild support for this platform.
 
   %_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:UseEnv=true /fileloggerparameters:Verbosity=normal;LogFile="%__CoreCLRBuildLog%"
