@@ -27,11 +27,9 @@ setup_dirs()
     mkdir -p "$__BinDir"
     mkdir -p "$__LogsDir"
     mkdir -p "$__IntermediatesDir"
-
     # Ensure there are no stale generated files
-    rm -rf "$__IntermediatesDir"
-    mkdir -p "$__GeneratedIntermediatesDir"
-    mkdir -p "$__GeneratedIntermediatesDir/inc"
+    rm -rf "$__GeneratedIntermediatesDir"
+
 }
 
 # Performs "clean build" type actions (deleting and remaking directories)
@@ -69,23 +67,36 @@ build_coreclr()
         return
     fi
 
-    # All set to commence the build
-
-    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
-    
     echo "Laying out dynamically generated files consumed by the build system "
     python "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --inc "$__GeneratedIntermediatesDir/inc" --dummy "$__GeneratedIntermediatesDir/inc/etmdummy.h" --testdir "$__GeneratedIntermediatesDir/eventprovider_tests"
-    
+    if  [[ $? != 0 ]]; then
+        exit
+    fi
+
     #determine the logging system
     case $__BuildOS in
         Linux)
             python "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediatesDir/"
+            if  [[ $? != 0 ]]; then
+                exit
+            fi
             ;;
         *)
             ;;
     esac
 
+    export __GeneratedIntermediatesDirPresent="$__IntermediatesDir/Generated" #do not use this variable, it is used below to support incremental build
+    python -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediatesDirPresent\",\"$__GeneratedIntermediatesDir\")"
+    if  [[ $? != 0 ]]; then
+        exit
+    fi
+
+    # Do not do any more processing from now on:
+    # All set to commence the build
+
+    export __GeneratedIntermediatesDir="$__GeneratedIntermediatesDirPresent"
     cd "$__IntermediatesDir"
+    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
 
     generator=""
     buildFile="Makefile"
@@ -370,7 +381,7 @@ __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
-export __GeneratedIntermediatesDir="$__IntermediatesDir/Generated"
+export __GeneratedIntermediatesDir="$__IntermediatesDir/Generated_latest" # use this variable to locate dynamically generated files, the actual location though will be different
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
