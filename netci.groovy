@@ -331,18 +331,15 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     def jobName = getBuildJobName(configuration, architecture, os) + "_tst"
                     def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
                         Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os), isPR)
+                    def name_suffix = ""
                     if (buildPri1Tests)
                     {
-                        def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                            Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt') + "_pri1", isPR)
+                        name_suffix = "_pri1";
                     }
-                    else
-                    {
-                        def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                            Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt'), isPR)                       
-                    }
+                    def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
+                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt') + name_suffix, isPR)
                 
-                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
+                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR) + name_suffix) {
                         // Add parameters for the inputs
                     
                         parameters {
@@ -416,7 +413,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     // Linux CoreCLR test
                     def flowJobName = getBuildJobName(configuration, architecture, os) + "_flow"
                     def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
-                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
+                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR) + name_suffix) {
                         buildFlow("""
 // Build the input jobs in parallel
 parallel (
