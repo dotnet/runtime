@@ -214,3 +214,6 @@ JIT/Methodical/eh/nested/cascadedcatchret/throwincascadedexcept_r/throwincascade
 JIT/Methodical/eh/nested/cascadedcatchret/throwincascadedexceptnofin_d/throwincascadedexceptnofin_d.sh
 JIT/Methodical/eh/nested/cascadedcatchret/throwincascadedexceptnofin_r/throwincascadedexceptnofin_r.sh
 JIT/Regression/CLR-x86-JIT/V1-M09/b13621/b13621/b13621.sh
+JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
+JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
+
