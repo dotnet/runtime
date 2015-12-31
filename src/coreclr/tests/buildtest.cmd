@@ -33,6 +33,7 @@ if /i "%1" == "vs2013"   (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"   (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "crossgen" (set _crossgen=true&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip" (set _ilasmroundtrip=true&shift&goto Arg_Loop)
 if /i "%1" == "priority" (set _priorityvalue=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "verbose" (set _verbosity=detailed&shift&goto Arg_Loop)
@@ -43,6 +44,7 @@ goto Usage
 :ArgsDone
 
 if defined _crossgen echo Building tests with CrossGen enabled.&set _buildParameters=%_buildParameters% /p:CrossGen=true
+if defined _ilasmroundtrip echo Building tests with IlasmRoundTrip enabled.&set _buildParameters=%_buildParameters% /p:IlasmRoundTrip=true
 if defined _priorityvalue echo Building Test Priority %_priorityvalue%&set _buildParameters=%_buildParameters% /p:CLRTestPriorityToBuild=%_priorityvalue%
 if defined _verbosity echo Enabling verbose file logging
 if not defined _verbosity set _verbosity=normal
@@ -221,5 +223,6 @@ echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2015)
 echo CrossGen - Enables the tests to run crossgen on the test executables before executing them. 
 echo Priority (N) where N is a number greater than zero that signifies the set of tests that will be built and consequently run.
+echo IlasmRoundTrip - Enables ilasm round trip build and run of the tests before executing them.
 echo Verbose - Enables detailed file logging for the msbuild tasks.
 exit /b 1
