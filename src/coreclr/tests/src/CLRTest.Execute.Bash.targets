@@ -52,6 +52,41 @@ fi
     </PropertyGroup>
   </Target>
 
+  <Target
+    Name="GetIlasmRoundTripBashScript"
+    Returns="$(IlasmRoundTripBashScript)">
+    <PropertyGroup>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
+      <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
+
+      <IlasmRoundTrip Condition="'$(ReferenceLocalMscorlib)'!=''">false</IlasmRoundTrip>
+
+      <IlasmRoundTripBashScript Condition="'$(IlasmRoundTrip)'=='true'">
+      <![CDATA[
+echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+"$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+_ERRORLEVEL=$?
+if [ ! $ERRORLEVEL == 0 ]
+then
+  echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
+  exit 1
+fi
+
+echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+"$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+_ERRORLEVEL=$?
+if [ ! $ERRORLEVEL == 0 ]
+then
+  echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
+  exit 1
+fi
+      ]]>
+      </IlasmRoundTripBashScript>
+    </PropertyGroup>
+  </Target>
+
   <!-- This is here because of this bug: http://blogs.msdn.com/b/msbuild/archive/2006/01/03/508629.aspx-->
   <Target Name="FetchExternalProperties">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
@@ -95,7 +130,7 @@ fi
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalProperties;GetCrossgenBashScript">
+    DependsOnTargets="FetchExternalProperties;GetCrossgenBashScript;GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -148,15 +183,22 @@ fi
     </ItemGroup>
     
     <PropertyGroup>
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">$(_CLRTestToRunFileFullPath)</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' AND $(_CLRTestNeedsProjectToRun) ">"$CORE_ROOT/corerun" $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
+      <BashCLRTestLaunchCmds Condition="'$(IlasmRoundTrip)'=='true'"><![CDATA[
+echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments $Host_Args
+$(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments $Host_Args
+if [ ! $? == $CLRTestExpectedExitCode ]
+then
+  echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
+  echo FAILED
+  exit 1
+fi
+      ]]></BashCLRTestLaunchCmds>
 
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">"$(MSBuildProjectName).exe"</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' AND !$(_CLRTestNeedsProjectToRun) ">"$CORE_ROOT/corerun" $(_CLRTestRunFile)</_CLRTestRunFile>
-
-      <BashCLRTestLaunchCmds Condition=" '$(BashCLRTestLaunchCmds)'=='' "><![CDATA[
-echo $(_CLRTestRunFile) $CLRTestExecutionArguments $Host_Args
-$_DebuggerFullPath $(_CLRTestRunFile) $CLRTestExecutionArguments $Host_Args
+      <BashCLRTestLaunchCmds><![CDATA[
+$(BashCLRTestLaunchCmds)
+echo $_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments $Host_Args
+$_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments $Host_Args
 CLRTestExitCode=$?
       ]]></BashCLRTestLaunchCmds>
     </PropertyGroup>
@@ -232,6 +274,8 @@ $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 # CrossGen Script (when /p:CrossGen=true)
 $(CrossgenBashScript)
+# IlasmRoundTrip Script
+$(IlasmRoundTripBashScript)
 # PreCommands
 $(_BashCLRTestPreCommands)
 # Launch
