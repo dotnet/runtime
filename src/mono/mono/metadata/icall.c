@@ -879,6 +879,9 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	klass = mono_class_from_mono_type (handle);
 	MONO_CHECK_ARG (handle, klass,);
 
+	if (klass->generic_container)
+		return;
+
 	vtable = mono_class_vtable_full (mono_domain_get (), klass, TRUE);
 
 	/* This will call the type constructor */
