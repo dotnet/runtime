@@ -2980,6 +2980,12 @@ mono_gc_base_init (void)
 
 	if (nursery_canaries_enabled ())
 		sgen_set_use_managed_allocator (FALSE);
+
+#if defined(HAVE_KW_THREAD)
+	/* This can happen with using libmonosgen.so */
+	if (mono_tls_key_get_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR) == -1)
+		sgen_set_use_managed_allocator (FALSE);
+#endif
 }
 
 void

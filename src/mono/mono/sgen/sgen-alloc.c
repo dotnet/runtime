@@ -554,9 +554,6 @@ sgen_init_allocator (void)
 
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
-
-	g_assert (tlab_next_addr_offset != -1);
-	g_assert (tlab_temp_end_offset != -1);
 #endif
 
 #ifdef HEAVY_STATISTICS
