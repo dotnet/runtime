@@ -4534,6 +4534,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ISHR_UN_IMM:
 		case OP_LADD_IMM:
 		case OP_LSUB_IMM:
+		case OP_LMUL_IMM:
 		case OP_LREM_IMM:
 		case OP_LAND_IMM:
 		case OP_LOR_IMM:
@@ -4579,6 +4580,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_IMUL_IMM:
 			case OP_MUL_IMM:
+			case OP_LMUL_IMM:
 				values [ins->dreg] = LLVMBuildMul (builder, lhs, imm, dname);
 				break;
 			case OP_IDIV_IMM:
