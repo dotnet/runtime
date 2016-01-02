@@ -1378,9 +1378,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		case LLVMArgAsFpArgs: {
 			int j;
 
+			/* Emit dummy fp arguments if needed so the rest is passed on the stack */
+			for (j = 0; j < ainfo->ndummy_fpargs; ++j)
+				param_types [pindex ++] = LLVMDoubleType ();
 			for (j = 0; j < ainfo->nslots; ++j)
-				param_types [pindex + j] = ainfo->esize == 8 ? LLVMDoubleType () : LLVMFloatType ();
-			pindex += ainfo->nslots;
+				param_types [pindex ++] = ainfo->esize == 8 ? LLVMDoubleType () : LLVMFloatType ();
 			break;
 		}
 		case LLVMArgVtypeAsScalar:
@@ -2793,6 +2795,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMValueRef args [8];
 			int j;
 
+			pindex += ainfo->ndummy_fpargs;
+
 			/* The argument is received as a set of int/fp arguments, store them into the real argument */
 			memset (args, 0, sizeof (args));
 			if (ainfo->storage == LLVMArgVtypeInReg) {
@@ -3219,6 +3223,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		case LLVMArgVtypeInReg:
 		case LLVMArgAsFpArgs: {
 			guint32 nargs;
+			int j;
+
+			for (j = 0; j < ainfo->ndummy_fpargs; ++j)
+				args [pindex + j] = LLVMConstNull (LLVMDoubleType ());
+			pindex += ainfo->ndummy_fpargs;
 
 			g_assert (addresses [reg]);
 			emit_vtype_to_args (ctx, builder, ainfo->type, addresses [reg], ainfo, args + pindex, &nargs);
@@ -6394,8 +6403,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
 		char *name;
+		int pindex = ainfo->pindex + ainfo->ndummy_fpargs;
+		int j;
 
-		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, ainfo->pindex);
+		for (j = 0; j < ainfo->ndummy_fpargs; ++j) {
+			name = g_strdup_printf ("dummy_%d_%d", i, j);
+			LLVMSetValueName (LLVMGetParam (method, ainfo->pindex + j), name);
+			g_free (name);
+		}
+
+		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, pindex);
 		if (ainfo->storage == LLVMArgScalarByRef) {
 			if (names [i] && names [i][0] != '\0')
 				name = g_strdup_printf ("p_arg_%s", names [i]);
@@ -6415,7 +6432,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
 		g_free (name);
 		if (ainfo->storage == LLVMArgVtypeByVal)
-			LLVMAddAttribute (LLVMGetParam (method, ainfo->pindex), LLVMByValAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, pindex), LLVMByValAttribute);
 
 		if (ainfo->storage == LLVMArgVtypeByRef) {
 			/* For OP_LDADDR */

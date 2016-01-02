@@ -401,4 +401,28 @@ class Tests
 			return 2;
 		return 0;
 	}
+
+	struct FpStruct {
+		public float a, b, c;
+	}
+
+	struct LargeStruct2 {
+		public FpStruct x;
+		public int a, b, c, d, e, f, g, h;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int pass_hfa_on_stack (FpStruct s1, FpStruct s2, FpStruct s3) {
+		return (int)s3.c;
+	}
+
+	public static int test_10_arm64_hfa_on_stack_llvm () {
+		var arr = new LargeStruct2 [10, 10];
+		for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j)
+				arr [i, j].x = new FpStruct ();
+
+		var s1 = new FpStruct () { a = 1, b = 1, c = 10 };
+		return pass_hfa_on_stack (s1, s1, s1);
+	}
 }
