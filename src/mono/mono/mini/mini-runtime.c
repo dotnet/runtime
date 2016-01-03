@@ -2719,7 +2719,7 @@ mini_get_vtable_trampoline (int slot_index)
 			/* The vtable/imt construction code in object.c depends on this being non-NULL */
 			return no_imt_trampoline;
 		else
-			return no_vcall_trampoline;
+			return NULL;
 	}
 
 	g_assert (slot_index >= - MONO_IMT_SIZE);
@@ -3585,6 +3585,8 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
+	/* This needs a wrapper so it can have a preserveall cconv */
+	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr object int", FALSE);
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);
 	register_icall (mono_init_delegate_virtual, "mono_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);

@@ -3014,7 +3014,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
-	gboolean is_virtual, calli;
+	gboolean is_virtual, calli, preserveall;
 	LLVMBuilderRef builder = *builder_ref;
 
 	if (call->signature->call_convention != MONO_CALL_DEFAULT)
@@ -3034,6 +3034,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	is_virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE || ins->opcode == OP_RCALL_MEMBASE);
 	calli = !call->fptr_is_patch && (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG || ins->opcode == OP_RCALL_REG);
+	/* Unused */
+	preserveall = FALSE;
 
 	/* FIXME: Avoid creating duplicate methods */
 
@@ -3294,6 +3296,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	g_assert (!(call->rgctx_arg_reg && call->imt_arg_reg));
 	if (!sig->pinvoke && !cfg->llvm_only)
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
+	if (preserveall)
+		mono_llvm_set_call_preserveall_cc (lcall);
 
 	if (cinfo->ret.storage == LLVMArgVtypeByRef)
 		LLVMAddInstrAttribute (lcall, 1 + cinfo->vret_arg_pindex, LLVMStructRetAttribute);
@@ -4170,7 +4174,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LCOMPARE_IMM:
 		case OP_COMPARE_IMM: {
 			CompRelation rel;
-			LLVMValueRef cmp;
+			LLVMValueRef cmp, args [16];
+			gboolean likely = (ins->flags & MONO_INST_LIKELY) != 0;
 
 			if (ins->next->opcode == OP_NOP)
 				break;
@@ -4231,6 +4236,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
 			} else
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
+
+			if (likely) {
+				args [0] = cmp;
+				args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
+				cmp = LLVMBuildCall (ctx->builder, LLVMGetNamedFunction (ctx->lmodule, "llvm.expect.i1"), args, 2, "");
+			}
 
 			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
 				if (ins->next->inst_true_bb == ins->next->inst_false_bb) {
@@ -7143,6 +7154,7 @@ add_intrinsics (LLVMModuleRef module)
 	}
 
 	AddFunc2 (module, "llvm.expect.i8", LLVMInt8Type (), LLVMInt8Type (), LLVMInt8Type ());
+	AddFunc2 (module, "llvm.expect.i1", LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type ());
 
 	/* EH intrinsics */
 	{

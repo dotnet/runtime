@@ -7652,6 +7652,113 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 	return NULL;
 }
 
+static MonoInst*
+emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp, MonoInst *imt_arg)
+{
+	MonoInst *icall_args [16];
+	MonoInst *call_target, *ins;
+	int arg_reg;
+	gboolean is_iface = cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE;
+	guint32 slot;
+
+	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+
+	if (is_iface)
+		slot = mono_method_get_imt_slot (cmethod);
+	else
+		slot = mono_method_get_vtable_index (cmethod);
+
+	if (!fsig->generic_param_count && !is_iface && !imt_arg && !(cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))) {
+		/*
+		 * The simplest case, a normal virtual call.
+		 */
+		int this_reg = sp [0]->dreg;
+		int vtable_reg = alloc_preg (cfg);
+		int slot_reg = alloc_preg (cfg);
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		int offset;
+		MonoBasicBlock *non_null_bb;
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
+
+		/* Load the vtable slot, which contains a function descriptor. */
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
+
+		NEW_BBLOCK (cfg, non_null_bb);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, slot_reg, 0);
+		cfg->cbb->last_ins->flags |= MONO_INST_LIKELY;
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, non_null_bb);
+
+		/* Slow path */
+		// FIXME: Make the wrapper use the preserveall cconv
+		// FIXME: Use one icall per slot for small slot numbers ?
+		icall_args [0] = sp [0];
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+		/* Make the icall return the vtable slot value to save some code space */
+		ins = mono_emit_jit_icall (cfg, mono_init_vtable_slot, icall_args);
+		ins->dreg = slot_reg;
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, non_null_bb);
+
+		/* Fastpath */
+		MONO_START_BB (cfg, non_null_bb);
+		/* Load the address + arg from the vtable slot */
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, SIZEOF_VOID_P);
+
+		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
+	// FIXME: Optimize this
+
+	icall_args [0] = sp [0];
+	EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+
+	if (fsig->generic_param_count) {
+		/* virtual generic call */
+		g_assert (!imt_arg);
+		/* Same as the virtual generic case above */
+		imt_arg = emit_get_rgctx_method (cfg, context_used,
+										 cmethod, MONO_RGCTX_INFO_METHOD);
+		icall_args [2] = imt_arg;
+	} else if (imt_arg) {
+		icall_args [2] = imt_arg;
+	} else {
+		EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
+		icall_args [2] = ins;
+	}
+
+	// FIXME: For generic virtual calls, avoid computing the rgctx twice
+
+	arg_reg = alloc_preg (cfg);
+	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
+	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, &mono_defaults.int_class->byval_arg);
+
+	if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+		/*
+		 * We handle virtual calls made from gsharedvt methods here instead
+		 * of the gsharedvt block above.
+		 */
+		if (is_iface)
+			call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
+		else
+			call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall_gsharedvt, icall_args);
+	} else {
+		if (is_iface)
+			call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
+		else
+			call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall, icall_args);
+	}
+
+	/*
+	 * Pass the extra argument even if the callee doesn't receive it, most
+	 * calling conventions allow this.
+	 */
+	return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+}
+
 static gboolean
 is_exception_class (MonoClass *klass)
 {
@@ -9733,66 +9840,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * Virtual calls in llvm-only mode.
 			 */
 			if (cfg->llvm_only && virtual_ && cmethod && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-				MonoInst *icall_args [16];
-				MonoInst *call_target;
-				int arg_reg;
-				gboolean is_iface = cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE;
-
-				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
-
-				// FIXME: Optimize this
-
-				guint32 slot;
-
-				if (is_iface)
-					slot = mono_method_get_imt_slot (cmethod);
-				else
-					slot = mono_method_get_vtable_index (cmethod);
-
-				icall_args [0] = sp [0];
-				EMIT_NEW_ICONST (cfg, icall_args [1], slot);
-
-				if (fsig->generic_param_count) {
-					/* virtual generic call */
-					g_assert (!imt_arg);
-					/* Same as the virtual generic case above */
-					imt_arg = emit_get_rgctx_method (cfg, context_used,
-													 cmethod, MONO_RGCTX_INFO_METHOD);
-					icall_args [2] = imt_arg;
-				} else if (imt_arg) {
-					icall_args [2] = imt_arg;
-				} else {
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
-					icall_args [2] = ins;
-				}
-
-				// FIXME: For generic virtual calls, avoid computing the rgctx twice
-
-				arg_reg = alloc_preg (cfg);
-				MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
-				EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, &mono_defaults.int_class->byval_arg);
-
-				if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
-					/*
-					 * We handle virtual calls made from gsharedvt methods here instead
-					 * of the gsharedvt block above.
-					 */
-					if (is_iface)
-						call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
-					else
-						call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall_gsharedvt, icall_args);
-				} else {
-					if (is_iface)
-						call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
-					else
-						call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall, icall_args);
-				}
-
-				/*
-				 * Pass the extra argument even if the callee doesn't receive it, most calling
-				 * calling conventions allow this.
-				 */
-				ins = emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+				ins = emit_llvmonly_virtual_call (cfg, cmethod, fsig, context_used, sp, imt_arg);
 				goto call_end;
 			}
 

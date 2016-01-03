@@ -1421,7 +1421,6 @@ resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer 
 {
 	MonoVTable *vt;
 	MonoMethod *m, *generic_virtual = NULL;
-	gpointer *vtable_slot;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
 
@@ -1433,18 +1432,12 @@ resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer 
 
 	vt = this_obj->vtable;
 
-	vtable_slot = &(vt->vtable [slot]);
-
 	/* Same as in common_call_trampoline () */
 
 	/* Avoid loading metadata or creating a generic vtable if possible */
 	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
-	if (addr && !vt->klass->valuetype) {
-		if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
-			*vtable_slot = addr;
-
+	if (addr && !vt->klass->valuetype)
 		return mono_create_ftnptr (mono_domain_get (), addr);
-	}
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 
@@ -1488,8 +1481,6 @@ resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer 
 
 	// FIXME: Unify this with mono_resolve_iface_call
 
-	*vtable_slot = addr;
-
 	if (gsharedvt) {
 		/*
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
@@ -1517,6 +1508,29 @@ gpointer
 mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
 {
 	return resolve_vcall (this_obj, slot, imt_method, out_rgctx_arg, TRUE);
+}
+
+/*
+ * mono_init_vtable_slot:
+ *
+ *   Initialize slot SLOT of the vtable of THIS_OBJ.
+ * Return the contents of the vtable slot.
+ */
+gpointer
+mono_init_vtable_slot (MonoObject *this_obj, int slot)
+{
+	gpointer arg;
+	gpointer addr = resolve_vcall (this_obj, slot, NULL, &arg, FALSE);
+	gpointer *ftnptr;
+
+	ftnptr = mono_domain_alloc0 (this_obj->vtable->domain, 2 * sizeof (gpointer));
+	ftnptr [0] = addr;
+	ftnptr [1] = arg;
+	mono_memory_barrier ();
+
+	this_obj->vtable->vtable [slot] = ftnptr;
+
+	return ftnptr;
 }
 
 /*

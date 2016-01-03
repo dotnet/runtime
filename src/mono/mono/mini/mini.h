@@ -983,7 +983,9 @@ enum {
 	 * Set on instructions during code emission which make calls, i.e. OP_CALL, OP_THROW.
 	 * backend.pc_offset will be set to the pc offset at the end of the native call instructions.
 	 */
-	MONO_INST_GC_CALLSITE = 128
+	MONO_INST_GC_CALLSITE = 128,
+	/* On comparisons, mark the branch following the condition as likely to be taken */
+	MONO_INST_LIKELY = 128,
 };
 
 #define inst_c0 data.op[0].const_val
