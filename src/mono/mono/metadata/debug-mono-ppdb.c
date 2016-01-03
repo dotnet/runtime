@@ -519,16 +519,39 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	scope_idx = start_scope_idx;
 	mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 	locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
-	while (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
+
+	// https://github.com/dotnet/roslyn/blob/2ae8d5fed96ab3f1164031f9b4ac827f53289159/docs/specs/PortablePdb-Metadata.md#LocalScopeTable
+	//
+	// The variableList attribute in the pdb metadata table is a contiguous array that starts at a
+	// given offset (locals_idx) above and
+	//
+	// """
+	// continues to the smaller of:
+	//
+	// the last row of the LocalVariable table
+	// the next run of LocalVariables, found by inspecting the VariableList of the next row in this LocalScope table.
+	// """
+	// this endpoint becomes locals_end_idx below
+
+	// March to the last scope that is in this method
+	while (scope_idx <= tables [MONO_TABLE_LOCALSCOPE].rows) {
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
 			break;
 		scope_idx ++;
 	}
+	// The number of scopes is the difference in the indices
+	// for the first and last scopes
 	nscopes = scope_idx - start_scope_idx;
-	if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
-		locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows;
+
+	// Ends with "the last row of the LocalVariable table"
+	// this happens if the above loop marched one past the end
+	// of the rows
+	if (scope_idx > tables [MONO_TABLE_LOCALSCOPE].rows) {
+		locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows + 1;
 	} else {
+		// Ends with "the next run of LocalVariables,
+		// found by inspecting the VariableList of the next row in this LocalScope table."
 		locals_end_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
 	}
 
@@ -545,7 +568,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 
 		locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
 		if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
-			locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows;
+			locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows + 1;
 		} else {
 			locals_end_idx = mono_metadata_decode_row_col (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1 + 1, MONO_LOCALSCOPE_VARIABLELIST);
 		}
