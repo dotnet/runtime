@@ -1087,6 +1087,7 @@ mini_get_underlying_signature (MonoMethodSignature *sig)
  * The extra argument is passed the same way as an rgctx to shared methods.
  * It calls <addr> using the gsharedvt version of SIG, passing in <rgctx> as an extra argument.
  */
+ #ifndef DISABLE_JIT
 MonoMethod*
 mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 {
@@ -1291,6 +1292,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 
 	return res;
 }
+#endif
 
 MonoMethodSignature*
 mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
