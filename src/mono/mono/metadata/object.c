@@ -528,6 +528,8 @@ static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoJumpTrampoline arch_create_jump_trampoline = default_jump_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 static MonoImtThunkBuilder imt_thunk_builder;
+static gboolean always_build_imt_thunks;
+
 #if (MONO_IMT_SIZE > 32)
 #error "MONO_IMT_SIZE cannot be larger than 32"
 #endif
@@ -573,6 +575,12 @@ mono_install_delegate_trampoline (MonoDelegateTrampoline func)
 void
 mono_install_imt_thunk_builder (MonoImtThunkBuilder func) {
 	imt_thunk_builder = func;
+}
+
+void
+mono_set_always_build_imt_thunks (gboolean value)
+{
+	always_build_imt_thunks = value;
 }
 
 static MonoCompileFunc default_mono_compile_method = NULL;
@@ -1287,7 +1295,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	if (imt_builder_entry != NULL) {
-		if (imt_builder_entry->children == 0 && !fail_tramp) {
+		if (imt_builder_entry->children == 0 && !fail_tramp && !always_build_imt_thunks) {
 			/* No collision, return the vtable slot contents */
 			return vtable->vtable [imt_builder_entry->value.vtable_slot];
 		} else {
@@ -1425,7 +1433,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * The IMT thunk might be called with an instance of one of the 
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (i));
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (vt, i));
 			} else {
 				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
 			}
@@ -1497,7 +1505,7 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	mono_loader_lock (); /*FIXME build_imt_slots requires the loader lock.*/
 	mono_domain_lock (vtable->domain);
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
-	if (imt [imt_slot] == callbacks.get_imt_trampoline (imt_slot))
+	if (!callbacks.imt_entry_inited (vtable, imt_slot))
 		build_imt_slots (vtable->klass, vtable, vtable->domain, imt, NULL, imt_slot);
 	mono_domain_unlock (vtable->domain);
 	mono_loader_unlock ();
@@ -1784,10 +1792,10 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 			int imt_slot = MONO_IMT_SIZE + displacement;
 
 			/* Force the rebuild of the thunk at the next call */
-			imt_trampoline = callbacks.get_imt_trampoline (imt_slot);
+			imt_trampoline = callbacks.get_imt_trampoline (vtable, imt_slot);
 			*vtable_slot = imt_trampoline;
 		} else {
-			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline ((gpointer*)vtable_slot - (gpointer*)vtable->vtable) : NULL;
+			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline (vtable, (gpointer*)vtable_slot - (gpointer*)vtable->vtable) : NULL;
 
 			entries = get_generic_virtual_entries (domain, vtable_slot);
 
@@ -2137,7 +2145,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	if (callbacks.get_vtable_trampoline) {
 		// This also covers the AOT case
 		for (i = 0; i < klass->vtable_size; ++i) {
-			vt->vtable [i] = callbacks.get_vtable_trampoline (i);
+			vt->vtable [i] = callbacks.get_vtable_trampoline (vt, i);
 		}
 	} else {
 		mono_class_setup_vtable (klass);
@@ -2153,7 +2161,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	if (imt_table_bytes) {
 		/* Now that the vtable is full, we can actually fill up the IMT */
 			for (i = 0; i < MONO_IMT_SIZE; ++i)
-				interface_offsets [i] = callbacks.get_imt_trampoline (i);
+				interface_offsets [i] = callbacks.get_imt_trampoline (vt, i);
 	}
 
 	/*

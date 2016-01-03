@@ -604,8 +604,9 @@ typedef struct {
 	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
 	char*    (*get_runtime_build_info) (void);
-	gpointer (*get_vtable_trampoline) (int slot_index);
-	gpointer (*get_imt_trampoline) (int imt_slot_index);
+	gpointer (*get_vtable_trampoline) (MonoVTable *vtable, int slot_index);
+	gpointer (*get_imt_trampoline) (MonoVTable *vtable, int imt_slot_index);
+	gboolean (*imt_entry_inited) (MonoVTable *vtable, int imt_slot_index);
 	void     (*set_cast_details) (MonoClass *from, MonoClass *to);
 	void     (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
@@ -1546,6 +1547,9 @@ typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain,
 
 void
 mono_install_imt_thunk_builder (MonoImtThunkBuilder func);
+
+void
+mono_set_always_build_imt_thunks (gboolean value);
 
 void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot);

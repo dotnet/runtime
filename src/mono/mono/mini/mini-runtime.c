@@ -2709,7 +2709,7 @@ static gpointer *vtable_trampolines;
 static int vtable_trampolines_size;
 
 gpointer
-mini_get_vtable_trampoline (int slot_index)
+mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 {
 	int index = slot_index + MONO_IMT_SIZE;
 
@@ -2747,6 +2747,21 @@ mini_get_vtable_trampoline (int slot_index)
 	if (!vtable_trampolines [index])
 		vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, mono_get_root_domain (), NULL);
 	return vtable_trampolines [index];
+}
+
+static gpointer
+mini_get_imt_trampoline (MonoVTable *vt, int slot_index)
+{
+	return mini_get_vtable_trampoline (vt, slot_index - MONO_IMT_SIZE);
+}
+
+static gboolean
+mini_imt_entry_inited (MonoVTable *vt, int imt_slot_index)
+{
+	gpointer *imt = (gpointer*)vt;
+	imt -= MONO_IMT_SIZE;
+
+	return (imt [imt_slot_index] != mini_get_imt_trampoline (vt, imt_slot_index));
 }
 
 gpointer
@@ -2811,12 +2826,6 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 		cache [idx] = (guint8 *)mono_arch_get_delegate_virtual_invoke_impl (sig, method, offset, load_imt_reg);
 	}
 	return cache [idx];
-}
-
-static gpointer
-mini_get_imt_trampoline (int slot_index)
-{
-	return mini_get_vtable_trampoline (slot_index - MONO_IMT_SIZE);
 }
 
 static void
@@ -3169,6 +3178,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
 	callbacks.get_imt_trampoline = mini_get_imt_trampoline;
+	callbacks.imt_entry_inited = mini_imt_entry_inited;
 
 	mono_install_callbacks (&callbacks);
 
