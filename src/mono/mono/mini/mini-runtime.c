@@ -1830,6 +1830,12 @@ mono_jit_map_is_enabled (void)
 
 #endif
 
+static void
+no_gsharedvt_in_wrapper (void)
+{
+	g_assert_not_reached ();
+}
+
 static gpointer
 mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex)
 {
@@ -1929,6 +1935,19 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
 
 	if (!code && mono_llvm_only) {
+		if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
+				/*
+				 * These wrappers are only created for signatures which are in the program, but
+				 * sometimes we load methods too eagerly and have to create them even if they
+				 * will never be called.
+				 */
+				return no_gsharedvt_in_wrapper;
+			}
+		}
+
 		printf ("AOT method not found in llvmonly mode: %s\n", mono_method_full_name (method, 1));
 		g_assert_not_reached ();
 	}
@@ -2507,6 +2526,164 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 }
 
+typedef struct {
+	MonoVTable *vtable;
+	int slot;
+} IMTThunkInfo;
+
+typedef gpointer (*IMTThunkFunc) (gpointer *arg, MonoMethod *imt_method);
+
+/*
+ * mini_llvmonly_initial_imt_thunk:
+ *
+ *  This function is called the first time a call is made through an IMT thunk.
+ * It should have the same signature as the mono_llvmonly_imt_thunk_... functions.
+ */
+static gpointer
+mini_llvmonly_initial_imt_thunk (gpointer *arg, MonoMethod *imt_method)
+{
+	IMTThunkInfo *info = (IMTThunkInfo*)arg;
+	gpointer *imt;
+	gpointer *ftndesc;
+	IMTThunkFunc func;
+
+	mono_vtable_build_imt_slot (info->vtable, info->slot);
+
+	imt = (gpointer*)info->vtable;
+	imt -= MONO_IMT_SIZE;
+
+	/* Return what the real IMT thunk returns */
+	ftndesc = imt [info->slot];
+	func = ftndesc [0];
+	return func ((gpointer *)ftndesc [1], imt_method);
+}
+
+/* This is called indirectly through an imt slot. */
+static gpointer
+mono_llvmonly_imt_thunk (gpointer *arg, MonoMethod *imt_method)
+{
+	int i = 0;
+
+	/* arg points to an array created in mono_llvmonly_get_imt_thunk () */
+	while (arg [i] && arg [i] != imt_method)
+		i += 2;
+	g_assert (arg [i]);
+
+	return arg [i + 1];
+}
+
+/* Optimized versions of mono_llvmonly_imt_thunk () for different table sizes */
+static gpointer
+mono_llvmonly_imt_thunk_1 (gpointer *arg, MonoMethod *imt_method)
+{
+	//g_assert (arg [0] == imt_method);
+	return arg [1];
+}
+
+static gpointer
+mono_llvmonly_imt_thunk_2 (gpointer *arg, MonoMethod *imt_method)
+{
+	//g_assert (arg [0] == imt_method || arg [2] == imt_method);
+	if (arg [0] == imt_method)
+		return arg [1];
+	else
+		return arg [3];
+}
+
+static gpointer
+mono_llvmonly_imt_thunk_3 (gpointer *arg, MonoMethod *imt_method)
+{
+	//g_assert (arg [0] == imt_method || arg [2] == imt_method || arg [4] == imt_method);
+	if (arg [0] == imt_method)
+		return arg [1];
+	else if (arg [2] == imt_method)
+		return arg [3];
+	else
+		return arg [5];
+}
+
+static gpointer
+mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+{
+	gpointer *buf;
+	gpointer *res;
+	int i, index, real_count;
+
+	/*
+	 * Create an array which is passed to the imt thunk functions.
+	 * The array contains MonoMethod-function descriptor pairs, terminated by a NULL entry.
+	 */
+
+	real_count = 0;
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+
+		if (item->has_target_code)
+			continue;
+
+		if (item->is_equals)
+			real_count ++;
+	}
+
+	/*
+	 * Initialize all vtable entries reachable from this imt slot, so the compiled
+	 * code doesn't have to check it.
+	 */
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		int vt_slot;
+
+		if (!item->is_equals || item->has_target_code)
+			continue;
+		vt_slot = item->value.vtable_slot;
+		mono_init_vtable_slot_vt (vtable, vt_slot);
+	}
+
+	/* Save the entries into an array */
+	buf = (void **)mono_domain_alloc (domain, (real_count + 1) * 2 * sizeof (gpointer));
+	index = 0;
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+
+		if (!item->is_equals || item->has_target_code)
+			continue;
+
+		g_assert (item->key);
+		g_assert (!item->has_target_code);
+		g_assert (vtable->vtable [item->value.vtable_slot]);
+
+		buf [(index * 2)] = item->key;
+		buf [(index * 2) + 1] = vtable->vtable [item->value.vtable_slot];
+		index ++;
+	}
+	buf [(index * 2)] = NULL;
+	buf [(index * 2) + 1] = fail_tramp;
+
+	/*
+	 * Return a function descriptor for a C function with 'buf' as its argument.
+	 * It will by called by JITted code.
+	 */
+	res = (void **)mono_domain_alloc (domain, 2 * sizeof (gpointer));
+	// FIXME: Add more special cases
+	switch (real_count) {
+	case 1:
+		res [0] = mono_llvmonly_imt_thunk_1;
+		break;
+	case 2:
+		res [0] = mono_llvmonly_imt_thunk_2;
+		break;
+	case 3:
+		res [0] = mono_llvmonly_imt_thunk_3;
+		break;
+	default:
+		res [0] = mono_llvmonly_imt_thunk;
+		break;
+	}
+	res [1] = buf;
+
+	return res;
+}
+
 MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
@@ -2714,12 +2891,20 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 	int index = slot_index + MONO_IMT_SIZE;
 
 	if (mono_llvm_only) {
-		/* Not used */
-		if (slot_index < 0)
-			/* The vtable/imt construction code in object.c depends on this being non-NULL */
-			return no_imt_trampoline;
-		else
+		if (slot_index < 0) {
+			/* Initialize the IMT thunks to a 'trampoline' so the generated code doesn't have to initialize it */
+			// FIXME: Memory management
+			gpointer *ftndesc = g_malloc (2 * sizeof (gpointer));
+			IMTThunkInfo *info = g_new0 (IMTThunkInfo, 1);
+			info->vtable = vt;
+			info->slot = index;
+			ftndesc [0] = mini_llvmonly_initial_imt_thunk;
+			ftndesc [1] = info;
+			mono_memory_barrier ();
+			return ftndesc;
+		} else {
 			return NULL;
+		}
 	}
 
 	g_assert (slot_index >= - MONO_IMT_SIZE);
@@ -2758,6 +2943,9 @@ mini_get_imt_trampoline (MonoVTable *vt, int slot_index)
 static gboolean
 mini_imt_entry_inited (MonoVTable *vt, int imt_slot_index)
 {
+	if (mono_llvm_only)
+		return FALSE;
+
 	gpointer *imt = (gpointer*)vt;
 	imt -= MONO_IMT_SIZE;
 
@@ -3283,10 +3471,14 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
-	if (mono_aot_only)
+	if (mono_llvm_only) {
+		mono_install_imt_thunk_builder (mono_llvmonly_get_imt_thunk);
+		mono_set_always_build_imt_thunks (TRUE);
+	} else if (mono_aot_only) {
 		mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
-	else
+	} else {
 		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
+	}
 
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();

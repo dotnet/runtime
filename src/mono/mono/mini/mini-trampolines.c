@@ -182,7 +182,8 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	/* We can only use the AOT compiled code if we don't require further processing */
 	lookup_aot = !generic_virtual & !variant_iface;
 
-	mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
+	if (!mono_llvm_only)
+		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
 	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
 		MonoError error;

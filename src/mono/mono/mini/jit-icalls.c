@@ -1377,8 +1377,6 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 													target, addr);
 	}
 
-	*vtable_slot = addr;
-
 	return addr;
 }
 
@@ -1412,25 +1410,18 @@ is_generic_method_definition (MonoMethod *m)
 }
 
 /*
- * mono_resolve_vcall:
+ * resolve_vcall:
  *
- *   Return the executable code for calling this_obj->vtable [slot].
+ *   Return the executable code for calling vt->vtable [slot].
  */
 static gpointer
-resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt)
+resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt)
 {
-	MonoVTable *vt;
 	MonoMethod *m, *generic_virtual = NULL;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
 
 	// FIXME: Optimize this
-
-	if (!this_obj)
-		/* The caller will handle it */
-		return NULL;
-
-	vt = this_obj->vtable;
 
 	/* Same as in common_call_trampoline () */
 
@@ -1501,13 +1492,35 @@ resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer 
 gpointer
 mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
 {
-	return resolve_vcall (this_obj, slot, imt_method, out_rgctx_arg, FALSE);
+	g_assert (this_obj);
+
+	return resolve_vcall (this_obj->vtable, slot, imt_method, out_rgctx_arg, FALSE);
 }
 
 gpointer
 mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
 {
-	return resolve_vcall (this_obj, slot, imt_method, out_rgctx_arg, TRUE);
+	g_assert (this_obj);
+
+	return resolve_vcall (this_obj->vtable, slot, imt_method, out_rgctx_arg, TRUE);
+}
+
+gpointer
+mono_init_vtable_slot_vt (MonoVTable *vtable, int slot)
+{
+	gpointer arg = NULL;
+	gpointer addr;
+	gpointer *ftnptr;
+
+	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE);
+	ftnptr = mono_domain_alloc0 (vtable->domain, 2 * sizeof (gpointer));
+	ftnptr [0] = addr;
+	ftnptr [1] = arg;
+	mono_memory_barrier ();
+
+	vtable->vtable [slot] = ftnptr;
+
+	return ftnptr;
 }
 
 /*
@@ -1519,18 +1532,7 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
 gpointer
 mono_init_vtable_slot (MonoObject *this_obj, int slot)
 {
-	gpointer arg;
-	gpointer addr = resolve_vcall (this_obj, slot, NULL, &arg, FALSE);
-	gpointer *ftnptr;
-
-	ftnptr = mono_domain_alloc0 (this_obj->vtable->domain, 2 * sizeof (gpointer));
-	ftnptr [0] = addr;
-	ftnptr [1] = arg;
-	mono_memory_barrier ();
-
-	this_obj->vtable->vtable [slot] = ftnptr;
-
-	return ftnptr;
+	return mono_init_vtable_slot_vt (this_obj->vtable, slot);
 }
 
 /*

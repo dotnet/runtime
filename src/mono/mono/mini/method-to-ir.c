@@ -146,10 +146,13 @@ MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, 
 
 static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 						  guchar *ip, guint real_offset, gboolean inline_always);
+static MonoInst*
+emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp, MonoInst *imt_arg);
 
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_domain_get;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
+static MonoMethodSignature *helper_sig_llvmonly_imt_thunk;
 
 /*
  * Instruction metadata
@@ -354,6 +357,7 @@ mono_create_helper_signatures (void)
 {
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
+	helper_sig_llvmonly_imt_thunk = mono_create_icall_signature ("ptr ptr ptr");
 }
 
 static MONO_NEVER_INLINE void
@@ -2760,26 +2764,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (!sig)
 		sig = mono_method_signature (method);
 
-	if (cfg->llvm_only && (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		MonoInst *icall_args [16];
-		MonoInst *ins;
-
-		// FIXME: Optimize this
-
-		guint32 imt_slot = mono_method_get_imt_slot (method);
-
-		icall_args [0] = this_ins;
-		EMIT_NEW_ICONST (cfg, icall_args [1], imt_slot);
-		if (imt_arg) {
-			icall_args [2] = imt_arg;
-		} else {
-			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, method);
-			icall_args [2] = ins;
-		}
-		EMIT_NEW_PCONST (cfg, icall_args [3], NULL);
-
-		call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
-	}
+	if (cfg->llvm_only && (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+		g_assert_not_reached ();
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
@@ -2813,37 +2799,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	}
 #endif
 
-	if (cfg->llvm_only && !call_target && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		// FIXME: Vcall optimizations below
-		MonoInst *icall_args [16];
-		MonoInst *ins;
-		int rgctx_reg;
-
-		if (sig->generic_param_count) {
-			/*
-			 * Generic virtual call, pass the concrete method as the imt argument.
-			 */
-			imt_arg = emit_get_rgctx_method (cfg, context_used,
-											 method, MONO_RGCTX_INFO_METHOD);
-		}
-
-		// FIXME: Optimize this
-
-		int slot = mono_method_get_vtable_index (method);
-
-		icall_args [0] = this_ins;
-		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
-		if (imt_arg) {
-			icall_args [2] = imt_arg;
-		} else {
-			EMIT_NEW_PCONST (cfg, ins, NULL);
-			icall_args [2] = ins;
-		}
-		rgctx_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_PCONST (cfg, rgctx_reg, NULL);
-		EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], rgctx_reg, &mono_defaults.int_class->byval_arg);
-		call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall, icall_args);
-	}
+	if (cfg->llvm_only && !call_target && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+		return emit_llvmonly_virtual_call (cfg, method, sig, 0, args, NULL);
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
 
@@ -7663,6 +7620,8 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
+	// FIXME: Pass a vtable to the icalls
+
 	if (is_iface)
 		slot = mono_method_get_imt_slot (cmethod);
 	else
@@ -7709,6 +7668,44 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, SIZEOF_VOID_P);
 
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
+	if (!fsig->generic_param_count && is_iface && !imt_arg && !(cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))) {
+		/*
+		 * A simple interface call
+		 *
+		 * We make a call through an imt slot to obtain the function descriptor we need to call.
+		 * The imt slot contains a function descriptor for a runtime function + arg.
+		 * The slot is already initialized when the vtable is created so there is no need
+		 * to check it here.
+		 */
+		int this_reg = sp [0]->dreg;
+		int vtable_reg = alloc_preg (cfg);
+		int slot_reg = alloc_preg (cfg);
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		int offset;
+		MonoInst *thunk_addr_ins, *thunk_arg_ins, *ftndesc_ins;
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		offset = ((gint32)slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+
+		/* Load the imt slot, which contains a function descriptor. */
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
+
+		/* Load the address + arg of the imt thunk from the imt slot */
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_addr_ins, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, SIZEOF_VOID_P);
+		/*
+		 * IMT thunks in llvm-only mode are C functions which take an info argument
+		 * plus the imt method and return the ftndesc to call.
+		 */
+		icall_args [0] = thunk_arg_ins;
+		EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
+		icall_args [1] = ins;
+		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
+
+		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
 	// FIXME: Optimize this
