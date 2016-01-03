@@ -4363,12 +4363,12 @@ public:
     };
 
     template<bool computeStack>
-    fgWalkResult        fgWalkTreePreRec  (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
+    static fgWalkResult fgWalkTreePreRec  (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
 
     // general purpose tree-walker that is capable of doing pre- and post- order
     // callbacks at the same time
     template<bool doPreOrder, bool doPostOrder>
-    fgWalkResult        fgWalkTreeRec  (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
+    static fgWalkResult fgWalkTreeRec  (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
 
     fgWalkResult        fgWalkTreePre     (GenTreePtr  *pTree,
                                            fgWalkPreFn *visitor,
@@ -4387,7 +4387,7 @@ public:
     //----- Postorder
 
     template<bool computeStack>
-    fgWalkResult        fgWalkTreePostRec (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
+    static fgWalkResult fgWalkTreePostRec (GenTreePtr  *pTree, fgWalkData *fgWalkPre);
 
     fgWalkResult        fgWalkTreePost    (GenTreePtr   *pTree,
                                            fgWalkPostFn  *visitor,
