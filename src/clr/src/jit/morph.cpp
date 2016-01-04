@@ -7137,7 +7137,7 @@ GenTreePtr          Compiler::fgMorphLeaf(GenTreePtr tree)
         CORINFO_CONST_LOOKUP addrInfo;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (tree->gtFptrVal.gtEntryPoint.addr != NULL)
+        if (tree->gtFptrVal.gtEntryPoint.addr != nullptr)
         {
             addrInfo = tree->gtFptrVal.gtEntryPoint;
         }

@@ -6073,6 +6073,9 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         case GT_INTRINSIC:
             copy = new (this, GT_INTRINSIC) GenTreeIntrinsic(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtOp.gtOp2, tree->gtIntrinsic.gtIntrinsicId,
                                                    tree->gtIntrinsic.gtMethodHandle);
+#ifdef FEATURE_READYTORUN_COMPILER
+            copy->gtIntrinsic.gtEntryPoint = tree->gtIntrinsic.gtEntryPoint;
+#endif
             break;
 
         case GT_COPYOBJ:
