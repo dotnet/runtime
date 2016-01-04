@@ -32,9 +32,6 @@
           <Method Name="ConvertChecked">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
-          <Method Name="CreateLambda">
-            <TypeParameter Name="delegateType" Dynamic="Public" Activate="Public"/>
-          </Method>
           <Method Name="Default">
             <TypeParameter Name="type" Dynamic="Public" Activate="Public"/>
           </Method>
@@ -42,16 +39,6 @@
             <TypeParameter Name="type" Dynamic="Public" Serialize="Public"/>
             <!-- When we can express interesting field names ... <TypeParameter Name="fieldName" Type="FieldName" Dynamic="Public" /> ALSO we might want to remove the notation above that injects serialization-->
           </Method>
-          <!--
-          <Method Name="GetActionType">
-            <TypeParameter Name="typeArgs" Type="GetActionType(System.Type[])" Dynamic="Public"/>
-          </Method>
-          -->
-          <!--
-          <Method Name="GetFuncType">
-            <TypeParameter Name="typeArgs" Type="GetActionType(System.Type[])" Dynamic="Public"/>
-          </Method>
-          -->
           <Method Name="Goto">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
@@ -88,9 +75,6 @@
           <Method Name="Parameter">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
-          <Method Name="ParameterIsAssignable">
-            <TypeParameter Name="argType" Dynamic="Public"/>
-          </Method>
           <Method Name="Property">
             <TypeParameter Name="type" Dynamic="Public" Serialize="Public"/>
             <!--
@@ -112,14 +96,6 @@
           <Method Name="Throw">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
-          <!--
-          <Method Name="TryGetActionType">
-            <TypeParameter Name="typeArgs" Type="GetActionType(System.Type[])" Dynamic="Public"/>
-          </Method>
-          <Method Name="TryGetFuncType">
-            <TypeParameter Name="typeArgs" Type="GetActionType(System.Type[])" Dynamic="Public"/>
-          </Method>
-          -->
           <Method Name="TypeAs">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
