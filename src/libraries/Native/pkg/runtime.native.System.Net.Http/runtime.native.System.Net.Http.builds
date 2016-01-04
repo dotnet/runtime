@@ -3,9 +3,22 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="runtime.native.System.Net.Http.pkgproj"/>
-    <Project Condition="'$(TargetsCentOS)' == 'true'" Include="centos\runtime.native.System.Net.Http.pkgproj"/>
-    <Project Condition="'$(TargetsLinux)' == 'true'" Include="ubuntu\runtime.native.System.Net.Http.pkgproj"/>
-    <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx\runtime.native.System.Net.Http.pkgproj"/>
+    <Project Include="centos\runtime.native.System.Net.Http.pkgproj">
+      <!-- currently we build both "centos" and "ubuntu" packages on Linux,
+           but will only publish one of the packages based on what OS we
+           were actually building on.  
+           Remove this when fixing https://github.com/dotnet/corefx/issues/5190 -->
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="ubuntu\runtime.native.System.Net.Http.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="osx\runtime.native.System.Net.Http.pkgproj">
+      <OSGroup>OSX</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
