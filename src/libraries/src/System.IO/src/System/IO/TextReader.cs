@@ -1,18 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
 using System.Threading;
 using System.Threading.Tasks;
-#endif
-
 
 namespace System.IO
 {
@@ -23,18 +17,11 @@ namespace System.IO
     //
     // This class is intended for character input, not bytes.  
     // There are methods on the Stream class for reading bytes. 
-    [ComVisible(true)]
-#if FEATURE_REMOTING
-    public abstract class TextReader : MarshalByRefObject, IDisposable
-    {
-#else // FEATURE_REMOTING
     public abstract class TextReader : IDisposable
     {
-#endif // FEATURE_REMOTING
+        private static Func<object, string> s_readLineDelegate = state => ((TextReader)state).ReadLine();
 
-        private static Func<object, string> _ReadLineDelegate = state => ((TextReader)state).ReadLine();
-
-        private static Func<object, int> _ReadDelegate = state =>
+        private static Func<object, int> s_readDelegate = state =>
         {
             Tuple<TextReader, char[], int, int> tuple = (Tuple<TextReader, char[], int, int>)state;
             return tuple.Item1.Read(tuple.Item2, tuple.Item3, tuple.Item4);
@@ -111,9 +98,9 @@ namespace System.IO
 
         // Reads all characters from the current position to the end of the 
         // TextReader, and returns them as one string.
-        public virtual String ReadToEnd()
+        public virtual string ReadToEnd()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
+            Contract.Ensures(Contract.Result<string>() != null);
 
             char[] chars = new char[4096];
             int len;
@@ -147,7 +134,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public virtual String ReadLine()
+        public virtual string ReadLine()
         {
             StringBuilder sb = new StringBuilder();
             while (true)
@@ -166,14 +153,12 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
-        public virtual Task<String> ReadLineAsync()
+        public virtual Task<string> ReadLineAsync()
         {
-            return Task<String>.Factory.StartNew(_ReadLineDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task<string>.Factory.StartNew(s_readLineDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
-        public async virtual Task<String> ReadToEndAsync()
+        public async virtual Task<string> ReadToEndAsync()
         {
             char[] chars = new char[4096];
             int len;
@@ -185,7 +170,6 @@ namespace System.IO
             return sb.ToString();
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -207,10 +191,9 @@ namespace System.IO
             Contract.Requires(buffer.Length - index >= count);
 
             Tuple<TextReader, char[], int, int> tuple = new Tuple<TextReader, char[], int, int>(this, buffer, index, count);
-            return Task<int>.Factory.StartNew(_ReadDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task<int>.Factory.StartNew(s_readDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -253,7 +236,7 @@ namespace System.IO
                 return 0;
             }
 
-            public override String ReadLine()
+            public override string ReadLine()
             {
                 return null;
             }

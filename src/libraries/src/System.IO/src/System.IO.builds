@@ -8,6 +8,7 @@
     </Project>
     <Project Include="System.IO.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

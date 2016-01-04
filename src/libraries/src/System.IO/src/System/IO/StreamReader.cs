@@ -1,16 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
-
 
 namespace System.IO
 {
@@ -18,7 +13,6 @@ namespace System.IO
     // This is designed for character input in a particular Encoding, 
     // whereas the Stream class is designed for byte input and output.  
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.
@@ -33,18 +27,18 @@ namespace System.IO
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
-        private Stream stream;
-        private Encoding encoding;
-        private Decoder decoder;
-        private byte[] byteBuffer;
-        private char[] charBuffer;
+        private Stream _stream;
+        private Encoding _encoding;
+        private Decoder _decoder;
+        private byte[] _byteBuffer;
+        private char[] _charBuffer;
         private byte[] _preamble;   // Encoding's preamble, which identifies this encoding.
-        private int charPos;
-        private int charLen;
+        private int _charPos;
+        private int _charLen;
         // Record the number of valid bytes in the byteBuffer, for a few checks.
-        private int byteLen;
+        private int _byteLen;
         // This is used only for preamble detection
-        private int bytePos;
+        private int _bytePos;
 
         // This is the maximum number of chars we can get from one call to 
         // ReadBuffer.  Used so ReadBuffer can tell when to copy data into
@@ -148,15 +142,15 @@ namespace System.IO
 
         private void Init(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen)
         {
-            this.stream = stream;
-            this.encoding = encoding;
-            decoder = encoding.GetDecoder();
+            _stream = stream;
+            _encoding = encoding;
+            _decoder = encoding.GetDecoder();
             if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
-            byteBuffer = new byte[bufferSize];
+            _byteBuffer = new byte[bufferSize];
             _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
-            charBuffer = new char[_maxCharsPerBuffer];
-            byteLen = 0;
-            bytePos = 0;
+            _charBuffer = new char[_maxCharsPerBuffer];
+            _byteLen = 0;
+            _bytePos = 0;
             _detectEncoding = detectEncodingFromByteOrderMarks;
             _preamble = encoding.GetPreamble();
             _checkPreamble = (_preamble.Length > 0);
@@ -167,7 +161,7 @@ namespace System.IO
         // Init used by NullStreamReader, to delay load encoding
         internal void Init(Stream stream)
         {
-            this.stream = stream;
+            _stream = stream;
             _closable = true;
         }
 
@@ -179,20 +173,20 @@ namespace System.IO
             {
                 // Note that Stream.Close() can potentially throw here. So we need to 
                 // ensure cleaning up internal resources, inside the finally block.  
-                if (!LeaveOpen && disposing && (stream != null))
-                    stream.Dispose();
+                if (!LeaveOpen && disposing && (_stream != null))
+                    _stream.Dispose();
             }
             finally
             {
-                if (!LeaveOpen && (stream != null))
+                if (!LeaveOpen && (_stream != null))
                 {
-                    stream = null;
-                    encoding = null;
-                    decoder = null;
-                    byteBuffer = null;
-                    charBuffer = null;
-                    charPos = 0;
-                    charLen = 0;
+                    _stream = null;
+                    _encoding = null;
+                    _decoder = null;
+                    _byteBuffer = null;
+                    _charBuffer = null;
+                    _charPos = 0;
+                    _charLen = 0;
                     base.Dispose(disposing);
                 }
             }
@@ -200,12 +194,12 @@ namespace System.IO
 
         public virtual Encoding CurrentEncoding
         {
-            get { return encoding; }
+            get { return _encoding; }
         }
 
         public virtual Stream BaseStream
         {
-            get { return stream; }
+            get { return _stream; }
         }
 
         internal bool LeaveOpen
@@ -224,14 +218,14 @@ namespace System.IO
         {
             CheckAsyncTaskInProgress();
 
-            byteLen = 0;
-            charLen = 0;
-            charPos = 0;
+            _byteLen = 0;
+            _charLen = 0;
+            _charPos = 0;
             // in general we'd like to have an invariant that encoding isn't null. However,
             // for startup improvements for NullStreamReader, we want to delay load encoding. 
-            if (encoding != null)
+            if (_encoding != null)
             {
-                decoder = encoding.GetDecoder();
+                _decoder = _encoding.GetDecoder();
             }
             _isBlocked = false;
         }
@@ -240,12 +234,12 @@ namespace System.IO
         {
             get
             {
-                if (stream == null)
+                if (_stream == null)
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
                 CheckAsyncTaskInProgress();
 
-                if (charPos < charLen)
+                if (_charPos < _charLen)
                     return false;
 
                 // This may block on pipes!
@@ -257,31 +251,31 @@ namespace System.IO
         [Pure]
         public override int Peek()
         {
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
-            if (charPos == charLen)
+            if (_charPos == _charLen)
             {
                 if (_isBlocked || ReadBuffer() == 0) return -1;
             }
-            return charBuffer[charPos];
+            return _charBuffer[_charPos];
         }
 
         public override int Read()
         {
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
-            if (charPos == charLen)
+            if (_charPos == _charLen)
             {
                 if (ReadBuffer() == 0) return -1;
             }
-            int result = charBuffer[charPos];
-            charPos++;
+            int result = _charBuffer[_charPos];
+            _charPos++;
             return result;
         }
 
@@ -295,7 +289,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
@@ -306,14 +300,14 @@ namespace System.IO
             bool readToUserBuffer = false;
             while (count > 0)
             {
-                int n = charLen - charPos;
+                int n = _charLen - _charPos;
                 if (n == 0) n = ReadBuffer(buffer, index + charsRead, count, out readToUserBuffer);
                 if (n == 0) break;  // We're at EOF
                 if (n > count) n = count;
                 if (!readToUserBuffer)
                 {
-                    Buffer.BlockCopy(charBuffer, charPos * 2, buffer, (index + charsRead) * 2, n * 2);
-                    charPos += n;
+                    Buffer.BlockCopy(_charBuffer, _charPos * 2, buffer, (index + charsRead) * 2, n * 2);
+                    _charPos += n;
                 }
                 charsRead += n;
                 count -= n;
@@ -327,21 +321,21 @@ namespace System.IO
             return charsRead;
         }
 
-        public override String ReadToEnd()
+        public override string ReadToEnd()
         {
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
             // Call ReadBuffer, then pull data out of charBuffer.
-            StringBuilder sb = new StringBuilder(charLen - charPos);
+            StringBuilder sb = new StringBuilder(_charLen - _charPos);
             do
             {
-                sb.Append(charBuffer, charPos, charLen - charPos);
-                charPos = charLen;  // Note we consumed these characters
+                sb.Append(_charBuffer, _charPos, _charLen - _charPos);
+                _charPos = _charLen;  // Note we consumed these characters
                 ReadBuffer();
-            } while (charLen > 0);
+            } while (_charLen > 0);
             return sb.ToString();
         }
 
@@ -355,7 +349,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
@@ -366,72 +360,54 @@ namespace System.IO
         // Trims n bytes from the front of the buffer.
         private void CompressBuffer(int n)
         {
-            Contract.Assert(byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
-            Buffer.BlockCopy(byteBuffer, n, byteBuffer, 0, byteLen - n);
-            byteLen -= n;
+            Contract.Assert(_byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
+            Buffer.BlockCopy(_byteBuffer, n, _byteBuffer, 0, _byteLen - n);
+            _byteLen -= n;
         }
 
         private void DetectEncoding()
         {
-            if (byteLen < 2)
+            if (_byteLen < 2)
                 return;
             _detectEncoding = false;
             bool changedEncoding = false;
-            if (byteBuffer[0] == 0xFE && byteBuffer[1] == 0xFF)
+            if (_byteBuffer[0] == 0xFE && _byteBuffer[1] == 0xFF)
             {
                 // Big Endian Unicode
 
-                encoding = Encoding.BigEndianUnicode;
+                _encoding = Encoding.BigEndianUnicode;
                 CompressBuffer(2);
                 changedEncoding = true;
             }
 
-            else if (byteBuffer[0] == 0xFF && byteBuffer[1] == 0xFE)
+            else if (_byteBuffer[0] == 0xFF && _byteBuffer[1] == 0xFE)
             {
                 // Little Endian Unicode, or possibly little endian UTF32
-                if (byteLen < 4 || byteBuffer[2] != 0 || byteBuffer[3] != 0)
+                if (_byteLen < 4 || _byteBuffer[2] != 0 || _byteBuffer[3] != 0)
                 {
-                    encoding = Encoding.Unicode;
+                    _encoding = Encoding.Unicode;
                     CompressBuffer(2);
                     changedEncoding = true;
                 }
-#if FEATURE_UTF32   
-                else
-                {
-                    encoding = Encoding.UTF32;
-                    CompressBuffer(4);
-                    changedEncoding = true;
-                }
-#endif            
             }
 
-            else if (byteLen >= 3 && byteBuffer[0] == 0xEF && byteBuffer[1] == 0xBB && byteBuffer[2] == 0xBF)
+            else if (_byteLen >= 3 && _byteBuffer[0] == 0xEF && _byteBuffer[1] == 0xBB && _byteBuffer[2] == 0xBF)
             {
                 // UTF-8
-                encoding = Encoding.UTF8;
+                _encoding = Encoding.UTF8;
                 CompressBuffer(3);
                 changedEncoding = true;
             }
-#if FEATURE_UTF32            
-            else if (byteLen >= 4 && byteBuffer[0] == 0 && byteBuffer[1] == 0 &&
-                     byteBuffer[2] == 0xFE && byteBuffer[3] == 0xFF)
-            {
-                // Big Endian UTF32
-                encoding = new UTF32Encoding(true, true);
-                CompressBuffer(4);
-                changedEncoding = true;
-            }
-#endif            
-            else if (byteLen == 2)
+            else if (_byteLen == 2)
                 _detectEncoding = true;
             // Note: in the future, if we change this algorithm significantly,
             // we can support checking for the preamble of the given encoding.
 
             if (changedEncoding)
             {
-                decoder = encoding.GetDecoder();
-                _maxCharsPerBuffer = encoding.GetMaxCharCount(byteBuffer.Length);
-                charBuffer = new char[_maxCharsPerBuffer];
+                _decoder = _encoding.GetDecoder();
+                _maxCharsPerBuffer = _encoding.GetMaxCharCount(_byteBuffer.Length);
+                _charBuffer = new char[_maxCharsPerBuffer];
             }
         }
 
@@ -445,28 +421,28 @@ namespace System.IO
             if (!_checkPreamble)
                 return _checkPreamble;
 
-            Contract.Assert(bytePos <= _preamble.Length, "_compressPreamble was called with the current bytePos greater than the preamble buffer length.  Are two threads using this StreamReader at the same time?");
-            int len = (byteLen >= (_preamble.Length)) ? (_preamble.Length - bytePos) : (byteLen - bytePos);
+            Contract.Assert(_bytePos <= _preamble.Length, "_compressPreamble was called with the current bytePos greater than the preamble buffer length.  Are two threads using this StreamReader at the same time?");
+            int len = (_byteLen >= (_preamble.Length)) ? (_preamble.Length - _bytePos) : (_byteLen - _bytePos);
 
-            for (int i = 0; i < len; i++, bytePos++)
+            for (int i = 0; i < len; i++, _bytePos++)
             {
-                if (byteBuffer[bytePos] != _preamble[bytePos])
+                if (_byteBuffer[_bytePos] != _preamble[_bytePos])
                 {
-                    bytePos = 0;
+                    _bytePos = 0;
                     _checkPreamble = false;
                     break;
                 }
             }
 
-            Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+            Contract.Assert(_bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
 
             if (_checkPreamble)
             {
-                if (bytePos == _preamble.Length)
+                if (_bytePos == _preamble.Length)
                 {
                     // We have a match
                     CompressBuffer(_preamble.Length);
-                    bytePos = 0;
+                    _bytePos = 0;
                     _checkPreamble = false;
                     _detectEncoding = false;
                 }
@@ -477,49 +453,49 @@ namespace System.IO
 
         internal virtual int ReadBuffer()
         {
-            charLen = 0;
-            charPos = 0;
+            _charLen = 0;
+            _charPos = 0;
 
             if (!_checkPreamble)
-                byteLen = 0;
+                _byteLen = 0;
             do
             {
                 if (_checkPreamble)
                 {
-                    Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
-                    int len = stream.Read(byteBuffer, bytePos, byteBuffer.Length - bytePos);
+                    Contract.Assert(_bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                    int len = _stream.Read(_byteBuffer, _bytePos, _byteBuffer.Length - _bytePos);
                     Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0)
                     {
                         // EOF but we might have buffered bytes from previous 
                         // attempt to detect preamble that needs to be decoded now
-                        if (byteLen > 0)
+                        if (_byteLen > 0)
                         {
-                            charLen += decoder.GetChars(byteBuffer, 0, byteLen, charBuffer, charLen);
+                            _charLen += _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, _charLen);
                             // Need to zero out the byteLen after we consume these bytes so that we don't keep infinitely hitting this code path
-                            bytePos = byteLen = 0;
+                            _bytePos = _byteLen = 0;
                         }
 
-                        return charLen;
+                        return _charLen;
                     }
 
-                    byteLen += len;
+                    _byteLen += len;
                 }
                 else
                 {
-                    Contract.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
-                    byteLen = stream.Read(byteBuffer, 0, byteBuffer.Length);
-                    Contract.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Contract.Assert(_bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                    _byteLen = _stream.Read(_byteBuffer, 0, _byteBuffer.Length);
+                    Contract.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
-                    if (byteLen == 0)  // We're at EOF
-                        return charLen;
+                    if (_byteLen == 0)  // We're at EOF
+                        return _charLen;
                 }
 
                 // _isBlocked == whether we read fewer bytes than we asked for.
                 // Note we must check it here because CompressBuffer or 
                 // DetectEncoding will change byteLen.
-                _isBlocked = (byteLen < byteBuffer.Length);
+                _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
                 // user suppplied Encoding for the one we implicitly detect. The user could
@@ -529,13 +505,13 @@ namespace System.IO
 
                 // If we're supposed to detect the encoding and haven't done so yet,
                 // do it.  Note this may need to be called more than once.
-                if (_detectEncoding && byteLen >= 2)
+                if (_detectEncoding && _byteLen >= 2)
                     DetectEncoding();
 
-                charLen += decoder.GetChars(byteBuffer, 0, byteLen, charBuffer, charLen);
-            } while (charLen == 0);
+                _charLen += _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, _charLen);
+            } while (_charLen == 0);
             //Console.WriteLine("ReadBuffer called.  chars: "+charLen);
-            return charLen;
+            return _charLen;
         }
 
 
@@ -548,11 +524,11 @@ namespace System.IO
         // this on the first call to ReadBuffer.  
         private int ReadBuffer(char[] userBuffer, int userOffset, int desiredChars, out bool readToUserBuffer)
         {
-            charLen = 0;
-            charPos = 0;
+            _charLen = 0;
+            _charPos = 0;
 
             if (!_checkPreamble)
-                byteLen = 0;
+                _byteLen = 0;
 
             int charsRead = 0;
 
@@ -575,49 +551,49 @@ namespace System.IO
 
                 if (_checkPreamble)
                 {
-                    Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
-                    int len = stream.Read(byteBuffer, bytePos, byteBuffer.Length - bytePos);
+                    Contract.Assert(_bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                    int len = _stream.Read(_byteBuffer, _bytePos, _byteBuffer.Length - _bytePos);
                     Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0)
                     {
                         // EOF but we might have buffered bytes from previous 
                         // attempt to detect preamble that needs to be decoded now
-                        if (byteLen > 0)
+                        if (_byteLen > 0)
                         {
                             if (readToUserBuffer)
                             {
-                                charsRead = decoder.GetChars(byteBuffer, 0, byteLen, userBuffer, userOffset + charsRead);
-                                charLen = 0;  // StreamReader's buffer is empty.
+                                charsRead = _decoder.GetChars(_byteBuffer, 0, _byteLen, userBuffer, userOffset + charsRead);
+                                _charLen = 0;  // StreamReader's buffer is empty.
                             }
                             else
                             {
-                                charsRead = decoder.GetChars(byteBuffer, 0, byteLen, charBuffer, charsRead);
-                                charLen += charsRead;  // Number of chars in StreamReader's buffer.
+                                charsRead = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, charsRead);
+                                _charLen += charsRead;  // Number of chars in StreamReader's buffer.
                             }
                         }
 
                         return charsRead;
                     }
 
-                    byteLen += len;
+                    _byteLen += len;
                 }
                 else
                 {
-                    Contract.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                    Contract.Assert(_bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
-                    byteLen = stream.Read(byteBuffer, 0, byteBuffer.Length);
+                    _byteLen = _stream.Read(_byteBuffer, 0, _byteBuffer.Length);
 
-                    Contract.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Contract.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
-                    if (byteLen == 0)  // EOF
+                    if (_byteLen == 0)  // EOF
                         break;
                 }
 
                 // _isBlocked == whether we read fewer bytes than we asked for.
                 // Note we must check it here because CompressBuffer or 
                 // DetectEncoding will change byteLen.
-                _isBlocked = (byteLen < byteBuffer.Length);
+                _isBlocked = (_byteLen < _byteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
                 // user suppplied Encoding for the one we implicitly detect. The user could
@@ -628,23 +604,23 @@ namespace System.IO
                     continue;
 
                 // On the first call to ReadBuffer, if we're supposed to detect the encoding, do it.
-                if (_detectEncoding && byteLen >= 2)
+                if (_detectEncoding && _byteLen >= 2)
                 {
                     DetectEncoding();
                     // DetectEncoding changes some buffer state.  Recompute this.
                     readToUserBuffer = desiredChars >= _maxCharsPerBuffer;
                 }
 
-                charPos = 0;
+                _charPos = 0;
                 if (readToUserBuffer)
                 {
-                    charsRead += decoder.GetChars(byteBuffer, 0, byteLen, userBuffer, userOffset + charsRead);
-                    charLen = 0;  // StreamReader's buffer is empty.
+                    charsRead += _decoder.GetChars(_byteBuffer, 0, _byteLen, userBuffer, userOffset + charsRead);
+                    _charLen = 0;  // StreamReader's buffer is empty.
                 }
                 else
                 {
-                    charsRead = decoder.GetChars(byteBuffer, 0, byteLen, charBuffer, charsRead);
-                    charLen += charsRead;  // Number of chars in StreamReader's buffer.
+                    charsRead = _decoder.GetChars(_byteBuffer, 0, _byteLen, _charBuffer, charsRead);
+                    _charLen += charsRead;  // Number of chars in StreamReader's buffer.
                 }
             } while (charsRead == 0);
 
@@ -661,14 +637,14 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public override String ReadLine()
+        public override string ReadLine()
         {
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
-            if (charPos == charLen)
+            if (_charPos == _charLen)
             {
                 if (ReadBuffer() == 0) return null;
             }
@@ -676,63 +652,62 @@ namespace System.IO
             StringBuilder sb = null;
             do
             {
-                int i = charPos;
+                int i = _charPos;
                 do
                 {
-                    char ch = charBuffer[i];
+                    char ch = _charBuffer[i];
                     // Note the following common line feed chars:
                     // \n - UNIX   \r\n - DOS   \r - Mac
                     if (ch == '\r' || ch == '\n')
                     {
-                        String s;
+                        string s;
                         if (sb != null)
                         {
-                            sb.Append(charBuffer, charPos, i - charPos);
+                            sb.Append(_charBuffer, _charPos, i - _charPos);
                             s = sb.ToString();
                         }
                         else
                         {
-                            s = new String(charBuffer, charPos, i - charPos);
+                            s = new string(_charBuffer, _charPos, i - _charPos);
                         }
-                        charPos = i + 1;
-                        if (ch == '\r' && (charPos < charLen || ReadBuffer() > 0))
+                        _charPos = i + 1;
+                        if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
                         {
-                            if (charBuffer[charPos] == '\n') charPos++;
+                            if (_charBuffer[_charPos] == '\n') _charPos++;
                         }
                         return s;
                     }
                     i++;
-                } while (i < charLen);
-                i = charLen - charPos;
+                } while (i < _charLen);
+                i = _charLen - _charPos;
                 if (sb == null) sb = new StringBuilder(i + 80);
-                sb.Append(charBuffer, charPos, i);
+                sb.Append(_charBuffer, _charPos, i);
             } while (ReadBuffer() > 0);
             return sb.ToString();
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
-        public override Task<String> ReadLineAsync()
+        public override Task<string> ReadLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
-            if (this.GetType() != typeof(StreamReader))
+            if (GetType() != typeof(StreamReader))
                 return base.ReadLineAsync();
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task<String> task = ReadLineAsyncInternal();
+            Task<string> task = ReadLineAsyncInternal();
             _asyncReadTask = task;
 
             return task;
         }
 
-        private async Task<String> ReadLineAsyncInternal()
+        private async Task<string> ReadLineAsyncInternal()
         {
             if (CharPos_Prop == CharLen_Prop && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
                 return null;
@@ -754,7 +729,7 @@ namespace System.IO
                     // \n - UNIX   \r\n - DOS   \r - Mac
                     if (ch == '\r' || ch == '\n')
                     {
-                        String s;
+                        string s;
 
                         if (sb != null)
                         {
@@ -763,7 +738,7 @@ namespace System.IO
                         }
                         else
                         {
-                            s = new String(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
+                            s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
                         }
 
                         CharPos_Prop = tmpCharPos = i + 1;
@@ -789,28 +764,27 @@ namespace System.IO
             return sb.ToString();
         }
 
-        [ComVisible(false)]
-        public override Task<String> ReadToEndAsync()
+        public override Task<string> ReadToEndAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
-            if (this.GetType() != typeof(StreamReader))
+            if (GetType() != typeof(StreamReader))
                 return base.ReadToEndAsync();
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task<String> task = ReadToEndAsyncInternal();
+            Task<string> task = ReadToEndAsyncInternal();
             _asyncReadTask = task;
 
             return task;
         }
 
-        private async Task<String> ReadToEndAsyncInternal()
+        private async Task<string> ReadToEndAsyncInternal()
         {
             // Call ReadBuffer, then pull data out of charBuffer.
             StringBuilder sb = new StringBuilder(CharLen_Prop - CharPos_Prop);
@@ -825,7 +799,6 @@ namespace System.IO
             return sb.ToString();
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -840,10 +813,10 @@ namespace System.IO
             // since it does not call through to Read() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
-            if (this.GetType() != typeof(StreamReader))
+            if (GetType() != typeof(StreamReader))
                 return base.ReadAsync(buffer, index, count);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
@@ -1011,7 +984,6 @@ namespace System.IO
             return charsRead;
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -1026,10 +998,10 @@ namespace System.IO
             // since it does not call through to Read() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read) when we are not sure.
-            if (this.GetType() != typeof(StreamReader))
+            if (GetType() != typeof(StreamReader))
                 return base.ReadBlockAsync(buffer, index, count);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
 
             CheckAsyncTaskInProgress();
@@ -1048,28 +1020,28 @@ namespace System.IO
 
         // See Dev11 bug #370300 for more info.
 
-        private Int32 CharLen_Prop
+        private int CharLen_Prop
         {
-            get { return charLen; }
-            set { charLen = value; }
+            get { return _charLen; }
+            set { _charLen = value; }
         }
 
-        private Int32 CharPos_Prop
+        private int CharPos_Prop
         {
-            get { return charPos; }
-            set { charPos = value; }
+            get { return _charPos; }
+            set { _charPos = value; }
         }
 
-        private Int32 ByteLen_Prop
+        private int ByteLen_Prop
         {
-            get { return byteLen; }
-            set { byteLen = value; }
+            get { return _byteLen; }
+            set { _byteLen = value; }
         }
 
-        private Int32 BytePos_Prop
+        private int BytePos_Prop
         {
-            get { return bytePos; }
-            set { bytePos = value; }
+            get { return _bytePos; }
+            set { _bytePos = value; }
         }
 
         private Byte[] Preamble_Prop
@@ -1084,7 +1056,7 @@ namespace System.IO
 
         private Decoder Decoder_Prop
         {
-            get { return decoder; }
+            get { return _decoder; }
         }
 
         private bool DetectEncoding_Prop
@@ -1092,14 +1064,14 @@ namespace System.IO
             get { return _detectEncoding; }
         }
 
-        private Char[] CharBuffer_Prop
+        private char[] CharBuffer_Prop
         {
-            get { return charBuffer; }
+            get { return _charBuffer; }
         }
 
         private Byte[] ByteBuffer_Prop
         {
-            get { return byteBuffer; }
+            get { return _byteBuffer; }
         }
 
         private bool IsBlocked_Prop
@@ -1110,10 +1082,10 @@ namespace System.IO
 
         private Stream Stream_Prop
         {
-            get { return stream; }
+            get { return _stream; }
         }
 
-        private Int32 MaxCharsPerBuffer_Prop
+        private int MaxCharsPerBuffer_Prop
         {
             get { return _maxCharsPerBuffer; }
         }
@@ -1227,14 +1199,14 @@ namespace System.IO
                 return 0;
             }
 
-            public override String ReadLine()
+            public override string ReadLine()
             {
                 return null;
             }
 
-            public override String ReadToEnd()
+            public override string ReadToEnd()
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             internal override int ReadBuffer()

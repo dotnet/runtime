@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime;
 using System.Text;
 using System.Diagnostics.Contracts;
 
@@ -12,7 +10,6 @@ namespace System.IO
     // primitives to an arbitrary stream. A subclass can override methods to
     // give unique encodings.
     //
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();
@@ -161,10 +158,9 @@ namespace System.IO
         // advanced by two.
         // Note this method cannot handle surrogates properly in UTF-8.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual void Write(char ch)
         {
-            if (Char.IsSurrogate(ch))
+            if (char.IsSurrogate(ch))
                 throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
             Contract.EndContractBlock();
 
@@ -205,7 +201,6 @@ namespace System.IO
         // Writes a double to this stream. The current position of the stream is
         // advanced by eight.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual void Write(double value)
         {
             ulong TmpValue = *(ulong*)&value;
@@ -222,7 +217,7 @@ namespace System.IO
 
         public virtual void Write(decimal value)
         {
-            int[] bits = Decimal.GetBits(value);
+            int[] bits = decimal.GetBits(value);
             Contract.Assert(bits.Length == 4);
 
             int lo = bits[0];
@@ -334,7 +329,6 @@ namespace System.IO
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual void Write(float value)
         {
             uint TmpValue = *(uint*)&value;
@@ -351,8 +345,7 @@ namespace System.IO
         // a four-byte unsigned integer, and then writes that many characters 
         // to the stream.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public unsafe virtual void Write(String value)
+        public unsafe virtual void Write(string value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");

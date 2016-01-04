@@ -1,18 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Text;
-using System.Threading;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
-
 
 namespace System.IO
 {
@@ -20,7 +12,6 @@ namespace System.IO
     // This is designed for character output in a particular Encoding, 
     // whereas the Stream class is designed for byte input and output.  
     // 
-    [ComVisible(true)]
     public class StreamWriter : TextWriter
     {
         // For UTF-8, the values of 1K for the default buffer size and 4K for the
@@ -33,26 +24,21 @@ namespace System.IO
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
-        private const Int32 DontCopyOnWriteLineThreshold = 512;
+        private const int DontCopyOnWriteLineThreshold = 512;
 
         // Bit bucket - Null has no backing store. Non closable.
         public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, new UTF8Encoding(false, true), MinBufferSize, true);
 
-        private Stream stream;
-        private Encoding encoding;
-        private Encoder encoder;
-        private byte[] byteBuffer;
-        private char[] charBuffer;
-        private int charPos;
-        private int charLen;
-        private bool autoFlush;
-        private bool haveWrittenPreamble;
-        private bool closable;
-
-#if MDA_SUPPORTED
-        // For StreamWriterBufferedDataLost MDA
-        private MdaHelper mdaHelper;
-#endif
+        private Stream _stream;
+        private Encoding _encoding;
+        private Encoder _encoder;
+        private byte[] _byteBuffer;
+        private char[] _charBuffer;
+        private int _charPos;
+        private int _charLen;
+        private bool _autoFlush;
+        private bool _haveWrittenPreamble;
+        private bool _closable;
 
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
@@ -79,20 +65,20 @@ namespace System.IO
         // Even Close() will hit the exception as it would try to flush the unwritten data. 
         // Maybe we can add a DiscardBufferedData() method to get out of such situation (like 
         // StreamReader though for different reason). Either way, the buffered data will be lost!
-        private static volatile Encoding _UTF8NoBOM;
+        private static volatile Encoding s_utf8NoBOM;
 
         internal static Encoding UTF8NoBOM
         {
             //[FriendAccessAllowed]
             get
             {
-                if (_UTF8NoBOM == null)
+                if (s_utf8NoBOM == null)
                 {
                     // No need for double lock - we just want to avoid extra
                     // allocations in the common case.
-                    _UTF8NoBOM = new UTF8Encoding(false, true);
+                    s_utf8NoBOM = new UTF8Encoding(false, true);
                 }
-                return _UTF8NoBOM;
+                return s_utf8NoBOM;
             }
         }
 
@@ -133,30 +119,20 @@ namespace System.IO
             Init(stream, encoding, bufferSize, leaveOpen);
         }
 
-        [System.Security.SecuritySafeCritical]
         private void Init(Stream streamArg, Encoding encodingArg, int bufferSize, bool shouldLeaveOpen)
         {
-            this.stream = streamArg;
-            this.encoding = encodingArg;
-            this.encoder = encoding.GetEncoder();
+            _stream = streamArg;
+            _encoding = encodingArg;
+            _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
-            charBuffer = new char[bufferSize];
-            byteBuffer = new byte[encoding.GetMaxByteCount(bufferSize)];
-            charLen = bufferSize;
+            _charBuffer = new char[bufferSize];
+            _byteBuffer = new byte[_encoding.GetMaxByteCount(bufferSize)];
+            _charLen = bufferSize;
             // If we're appending to a Stream that already has data, don't write
             // the preamble.
-            if (stream.CanSeek && stream.Position > 0)
-                haveWrittenPreamble = true;
-            closable = !shouldLeaveOpen;
-#if MDA_SUPPORTED
-            if (Mda.StreamWriterBufferedDataLost.Enabled)
-            {
-                String callstack = null;
-                if (Mda.StreamWriterBufferedDataLost.CaptureAllocatedCallStack)
-                    callstack = Environment.GetStackTrace(null, false);
-                mdaHelper = new MdaHelper(this, callstack);
-            }
-#endif
+            if (_stream.CanSeek && _stream.Position > 0)
+                _haveWrittenPreamble = true;
+            _closable = !shouldLeaveOpen;
         }
 
         protected override void Dispose(bool disposing)
@@ -167,7 +143,7 @@ namespace System.IO
                 // Also, we never close the handles for stdout & friends.  So we can safely 
                 // write any buffered data to those streams even during finalization, which 
                 // is generally the right thing to do.
-                if (stream != null)
+                if (_stream != null)
                 {
                     // Note: flush on the underlying stream can throw (ex., low disk space)
                     if (disposing /* || (LeaveOpen && stream is __ConsoleStream) */)
@@ -175,11 +151,6 @@ namespace System.IO
                         CheckAsyncTaskInProgress();
 
                         Flush(true, true);
-#if MDA_SUPPORTED
-                        // Disable buffered data loss mda
-                        if (mdaHelper != null)
-                            GC.SuppressFinalize(mdaHelper);
-#endif
                     }
                 }
             }
@@ -187,7 +158,7 @@ namespace System.IO
             {
                 // Dispose of our resources if this StreamWriter is closable. 
                 // Note: Console.Out and other such non closable streamwriters should be left alone 
-                if (!LeaveOpen && stream != null)
+                if (!LeaveOpen && _stream != null)
                 {
                     try
                     {
@@ -196,16 +167,16 @@ namespace System.IO
                         // due to the same Flush error). In this case, we still need to ensure 
                         // cleaning up internal resources, hence the finally block.  
                         if (disposing)
-                            stream.Dispose();
+                            _stream.Dispose();
                     }
                     finally
                     {
-                        stream = null;
-                        byteBuffer = null;
-                        charBuffer = null;
-                        encoding = null;
-                        encoder = null;
-                        charLen = 0;
+                        _stream = null;
+                        _byteBuffer = null;
+                        _charBuffer = null;
+                        _encoding = null;
+                        _encoder = null;
+                        _charLen = 0;
                         base.Dispose(disposing);
                     }
                 }
@@ -225,73 +196,73 @@ namespace System.IO
             // the user explicitly calls Flush (though not if AutoFlush is true).
             // This is required to flush any dangling characters from our UTF-7 
             // and UTF-8 encoders.  
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             // Perf boost for Flush on non-dirty writers.
-            if (charPos == 0 && !flushStream && !flushEncoder)
+            if (_charPos == 0 && !flushStream && !flushEncoder)
                 return;
 
-            if (!haveWrittenPreamble)
+            if (!_haveWrittenPreamble)
             {
-                haveWrittenPreamble = true;
-                byte[] preamble = encoding.GetPreamble();
+                _haveWrittenPreamble = true;
+                byte[] preamble = _encoding.GetPreamble();
                 if (preamble.Length > 0)
-                    stream.Write(preamble, 0, preamble.Length);
+                    _stream.Write(preamble, 0, preamble.Length);
             }
 
-            int count = encoder.GetBytes(charBuffer, 0, charPos, byteBuffer, 0, flushEncoder);
-            charPos = 0;
+            int count = _encoder.GetBytes(_charBuffer, 0, _charPos, _byteBuffer, 0, flushEncoder);
+            _charPos = 0;
             if (count > 0)
-                stream.Write(byteBuffer, 0, count);
+                _stream.Write(_byteBuffer, 0, count);
             // By definition, calling Flush should flush the stream, but this is
             // only necessary if we passed in true for flushStream.  The Web
             // Services guys have some perf tests where flushing needlessly hurts.
             if (flushStream)
-                stream.Flush();
+                _stream.Flush();
         }
 
         public virtual bool AutoFlush
         {
-            get { return autoFlush; }
+            get { return _autoFlush; }
 
             set
             {
                 CheckAsyncTaskInProgress();
 
-                autoFlush = value;
+                _autoFlush = value;
                 if (value) Flush(true, false);
             }
         }
 
         public virtual Stream BaseStream
         {
-            get { return stream; }
+            get { return _stream; }
         }
 
         internal bool LeaveOpen
         {
-            get { return !closable; }
+            get { return !_closable; }
         }
 
         internal bool HaveWrittenPreamble
         {
-            set { haveWrittenPreamble = value; }
+            set { _haveWrittenPreamble = value; }
         }
 
         public override Encoding Encoding
         {
-            get { return encoding; }
+            get { return _encoding; }
         }
 
         public override void Write(char value)
         {
             CheckAsyncTaskInProgress();
 
-            if (charPos == charLen) Flush(false, false);
-            charBuffer[charPos] = value;
-            charPos++;
-            if (autoFlush) Flush(true, false);
+            if (_charPos == _charLen) Flush(false, false);
+            _charBuffer[_charPos] = value;
+            _charPos++;
+            if (_autoFlush) Flush(true, false);
         }
 
         public override void Write(char[] buffer)
@@ -307,16 +278,16 @@ namespace System.IO
             int count = buffer.Length;
             while (count > 0)
             {
-                if (charPos == charLen) Flush(false, false);
-                int n = charLen - charPos;
+                if (_charPos == _charLen) Flush(false, false);
+                int n = _charLen - _charPos;
                 if (n > count) n = count;
                 Contract.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
-                Buffer.BlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
-                charPos += n;
+                Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
+                _charPos += n;
                 index += n;
                 count -= n;
             }
-            if (autoFlush) Flush(true, false);
+            if (_autoFlush) Flush(true, false);
         }
 
         public override void Write(char[] buffer, int index, int count)
@@ -335,19 +306,19 @@ namespace System.IO
 
             while (count > 0)
             {
-                if (charPos == charLen) Flush(false, false);
-                int n = charLen - charPos;
+                if (_charPos == _charLen) Flush(false, false);
+                int n = _charLen - _charPos;
                 if (n > count) n = count;
                 Contract.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
-                Buffer.BlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
-                charPos += n;
+                Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
+                _charPos += n;
                 index += n;
                 count -= n;
             }
-            if (autoFlush) Flush(true, false);
+            if (_autoFlush) Flush(true, false);
         }
 
-        public override void Write(String value)
+        public override void Write(string value)
         {
             if (value != null)
             {
@@ -357,36 +328,35 @@ namespace System.IO
                 int index = 0;
                 while (count > 0)
                 {
-                    if (charPos == charLen) Flush(false, false);
-                    int n = charLen - charPos;
+                    if (_charPos == _charLen) Flush(false, false);
+                    int n = _charLen - _charPos;
                     if (n > count) n = count;
                     Contract.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
-                    value.CopyTo(index, charBuffer, charPos, n);
-                    charPos += n;
+                    value.CopyTo(index, _charBuffer, _charPos, n);
+                    _charPos += n;
                     index += n;
                     count -= n;
                 }
-                if (autoFlush) Flush(true, false);
+                if (_autoFlush) Flush(true, false);
             }
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
         public override Task WriteAsync(char value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteAsync(value);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, value, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: false);
+            Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
             _asyncWriteTask = task;
 
             return task;
@@ -395,14 +365,14 @@ namespace System.IO
         // We pass in private instance fields of this MarshalByRefObject-derived type as local params
         // to ensure performant access inside the state machine that corresponds this async method.
         // Fields that are written to must be assigned at the end of the method *and* before instance invocations.
-        private static async Task WriteAsyncInternal(StreamWriter _this, Char value,
-                                                     Char[] charBuffer, Int32 charPos, Int32 charLen, Char[] coreNewLine,
+        private static async Task WriteAsyncInternal(StreamWriter _this, char value,
+                                                     char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine)
         {
             if (charPos == charLen)
             {
                 await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Contract.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
@@ -411,12 +381,12 @@ namespace System.IO
 
             if (appendNewLine)
             {
-                for (Int32 i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
+                for (int i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
                 {
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Contract.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -428,31 +398,30 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Contract.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
             _this.CharPos_Prop = charPos;
         }
 
-        [ComVisible(false)]
-        public override Task WriteAsync(String value)
+        public override Task WriteAsync(string value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteAsync(value);
 
             if (value != null)
             {
-                if (stream == null)
+                if (_stream == null)
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
                 CheckAsyncTaskInProgress();
 
-                Task task = WriteAsyncInternal(this, value, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: false);
+                Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
                 _asyncWriteTask = task;
 
                 return task;
@@ -466,8 +435,8 @@ namespace System.IO
         // We pass in private instance fields of this MarshalByRefObject-derived type as local params
         // to ensure performant access inside the state machine that corresponds this async method.
         // Fields that are written to must be assigned at the end of the method *and* before instance invocations.
-        private static async Task WriteAsyncInternal(StreamWriter _this, String value,
-                                                     Char[] charBuffer, Int32 charPos, Int32 charLen, Char[] coreNewLine,
+        private static async Task WriteAsyncInternal(StreamWriter _this, string value,
+                                                     char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine)
         {
             Contract.Requires(value != null);
@@ -480,7 +449,7 @@ namespace System.IO
                 if (charPos == charLen)
                 {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this.charPos == 0);
+                    Contract.Assert(_this._charPos == 0);
                     charPos = 0;
                 }
 
@@ -499,12 +468,12 @@ namespace System.IO
 
             if (appendNewLine)
             {
-                for (Int32 i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
+                for (int i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
                 {
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Contract.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -516,14 +485,13 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Contract.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
             _this.CharPos_Prop = charPos;
         }
 
-        [ComVisible(false)]
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -540,15 +508,15 @@ namespace System.IO
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteAsync(buffer, index, count);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, buffer, index, count, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: false);
+            Task task = WriteAsyncInternal(this, buffer, index, count, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
             _asyncWriteTask = task;
 
             return task;
@@ -557,8 +525,8 @@ namespace System.IO
         // We pass in private instance fields of this MarshalByRefObject-derived type as local params
         // to ensure performant access inside the state machine that corresponds this async method.
         // Fields that are written to must be assigned at the end of the method *and* before instance invocations.
-        private static async Task WriteAsyncInternal(StreamWriter _this, Char[] buffer, Int32 index, Int32 count,
-                                                     Char[] charBuffer, Int32 charPos, Int32 charLen, Char[] coreNewLine,
+        private static async Task WriteAsyncInternal(StreamWriter _this, char[] buffer, int index, int count,
+                                                     char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine)
         {
             Contract.Requires(count == 0 || (count > 0 && buffer != null));
@@ -571,7 +539,7 @@ namespace System.IO
                 if (charPos == charLen)
                 {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this.charPos == 0);
+                    Contract.Assert(_this._charPos == 0);
                     charPos = 0;
                 }
 
@@ -589,12 +557,12 @@ namespace System.IO
 
             if (appendNewLine)
             {
-                for (Int32 i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
+                for (int i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
                 {
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Contract.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -606,80 +574,76 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Contract.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
             _this.CharPos_Prop = charPos;
         }
 
-        [ComVisible(false)]
         public override Task WriteLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteLineAsync();
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, null, 0, 0, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, null, 0, 0, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
             _asyncWriteTask = task;
 
             return task;
         }
 
 
-        [ComVisible(false)]
         public override Task WriteLineAsync(char value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteLineAsync(value);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, value, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
             _asyncWriteTask = task;
 
             return task;
         }
 
 
-        [ComVisible(false)]
-        public override Task WriteLineAsync(String value)
+        public override Task WriteLineAsync(string value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteLineAsync(value);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, value, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
             _asyncWriteTask = task;
 
             return task;
         }
 
 
-        [ComVisible(false)]
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -696,54 +660,53 @@ namespace System.IO
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.WriteLineAsync(buffer, index, count);
 
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = WriteAsyncInternal(this, buffer, index, count, charBuffer, charPos, charLen, CoreNewLine, autoFlush, appendNewLine: true);
+            Task task = WriteAsyncInternal(this, buffer, index, count, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
             _asyncWriteTask = task;
 
             return task;
         }
 
 
-        [ComVisible(false)]
         public override Task FlushAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Flush() which a subclass might have overriden.  To be safe 
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
-            if (this.GetType() != typeof(StreamWriter))
+            if (GetType() != typeof(StreamWriter))
                 return base.FlushAsync();
 
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
             // This is required to flush any dangling characters from our UTF-7 
             // and UTF-8 encoders.  
-            if (stream == null)
+            if (_stream == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
 
             CheckAsyncTaskInProgress();
 
-            Task task = FlushAsyncInternal(true, true, charBuffer, charPos);
+            Task task = FlushAsyncInternal(true, true, _charBuffer, _charPos);
             _asyncWriteTask = task;
 
             return task;
         }
 
-        private Int32 CharPos_Prop
+        private int CharPos_Prop
         {
-            set { this.charPos = value; }
+            set { _charPos = value; }
         }
 
         private bool HaveWrittenPreamble_Prop
         {
-            set { this.haveWrittenPreamble = value; }
+            set { _haveWrittenPreamble = value; }
         }
 
 
@@ -757,16 +720,16 @@ namespace System.IO
 
 
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder,
-                                        Char[] sCharBuffer, Int32 sCharPos)
+                                        char[] sCharBuffer, int sCharPos)
         {
             // Perf boost for Flush on non-dirty writers.
             if (sCharPos == 0 && !flushStream && !flushEncoder)
                 return MakeCompletedTask();
 
-            Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, this.haveWrittenPreamble,
-                                                this.encoding, this.encoder, this.byteBuffer, this.stream);
+            Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, _haveWrittenPreamble,
+                                                _encoding, _encoder, _byteBuffer, _stream);
 
-            this.charPos = 0;
+            _charPos = 0;
             return flushTask;
         }
 
@@ -774,7 +737,7 @@ namespace System.IO
         // We pass in private instance fields of this MarshalByRefObject-derived type as local params
         // to ensure performant access inside the state machine that corresponds this async method.
         private static async Task FlushAsyncInternal(StreamWriter _this, bool flushStream, bool flushEncoder,
-                                                     Char[] charBuffer, Int32 charPos, bool haveWrittenPreamble,
+                                                     char[] charBuffer, int charPos, bool haveWrittenPreamble,
                                                      Encoding encoding, Encoder encoder, Byte[] byteBuffer, Stream stream)
         {
             if (!haveWrittenPreamble)
@@ -796,43 +759,5 @@ namespace System.IO
                 await stream.FlushAsync().ConfigureAwait(false);
         }
         #endregion
-
-#if MDA_SUPPORTED
-        // StreamWriterBufferedDataLost MDA
-        // Instead of adding a finalizer to StreamWriter for detecting buffered data loss  
-        // (ie, when the user forgets to call Close/Flush on the StreamWriter), we will 
-        // have a separate object with normal finalization semantics that maintains a 
-        // back pointer to this StreamWriter and alerts about any data loss
-        private sealed class MdaHelper
-        {
-            private StreamWriter streamWriter;
-            private String allocatedCallstack;    // captures the callstack when this streamwriter was allocated
-
-            internal MdaHelper(StreamWriter sw, String cs)
-            {
-                streamWriter = sw;
-                allocatedCallstack = cs;
-            }
-
-            // Finalizer
-            ~MdaHelper()
-            {
-                // Make sure people closed this StreamWriter, exclude StreamWriter::Null.
-                if (streamWriter.charPos != 0 && streamWriter.stream != null && streamWriter.stream != Stream.Null)
-                {
-                    String fileName = (streamWriter.stream is FileStream) ? ((FileStream)streamWriter.stream).NameInternal : "<unknown>";
-                    String callStack = allocatedCallstack;
-
-                    if (callStack == null)
-                        callStack = SR.GetString.IO_StreamWriterBufferedDataLostCaptureAllocatedFromCallstackNotEnabled);
-
-                    String message = SR.GetString(SR.IO_StreamWriterBufferedDataLost, streamWriter.stream.GetType().FullName, fileName, callStack);
-
-                    Mda.StreamWriterBufferedDataLost.ReportError(message);
-                }
-            }
-        }  // class MdaHelper
-#endif  // MDA_SUPPORTED
-
     }  // class StreamWriter
 }  // namespace

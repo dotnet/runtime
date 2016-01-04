@@ -1,19 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Text;
 using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
-
 
 namespace System.IO
 {
@@ -23,93 +17,90 @@ namespace System.IO
     //
     // This class is intended for character output, not bytes.  
     // There are methods on the Stream class for writing bytes. 
-    [ComVisible(true)]
     public abstract class TextWriter : IDisposable
     {
         public static readonly TextWriter Null = new NullTextWriter();
 
-        private static Action<object> _WriteCharDelegate = state =>
+        private static Action<object> s_writeCharDelegate = state =>
         {
             Tuple<TextWriter, char> tuple = (Tuple<TextWriter, char>)state;
             tuple.Item1.Write(tuple.Item2);
         };
 
-        private static Action<object> _WriteStringDelegate = state =>
+        private static Action<object> s_writeStringDelegate = state =>
         {
             Tuple<TextWriter, string> tuple = (Tuple<TextWriter, string>)state;
             tuple.Item1.Write(tuple.Item2);
         };
 
-        private static Action<object> _WriteCharArrayRangeDelegate = state =>
+        private static Action<object> s_writeCharArrayRangeDelegate = state =>
         {
             Tuple<TextWriter, char[], int, int> tuple = (Tuple<TextWriter, char[], int, int>)state;
             tuple.Item1.Write(tuple.Item2, tuple.Item3, tuple.Item4);
         };
 
-        private static Action<object> _WriteLineCharDelegate = state =>
+        private static Action<object> s_writeLineCharDelegate = state =>
         {
             Tuple<TextWriter, char> tuple = (Tuple<TextWriter, char>)state;
             tuple.Item1.WriteLine(tuple.Item2);
         };
 
-        private static Action<object> _WriteLineStringDelegate = state =>
+        private static Action<object> s_writeLineStringDelegate = state =>
         {
             Tuple<TextWriter, string> tuple = (Tuple<TextWriter, string>)state;
             tuple.Item1.WriteLine(tuple.Item2);
         };
 
-        private static Action<object> _WriteLineCharArrayRangeDelegate = state =>
+        private static Action<object> s_writeLineCharArrayRangeDelegate = state =>
         {
             Tuple<TextWriter, char[], int, int> tuple = (Tuple<TextWriter, char[], int, int>)state;
             tuple.Item1.WriteLine(tuple.Item2, tuple.Item3, tuple.Item4);
         };
 
-        private static Action<object> _FlushDelegate = state => ((TextWriter)state).Flush();
+        private static Action<object> s_flushDelegate = state => ((TextWriter)state).Flush();
 
         // This should be initialized to Environment.NewLine, but
         // to avoid loading Environment unnecessarily so I've duplicated
         // the value here.
 #if !PLATFORM_UNIX
-        private const String InitialNewLine = "\r\n";
+        private const string InitialNewLine = "\r\n";
 
         protected char[] CoreNewLine = new char[] { '\r', '\n' };
         private string CoreNewLineStr = "\r\n";
 #else
-        private const String InitialNewLine = "\n";
+        private const string InitialNewLine = "\n";
 
         protected char[] CoreNewLine = new char[] { '\n' };
         private string CoreNewLineStr = "\n";
-
 #endif // !PLATFORM_UNIX
 
         // Can be null - if so, ask for the Thread's CurrentCulture every time.
-        private IFormatProvider InternalFormatProvider;
+        private IFormatProvider _internalFormatProvider;
 
         protected TextWriter()
         {
-            InternalFormatProvider = null;  // Ask for CurrentCulture all the time.
+            _internalFormatProvider = null;  // Ask for CurrentCulture all the time.
         }
 
         protected TextWriter(IFormatProvider formatProvider)
         {
-            InternalFormatProvider = formatProvider;
+            _internalFormatProvider = formatProvider;
         }
 
         public virtual IFormatProvider FormatProvider
         {
             get
             {
-                if (InternalFormatProvider == null)
+                if (_internalFormatProvider == null)
                     return CultureInfo.CurrentCulture;
                 else
-                    return InternalFormatProvider;
+                    return _internalFormatProvider;
             }
         }
 
         protected virtual void Dispose(bool disposing)
         {
         }
-
 
         public void Dispose()
         {
@@ -139,7 +130,7 @@ namespace System.IO
         // the TextWriter to be readable by a TextReader, only one of the following line
         // terminator strings should be used: "\r", "\n", or "\r\n".
         // 
-        public virtual String NewLine
+        public virtual string NewLine
         {
             get { return CoreNewLineStr; }
             set
@@ -250,7 +241,7 @@ namespace System.IO
             Write(value.ToString(FormatProvider));
         }
 
-        public virtual void Write(Decimal value)
+        public virtual void Write(decimal value)
         {
             Write(value.ToString(FormatProvider));
         }
@@ -258,7 +249,7 @@ namespace System.IO
         // Writes a string to the text stream. If the given string is null, nothing
         // is written to the text stream.
         //
-        public virtual void Write(String value)
+        public virtual void Write(string value)
         {
             if (value != null) Write(value.ToCharArray());
         }
@@ -269,7 +260,7 @@ namespace System.IO
         // string representation, and the resulting string is then written to the
         // output stream.
         //
-        public virtual void Write(Object value)
+        public virtual void Write(object value)
         {
             if (value != null)
             {
@@ -281,52 +272,36 @@ namespace System.IO
             }
         }
 
-#if false
-    //      // Converts the wchar * to a string and writes this to the stream.
-    //      //
-    //      __attribute NonCLSCompliantAttribute()
-    //      public void Write(wchar *value) {
-    //          Write(new String(value));
-    //      }
-    
-    //      // Treats the byte* as a LPCSTR, converts it to a string, and writes it to the stream.
-    //      // 
-    //      __attribute NonCLSCompliantAttribute()
-    //      public void Write(byte *value) {
-    //          Write(new String(value));
-    //      }
-#endif
-
         // Writes out a formatted string.  Uses the same semantics as
         // String.Format.
         // 
-        public virtual void Write(String format, Object arg0)
+        public virtual void Write(string format, object arg0)
         {
-            Write(String.Format(FormatProvider, format, arg0));
+            Write(string.Format(FormatProvider, format, arg0));
         }
 
         // Writes out a formatted string.  Uses the same semantics as
         // String.Format.
         // 
-        public virtual void Write(String format, Object arg0, Object arg1)
+        public virtual void Write(string format, object arg0, object arg1)
         {
-            Write(String.Format(FormatProvider, format, arg0, arg1));
+            Write(string.Format(FormatProvider, format, arg0, arg1));
         }
 
         // Writes out a formatted string.  Uses the same semantics as
         // String.Format.
         // 
-        public virtual void Write(String format, Object arg0, Object arg1, Object arg2)
+        public virtual void Write(string format, object arg0, object arg1, object arg2)
         {
-            Write(String.Format(FormatProvider, format, arg0, arg1, arg2));
+            Write(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
 
         // Writes out a formatted string.  Uses the same semantics as
         // String.Format.
         // 
-        public virtual void Write(String format, params Object[] arg)
+        public virtual void Write(string format, params object[] arg)
         {
-            Write(String.Format(FormatProvider, format, arg));
+            Write(string.Format(FormatProvider, format, arg));
         }
 
 
@@ -438,7 +413,7 @@ namespace System.IO
 
         // Writes a string followed by a line terminator to the text stream.
         //
-        public virtual void WriteLine(String value)
+        public virtual void WriteLine(string value)
         {
             if (value != null)
             {
@@ -450,7 +425,7 @@ namespace System.IO
         // Writes the text representation of an object followed by a line
         // terminator to the text stream.
         //
-        public virtual void WriteLine(Object value)
+        public virtual void WriteLine(object value)
         {
             if (value == null)
             {
@@ -471,51 +446,48 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same 
         // semantics as String.Format.
         // 
-        public virtual void WriteLine(String format, Object arg0)
+        public virtual void WriteLine(string format, object arg0)
         {
-            WriteLine(String.Format(FormatProvider, format, arg0));
+            WriteLine(string.Format(FormatProvider, format, arg0));
         }
 
         // Writes out a formatted string and a new line.  Uses the same 
         // semantics as String.Format.
         // 
-        public virtual void WriteLine(String format, Object arg0, Object arg1)
+        public virtual void WriteLine(string format, object arg0, object arg1)
         {
-            WriteLine(String.Format(FormatProvider, format, arg0, arg1));
+            WriteLine(string.Format(FormatProvider, format, arg0, arg1));
         }
 
         // Writes out a formatted string and a new line.  Uses the same 
         // semantics as String.Format.
         // 
-        public virtual void WriteLine(String format, Object arg0, Object arg1, Object arg2)
+        public virtual void WriteLine(string format, object arg0, object arg1, object arg2)
         {
-            WriteLine(String.Format(FormatProvider, format, arg0, arg1, arg2));
+            WriteLine(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
 
         // Writes out a formatted string and a new line.  Uses the same 
         // semantics as String.Format.
         // 
-        public virtual void WriteLine(String format, params Object[] arg)
+        public virtual void WriteLine(string format, params object[] arg)
         {
-            WriteLine(String.Format(FormatProvider, format, arg));
+            WriteLine(string.Format(FormatProvider, format, arg));
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
         public virtual Task WriteAsync(char value)
         {
             Tuple<TextWriter, char> tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(_WriteCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
-        public virtual Task WriteAsync(String value)
+        public virtual Task WriteAsync(string value)
         {
             Tuple<TextWriter, string> tuple = new Tuple<TextWriter, string>(this, value);
-            return Task.Factory.StartNew(_WriteStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public Task WriteAsync(char[] buffer)
         {
             if (buffer == null) return MakeCompletedTask();
@@ -530,51 +502,44 @@ namespace System.IO
         }
 #pragma warning restore 1998
 
-        [ComVisible(false)]
         public virtual Task WriteAsync(char[] buffer, int index, int count)
         {
             Tuple<TextWriter, char[], int, int> tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(_WriteCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public virtual Task WriteLineAsync(char value)
         {
             Tuple<TextWriter, char> tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(_WriteLineCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeLineCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
-        public virtual Task WriteLineAsync(String value)
+        public virtual Task WriteLineAsync(string value)
         {
             Tuple<TextWriter, string> tuple = new Tuple<TextWriter, string>(this, value);
-            return Task.Factory.StartNew(_WriteLineStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeLineStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public Task WriteLineAsync(char[] buffer)
         {
             if (buffer == null) return MakeCompletedTask();
             return WriteLineAsync(buffer, 0, buffer.Length);
         }
 
-        [ComVisible(false)]
         public virtual Task WriteLineAsync(char[] buffer, int index, int count)
         {
             Tuple<TextWriter, char[], int, int> tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(_WriteLineCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_writeLineCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public virtual Task WriteLineAsync()
         {
             return WriteAsync(CoreNewLine);
         }
 
-        [ComVisible(false)]
         public virtual Task FlushAsync()
         {
-            return Task.Factory.StartNew(_FlushDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(s_flushDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
         #endregion
 
@@ -597,7 +562,7 @@ namespace System.IO
             {
             }
 
-            public override void Write(String value)
+            public override void Write(string value)
             {
             }
 
@@ -607,11 +572,11 @@ namespace System.IO
             }
 
             // Not strictly necessary, but for perf reasons
-            public override void WriteLine(String value)
+            public override void WriteLine(string value)
             {
             }
 
-            public override void WriteLine(Object value)
+            public override void WriteLine(object value)
             {
             }
 
