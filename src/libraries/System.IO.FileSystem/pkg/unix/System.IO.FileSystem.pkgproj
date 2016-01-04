@@ -9,7 +9,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.IO.FileSystem.builds">
-      <AdditionalProperties>OSGroup=Linux</AdditionalProperties>
+      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
   </ItemGroup>

@@ -2,12 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.IO.UnmanagedMemoryStream.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
-    </Project>
-    <Project Include="facade\System.IO.UnmanagedMemoryStream.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    <Project Include="System.IO.UnmanagedMemoryStream.csproj" />
+    <Project Include="facade\System.IO.UnmanagedMemoryStream.csproj">
+      <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

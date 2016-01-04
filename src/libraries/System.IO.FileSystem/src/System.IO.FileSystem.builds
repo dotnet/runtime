@@ -3,14 +3,25 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.IO.FileSystem.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>FreeBSD</OSGroup>
     </Project>
-    <Project Include="System.IO.FileSystem.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Linux</OSGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="facade\System.IO.FileSystem.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

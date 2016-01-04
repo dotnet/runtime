@@ -5,7 +5,6 @@
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
     <AssemblyVersion>4.0.21.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>

@@ -7,10 +7,9 @@ come later.
 
 ## Required Software
 
-Visual Studio 2013 (Update 3 or later) or Visual Studio 2015 (Preview or later) is required.
+Visual Studio 2015 is required.
 
 The following free downloads are compatible:
-* [Visual Studio Community 2013 (with Update 3)](http://www.visualstudio.com/en-us/visual-studio-community-vs.aspx)
 * [Visual Studio Community 2015](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
 
 Note: In order to build our C++ projects be sure to select "Programming Languages | Visual C++ | Common Tools for Visual C++ 2015" while installing VS 2015 (or modify your install to include it).
@@ -22,6 +21,11 @@ From the root of the repository, type `build`. This will build everything and ru
 the core tests for the project. Visual Studio Solution (.sln) files exist for
 related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
+
+By default building from the root will only build the libraries for the OS you are running on. One can
+build for another OS by specifying `/p:FilterOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
+`/p:BuildAllOSGroups=true`.
+
 
 [Building CoreFX on FreeBSD, Linux and OS X](unix-instructions.md)
 ## Tests

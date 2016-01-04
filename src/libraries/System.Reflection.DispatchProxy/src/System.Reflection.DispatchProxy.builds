@@ -2,12 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Reflection.DispatchProxy.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
-    </Project>
-    <Project Include="facade\System.Reflection.DispatchProxy.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+    <Project Include="System.Reflection.DispatchProxy.csproj" />
+    <Project Include="facade\System.Reflection.DispatchProxy.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

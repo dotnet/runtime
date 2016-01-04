@@ -1,11 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
     <NoWarn>649;414</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FileAlignment>512</FileAlignment>
@@ -13,6 +12,8 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Xml.XmlSerializer.Forwards.cs" />
     <Compile Include="System\Xml\XmlReservedNs.cs" />
