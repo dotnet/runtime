@@ -1523,9 +1523,9 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
  * This function is called on a slowpath, so it doesn't need to be fast.
  */
 gpointer
-mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method)
+mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic_virtual)
 {
-	MonoMethod *m, *generic_virtual = NULL;
+	MonoMethod *m;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
 	MonoError error;
@@ -1547,8 +1547,6 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_met
 	else
 		g_assert (!m->klass->generic_container);
 
-	generic_virtual = imt_method;
-	g_assert (generic_virtual);
 	g_assert (generic_virtual->is_inflated);
 	context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
 
@@ -1575,6 +1573,51 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_met
 
 	mono_method_add_generic_virtual_invocation (mono_domain_get (),
 												vt, vt->vtable + slot,
+												generic_virtual, ftndesc);
+	return ftndesc;
+}
+
+/*
+ * mono_resolve_generic_virtual_call:
+ *
+ *   Resolve a generic virtual call on interfaces. This returns an ftndesc.
+ * This function is called on a slowpath, so it doesn't need to be fast.
+ */
+gpointer
+mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *generic_virtual)
+{
+	MonoMethod *m, *variant_iface;
+	gpointer addr, aot_addr, compiled_method;
+	gboolean need_unbox_tramp = FALSE;
+	gboolean need_rgctx_tramp;
+	gpointer out_arg = NULL;
+	gpointer *imt;
+
+	imt = (gpointer*)vt - MONO_IMT_SIZE;
+
+	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface);
+	g_assert (!variant_iface);
+
+	if (vt->klass->valuetype)
+		need_unbox_tramp = TRUE;
+
+	// FIXME: This can throw exceptions
+	addr = compiled_method = mono_compile_method (m);
+	g_assert (addr);
+
+	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &out_arg);
+
+	/*
+	 * This wastes memory but the memory usage is bounded since
+	 * mono_method_add_generic_virtual_invocation () eventually builds an imt thunk for
+	 * this vtable slot so we are not called any more for this instantiation.
+	 */
+	gpointer *ftndesc = mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+	ftndesc [0] = addr;
+	ftndesc [1] = out_arg;
+
+	mono_method_add_generic_virtual_invocation (mono_domain_get (),
+												vt, imt + imt_slot,
 												generic_virtual, ftndesc);
 	return ftndesc;
 }

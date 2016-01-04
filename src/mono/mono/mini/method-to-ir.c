@@ -7709,10 +7709,11 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	if (fsig->generic_param_count && !is_iface && !is_gsharedvt) {
+	if (fsig->generic_param_count && !is_gsharedvt) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
+		 * This handles generic virtual methods both on classes and interfaces.
 		 */
 		int slot_reg = alloc_preg (cfg);
 		int addr_reg = alloc_preg (cfg);
@@ -7726,9 +7727,12 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
+		if (is_iface)
+			offset = ((gint32)slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+		else
+			offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
 
-		/* Load the imt slot, which contains a function descriptor. */
+		/* Load the slot, which contains a function descriptor. */
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
 
 		/* These slots are not initialized, so fall back to the slow path until they are initialized */
@@ -7760,7 +7764,10 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 		icall_args [2] = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
-		ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_call, icall_args);
+		if (is_iface)
+			ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_iface_call, icall_args);
+		else
+			ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_call, icall_args);
 		ftndesc_ins->dreg = ftndesc_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 

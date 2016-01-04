@@ -2555,6 +2555,10 @@ mini_llvmonly_initial_imt_thunk (gpointer *arg, MonoMethod *imt_method)
 	/* Return what the real IMT thunk returns */
 	ftndesc = imt [info->slot];
 	func = ftndesc [0];
+
+	if (func == (IMTThunkFunc)mini_llvmonly_initial_imt_thunk)
+		/* Happens when the imt slot contains only a generic virtual method */
+		return NULL;
 	return func ((gpointer *)ftndesc [1], imt_method);
 }
 
@@ -3809,6 +3813,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_generic_virtual_call, "mono_resolve_generic_virtual_call", "ptr ptr int ptr");
+	register_icall_no_wrapper (mono_resolve_generic_virtual_iface_call, "mono_resolve_generic_virtual_iface_call", "ptr ptr int ptr");
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr ptr int", FALSE);
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);

@@ -205,6 +205,8 @@ gpointer mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int imt_slot, MonoM
 
 gpointer mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method);
 
+gpointer mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *imt_method);
+
 gpointer mono_init_vtable_slot (MonoVTable *vtable, int slot);
 
 void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
