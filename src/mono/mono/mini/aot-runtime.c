@@ -3910,13 +3910,27 @@ find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 
 			break;
 		}
 
-		/* Special case: wrappers of shared generic methods */
-		if (m && method->wrapper_type && m->wrapper_type == m->wrapper_type &&
+		/*
+		 * Special case: wrappers of shared generic methods.
+		 * This is needed because of the way mini_get_shared_method () works,
+		 * we could end up with multiple copies of the same wrapper.
+		 */
+		if (m && method->wrapper_type && method->wrapper_type == m->wrapper_type &&
 			method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
 			MonoMethod *w1 = mono_marshal_method_from_wrapper (method);
 			MonoMethod *w2 = mono_marshal_method_from_wrapper (m);
 
 			if ((w1 == w2) || (w1->is_inflated && ((MonoMethodInflated *)w1)->declaring == w2)) {
+				index = value;
+				break;
+			}
+		}
+		if (m && method->wrapper_type && method->wrapper_type == m->wrapper_type &&
+			method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
+			WrapperInfo *info1 = mono_marshal_get_wrapper_info (method);
+			WrapperInfo *info2 = mono_marshal_get_wrapper_info (m);
+
+			if (info1->subtype == info2->subtype && method->klass == m->klass) {
 				index = value;
 				break;
 			}
