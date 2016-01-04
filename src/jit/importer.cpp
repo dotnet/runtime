@@ -3249,7 +3249,9 @@ InterlockedBinOpCommon:
         op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, method);
 
         // Set the CALL flag to indicate that the operator is implemented by a call. 
-        op1->gtFlags |= GTF_CALL;
+        // Set also the EXCEPTION flag because the native implementation of 
+        // CORINFO_INTRINSIC_Object_GetType intrinsic can throw NullReferenceException.
+        op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
         return op1;
 #endif
 
