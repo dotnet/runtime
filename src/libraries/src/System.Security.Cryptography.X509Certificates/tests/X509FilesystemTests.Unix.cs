@@ -36,23 +36,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.VerificationTime = new DateTime(2015, 6, 17, 0, 0, 0, DateTimeKind.Utc);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EndCertificateOnly;
+                chain.ChainPolicy.VerificationFlags |= X509VerificationFlags.AllowUnknownCertificateAuthority;
 
                 bool valid = chain.Build(microsoftDotComIssuer);
                 Assert.True(valid, "Precondition: Chain builds with no revocation checks");
+
+                int initialErrorCount = chain.ChainStatus.Length;
+                Assert.InRange(initialErrorCount, 0, 1);
+
+                if (initialErrorCount > 0)
+                {
+                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.ChainStatus[0].Status);
+                }
 
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
 
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.False(valid, "Chain should not build validly");
 
-                Assert.Equal(1, chain.ChainStatus.Length);
+                Assert.Equal(initialErrorCount + 1, chain.ChainStatus.Length);
                 Assert.Equal(X509ChainStatusFlags.RevocationStatusUnknown, chain.ChainStatus[0].Status);
 
                 File.WriteAllText(crlFile, MicrosoftDotComRootCrlPem, Encoding.ASCII);
 
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.True(valid, "Chain should build validly now");
-                Assert.Equal(0, chain.ChainStatus.Length);
+                Assert.Equal(initialErrorCount, chain.ChainStatus.Length);
 
                 // Rewind one second, the CRL is not "not yet valid"
                 chain.ChainPolicy.VerificationTime = chain.ChainPolicy.VerificationTime.Subtract(TimeSpan.FromSeconds(1));
@@ -60,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.False(valid, "Chain should not build validly, CRL is not yet valid");
 
-                Assert.Equal(1, chain.ChainStatus.Length);
+                Assert.Equal(initialErrorCount + 1, chain.ChainStatus.Length);
                 Assert.Equal(X509ChainStatusFlags.RevocationStatusUnknown, chain.ChainStatus[0].Status);
             }
         }
