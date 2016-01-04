@@ -17,6 +17,9 @@
         <AdditionalProperties Condition="'%(Project.OSGroup)'!=''">OSGroup=%(Project.OSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
+        <AdditionalProperties Condition="'%(Project.Platform)'!=''">Platform=%(Project.Platform);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
         <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
