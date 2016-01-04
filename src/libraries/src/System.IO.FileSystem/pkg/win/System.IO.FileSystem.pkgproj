@@ -9,7 +9,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.IO.FileSystem.builds">
-      <AdditionalProperties>OSGroup=Windows_NT</AdditionalProperties>
+      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
     </ProjectReference>
 
     <!-- No implementation on platforms where our P-Invokes are not allowed -->

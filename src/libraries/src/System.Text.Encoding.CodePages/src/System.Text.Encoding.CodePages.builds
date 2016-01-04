@@ -3,8 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Text.Encoding.CodePages.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>Linux</OSGroup>
+    </Project>
+    <Project Include="System.Text.Encoding.CodePages.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Text.Encoding.CodePages.csproj">
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+
