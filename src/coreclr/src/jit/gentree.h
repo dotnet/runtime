@@ -2568,6 +2568,11 @@ struct GenTreeIntrinsic: public GenTreeOp
     CorInfoIntrinsics     gtIntrinsicId;
     CORINFO_METHOD_HANDLE gtMethodHandle;    // Method handle of the method which is treated as an intrinsic.
 
+#ifdef FEATURE_READYTORUN_COMPILER
+    // Call target lookup info for method call from a Ready To Run module
+    CORINFO_CONST_LOOKUP gtEntryPoint;
+#endif
+
     GenTreeIntrinsic(var_types type, GenTreePtr op1, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle) :
         GenTreeOp(GT_INTRINSIC, type, op1, NULL),
         gtIntrinsicId(intrinsicId),
