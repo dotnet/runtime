@@ -8,17 +8,19 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography
 {
-    internal class TripleDesOpenSslCipher : BasicSymmetricCipher
+    internal class OpenSslCipher : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
         private SafeEvpCipherCtxHandle _ctx;
 
-        public TripleDesOpenSslCipher(CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
+        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
+            Debug.Assert(algorithm != IntPtr.Zero);
+
             _encrypting = encrypting;
 
-            OpenKey(cipherMode, key);
+            OpenKey(algorithm, key);
         }
 
         protected override void Dispose(bool disposing)
@@ -114,23 +116,8 @@ namespace Internal.Cryptography
             return bytesWritten;
         }
 
-        private void OpenKey(CipherMode cipherMode, byte[] key)
+        private void OpenKey(IntPtr algorithm, byte[] key)
         {
-            // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm;
-            switch (cipherMode)
-            {
-                case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpDes3Cbc();
-                    break;
-                case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpDes3Ecb();
-                    break;
-                default:
-                    // This is what AesCngCryptoTransform::GetCipherAlgorithm throws when it doesn't understand the value.
-                    throw new NotSupportedException();
-            }
-
             _ctx = Interop.Crypto.EvpCipherCreate(
                 algorithm,
                 key,
