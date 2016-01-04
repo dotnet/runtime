@@ -234,9 +234,6 @@
   <data name="Cryptography_WeakKey" xml:space="preserve">
     <value>Specified key is a known weak key for this algorithm and cannot be used.</value>
   </data>
-  <data name="WorkInProgress" xml:space="preserve">
-    <value>WorkInProgress.</value>
-  </data>
   <data name="WorkInProgress_UnsupportedHash" xml:space="preserve">
     <value>Unsupported hash algorithm. RSACng currently supports only MD5, SHA1, SHA256, SHA384 and SHA512.</value>
   </data>
