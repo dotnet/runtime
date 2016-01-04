@@ -37,12 +37,12 @@ def generateEtwMacroHeader(sClrEtwAllMan, sExcludeFile,macroHeader,inHeader):
         os.makedirs(incDir)
     
     outHeader    = open(macroHeader,'w')
-    print >>outHeader, stdprolog
-    
-    print >>outHeader, "#include \"" + os.path.basename(inHeader) + '"'
-    print >>outHeader, "#define NO_OF_ETW_PROVIDERS " + str(numOfProviders)
-    print >>outHeader, "#define MAX_BYTES_PER_ETW_PROVIDER " + str(nMaxEventBytesPerProvider)
-    print >>outHeader, "EXTERN_C __declspec(selectany) const BYTE etwStackSupportedEvents[NO_OF_ETW_PROVIDERS][MAX_BYTES_PER_ETW_PROVIDER] = \n{"
+    outHeader.write(stdprolog + "\n")
+
+    outHeader.write("#include \"" + os.path.basename(inHeader) + '"\n')
+    outHeader.write("#define NO_OF_ETW_PROVIDERS " + str(numOfProviders) + "\n")
+    outHeader.write("#define MAX_BYTES_PER_ETW_PROVIDER " + str(nMaxEventBytesPerProvider) + "\n")
+    outHeader.write("EXTERN_C __declspec(selectany) const BYTE etwStackSupportedEvents[NO_OF_ETW_PROVIDERS][MAX_BYTES_PER_ETW_PROVIDER] = \n{\n")
 
     for providerNode in tree.getElementsByTagName('provider'):
         stackSupportedEvents = [0]*nMaxEventBytesPerProvider
@@ -55,8 +55,8 @@ def generateEtwMacroHeader(sClrEtwAllMan, sExcludeFile,macroHeader,inHeader):
             eventTemplate           = eventNode.getAttribute('template')
             eventTemplate           = eventNode.getAttribute('template')
             eventValue              = int(eventNode.getAttribute('value'))
-            eventIndex              = eventValue/8
-            eventBitPositionInIndex = eventValue%8
+            eventIndex              = eventValue // 8
+            eventBitPositionInIndex = eventValue % 8
             
             eventStackBitFromNoStackList       = int(getStackWalkBit(eventProvider, taskName, eventSymbol, exclusionInfo.nostack))
             eventStackBitFromExplicitStackList = int(getStackWalkBit(eventProvider, taskName, eventSymbol, exclusionInfo.explicitstack))
@@ -80,8 +80,8 @@ def generateEtwMacroHeader(sClrEtwAllMan, sExcludeFile,macroHeader,inHeader):
         
         del line[-1]
         line.append("},")
-        print >>outHeader,''.join(line)
-    print >>outHeader, "};"
+        outHeader.write(''.join(line) + "\n")
+    outHeader.write("};\n")
     
     outHeader.close()
 
