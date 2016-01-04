@@ -266,6 +266,8 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
             {
+                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
+
                 return new ECDsaOpenSsl(publicKeyHandle);
             }
         }
