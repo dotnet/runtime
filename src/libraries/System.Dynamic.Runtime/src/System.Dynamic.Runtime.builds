@@ -3,10 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Dynamic.Runtime.csproj" />
-    <Project Include="facade\System.Dynamic.Runtime.csproj">
+    <Project Include="System.Dynamic.Runtime.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Dynamic.Runtime.csproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="System.Dynamic.Runtime.csproj">
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

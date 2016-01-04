@@ -6,14 +6,28 @@
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
-    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILER</DefineConstants>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netcore50aot'">true</IsInterpreting>
+    <DefineConstants Condition="'$(IsInterpreting)' != 'true'">$(DefineConstants);FEATURE_COMPILER</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <ProjectJson>netcore50aot\project.json</ProjectJson>
+    <ProjectLockJson>netcore50aot\project.lock.json</ProjectLockJson>
+    <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
       <Link>Common\System\Dynamic\Utils\CacheDict.cs</Link>
     </Compile>
@@ -68,8 +82,6 @@
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\Dynamic\BinaryOperationBinder.cs" />
     <Compile Include="System\Dynamic\BindingRestrictions.cs" />
@@ -111,10 +123,17 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.cs" />
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
+  <ItemGroup Condition=" '$(IsInterpreting)' != 'true' and '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
