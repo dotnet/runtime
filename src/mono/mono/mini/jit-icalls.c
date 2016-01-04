@@ -1486,6 +1486,17 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 		*out_arg = out_wrapper_arg;
 	}
 
+	if (!gsharedvt && generic_virtual) {
+		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
+		gpointer *ftndesc = mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+		ftndesc [0] = addr;
+		ftndesc [1] = *out_arg;
+
+		mono_method_add_generic_virtual_invocation (mono_domain_get (),
+													vt, vt->vtable + slot,
+													generic_virtual, ftndesc);
+	}
+
 	return addr;
 }
 
@@ -1503,6 +1514,70 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
 	g_assert (this_obj);
 
 	return resolve_vcall (this_obj->vtable, slot, imt_method, out_rgctx_arg, TRUE);
+}
+
+/*
+ * mono_resolve_generic_virtual_call:
+ *
+ *   Resolve a generic virtual call. This returns an ftndesc.
+ * This function is called on a slowpath, so it doesn't need to be fast.
+ */
+gpointer
+mono_resolve_generic_virtual_call (MonoObject *this_obj, int slot, MonoMethod *imt_method)
+{
+	MonoMethod *m, *generic_virtual = NULL;
+	gpointer addr, compiled_method;
+	gboolean need_unbox_tramp = FALSE;
+	MonoError error;
+	MonoGenericContext context = { NULL, NULL };
+	MonoMethod *declaring;
+	gpointer out_arg = NULL;
+	MonoVTable *vt = this_obj->vtable;
+
+	m = mono_class_get_vtable_entry (vt->klass, slot);
+
+	g_assert (is_generic_method_definition (m));
+
+	if (m->is_inflated)
+		declaring = mono_method_get_declaring_generic_method (m);
+	else
+		declaring = m;
+
+	if (m->klass->generic_class)
+		context.class_inst = m->klass->generic_class->context.class_inst;
+	else
+		g_assert (!m->klass->generic_container);
+
+	generic_virtual = imt_method;
+	g_assert (generic_virtual);
+	g_assert (generic_virtual->is_inflated);
+	context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
+
+	m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
+	g_assert (mono_error_ok (&error));
+
+	if (vt->klass->valuetype)
+		need_unbox_tramp = TRUE;
+
+	// FIXME: This can throw exceptions
+	addr = compiled_method = mono_compile_method (m);
+	g_assert (addr);
+
+	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &out_arg);
+
+	/*
+	 * This wastes memory but the memory usage is bounded since
+	 * mono_method_add_generic_virtual_invocation () eventually builds an imt thunk for
+	 * this vtable slot so we are not called any more for this instantiation.
+	 */
+	gpointer *ftndesc = mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+	ftndesc [0] = addr;
+	ftndesc [1] = out_arg;
+
+	mono_method_add_generic_virtual_invocation (mono_domain_get (),
+												vt, vt->vtable + slot,
+												generic_virtual, ftndesc);
+	return ftndesc;
 }
 
 gpointer

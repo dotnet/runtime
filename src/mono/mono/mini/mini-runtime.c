@@ -2602,12 +2602,33 @@ mono_llvmonly_imt_thunk_3 (gpointer *arg, MonoMethod *imt_method)
 		return arg [5];
 }
 
+/*
+ * A version of the imt thunk used for generic virtual methods.
+ * Unlikely a normal imt thunk, its possible that IMT_METHOD is not found
+ * in the search table. The original JIT code had a 'fallback' trampoline it could
+ * call, but we can't do that, so we just return NULL, and the compiled code
+ * will handle it.
+ */
+static gpointer
+mono_llvmonly_generic_virtual_imt_thunk (gpointer *arg, MonoMethod *imt_method)
+{
+	int i = 0;
+
+	while (arg [i] && arg [i] != imt_method)
+		i += 2;
+	if (!arg [i])
+		return NULL;
+
+	return arg [i + 1];
+}
+
 static gpointer
 mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	gpointer *buf;
 	gpointer *res;
 	int i, index, real_count;
+	gboolean virtual_generic = FALSE;
 
 	/*
 	 * Create an array which is passed to the imt thunk functions.
@@ -2618,11 +2639,10 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 
-		if (item->has_target_code)
-			continue;
-
 		if (item->is_equals)
 			real_count ++;
+		if (item->has_target_code)
+			virtual_generic = TRUE;
 	}
 
 	/*
@@ -2645,15 +2665,15 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 
-		if (!item->is_equals || item->has_target_code)
+		if (!item->is_equals)
 			continue;
 
 		g_assert (item->key);
-		g_assert (!item->has_target_code);
-		g_assert (vtable->vtable [item->value.vtable_slot]);
-
 		buf [(index * 2)] = item->key;
-		buf [(index * 2) + 1] = vtable->vtable [item->value.vtable_slot];
+		if (item->has_target_code)
+			buf [(index * 2) + 1] = item->value.target_code;
+		else
+			buf [(index * 2) + 1] = vtable->vtable [item->value.vtable_slot];
 		index ++;
 	}
 	buf [(index * 2)] = NULL;
@@ -2664,7 +2684,6 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 	 * It will by called by JITted code.
 	 */
 	res = (void **)mono_domain_alloc (domain, 2 * sizeof (gpointer));
-	// FIXME: Add more special cases
 	switch (real_count) {
 	case 1:
 		res [0] = mono_llvmonly_imt_thunk_1;
@@ -2679,6 +2698,8 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		res [0] = mono_llvmonly_imt_thunk;
 		break;
 	}
+	if (virtual_generic)
+		res [0] = mono_llvmonly_generic_virtual_imt_thunk;
 	res [1] = buf;
 
 	return res;
@@ -3787,6 +3808,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
+	register_icall_no_wrapper (mono_resolve_generic_virtual_call, "mono_resolve_generic_virtual_call", "ptr object int ptr");
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr object int", FALSE);
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);

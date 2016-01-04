@@ -7616,6 +7616,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	MonoInst *call_target, *ins;
 	int arg_reg;
 	gboolean is_iface = cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE;
+	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	guint32 slot;
 
 	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
@@ -7627,7 +7628,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	else
 		slot = mono_method_get_vtable_index (cmethod);
 
-	if (!fsig->generic_param_count && !is_iface && !imt_arg && !(cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))) {
+	if (!fsig->generic_param_count && !is_iface && !imt_arg && !is_gsharedvt) {
 		/*
 		 * The simplest case, a normal virtual call.
 		 */
@@ -7670,7 +7671,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !imt_arg && !(cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))) {
+	if (!fsig->generic_param_count && is_iface && !imt_arg && !is_gsharedvt) {
 		/*
 		 * A simple interface call
 		 *
@@ -7705,6 +7706,69 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		icall_args [1] = ins;
 		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
 
+		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+	}
+
+	if (fsig->generic_param_count && !is_iface && !is_gsharedvt) {
+		/*
+		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
+		 * dynamically extended as more instantiations are discovered.
+		 */
+		int this_reg = sp [0]->dreg;
+		int vtable_reg = alloc_preg (cfg);
+		int slot_reg = alloc_preg (cfg);
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		int ftndesc_reg = alloc_preg (cfg);
+		int offset;
+		MonoInst *thunk_addr_ins, *thunk_arg_ins, *ftndesc_ins;
+		MonoBasicBlock *slowpath_bb, *end_bb;
+
+		NEW_BBLOCK (cfg, slowpath_bb);
+		NEW_BBLOCK (cfg, end_bb);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
+
+		/* Load the imt slot, which contains a function descriptor. */
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
+
+		/* These slots are not initialized, so fall back to the slow path until they are initialized */
+		/* That happens when mono_method_add_generic_virtual_invocation () creates an IMT thunk */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, slot_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+
+		/* Fastpath */
+		/* Same as with iface calls */
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_addr_ins, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, SIZEOF_VOID_P);
+		icall_args [0] = thunk_arg_ins;
+		icall_args [1] = emit_get_rgctx_method (cfg, context_used,
+												cmethod, MONO_RGCTX_INFO_METHOD);
+		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
+		ftndesc_ins->dreg = ftndesc_reg;
+		/*
+		 * Unlike normal iface calls, these imt thunks can return NULL, i.e. when they are passed an instantiation
+		 * they don't know about yet. Fall back to the slowpath in that case.
+		 */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, ftndesc_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+		/* Slowpath */
+		MONO_START_BB (cfg, slowpath_bb);
+		icall_args [0] = sp [0];
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+		imt_arg = emit_get_rgctx_method (cfg, context_used,
+										 cmethod, MONO_RGCTX_INFO_METHOD);
+		icall_args [2] = imt_arg;
+		ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_call, icall_args);
+		ftndesc_ins->dreg = ftndesc_reg;
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+		/* Common case */
+		MONO_START_BB (cfg, end_bb);
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
