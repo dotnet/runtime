@@ -9198,10 +9198,13 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return err;
 
 	MonoClass *obj_type;
+	gboolean remote_obj = FALSE;
 
 	obj_type = obj->vtable->klass;
-	if (mono_class_is_transparent_proxy (obj_type))
+	if (mono_class_is_transparent_proxy (obj_type)) {
 		obj_type = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
+		remote_obj = TRUE;
+	}
 
 	g_assert (obj_type);
 
@@ -9243,7 +9246,15 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				buffer_add_value (buf, f->type, (guint8*)obj + f->offset, obj->vtable->domain);
+				guint8 *field_value = NULL;
+				void *field_storage = NULL;
+
+				if (remote_obj) {
+					field_value = mono_load_remote_field(obj, obj_type, f, &field_storage);
+				} else
+					field_value = (guint8*)obj + f->offset;
+
+				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
 		}
 		break;
