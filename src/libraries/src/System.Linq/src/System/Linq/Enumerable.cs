@@ -511,7 +511,7 @@ namespace System.Linq
                         state = 2;
                         goto case 2;
                     case 2:
-                        while (_enumerator.MoveNext())
+                        if (_enumerator.MoveNext())
                         {
                             current = _selector(_enumerator.Current);
                             return true;
