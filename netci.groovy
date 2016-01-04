@@ -185,7 +185,10 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     setMachineAffinity(newJob, os, architecture)
                     // Add all the standard options
                     Utilities.standardJobSetup(newJob, project, isPR)
-                    if (isPR) {
+                    if (buildPri1Tests){
+                        Utilities.addPeriodicTrigger(newJob, '@daily')
+                    }
+                    else if (isPR) {
                         addPRTrigger(newJob, architecture, os, configuration, false)
                     }
                     else {
