@@ -276,6 +276,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public static readonly object[][] QuotedContentsCases =
         {
+            // Empty value
+            new object[]
+            {
+                "CN=\"\"",
+                "300B3109300706035504031300"
+            },
+
             // Comma (RDN separator)
             new object[]
             {
