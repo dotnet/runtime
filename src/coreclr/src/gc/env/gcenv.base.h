@@ -128,7 +128,17 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   extern "C" void __emit(const unsigned __int32 opcode);
   #pragma intrinsic(__emit)
   #define MemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
-  
+ 
+ #elif defined(_ARM64_)
+
+  extern "C" void __yield(void);
+  #pragma intrinsic(__yield)
+  __forceinline void YieldProcessor() { __yield();}
+
+  extern "C" void __dmb(const unsigned __int32 _Type);
+  #pragma intrinsic(__dmb)
+  #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
+
  #elif defined(_AMD64_)
   
   extern "C" VOID
