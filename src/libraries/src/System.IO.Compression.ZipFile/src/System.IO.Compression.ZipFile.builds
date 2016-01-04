@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.IO.Compression.ZipFile.csproj" />
-    <Project Include="facade\System.IO.Compression.ZipFile.csproj">
+    <Project Include="System.IO.Compression.ZipFile.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
