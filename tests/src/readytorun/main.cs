@@ -234,6 +234,12 @@ class Program
         MyChangingHFAStruct.Check(s);
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestGetType()
+    {
+        new MyClass().GetType().ToString();
+    }
+
 #if CORECLR
     class MyLoadContext : AssemblyLoadContext
     {
@@ -308,6 +314,8 @@ class Program
         TestGrowingStruct();
         TestChangingStruct();
         TestChangingHFAStruct();
+
+        TestGetType();
 
 #if CORECLR
         TestMultipleLoads();
