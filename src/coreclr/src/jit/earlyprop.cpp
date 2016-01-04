@@ -79,8 +79,6 @@ GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
 
         if (call->gtCallType == CT_HELPER)
         {
-            CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-
             if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
@@ -115,8 +113,6 @@ GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
 
         if (call->gtCallType == CT_HELPER)
         {
-            CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-
             if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWFAST) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8) ||
