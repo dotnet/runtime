@@ -150,7 +150,6 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509StoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />

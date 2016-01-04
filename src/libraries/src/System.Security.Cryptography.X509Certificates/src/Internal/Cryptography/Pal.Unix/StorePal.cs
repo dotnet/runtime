@@ -168,9 +168,7 @@ namespace Internal.Cryptography.Pal
 
         private static IStorePal SingleCertToStorePal(ICertificatePal singleCert)
         {
-            return new OpenSslX509StoreProvider(
-                new X509Certificate2Collection(
-                    new X509Certificate2(singleCert)));
+            return new CollectionBackedStoreProvider(new X509Certificate2(singleCert));
         }
 
         private static IStorePal ListToStorePal(List<ICertificatePal> certPals)
@@ -182,7 +180,7 @@ namespace Internal.Cryptography.Pal
                 coll.Add(new X509Certificate2(certPals[i]));
             }
 
-            return new OpenSslX509StoreProvider(coll);
+            return new CollectionBackedStoreProvider(coll);
         }
 
         private static IStorePal CloneStore(X509Certificate2Collection seed)
@@ -195,7 +193,7 @@ namespace Internal.Cryptography.Pal
                 coll.Add(new X509Certificate2(cert.Handle));
             }
 
-            return new OpenSslX509StoreProvider(coll);
+            return new CollectionBackedStoreProvider(coll);
         }
 
         private static void LoadMachineStores()
