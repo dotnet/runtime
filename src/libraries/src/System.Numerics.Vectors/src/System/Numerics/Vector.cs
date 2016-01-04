@@ -56,7 +56,7 @@ namespace System.Numerics
                 return s_count;
             }
         }
-        private static int s_count = InitializeCount();
+        private static readonly int s_count = InitializeCount();
 
         /// <summary>
         /// Returns a vector containing all zeroes.
