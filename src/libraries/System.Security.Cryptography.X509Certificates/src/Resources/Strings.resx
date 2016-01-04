@@ -243,9 +243,6 @@
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
-  <data name="WorkInProgress" xml:space="preserve">
-    <value>WorkInProgress.</value>
-  </data>
   <data name="Cryptography_FileStatusError" xml:space="preserve">
     <value>Unable to get file status.</value>
   </data>
