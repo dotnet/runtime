@@ -3495,11 +3495,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 		cfg->extend_live_ranges = TRUE;
 
-		/* Temporarily disable this when running in the debugger until we have support
-		 * for this in the debugger. */
-		/* This is no longer needed with sdb */
-		//cfg->disable_omit_fp = TRUE;
-
 		/* The debugger needs all locals to be on the stack or in a global register */
 		cfg->disable_vreg_to_lvreg = TRUE;
 
@@ -3507,13 +3502,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		 * may still want to view them. */
 		cfg->disable_deadce_vars = TRUE;
 
-		// cfg->opt |= MONO_OPT_SHARED;
 		cfg->opt &= ~MONO_OPT_DEADCE;
 		cfg->opt &= ~MONO_OPT_INLINE;
 		cfg->opt &= ~MONO_OPT_COPYPROP;
 		cfg->opt &= ~MONO_OPT_CONSPROP;
-		/* This is no longer needed with sdb */
-		//cfg->opt &= ~MONO_OPT_GSHARED;
 
 		/* This is needed for the soft debugger, which doesn't like code after the epilog */
 		cfg->disable_out_of_line_bblocks = TRUE;
