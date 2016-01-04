@@ -387,17 +387,14 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
  * - generic sharing (ARG is the rgctx)
  * - gsharedvt signature wrappers (ARG is a function descriptor)
  */
-gpointer
-mini_create_llvmonly_ftndesc (gpointer addr, gpointer arg)
+MonoFtnDesc*
+mini_create_llvmonly_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg)
 {
-	gpointer *res;
+	MonoFtnDesc *ftndesc = (MonoFtnDesc*)mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+	ftndesc->addr = addr;
+	ftndesc->arg = arg;
 
-	// FIXME: Memory management
-	res = g_malloc0 (2 * sizeof (gpointer));
-	res [0] = addr;
-	res [1] = arg;
-
-	return res;
+	return ftndesc;
 }
 
 /**
@@ -476,7 +473,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		/*
 		 * This is a gsharedvt in wrapper, it gets passed a ftndesc for the gsharedvt method as an argument.
 		 */
-		*out_arg = mini_create_llvmonly_ftndesc (compiled_method, mini_method_get_rgctx (m));
+		*out_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), compiled_method, mini_method_get_rgctx (m));
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
 

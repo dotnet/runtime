@@ -1292,6 +1292,17 @@ typedef struct
 	gboolean need_rgctx_tramp;
 } MonoDelegateTrampInfo;
 
+/*
+ * A function descriptor, which is a function address + argument pair.
+ * In llvm-only mode, these are used instead of trampolines to pass
+ * extra arguments to runtime functions/methods.
+ */
+typedef struct
+{
+	gpointer addr;
+	gpointer arg;
+} MonoFtnDesc;
+
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
 #include "patch-info.h"
@@ -2511,10 +2522,10 @@ gpointer          mini_get_single_step_trampoline (void);
 gpointer          mini_get_breakpoint_trampoline (void);
 gpointer          mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp);
 gpointer          mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg);
-gpointer          mini_create_llvmonly_ftndesc (gpointer addr, gpointer arg);
 gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji);
 gpointer*         mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_method, MonoMethod **impl_method, gpointer *out_aot_addr,
 										   gboolean *out_need_rgctx_tramp, MonoMethod **variant_iface);
+MonoFtnDesc      *mini_create_llvmonly_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg);
 
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);

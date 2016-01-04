@@ -7620,6 +7620,10 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	guint32 slot;
 	int offset;
 
+	/*
+	 * In llvm-only mode, vtables contain function descriptors instead of
+	 * method addresses/trampolines.
+	 */
 	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
 	if (is_iface)
