@@ -81,7 +81,7 @@ translate_backtrace (gpointer native_trace[], int size)
 
 typedef struct {
 	GPtrArray *transitions;
-	gboolean in_gc_critical_region;
+	guint32 in_gc_critical_region;
 } CheckState;
 
 typedef struct {
@@ -235,7 +235,7 @@ void *
 critical_gc_region_begin(void)
 {
 	CheckState *state = get_state ();
-	state->in_gc_critical_region = TRUE;
+	state->in_gc_critical_region++;
 	return state;
 }
 
@@ -245,14 +245,14 @@ critical_gc_region_end(void* token)
 {
 	CheckState *state = get_state();
 	g_assert (state == token);
-	state->in_gc_critical_region = FALSE;
+	state->in_gc_critical_region--;
 }
 
 void
 assert_not_in_gc_critical_region(void)
 {
 	CheckState *state = get_state();
-	if (state->in_gc_critical_region) {
+	if (state->in_gc_critical_region > 0) {
 		MonoThreadInfo *cur = mono_thread_info_current();
 		state = mono_thread_info_current_state(cur);
 		assertion_fail("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name(state));

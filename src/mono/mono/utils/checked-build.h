@@ -83,7 +83,7 @@ Functions that can be called from both coop or preept modes.
  * The GC critical region must only occur in unsafe mode.
  */
 #define MONO_PREPARE_GC_CRITICAL_REGION					\
-	MON_REQ_GC_UNSAFE_MODE						\
+	MONO_REQ_GC_UNSAFE_MODE						\
 	do {								\
 		void* __critical_gc_region_cookie = critical_gc_region_begin()
 
