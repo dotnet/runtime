@@ -1331,6 +1331,7 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
  * resolve_iface_call:
  *
  *   Return the executable code for the iface method IMT_METHOD called on THIS.
+ * This function is called on a slowpath, so it doesn't need to be fast.
  */
 static gpointer
 resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg, gboolean caller_gsharedvt)
@@ -1340,8 +1341,6 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	MonoMethod *impl_method, *generic_virtual = NULL, *variant_iface = NULL;
 	gpointer addr, compiled_method, aot_addr;
 	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
-
-	// FIXME: Optimize this
 
 	if (!this_obj)
 		/* The caller will handle it */
@@ -1381,12 +1380,6 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 }
 
 gpointer
-mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
-{
-	return resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, FALSE);
-}
-
-gpointer
 mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
 {
 	return resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE);
@@ -1413,6 +1406,7 @@ is_generic_method_definition (MonoMethod *m)
  * resolve_vcall:
  *
  *   Return the executable code for calling vt->vtable [slot].
+ * This function is called on a slowpath, so it doesn't need to be fast.
  */
 static gpointer
 resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt)
@@ -1420,8 +1414,6 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	MonoMethod *m, *generic_virtual = NULL;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
-
-	// FIXME: Optimize this
 
 	/* Same as in common_call_trampoline () */
 
@@ -1470,8 +1462,6 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, out_arg);
 
-	// FIXME: Unify this with mono_resolve_iface_call
-
 	if (gsharedvt) {
 		/*
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
@@ -1498,14 +1488,6 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	}
 
 	return addr;
-}
-
-gpointer
-mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
-{
-	g_assert (this_obj);
-
-	return resolve_vcall (this_obj->vtable, slot, imt_method, out_rgctx_arg, FALSE);
 }
 
 gpointer

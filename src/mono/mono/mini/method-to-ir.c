@@ -7785,23 +7785,15 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	icall_args [2] = emit_get_rgctx_method (cfg, context_used,
 											cmethod, MONO_RGCTX_INFO_METHOD);
 
-	// FIXME: For generic virtual calls, avoid computing the rgctx twice
-
 	arg_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
 	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, &mono_defaults.int_class->byval_arg);
 
-	if (is_gsharedvt) {
-		if (is_iface)
-			call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
-		else
-			call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall_gsharedvt, icall_args);
-	} else {
-		if (is_iface)
-			call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
-		else
-			call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall, icall_args);
-	}
+	g_assert (is_gsharedvt);
+	if (is_iface)
+		call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
+	else
+		call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall_gsharedvt, icall_args);
 
 	/*
 	 * Pass the extra argument even if the callee doesn't receive it, most
