@@ -2656,7 +2656,7 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		if (!item->is_equals || item->has_target_code)
 			continue;
 		vt_slot = item->value.vtable_slot;
-		mono_init_vtable_slot_vt (vtable, vt_slot);
+		mono_init_vtable_slot (vtable, vt_slot);
 	}
 
 	/* Save the entries into an array */
@@ -3808,9 +3808,9 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
-	register_icall_no_wrapper (mono_resolve_generic_virtual_call, "mono_resolve_generic_virtual_call", "ptr object int ptr");
+	register_icall_no_wrapper (mono_resolve_generic_virtual_call, "mono_resolve_generic_virtual_call", "ptr ptr int ptr");
 	/* This needs a wrapper so it can have a preserveall cconv */
-	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr object int", FALSE);
+	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr ptr int", FALSE);
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);
 	register_icall (mono_init_delegate_virtual, "mono_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);

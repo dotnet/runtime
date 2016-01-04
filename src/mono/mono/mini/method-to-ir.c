@@ -147,7 +147,7 @@ MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, 
 static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 						  guchar *ip, guint real_offset, gboolean inline_always);
 static MonoInst*
-emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp, MonoInst *imt_arg);
+emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp);
 
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_domain_get;
@@ -2800,7 +2800,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 #endif
 
 	if (cfg->llvm_only && !call_target && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
-		return emit_llvmonly_virtual_call (cfg, method, sig, 0, args, NULL);
+		return emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
 
@@ -7610,37 +7610,36 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 }
 
 static MonoInst*
-emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp, MonoInst *imt_arg)
+emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp)
 {
 	MonoInst *icall_args [16];
-	MonoInst *call_target, *ins;
-	int arg_reg;
+	MonoInst *call_target, *ins, *vtable_ins;
+	int arg_reg, this_reg, vtable_reg;
 	gboolean is_iface = cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE;
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	guint32 slot;
+	int offset;
 
 	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
-
-	// FIXME: Pass a vtable to the icalls
 
 	if (is_iface)
 		slot = mono_method_get_imt_slot (cmethod);
 	else
 		slot = mono_method_get_vtable_index (cmethod);
 
-	if (!fsig->generic_param_count && !is_iface && !imt_arg && !is_gsharedvt) {
+	this_reg = sp [0]->dreg;
+
+	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
 		/*
 		 * The simplest case, a normal virtual call.
 		 */
-		int this_reg = sp [0]->dreg;
-		int vtable_reg = alloc_preg (cfg);
 		int slot_reg = alloc_preg (cfg);
 		int addr_reg = alloc_preg (cfg);
 		int arg_reg = alloc_preg (cfg);
-		int offset;
 		MonoBasicBlock *non_null_bb;
 
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		vtable_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
 
 		/* Load the vtable slot, which contains a function descriptor. */
@@ -7655,7 +7654,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		/* Slow path */
 		// FIXME: Make the wrapper use the preserveall cconv
 		// FIXME: Use one icall per slot for small slot numbers ?
-		icall_args [0] = sp [0];
+		icall_args [0] = vtable_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 		/* Make the icall return the vtable slot value to save some code space */
 		ins = mono_emit_jit_icall (cfg, mono_init_vtable_slot, icall_args);
@@ -7671,25 +7670,26 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !imt_arg && !is_gsharedvt) {
+	if (!fsig->generic_param_count && is_iface && !is_gsharedvt) {
 		/*
 		 * A simple interface call
 		 *
 		 * We make a call through an imt slot to obtain the function descriptor we need to call.
 		 * The imt slot contains a function descriptor for a runtime function + arg.
-		 * The slot is already initialized when the vtable is created so there is no need
-		 * to check it here.
 		 */
-		int this_reg = sp [0]->dreg;
-		int vtable_reg = alloc_preg (cfg);
 		int slot_reg = alloc_preg (cfg);
 		int addr_reg = alloc_preg (cfg);
 		int arg_reg = alloc_preg (cfg);
-		int offset;
 		MonoInst *thunk_addr_ins, *thunk_arg_ins, *ftndesc_ins;
 
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		vtable_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		offset = ((gint32)slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+
+		/*
+		 * The slot is already initialized when the vtable is created so there is no need
+		 * to check it here.
+		 */
 
 		/* Load the imt slot, which contains a function descriptor. */
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
@@ -7702,8 +7702,8 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		 * plus the imt method and return the ftndesc to call.
 		 */
 		icall_args [0] = thunk_arg_ins;
-		EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
-		icall_args [1] = ins;
+		icall_args [1] = emit_get_rgctx_method (cfg, context_used,
+												cmethod, MONO_RGCTX_INFO_METHOD);
 		ftndesc_ins = mono_emit_calli (cfg, helper_sig_llvmonly_imt_thunk, icall_args, thunk_addr_ins, NULL, NULL);
 
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
@@ -7714,20 +7714,18 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
 		 */
-		int this_reg = sp [0]->dreg;
-		int vtable_reg = alloc_preg (cfg);
 		int slot_reg = alloc_preg (cfg);
 		int addr_reg = alloc_preg (cfg);
 		int arg_reg = alloc_preg (cfg);
 		int ftndesc_reg = alloc_preg (cfg);
-		int offset;
 		MonoInst *thunk_addr_ins, *thunk_arg_ins, *ftndesc_ins;
 		MonoBasicBlock *slowpath_bb, *end_bb;
 
 		NEW_BBLOCK (cfg, slowpath_bb);
 		NEW_BBLOCK (cfg, end_bb);
 
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		vtable_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
 
 		/* Load the imt slot, which contains a function descriptor. */
@@ -7758,11 +7756,10 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 		/* Slowpath */
 		MONO_START_BB (cfg, slowpath_bb);
-		icall_args [0] = sp [0];
+		icall_args [0] = vtable_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
-		imt_arg = emit_get_rgctx_method (cfg, context_used,
-										 cmethod, MONO_RGCTX_INFO_METHOD);
-		icall_args [2] = imt_arg;
+		icall_args [2] = emit_get_rgctx_method (cfg, context_used,
+												cmethod, MONO_RGCTX_INFO_METHOD);
 		ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_call, icall_args);
 		ftndesc_ins->dreg = ftndesc_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
@@ -7772,24 +7769,14 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	// FIXME: Optimize this
-
+	/*
+	 * Non-optimized cases
+	 */
 	icall_args [0] = sp [0];
 	EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 
-	if (fsig->generic_param_count) {
-		/* virtual generic call */
-		g_assert (!imt_arg);
-		/* Same as the virtual generic case above */
-		imt_arg = emit_get_rgctx_method (cfg, context_used,
-										 cmethod, MONO_RGCTX_INFO_METHOD);
-		icall_args [2] = imt_arg;
-	} else if (imt_arg) {
-		icall_args [2] = imt_arg;
-	} else {
-		EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
-		icall_args [2] = ins;
-	}
+	icall_args [2] = emit_get_rgctx_method (cfg, context_used,
+											cmethod, MONO_RGCTX_INFO_METHOD);
 
 	// FIXME: For generic virtual calls, avoid computing the rgctx twice
 
@@ -7797,11 +7784,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
 	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, &mono_defaults.int_class->byval_arg);
 
-	if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
-		/*
-		 * We handle virtual calls made from gsharedvt methods here instead
-		 * of the gsharedvt block above.
-		 */
+	if (is_gsharedvt) {
 		if (is_iface)
 			call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
 		else
@@ -9901,7 +9884,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * Virtual calls in llvm-only mode.
 			 */
 			if (cfg->llvm_only && virtual_ && cmethod && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-				ins = emit_llvmonly_virtual_call (cfg, cmethod, fsig, context_used, sp, imt_arg);
+				ins = emit_llvmonly_virtual_call (cfg, cmethod, fsig, context_used, sp);
 				goto call_end;
 			}
 

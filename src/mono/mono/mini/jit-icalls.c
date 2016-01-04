@@ -1523,7 +1523,7 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
  * This function is called on a slowpath, so it doesn't need to be fast.
  */
 gpointer
-mono_resolve_generic_virtual_call (MonoObject *this_obj, int slot, MonoMethod *imt_method)
+mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method)
 {
 	MonoMethod *m, *generic_virtual = NULL;
 	gpointer addr, compiled_method;
@@ -1532,7 +1532,6 @@ mono_resolve_generic_virtual_call (MonoObject *this_obj, int slot, MonoMethod *i
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *declaring;
 	gpointer out_arg = NULL;
-	MonoVTable *vt = this_obj->vtable;
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 
@@ -1580,8 +1579,14 @@ mono_resolve_generic_virtual_call (MonoObject *this_obj, int slot, MonoMethod *i
 	return ftndesc;
 }
 
+/*
+ * mono_init_vtable_slot:
+ *
+ *   Initialize slot SLOT of VTABLE.
+ * Return the contents of the vtable slot.
+ */
 gpointer
-mono_init_vtable_slot_vt (MonoVTable *vtable, int slot)
+mono_init_vtable_slot (MonoVTable *vtable, int slot)
 {
 	gpointer arg = NULL;
 	gpointer addr;
@@ -1596,18 +1601,6 @@ mono_init_vtable_slot_vt (MonoVTable *vtable, int slot)
 	vtable->vtable [slot] = ftnptr;
 
 	return ftnptr;
-}
-
-/*
- * mono_init_vtable_slot:
- *
- *   Initialize slot SLOT of the vtable of THIS_OBJ.
- * Return the contents of the vtable slot.
- */
-gpointer
-mono_init_vtable_slot (MonoObject *this_obj, int slot)
-{
-	return mono_init_vtable_slot_vt (this_obj->vtable, slot);
 }
 
 /*
