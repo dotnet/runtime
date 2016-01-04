@@ -10,7 +10,6 @@
 
 import os 
 import xml.dom.minidom as DOM
-from sets import Set
 
 stdprolog="""
 //
@@ -179,8 +178,8 @@ def bucketizeAbstractTemplates(template,fnPrototypes,var_Dependecies):
 
     return templateProp
 
-ignoredXmlTemplateAttribes = Set(["map","outType"])
-usedXmlTemplateAttribes    = Set(["name","inType","count", "length"])
+ignoredXmlTemplateAttribes = frozenset(["map","outType"])
+usedXmlTemplateAttribes    = frozenset(["name","inType","count", "length"])
 
 def parseTemplateNodes(templateNodes):
 
@@ -608,14 +607,14 @@ def generateEtmDummyHeader(sClrEtwAllMan,clretwdummy):
     if not os.path.exists(incDir):
         os.makedirs(incDir)
     Clretwdummy    = open(clretwdummy,'w')
-    print >>Clretwdummy, stdprolog
+    Clretwdummy.write(stdprolog + "\n")
 
     for providerNode in tree.getElementsByTagName('provider'):
         templateNodes = providerNode.getElementsByTagName('template')
         allTemplates  = parseTemplateNodes(templateNodes)
         eventNodes = providerNode.getElementsByTagName('event')
         #pal: create etmdummy.h
-        print >>Clretwdummy,generateclrEtwDummy(eventNodes,allTemplates)
+        Clretwdummy.write(generateclrEtwDummy(eventNodes, allTemplates) + "\n")
     
     Clretwdummy.close()
 
@@ -632,20 +631,20 @@ def generatePlformIndependentFiles(sClrEtwAllMan,incDir,etmDummyFile, testDir):
     Clrallevents   = open(clrallevents,'w')
     Clrxplatevents = open(clrxplatevents,'w')
 
-    print >>Clrallevents, stdprolog
-    print >>Clrxplatevents, stdprolog
+    Clrallevents.write(stdprolog + "\n")
+    Clrxplatevents.write(stdprolog + "\n")
 
-    print >>Clrallevents, "\n#include \"clrxplatevents.h\"\n"
+    Clrallevents.write("\n#include \"clrxplatevents.h\"\n\n")
 
     for providerNode in tree.getElementsByTagName('provider'):
         templateNodes = providerNode.getElementsByTagName('template')
         allTemplates  = parseTemplateNodes(templateNodes)
         eventNodes = providerNode.getElementsByTagName('event')
         #vm header: 
-        print >>Clrallevents,generateClrallEvents(eventNodes,allTemplates)
+        Clrallevents.write(generateClrallEvents(eventNodes, allTemplates) + "\n")
 
         #pal: create clrallevents.h
-        print >>Clrxplatevents, generateClrXplatEvents(eventNodes,allTemplates)
+        Clrxplatevents.write(generateClrXplatEvents(eventNodes, allTemplates) + "\n")
 
 
     Clrxplatevents.close()
@@ -653,9 +652,9 @@ def generatePlformIndependentFiles(sClrEtwAllMan,incDir,etmDummyFile, testDir):
 
 class EventExclusions:
     def __init__(self):
-        self.nostack         = Set()
-        self.explicitstack   = Set()
-        self.noclrinstance   = Set()
+        self.nostack         = set()
+        self.explicitstack   = set()
+        self.noclrinstance   = set()
 
 def parseExclusionList(exclusionListFile):
     ExclusionFile   = open(exclusionListFile,'r')
