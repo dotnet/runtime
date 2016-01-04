@@ -1,27 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Threading;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
-using System.Runtime;
 using System.Runtime.InteropServices;
-#if NEW_EXPERIMENTAL_ASYNC_IO
-using System.Runtime.CompilerServices;
-#endif
-using System.Runtime.ExceptionServices;
-using System.Security;
 using System.Diagnostics.Contracts;
-using System.Reflection;
 
 namespace System.IO
 {
-    [ComVisible(true)]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(StreamContract))]
-#endif
     public abstract class Stream : IDisposable
     {
         public static readonly Stream Null = new NullStream();
@@ -29,7 +15,7 @@ namespace System.IO
         //We pick a value that is the largest multiple of 4096 that is still smaller than the large object heap threshold (85K).
         // The CopyTo/CopyToAsync buffer is short-lived and is likely to be collected at Gen0, and it offers a significant
         // improvement in Copy performance.
-        private const int _DefaultCopyBufferSize = 81920;
+        private const int DefaultCopyBufferSize = 81920;
 
         // To implement Async IO operations on streams that don't support async IO
 
@@ -55,7 +41,6 @@ namespace System.IO
             get;
         }
 
-        [ComVisible(false)]
         public virtual bool CanTimeout
         {
             [Pure]
@@ -82,7 +67,6 @@ namespace System.IO
             set;
         }
 
-        [ComVisible(false)]
         public virtual int ReadTimeout
         {
             get
@@ -96,7 +80,6 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public virtual int WriteTimeout
         {
             get
@@ -110,20 +93,17 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public Task CopyToAsync(Stream destination)
         {
-            return CopyToAsync(destination, _DefaultCopyBufferSize);
+            return CopyToAsync(destination, DefaultCopyBufferSize);
         }
 
-        [ComVisible(false)]
-        public Task CopyToAsync(Stream destination, Int32 bufferSize)
+        public Task CopyToAsync(Stream destination, int bufferSize)
         {
             return CopyToAsync(destination, bufferSize, CancellationToken.None);
         }
 
-        [ComVisible(false)]
-        public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             if (destination == null)
                 throw new ArgumentNullException("destination");
@@ -142,7 +122,7 @@ namespace System.IO
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
 
-        private async Task CopyToAsyncInternal(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             Contract.Requires(destination != null);
             Contract.Requires(bufferSize > 0);
@@ -174,7 +154,7 @@ namespace System.IO
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
             Contract.EndContractBlock();
 
-            InternalCopyTo(destination, _DefaultCopyBufferSize);
+            InternalCopyTo(destination, DefaultCopyBufferSize);
         }
 
         public void CopyTo(Stream destination, int bufferSize)
@@ -233,13 +213,11 @@ namespace System.IO
 
         public abstract void Flush();
 
-        [ComVisible(false)]
         public Task FlushAsync()
         {
             return FlushAsync(CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -249,13 +227,11 @@ namespace System.IO
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public Task<int> ReadAsync(Byte[] buffer, int offset, int count)
         {
             return ReadAsync(buffer, offset, count, CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
@@ -288,13 +264,11 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public Task WriteAsync(Byte[] buffer, int offset, int count)
         {
             return WriteAsync(buffer, offset, count, CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
@@ -411,7 +385,6 @@ namespace System.IO
             }
 
 #pragma warning disable 1998 // async method with no await
-            [ComVisible(false)]
             public override async Task FlushAsync(CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -424,7 +397,6 @@ namespace System.IO
             }
 
 #pragma warning disable 1998 // async method with no await
-            [ComVisible(false)]
             public override async Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -442,7 +414,6 @@ namespace System.IO
             }
 
 #pragma warning disable 1998 // async method with no await
-            [ComVisible(false)]
             public override async Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -463,74 +434,4 @@ namespace System.IO
             }
         }
     }
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(Stream))]
-    internal abstract class StreamContract : Stream
-    {
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            Contract.Ensures(Contract.Result<long>() >= 0);
-            throw new NotImplementedException();
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= count);
-            throw new NotImplementedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override long Position
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<long>() >= 0);
-                throw new NotImplementedException();
-            }
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool CanRead
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public override bool CanWrite
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public override bool CanSeek
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public override long Length
-        {
-            get
-            {
-                Contract.Ensures(Contract.Result<long>() >= 0);
-                throw new NotImplementedException();
-            }
-        }
-    }
-#endif  // CONTRACTS_FULL
 }

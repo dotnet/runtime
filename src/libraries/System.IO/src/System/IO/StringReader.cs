@@ -1,26 +1,21 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
-
 
 namespace System.IO
 {
     // This class implements a text reader that reads from a string.
     //
-    [ComVisible(true)]
     public class StringReader : TextReader
     {
-        private String _s;
+        private string _s;
         private int _pos;
         private int _length;
 
-        public StringReader(String s)
+        public StringReader(string s)
         {
             if (s == null)
                 throw new ArgumentNullException("s");
@@ -92,11 +87,11 @@ namespace System.IO
             return n;
         }
 
-        public override String ReadToEnd()
+        public override string ReadToEnd()
         {
             if (_s == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            String s;
+            string s;
             if (_pos == 0)
                 s = _s;
             else
@@ -111,7 +106,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the underlying string has been reached.
         //
-        public override String ReadLine()
+        public override string ReadLine()
         {
             if (_s == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
@@ -121,7 +116,7 @@ namespace System.IO
                 char ch = _s[i];
                 if (ch == '\r' || ch == '\n')
                 {
-                    String result = _s.Substring(_pos, i - _pos);
+                    string result = _s.Substring(_pos, i - _pos);
                     _pos = i + 1;
                     if (ch == '\r' && _pos < _length && _s[_pos] == '\n') _pos++;
                     return result;
@@ -130,7 +125,7 @@ namespace System.IO
             }
             if (i > _pos)
             {
-                String result = _s.Substring(_pos, i - _pos);
+                string result = _s.Substring(_pos, i - _pos);
                 _pos = i;
                 return result;
             }
@@ -138,19 +133,16 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
-        public override Task<String> ReadLineAsync()
+        public override Task<string> ReadLineAsync()
         {
             return Task.FromResult(ReadLine());
         }
 
-        [ComVisible(false)]
-        public override Task<String> ReadToEndAsync()
+        public override Task<string> ReadToEndAsync()
         {
             return Task.FromResult(ReadToEnd());
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
@@ -165,7 +157,6 @@ namespace System.IO
             return Task.FromResult(ReadBlock(buffer, index, count));
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)

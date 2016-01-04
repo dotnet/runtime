@@ -1,9 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
 using System.Threading;
@@ -19,7 +16,6 @@ namespace System.IO
     // from an unsigned byte array, or you can create an empty one.  Empty 
     // memory streams are resizable, while ones created with a byte array provide
     // a stream "view" of the data.
-    [ComVisible(true)]
     public class MemoryStream : Stream
     {
         private byte[] _buffer;    // Either allocated internally or externally.
@@ -37,7 +33,7 @@ namespace System.IO
 
         // <TODO>In V2, if we get support for arrays of more than 2 GB worth of elements,
         // consider removing this constraing, or setting it to Int64.MaxValue.</TODO>
-        private const int MemStreamMaxLength = Int32.MaxValue;
+        private const int MemStreamMaxLength = int.MaxValue;
 
         public MemoryStream()
             : this(0)
@@ -178,7 +174,6 @@ namespace System.IO
         }
 
 #pragma warning disable 1998 //async method with no await operators
-        [ComVisible(false)]
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -258,22 +253,9 @@ namespace System.IO
             {
                 // Only update the capacity if the MS is expandable and the value is different than the current capacity.
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
-#if !FEATURE_CORECLR
                 if (value < Length) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
-#endif
                 Contract.Ensures(_capacity - _origin == value);
                 Contract.EndContractBlock();
-
-#if FEATURE_CORECLR              
-                if (IsAppEarlierThanSl4)
-                {
-                    if (value < _length) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
-                }
-                else
-                {
-                    if (value < Length) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
-                }
-#endif
 
                 if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
                 if (!_expandable && (value != Capacity)) throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
@@ -327,16 +309,6 @@ namespace System.IO
             }
         }
 
-#if FEATURE_CORECLR
-        private static bool IsAppEarlierThanSl4
-        {
-            get
-            {
-                return CompatibilitySwitches.IsAppEarlierThanSilverlight4;
-            }
-        }
-#endif
-
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -371,7 +343,6 @@ namespace System.IO
             return n;
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -407,7 +378,7 @@ namespace System.IO
         }
 
 
-        public override Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // This implementation offers beter performance compared to the base class version.
 
@@ -436,13 +407,13 @@ namespace System.IO
             // since it does not call through to Read() or Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read/Write) when we are not sure.
-            if (this.GetType() != typeof(MemoryStream))
+            if (GetType() != typeof(MemoryStream))
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
 
             return CopyToAsyncImpl(destination, bufferSize, cancellationToken);
         }
 
-        private async Task CopyToAsyncImpl(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        private async Task CopyToAsyncImpl(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -450,8 +421,8 @@ namespace System.IO
             //   (require that InternalEmulateRead does not throw,
             //    otherwise it needs to be wrapped into try-catch-Task.FromException like memStrDest.Write below)
 
-            Int32 pos = _position;
-            Int32 n = InternalEmulateRead(_length - _position);
+            int pos = _position;
+            int n = InternalEmulateRead(_length - _position);
 
             // If destination is not a memory stream, write there asynchronously:
             MemoryStream memStrDest = destination as MemoryStream;
@@ -514,7 +485,7 @@ namespace System.IO
         // 
         public override void SetLength(long value)
         {
-            if (value < 0 || value > Int32.MaxValue)
+            if (value < 0 || value > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_StreamLength);
             }
@@ -523,8 +494,8 @@ namespace System.IO
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Contract.Assert(MemStreamMaxLength == Int32.MaxValue);  // Check parameter validation logic in this method if this fails.
-            if (value > (Int32.MaxValue - _origin))
+            Contract.Assert(MemStreamMaxLength == int.MaxValue);  // Check parameter validation logic in this method if this fails.
+            if (value > (int.MaxValue - _origin))
             {
                 throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_StreamLength);
             }
@@ -593,7 +564,6 @@ namespace System.IO
             _position = i;
         }
 
-        [ComVisible(false)]
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -650,16 +620,5 @@ namespace System.IO
             if (!_isOpen) throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
             stream.Write(_buffer, _origin, _length - _origin);
         }
-#if CONTRACTS_FULL
-        [ContractInvariantMethod]
-        private void ObjectInvariantMS()
-        {
-            Contract.Invariant(_origin >= 0);
-            Contract.Invariant(_origin <= _position);
-            Contract.Invariant(_length <= _capacity);
-            // equivalent to _origin > 0 => !expandable, and using fact that _origin is non-negative.
-            Contract.Invariant(_origin == 0 || !_expandable);
-        }
-#endif
     }
 }

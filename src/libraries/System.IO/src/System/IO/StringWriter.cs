@@ -1,15 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime;
 using System.Text;
 using System.Globalization;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-#if !FEATURE_CORECLR
 using System.Threading.Tasks;
-#endif
 
 
 namespace System.IO
@@ -17,10 +13,9 @@ namespace System.IO
     // This class implements a text writer that writes to a string buffer and allows
     // the resulting sequence of characters to be presented as a string.
     //
-    [ComVisible(true)]
     public class StringWriter : TextWriter
     {
-        private static volatile UnicodeEncoding m_encoding = null;
+        private static volatile UnicodeEncoding s_encoding = null;
 
         private StringBuilder _sb;
         private bool _isOpen;
@@ -65,11 +60,11 @@ namespace System.IO
         {
             get
             {
-                if (m_encoding == null)
+                if (s_encoding == null)
                 {
-                    m_encoding = new UnicodeEncoding(false, false);
+                    s_encoding = new UnicodeEncoding(false, false);
                 }
-                return m_encoding;
+                return s_encoding;
             }
         }
 
@@ -117,7 +112,7 @@ namespace System.IO
         // Writes a string to the underlying string buffer. If the given string is
         // null, nothing is written.
         //
-        public override void Write(String value)
+        public override void Write(string value)
         {
             if (!_isOpen)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
@@ -134,49 +129,42 @@ namespace System.IO
         }
 #pragma warning restore 1998
 
-        [ComVisible(false)]
         public override Task WriteAsync(char value)
         {
             Write(value);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
-        public override Task WriteAsync(String value)
+        public override Task WriteAsync(string value)
         {
             Write(value);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
             Write(buffer, index, count);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
         public override Task WriteLineAsync(char value)
         {
             WriteLine(value);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
-        public override Task WriteLineAsync(String value)
+        public override Task WriteLineAsync(string value)
         {
             WriteLine(value);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
             WriteLine(buffer, index, count);
             return MakeCompletedTask();
         }
 
-        [ComVisible(false)]
         public override Task FlushAsync()
         {
             return MakeCompletedTask();
@@ -186,7 +174,7 @@ namespace System.IO
         // Returns a string containing the characters written to this TextWriter
         // so far.
         //
-        public override String ToString()
+        public override string ToString()
         {
             return _sb.ToString();
         }
