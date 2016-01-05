@@ -924,8 +924,11 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
-	if ((size == 0) || (size > 16))
+	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
+		/* We pass and return vtypes of size 8 in a register */
+	} else if (!sig->pinvoke || (size == 0) || (size > 16)) {
 		pass_on_stack = TRUE;
+	}
 
 	/* If this struct can't be split up naturally into 8-byte */
 	/* chunks (registers), pass it on the stack.              */
@@ -977,29 +980,19 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		nquads = 1;
 
 	if (!sig->pinvoke) {
-		gpointer iter = NULL;
-		MonoClassField *field;
-
-		while ((field = mono_class_get_fields (klass, &iter))) {
-			MonoType *t = mini_get_underlying_type (mono_field_get_type (field));
-			int foffset;
-			gint32 align;
-
-			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-				continue;
-
-			foffset = field->offset - sizeof (MonoObject);
-			size = mono_type_size (t, &align);
-		}
-
 		int n = mono_class_value_size (klass, NULL);
 
 		quadsize [0] = n >= 8 ? 8 : n;
 		quadsize [1] = n >= 8 ? MAX (n - 8, 8) : 0;
 
-		/* Always pass/return in 1 or 2 integer registers */
+		/* Always pass in 1 or 2 integer registers */
 		args [0] = ARG_CLASS_INTEGER;
 		args [1] = ARG_CLASS_INTEGER;
+		/* Only the simplest cases are supported */
+		if (is_return && nquads != 1) {
+			args [0] = ARG_CLASS_MEMORY;
+			args [1] = ARG_CLASS_MEMORY;
+		}
 	} else {
 		/*
 		 * Implement the algorithm from section 3.2.3 of the X86_64 ABI.
