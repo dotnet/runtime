@@ -1618,13 +1618,19 @@ void Rationalizer::RewriteLdObj(GenTreePtr* ppTree, Compiler::fgWalkData* data)
 //    ppTree      - A pointer-to-a-pointer for the tree node
 //    fgWalkData  - A pointer to tree walk data providing the context
 //    callHnd     - The method handle of the call to be generated
+//    entryPoint  - The method entrypoint of the call to be generated
 //    args        - The argument list of the call to be generated
 //
 // Return Value:
 //    None.
 //
 
-void Rationalizer::RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* data, CORINFO_METHOD_HANDLE callHnd, GenTreeArgList* args)
+void Rationalizer::RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* data,
+    CORINFO_METHOD_HANDLE callHnd,
+#ifdef FEATURE_READYTORUN_COMPILER
+    CORINFO_CONST_LOOKUP entryPoint,
+#endif
+    GenTreeArgList* args)
 {
     GenTreePtr tree = *ppTree;
     Compiler*  comp = data->compiler;
@@ -1639,6 +1645,9 @@ void Rationalizer::RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* d
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
     call = comp->fgMorphArgs(call);
     call->CopyCosts(tree);
+#ifdef FEATURE_READYTORUN_COMPILER
+    call->gtCall.gtEntryPoint = entryPoint;
+#endif
 
     // Replace "tree" with "call"
     *ppTree = call;
@@ -1722,7 +1731,12 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTreePtr* ppTree, Compiler::fgWa
         args = comp->gtNewArgList(tree->gtOp.gtOp1, tree->gtOp.gtOp2);
     }
 
-    RewriteNodeAsCall(ppTree, data, tree->gtIntrinsic.gtMethodHandle, args);
+    RewriteNodeAsCall(ppTree, data,
+        tree->gtIntrinsic.gtMethodHandle,
+#ifdef FEATURE_READYTORUN_COMPILER
+        tree->gtIntrinsic.gtEntryPoint,
+#endif
+        args);
 }
 
 // tree walker callback function that rewrites ASG and ADDR nodes
