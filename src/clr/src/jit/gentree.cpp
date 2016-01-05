@@ -404,6 +404,7 @@ template Compiler::fgWalkResult Compiler::fgWalkTreeRec<false,true> (GenTreePtr 
 //                    a stack of ancestor nodes which can be viewed in the callback.
 //
 template<bool computeStack>
+// static
 Compiler::fgWalkResult      Compiler::fgWalkTreePreRec(GenTreePtr *pTree, fgWalkData *fgWalkData)
 {
     fgWalkResult    result        = WALK_CONTINUE;
@@ -608,7 +609,7 @@ Compiler::fgWalkResult      Compiler::fgWalkTreePreRec(GenTreePtr *pTree, fgWalk
 
         default:
 #ifdef  DEBUG
-            gtDispTree(tree);
+            fgWalkData->compiler->gtDispTree(tree);
 #endif
             assert(!"unexpected operator");
         }
@@ -660,6 +661,7 @@ void                    Compiler::fgWalkAllTreesPre(fgWalkPreFn * visitor,
 //                     a stack of ancestor nodes which can be viewed in the callback.
 //
 template<bool computeStack> 
+// static
 Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr *pTree, fgWalkData *fgWalkData)
 {
     fgWalkResult    result;
@@ -821,7 +823,7 @@ Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr *pTree, fgWalkData
 
     default:
 #ifdef  DEBUG
-        gtDispTree(tree);
+        fgWalkData->compiler->gtDispTree(tree);
 #endif
         assert(!"unexpected operator");
     }
@@ -843,6 +845,7 @@ DONE:
 // walk tree doing callbacks in both pre- and post- order (both optional)
 
 template<bool doPreOrder, bool doPostOrder>
+// static
 Compiler::fgWalkResult      
 Compiler::fgWalkTreeRec(GenTreePtr *pTree, fgWalkData *fgWalkData)
 {
@@ -1019,7 +1022,7 @@ Compiler::fgWalkTreeRec(GenTreePtr *pTree, fgWalkData *fgWalkData)
 
     default:
 #ifdef  DEBUG
-        gtDispTree(tree);
+        fgWalkData->compiler->gtDispTree(tree);
 #endif
         assert(!"unexpected operator");
     }
