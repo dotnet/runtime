@@ -22,7 +22,7 @@ internal static partial class Interop
             private readonly int __padding;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTcpGlobalStatistics")]
         public static unsafe extern int GetTcpGlobalStatistics(out TcpGlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -44,7 +44,7 @@ internal static partial class Interop
             public readonly int Forwarding;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4GlobalStatistics")]
         public static unsafe extern int GetIPv4GlobalStatistics(out IPv4GlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -57,7 +57,7 @@ internal static partial class Interop
             public readonly ulong UdpListeners;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUdpGlobalStatistics")]
         public static unsafe extern int GetUdpGlobalStatistics(out UdpGlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -87,7 +87,7 @@ internal static partial class Interop
             public readonly ulong TimestampRequestsSent;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv4GlobalStatistics")]
         public static unsafe extern int GetIcmpv4GlobalStatistics(out Icmpv4GlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -123,7 +123,7 @@ internal static partial class Interop
             public readonly ulong TimeExceededMessagesSent;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv6GlobalStatistics")]
         public static unsafe extern int GetIcmpv6GlobalStatistics(out Icmpv6GlobalStatistics statistics);
 
         public struct NativeIPInterfaceStatistics
@@ -143,10 +143,10 @@ internal static partial class Interop
             public readonly ulong InNoProto;
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics")]
         public static unsafe extern int GetNativeIPInterfaceStatistics(string name, out NativeIPInterfaceStatistics stats);
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNumRoutes")]
         public static extern int GetNumRoutes();
     }
 }

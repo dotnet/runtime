@@ -19,7 +19,7 @@
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
 
-extern "C" Error CreateNetworkChangeListenerSocket(int32_t* retSocket)
+extern "C" Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
 {
     sockaddr_nl sa = {};
     sa.nl_family = AF_NETLINK;
@@ -28,25 +28,25 @@ extern "C" Error CreateNetworkChangeListenerSocket(int32_t* retSocket)
     if (sock == -1)
     {
         *retSocket = -1;
-        return ConvertErrorPlatformToPal(errno);
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
     if (bind(sock, reinterpret_cast<sockaddr*>(&sa), sizeof(sa)) != 0)
     {
         *retSocket = -1;
-        return ConvertErrorPlatformToPal(errno);
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
     *retSocket = sock;
     return PAL_SUCCESS;
 }
 
-extern "C" Error CloseNetworkChangeListenerSocket(int32_t socket)
+extern "C" Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
 {
     int err = close(socket);
-    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+    return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-extern "C" NetworkChangeKind ReadSingleEvent(int32_t sock)
+extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int32_t sock)
 {
     char buffer[4096];
     iovec iov = {buffer, sizeof(buffer)};

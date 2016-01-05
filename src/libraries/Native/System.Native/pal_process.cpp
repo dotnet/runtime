@@ -81,7 +81,7 @@ static void CloseIfOpen(int fd)
     }
 }
 
-extern "C" int32_t ForkAndExecProcess(const char* filename,
+extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
@@ -258,7 +258,7 @@ static void ConvertFromPalRLimitToManaged(const rlimit& native, RLimit& pal)
     pal.MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native.rlim_max);
 }
 
-extern "C" int32_t GetRLimit(RLimitResources resourceType, RLimit* limits)
+extern "C" int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
     assert(limits != nullptr);
 
@@ -277,7 +277,7 @@ extern "C" int32_t GetRLimit(RLimitResources resourceType, RLimit* limits)
     return result;
 }
 
-extern "C" int32_t SetRLimit(RLimitResources resourceType, const RLimit* limits)
+extern "C" int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
 {
     assert(limits != nullptr);
 
@@ -287,27 +287,27 @@ extern "C" int32_t SetRLimit(RLimitResources resourceType, const RLimit* limits)
     return setrlimit(platformLimit, &internalLimit);
 }
 
-extern "C" int32_t Kill(int32_t pid, int32_t signal)
+extern "C" int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
     return kill(pid, signal);
 }
 
-extern "C" int32_t GetPid()
+extern "C" int32_t SystemNative_GetPid()
 {
     return getpid();
 }
 
-extern "C" int32_t GetSid(int32_t pid)
+extern "C" int32_t SystemNative_GetSid(int32_t pid)
 {
     return getsid(pid);
 }
 
-extern "C" void SysLog(SysLogPriority priority, const char* message, const char* arg1)
+extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
     syslog(static_cast<int>(priority), message, arg1);
 }
 
-extern "C" int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options)
+extern "C" int32_t SystemNative_WaitPid(int32_t pid, int32_t* status, WaitPidOptions options)
 {
     assert(status != nullptr);
 
@@ -316,27 +316,27 @@ extern "C" int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options)
     return result;
 }
 
-extern "C" int32_t WExitStatus(int32_t status)
+extern "C" int32_t SystemNative_WExitStatus(int32_t status)
 {
     return WEXITSTATUS(status);
 }
 
-extern "C" int32_t WIfExited(int32_t status)
+extern "C" int32_t SystemNative_WIfExited(int32_t status)
 {
     return WIFEXITED(status);
 }
 
-extern "C" int32_t WIfSignaled(int32_t status)
+extern "C" int32_t SystemNative_WIfSignaled(int32_t status)
 {
     return WIFSIGNALED(status);
 }
 
-extern "C" int32_t WTermSig(int32_t status)
+extern "C" int32_t SystemNative_WTermSig(int32_t status)
 {
     return WTERMSIG(status);
 }
 
-extern "C" int64_t PathConf(const char* path, PathConfName name)
+extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
 {
     int32_t confValue = -1;
     switch (name)
@@ -380,7 +380,7 @@ extern "C" int64_t PathConf(const char* path, PathConfName name)
     return pathconf(path, confValue);
 }
 
-extern "C" int64_t GetMaximumPath()
+extern "C" int64_t SystemNative_GetMaximumPath()
 {
     int64_t result = pathconf("/", _PC_PATH_MAX);
     if (result == -1)
@@ -391,7 +391,7 @@ extern "C" int64_t GetMaximumPath()
     return result;
 }
 
-extern "C" int32_t GetPriority(PriorityWhich which, int32_t who)
+extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
     // GetPriority uses errno 0 to show succes to make sure we don't have a stale value
     errno = 0;
@@ -402,7 +402,7 @@ extern "C" int32_t GetPriority(PriorityWhich which, int32_t who)
 #endif
 }
 
-extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice)
+extern "C" int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
 #if PRIORITY_REQUIRES_INT_WHO
     return setpriority(which, who, nice);
@@ -411,7 +411,7 @@ extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 #endif
 }
 
-extern "C" char* GetCwd(char* buffer, int32_t bufferSize)
+extern "C" char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
 {
     assert(bufferSize >= 0);
 
@@ -425,7 +425,7 @@ extern "C" char* GetCwd(char* buffer, int32_t bufferSize)
 }
 
 #if HAVE_SCHED_SETAFFINITY
-extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask)
+extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
     assert(mask != nullptr);
 
@@ -449,7 +449,7 @@ extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask)
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
-extern "C" int32_t SchedGetAffinity(int32_t pid, intptr_t* mask)
+extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
     assert(mask != nullptr);
 

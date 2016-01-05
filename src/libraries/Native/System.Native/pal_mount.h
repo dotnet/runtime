@@ -25,7 +25,7 @@ typedef void (*MountPointFound)(const char* name);
 /**
  * Gets the space information for the given mount point and populates the input struct with the data.
  */
-extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
+extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
 
 /**
  * Gets the format information about the given mount point.
@@ -37,11 +37,11 @@ extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInforma
  * back, depending on what the platform gives us, and let C# reason on it in an easy way.
  */
 extern "C" int32_t
-GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType);
+SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType);
 
 /**
  * Enumerate all mount points on the system and call the input
  * function pointer once-per-mount-point to prevent heap allocs
  * as much as possible.
  */
-extern "C" int32_t GetAllMountPoints(MountPointFound onFound);
+extern "C" int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);

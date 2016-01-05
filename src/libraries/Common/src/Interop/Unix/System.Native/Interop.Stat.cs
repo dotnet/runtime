@@ -45,13 +45,13 @@ internal static partial class Interop
             HasBirthTime = 1,
         }
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FStat", SetLastError = true)]
         internal static extern int FStat(SafeFileHandle fd, out FileStatus output);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
         internal static extern int Stat(string path, out FileStatus output);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", SetLastError = true)]
         internal static extern int LStat(string path, out FileStatus output);
     }
 }

@@ -25,7 +25,7 @@ static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
     native.modtime = static_cast<time_t>(pal.ModTime);
 }
 
-extern "C" int32_t UTime(const char* path, UTimBuf* times)
+extern "C" int32_t SystemNative_UTime(const char* path, UTimBuf* times)
 {
     assert(times != nullptr);
 
@@ -37,7 +37,7 @@ extern "C" int32_t UTime(const char* path, UTimBuf* times)
     return result;
 }
 
-extern "C" int32_t GetTimestampResolution(uint64_t* resolution)
+extern "C" int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
 {
     assert(resolution);
 
@@ -77,7 +77,7 @@ extern "C" int32_t GetTimestampResolution(uint64_t* resolution)
 #endif
 }
 
-extern "C" int32_t GetTimestamp(uint64_t* timestamp)
+extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
 {
     assert(timestamp);
 

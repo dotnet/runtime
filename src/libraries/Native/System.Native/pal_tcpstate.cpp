@@ -13,7 +13,7 @@
 #error System must have TCP states defined in either tcp.h or tcp_fsm.h.
 #endif
 
-extern "C" TcpState MapTcpState(int32_t tcpState)
+extern "C" TcpState SystemNative_MapTcpState(int32_t tcpState)
 {
     switch (tcpState)
     {

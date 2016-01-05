@@ -14,10 +14,10 @@ internal static partial class Interop
             private int Padding;       // Pad out to 8-byte alignment
         }
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]
         internal static extern int GetControlMessageBufferSize(bool isIPv4, bool isIPv6);
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
         internal static extern unsafe bool TryGetIPPacketInformation(MessageHeader* messageHeader, bool isIPv4, IPPacketInformation* packetInfo);
     }
 }
