@@ -12335,8 +12335,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* 
 						 * Link the finally bblock with the target, since it will
 						 * conceptually branch there.
-						 * FIXME: Have to link the bblock containing the endfinally.
 						 */
+						GET_BBLOCK (cfg, tblock, cfg->cil_start + clause->handler_offset + clause->handler_len - 1);
 						GET_BBLOCK (cfg, target_bb, target);
 						link_bblock (cfg, tblock, target_bb);
 					}
