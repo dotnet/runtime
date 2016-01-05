@@ -116,7 +116,7 @@ Creates a new CURL instance.
 
 Returns the new CURL instance or nullptr if something went wrong.
 */
-extern "C" CURL* EasyCreate();
+extern "C" CURL* HttpNative_EasyCreate();
 
 /*
 Cleans up and deletes a CURL instance.
@@ -124,51 +124,51 @@ Cleans up and deletes a CURL instance.
 No-op if handle is null.
 The given CURL pointer is invalid after this call.
 */
-extern "C" void EasyDestroy(CURL* handle);
+extern "C" void HttpNative_EasyDestroy(CURL* handle);
 
 /*
 Shims the curl_easy_setopt function, which takes a variable number of
 arguments, but must be a long, a function pointer, an object pointer or a curl_off_t,
 depending on what option is supplied.
 */
-extern "C" int32_t EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value);
-extern "C" int32_t EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value);
-extern "C" int32_t EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value);
+extern "C" int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value);
+extern "C" int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value);
+extern "C" int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value);
 
 /*
 Returns a string describing the CURLcode error code.
 */
-extern "C" const char* EasyGetErrorString(PAL_CURLcode code);
+extern "C" const char* HttpNative_EasyGetErrorString(PAL_CURLcode code);
 
 /*
 Shims the curl_easy_setopt function, which takes a variable number of
 arguments.
 */
-extern "C" int32_t EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value);
-extern "C" int32_t EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value);
+extern "C" int32_t HttpNative_EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value);
+extern "C" int32_t HttpNative_EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value);
 
 /*
 Shims the curl_easy_perform function.
 
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
-extern "C" int32_t EasyPerform(CURL* handle);
+extern "C" int32_t HttpNative_EasyPerform(CURL* handle);
 
 /*
 Unpauses the CURL request.
 
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
-extern "C" int32_t EasyUnpause(CURL* handle);
+extern "C" int32_t HttpNative_EasyUnpause(CURL* handle);
 
 // the function pointer definition for the callback used in RegisterSeekCallback
-typedef int32_t(*SeekCallback)(void* userPointer, int64_t offset, int32_t origin);
+typedef int32_t (*SeekCallback)(void* userPointer, int64_t offset, int32_t origin);
 
 // the function pointer definition for the callback used in RegisterReadWriteCallback
-typedef uint64_t(*ReadWriteCallback)(uint8_t* buffer, uint64_t bufferSize, uint64_t nitems, void* userPointer);
+typedef uint64_t (*ReadWriteCallback)(uint8_t* buffer, uint64_t bufferSize, uint64_t nitems, void* userPointer);
 
 // the function pointer definition for the callback used in RegisterSslCtxCallback
-typedef int32_t(*SslCtxCallback)(CURL* curl, void* sslCtx, void* userPointer);
+typedef int32_t (*SslCtxCallback)(CURL* curl, void* sslCtx, void* userPointer);
 
 /*
 The object that is returned from RegisterXXXCallback functions.
@@ -182,12 +182,17 @@ Registers a callback in libcurl for seeking in an input stream.
 This function gets called by libcurl to seek to a certain position in the input stream
 and can be used to fast forward a file in a resumed upload.
 */
-extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle);
+extern "C" void
+HttpNative_RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for reading/writing input/output streams.
 */
-extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle);
+extern "C" void HttpNative_RegisterReadWriteCallback(CURL* curl,
+                                                     ReadWriteFunction functionType,
+                                                     ReadWriteCallback callback,
+                                                     void* userPointer,
+                                                     CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for initializing SSL connections.
@@ -198,9 +203,12 @@ to modify the behaviour of the SSL initialization.
 
 Returns a CURLcode that describes whether registering the callback was successful or not.
 */
-extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, void *userPointer, CallbackHandle** callbackHandle);
+extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
+                                                     SslCtxCallback callback,
+                                                     void* userPointer,
+                                                     CallbackHandle** callbackHandle);
 
 /*
 Frees the CallbackHandle created by a RegisterXXXCallback function.
 */
-extern "C" void FreeCallbackHandle(CallbackHandle* callbackHandle);
+extern "C" void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle);
