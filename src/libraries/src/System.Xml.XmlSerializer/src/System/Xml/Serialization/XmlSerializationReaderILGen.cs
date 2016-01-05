@@ -886,15 +886,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    string formatterName = mapping.TypeDesc.FormatterName;
-                    // Workaround for ToByte -> SL's ToInt16
-                    if (formatterName == "Byte")
-                        formatterName = "Int16";
-                    // Workaround for ToUInt16 -> SL's ToInt32
-                    else if (formatterName == "UInt16")
-                        formatterName = "Int32";
                     ToXXX = typeof(XmlConvert).GetMethod(
-                        "To" + formatterName,
+                        "To" + mapping.TypeDesc.FormatterName,
                         CodeGenerator.StaticBindingFlags,
                         new Type[] { argType }
                         );
@@ -943,16 +936,6 @@ namespace System.Xml.Serialization
                     ilg.Ldc(false);
                 }
                 ilg.Call(ToXXX);
-                // If use XmlConvert, ..
-                if (!mapping.TypeDesc.HasCustomFormatter)
-                {
-                    // Workaround for ToByte -> SL's ToInt16
-                    if (mapping.TypeDesc.FormatterName == "Byte")
-                        ilg.ConvertValue(typeof(Int16), typeof(Byte));
-                    // Workaround for ToUInt16 -> SL's ToInt32
-                    else if (mapping.TypeDesc.FormatterName == "UInt16")
-                        ilg.ConvertValue(typeof(Int32), typeof(UInt16));
-                }
             }
         }
 
