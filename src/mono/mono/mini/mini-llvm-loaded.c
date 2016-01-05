@@ -31,6 +31,7 @@ static MonoLLVMCFGFunc mono_llvm_check_method_supported_fptr;
 static MonoLLVMEmitAotInfoFunc mono_llvm_emit_aot_file_info_fptr;
 static MonoLLVMEmitAotDataFunc mono_llvm_emit_aot_data_fptr;
 static MonoLLVMFreeDomainFunc mono_llvm_free_domain_info_fptr;
+static void (*mono_llvm_create_vars_fptr) (MonoCompile *cfg);
 
 void
 mono_llvm_init (void)
@@ -97,6 +98,13 @@ mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 		mono_llvm_emit_aot_data_fptr (symbol, data, data_len);
 }
 
+void
+mono_llvm_create_vars (MonoCompile *cfg)
+{
+	if (mono_llvm_create_vars_fptr)
+		mono_llvm_create_vars_fptr (cfg);
+}
+
 int
 mono_llvm_load (const char* bpath)
 {
@@ -128,6 +136,8 @@ mono_llvm_load (const char* bpath)
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_emit_aot_file_info", (void**)&mono_llvm_emit_aot_file_info_fptr);
 	if (err) goto symbol_error;
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_emit_aot_data", (void**)&mono_llvm_emit_aot_data_fptr);
+	if (err) goto symbol_error;
+	err = mono_dl_symbol (llvm_lib, "mono_llvm_create_vars", (void**)&mono_llvm_create_vars_fptr);
 	if (err) goto symbol_error;
 	return TRUE;
 symbol_error:

@@ -26,7 +26,7 @@ void     mono_llvm_clear_exception (void);
 MonoObject *mono_llvm_load_exception (void);
 void     mono_llvm_reset_exception (void);
 void     mono_llvm_raise_exception (MonoException *e);
-void     mono_llvm_create_vars (MonoCompile *cfg);
+void     mono_llvm_create_vars (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 
 gboolean mini_llvm_init                     (void);
 
