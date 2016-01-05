@@ -1,10 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace System.Reflection.Context
 {
@@ -25,22 +22,22 @@ namespace System.Reflection.Context
             throw new PlatformNotSupportedException();
         }
 
-        protected PropertyInfo CreateProperty(Type propertyType, String name, Func<Object, Object> getter, Action<Object, Object> setter)
+        protected PropertyInfo CreateProperty(Type propertyType, string name, Func<object, object> getter, Action<object, object> setter)
         {
             throw new PlatformNotSupportedException();
         }
 
-        protected PropertyInfo CreateProperty(Type propertyType, String name, Func<Object, Object> getter, Action<Object, Object> setter, IEnumerable<Attribute> propertyCustomAttributes, IEnumerable<Attribute> getterCustomAttributes, IEnumerable<Attribute> setterCustomAttributes)
+        protected PropertyInfo CreateProperty(Type propertyType, string name, Func<object, object> getter, Action<object, object> setter, IEnumerable<Attribute> propertyCustomAttributes, IEnumerable<Attribute> getterCustomAttributes, IEnumerable<Attribute> setterCustomAttributes)
         {
             throw new PlatformNotSupportedException();
         }
 
-        protected virtual IEnumerable<Object> GetCustomAttributes(MemberInfo member, IEnumerable<Object> declaredAttributes)
+        protected virtual IEnumerable<object> GetCustomAttributes(MemberInfo member, IEnumerable<object> declaredAttributes)
         {
             throw new PlatformNotSupportedException();
         }
 
-        protected virtual IEnumerable<Object> GetCustomAttributes(ParameterInfo parameter, IEnumerable<Object> declaredAttributes)
+        protected virtual IEnumerable<object> GetCustomAttributes(ParameterInfo parameter, IEnumerable<object> declaredAttributes)
         {
             throw new PlatformNotSupportedException();
         }
