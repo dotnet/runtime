@@ -2463,7 +2463,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		gpointer *args;
 		gpointer retval_ptr;
 		guint8 retval [256];
-		gpointer param_refs [256];
+		gpointer *param_refs;
 		int i, pindex;
 
 		/*
@@ -2473,6 +2473,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 * signatures.
 		 */
 		args = (void **)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
+		param_refs = (gpointer*)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
 		pindex = 0;
 		/*
 		 * The runtime invoke wrappers expects pointers to primitive types, so have to
