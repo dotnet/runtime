@@ -2105,7 +2105,7 @@ void Assembler::EmitInstrSwitch(Instr* instr, Labels* targets)
     Labels  *pLbls;
     int     NumLabels;
     Label   *pLabel;
-    long    offset;
+    UINT    offset;
 
     EmitOpcode(instr);
 
@@ -2134,10 +2134,10 @@ void Assembler::EmitInstrSwitch(Instr* instr, Labels* targets)
         }
         else
         {
-            offset = (long)(UINT_PTR)pLbls->Label;
+            offset = (UINT)(UINT_PTR)pLbls->Label;
             if (m_fDisplayTraceOutput) report->msg("%d\n", offset);
         }
-        EmitBytes((BYTE *)&offset, sizeof(long));
+        EmitBytes((BYTE *)&offset, sizeof(UINT));
     }
     delete targets;
 }
