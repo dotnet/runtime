@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-extern "C" int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
+extern "C" int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* format, ...)
 {
     assert(string != nullptr || size == 0);
     assert(size >= 0);
@@ -26,7 +26,7 @@ extern "C" int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
     return result;
 }
 
-extern "C" int32_t PrintF(const char* format, ...)
+extern "C" int32_t SystemNative_PrintF(const char* format, ...)
 {
     va_list arguments;
     va_start(arguments, format);

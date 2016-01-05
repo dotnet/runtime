@@ -16,7 +16,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns 0 on succes; otherwise, returns -1
         /// </returns>
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
         internal static extern int Rename(string oldPath, string newPath);
     }
 }

@@ -41,7 +41,7 @@ int32_t ReadSysctlVar(const char* name, RetType* value)
     return sysctlbyname(name, value, &oldlenp, newp, newlen);
 }
 
-extern "C" int32_t GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
+extern "C" int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 {
     assert(retStats != nullptr);
 
@@ -70,7 +70,7 @@ extern "C" int32_t GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
+extern "C" int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 {
     assert(retStats != nullptr);
 
@@ -109,7 +109,7 @@ extern "C" int32_t GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
+extern "C" int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 {
     assert(retStats != nullptr);
 
@@ -135,7 +135,7 @@ extern "C" int32_t GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
+extern "C" int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 {
     assert(retStats != nullptr);
 
@@ -175,7 +175,7 @@ extern "C" int32_t GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
+extern "C" int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 {
     assert(retStats != nullptr);
 
@@ -221,7 +221,7 @@ extern "C" int32_t GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetEstimatedTcpConnectionCount()
+extern "C" int32_t SystemNative_GetEstimatedTcpConnectionCount()
 {
     int32_t count;
     ReadSysctlVar("net.inet.tcp.pcbcount", &count);
@@ -238,7 +238,7 @@ size_t GetEstimatedTcpPcbSize()
     return oldlenp;
 }
 
-extern "C" int32_t GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
+extern "C" int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
 {
     assert(infos != nullptr);
     assert(infoCount != nullptr);
@@ -309,7 +309,7 @@ extern "C" int32_t GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* i
     return 0;
 }
 
-extern "C" int32_t GetEstimatedUdpListenerCount()
+extern "C" int32_t SystemNative_GetEstimatedUdpListenerCount()
 {
     int32_t count;
     ReadSysctlVar("net.inet.udp.pcbcount", &count);
@@ -326,7 +326,7 @@ size_t GetEstimatedUdpPcbSize()
     return oldlenp;
 }
 
-extern "C" int32_t GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
+extern "C" int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
 {
     assert(infos != nullptr);
     assert(infoCount != nullptr);
@@ -385,7 +385,7 @@ extern "C" int32_t GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCou
     return 0;
 }
 
-extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
+extern "C" int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
     assert(interfaceName != nullptr && retStats != nullptr);
     unsigned int interfaceIndex = if_nametoindex(interfaceName);
@@ -447,7 +447,7 @@ extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPI
     return -1;
 }
 
-extern "C" int32_t GetNumRoutes()
+extern "C" int32_t SystemNative_GetNumRoutes()
 {
     int routeDumpMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_DUMP, 0};
 

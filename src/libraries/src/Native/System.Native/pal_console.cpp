@@ -16,7 +16,7 @@
 #include <unistd.h>
 #include <poll.h>
 
-extern "C" int32_t GetWindowSize(WinSize* windowSize)
+extern "C" int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
     assert(windowSize != nullptr);
 
@@ -35,7 +35,7 @@ extern "C" int32_t GetWindowSize(WinSize* windowSize)
 #endif
 }
 
-extern "C" int32_t IsATty(intptr_t fd)
+extern "C" int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
 }
@@ -53,7 +53,7 @@ static void UninitializeConsole()
     }
 }
 
-extern "C" void InitializeConsole()
+extern "C" void SystemNative_InitializeConsole()
 {
     assert(!g_initialized);
 
@@ -74,7 +74,7 @@ extern "C" void InitializeConsole()
 #endif
 }
 
-extern "C" int32_t StdinReady()
+extern "C" int32_t SystemNative_StdinReady()
 {
     struct pollfd fd;
     fd.fd = STDIN_FILENO;
@@ -82,7 +82,7 @@ extern "C" int32_t StdinReady()
     return poll(&fd, 1, 0) > 0 ? 1 : 0;
 }
 
-extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
+extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -231,7 +231,7 @@ static bool InitializeSignalHandling()
     return true;
 }
 
-extern "C" int32_t RegisterForCtrl(CtrlCallback callback)
+extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback)
 {
     assert(callback != nullptr);
     assert(g_ctrlCallback == nullptr);
@@ -247,7 +247,7 @@ extern "C" int32_t RegisterForCtrl(CtrlCallback callback)
     return 1;
 }
 
-extern "C" void UnregisterForCtrl()
+extern "C" void SystemNative_UnregisterForCtrl()
 {
     assert(g_ctrlCallback != nullptr);
     g_ctrlCallback = nullptr;

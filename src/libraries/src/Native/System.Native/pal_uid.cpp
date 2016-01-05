@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
+extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
 {
     assert(pwd != nullptr);
     assert(buf != nullptr);
@@ -53,12 +53,12 @@ extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t bufle
     return 0;
 }
 
-extern "C" uint32_t GetEUid()
+extern "C" uint32_t SystemNative_GetEUid()
 {
     return geteuid();
 }
 
-extern "C" uint32_t GetEGid()
+extern "C" uint32_t SystemNative_GetEGid()
 {
     return getegid();
 }

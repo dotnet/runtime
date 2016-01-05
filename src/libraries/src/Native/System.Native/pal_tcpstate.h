@@ -19,4 +19,4 @@ enum TcpState
     DeleteTcb
 };
 
-extern "C" TcpState MapTcpState(int32_t tcpState);
+extern "C" TcpState SystemNative_MapTcpState(int32_t tcpState);

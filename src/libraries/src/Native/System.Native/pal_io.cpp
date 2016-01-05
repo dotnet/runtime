@@ -146,7 +146,7 @@ static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 #endif
 }
 
-extern "C" int32_t Stat(const char* path, FileStatus* output)
+extern "C" int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -160,7 +160,7 @@ extern "C" int32_t Stat(const char* path, FileStatus* output)
     return ret;
 }
 
-extern "C" int32_t FStat(intptr_t fd, FileStatus* output)
+extern "C" int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -174,7 +174,7 @@ extern "C" int32_t FStat(intptr_t fd, FileStatus* output)
     return ret;
 }
 
-extern "C" int32_t LStat(const char* path, FileStatus* output)
+extern "C" int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -227,7 +227,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
     return ret;
 }
 
-extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode)
+extern "C" intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
@@ -241,26 +241,26 @@ extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode)
     return result;
 }
 
-extern "C" int32_t Close(intptr_t fd)
+extern "C" int32_t SystemNative_Close(intptr_t fd)
 {
     return close(ToFileDescriptor(fd));
 }
 
-extern "C" intptr_t Dup(intptr_t oldfd)
+extern "C" intptr_t SystemNative_Dup(intptr_t oldfd)
 {
     int result;
     while (CheckInterrupted(result = dup(ToFileDescriptor(oldfd))));
     return result;
 }
 
-extern "C" int32_t Unlink(const char* path)
+extern "C" int32_t SystemNative_Unlink(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = unlink(path)));
     return result;
 }
 
-extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
+extern "C" intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
@@ -278,7 +278,7 @@ extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 #endif
 }
 
-extern "C" int32_t ShmUnlink(const char* name)
+extern "C" int32_t SystemNative_ShmUnlink(const char* name)
 {
     int32_t result;
     while (CheckInterrupted(result = shm_unlink(name)));
@@ -300,7 +300,7 @@ static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
 #endif
 }
 
-extern "C" int32_t GetDirentSize()
+extern "C" int32_t SystemNative_GetDirentSize()
 {
     // dirent should be under 2k in size
     static_assert(sizeof(dirent) < 2048, "");
@@ -318,7 +318,7 @@ extern "C" int32_t GetDirentSize()
 //    in the byte[] buffer so the managed code and find it and copy it out of the
 //    buffer into a managed string that the caller of the framework can use, making
 //    the 2nd and final strcpy.
-extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
     assert(buffer != nullptr);
     assert(dir != nullptr);
@@ -355,17 +355,17 @@ extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, Director
     return 0;
 }
 
-extern "C" DIR* OpenDir(const char* path)
+extern "C" DIR* SystemNative_OpenDir(const char* path)
 {
     return opendir(path);
 }
 
-extern "C" int32_t CloseDir(DIR* dir)
+extern "C" int32_t SystemNative_CloseDir(DIR* dir)
 {
     return closedir(dir);
 }
 
-extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
+extern "C" int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
     switch (flags)
     {
@@ -389,7 +389,7 @@ extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
     return result;
 }
 
-extern "C" int32_t FcntlCanGetSetPipeSz()
+extern "C" int32_t SystemNative_FcntlCanGetSetPipeSz()
 {
 #if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)
     return true;
@@ -398,7 +398,7 @@ extern "C" int32_t FcntlCanGetSetPipeSz()
 #endif
 }
 
-extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
+extern "C" int32_t SystemNative_FcntlGetPipeSz(intptr_t fd)
 {
 #ifdef F_GETPIPE_SZ
     int32_t result;
@@ -411,7 +411,7 @@ extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
 #endif
 }
 
-extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size)
+extern "C" int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size)
 {
 #ifdef F_SETPIPE_SZ
     int32_t result;
@@ -424,7 +424,7 @@ extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size)
 #endif
 }
 
-extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
+extern "C" int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
@@ -446,73 +446,73 @@ extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
     return fcntl(fileDescriptor, F_SETFL, flags);
 }
 
-extern "C" int32_t MkDir(const char* path, int32_t mode)
+extern "C" int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = mkdir(path, static_cast<mode_t>(mode))));
     return result;
 }
 
-extern "C" int32_t ChMod(const char* path, int32_t mode)
+extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = chmod(path, static_cast<mode_t>(mode))));
     return result;
 }
 
-extern "C" int32_t MkFifo(const char* path, int32_t mode)
+extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = mkfifo(path, static_cast<mode_t>(mode))));
     return result;
 }
 
-extern "C" int32_t FSync(intptr_t fd)
+extern "C" int32_t SystemNative_FSync(intptr_t fd)
 {
     int32_t result;
     while (CheckInterrupted(result = fsync(ToFileDescriptor(fd))));
     return result;
 }
 
-extern "C" int32_t FLock(intptr_t fd, LockOperations operation)
+extern "C" int32_t SystemNative_FLock(intptr_t fd, LockOperations operation)
 {
     int32_t result;
     while (CheckInterrupted(result = flock(ToFileDescriptor(fd), operation)));
     return result;
 }
 
-extern "C" int32_t ChDir(const char* path)
+extern "C" int32_t SystemNative_ChDir(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = chdir(path)));
     return result;
 }
 
-extern "C" int32_t Access(const char* path, AccessMode mode)
+extern "C" int32_t SystemNative_Access(const char* path, AccessMode mode)
 {
     return access(path, mode);
 }
 
-extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
+extern "C" int32_t SystemNative_FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
 {
     return fnmatch(pattern, path, flags);
 }
 
-extern "C" int64_t LSeek(intptr_t fd, int64_t offset, SeekWhence whence)
+extern "C" int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, SeekWhence whence)
 {
     int64_t result;
     while (CheckInterrupted(result = lseek(ToFileDescriptor(fd), offset, whence)));
     return result;
 }
 
-extern "C" int32_t Link(const char* source, const char* linkTarget)
+extern "C" int32_t SystemNative_Link(const char* source, const char* linkTarget)
 {
     int32_t result;
     while (CheckInterrupted(result = link(source, linkTarget)));
     return result;
 }
 
-extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength)
+extern "C" intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
     while (CheckInterrupted(result = mkstemps(pathTemplate, suffixLength)));
@@ -582,7 +582,7 @@ static int32_t ConvertMSyncFlags(int32_t flags)
     return ret;
 }
 
-extern "C" void* MMap(void* address,
+extern "C" void* SystemNative_MMap(void* address,
                       uint64_t length,
                       int32_t protection, // bitwise OR of PAL_PROT_*
                       int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
@@ -615,7 +615,7 @@ extern "C" void* MMap(void* address,
     return ret;
 }
 
-extern "C" int32_t MUnmap(void* address, uint64_t length)
+extern "C" int32_t SystemNative_MUnmap(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -626,7 +626,7 @@ extern "C" int32_t MUnmap(void* address, uint64_t length)
     return munmap(address, static_cast<size_t>(length));
 }
 
-extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
+extern "C" int32_t SystemNative_MAdvise(void* address, uint64_t length, MemoryAdvice advice)
 {
     if (length > SIZE_MAX)
     {
@@ -651,7 +651,7 @@ extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
     return -1;
 }
 
-extern "C" int32_t MLock(void* address, uint64_t length)
+extern "C" int32_t SystemNative_MLock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -662,7 +662,7 @@ extern "C" int32_t MLock(void* address, uint64_t length)
     return mlock(address, static_cast<size_t>(length));
 }
 
-extern "C" int32_t MUnlock(void* address, uint64_t length)
+extern "C" int32_t SystemNative_MUnlock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -673,7 +673,7 @@ extern "C" int32_t MUnlock(void* address, uint64_t length)
     return munlock(address, static_cast<size_t>(length));
 }
 
-extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection)
+extern "C" int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
 {
     if (length > SIZE_MAX)
     {
@@ -691,7 +691,7 @@ extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection)
     return mprotect(address, static_cast<size_t>(length), protection);
 }
 
-extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags)
+extern "C" int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
 {
     if (length > SIZE_MAX)
     {
@@ -709,7 +709,7 @@ extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags)
     return msync(address, static_cast<size_t>(length), flags);
 }
 
-extern "C" int64_t SysConf(SysConfName name)
+extern "C" int64_t SystemNative_SysConf(SysConfName name)
 {
     switch (name)
     {
@@ -724,14 +724,14 @@ extern "C" int64_t SysConf(SysConfName name)
     return -1;
 }
 
-extern "C" int32_t FTruncate(intptr_t fd, int64_t length)
+extern "C" int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
 {
     int32_t result;
     while (CheckInterrupted(result = ftruncate(ToFileDescriptor(fd), length)));
     return result;
 }
 
-extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
+extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     if (pollEvents == nullptr || triggered == nullptr)
     {
@@ -764,7 +764,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
         }
 
         *triggered = 0;
-        return ConvertErrorPlatformToPal(errno);
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
     for (uint32_t i = 0; i < eventCount; i++)
@@ -786,7 +786,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
     return PAL_SUCCESS;
 }
 
-extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice)
+extern "C" int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice)
 {
 #if HAVE_POSIX_ADVISE
     int32_t result;
@@ -799,7 +799,7 @@ extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, Fil
 #endif
 }
 
-extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize)
+extern "C" int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -817,7 +817,7 @@ extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
+extern "C" int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -833,26 +833,26 @@ extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C" int32_t Rename(const char* oldPath, const char* newPath)
+extern "C" int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
 {
     int32_t result;
     while (CheckInterrupted(result = rename(oldPath, newPath)));
     return result;
 }
 
-extern "C" int32_t RmDir(const char* path)
+extern "C" int32_t SystemNative_RmDir(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = rmdir(path)));
     return result;
 }
 
-extern "C" void Sync()
+extern "C" void SystemNative_Sync()
 {
     sync();
 }
 
-extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize)
+extern "C" int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -870,7 +870,7 @@ extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C" intptr_t INotifyInit()
+extern "C" intptr_t SystemNative_INotifyInit()
 {
 #if HAVE_INOTIFY
     return inotify_init();
@@ -880,7 +880,7 @@ extern "C" intptr_t INotifyInit()
 #endif
 }
 
-extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
+extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
 {
     assert(fd >= 0);
     assert(pathName != nullptr);
@@ -894,7 +894,7 @@ extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t m
 #endif
 }
 
-extern "C" int32_t INotifyRemoveWatch(intptr_t fd, int32_t wd)
+extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
 {
     assert(fd >= 0);
     assert(wd >= 0);

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <assert.h>
 
-extern "C" Error ConvertErrorPlatformToPal(int32_t platformErrno)
+extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
 {
     switch (platformErrno)
     {
@@ -181,7 +181,7 @@ extern "C" Error ConvertErrorPlatformToPal(int32_t platformErrno)
     return PAL_ENONSTANDARD;
 }
 
-extern "C" int32_t ConvertErrorPalToPlatform(Error error)
+extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
 {
     switch (error)
     {
@@ -354,7 +354,7 @@ extern "C" int32_t ConvertErrorPalToPlatform(Error error)
     return -1;
 }
 
-extern "C" const char* StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
+extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr);
     assert(bufferSize > 0);

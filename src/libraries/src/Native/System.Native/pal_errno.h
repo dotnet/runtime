@@ -122,14 +122,14 @@ enum Error : int32_t
  * Error above. If the value is not recognized, returns
  * PAL_ENONSTANDARD.
  */
-extern "C" Error ConvertErrorPlatformToPal(int32_t platformErrno);
+extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
 
 /**
  * Converts the given PAL Error value to a platform-specific errno
  * value. This is to be used when we want to synthesize a given error
  * and obtain the appropriate error message via StrErrorR.
  */
-extern "C" int32_t ConvertErrorPalToPlatform(Error error);
+extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error);
 
 /**
  * Obtains the system error message for the given raw numeric value
@@ -152,4 +152,4 @@ extern "C" int32_t ConvertErrorPalToPlatform(Error error);
  * returned and the buffer is filled with as much of the message
  * as possible and null-terminated.
  */
-extern "C" const char* StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize);
+extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize);
