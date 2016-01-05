@@ -24,37 +24,35 @@ static_assert(PAL_CURLPIPE_MULTIPLEX == CURLPIPE_MULTIPLEX, "");
 
 static_assert(PAL_CURLMSG_DONE == CURLMSG_DONE, "");
 
-extern "C" CURLM* MultiCreate()
+extern "C" CURLM* HttpNative_MultiCreate()
 {
     return curl_multi_init();
 }
 
-extern "C" int32_t MultiDestroy(CURLM* multiHandle)
+extern "C" int32_t HttpNative_MultiDestroy(CURLM* multiHandle)
 {
     return curl_multi_cleanup(multiHandle);
 }
 
-extern "C" int32_t MultiAddHandle(CURLM* multiHandle, CURL* easyHandle)
+extern "C" int32_t HttpNative_MultiAddHandle(CURLM* multiHandle, CURL* easyHandle)
 {
     return curl_multi_add_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
+extern "C" int32_t HttpNative_MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
 {
     return curl_multi_remove_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t MultiWait(CURLM* multiHandle, intptr_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
+extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
+                                        intptr_t extraFileDescriptor,
+                                        int32_t* isExtraFileDescriptorActive,
+                                        int32_t* isTimeout)
 {
     assert(isExtraFileDescriptorActive != nullptr);
     assert(isTimeout != nullptr);
 
-    curl_waitfd extraFds =
-    {
-        .fd = ToFileDescriptor(extraFileDescriptor),
-        .events = CURL_WAIT_POLLIN,
-        .revents = 0
-    };
+    curl_waitfd extraFds = {.fd = ToFileDescriptor(extraFileDescriptor), .events = CURL_WAIT_POLLIN, .revents = 0};
 
     // Even with our cancellation mechanism, we specify a timeout so that
     // just in case something goes wrong we can recover gracefully.  This timeout is relatively long.
@@ -72,13 +70,13 @@ extern "C" int32_t MultiWait(CURLM* multiHandle, intptr_t extraFileDescriptor, i
     return result;
 }
 
-extern "C" int32_t MultiPerform(CURLM* multiHandle)
+extern "C" int32_t HttpNative_MultiPerform(CURLM* multiHandle)
 {
     int running_handles;
     return curl_multi_perform(multiHandle, &running_handles);
 }
 
-extern "C" int32_t MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** easyHandle, int32_t* result)
+extern "C" int32_t HttpNative_MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** easyHandle, int32_t* result)
 {
     assert(message != nullptr);
     assert(easyHandle != nullptr);
@@ -102,12 +100,12 @@ extern "C" int32_t MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** ea
     return 1;
 }
 
-extern "C" const char* MultiGetErrorString(PAL_CURLMcode code)
+extern "C" const char* HttpNative_MultiGetErrorString(PAL_CURLMcode code)
 {
     return curl_multi_strerror(static_cast<CURLMcode>(code));
 }
 
-extern "C" int32_t MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value)
+extern "C" int32_t HttpNative_MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value)
 {
     return curl_multi_setopt(handle, static_cast<CURLMoption>(option), value);
 }

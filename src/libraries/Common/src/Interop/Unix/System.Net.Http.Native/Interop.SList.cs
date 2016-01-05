@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Http
     {
-        [DllImport(Libraries.HttpNative, CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_SListAppend", CharSet = CharSet.Ansi)]
         private static extern IntPtr SListAppend(IntPtr slist, string headerValue);
 
         internal static bool SListAppend(SafeCurlSListHandle slist, string headerValue)
@@ -32,7 +32,7 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_SListFreeAll")]
         private static extern void SListFreeAll(IntPtr slist);
 
         internal sealed class SafeCurlSListHandle : SafeHandle

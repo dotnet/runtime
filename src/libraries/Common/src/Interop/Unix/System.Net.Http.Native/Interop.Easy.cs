@@ -8,37 +8,37 @@ internal static partial class Interop
 {
     internal static partial class Http
     {
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyCreate")]
         public static extern SafeCurlHandle EasyCreate();
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyDestroy")]
         private static extern void EasyDestroy(IntPtr handle);
 
-        [DllImport(Libraries.HttpNative, CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasySetOptionString", CharSet = CharSet.Ansi)]
         public static extern CURLcode EasySetOptionString(SafeCurlHandle curl, CURLoption option, string value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasySetOptionLong")]
         public static extern CURLcode EasySetOptionLong(SafeCurlHandle curl, CURLoption option, long value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasySetOptionPointer")]
         public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, IntPtr value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasySetOptionPointer")]
         public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, SafeHandle value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetErrorString")]
         public static extern IntPtr EasyGetErrorString(int code);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetInfoPointer")]
         public static extern CURLcode EasyGetInfoPointer(IntPtr handle, CURLINFO info, out IntPtr value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetInfoLong")]
         public static extern CURLcode EasyGetInfoLong(SafeCurlHandle handle, CURLINFO info, out long value);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyPerform")]
         public static extern CURLcode EasyPerform(SafeCurlHandle curl);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyUnpause")]
         public static extern CURLcode EasyUnpause(SafeCurlHandle easy);
 
         public delegate CurlSeekResult SeekCallback(IntPtr userPointer, long offset, int origin);
@@ -47,14 +47,14 @@ internal static partial class Interop
 
         public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterSeekCallback")]
         public static extern void RegisterSeekCallback(
             SafeCurlHandle curl,
             SeekCallback callback,
             IntPtr userPointer,
             ref SafeCallbackHandle callbackHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterReadWriteCallback")]
         public static extern void RegisterReadWriteCallback(
             SafeCurlHandle curl,
             ReadWriteFunction functionType,
@@ -62,14 +62,14 @@ internal static partial class Interop
             IntPtr userPointer,
             ref SafeCallbackHandle callbackHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterSslCtxCallback")]
         public static extern CURLcode RegisterSslCtxCallback(
             SafeCurlHandle curl,
             SslCtxCallback callback,
             IntPtr userPointer,
             ref SafeCallbackHandle callbackHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_FreeCallbackHandle")]
         private static extern void FreeCallbackHandle(IntPtr handle);
 
         // Curl options are of the format <type base> + <n>
