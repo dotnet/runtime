@@ -278,6 +278,9 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.
                 if (os in ['Ubuntu', 'CentOS7.1']) {
                     Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
                 }
+                else {
+                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test", "(?i).*test\\W+${os}.*")
+                }
             }
             else {
                 // Set a push trigger
