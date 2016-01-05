@@ -2707,3 +2707,8 @@ public class TypeWithTimeSpanProperty
 {
     public TimeSpan TimeSpanProperty;
 }
+
+public class TypeWithByteProperty
+{
+    public byte ByteProperty;
+}
