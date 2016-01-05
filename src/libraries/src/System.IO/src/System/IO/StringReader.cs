@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
@@ -18,8 +17,10 @@ namespace System.IO
         public StringReader(string s)
         {
             if (s == null)
+            {
                 throw new ArgumentNullException("s");
-            Contract.EndContractBlock();
+            }
+
             _s = s;
             _length = s == null ? 0 : s.Length;
         }
@@ -42,8 +43,14 @@ namespace System.IO
         public override int Peek()
         {
             if (_s == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            if (_pos == _length) return -1;
+            }
+            if (_pos == _length)
+            {
+                return -1;
+            }
+
             return _s[_pos];
         }
 
@@ -53,8 +60,14 @@ namespace System.IO
         public override int Read()
         {
             if (_s == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            if (_pos == _length) return -1;
+            }
+            if (_pos == _length)
+            {
+                return -1;
+            }
+
             return _s[_pos++];
         }
 
@@ -66,21 +79,34 @@ namespace System.IO
         public override int Read(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
             if (_s == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+            }
 
             int n = _length - _pos;
             if (n > 0)
             {
-                if (n > count) n = count;
+                if (n > count)
+                {
+                    n = count;
+                }
+
                 _s.CopyTo(_pos, buffer, index, n);
                 _pos += n;
             }
@@ -90,12 +116,20 @@ namespace System.IO
         public override string ReadToEnd()
         {
             if (_s == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+            }
+
             string s;
             if (_pos == 0)
+            {
                 s = _s;
+            }
             else
+            {
                 s = _s.Substring(_pos, _length - _pos);
+            }
+
             _pos = _length;
             return s;
         }
@@ -109,7 +143,10 @@ namespace System.IO
         public override string ReadLine()
         {
             if (_s == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+            }
+
             int i = _pos;
             while (i < _length)
             {
@@ -118,17 +155,24 @@ namespace System.IO
                 {
                     string result = _s.Substring(_pos, i - _pos);
                     _pos = i + 1;
-                    if (ch == '\r' && _pos < _length && _s[_pos] == '\n') _pos++;
+                    if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
+                    {
+                        _pos++;
+                    }
+
                     return result;
                 }
+
                 i++;
             }
+
             if (i > _pos)
             {
                 string result = _s.Substring(_pos, i - _pos);
                 _pos = i;
                 return result;
             }
+
             return null;
         }
 
@@ -146,13 +190,17 @@ namespace System.IO
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0 || count < 0)
+            {
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-
-            Contract.EndContractBlock();
+            }
 
             return Task.FromResult(ReadBlock(buffer, index, count));
         }
@@ -160,12 +208,17 @@ namespace System.IO
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0 || count < 0)
+            {
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             return Task.FromResult(Read(buffer, index, count));
         }

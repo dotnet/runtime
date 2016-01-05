@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -110,11 +109,17 @@ namespace System.IO
             : base(null) // Ask for CurrentCulture all the time
         {
             if (stream == null || encoding == null)
+            {
                 throw new ArgumentNullException((stream == null ? "stream" : "encoding"));
+            }
             if (!stream.CanWrite)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
-            if (bufferSize <= 0) throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
-            Contract.EndContractBlock();
+            }
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             Init(stream, encoding, bufferSize, leaveOpen);
         }
@@ -124,14 +129,21 @@ namespace System.IO
             _stream = streamArg;
             _encoding = encodingArg;
             _encoder = _encoding.GetEncoder();
-            if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
+            if (bufferSize < MinBufferSize)
+            {
+                bufferSize = MinBufferSize;
+            }
+
             _charBuffer = new char[bufferSize];
             _byteBuffer = new byte[_encoding.GetMaxByteCount(bufferSize)];
             _charLen = bufferSize;
             // If we're appending to a Stream that already has data, don't write
             // the preamble.
             if (_stream.CanSeek && _stream.Position > 0)
+            {
                 _haveWrittenPreamble = true;
+            }
+
             _closable = !shouldLeaveOpen;
         }
 
@@ -167,7 +179,9 @@ namespace System.IO
                         // due to the same Flush error). In this case, we still need to ensure 
                         // cleaning up internal resources, hence the finally block.  
                         if (disposing)
+                        {
                             _stream.Dispose();
+                        }
                     }
                     finally
                     {
@@ -197,29 +211,39 @@ namespace System.IO
             // This is required to flush any dangling characters from our UTF-7 
             // and UTF-8 encoders.  
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             // Perf boost for Flush on non-dirty writers.
             if (_charPos == 0 && !flushStream && !flushEncoder)
+            {
                 return;
+            }
 
             if (!_haveWrittenPreamble)
             {
                 _haveWrittenPreamble = true;
                 byte[] preamble = _encoding.GetPreamble();
                 if (preamble.Length > 0)
+                {
                     _stream.Write(preamble, 0, preamble.Length);
+                }
             }
 
             int count = _encoder.GetBytes(_charBuffer, 0, _charPos, _byteBuffer, 0, flushEncoder);
             _charPos = 0;
             if (count > 0)
+            {
                 _stream.Write(_byteBuffer, 0, count);
+            }
             // By definition, calling Flush should flush the stream, but this is
             // only necessary if we passed in true for flushStream.  The Web
             // Services guys have some perf tests where flushing needlessly hurts.
             if (flushStream)
+            {
                 _stream.Flush();
+            }
         }
 
         public virtual bool AutoFlush
@@ -231,7 +255,10 @@ namespace System.IO
                 CheckAsyncTaskInProgress();
 
                 _autoFlush = value;
-                if (value) Flush(true, false);
+                if (value)
+                {
+                    Flush(true, false);
+                }
             }
         }
 
@@ -259,10 +286,17 @@ namespace System.IO
         {
             CheckAsyncTaskInProgress();
 
-            if (_charPos == _charLen) Flush(false, false);
+            if (_charPos == _charLen)
+            {
+                Flush(false, false);
+            }
+
             _charBuffer[_charPos] = value;
             _charPos++;
-            if (_autoFlush) Flush(true, false);
+            if (_autoFlush)
+            {
+                Flush(true, false);
+            }
         }
 
         public override void Write(char[] buffer)
@@ -270,7 +304,9 @@ namespace System.IO
             // This may be faster than the one with the index & count since it
             // has to do less argument checking.
             if (buffer == null)
+            {
                 return;
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -278,44 +314,75 @@ namespace System.IO
             int count = buffer.Length;
             while (count > 0)
             {
-                if (_charPos == _charLen) Flush(false, false);
+                if (_charPos == _charLen)
+                {
+                    Flush(false, false);
+                }
+
                 int n = _charLen - _charPos;
-                if (n > count) n = count;
-                Contract.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
+                if (n > count)
+                {
+                    n = count;
+                }
+
+                Debug.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
                 Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
                 _charPos += n;
                 index += n;
                 count -= n;
             }
-            if (_autoFlush) Flush(true, false);
+
+            if (_autoFlush)
+            {
+                Flush(true, false);
+            }
         }
 
         public override void Write(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             CheckAsyncTaskInProgress();
 
             while (count > 0)
             {
-                if (_charPos == _charLen) Flush(false, false);
+                if (_charPos == _charLen)
+                {
+                    Flush(false, false);
+                }
+
                 int n = _charLen - _charPos;
-                if (n > count) n = count;
-                Contract.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
+                if (n > count)
+                {
+                    n = count;
+                }
+
+                Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
                 Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
                 _charPos += n;
                 index += n;
                 count -= n;
             }
-            if (_autoFlush) Flush(true, false);
+
+            if (_autoFlush)
+            {
+                Flush(true, false);
+            }
         }
 
         public override void Write(string value)
@@ -328,16 +395,28 @@ namespace System.IO
                 int index = 0;
                 while (count > 0)
                 {
-                    if (_charPos == _charLen) Flush(false, false);
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
+
                     int n = _charLen - _charPos;
-                    if (n > count) n = count;
-                    Contract.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                    if (n > count)
+                    {
+                        n = count;
+                    }
+
+                    Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
                     value.CopyTo(index, _charBuffer, _charPos, n);
                     _charPos += n;
                     index += n;
                     count -= n;
                 }
-                if (_autoFlush) Flush(true, false);
+
+                if (_autoFlush)
+                {
+                    Flush(true, false);
+                }
             }
         }
 
@@ -349,10 +428,14 @@ namespace System.IO
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteAsync(value);
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -372,7 +455,7 @@ namespace System.IO
             if (charPos == charLen)
             {
                 await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this._charPos == 0);
+                Debug.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
@@ -386,7 +469,7 @@ namespace System.IO
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this._charPos == 0);
+                        Debug.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -398,7 +481,7 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this._charPos == 0);
+                Debug.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
@@ -412,12 +495,16 @@ namespace System.IO
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteAsync(value);
+            }
 
             if (value != null)
             {
                 if (_stream == null)
+                {
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+                }
 
                 CheckAsyncTaskInProgress();
 
@@ -439,7 +526,7 @@ namespace System.IO
                                                      char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine)
         {
-            Contract.Requires(value != null);
+            Debug.Assert(value != null);
 
             int count = value.Length;
             int index = 0;
@@ -449,15 +536,17 @@ namespace System.IO
                 if (charPos == charLen)
                 {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this._charPos == 0);
+                    Debug.Assert(_this._charPos == 0);
                     charPos = 0;
                 }
 
                 int n = charLen - charPos;
                 if (n > count)
+                {
                     n = count;
+                }
 
-                Contract.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
 
                 value.CopyTo(index, charBuffer, charPos, n);
 
@@ -473,7 +562,7 @@ namespace System.IO
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this._charPos == 0);
+                        Debug.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -485,7 +574,7 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this._charPos == 0);
+                Debug.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
@@ -495,24 +584,35 @@ namespace System.IO
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteAsync(buffer, index, count);
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -529,24 +629,27 @@ namespace System.IO
                                                      char[] charBuffer, int charPos, int charLen, char[] coreNewLine,
                                                      bool autoFlush, bool appendNewLine)
         {
-            Contract.Requires(count == 0 || (count > 0 && buffer != null));
-            Contract.Requires(index >= 0);
-            Contract.Requires(count >= 0);
-            Contract.Requires(buffer == null || (buffer != null && buffer.Length - index >= count));
+            Debug.Assert(count == 0 || (count > 0 && buffer != null));
+            Debug.Assert(index >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer == null || (buffer != null && buffer.Length - index >= count));
 
             while (count > 0)
             {
                 if (charPos == charLen)
                 {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this._charPos == 0);
+                    Debug.Assert(_this._charPos == 0);
                     charPos = 0;
                 }
 
                 int n = charLen - charPos;
-                if (n > count) n = count;
+                if (n > count)
+                {
+                    n = count;
+                }
 
-                Contract.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
 
                 Buffer.BlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
 
@@ -562,7 +665,7 @@ namespace System.IO
                     if (charPos == charLen)
                     {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this._charPos == 0);
+                        Debug.Assert(_this._charPos == 0);
                         charPos = 0;
                     }
 
@@ -574,7 +677,7 @@ namespace System.IO
             if (autoFlush)
             {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this._charPos == 0);
+                Debug.Assert(_this._charPos == 0);
                 charPos = 0;
             }
 
@@ -588,10 +691,14 @@ namespace System.IO
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteLineAsync();
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -609,10 +716,14 @@ namespace System.IO
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteLineAsync(value);
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -630,10 +741,14 @@ namespace System.IO
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteLineAsync(value);
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -647,24 +762,35 @@ namespace System.IO
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overriden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.WriteLineAsync(buffer, index, count);
+            }
 
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -682,14 +808,18 @@ namespace System.IO
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(StreamWriter))
+            {
                 return base.FlushAsync();
+            }
 
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
             // This is required to flush any dangling characters from our UTF-7 
             // and UTF-8 encoders.  
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             CheckAsyncTaskInProgress();
 
@@ -724,7 +854,9 @@ namespace System.IO
         {
             // Perf boost for Flush on non-dirty writers.
             if (sCharPos == 0 && !flushStream && !flushEncoder)
+            {
                 return MakeCompletedTask();
+            }
 
             Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, _haveWrittenPreamble,
                                                 _encoding, _encoder, _byteBuffer, _stream);
@@ -745,18 +877,24 @@ namespace System.IO
                 _this.HaveWrittenPreamble_Prop = true;
                 byte[] preamble = encoding.GetPreamble();
                 if (preamble.Length > 0)
+                {
                     await stream.WriteAsync(preamble, 0, preamble.Length).ConfigureAwait(false);
+                }
             }
 
             int count = encoder.GetBytes(charBuffer, 0, charPos, byteBuffer, 0, flushEncoder);
             if (count > 0)
+            {
                 await stream.WriteAsync(byteBuffer, 0, count).ConfigureAwait(false);
+            }
 
             // By definition, calling Flush should flush the stream, but this is
             // only necessary if we passed in true for flushStream.  The Web
             // Services guys have some perf tests where flushing needlessly hurts.
             if (flushStream)
+            {
                 await stream.FlushAsync().ConfigureAwait(false);
+            }
         }
         #endregion
     }  // class StreamWriter

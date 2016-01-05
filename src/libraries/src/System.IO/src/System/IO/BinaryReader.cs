@@ -2,8 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
-using System.Diagnostics.Contracts;
-using System.Security;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -43,14 +42,19 @@ namespace System.IO
                 throw new ArgumentNullException("encoding");
             }
             if (!input.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
-            Contract.EndContractBlock();
+            }
+
             _stream = input;
             _decoder = encoding.GetDecoder();
             _maxCharsSize = encoding.GetMaxCharCount(MaxCharBytesSize);
             int minBufferSize = encoding.GetMaxByteCount(1);  // max bytes per one char
             if (minBufferSize < 16)
+            {
                 minBufferSize = 16;
+            }
+
             _buffer = new byte[minBufferSize];
             // _charBuffer and _charBytes will be left null.
 
@@ -62,7 +66,7 @@ namespace System.IO
             _isMemoryStream = (_stream.GetType() == typeof(MemoryStream));
             _leaveOpen = leaveOpen;
 
-            Contract.Assert(_decoder != null, "[BinaryReader.ctor]_decoder!=null");
+            Debug.Assert(_decoder != null, "[BinaryReader.ctor]_decoder!=null");
         }
 
         public virtual Stream BaseStream
@@ -80,7 +84,9 @@ namespace System.IO
                 Stream copyOfStream = _stream;
                 _stream = null;
                 if (copyOfStream != null && !_leaveOpen)
+                {
                     copyOfStream.Dispose();
+                }
             }
             _stream = null;
             _buffer = null;
@@ -97,12 +103,16 @@ namespace System.IO
 
         public virtual int PeekChar()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-
-            if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             if (!_stream.CanSeek)
+            {
                 return -1;
+            }
+
             long origPos = _stream.Position;
             int ch = Read();
             _stream.Position = origPos;
@@ -111,8 +121,6 @@ namespace System.IO
 
         public virtual int Read()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-
             if (_stream == null)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
@@ -129,11 +137,17 @@ namespace System.IO
         public virtual byte ReadByte()
         {
             // Inlined to avoid some method call overhead with FillBuffer.
-            if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             int b = _stream.ReadByte();
             if (b == -1)
+            {
                 throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+            }
+
             return (byte)b;
         }
 
@@ -171,10 +185,14 @@ namespace System.IO
         {
             if (_isMemoryStream)
             {
-                if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                if (_stream == null)
+                {
+                    throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+                }
+
                 // read directly from MemoryStream buffer
                 MemoryStream mStream = _stream as MemoryStream;
-                Contract.Assert(mStream != null, "_stream as MemoryStream != null");
+                Debug.Assert(mStream != null, "_stream as MemoryStream != null");
 
                 return mStream.InternalReadInt32();
             }
@@ -250,10 +268,10 @@ namespace System.IO
 
         public virtual string ReadString()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
-
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             int currPos = 0;
             int n;
@@ -297,10 +315,15 @@ namespace System.IO
                 charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
 
                 if (currPos == 0 && n == stringLength)
+                {
                     return new string(_charBuffer, 0, charsRead);
+                }
 
                 if (sb == null)
+                {
                     sb = StringBuilderCache.Acquire(stringLength); // Actual string length in chars may be smaller.
+                }
+
                 sb.Append(_charBuffer, 0, charsRead);
                 currPos += n;
             } while (currPos < stringLength);
@@ -326,12 +349,10 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= count);
-            Contract.EndContractBlock();
-
             if (_stream == null)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             // SafeCritical: index and count have already been verified to be a valid range for the buffer
             return InternalReadChars(buffer, index, count);
@@ -339,9 +360,9 @@ namespace System.IO
 
         private int InternalReadChars(char[] buffer, int index, int count)
         {
-            Contract.Requires(buffer != null);
-            Contract.Requires(index >= 0 && count >= 0);
-            Contract.Assert(_stream != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(index >= 0 && count >= 0);
+            Debug.Assert(_stream != null);
 
             int numBytes = 0;
             int charsRemaining = count;
@@ -359,23 +380,21 @@ namespace System.IO
                 // do ~1+log(n) reads to read n characters.
                 numBytes = charsRemaining;
 
-                //// special case for DecoderNLS subclasses when there is a hanging byte from the previous loop
-                //DecoderNLS decoder = _decoder as DecoderNLS;
-                //if (decoder != null && decoder.HasState && numBytes > 1) {
-                //    numBytes -= 1;
-                //}
-
                 if (_2BytesPerChar)
+                {
                     numBytes <<= 1;
+                }
                 if (numBytes > MaxCharBytesSize)
+                {
                     numBytes = MaxCharBytesSize;
+                }
 
                 int position = 0;
                 byte[] byteBuffer = null;
                 if (_isMemoryStream)
                 {
                     MemoryStream mStream = _stream as MemoryStream;
-                    Contract.Assert(mStream != null, "_stream as MemoryStream != null");
+                    Debug.Assert(mStream != null, "_stream as MemoryStream != null");
 
                     position = mStream.InternalGetPosition();
                     numBytes = mStream.InternalEmulateRead(numBytes);
@@ -392,7 +411,7 @@ namespace System.IO
                     return (count - charsRemaining);
                 }
 
-                Contract.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
+                Debug.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
                 unsafe
                 {
                     fixed (byte* pBytes = byteBuffer)
@@ -407,7 +426,7 @@ namespace System.IO
             }
 
             // this should never fail
-            Contract.Assert(charsRemaining >= 0, "We read too many characters.");
+            Debug.Assert(charsRemaining >= 0, "We read too many characters.");
 
             // we may have read fewer than the number of characters requested if end of stream reached 
             // or if the encoding makes the char count too big for the buffer (e.g. fallback sequence)
@@ -425,7 +444,9 @@ namespace System.IO
             long posSav = posSav = 0;
 
             if (_stream.CanSeek)
+            {
                 posSav = _stream.Position;
+            }
 
             if (_charBytes == null)
             {
@@ -447,13 +468,17 @@ namespace System.IO
                 int r = _stream.ReadByte();
                 _charBytes[0] = (byte)r;
                 if (r == -1)
+                {
                     numBytes = 0;
+                }
                 if (numBytes == 2)
                 {
                     r = _stream.ReadByte();
                     _charBytes[1] = (byte)r;
                     if (r == -1)
+                    {
                         numBytes = 1;
+                    }
                 }
 
                 if (numBytes == 0)
@@ -462,7 +487,7 @@ namespace System.IO
                     return -1;
                 }
 
-                Contract.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::InternalReadOneChar assumes it's reading one or 2 bytes only.");
+                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::InternalReadOneChar assumes it's reading one or 2 bytes only.");
 
                 try
                 {
@@ -473,17 +498,22 @@ namespace System.IO
                     // Handle surrogate char 
 
                     if (_stream.CanSeek)
+                    {
                         _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
+                    }
                     // else - we can't do much here
 
                     throw;
                 }
 
-                Contract.Assert(charsRead < 2, "InternalReadOneChar - assuming we only got 0 or 1 char, not 2!");
+                Debug.Assert(charsRead < 2, "InternalReadOneChar - assuming we only got 0 or 1 char, not 2!");
                 //                Console.WriteLine("That became: " + charsRead + " characters.");
             }
             if (charsRead == 0)
+            {
                 return -1;
+            }
+
             return _singleChar[0];
         }
 
@@ -493,9 +523,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            Contract.Ensures(Contract.Result<char[]>() != null);
-            Contract.Ensures(Contract.Result<char[]>().Length <= count);
-            Contract.EndContractBlock();
             if (_stream == null)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
@@ -522,28 +549,39 @@ namespace System.IO
         public virtual int Read(byte[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= count);
-            Contract.EndContractBlock();
+            }
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
-            if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
             return _stream.Read(buffer, index, count);
         }
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0) throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.Ensures(Contract.Result<byte[]>() != null);
-            Contract.Ensures(Contract.Result<byte[]>().Length <= Contract.OldValue(count));
-            Contract.EndContractBlock();
-            if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             if (count == 0)
             {
@@ -551,13 +589,15 @@ namespace System.IO
             }
 
             byte[] result = new byte[count];
-
             int numRead = 0;
             do
             {
                 int n = _stream.Read(result, numRead, count);
                 if (n == 0)
+                {
                     break;
+                }
+
                 numRead += n;
                 count -= n;
             } while (count > 0);
@@ -579,10 +619,14 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
+
             int bytesRead = 0;
             int n = 0;
 
-            if (_stream == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             // Need to find a good threshold for calling ReadByte() repeatedly
             // vs. calling Read(byte[], int, int) for both buffered & unbuffered
@@ -591,7 +635,10 @@ namespace System.IO
             {
                 n = _stream.ReadByte();
                 if (n == -1)
+                {
                     throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
+                }
+
                 _buffer[0] = (byte)n;
                 return;
             }
@@ -619,7 +666,9 @@ namespace System.IO
                 // Check for a corrupted stream.  Read a max of 5 bytes.
                 // In a future version, add a DataFormatException.
                 if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
+                {
                     throw new FormatException(SR.Format_Bad7BitInt32);
+                }
 
                 // ReadByte handles end of stream cases for us.
                 b = ReadByte();

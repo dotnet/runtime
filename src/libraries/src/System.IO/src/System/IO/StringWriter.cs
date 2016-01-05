@@ -3,10 +3,7 @@
 
 using System.Text;
 using System.Globalization;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
 
 namespace System.IO
 {
@@ -41,8 +38,10 @@ namespace System.IO
         public StringWriter(StringBuilder sb, IFormatProvider formatProvider) : base(formatProvider)
         {
             if (sb == null)
+            {
                 throw new ArgumentNullException("sb", SR.ArgumentNull_Buffer);
-            Contract.EndContractBlock();
+            }
+
             _sb = sb;
             _isOpen = true;
         }
@@ -82,7 +81,10 @@ namespace System.IO
         public override void Write(char value)
         {
             if (!_isOpen)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
+
             _sb.Append(value);
         }
 
@@ -94,17 +96,25 @@ namespace System.IO
         public override void Write(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
-
+            }
             if (!_isOpen)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
+            }
 
             _sb.Append(buffer, index, count);
         }
@@ -115,8 +125,14 @@ namespace System.IO
         public override void Write(string value)
         {
             if (!_isOpen)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            if (value != null) _sb.Append(value);
+            }
+
+            if (value != null)
+            {
+                _sb.Append(value);
+            }
         }
 
 
