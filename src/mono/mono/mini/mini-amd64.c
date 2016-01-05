@@ -2248,17 +2248,22 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	case ArgInDoubleSSEReg:
 		linfo->ret.storage = LLVMArgNormal;
 		break;
-	case ArgValuetypeInReg:
-		if (sig->pinvoke) {
-			cfg->exception_message = g_strdup ("pinvoke + vtypes");
+	case ArgValuetypeInReg: {
+		ainfo = &cinfo->ret;
+
+		if (sig->pinvoke &&
+			(ainfo->pair_storage [0] == ArgInFloatSSEReg || ainfo->pair_storage [0] == ArgInDoubleSSEReg ||
+			 ainfo->pair_storage [1] == ArgInFloatSSEReg || ainfo->pair_storage [1] == ArgInDoubleSSEReg)) {
+			cfg->exception_message = g_strdup ("pinvoke + vtype ret");
 			cfg->disable_llvm = TRUE;
 			return linfo;
 		}
 
 		linfo->ret.storage = LLVMArgVtypeInReg;
 		for (j = 0; j < 2; ++j)
-			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, cinfo->ret.pair_storage [j]);
+			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
 		break;
+	}
 	case ArgValuetypeAddrInIReg:
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
@@ -2294,7 +2299,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case ArgValuetypeInReg:
-			if (sig->pinvoke) {
+			if (sig->pinvoke &&
+				(ainfo->pair_storage [0] == ArgInFloatSSEReg || ainfo->pair_storage [0] == ArgInDoubleSSEReg ||
+				 ainfo->pair_storage [1] == ArgInFloatSSEReg || ainfo->pair_storage [1] == ArgInDoubleSSEReg)) {
 				cfg->exception_message = g_strdup ("pinvoke + vtypes");
 				cfg->disable_llvm = TRUE;
 				return linfo;
