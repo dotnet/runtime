@@ -3447,7 +3447,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     ULONG           ulArgs=0;
     unsigned        retParamIx = 0;
     unsigned        uStringLen = SZSTRING_SIZE;
-    char szArgPrefix[32];
+    char szArgPrefix[MAX_PREFIX_SIZE];
     char*           szptr = NULL;
     mdToken         tkMVarOwner = g_tkMVarOwner;
 
@@ -3627,7 +3627,7 @@ lDone: ;
 
     qbMemberSig.Shrink(0);
     // Get the argument names, if any
-    strcpy_s(szArgPrefix,32,(g_fThisIsInstanceMethod ? "A1": "A0"));
+    strcpy_s(szArgPrefix,MAX_PREFIX_SIZE,(g_fThisIsInstanceMethod ? "A1": "A0"));
     {
         PCCOR_SIGNATURE typePtr = pComSig;
         unsigned ulCallConv = CorSigUncompressData(typePtr);  // get the calling convention out of the way
@@ -3699,11 +3699,7 @@ lDone: ;
                     sprintf_s(pszArgname[j].name,16,"A_%d",g_fThisIsInstanceMethod ? j+1 : j);
                 }
             }// end for( along the argnames)
-#ifdef _WIN64
-                sprintf_s(szArgPrefix,32,"@%I64d0",(size_t)pszArgname);
-#else
-            sprintf_s(szArgPrefix,32,"@%d0",(size_t)pszArgname);
-#endif //_WIN64
+            sprintf_s(szArgPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszArgname);
         } //end if (ulArgs)
         g_pImport->EnumClose(&hArgEnum);
     }
