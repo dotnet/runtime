@@ -3,10 +3,8 @@
 
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -92,9 +90,13 @@ namespace System.IO
             get
             {
                 if (_internalFormatProvider == null)
+                {
                     return CultureInfo.CurrentCulture;
+                }
                 else
+                {
                     return _internalFormatProvider;
+                }
             }
         }
 
@@ -136,7 +138,10 @@ namespace System.IO
             set
             {
                 if (value == null)
+                {
                     value = InitialNewLine;
+                }
+
                 CoreNewLineStr = value;
                 CoreNewLine = value.ToCharArray();
             }
@@ -155,7 +160,10 @@ namespace System.IO
         //
         public virtual void Write(char[] buffer)
         {
-            if (buffer != null) Write(buffer, 0, buffer.Length);
+            if (buffer != null)
+            {
+                Write(buffer, 0, buffer.Length);
+            }
         }
 
         // Writes a range of a character array to the text stream. This method will
@@ -165,14 +173,21 @@ namespace System.IO
         public virtual void Write(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             for (int i = 0; i < count; i++) Write(buffer[index + i]);
         }
@@ -251,7 +266,10 @@ namespace System.IO
         //
         public virtual void Write(string value)
         {
-            if (value != null) Write(value.ToCharArray());
+            if (value != null)
+            {
+                Write(value.ToCharArray());
+            }
         }
 
         // Writes the text representation of an object to the text stream. If the
@@ -266,7 +284,9 @@ namespace System.IO
             {
                 IFormattable f = value as IFormattable;
                 if (f != null)
+                {
                     Write(f.ToString(null, FormatProvider));
+                }
                 else
                     Write(value.ToString());
             }
@@ -437,9 +457,13 @@ namespace System.IO
                 // This makes calls to WriteLine(Object) atomic.
                 IFormattable f = value as IFormattable;
                 if (f != null)
+                {
                     WriteLine(f.ToString(null, FormatProvider));
+                }
                 else
+                {
                     WriteLine(value.ToString());
+                }
             }
         }
 
@@ -490,7 +514,11 @@ namespace System.IO
 
         public Task WriteAsync(char[] buffer)
         {
-            if (buffer == null) return MakeCompletedTask();
+            if (buffer == null)
+            {
+                return MakeCompletedTask();
+            }
+
             return WriteAsync(buffer, 0, buffer.Length);
         }
 
@@ -522,7 +550,11 @@ namespace System.IO
 
         public Task WriteLineAsync(char[] buffer)
         {
-            if (buffer == null) return MakeCompletedTask();
+            if (buffer == null)
+            {
+                return MakeCompletedTask();
+            }
+
             return WriteLineAsync(buffer, 0, buffer.Length);
         }
 

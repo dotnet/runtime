@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -71,7 +71,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
@@ -84,7 +83,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
@@ -106,28 +104,39 @@ namespace System.IO
         public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             if (destination == null)
+            {
                 throw new ArgumentNullException("destination");
+            }
             if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+            }
             if (!CanRead && !CanWrite)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
             if (!destination.CanRead && !destination.CanWrite)
+            {
                 throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+            }
             if (!CanRead)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
             if (!destination.CanWrite)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            Contract.EndContractBlock();
+            }
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
 
         private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            Contract.Requires(destination != null);
-            Contract.Requires(bufferSize > 0);
-            Contract.Requires(CanRead);
-            Contract.Requires(destination.CanWrite);
+            Debug.Assert(destination != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(CanRead);
+            Debug.Assert(destination.CanWrite);
 
             byte[] buffer = new byte[bufferSize];
             int bytesRead;
@@ -143,16 +152,25 @@ namespace System.IO
         public void CopyTo(Stream destination)
         {
             if (destination == null)
+            {
                 throw new ArgumentNullException("destination");
+            }
             if (!CanRead && !CanWrite)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
             if (!destination.CanRead && !destination.CanWrite)
+            {
                 throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+            }
             if (!CanRead)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
             if (!destination.CanWrite)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            Contract.EndContractBlock();
+            }
 
             InternalCopyTo(destination, DefaultCopyBufferSize);
         }
@@ -160,45 +178,51 @@ namespace System.IO
         public void CopyTo(Stream destination, int bufferSize)
         {
             if (destination == null)
+            {
                 throw new ArgumentNullException("destination");
+            }
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize",
-                        SR.ArgumentOutOfRange_NeedPosNum);
+            {
+                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+            }
             if (!CanRead && !CanWrite)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            }
             if (!destination.CanRead && !destination.CanWrite)
+            {
                 throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+            }
             if (!CanRead)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
             if (!destination.CanWrite)
+            {
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            Contract.EndContractBlock();
+            }
 
             InternalCopyTo(destination, bufferSize);
         }
 
         private void InternalCopyTo(Stream destination, int bufferSize)
         {
-            Contract.Requires(destination != null);
-            Contract.Requires(CanRead);
-            Contract.Requires(destination.CanWrite);
-            Contract.Requires(bufferSize > 0);
+            Debug.Assert(destination != null);
+            Debug.Assert(CanRead);
+            Debug.Assert(destination.CanWrite);
+            Debug.Assert(bufferSize > 0);
 
             byte[] buffer = new byte[bufferSize];
             int read;
             while ((read = Read(buffer, 0, buffer.Length)) != 0)
+            {
                 destination.Write(buffer, 0, read);
+            }
         }
 
 
         public void Dispose()
         {
-            /* These are correct, but we'd have to fix PipeStream & NetworkStream very carefully.
-            Contract.Ensures(CanRead == false);
-            Contract.Ensures(CanWrite == false);
-            Contract.Ensures(CanSeek == false);
-            */
-
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -221,7 +245,9 @@ namespace System.IO
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
+            {
                 return new Task(() => { }, cancellationToken);
+            }
 
             return Task.Factory.StartNew(state => ((Stream)state).Flush(), this,
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -234,10 +260,15 @@ namespace System.IO
 
         public virtual Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (!CanRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
 
             if (cancellationToken.IsCancellationRequested)
+            {
                 return new Task<int>(() => 0, cancellationToken);
+            }
 
             return ReadAsyncTask(buffer, offset, count, cancellationToken);
         }
@@ -271,10 +302,15 @@ namespace System.IO
 
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (!CanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            }
 
             if (cancellationToken.IsCancellationRequested)
+            {
                 return new Task(() => { }, cancellationToken);
+            }
 
             return WriteAsyncTask(buffer, offset, count, cancellationToken);
         }
@@ -315,13 +351,12 @@ namespace System.IO
         // significantly for people who are reading one byte at a time.
         public virtual int ReadByte()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < 256);
-
             byte[] oneByteArray = new byte[1];
             int r = Read(oneByteArray, 0, 1);
             if (r == 0)
+            {
                 return -1;
+            }
             return oneByteArray[0];
         }
 

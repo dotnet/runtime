@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -51,8 +51,6 @@ namespace System.IO
         [Pure]
         public virtual int Peek()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-
             return -1;
         }
 
@@ -63,7 +61,6 @@ namespace System.IO
         //
         public virtual int Read()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
             return -1;
         }
 
@@ -75,22 +72,30 @@ namespace System.IO
         public virtual int Read(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= Contract.OldValue(count));
-            Contract.EndContractBlock();
+            }
 
             int n = 0;
             do
             {
                 int ch = Read();
-                if (ch == -1) break;
+                if (ch == -1)
+                {
+                    break;
+                }
                 buffer[index + n++] = (char)ch;
             } while (n < count);
             return n;
@@ -100,8 +105,6 @@ namespace System.IO
         // TextReader, and returns them as one string.
         public virtual string ReadToEnd()
         {
-            Contract.Ensures(Contract.Result<string>() != null);
-
             char[] chars = new char[4096];
             int len;
             StringBuilder sb = new StringBuilder(4096);
@@ -117,9 +120,6 @@ namespace System.IO
         // 
         public virtual int ReadBlock(char[] buffer, int index, int count)
         {
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= count);
-
             int i, n = 0;
             do
             {
@@ -143,12 +143,20 @@ namespace System.IO
                 if (ch == -1) break;
                 if (ch == '\r' || ch == '\n')
                 {
-                    if (ch == '\r' && Peek() == '\n') Read();
+                    if (ch == '\r' && Peek() == '\n')
+                    {
+                        Read();
+                    }
+
                     return sb.ToString();
                 }
                 sb.Append((char)ch);
             }
-            if (sb.Length > 0) return sb.ToString();
+            if (sb.Length > 0)
+            {
+                return sb.ToString();
+            }
+
             return null;
         }
 
@@ -173,22 +181,27 @@ namespace System.IO
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0 || count < 0)
+            {
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            }
 
             return ReadAsyncInternal(buffer, index, count);
         }
 
         internal virtual Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
         {
-            Contract.Requires(buffer != null);
-            Contract.Requires(index >= 0);
-            Contract.Requires(count >= 0);
-            Contract.Requires(buffer.Length - index >= count);
+            Debug.Assert(buffer != null);
+            Debug.Assert(index >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length - index >= count);
 
             Tuple<TextReader, char[], int, int> tuple = new Tuple<TextReader, char[], int, int>(this, buffer, index, count);
             return Task<int>.Factory.StartNew(s_readDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -197,23 +210,27 @@ namespace System.IO
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            }
             if (index < 0 || count < 0)
+            {
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-
-            Contract.EndContractBlock();
+            }
 
             return ReadBlockAsyncInternal(buffer, index, count);
         }
 
         private async Task<int> ReadBlockAsyncInternal(char[] buffer, int index, int count)
         {
-            Contract.Requires(buffer != null);
-            Contract.Requires(index >= 0);
-            Contract.Requires(count >= 0);
-            Contract.Requires(buffer.Length - index >= count);
+            Debug.Assert(buffer != null);
+            Debug.Assert(index >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length - index >= count);
 
             int i, n = 0;
             do
