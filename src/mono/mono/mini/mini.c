@@ -748,11 +748,9 @@ mono_op_imm_to_op (int opcode)
 		return OP_ICOMPARE;
 	case OP_LOCALLOC_IMM:
 		return OP_LOCALLOC;
-	default:
-		printf ("%s\n", mono_inst_name (opcode));
-		g_assert_not_reached ();
-		return -1;
 	}
+
+	return -1;
 }
 
 /*
@@ -763,13 +761,18 @@ mono_op_imm_to_op (int opcode)
 void
 mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
+	int opcode2 = mono_op_imm_to_op (ins->opcode);
 	MonoInst *temp;
 
 	MONO_INST_NEW (cfg, temp, OP_ICONST);
 	temp->inst_c0 = ins->inst_imm;
 	temp->dreg = mono_alloc_ireg (cfg);
 	mono_bblock_insert_before_ins (bb, ins, temp);
-	ins->opcode = mono_op_imm_to_op (ins->opcode);
+
+	if (opcode2 == -1)
+                g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+	ins->opcode = opcode2;
+
 	if (ins->opcode == OP_LOCALLOC)
 		ins->sreg1 = temp->dreg;
 	else

@@ -3463,11 +3463,14 @@ loop_start:
 		case OP_IOR_IMM:
 		case OP_IXOR_IMM:
 			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_imm, &rot_amount)) < 0) {
+				int opcode2 = mono_op_imm_to_op (ins->opcode);
 				ADD_NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
-				ins->opcode = mono_op_imm_to_op (ins->opcode);
+				if (opcode2 == -1)
+					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+				ins->opcode = opcode2;
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;
@@ -3507,13 +3510,17 @@ loop_start:
 		case OP_IDIV_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_IMM:
-		case OP_IREM_UN_IMM:
+		case OP_IREM_UN_IMM: {
+			int opcode2 = mono_op_imm_to_op (ins->opcode);
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			if (opcode2 == -1)
+				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+			ins->opcode = opcode2;
 			break;
+		}
 		case OP_LOCALLOC_IMM:
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
