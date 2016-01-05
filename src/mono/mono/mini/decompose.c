@@ -713,15 +713,21 @@ mono_decompose_long_opts (MonoCompile *cfg)
 			case OP_LCONV_TO_U:
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg, MONO_LVREG_LS (tree->sreg1));
 				break;
+#ifndef MONO_ARCH_EMULATE_LCONV_TO_R8
 			case OP_LCONV_TO_R8:
 				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R8_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
+#endif
+#ifndef MONO_ARCH_EMULATE_LCONV_TO_R4
 			case OP_LCONV_TO_R4:
 				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R4_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
+#endif
+#ifndef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
 			case OP_LCONV_TO_R_UN:
 				MONO_EMIT_NEW_BIALU (cfg, OP_LCONV_TO_R_UN_2, tree->dreg, MONO_LVREG_LS (tree->sreg1), MONO_LVREG_MS (tree->sreg1));
 				break;
+#endif
 			case OP_LCONV_TO_OVF_I1: {
 				MonoBasicBlock *is_negative, *end_label;
 
