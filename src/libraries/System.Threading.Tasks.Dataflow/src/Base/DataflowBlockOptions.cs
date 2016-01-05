@@ -47,6 +47,10 @@ namespace System.Threading.Tasks.Dataflow
     ///         <term>NameFormat</term>
     ///         <description>"{0} Id={1}"</description>
     ///     </item>
+    ///     <item>
+    ///         <term>ForceOrdered</term>
+    ///         <description>true</description>
+    ///     </item>
     /// </list>
     /// Dataflow blocks capture the state of the options at their construction.  Subsequent changes
     /// to the provided <see cref="DataflowBlockOptions"/> instance should not affect the behavior
@@ -71,6 +75,8 @@ namespace System.Threading.Tasks.Dataflow
         private Int32 _boundedCapacity = Unbounded;
         /// <summary>The name format to use for creating a name for a block.</summary>
         private string _nameFormat = "{0} Id={1}"; // see NameFormat property for a description of format items
+        /// <summary>Whether to force ordered processing of messages.</summary>
+        private bool _forceOrdered = true;
 
         /// <summary>A default instance of <see cref="DataflowBlockOptions"/>.</summary>
         /// <remarks>
@@ -90,7 +96,8 @@ namespace System.Threading.Tasks.Dataflow
                     CancellationToken = this.CancellationToken,
                     MaxMessagesPerTask = this.MaxMessagesPerTask,
                     BoundedCapacity = this.BoundedCapacity,
-                    NameFormat = this.NameFormat
+                    NameFormat = this.NameFormat,
+                    ForceOrdered = this.ForceOrdered
                 };
         }
 
@@ -170,6 +177,13 @@ namespace System.Threading.Tasks.Dataflow
                 _nameFormat = value;
             }
         }
+
+        /// <summary>Gets whether ordered processing should be enforced on a block's handling of messages.</summary>
+        public bool ForceOrdered
+        {
+            get { return _forceOrdered; }
+            set { _forceOrdered = value; }
+        }
     }
 
     /// <summary>
@@ -206,6 +220,10 @@ namespace System.Threading.Tasks.Dataflow
     ///         <description>"{0} Id={1}"</description>
     ///     </item>
     ///     <item>
+    ///         <term>ForceOrdered</term>
+    ///         <description>true</description>
+    ///     </item>
+    ///     <item>
     ///         <term>MaxDegreeOfParallelism</term>
     ///         <description>1</description>
     ///     </item>
@@ -240,6 +258,7 @@ namespace System.Threading.Tasks.Dataflow
                     MaxMessagesPerTask = this.MaxMessagesPerTask,
                     BoundedCapacity = this.BoundedCapacity,
                     NameFormat = this.NameFormat,
+                    ForceOrdered = this.ForceOrdered,
                     MaxDegreeOfParallelism = this.MaxDegreeOfParallelism,
                     SingleProducerConstrained = this.SingleProducerConstrained
                 };
@@ -333,6 +352,10 @@ namespace System.Threading.Tasks.Dataflow
     ///         <description>"{0} Id={1}"</description>
     ///     </item>
     ///     <item>
+    ///         <term>ForceOrdered</term>
+    ///         <description>true</description>
+    ///     </item>
+    ///     <item>
     ///         <term>MaxNumberOfGroups</term>
     ///         <description>GroupingDataflowBlockOptions.Unbounded (-1)</description>
     ///     </item>
@@ -367,6 +390,7 @@ namespace System.Threading.Tasks.Dataflow
                     MaxMessagesPerTask = this.MaxMessagesPerTask,
                     BoundedCapacity = this.BoundedCapacity,
                     NameFormat = this.NameFormat,
+                    ForceOrdered = this.ForceOrdered,
                     Greedy = this.Greedy,
                     MaxNumberOfGroups = this.MaxNumberOfGroups
                 };

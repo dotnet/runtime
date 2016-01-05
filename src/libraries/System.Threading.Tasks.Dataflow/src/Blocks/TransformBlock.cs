@@ -32,6 +32,16 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>The source side.</summary>
         private readonly SourceCore<TOutput> _source;
 
+        /// <summary>Gets the object to use for writing to the source when multiple threads may be involved.</summary>
+        /// <remarks>
+        /// If a reordering buffer is used, it is safe for multiple threads to write to concurrently and handles safe 
+        /// access to the source. If there's no reordering buffer because no parallelism is used, then only one thread at
+        /// a time will try to access the source, anyway.  But, if there's no reordering buffer and parallelism is being
+        /// employed, then multiple threads may try to access the source concurrently, in which case we need to manually
+        /// synchronize all such access, and this lock is used for that purpose.
+        /// </remarks>
+        private object ParallelSourceLock { get { return _source; } }
+
         /// <summary>Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/>.</summary>
         /// <param name="transform">The function to invoke with each data element received.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
@@ -102,8 +112,9 @@ namespace System.Threading.Tasks.Dataflow
                 owningSource => ((TransformBlock<TInput, TOutput>)owningSource)._target.Complete(exception: null, dropPendingMessages: true),
                 onItemsRemoved);
 
-            // If parallelism is employed, we will need to support reordering messages that complete out-of-order
-            if (dataflowBlockOptions.SupportsParallelExecution)
+            // If parallelism is employed, we will need to support reordering messages that complete out-of-order.
+            // However, a developer can override this with ForceOrdered == false.
+            if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.ForceOrdered)
             {
                 _reorderingBuffer = new ReorderingBuffer<TOutput>(this, (owningSource, message) => ((TransformBlock<TInput, TOutput>)owningSource)._source.AddMessage(message));
             }
@@ -182,7 +193,7 @@ namespace System.Threading.Tasks.Dataflow
                 // count to reflect that we're done with this input item.
                 if (!itemIsValid) _target.ChangeBoundingCount(-1);
 
-                // If there's no reordering buffer (because we're running sequentially),
+                // If there's no reordering buffer (because we're running sequentially or ordering was disabled),
                 // simply pass the output message through. Otherwise, there's a reordering buffer, 
                 // so add to it instead (if a reordering buffer is used, we always need
                 // to output the message to it, even if the operation failed and outputMessage
@@ -191,7 +202,20 @@ namespace System.Threading.Tasks.Dataflow
                 // null messages accordingly.)
                 if (_reorderingBuffer == null)
                 {
-                    if (itemIsValid) _source.AddMessage(outputItem);
+                    if (itemIsValid)
+                    {
+                        if (_target.DataflowBlockOptions.MaxDegreeOfParallelism == 1)
+                        {
+                            _source.AddMessage(outputItem);
+                        }
+                        else
+                        {
+                            lock (ParallelSourceLock)
+                            {
+                                _source.AddMessage(outputItem);
+                            }
+                        }
+                    }
                 }
                 else _reorderingBuffer.AddItem(messageWithId.Value, outputItem, itemIsValid);
             }
@@ -279,11 +303,24 @@ namespace System.Threading.Tasks.Dataflow
             // appropriately incremented before it's decremented.
             if (!gotOutputItem && isBounded) _target.ChangeBoundingCount(-1);
 
-            // If there's no reordering buffer (because we're running sequentially),
+            // If there's no reordering buffer (because we're running sequentially or ordering is disabled),
             // and we got a message, simply pass the output message through.
             if (_reorderingBuffer == null)
             {
-                if (gotOutputItem) _source.AddMessage(outputItem);
+                if (gotOutputItem)
+                {
+                    if (_target.DataflowBlockOptions.MaxDegreeOfParallelism == 1)
+                    {
+                        _source.AddMessage(outputItem);
+                    }
+                    else
+                    {
+                        lock (ParallelSourceLock)
+                        {
+                            _source.AddMessage(outputItem);
+                        }
+                    }
+                }
             }
             // Otherwise, there's a reordering buffer, so add to it instead.  
             // Even if something goes wrong, we need to update the 

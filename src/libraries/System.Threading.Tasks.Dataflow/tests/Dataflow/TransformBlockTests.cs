@@ -542,23 +542,120 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await Assert.ThrowsAsync<InvalidCastException>(() => tb.Completion);
         }
 
-        [Fact]
-        public async Task TestOrdering()
+        [Theory]
+        [InlineData(DataflowBlockOptions.Unbounded, 1, null)]
+        [InlineData(DataflowBlockOptions.Unbounded, 2, null)]
+        [InlineData(DataflowBlockOptions.Unbounded, DataflowBlockOptions.Unbounded, null)]
+        [InlineData(1, 1, null)]
+        [InlineData(1, 2, null)]
+        [InlineData(1, DataflowBlockOptions.Unbounded, null)]
+        [InlineData(2, 2, true)]
+        [InlineData(2, 1, false)] // no force ordered, but dop == 1, so it doesn't matter
+        public async Task TestOrdering_Sync_OrderedEnabled(int mmpt, int dop, bool? forceOrdered)
         {
             const int iters = 1000;
-            foreach (int mmpt in new[] { DataflowBlockOptions.Unbounded, 1 })
-            foreach (int dop in new[] { 1, 2, DataflowBlockOptions.Unbounded })
+
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
+            if (forceOrdered == null)
             {
-                var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
-                var tb = new TransformBlock<int, int>(i => i, options);
-                tb.PostRange(0, iters);
-                for (int i = 0; i < iters; i++)
-                {
-                    Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
-                }
-                tb.Complete();
-                await tb.Completion;
+                Assert.True(options.ForceOrdered);
             }
+            else
+            {
+                options.ForceOrdered = forceOrdered.Value;
+            }
+
+            var tb = new TransformBlock<int, int>(i => i, options);
+            tb.PostRange(0, iters);
+            for (int i = 0; i < iters; i++)
+            {
+                Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+            }
+            tb.Complete();
+            await tb.Completion;
+        }
+
+        [Theory]
+        [InlineData(DataflowBlockOptions.Unbounded, 1, null)]
+        [InlineData(DataflowBlockOptions.Unbounded, 2, null)]
+        [InlineData(DataflowBlockOptions.Unbounded, DataflowBlockOptions.Unbounded, null)]
+        [InlineData(1, 1, null)]
+        [InlineData(1, 2, null)]
+        [InlineData(1, DataflowBlockOptions.Unbounded, null)]
+        [InlineData(2, 2, true)]
+        [InlineData(2, 1, false)] // no force ordered, but dop == 1, so it doesn't matter
+        public async Task TestOrdering_Async_OrderedEnabled(int mmpt, int dop, bool? forceOrdered)
+        {
+            const int iters = 1000;
+
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
+            if (forceOrdered == null)
+            {
+                Assert.True(options.ForceOrdered);
+            }
+            else
+            {
+                options.ForceOrdered = forceOrdered.Value;
+            }
+
+            var tb = new TransformBlock<int, int>(i => Task.FromResult(i), options);
+            tb.PostRange(0, iters);
+            for (int i = 0; i < iters; i++)
+            {
+                Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+            }
+            tb.Complete();
+            await tb.Completion;
+        }
+
+        [Fact]
+        public async Task TestOrdering_Async_OrderedDisabled()
+        {
+            // If ordering were enabled, this test would hang.
+
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, ForceOrdered = false };
+
+            var tasks = new TaskCompletionSource<int>[10];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = new TaskCompletionSource<int>();
+            }
+
+            var tb = new TransformBlock<int, int>(i => tasks[i].Task, options);
+            tb.PostRange(0, tasks.Length);
+
+            for (int i = tasks.Length - 1; i >= 0; i--)
+            {
+                tasks[i].SetResult(i);
+                Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+            }
+
+            tb.Complete();
+            await tb.Completion;
+        }
+
+        [Fact]
+        public async Task TestOrdering_Sync_OrderedDisabled()
+        {
+            // If ordering were enabled, this test would hang.
+
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, ForceOrdered = false };
+
+            var mres = new ManualResetEventSlim();
+            var tb = new TransformBlock<int, int>(i =>
+            {
+                if (i == 0) mres.Wait();
+                return i;
+            }, options);
+            tb.Post(0);
+            tb.Post(1);
+
+            Assert.Equal(1, await tb.ReceiveAsync());
+            mres.Set();
+            Assert.Equal(0, await tb.ReceiveAsync());
+
+            tb.Complete();
+            await tb.Completion;
         }
     }
 }
