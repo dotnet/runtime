@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.DependencyModel
     {
         private const string DepsResourceSufix = ".deps.json";
 
+        private static Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
+
         public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, Library[] compileLibraries, Library[] runtimeLibraries)
         {
             Target = target;
@@ -20,6 +22,8 @@ namespace Microsoft.Extensions.DependencyModel
             CompileLibraries = compileLibraries;
             RuntimeLibraries = runtimeLibraries;
         }
+
+        public static DependencyContext Default => _defaultContext.Value;
 
         public string Target { get; }
 
@@ -31,7 +35,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IReadOnlyList<Library> RuntimeLibraries { get; }
 
-        public static DependencyContext Load()
+        private static DependencyContext LoadDefault()
         {
             var entryAssembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetEntryAssembly").Invoke(null, null);
             var stream = entryAssembly.GetManifestResourceStream(entryAssembly.GetName().Name + DepsResourceSufix);
