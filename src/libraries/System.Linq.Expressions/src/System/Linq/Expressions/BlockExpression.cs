@@ -118,12 +118,6 @@ namespace System.Linq.Expressions
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual ParameterExpression GetVariable(int index)
-        {
-            throw ContractUtils.Unreachable;
-        }
-
         internal virtual int VariableCount
         {
             get
@@ -429,11 +423,6 @@ namespace System.Linq.Expressions
             {
                 return _variables.Count;
             }
-        }
-
-        internal override ParameterExpression GetVariable(int index)
-        {
-            return _variables[index];
         }
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
