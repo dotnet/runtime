@@ -3,12 +3,12 @@
 
 #include "pal_evp_pkey.h"
 
-extern "C" EVP_PKEY* EvpPkeyCreate()
+extern "C" EVP_PKEY* CryptoNative_EvpPkeyCreate()
 {
     return EVP_PKEY_new();
 }
 
-extern "C" void EvpPkeyDestroy(EVP_PKEY* pkey)
+extern "C" void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
     if (pkey != nullptr)
     {
@@ -16,7 +16,7 @@ extern "C" void EvpPkeyDestroy(EVP_PKEY* pkey)
     }
 }
 
-extern "C" int32_t UpRefEvpPkey(EVP_PKEY* pkey)
+extern "C" int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 {
     if (!pkey)
     {

@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRandomBytes")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetRandomBytes(byte[] buf, int num);
     }

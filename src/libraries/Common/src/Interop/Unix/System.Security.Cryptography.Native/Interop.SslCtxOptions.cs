@@ -14,28 +14,28 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetProtocolOptions")]
         internal static extern void SetProtocolOptions(SafeSslContextHandle ctx, SslProtocols protocols);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUseCertificate")]
         internal static extern int SslCtxUseCertificate(SafeSslContextHandle ctx, SafeX509Handle certPtr);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUsePrivateKey")]
         internal static extern int SslCtxUsePrivateKey(SafeSslContextHandle ctx, SafeEvpPKeyHandle keyPtr);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCheckPrivateKey")]
         internal static extern int SslCtxCheckPrivateKey(SafeSslContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetQuietShutdown")]
         internal static extern void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
         internal static extern void SslCtxSetVerify(SafeSslContextHandle ctx, SslCtxSetVerifyCallback callback);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetEncryptionPolicy")]
         internal static extern void SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetClientCAList")]
         internal static extern void SslCtxSetClientCAList(SafeSslContextHandle ctx, SafeX509NameStackHandle x509NameStackPtr);
     }
 }

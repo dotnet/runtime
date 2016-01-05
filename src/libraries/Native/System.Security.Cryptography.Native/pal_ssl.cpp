@@ -13,34 +13,34 @@ static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE, "");
 static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL, "");
 static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN, "");
 
-extern "C" void EnsureLibSslInitialized()
+extern "C" void CryptoNative_EnsureLibSslInitialized()
 {
     SSL_library_init();
     SSL_load_error_strings();
 }
 
-extern "C" const SSL_METHOD* SslV2_3Method()
+extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method()
 {
     const SSL_METHOD* method = SSLv23_method();
     assert(method != nullptr);
     return method;
 }
 
-extern "C" const SSL_METHOD* SslV3Method()
+extern "C" const SSL_METHOD* CryptoNative_SslV3Method()
 {
     const SSL_METHOD* method = SSLv3_method();
     assert(method != nullptr);
     return method;
 }
 
-extern "C" const SSL_METHOD* TlsV1Method()
+extern "C" const SSL_METHOD* CryptoNative_TlsV1Method()
 {
     const SSL_METHOD* method = TLSv1_method();
     assert(method != nullptr);
     return method;
 }
 
-extern "C" const SSL_METHOD* TlsV1_1Method()
+extern "C" const SSL_METHOD* CryptoNative_TlsV1_1Method()
 {
 #if HAVE_TLS_V1_1
     const SSL_METHOD* method = TLSv1_1_method();
@@ -51,7 +51,7 @@ extern "C" const SSL_METHOD* TlsV1_1Method()
 #endif
 }
 
-extern "C" const SSL_METHOD* TlsV1_2Method()
+extern "C" const SSL_METHOD* CryptoNative_TlsV1_2Method()
 {
 #if HAVE_TLS_V1_2
     const SSL_METHOD* method = TLSv1_2_method();
@@ -62,12 +62,12 @@ extern "C" const SSL_METHOD* TlsV1_2Method()
 #endif
 }
 
-extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method)
+extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 {
     return SSL_CTX_new(method);
 }
 
-extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
+extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     long protocolOptions = 0;
 
@@ -99,17 +99,17 @@ extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
     SSL_CTX_set_options(ctx, protocolOptions);
 }
 
-extern "C" SSL* SslCreate(SSL_CTX* ctx)
+extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     return SSL_new(ctx);
 }
 
-extern "C" int32_t SslGetError(SSL* ssl, int32_t ret)
+extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
     return SSL_get_error(ssl, ret);
 }
 
-extern "C" void SslDestroy(SSL* ssl)
+extern "C" void CryptoNative_SslDestroy(SSL* ssl)
 {
     if (ssl)
     {
@@ -117,7 +117,7 @@ extern "C" void SslDestroy(SSL* ssl)
     }
 }
 
-extern "C" void SslCtxDestroy(SSL_CTX* ctx)
+extern "C" void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
 {
     if (ctx)
     {
@@ -125,38 +125,38 @@ extern "C" void SslCtxDestroy(SSL_CTX* ctx)
     }
 }
 
-extern "C" void SslSetConnectState(SSL* ssl)
+extern "C" void CryptoNative_SslSetConnectState(SSL* ssl)
 {
     SSL_set_connect_state(ssl);
 }
 
-extern "C" void SslSetAcceptState(SSL* ssl)
+extern "C" void CryptoNative_SslSetAcceptState(SSL* ssl)
 {
     SSL_set_accept_state(ssl);
 }
 
-extern "C" const char* SslGetVersion(SSL* ssl)
+extern "C" const char* CryptoNative_SslGetVersion(SSL* ssl)
 {
     return SSL_get_version(ssl);
 }
 
-extern "C" int32_t SslGetFinished(SSL* ssl, void* buf, int32_t count)
+extern "C" int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count)
 {
-	size_t result = SSL_get_finished(ssl, buf, size_t(count));
-	assert(result <= INT32_MAX);
-	return static_cast<int32_t>(result);
+    size_t result = SSL_get_finished(ssl, buf, size_t(count));
+    assert(result <= INT32_MAX);
+    return static_cast<int32_t>(result);
 }
 
-extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
+extern "C" int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
 {
-	size_t result = SSL_get_peer_finished(ssl, buf, size_t(count));
-	assert(result <= INT32_MAX);
-	return static_cast<int32_t>(result);
+    size_t result = SSL_get_peer_finished(ssl, buf, size_t(count));
+    assert(result <= INT32_MAX);
+    return static_cast<int32_t>(result);
 }
 
-extern "C" int32_t SslSessionReused(SSL* ssl)
+extern "C" int32_t CryptoNative_SslSessionReused(SSL* ssl)
 {
-	return SSL_session_reused(ssl) == 1;
+    return SSL_session_reused(ssl) == 1;
 }
 
 /*
@@ -440,12 +440,12 @@ GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHas
     return;
 }
 
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
-                                        CipherAlgorithmType* dataCipherAlg,
-                                        ExchangeAlgorithmType* keyExchangeAlg,
-                                        HashAlgorithmType* dataHashAlg,
-                                        int32_t* dataKeySize,
-                                        DataHashSize* hashKeySize)
+extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
+                                                     CipherAlgorithmType* dataCipherAlg,
+                                                     ExchangeAlgorithmType* keyExchangeAlg,
+                                                     HashAlgorithmType* dataHashAlg,
+                                                     int32_t* dataKeySize,
+                                                     DataHashSize* hashKeySize)
 {
     const SSL_CIPHER* cipher;
 
@@ -484,84 +484,85 @@ err:
     return 0;
 }
 
-extern "C" int32_t SslWrite(SSL* ssl, const void* buf, int32_t num)
+extern "C" int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
     return SSL_write(ssl, buf, num);
 }
 
-extern "C" int32_t SslRead(SSL* ssl, void* buf, int32_t num)
+extern "C" int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
 {
     return SSL_read(ssl, buf, num);
 }
 
-extern "C" int32_t IsSslRenegotiatePending(SSL* ssl)
+extern "C" int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
-extern "C" int32_t SslShutdown(SSL* ssl)
+extern "C" int32_t CryptoNative_SslShutdown(SSL* ssl)
 {
     return SSL_shutdown(ssl);
 }
 
-extern "C" void SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
+extern "C" void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-extern "C" int32_t SslDoHandshake(SSL* ssl)
+extern "C" int32_t CryptoNative_SslDoHandshake(SSL* ssl)
 {
     return SSL_do_handshake(ssl);
 }
 
-extern "C" int32_t IsSslStateOK(SSL* ssl)
+extern "C" int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
     return SSL_state(ssl) == SSL_ST_OK;
 }
 
-extern "C" X509* SslGetPeerCertificate(SSL* ssl)
+extern "C" X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
     return SSL_get_peer_certificate(ssl);
 }
 
-extern "C" X509Stack* SslGetPeerCertChain(SSL* ssl)
+extern "C" X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
 {
     return SSL_get_peer_cert_chain(ssl);
 }
 
-extern "C" int32_t SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
+extern "C" int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
 {
     return SSL_CTX_use_certificate(ctx, x);
 }
 
-extern "C" int32_t SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
+extern "C" int32_t CryptoNative_SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
 {
     return SSL_CTX_use_PrivateKey(ctx, pkey);
 }
 
-extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx)
+extern "C" int32_t CryptoNative_SslCtxCheckPrivateKey(SSL_CTX* ctx)
 {
     return SSL_CTX_check_private_key(ctx);
 }
 
-extern "C" void SslCtxSetQuietShutdown(SSL_CTX* ctx)
+extern "C" void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx)
 {
     SSL_CTX_set_quiet_shutdown(ctx, 1);
 }
 
-extern "C" X509NameStack* SslGetClientCAList(SSL* ssl)
+extern "C" X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 {
     return SSL_get_client_CA_list(ssl);
 }
 
-extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
+extern "C" void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
 {
     int mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 
     SSL_CTX_set_verify(ctx, mode, callback);
 }
 
-extern "C" void SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
+extern "C" void
+CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
 {
     SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
 }
@@ -571,7 +572,7 @@ extern "C" void SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCal
 #define SSL_TXT_Separator ":"
 #define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
 
-extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
+extern "C" void CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
     const char* cipherString = nullptr;
     switch (policy)
@@ -594,17 +595,17 @@ extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
     SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
-extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
+extern "C" void CryptoNative_SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
 {
     SSL_CTX_set_client_CA_list(ctx, list);
 }
 
-extern "C" void SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
+extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
 {
     SSL_CTX_set_client_cert_cb(ctx, callback);
 }
 
-extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
+extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
 {
     if (header)
     {
@@ -627,15 +628,14 @@ extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maxim
     }
 }
 
-
-extern "C" int32_t SslAddExtraChainCert(SSL* ssl, X509* x509)
+extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 {
     if (!x509 || !ssl)
     {
         return 0;
     }
 
-    SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+    SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
     if (SSL_CTX_add_extra_chain_cert(ssl_ctx, x509) == 1)
     {
         return 1;

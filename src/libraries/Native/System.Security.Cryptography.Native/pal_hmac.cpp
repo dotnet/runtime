@@ -32,7 +32,7 @@ inline static auto HmacCall(F func, Args... args) -> NonVoidResultOf<F(Args...)>
     return func(args...);
 }
 
-extern "C" HMAC_CTX* HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
+extern "C" HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
 {
     assert(key != nullptr || keyLen == 0);
     assert(keyLen >= 0);
@@ -62,7 +62,7 @@ extern "C" HMAC_CTX* HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD
     return ctx.release();
 }
 
-extern "C" void HmacDestroy(HMAC_CTX* ctx)
+extern "C" void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
 {
     if (ctx != nullptr)
     {
@@ -71,14 +71,14 @@ extern "C" void HmacDestroy(HMAC_CTX* ctx)
     }
 }
 
-extern "C" int32_t HmacReset(HMAC_CTX* ctx)
+extern "C" int32_t CryptoNative_HmacReset(HMAC_CTX* ctx)
 {
     assert(ctx != nullptr);
 
     return HmacCall(HMAC_Init_ex, ctx, nullptr, 0, nullptr, nullptr);
 }
 
-extern "C" int32_t HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
+extern "C" int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
 {
     assert(ctx != nullptr);
     assert(data != nullptr || len == 0);
@@ -92,7 +92,7 @@ extern "C" int32_t HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
     return HmacCall(HMAC_Update, ctx, data, UnsignedCast(len));
 }
 
-extern "C" int32_t HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
+extern "C" int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
 {
     assert(ctx != nullptr);
     assert(len != nullptr);

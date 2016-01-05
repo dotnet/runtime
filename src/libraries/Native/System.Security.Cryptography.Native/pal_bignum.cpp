@@ -3,7 +3,7 @@
 
 #include "pal_bignum.h"
 
-extern "C" void BigNumDestroy(BIGNUM* a)
+extern "C" void CryptoNative_BigNumDestroy(BIGNUM* a)
 {
     if (a != nullptr)
     {
@@ -11,7 +11,7 @@ extern "C" void BigNumDestroy(BIGNUM* a)
     }
 }
 
-extern "C" BIGNUM* BigNumFromBinary(const uint8_t* s, int32_t len)
+extern "C" BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len)
 {
     if (!s || !len)
     {
@@ -21,7 +21,7 @@ extern "C" BIGNUM* BigNumFromBinary(const uint8_t* s, int32_t len)
     return BN_bin2bn(s, len, nullptr);
 }
 
-extern "C" int32_t BigNumToBinary(const BIGNUM* a, uint8_t* to)
+extern "C" int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to)
 {
     if (!a || !to)
     {
@@ -31,7 +31,7 @@ extern "C" int32_t BigNumToBinary(const BIGNUM* a, uint8_t* to)
     return BN_bn2bin(a, to);
 }
 
-extern "C" int32_t GetBigNumBytes(const BIGNUM* a)
+extern "C" int32_t CryptoNative_GetBigNumBytes(const BIGNUM* a)
 {
     if (!a)
     {

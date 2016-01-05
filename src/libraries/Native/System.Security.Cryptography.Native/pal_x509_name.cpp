@@ -3,17 +3,17 @@
 
 #include "pal_x509_name.h"
 
-extern "C" int32_t GetX509NameStackFieldCount(X509NameStack* sk)
+extern "C" int32_t CryptoNative_GetX509NameStackFieldCount(X509NameStack* sk)
 {
     return sk_X509_NAME_num(sk);
 }
 
-extern "C" X509_NAME* GetX509NameStackField(X509NameStack* sk, int32_t loc)
+extern "C" X509_NAME* CryptoNative_GetX509NameStackField(X509NameStack* sk, int32_t loc)
 {
     return sk_X509_NAME_value(sk, loc);
 }
 
-extern "C" X509_NAME* DecodeX509Name(const uint8_t* buf, int32_t len)
+extern "C" X509_NAME* CryptoNative_DecodeX509Name(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
@@ -23,7 +23,7 @@ extern "C" X509_NAME* DecodeX509Name(const uint8_t* buf, int32_t len)
     return d2i_X509_NAME(nullptr, &buf, len);
 }
 
-extern "C" void X509NameDestroy(X509_NAME* a)
+extern "C" void CryptoNative_X509NameDestroy(X509_NAME* a)
 {
     if (a != nullptr)
     {
@@ -31,12 +31,12 @@ extern "C" void X509NameDestroy(X509_NAME* a)
     }
 }
 
-extern "C" STACK_OF(X509_NAME) * NewX509NameStack()
+extern "C" STACK_OF(X509_NAME) * CryptoNative_NewX509NameStack()
 {
     return sk_X509_NAME_new_null();
 }
 
-extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME * x509Name)
+extern "C" int32_t CryptoNative_PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME* x509Name)
 {
     if (!stack)
     {
@@ -46,32 +46,32 @@ extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME
     return sk_X509_NAME_push(stack, x509Name);
 }
 
-extern "C" void RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack)
+extern "C" void CryptoNative_RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack)
 {
     sk_X509_NAME_pop_free(stack, X509_NAME_free);
 }
 
-extern "C" X509_NAME* DuplicateX509Name(X509_NAME* x509Name)
+extern "C" X509_NAME* CryptoNative_DuplicateX509Name(X509_NAME* x509Name)
 {
     return X509_NAME_dup(x509Name);
 }
 
-extern "C" int32_t GetX509NameEntryCount(X509_NAME* x509Name)
+extern "C" int32_t CryptoNative_GetX509NameEntryCount(X509_NAME* x509Name)
 {
     return X509_NAME_entry_count(x509Name);
 }
 
-extern "C" X509_NAME_ENTRY* GetX509NameEntry(X509_NAME* x509Name, int32_t loc)
+extern "C" X509_NAME_ENTRY* CryptoNative_GetX509NameEntry(X509_NAME* x509Name, int32_t loc)
 {
     return X509_NAME_get_entry(x509Name, loc);
 }
 
-extern "C" ASN1_OBJECT* GetX509NameEntryOid(X509_NAME_ENTRY* nameEntry)
+extern "C" ASN1_OBJECT* CryptoNative_GetX509NameEntryOid(X509_NAME_ENTRY* nameEntry)
 {
     return X509_NAME_ENTRY_get_object(nameEntry);
 }
 
-extern "C" ASN1_STRING* GetX509NameEntryData(X509_NAME_ENTRY* nameEntry)
+extern "C" ASN1_STRING* CryptoNative_GetX509NameEntryData(X509_NAME_ENTRY* nameEntry)
 {
     return X509_NAME_ENTRY_get_data(nameEntry);
 }

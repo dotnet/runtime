@@ -6,7 +6,7 @@
 #include <openssl/asn1.h>
 
 /*
-Flags for the 'type' parameter of DecodeAsn1TypeBytes.
+Flags for the 'type' parameter of CryptoNative_DecodeAsn1TypeBytes.
 */
 enum Asn1StringTypeFlags : int32_t
 {
@@ -30,7 +30,7 @@ enum Asn1StringTypeFlags : int32_t
 };
 
 /*
-Flags for the 'flags' parameter of Asn1StringPrintEx.
+Flags for the 'flags' parameter of CryptoNative_Asn1StringPrintEx.
 */
 enum Asn1StringPrintFlags : uint64_t
 {
@@ -40,9 +40,9 @@ enum Asn1StringPrintFlags : uint64_t
 /*
 Shims the d2i_ASN1_type_bytes method and makes it easier to invoke from managed code.
 */
-extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type);
+extern "C" ASN1_STRING* CryptoNative_DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type);
 
 /*
 Direct shim to ASN1_STRING_print_ex.
 */
-extern "C" int32_t Asn1StringPrintEx(BIO* out, ASN1_STRING* str, Asn1StringPrintFlags flags);
+extern "C" int32_t CryptoNative_Asn1StringPrintEx(BIO* out, ASN1_STRING* str, Asn1StringPrintFlags flags);

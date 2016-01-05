@@ -40,7 +40,7 @@ internal static partial class Interop
             // No-op that exists to provide a hook for other static constructors.
         }
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
         private static extern int EnsureOpenSslInitialized();
     }
 }
