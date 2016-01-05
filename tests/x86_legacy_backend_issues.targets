@@ -1,0 +1,155 @@
+<Project DefaultTargets = "GetListOfTestCmds"
+	xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+	<ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+		<ExcludeList Include="$(XunitTestBinBase)\GC\Features\HeapExpansion\Finalizer\Finalizer.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" >
+			<Issue>2389</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd" >
+			<Issue>2409</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\1\arglist\arglist.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\2\arglist\arglist.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\4\arglist\arglist.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\volatile\1\arglist\arglist.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray1\HugeArray1.cmd" >
+			<Issue>2408</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_dbgconcurgc_il\_dbgconcurgc_il.cmd" >
+			<Issue>2410</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_relconcurgc_il\_relconcurgc_il.cmd" >
+			<Issue>2410</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd" >
+			<Issue>2413</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd" >
+			<Issue>2413</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_do\u8rem_cs_do.cmd" >
+			<Issue>2412</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_ro\u8rem_cs_ro.cmd" >
+			<Issue>2412</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_d\dblarray4_cs_d.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_do\dblarray4_cs_do.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_r\dblarray4_cs_r.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_ro\dblarray4_cs_ro.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgi_array_merge\_il_dbgi_array_merge.cmd" >
+			<Issue>2415</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgsizeof\_il_dbgsizeof.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgu_array_merge\_il_dbgu_array_merge.cmd" >
+			<Issue>2415</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_reli_array_merge\_il_reli_array_merge.cmd" >
+			<Issue>2415</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relsizeof\_il_relsizeof.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relu_array_merge\_il_relu_array_merge.cmd" >
+			<Issue>2415</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\structs\systemvbringup\structinregs\structinregs.cmd" >
+			<Issue>2417</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof\_il_dbgsizeof.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof32\_il_dbgsizeof32.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof64\_il_dbgsizeof64.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof\_il_relsizeof.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof32\_il_relsizeof32.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof64\_il_relsizeof64.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\Locals.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex\CircleInConvex.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_dbgarrres\_il_dbgarrres.cmd" >
+			<Issue>2419</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b108129\b108129\b108129.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
+			<Issue>2420</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M09.5-PDC\b14426\b14426\b14426.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57367\b57367\b57367.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M02\b20785\b20785\b20785.cmd" >
+			<Issue>2421</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b14585\b14585\b14585.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13621\b13621\b13621.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b16102\b16102\b16102.cmd" >
+			<Issue>2406</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b101136\b101136\b101136.cmd" >
+			<Issue>2422</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b399444\b399444a\b399444a.cmd" >
+			<Issue>2418</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_relarrres\_il_relarrres.cmd" >
+			<Issue>2419</Issue>
+		</ExcludeList>
+	</ItemGroup>
+</Project>
