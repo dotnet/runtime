@@ -1739,7 +1739,7 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
             info.compCompHnd->getReadyToRunHelper(pResolvedToken, CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &op1->gtFptrVal.gtDelegateCtor);
         }
         else
-            op1->gtFptrVal.gtEntryPoint.addr = NULL;
+            op1->gtFptrVal.gtEntryPoint.addr = nullptr;
 #endif
         break;
 
@@ -5844,6 +5844,22 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                 assert(!(mflags & CORINFO_FLG_VIRTUAL) ||
                        (mflags & CORINFO_FLG_FINAL) ||
                        (clsFlags & CORINFO_FLG_FINAL));
+
+#ifdef FEATURE_READYTORUN_COMPILER
+                if (call->OperGet() == GT_INTRINSIC)
+                {
+                    if (opts.IsReadyToRun())
+                    {
+                        assert(callInfo->kind == CORINFO_CALL);
+                        call->gtIntrinsic.gtEntryPoint = callInfo->codePointerLookup.constLookup;
+                    }
+                    else
+                    {
+                        call->gtIntrinsic.gtEntryPoint.addr = nullptr;
+                    }
+                }
+#endif
+
                 bIntrinsicImported = true;
                 goto DONE_CALL;
             }
