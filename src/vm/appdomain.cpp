@@ -2553,6 +2553,10 @@ void SystemDomain::Init()
 #endif // FEATURE_VERSIONING
 
     m_BaseLibrary.Append(m_SystemDirectory);
+    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    {
+        m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
+    }
     m_BaseLibrary.Append(g_pwBaseLibrary);
     m_BaseLibrary.Normalize();
 
