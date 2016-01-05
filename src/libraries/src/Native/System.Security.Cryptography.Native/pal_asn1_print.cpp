@@ -23,7 +23,7 @@ static_assert(PAL_B_ASN1_SEQUENCE == B_ASN1_SEQUENCE, "");
 
 static_assert(PAL_ASN1_STRFLGS_UTF8_CONVERT == ASN1_STRFLGS_UTF8_CONVERT, "");
 
-extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type)
+extern "C" ASN1_STRING* CryptoNative_DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type)
 {
     if (!buf || !len)
     {
@@ -33,7 +33,7 @@ extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn
     return d2i_ASN1_type_bytes(nullptr, &buf, len, type);
 }
 
-extern "C" int32_t Asn1StringPrintEx(BIO* out, ASN1_STRING* str, Asn1StringPrintFlags flags)
+extern "C" int32_t CryptoNative_Asn1StringPrintEx(BIO* out, ASN1_STRING* str, Asn1StringPrintFlags flags)
 {
     return ASN1_STRING_print_ex(out, str, flags);
 }

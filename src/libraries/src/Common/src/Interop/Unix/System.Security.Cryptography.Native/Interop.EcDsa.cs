@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EcDsaSign([In] byte[] dgst, int dlen, [Out] byte[] sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey);
 
@@ -18,11 +18,11 @@ internal static partial class Interop
          *      0: incorrect signature
          *     -1: error
          */
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaVerify")]
         internal static extern int EcDsaVerify([In] byte[] dgst, int dgst_len, [In] byte[] sigbuf, int sig_len, SafeEcKeyHandle ecKey);
 
         // returns the maximum length of a DER encoded ECDSA signature created with this key.
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSize")]
         internal static extern int EcDsaSize(SafeEcKeyHandle ecKey);
     }
 }

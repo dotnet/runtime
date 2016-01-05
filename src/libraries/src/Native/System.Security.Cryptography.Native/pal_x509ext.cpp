@@ -5,12 +5,13 @@
 
 #include <assert.h>
 
-extern "C" X509_EXTENSION* X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
+extern "C" X509_EXTENSION*
+CryptoNative_X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
 {
     return X509_EXTENSION_create_by_OBJ(nullptr, obj, isCritical, data);
 }
 
-extern "C" void X509ExtensionDestroy(X509_EXTENSION* a)
+extern "C" void CryptoNative_X509ExtensionDestroy(X509_EXTENSION* a)
 {
     if (a != nullptr)
     {
@@ -18,16 +19,16 @@ extern "C" void X509ExtensionDestroy(X509_EXTENSION* a)
     }
 }
 
-extern "C" int32_t X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
+extern "C" int32_t CryptoNative_X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
 {
     return X509V3_EXT_print(out, ext, X509V3_EXT_DEFAULT, /*indent*/ 0);
 }
 
-extern "C" int32_t DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
-                                                        int32_t encodedLength,
-                                                        int32_t* certificateAuthority,
-                                                        int32_t* hasPathLengthConstraint,
-                                                        int32_t* pathLengthConstraint)
+extern "C" int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
+                                                                     int32_t encodedLength,
+                                                                     int32_t* certificateAuthority,
+                                                                     int32_t* hasPathLengthConstraint,
+                                                                     int32_t* pathLengthConstraint)
 {
     if (!certificateAuthority || !hasPathLengthConstraint || !pathLengthConstraint)
     {
@@ -66,7 +67,7 @@ extern "C" int32_t DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
     return result;
 }
 
-extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
+extern "C" EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
@@ -76,7 +77,7 @@ extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const uint8_t* buf, int32_
     return d2i_EXTENDED_KEY_USAGE(nullptr, &buf, len);
 }
 
-extern "C" void ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a)
+extern "C" void CryptoNative_ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a)
 {
     if (a != nullptr)
     {

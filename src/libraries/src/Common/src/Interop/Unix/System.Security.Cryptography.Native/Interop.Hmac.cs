@@ -9,19 +9,19 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCreate")]
         internal extern static unsafe SafeHmacCtxHandle HmacCreate(byte* key, int keyLen, IntPtr md);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacDestroy")]
         internal extern static void HmacDestroy(IntPtr ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
         internal extern static int HmacReset(SafeHmacCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
         internal extern static unsafe int HmacUpdate(SafeHmacCtxHandle ctx, byte* data, int len);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
         internal extern static unsafe int HmacFinal(SafeHmacCtxHandle ctx, byte* data, ref int len);
     }
 }

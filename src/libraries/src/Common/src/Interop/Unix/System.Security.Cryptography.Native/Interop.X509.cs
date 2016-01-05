@@ -13,34 +13,34 @@ internal static partial class Interop
     {
         internal delegate int X509StoreVerifyCallback(int ok, IntPtr ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EvpPublicKey")]
         internal static extern SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509Crl")]
         internal static extern SafeX509CrlHandle DecodeX509Crl(byte[] buf, int len);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static extern SafeX509Handle DecodeX509(byte[] buf, int len);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static extern int GetX509DerSize(SafeX509Handle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509")]
         internal static extern int EncodeX509(SafeX509Handle x, byte[] buf);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static extern void X509Destroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static extern SafeX509Handle X509Duplicate(IntPtr handle);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static extern SafeX509Handle X509Duplicate(SafeX509Handle handle);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBio")]
         internal static extern SafeX509Handle PemReadX509FromBio(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "X509GetSerialNumber")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetSerialNumber")]
         private static extern SafeSharedAsn1IntegerHandle X509GetSerialNumber_private(SafeX509Handle x);
 
         internal static SafeSharedAsn1IntegerHandle X509GetSerialNumber(SafeX509Handle x)
@@ -52,74 +52,74 @@ internal static partial class Interop
                 x);
         }
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetIssuerName")]
         internal static extern IntPtr X509GetIssuerName(SafeX509Handle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetSubjectName")]
         internal static extern IntPtr X509GetSubjectName(SafeX509Handle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CheckPurpose")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509CheckPurpose(SafeX509Handle x, int id, int ca);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CheckIssued")]
         internal static extern int X509CheckIssued(SafeX509Handle issuer, SafeX509Handle subject);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509IssuerNameHash")]
         internal static extern ulong X509IssuerNameHash(SafeX509Handle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetExtCount")]
         internal static extern int X509GetExtCount(SafeX509Handle x);
 
         // Returns a pointer already being tracked by the SafeX509Handle, shouldn't be SafeHandle tracked/freed.
         // Bounds checking is in place for "loc", IntPtr.Zero is returned on violations.
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetExt")]
         internal static extern IntPtr X509GetExt(SafeX509Handle x, int loc);
 
         // Returns a pointer already being tracked by a SafeX509Handle, shouldn't be SafeHandle tracked/freed.
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetOid")]
         internal static extern IntPtr X509ExtensionGetOid(IntPtr ex);
 
         // Returns a pointer already being tracked by a SafeX509Handle, shouldn't be SafeHandle tracked/freed.
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetData")]
         internal static extern IntPtr X509ExtensionGetData(IntPtr ex);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetCritical")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509ExtensionGetCritical(IntPtr ex);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCreate")]
         internal static extern SafeX509StoreHandle X509StoreCreate();
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
         internal static extern void X509StoreDestory(IntPtr v);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCert")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509StoreAddCert(SafeX509StoreHandle ctx, SafeX509Handle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCrl")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509StoreAddCrl(SafeX509StoreHandle ctx, SafeX509CrlHandle x);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreSetRevocationFlag")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxInit")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509StoreCtxInit(SafeX509StoreCtxHandle ctx, SafeX509StoreHandle store, SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCert")]
         internal static extern int X509VerifyCert(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetError")]
         internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetErrorDepth")]
         internal static extern int X509StoreCtxGetErrorDepth(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxSetVerifyCallback")]
         internal static extern void X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, X509StoreVerifyCallback callback);
 
         internal static string GetX509VerifyCertErrorString(X509VerifyStatusCode n)
@@ -127,22 +127,22 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n));
         }
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]
         private static extern IntPtr X509VerifyCertErrorString(X509VerifyStatusCode n);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CrlDestroy")]
         internal static extern void X509CrlDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemWriteBioX509Crl")]
         internal static extern int PemWriteBioX509Crl(SafeBioHandle bio, SafeX509CrlHandle crl);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadBioX509Crl")]
         internal static extern SafeX509CrlHandle PemReadBioX509Crl(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SubjectPublicKeyInfoDerSize")]
         internal static extern int GetX509SubjectPublicKeyInfoDerSize(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509SubjectPublicKeyInfo")]
         internal static extern int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, byte[] buf);
 
         internal enum X509VerifyStatusCode : int
