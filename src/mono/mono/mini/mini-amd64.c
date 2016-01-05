@@ -504,6 +504,8 @@ typedef struct {
 	/* The size of each pair */
 	int pair_size [2];
 	int nregs;
+	/* Only if storage == ArgOnStack */
+	int arg_size;
 } ArgInfo;
 
 typedef struct {
@@ -538,6 +540,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 
     if (*gr >= PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
+		ainfo->arg_size = sizeof (mgreg_t);
 		/* Since the same stack slot size is used for all arg */
 		/*  types, it needs to be big enough to hold them all */
 		(*stack_size) += sizeof(mgreg_t);
@@ -562,6 +565,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 
     if (*gr >= FLOAT_PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
+		ainfo->arg_size = sizeof (mgreg_t);
 		/* Since the same stack slot size is used for both float */
 		/*  types, it needs to be big enough to hold them both */
 		(*stack_size) += sizeof(mgreg_t);
@@ -772,6 +776,8 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+		if (!is_return)
+			ainfo->arg_size = ALIGN_TO (size, 8);
 
 		g_free (fields);
 		return;
@@ -816,6 +822,7 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				else {
 					ainfo->pair_storage [0] = ArgOnStack;
 					ainfo->offset = *stack_size;
+					ainfo->arg_size = sizeof (mgreg_t);
 					*stack_size += 8;
 				}
 			}
@@ -900,6 +907,8 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			ainfo->offset = *stack_size;
 			*stack_size += sizeof (mgreg_t);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = sizeof (mgreg_t);
 		}
 	}
 }
@@ -970,6 +979,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+		if (!is_return)
+			ainfo->arg_size = ALIGN_TO (size, 8);
 
 		g_free (fields);
 		return;
@@ -1012,6 +1023,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			ainfo->offset = *stack_size;
 			*stack_size += ALIGN_TO (info->native_size, 8);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = ALIGN_TO (info->native_size, 8);
 
 			g_free (fields);
 			return;
@@ -1110,16 +1123,20 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		}
 
 		if ((args [0] == ARG_CLASS_MEMORY) || (args [1] == ARG_CLASS_MEMORY)) {
+			int arg_size;
 			/* Revert possible register assignments */
 			*gr = orig_gr;
 			*fr = orig_fr;
 
 			ainfo->offset = *stack_size;
 			if (sig->pinvoke)
-				*stack_size += ALIGN_TO (info->native_size, 8);
+				arg_size = ALIGN_TO (info->native_size, 8);
 			else
-				*stack_size += nquads * sizeof(mgreg_t);
+				arg_size = nquads * sizeof(mgreg_t);
+			*stack_size += arg_size;
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = arg_size;
 		}
 	}
 #endif /* !TARGET_WIN32 */
