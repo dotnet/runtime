@@ -13,13 +13,8 @@
 #include <config.h>
 #include <glib.h>
 
-#include "object.h"
-#include "class.h"
-#include "class-internals.h"
-#include "threads-types.h"
-#include "handle-arena.h"
-
-#include "mono/utils/mono-threads-coop.h"
+#include <mono/metadata/object.h>
+#include <mono/metadata/class.h>
 
 G_BEGIN_DECLS
 
@@ -100,13 +95,13 @@ mono_handle_check_in_critical_section ()
 static inline MonoClass*
 mono_handle_class (MonoHandle handle)
 {
-	return handle->obj->vtable->klass;
+	return mono_object_get_class (handle->obj);
 }
 
 static inline MonoDomain*
 mono_handle_domain (MonoHandle handle)
 {
-	return handle->obj->vtable->domain;
+	return mono_object_get_domain (handle->obj);
 }
 
 #define MONO_HANDLE_TYPE_DECL(type)      typedef struct { type *obj; } type ## HandleStorage ; \
