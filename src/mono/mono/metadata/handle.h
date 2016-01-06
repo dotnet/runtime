@@ -146,7 +146,7 @@ mono_handle_domain (MonoHandle handle)
 #define MONO_HANDLE_ARRAY_SET(handle,type,index,value)	\
 	do {	\
 		MONO_PREPARE_GC_CRITICAL_REGION;	\
-		mono_array_set (mono_handle_obj ((handle)), (type), (index), (value));	\
+		mono_array_set (mono_handle_obj ((handle)), type, (index), (value));	\
 		MONO_FINISH_GC_CRITICAL_REGION;	\
 	} while (0)
 
