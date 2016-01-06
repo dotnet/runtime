@@ -79,7 +79,7 @@ handle_new (MonoHandleArena *arena, MonoObject *obj)
 	chunk = arena->chunk_last;
 
 	if (chunk->handles_size < HANDLES_PER_CHUNK) {
-		chunk->handles [chunk->handles_size].obj = obj;
+		chunk->handles [chunk->handles_size].__private_obj = obj;
 		chunk->handles_size += 1;
 
 		return &chunk->handles [chunk->handles_size - 1];
@@ -87,7 +87,7 @@ handle_new (MonoHandleArena *arena, MonoObject *obj)
 
 	chunk = chunk->next = chunk_alloc ();
 
-	chunk->handles [0].obj = obj;
+	chunk->handles [0].__private_obj = obj;
 	chunk->handles_size = 1;
 
 	arena->chunk_last = chunk;
@@ -112,7 +112,7 @@ mono_handle_arena_elevate (MonoHandleArena *arena, MonoHandle handle)
 	g_assert (arena);
 	g_assert (arena->prev);
 
-	return handle_new (arena->prev, handle->obj);
+	return handle_new (arena->prev, handle->__private_obj);
 }
 
 gsize
@@ -167,8 +167,8 @@ arena_scan (gpointer addr, MonoGCMarkFunc mark_func, gpointer gc_data)
 	for (arena = *(MonoHandleArena**) addr; arena; arena = arena->prev) {
 		for (chunk = arena->chunk; chunk; chunk = chunk->next) {
 			for (i = 0; i < chunk->handles_size; ++i) {
-				if (chunk->handles [i].obj != NULL)
-					mark_func (&chunk->handles [i].obj, gc_data);
+				if (chunk->handles [i].__private_obj != NULL)
+					mark_func (&chunk->handles [i].__private_obj, gc_data);
 			}
 		}
 	}

@@ -26,7 +26,7 @@ G_BEGIN_DECLS
  * in C, but using a C++ template would simplify that a lot
  */
 typedef struct {
-	MonoObject *obj;
+	MonoObject *__private_obj;
 } MonoHandleStorage;
 
 typedef MonoHandleStorage* MonoHandle;
@@ -71,7 +71,7 @@ mono_handle_arena_current_addr (void);
 	} while (0)
 
 #define MONO_HANDLE_ARENA_POP_RETURN_UNSAFE(handle,ret)	\
-		(ret) = (handle)->obj;	\
+		(ret) = (handle)->__private_obj;	\
 		mono_handle_arena_stack_pop (__arena_stack, __arena);	\
 	} while (0)
 
@@ -94,9 +94,9 @@ mono_handle_elevate (MonoHandle handle)
 
 #ifndef CHECKED_BUILD
 
-#define mono_handle_obj(handle) ((handle)->obj)
+#define mono_handle_obj(handle) ((handle)->__private_obj)
 
-#define mono_handle_assign(handle,rawptr) do { (handle)->obj = (rawptr); } while(0)
+#define mono_handle_assign(handle,rawptr) do { (handle)->__private_obj = (rawptr); } while(0)
 
 #else
 
@@ -106,31 +106,31 @@ mono_handle_check_in_critical_section ()
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
-#define mono_handle_obj(handle) (mono_handle_check_in_critical_section (), (handle)->obj)
+#define mono_handle_obj(handle) (mono_handle_check_in_critical_section (), (handle)->__private_obj)
 
-#define mono_handle_assign(handle,rawptr) do { mono_handle_check_in_critical_section (); (handle)->obj = (rawptr); } while (0)
+#define mono_handle_assign(handle,rawptr) do { mono_handle_check_in_critical_section (); (handle)->__private_obj = (rawptr); } while (0)
 
 #endif
 
 static inline MonoClass*
 mono_handle_class (MonoHandle handle)
 {
-	return mono_object_get_class (handle->obj);
+	return mono_object_get_class (handle->__private_obj);
 }
 
 static inline MonoDomain*
 mono_handle_domain (MonoHandle handle)
 {
-	return mono_object_get_domain (handle->obj);
+	return mono_object_get_domain (handle->__private_obj);
 }
 
-#define mono_handle_obj_is_null(handle) ((handle)->obj == NULL)
+#define mono_handle_obj_is_null(handle) ((handle)->__private_obj == NULL)
 
-#define MONO_HANDLE_TYPE_DECL(type)      typedef struct { type *obj; } type ## HandleStorage ; \
+#define MONO_HANDLE_TYPE_DECL(type)      typedef struct { type *__private_obj; } type ## HandleStorage ; \
 	typedef type ## HandleStorage * type ## Handle
 #define MONO_HANDLE_TYPE(type)           type ## Handle
 #define MONO_HANDLE_NEW(type,obj)        ((type ## Handle) mono_handle_new ((MonoObject*) (obj)))
-#define MONO_HANDLE_ELEVATE(type,handle) ((type ## Handle) mono_handle_elevate ((MonoObject*) (handle)->obj))
+#define MONO_HANDLE_ELEVATE(type,handle) ((type ## Handle) mono_handle_elevate ((MonoObject*) (handle)->__private_obj))
 
 #define MONO_HANDLE_ASSIGN(handle,rawptr)	\
 	do {	\
