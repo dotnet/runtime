@@ -1,8 +1,27 @@
 {
-  "dependencies": {
-    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23520"
-  },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23520"
+      }
+    },
+    "netcore50": {
+      "dependencies": {
+        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.Diagnostics.Tools": "4.0.0",
+        "System.Globalization": "4.0.10",
+        "System.Runtime.Extensions": "4.0.10",
+        "System.Text.Encoding.Extensions": "4.0.10",
+        "System.Threading": "4.0.10",
+        "System.Threading.Tasks": "4.0.10",
+        "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc2-23704"
+      }
+    },
+    "net46": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
+      }
+    }
   }
 }
