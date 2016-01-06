@@ -35,7 +35,6 @@
     <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DataContractSet.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DiagnosticUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />

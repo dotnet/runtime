@@ -1,12 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
 using System.Xml;
-using System.Text;
-using System.Diagnostics;
-using System.Reflection;
 using System.Globalization;
 
 
@@ -484,9 +479,6 @@ namespace System.Runtime.Serialization
             WriteFloat(value);
             WriteEndElementPrimitive();
         }
-
-        private const int CharChunkSize = 76;
-        private const int ByteChunkSize = CharChunkSize / 4 * 3;
 
         internal virtual void WriteBase64(byte[] bytes)
         {

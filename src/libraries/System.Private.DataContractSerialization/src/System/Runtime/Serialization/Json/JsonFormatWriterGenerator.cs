@@ -157,28 +157,6 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Stloc(_objectLocal);
             }
 
-            private void ThrowIfCannotSerializeReadOnlyTypes(ClassDataContract classContract)
-            {
-                ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.ClassSerializationExceptionMessageProperty);
-            }
-
-            private void ThrowIfCannotSerializeReadOnlyTypes(CollectionDataContract classContract)
-            {
-                ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.CollectionSerializationExceptionMessageProperty);
-            }
-
-            private void ThrowIfCannotSerializeReadOnlyTypes(PropertyInfo serializationExceptionMessageProperty)
-            {
-                _ilg.Load(_contextArg);
-                _ilg.LoadMember(XmlFormatGeneratorStatics.SerializeReadOnlyTypesProperty);
-                _ilg.IfNot();
-                _ilg.Load(_dataContractArg);
-                _ilg.LoadMember(serializationExceptionMessageProperty);
-                _ilg.Load(null);
-                _ilg.Call(XmlFormatGeneratorStatics.ThrowInvalidDataContractExceptionMethod);
-                _ilg.EndIf();
-            }
-
             private void InvokeOnSerializing(ClassDataContract classContract)
             {
                 if (classContract.BaseContract != null)

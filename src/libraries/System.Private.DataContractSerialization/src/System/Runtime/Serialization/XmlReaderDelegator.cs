@@ -1,10 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Xml;
-using System.Xml.Schema;
-using System.Reflection;
 using System.Globalization;
 using System.Collections.Generic;
 
@@ -219,14 +216,6 @@ namespace System.Runtime.Serialization
             else
                 reader.ReadEndElement();
         }
-
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
-        {
-            return new InvalidDataContractException(SR.Format(
-                type.GetTypeInfo().IsInterface ? SR.InterfaceTypeCannotBeCreated : SR.InvalidPrimitiveType,
-                DataContract.GetClrTypeFullName(type)));
-        }
-
 
         private void ThrowConversionException(string value, string type)
         {
