@@ -17,6 +17,7 @@
 #include "class.h"
 #include "class-internals.h"
 #include "threads-types.h"
+#include "handle-arena.h"
 
 #include "mono/utils/mono-threads-coop.h"
 
@@ -57,6 +58,24 @@ mono_handle_arena_initialize (MonoHandleArena **arena_stack);
 
 void
 mono_handle_arena_deinitialize (MonoHandleArena **arena_stack);
+
+MonoHandleArena*
+mono_handle_arena_current (void);
+
+MonoHandleArena**
+mono_handle_arena_current_addr (void);
+
+static inline MonoHandle
+mono_handle_new (MonoObject *obj)
+{
+	return mono_handle_arena_new (mono_handle_arena_current (), obj);
+}
+
+static inline MonoHandle
+mono_handle_elevate (MonoHandle handle)
+{
+	return mono_handle_arena_elevate (mono_handle_arena_current (), handle);
+}
 
 #ifndef CHECKED_BUILD
 
@@ -131,13 +150,8 @@ mono_handle_domain (MonoHandle handle)
 		MONO_FINISH_GC_CRITICAL_REGION;	\
 	} while (0)
 
-/* handle arena specific functions */
 
-MonoHandle
-mono_handle_new (MonoObject *rawptr);
 
-MonoHandle
-mono_handle_elevate (MonoHandle handle);
 
 /* Some common handle types */
 
