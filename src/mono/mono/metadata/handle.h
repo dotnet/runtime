@@ -111,11 +111,6 @@ mono_handle_domain (MonoHandle handle)
 
 /* handle arena specific functions */
 
-typedef struct _MonoHandleArena MonoHandleArena;
-
-gsize
-mono_handle_arena_size (gsize nb_handles);
-
 MonoHandle
 mono_handle_new (MonoObject *rawptr);
 
