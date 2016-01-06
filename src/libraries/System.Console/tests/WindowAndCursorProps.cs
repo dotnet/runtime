@@ -126,8 +126,8 @@ public class WindowAndCursorProps
             Console.SetCursorPosition(0, 0);
             Console.SetCursorPosition(1, 2);
         }
-            Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
-            Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
+        Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
     }
 
     [Fact]
