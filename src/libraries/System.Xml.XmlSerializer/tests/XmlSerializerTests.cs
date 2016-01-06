@@ -1614,6 +1614,39 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
+    [Fact]
+    public static void Xml_TypeWithByteProperty()
+    {
+        var obj = new TypeWithByteProperty() {ByteProperty = 123};
+        var deserializedObj = SerializeAndDeserialize(obj,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <ByteProperty>123</ByteProperty>
+</TypeWithByteProperty>");
+        Assert.StrictEqual(obj.ByteProperty, deserializedObj.ByteProperty);
+    }
+
+    [Fact]
+    public static void Xml_DeserializeOutOfRangeByteProperty()
+    {
+        //Deserialize an instance with out-of-range value for the byte property, expecting exception from deserialization process
+        var serializer = new XmlSerializer(typeof(TypeWithByteProperty));
+        using (var stream = new MemoryStream())
+        {
+            var writer = new StreamWriter(stream);
+            writer.Write(
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<TypeWithByteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <ByteProperty>-1</ByteProperty>
+</TypeWithByteProperty>");
+            writer.Flush();
+            stream.Position = 0;
+            Assert.Throws<InvalidOperationException>(() => {
+                var deserializedObj = (TypeWithByteProperty)serializer.Deserialize(stream);
+            });
+        }
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
