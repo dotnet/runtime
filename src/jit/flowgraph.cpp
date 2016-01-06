@@ -32,6 +32,8 @@ void                Compiler::fgInit()
 
 #ifdef DEBUG
     fgInlinedCount               = 0;
+    static ConfigDWORD fJitPrintInlinedMethods;
+    fgPrintInlinedMethods = fJitPrintInlinedMethods.val(CLRConfig::EXTERNAL_JitPrintInlinedMethods) == 1;
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
@@ -21485,19 +21487,21 @@ void Compiler::fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt*
 /*****************************************************************************
  * Check if we have a recursion loop or if the recursion is too deep while doing the inlining.
  * Return true if a recursion loop is found or if the inlining recursion is too deep.
+ * Also return the depth.
  */
 
 bool          Compiler::fgIsUnboundedInlineRecursion(inlExpPtr               expLst,
-                                                     BYTE*                   ilCode)
+                                                     BYTE*                   ilCode,
+                                                     DWORD&                  depth)
 {
     const DWORD MAX_INLINING_RECURSION_DEPTH = 20;
 
-    DWORD count = 0;
-    for (; expLst; expLst = expLst->ixlNext)
+    depth = 0;
+    for (; expLst != nullptr; expLst = expLst->ixlParent)
     {
         // Hard limit just to catch pathological cases
-        count++;
-        if  ((expLst->ixlCode == ilCode) || (count > MAX_INLINING_RECURSION_DEPTH))
+        depth++;
+        if  ((expLst->ixlCode == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
             return true;
     }
 
@@ -21521,7 +21525,27 @@ void                Compiler::fgInline()
 #endif // DEBUG
 
     BasicBlock* block = fgFirstBB;
-    noway_assert(block);
+    noway_assert(block != nullptr);
+
+    // Set the root inline context on all statements
+    inlExpLst* expDsc = new (this, CMK_Inlining) inlExpLst();
+
+#if defined(DEBUG)
+    expDsc->methodName = info.compFullName;
+#endif
+
+    for (; block != nullptr; block = block->bbNext)
+    {
+        for (GenTreeStmt* stmt = block->firstStmt();
+             stmt;
+             stmt = stmt->gtNextStmt)
+        {
+           stmt->gtInlineExpList = expDsc;
+        }
+    }
+
+    // Reset block back to start for inlining
+    block = fgFirstBB;
 
     do
     {
@@ -21601,6 +21625,12 @@ void                Compiler::fgInline()
         printf("*************** After fgInline()\n");
         fgDispBasicBlocks(true);
         fgDispHandlerTab();
+    }
+
+    if  (verbose || (fgInlinedCount > 0 && fgPrintInlinedMethods))
+    {
+       printf("**************** Inline Tree\n");
+       expDsc->Dump();
     }
 
 #endif // DEBUG
@@ -21895,7 +21925,10 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
 
-    if (fgIsUnboundedInlineRecursion(inlineInfo.iciStmt->gtStmt.gtInlineExpList, inlineCandidateInfo->methInfo.ILCode))
+    DWORD inlineDepth = 0;
+    BYTE * candidateIL = inlineCandidateInfo->methInfo.ILCode;
+    inlExpPtr expList = inlineInfo.iciStmt->gtStmt.gtInlineExpList;
+    if (fgIsUnboundedInlineRecursion(expList, candidateIL, inlineDepth))
     {
 #ifdef DEBUG
         if (verbose)
@@ -22069,14 +22102,12 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
 #ifdef DEBUG
     ++fgInlinedCount;
 
-    static ConfigDWORD fJitPrintInlinedMethods;
-
-    if (verbose ||
-        fJitPrintInlinedMethods.val(CLRConfig::EXTERNAL_JitPrintInlinedMethods) == 1)
+    if (verbose || fgPrintInlinedMethods)
     {
-        printf("Successfully inlined %s (%d IL bytes) into %s\n",
+        printf("Successfully inlined %s (%d IL bytes) (depth %d) into %s\n",
                eeGetMethodFullName(fncHandle),
                inlineCandidateInfo->methInfo.ILCodeSize,
+               inlineDepth,
                info.compFullName);
     }
 
@@ -22145,13 +22176,25 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Obtain an inlExpLst struct and update the gtInlineExpList field in the inlinee's statements
     //
-    inlExpLst* expDsc;
-    expDsc = new (this, CMK_Inlining) inlExpLst;
-    expDsc->ixlCode = pInlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    expDsc->ixlNext = iciStmt->gtStmt.gtInlineExpList;
+    inlExpLst* expDsc = new (this, CMK_Inlining) inlExpLst;
+    inlExpLst *parentLst = iciStmt->gtStmt.gtInlineExpList;
+    noway_assert(parentLst != nullptr);
+    BYTE *parentIL = pInlineInfo->inlineCandidateInfo->methInfo.ILCode;
+    expDsc->ixlCode = parentIL;
+    expDsc->ixlParent = parentLst;
+    // Push on front here will put siblings in reverse lexical
+    // order which we undo in the dumper
+    expDsc->ixlSibling = parentLst->ixlChild;
+    parentLst->ixlChild = expDsc;
+    expDsc->ixlChild = nullptr;
+    expDsc->ilOffset = iciStmt->AsStmt()->gtStmtILoffsx;
+#ifdef DEBUG
+    expDsc->methodName = eeGetMethodFullName(pInlineInfo->fncHandle);
+    expDsc->depth = parentLst->depth + 1;
+#endif
 
     for (block = InlineeCompiler->fgFirstBB;
-         block;
+         block != nullptr;
          block = block->bbNext)
     {
         for (GenTreeStmt* stmt = block->firstStmt();
