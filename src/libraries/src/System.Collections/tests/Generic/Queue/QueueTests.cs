@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -28,6 +29,110 @@ namespace System.Collections.Tests
             // Verify arguments
             Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue<int>(-1));
             Assert.Throws<ArgumentNullException>("collection", () => new Queue<int>(null));
+        }
+
+        [Theory]
+        [MemberData("Collections")]
+        public void Ctor_IEnumerable(IEnumerable<int> collection)
+        {
+            var q = new Queue<int>(collection);
+
+            Assert.Equal(collection, q);
+
+            foreach (int item in collection)
+            {
+                Assert.Equal(item, q.Dequeue());
+            }
+            Assert.Equal(0, q.Count);
+        }
+
+        [Theory]
+        [MemberData("Collections")]
+        public void Ctor_IEnumerable_EnqueueDequeue(IEnumerable<int> collection)
+        {
+            var q = new Queue<int>(collection);
+            q.Enqueue(int.MaxValue);
+            q.Enqueue(int.MinValue);
+
+            foreach (int item in collection)
+            {
+                Assert.Equal(item, q.Dequeue());
+            }
+            Assert.Equal(int.MaxValue, q.Dequeue());
+            Assert.Equal(int.MinValue, q.Dequeue());
+            Assert.Equal(0, q.Count);
+        }
+
+        [Theory]
+        [MemberData("NonEmptyCollections")]
+        public void Ctor_IEnumerable_Dequeue(IEnumerable<int> collection)
+        {
+            var q = new Queue<int>(collection);
+            IEnumerator<int> e = collection.GetEnumerator();
+
+            Assert.True(e.MoveNext());
+            Assert.Equal(e.Current, q.Dequeue());
+
+            while (e.MoveNext())
+            {
+                Assert.Equal(e.Current, q.Dequeue());
+            }
+            Assert.Equal(0, q.Count);
+        }
+
+        [Theory]
+        [MemberData("NonEmptyCollections")]
+        public void Ctor_IEnumerable_DequeueEnqueue(IEnumerable<int> collection)
+        {
+            var q = new Queue<int>(collection);
+            IEnumerator<int> e = collection.GetEnumerator();
+
+            Assert.True(e.MoveNext());
+            Assert.Equal(e.Current, q.Dequeue());
+
+            q.Enqueue(int.MaxValue);
+
+            while (e.MoveNext())
+            {
+                Assert.Equal(e.Current, q.Dequeue());
+            }
+            Assert.Equal(int.MaxValue, q.Dequeue());
+            Assert.Equal(0, q.Count);
+        }
+
+        public static IEnumerable<object[]> Collections
+        {
+            get { return GenerateCollections(includeEmptyCollections: true); }
+        }
+
+        public static IEnumerable<object[]> NonEmptyCollections
+        {
+            get { return GenerateCollections(includeEmptyCollections: false); }
+        }
+
+        private static IEnumerable<object[]> GenerateCollections(bool includeEmptyCollections)
+        {
+            var sizes = new List<int> { 65, 64, 5, 4, 3, 2, 1 };
+
+            if (includeEmptyCollections)
+                sizes.Add(0);
+
+            foreach (int size in sizes)
+            {
+                yield return new object[] { Enumerable.Range(0, size).ToArray() };
+                yield return new object[] { Enumerable.Range(0, size).ToList() };
+                yield return new object[] { new Collection<int>(Enumerable.Range(0, size).ToList()) };
+                yield return new object[] { new ReadOnlyCollection<int>(Enumerable.Range(0, size).ToList()) };
+                yield return new object[] { CreateIteratorCollection(size) };
+            }
+        }
+
+        private static IEnumerable<int> CreateIteratorCollection(int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                yield return i;
+            }
         }
 
         [Theory]
@@ -104,15 +209,13 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
-        public void Clear_Wrapped()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Clear_Wrapped(bool initializeFromCollection)
         {
             // Try to exercise special case of clearing when we've wrapped around
-            var q = new Queue<string>(4);
-            for (int i = 0; i < 4; i++)
-            {
-                q.Enqueue(i.ToString());
-            }
+            Queue<string> q = CreateQueueAtCapacity(initializeFromCollection, i => i.ToString(), size: 4);
             Assert.Equal("0", q.Dequeue());
             Assert.Equal("1", q.Dequeue());
             q.Enqueue("5");
@@ -225,15 +328,13 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
-        public void CopyTo_Wrapped()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CopyTo_Wrapped(bool initializeFromCollection)
         {
             // Create a queue whose head has wrapped around
-            var q = new Queue<int>(4);
-            for (int i = 0; i < 4; i++)
-            {
-                q.Enqueue(i);
-            }
+            Queue<int> q = CreateQueueAtCapacity(initializeFromCollection, i => i, size: 4);
             Assert.Equal(0, q.Dequeue());
             Assert.Equal(1, q.Dequeue());
             Assert.Equal(2, q.Count);
@@ -364,15 +465,13 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
-        public void ICollection_CopyTo_Wrapped()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ICollection_CopyTo_Wrapped(bool initializeFromCollection)
         {
             // Create a queue whose head has wrapped around
-            var q = new Queue<int>(4);
-            for (int i = 0; i < 4; i++)
-            {
-                q.Enqueue(i);
-            }
+            Queue<int> q = CreateQueueAtCapacity(initializeFromCollection, i => i, size: 4);
             Assert.Equal(0, q.Dequeue());
             Assert.Equal(1, q.Dequeue());
             Assert.Equal(2, q.Count);
@@ -471,5 +570,24 @@ namespace System.Collections.Tests
             }
         }
 
+        private static Queue<T> CreateQueueAtCapacity<T>(bool initializeFromCollection, Func<int, T> selector, int size)
+        {
+            Queue<T> q;
+
+            if (initializeFromCollection)
+            {
+                q = new Queue<T>(Enumerable.Range(0, size).Select(selector).ToArray());
+            }
+            else
+            {
+                q = new Queue<T>(size);
+                for (int i = 0; i < size; i++)
+                {
+                    q.Enqueue(selector(i));
+                }
+            }
+
+            return q;
+        }
     }
 }
