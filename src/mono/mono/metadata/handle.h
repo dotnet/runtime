@@ -124,6 +124,8 @@ mono_handle_domain (MonoHandle handle)
 	return mono_object_get_domain (handle->obj);
 }
 
+#define mono_handle_obj_is_null(handle) ((handle)->obj == NULL)
+
 #define MONO_HANDLE_TYPE_DECL(type)      typedef struct { type *obj; } type ## HandleStorage ; \
 	typedef type ## HandleStorage * type ## Handle
 #define MONO_HANDLE_TYPE(type)           type ## Handle
