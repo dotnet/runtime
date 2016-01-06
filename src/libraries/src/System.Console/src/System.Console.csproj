@@ -95,6 +95,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCursorPosition.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleScreenBufferSize.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs</Link>
     </Compile>

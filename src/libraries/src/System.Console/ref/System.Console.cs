@@ -11,6 +11,8 @@ namespace System
     {
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
         public static bool CursorVisible { get { return default(bool); } set { } }
+        public static int CursorTop { get { return default(int); } set { } }
+        public static int CursorLeft { get { return default(int); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
         public static System.ConsoleColor ForegroundColor { get { return default(System.ConsoleColor); } set { } }
         public static bool IsInputRedirected { get { return false; } }
