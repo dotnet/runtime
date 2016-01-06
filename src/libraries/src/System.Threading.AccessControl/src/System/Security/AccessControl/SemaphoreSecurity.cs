@@ -3,11 +3,9 @@
 
 /*============================================================
 **
-** Class:  SemaphoreSecurity
 **
 ** Purpose: Managed ACL wrapper for Win32 semaphores.
 **
-** Date:  November 26, 2003
 **
 ===========================================================*/
 
@@ -38,7 +36,6 @@ namespace System.Security.AccessControl
         FullControl = 0x1F0003
     }
 
-    [ComVisible(false)]
     public sealed class SemaphoreAccessRule : AccessRule
     {
         // Constructor for creating access rules for registry objects
@@ -80,7 +77,6 @@ namespace System.Security.AccessControl
         }
     }
 
-    [ComVisible(false)]
     public sealed class SemaphoreAuditRule : AuditRule
     {
         public SemaphoreAuditRule(IdentityReference identity, SemaphoreRights eventRights, AuditFlags flags)
@@ -106,7 +102,6 @@ namespace System.Security.AccessControl
         }
     }
 
-    [ComVisible(false)]
     public sealed class SemaphoreSecurity : NativeObjectSecurity
     {
         public SemaphoreSecurity()
@@ -132,9 +127,9 @@ namespace System.Security.AccessControl
 
             switch (errorCode)
             {
-                case Interop.mincore.ERROR_INVALID_NAME:
-                case Interop.mincore.ERROR_INVALID_HANDLE:
-                case Interop.mincore.ERROR_FILE_NOT_FOUND:
+                case Interop.mincore.Errors.ERROR_INVALID_NAME:
+                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
                     if ((name != null) && (name.Length != 0))
                         exception = new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
                     else

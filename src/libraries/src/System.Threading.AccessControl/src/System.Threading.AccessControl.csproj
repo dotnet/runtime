@@ -1,44 +1,35 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="..\dir.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Threading.AccessControl</AssemblyName>
-    <OutputType>Library</OutputType>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{E3ED83FD-3015-4BD8-A1B8-6294986E6CFA}</ProjectGuid>
-    <IsProjectKLibrary>true</IsProjectKLibrary>
-    <IsTestNetLibrary>true</IsTestNetLibrary>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Runtime.Handles" /> <!-- SafeHandle -->
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime">
-      <Version>4.0.20.0</Version>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices" >
-      <Version>4.0.20.0</Version> <!-- To be compatible with System.Runtime.Handles -->
-    </Reference>      
-    <Reference Include="System.Security.AccessControl" /> <!-- AccessRule, etc. -->
-    <Reference Include="System.Security.Principal.Windows" /> <!-- NTAccout, etc. -->
-    <Reference Include="System.Threading">
-      <Version>4.0.10.0</Version>
-    </Reference>
-    <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Interop\Interop.Manual.cs" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
     <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
     <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />
     <Compile Include="System\Threading\ThreadingAclExtensions.cs" />
   </ItemGroup>
-  <Import Project="..\dir.targets" />
+  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+    <Compile Include="System\Threading\ThreadingAclExtensions.net46.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

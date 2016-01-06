@@ -3,7 +3,6 @@
 
 /*============================================================
 **
-** Class:  MutexSecurity
 **
 **
 ** Purpose: Managed ACL wrapper for Win32 mutexes.
@@ -137,9 +136,9 @@ namespace System.Security.AccessControl
 
             switch (errorCode)
             {
-                case Interop.mincore.ERROR_INVALID_NAME:
-                case Interop.mincore.ERROR_INVALID_HANDLE:
-                case Interop.mincore.ERROR_FILE_NOT_FOUND:
+                case Interop.mincore.Errors.ERROR_INVALID_NAME:
+                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
                     if ((name != null) && (name.Length != 0))
                         exception = new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
                     else
