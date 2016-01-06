@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         private Lazy<SafeRsaHandle> _key;
 
         public RSAOpenSsl()
-            : this(1024)
+            : this(2048)
         {
         }
 
