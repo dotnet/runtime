@@ -949,8 +949,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    string prefix = localName.Substring(0, colon);
-                    prefix = _w.LookupPrefix(ns);
+                    string prefix = _w.LookupPrefix(ns);
                     _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
                 }
                 XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
