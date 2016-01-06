@@ -1708,6 +1708,25 @@ ncells ) {
 	public static int test_42_pass_16byte_struct_split () {
 		return pass_struct16 (null, null, null, null, null, new Struct16 () { a = 42 });
 	}
+
+	public interface IComparer2
+	{
+		Type foo<T> ();
+	}
+
+	public class AClass : IComparer2 {
+		public Type foo<T> () {
+			return typeof(T);
+		}
+	}
+
+	public static int test_0_delegate_to_virtual_generic_on_ifaces () {
+		IComparer2 c = new AClass ();
+
+		Func<Type> f = c.foo<string>;
+		return f () == typeof(string) ? 0 : 1;
+	}
+
 }
 
 #if __MOBILE__

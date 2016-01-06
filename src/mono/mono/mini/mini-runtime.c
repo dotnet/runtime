@@ -2993,7 +2993,7 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	is_interface = method->klass->flags & TYPE_ATTRIBUTE_INTERFACE ? TRUE : FALSE;
 	load_imt_reg = is_virtual_generic || is_interface;
 
-	if (is_interface && !is_virtual_generic)
+	if (is_interface)
 		offset = ((gint32)mono_method_get_imt_slot (method) - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 	else
 		offset = G_STRUCT_OFFSET (MonoVTable, vtable) + ((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
