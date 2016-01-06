@@ -118,14 +118,6 @@ namespace System.Linq.Expressions
             throw ContractUtils.Unreachable;
         }
 
-        internal virtual int VariableCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
         {
             return EmptyReadOnlyCollection<ParameterExpression>.Instance;
@@ -417,14 +409,6 @@ namespace System.Linq.Expressions
             _variables = variables;
         }
 
-        internal override int VariableCount
-        {
-            get
-            {
-                return _variables.Count;
-            }
-        }
-
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
         {
             return ReturnReadOnly(ref _variables);
@@ -495,12 +479,12 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == VariableCount);
+                Debug.Assert(variables.Count == Variables.Count);
                 ValidateVariables(variables, "variables");
                 return new Scope1(variables, _body);
             }
             Debug.Assert(args.Length == 1);
-            Debug.Assert(variables == null || variables.Count == VariableCount);
+            Debug.Assert(variables == null || variables.Count == Variables.Count);
 
             return new Scope1(ReuseOrValidateVariables(variables), args[0]);
         }
@@ -543,12 +527,12 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == VariableCount);
+                Debug.Assert(variables.Count == Variables.Count);
                 ValidateVariables(variables, "variables");
                 return new ScopeN(variables, _body);
             }
             Debug.Assert(args.Length == ExpressionCount);
-            Debug.Assert(variables == null || variables.Count == VariableCount);
+            Debug.Assert(variables == null || variables.Count == Variables.Count);
 
             return new ScopeN(ReuseOrValidateVariables(variables), args);
         }
@@ -573,12 +557,12 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == VariableCount);
+                Debug.Assert(variables.Count == Variables.Count);
                 ValidateVariables(variables, "variables");
                 return new ScopeWithType(variables, Body, _type);
             }
             Debug.Assert(args.Length == ExpressionCount);
-            Debug.Assert(variables == null || variables.Count == VariableCount);
+            Debug.Assert(variables == null || variables.Count == Variables.Count);
 
             return new ScopeWithType(ReuseOrValidateVariables(variables), args, _type);
         }
@@ -729,12 +713,7 @@ namespace System.Linq.Expressions
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            yield return _arg0;
-
-            for (int i = 1; i < _block.ExpressionCount; i++)
-            {
-                yield return _block.GetExpression(i);
-            }
+            return GetEnumerator();
         }
         #endregion
     }
