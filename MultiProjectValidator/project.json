@@ -8,7 +8,7 @@
     "dependencies": {
       "NETStandard.Library": "1.0.0-rc2-23614",
       "Microsoft.DotNet.ProjectModel": "1.0.0-*",
-      "Microsoft.DotNet.Cli.Utils": "1.0.0-*", 
+      "Microsoft.DotNet.Cli.Utils": "1.0.0-*"
     },
 
     "frameworks": {
