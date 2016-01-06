@@ -1624,7 +1624,11 @@ public static partial class XmlSerializerTests
   <ByteProperty>123</ByteProperty>
 </TypeWithByteProperty>");
         Assert.StrictEqual(obj.ByteProperty, deserializedObj.ByteProperty);
+    }
 
+    [Fact]
+    public static void Xml_DeserializeOutOfRangeByteProperty()
+    {
         //Deserialize an instance with out-of-range value for the byte property, expecting exception from deserialization process
         var serializer = new XmlSerializer(typeof(TypeWithByteProperty));
         using (var stream = new MemoryStream())
@@ -1637,8 +1641,8 @@ public static partial class XmlSerializerTests
 </TypeWithByteProperty>");
             writer.Flush();
             stream.Position = 0;
-            Assert.Throws<InvalidOperationException>(() => { 
-                deserializedObj = (TypeWithByteProperty)serializer.Deserialize(stream);
+            Assert.Throws<InvalidOperationException>(() => {
+                var deserializedObj = (TypeWithByteProperty)serializer.Deserialize(stream);
             });
         }
     }
