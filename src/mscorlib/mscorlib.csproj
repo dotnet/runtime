@@ -4,7 +4,7 @@
   
   <!-- Include common build properties -->
   <Import Project="..\..\dir.props" />
-  
+ 
   <!-- Compilation options -->
   <PropertyGroup>
     <AvailablePlatforms>amd64,x86,arm,arm64</AvailablePlatforms>
@@ -39,7 +39,6 @@
 
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
-    <AssemblyOriginatorKeyFile Condition="'$(AssemblyOriginatorKeyFile)' == ''">$(MSBuildThisFileDirectory)Tools\Signing\PublicTestKey.snk</AssemblyOriginatorKeyFile>
 
     <DefineConstants>$(DefineConstants);NEW_EXPERIMENTAL_ASYNC_IO;_USE_NLS_PLUS_TABLE;RESOURCE_SATELLITE_CONFIG;INSIDE_CLR;CODE_ANALYSIS_BASELINE</DefineConstants>
   </PropertyGroup>
@@ -172,6 +171,14 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <!-- Import signing tools -->
+  <Import Condition="Exists('$(ToolsDir)\sign.targets')" Project="$(ToolsDir)\sign.targets" />
+
+  <!-- Overwrite the key that we are going to use for signing -->
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)Tools\Signing\mscorlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Tools\Versioning\GenerateVersionInfo.targets"/>
   <Import Project="GenerateSplitStringResources.targets"/>
