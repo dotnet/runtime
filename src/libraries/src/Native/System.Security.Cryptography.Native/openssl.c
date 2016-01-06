@@ -86,6 +86,14 @@ extern int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t
     return 1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf)
+{
+    return CryptoNative_GetX509Thumbprint(x509, pBuf, cBuf);
+}
+
 /*
 Function:
 GetX509NotBefore
@@ -105,6 +113,14 @@ extern ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
     }
 
     return NULL;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_TIME* GetX509NotBefore(X509* x509)
+{
+    return CryptoNative_GetX509NotBefore(x509);
 }
 
 /*
@@ -128,6 +144,14 @@ extern ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
     return NULL;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_TIME* GetX509NotAfter(X509* x509)
+{
+    return CryptoNative_GetX509NotAfter(x509);
+}
+
 /*
 Function:
 GetX509CrlNextUpdate
@@ -147,6 +171,14 @@ extern ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
     }
 
     return NULL;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_TIME* GetX509CrlNextUpdate(X509_CRL* crl)
+{
+    return CryptoNative_GetX509CrlNextUpdate(crl);
 }
 
 /*
@@ -174,6 +206,14 @@ extern int CryptoNative_GetX509Version(X509* x509)
     return -1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int GetX509Version(X509* x509)
+{
+    return CryptoNative_GetX509Version(x509);
+}
+
 /*
 Function:
 GetX509PublicKeyAlgorithm
@@ -195,6 +235,15 @@ extern ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
     return NULL;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_OBJECT* GetX509PublicKeyAlgorithm(X509* x509)
+{
+    return CryptoNative_GetX509PublicKeyAlgorithm(x509);
+}
+
+
 /*
 Function:
 GetX509SignatureAlgorithm
@@ -214,6 +263,14 @@ extern ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509)
     }
 
     return NULL;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_OBJECT* GetX509SignatureAlgorithm(X509* x509)
+{
+    return CryptoNative_GetX509SignatureAlgorithm(x509);
 }
 
 /*
@@ -254,6 +311,15 @@ extern int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* 
     return 0;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
+{
+    return CryptoNative_GetX509PublicKeyParameterBytes(x509, pBuf, cBuf);
+}
+
+
 /*
 Function:
 GetX509PublicKeyBytes
@@ -274,6 +340,15 @@ extern ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 
     return NULL;
 }
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_BIT_STRING* GetX509PublicKeyBytes(X509* x509)
+{
+    return CryptoNative_GetX509PublicKeyBytes(x509);
+}
+
 
 /*
 Function:
@@ -331,6 +406,14 @@ extern int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf,
     return 1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf)
+{
+    return CryptoNative_GetAsn1StringBytes(asn1, pBuf, cBuf);
+}
+
 /*
 Function:
 GetX509NameRawBytes
@@ -382,6 +465,14 @@ extern int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pB
     return 1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
+{
+    return CryptoNative_GetX509NameRawBytes(x509Name, pBuf, cBuf);
+}
+
 /*
 Function:
 GetX509EkuFieldCount
@@ -398,6 +489,14 @@ extern int CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
     return sk_ASN1_OBJECT_num(eku);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
+{
+    return CryptoNative_GetX509EkuFieldCount(eku);
+}
+
 /*
 Function:
 GetX509EkuField
@@ -412,6 +511,14 @@ that particular OID.
 extern ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
 {
     return sk_ASN1_OBJECT_value(eku, loc);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern ASN1_OBJECT* GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
+{
+    return CryptoNative_GetX509EkuField(eku, loc);
 }
 
 /*
@@ -669,6 +776,14 @@ extern BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t f
     return NULL;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern BIO* GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer)
+{
+    return CryptoNative_GetX509NameInfo(x509, nameType, forIssuer);
+}
+
 /*
 Function:
 CheckX509HostnameMatch
@@ -875,6 +990,14 @@ extern int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, 
     return success;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname)
+{
+    return CryptoNative_CheckX509Hostname(x509, hostname, cchHostname);
+}
+
 /*
 Function:
 CheckX509IpAddress
@@ -964,6 +1087,16 @@ extern int32_t CryptoNative_CheckX509IpAddress(
 
     return success;
 }
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t CheckX509IpAddress(
+    X509* x509, const uint8_t* addressBytes, int32_t addressBytesLen, const char* hostname, int32_t cchHostname)
+{
+    return CryptoNative_CheckX509IpAddress(x509, addressBytes, addressBytesLen, hostname, cchHostname);
+}
+
 /*
 Function:
 GetX509StackFieldCount
@@ -978,6 +1111,14 @@ Note that 0 does not always indicate an error, merely that GetX509StackField sho
 extern int32_t CryptoNative_GetX509StackFieldCount(STACK_OF(X509) * stack)
 {
     return sk_X509_num(stack);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetX509StackFieldCount(STACK_OF(X509) * stack)
+{
+    return CryptoNative_GetX509StackFieldCount(stack);
 }
 
 /*
@@ -996,6 +1137,14 @@ extern X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc)
     return sk_X509_value(stack, loc);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern X509* GetX509StackField(STACK_OF(X509) * stack, int loc)
+{
+    return CryptoNative_GetX509StackField(stack, loc);
+}
+
 /*
 Function:
 RecursiveFreeX509Stack
@@ -1006,6 +1155,14 @@ when done with it.
 extern void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack)
 {
     sk_X509_pop_free(stack, X509_free);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern void RecursiveFreeX509Stack(STACK_OF(X509) * stack)
+{
+    CryptoNative_RecursiveFreeX509Stack(stack);
 }
 
 /*
@@ -1051,6 +1208,27 @@ extern int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
     return 1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
+    int32_t year,
+    int32_t month,
+    int32_t day,
+    int32_t hour,
+    int32_t minute,
+    int32_t second,
+    int32_t isDst)
+{
+    return CryptoNative_SetX509ChainVerifyTime(ctx,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        isDst);
+}
 /*
 Function:
 GetX509RootStorePath
@@ -1074,6 +1252,14 @@ extern const char* CryptoNative_GetX509RootStorePath()
     return dir;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern const char* GetX509RootStorePath()
+{
+    return CryptoNative_GetX509RootStorePath();
+}
+
 /*
 Function:
 ReadX509AsDerFromBio
@@ -1088,6 +1274,14 @@ otherwise NULL.
 extern X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)
 {
     return d2i_X509_bio(bio, NULL);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern X509* ReadX509AsDerFromBio(BIO* bio)
+{
+    return CryptoNative_ReadX509AsDerFromBio(bio);
 }
 
 /*
@@ -1113,6 +1307,14 @@ extern int32_t CryptoNative_BioTell(BIO* bio)
     }
 
     return BIO_tell(bio);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t BioTell(BIO* bio)
+{
+    return CryptoNative_BioTell(bio);
 }
 
 /*
@@ -1142,6 +1344,14 @@ extern int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t BioSeek(BIO* bio, int32_t ofs)
+{
+    return CryptoNative_BioSeek(bio, ofs);
+}
+
 /*
 Function:
 NewX509Stack
@@ -1155,6 +1365,14 @@ A STACK_OF(X509*) with no comparator.
 extern STACK_OF(X509) * CryptoNative_NewX509Stack()
 {
     return sk_X509_new_null();
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern STACK_OF(X509) * NewX509Stack()
+{
+    return CryptoNative_NewX509Stack();
 }
 
 /*
@@ -1178,6 +1396,14 @@ extern int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x50
     return sk_X509_push(stack, x509);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t PushX509StackField(STACK_OF(X509) * stack, X509* x509)
+{
+    return CryptoNative_PushX509StackField(stack, x509);
+}
+
 /*
 Function:
 GetRandomBytes
@@ -1194,6 +1420,14 @@ extern int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
     int ret = RAND_bytes(buf, num);
 
     return ret == 1;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t GetRandomBytes(uint8_t* buf, int32_t num)
+{
+    return CryptoNative_GetRandomBytes(buf, num);
 }
 
 /*
@@ -1257,6 +1491,14 @@ extern int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const 
     }
 
     return 0;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName)
+{
+    return CryptoNative_LookupFriendlyNameByOid(oidValue, friendlyName);
 }
 
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
@@ -1407,4 +1649,12 @@ done:
 
     pthread_mutex_unlock(&g_initLock);
     return ret;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern int32_t EnsureOpenSslInitialized()
+{
+    return CryptoNative_EnsureOpenSslInitialized();
 }

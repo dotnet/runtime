@@ -32,6 +32,14 @@ inline static auto HmacCall(F func, Args... args) -> NonVoidResultOf<F(Args...)>
     return func(args...);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern "C" HMAC_CTX* HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
+{
+    return CryptoNative_HmacCreate(key, keyLen, md);
+}
+
 extern "C" HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
 {
     assert(key != nullptr || keyLen == 0);
@@ -62,6 +70,14 @@ extern "C" HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen,
     return ctx.release();
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern "C" void HmacDestroy(HMAC_CTX* ctx)
+{
+    return CryptoNative_HmacDestroy(ctx);
+}
+
 extern "C" void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
 {
     if (ctx != nullptr)
@@ -71,11 +87,27 @@ extern "C" void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
     }
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern "C" int32_t HmacReset(HMAC_CTX* ctx)
+{
+    return CryptoNative_HmacReset(ctx);
+}
+
 extern "C" int32_t CryptoNative_HmacReset(HMAC_CTX* ctx)
 {
     assert(ctx != nullptr);
 
     return HmacCall(HMAC_Init_ex, ctx, nullptr, 0, nullptr, nullptr);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern "C" int32_t HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
+{
+    return CryptoNative_HmacUpdate(ctx, data, len);
 }
 
 extern "C" int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
@@ -90,6 +122,14 @@ extern "C" int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, i
     }
 
     return HmacCall(HMAC_Update, ctx, data, UnsignedCast(len));
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.
+extern "C" int32_t HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
+{
+    return CryptoNative_HmacFinal(ctx, md, len);
 }
 
 extern "C" int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
