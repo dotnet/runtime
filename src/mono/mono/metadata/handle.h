@@ -22,9 +22,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _MonoHandleStorage MonoHandleStorage;
-typedef MonoHandleStorage* MonoHandle;
-
 /*
  * DO NOT ACCESS DIRECTLY
  * USE mono_handle_obj BELOW TO ACCESS OBJ
@@ -32,9 +29,34 @@ typedef MonoHandleStorage* MonoHandle;
  * The field obj is not private as there is no way to do that
  * in C, but using a C++ template would simplify that a lot
  */
-struct _MonoHandleStorage {
+typedef struct {
 	MonoObject *obj;
-};
+} MonoHandleStorage;
+
+typedef MonoHandleStorage* MonoHandle;
+
+typedef struct _MonoHandleArena MonoHandleArena;
+
+gsize
+mono_handle_arena_size (void);
+
+MonoHandle
+mono_handle_arena_new (MonoHandleArena *arena, MonoObject *obj);
+
+MonoHandle
+mono_handle_arena_elevate (MonoHandleArena *arena, MonoHandle handle);
+
+void
+mono_handle_arena_stack_push (MonoHandleArena **arena_stack, MonoHandleArena *arena);
+
+void
+mono_handle_arena_stack_pop (MonoHandleArena **arena_stack, MonoHandleArena *arena);
+
+void
+mono_handle_arena_initialize (MonoHandleArena **arena_stack);
+
+void
+mono_handle_arena_deinitialize (MonoHandleArena **arena_stack);
 
 #ifndef CHECKED_BUILD
 

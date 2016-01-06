@@ -10,7 +10,6 @@
 #include <config.h>
 #include <glib.h>
 #include <mono/metadata/handle.h>
-#include <mono/metadata/handle-private.h>
 
 static void
 test2_arena_push_pop ()
