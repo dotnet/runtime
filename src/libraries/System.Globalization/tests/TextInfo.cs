@@ -148,4 +148,18 @@ public class TextInfoTests
         // Greek Capital Letter Sigma (does not to case to U+03C2 with "final sigma" rule).
         Assert.Equal("\u03C3", ti.ToLower("\u03A3"));
     }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void EnUsPosixIsNotATurkishCasingLocale()
+    {
+        // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
+        // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
+        // casing implementation, which uses collation to understand if we need to do turkish casing or not.
+
+        TextInfo ti = new CultureInfo("en-US-POSIX").TextInfo;
+
+        Assert.Equal('I', ti.ToUpper('i'));
+        Assert.Equal('i', ti.ToLower('I'));
+    }
 }
