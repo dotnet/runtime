@@ -6112,6 +6112,7 @@ PALIMPORT int __cdecl vsprintf(char *, const char *, va_list);
 PALIMPORT int __cdecl sscanf(const char *, const char *, ...);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT LONG __cdecl atol(const char *);
+PALIMPORT long long int __cdecl atoll(const char *);
 PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
 PALIMPORT double __cdecl atof(const char *);
 PALIMPORT double __cdecl strtod(const char *, char **);

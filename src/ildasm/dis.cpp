@@ -915,7 +915,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
     LineCodeDescr* pLCD = NULL;
     ParamDescriptor* pszLVname = NULL;
     ULONG ulVars=0;
-    char szVarPrefix[64];
+    char szVarPrefix[MAX_PREFIX_SIZE];
     // scope handling:
     DynamicArray<LexScope>          daScope;
     ULONG                           ulScopes=0;
@@ -928,7 +928,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
     ULONG32                         ulMethodCol[2];
     BOOL                            fHasRangeInfo = FALSE;
 
-    strcpy_s(szVarPrefix,64,"V0");
+    strcpy_s(szVarPrefix,MAX_PREFIX_SIZE,"V0");
     if(g_pSymReader)
     {
         g_pSymReader->GetMethod(FuncToken,&pSymMethod);
@@ -1048,11 +1048,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 LoadScope(pRootScope,&daScope,&ulScopes);
                 qsort(&daScope[0],ulScopes,sizeof(LexScope),cmpLexScope);
                 OpenScope(pRootScope,pszLVname,ulVars);
-#ifdef _WIN64
-                sprintf_s(szVarPrefix,64,"@%I64d0",(size_t)pszLVname);
-#else
-                sprintf_s(szVarPrefix,64,"@%d0",(size_t)pszLVname);
-#endif //_WIN64
+                sprintf_s(szVarPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszLVname);
 
 #ifndef SHOW_LEXICAL_SCOPES
                 for(unsigned jjj = 0; jjj < ulScopes; jjj++)

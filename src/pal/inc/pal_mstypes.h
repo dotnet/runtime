@@ -319,8 +319,7 @@ typedef signed __int64 LONG64;
 
 #ifdef BIT64
 
-// UNIXTODO: Implement proper _atoi64, the atol returns 32 bit result
-#define _atoi64 (__int64)atol
+#define _atoi64 (__int64)atoll
 
 typedef __int64 INT_PTR, *PINT_PTR;
 typedef unsigned __int64 UINT_PTR, *PUINT_PTR;

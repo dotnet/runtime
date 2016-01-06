@@ -206,14 +206,14 @@ const PCCOR_SIGNATURE PrettyPrintSignature(
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
     unsigned ixArg= 0; //arg index
     char argname[1024];
-    char label[16];
+    char label[MAX_PREFIX_SIZE];
     const char* openpar = "(";
     const char* closepar = ")";
     ParamDescriptor* pszArgName = NULL; // ptr to array of names (if provided by debug info)
 
     if(inlabel && *inlabel) // check for *inlabel is totally unnecessary, added to pacify the PREFIX
     {
-        strcpy_s(label,COUNTOF(label),inlabel);
+        strcpy_s(label,MAX_PREFIX_SIZE,inlabel);
         ixArg = label[strlen(label)-1] - '0';
         label[strlen(label)-1] = 0;
         if(label[0] == '@') // it's pointer!
