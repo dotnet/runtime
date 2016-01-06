@@ -172,11 +172,12 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
+                    def jobName = ""
                     if (buildPri1Tests) {
-                        def jobName = getBuildJobName(configuration, architecture, os) + "_pri1"
+                        jobName = getBuildJobName(configuration, architecture, os) + "_pri1"
                     }
                     else {
-                        def jobName = getBuildJobName(configuration, architecture, os)
+                        jobName = getBuildJobName(configuration, architecture, os)
                     }
                     
                     // Create the new job
