@@ -2338,6 +2338,12 @@ emit_aot_data (MonoAotCompile *acfg, MonoAotFileTable table, const char *symbol,
 		acfg->table_offsets [(int)table] = acfg->datafile_offset;
 		fwrite (data,1, size, acfg->data_outfile);
 		acfg->datafile_offset += size;
+		// align the data to 8 bytes. Put zeros in the file (so that every build results in consistent output).
+		int align = 8 - size % 8;
+		acfg->datafile_offset += align;
+		guint8 align_buf [16];
+		memset (&align_buf, 0, sizeof (align_buf));
+		fwrite (align_buf, align, 1, acfg->data_outfile);
 	} else if (acfg->llvm) {
 		mono_llvm_emit_aot_data (symbol, data, size);
 	} else {
