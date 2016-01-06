@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [skipcoreclr] [skipmscorlib] [skiptests]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [skipnative] [skipmscorlib] [skiptests]"
     echo "BuildArch can be: x64, x86, arm, arm64"
     echo "BuildType can be: Debug, Checked, Release"
     echo "clean - optional argument to force a clean build."
@@ -12,7 +12,7 @@ usage()
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
-    echo "skipcoreclr - do not build CoreCLR."
+    echo "skipnative - do not build native components."
     echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
 
@@ -358,7 +358,12 @@ for i in "$@"
         ninja)
         __UseNinja=1
         ;;
+        skipnative)
+        # Use "skipnative" to use the same option name as build.cmd.
+        __SkipCoreCLR=1
+        ;;
         skipcoreclr)
+        # Accept "skipcoreclr" for backwards-compatibility.
         __SkipCoreCLR=1
         ;;
         skipmscorlib)
