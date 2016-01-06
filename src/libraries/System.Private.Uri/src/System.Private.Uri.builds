@@ -2,9 +2,23 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Private.Uri.CoreCLR.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+    <Project Include="System.Private.Uri.csproj">
+      <OSGroup>FreeBSD</OSGroup>
+    </Project>
+    <Project Include="System.Private.Uri.csproj">
+      <OSGroup>Linux</OSGroup>
+    </Project>
+    <Project Include="System.Private.Uri.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Private.Uri.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Private.Uri.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

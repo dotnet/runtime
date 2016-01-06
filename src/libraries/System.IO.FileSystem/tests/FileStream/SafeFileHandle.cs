@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -58,7 +59,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ThrowWhenHandlePositionIsChanged()
+        public async Task ThrowWhenHandlePositionIsChanged()
         {
             string fileName = GetTestFilePath();
 
@@ -92,13 +93,13 @@ namespace System.IO.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // TODO: [ActiveIssue(812)]: Remove guard when async I/O is properly implemented on Unix
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Async I/O behaviors differ due to kernel-based implementation on Windows
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }
                     else
                     {
-                        Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1)).Wait();
+                        await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
                     }
 
                     fs.WriteByte(0);

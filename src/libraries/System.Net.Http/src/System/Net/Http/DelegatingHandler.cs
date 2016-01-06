@@ -30,7 +30,7 @@ namespace System.Net.Http
                 }
                 CheckDisposedOrStarted();
 
-                if (Logging.On) Logging.Associate(Logging.Http, this, value);
+                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, value);
                 _innerHandler = value;
             }
         }

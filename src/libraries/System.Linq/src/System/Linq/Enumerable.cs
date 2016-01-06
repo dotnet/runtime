@@ -511,7 +511,7 @@ namespace System.Linq
                         state = 2;
                         goto case 2;
                     case 2:
-                        while (_enumerator.MoveNext())
+                        if (_enumerator.MoveNext())
                         {
                             current = _selector(_enumerator.Current);
                             return true;
@@ -884,7 +884,22 @@ namespace System.Linq
         public static IEnumerable<TSource> Skip<TSource>(this IEnumerable<TSource> source, int count)
         {
             if (source == null) throw Error.ArgumentNull("source");
-            return SkipIterator<TSource>(source, count);
+
+            IList<TSource> sourceList = source as IList<TSource>;
+            return sourceList != null ? SkipList(sourceList, count) : SkipIterator<TSource>(source, count);
+        }
+
+        private static IEnumerable<TSource> SkipList<TSource>(IList<TSource> source, int count)
+        {
+            if (count < 0)
+            {
+                count = 0;
+            }
+
+            while (count < source.Count)
+            {
+                yield return source[count++];
+            }
         }
 
         private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)

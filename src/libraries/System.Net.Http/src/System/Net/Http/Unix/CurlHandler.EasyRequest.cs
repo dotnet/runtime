@@ -43,6 +43,7 @@ namespace System.Net.Http
             internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
             internal bool _isRedirect = false;
+            internal Uri _targetUri;
 
             private SafeCallbackHandle _callbackHandle;
 
@@ -59,6 +60,7 @@ namespace System.Net.Http
                 }
 
                 _responseMessage = new CurlResponseMessage(this);
+                _targetUri = requestMessage.RequestUri;
             }
 
             /// <summary>
@@ -566,6 +568,12 @@ namespace System.Net.Http
                     _offset = offset;
                     _count = count;
                 }
+            }
+
+            internal void  SetRedirectUri(Uri redirectUri)
+            {
+                _targetUri = _requestMessage.RequestUri;
+                _requestMessage.RequestUri = redirectUri;
             }
 
             [Conditional(VerboseDebuggingConditional)]

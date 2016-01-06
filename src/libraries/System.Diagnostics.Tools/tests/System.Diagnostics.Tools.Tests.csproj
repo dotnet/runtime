@@ -10,8 +10,8 @@
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\CodeDom\Compiler\GeneratedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttributeTests.cs" />

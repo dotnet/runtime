@@ -523,9 +523,6 @@ namespace System.Net.Http
                         }
                         // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                     }
-
-                    completedOperation._handler.AddResponseCookies(
-                        completedOperation._requestMessage.RequestUri, completedOperation._responseMessage);
                 }
 
                 // Complete or fail the request
@@ -580,6 +577,10 @@ namespace System.Net.Http
                                 else if (easy._isRedirect && string.Equals(headerName, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase))
                                 {
                                     HandleRedirectLocationHeader(easy, headerValue);
+                                }
+                                else if (string.Equals(headerName, HttpKnownHeaderNames.SetCookie, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    easy._handler.AddResponseCookies(easy, headerValue);
                                 }
                             }
                         }

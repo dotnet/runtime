@@ -109,6 +109,45 @@ namespace System.Data.SqlClient
         internal SessionData _currentSessionData; // internal for use from TdsParser only, otehr should use CurrentSessionData property that will fix database and language
         private SessionData _recoverySessionData;
 
+        // The erros in the transient error set are contained in
+        // https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-error-messages/#transient-faults-connection-loss-and-other-temporary-errors
+        private static readonly HashSet<int> s_transientErrors = new HashSet<int>
+        {
+            // SQL Error Code: 4060
+            // Cannot open database "%.*ls" requested by the login. The login failed.
+            4060,
+
+            // SQL Error Code: 10928
+            // Resource ID: %d. The %s limit for the database is %d and has been reached.
+            10928,
+
+            // SQL Error Code: 10929
+            // Resource ID: %d. The %s minimum guarantee is %d, maximum limit is %d and the current usage for the database is %d. 
+            // However, the server is currently too busy to support requests greater than %d for this database.
+            10929,
+
+            // SQL Error Code: 40197
+            // You will receive this error, when the service is down due to software or hardware upgrades, hardware failures, 
+            // or any other failover problems. The error code (%d) embedded within the message of error 40197 provides 
+            // additional information about the kind of failure or failover that occurred. Some examples of the error codes are 
+            // embedded within the message of error 40197 are 40020, 40143, 40166, and 40540.
+            40197,
+
+            40020,
+            40143,
+            40166,
+
+            // The service has encountered an error processing your request. Please try again.
+            40540,
+
+            // The service is currently busy. Retry the request after 10 seconds. Incident ID: %ls. Code: %d.
+            40501,
+
+            // Database '%.*ls' on server '%.*ls' is not currently available. Please retry the connection later. 
+            // If the problem persists, contact customer support, and provide them the session tracing ID of '%.*ls'.
+            40613
+        };
+
         internal SessionData CurrentSessionData
         {
             get
@@ -259,6 +298,7 @@ namespace System.Data.SqlClient
         private RoutingInfo _routingInfo = null;
         private Guid _originalClientConnectionId = Guid.Empty;
         private string _routingDestination = null;
+        
 
         // although the new password is generally not used it must be passed to the c'tor
         // the new Login7 packet will always write out the new password (or a length of zero and no bytes if not present)
@@ -269,7 +309,8 @@ namespace System.Data.SqlClient
                 object providerInfo,
                 bool redirectedUserInstance,
                 SqlConnectionString userConnectionOptions = null, // NOTE: userConnectionOptions may be different to connectionOptions if the connection string has been expanded (see SqlConnectionString.Expand)
-                SessionData reconnectSessionData = null) : base(connectionOptions)
+                SessionData reconnectSessionData = null,
+                bool applyTransientFaultHandling = false) : base(connectionOptions)
         {
 #if DEBUG
             if (reconnectSessionData != null)
@@ -312,13 +353,57 @@ namespace System.Data.SqlClient
             try
             {
                 var timeout = TimeoutTimer.StartSecondsTimeout(connectionOptions.ConnectTimeout);
-                OpenLoginEnlist(timeout, connectionOptions, redirectedUserInstance);
+
+                // If transient fault handling is enabled then we can retry the login upto the ConnectRetryCount.
+                int connectionEstablishCount = applyTransientFaultHandling ? connectionOptions.ConnectRetryCount + 1 : 1;
+                int transientRetryIntervalInMilliSeconds = connectionOptions.ConnectRetryInterval * 1000; // Max value of transientRetryInterval is 60*1000 ms. The max value allowed for ConnectRetryInterval is 60
+                for (int i = 0; i < connectionEstablishCount; i++)
+                {
+                    try
+                    {
+                        OpenLoginEnlist(timeout, connectionOptions, redirectedUserInstance);
+                        break;
+                    }
+                    catch (SqlException sqlex)
+                    {
+                        if (i + 1 == connectionEstablishCount
+                            || !applyTransientFaultHandling
+                            || timeout.IsExpired
+                            || timeout.MillisecondsRemaining < transientRetryIntervalInMilliSeconds
+                            || !IsTransientError(sqlex))
+                        {
+                            throw sqlex;
+                        }
+                        else
+                        {
+                            Thread.Sleep(transientRetryIntervalInMilliSeconds);
+                        }
+                    }
+                }
             }
             finally
             {
                 ThreadHasParserLockForClose = false;
                 _parserLock.Release();
             }
+        }
+
+        
+        // Returns true if the Sql error is a transient.
+        private bool IsTransientError(SqlException exc)
+        {
+            if (exc == null)
+            {
+                return false;
+            }
+            foreach (SqlError error in exc.Errors)
+            {
+                if (s_transientErrors.Contains(error.Number))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         internal Guid ClientConnectionId

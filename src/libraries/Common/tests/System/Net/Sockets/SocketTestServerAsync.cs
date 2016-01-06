@@ -31,12 +31,13 @@ namespace System.Net.Sockets.Tests
         private int _numConnectedSockets;     // The total number of clients connected to the server.
         private Semaphore _maxNumberAcceptedClientsSemaphore;
         private int _acceptRetryCount = 10;
+        private ProtocolType _protocolType;
 
         private object _listenSocketLock = new object();
 
         protected sealed override int Port { get { return ((IPEndPoint)_listenSocket.LocalEndPoint).Port; } }
 
-        public SocketTestServerAsync(int numConnections, int receiveBufferSize, EndPoint localEndPoint)
+        public SocketTestServerAsync(int numConnections, int receiveBufferSize, EndPoint localEndPoint, ProtocolType protocolType = ProtocolType.Tcp)
         {
             _log = VerboseTestLogging.GetInstance();
             _totalBytesRead = 0;
@@ -51,6 +52,7 @@ namespace System.Net.Sockets.Tests
 
             _readWritePool = new SocketAsyncEventArgsPool(numConnections);
             _maxNumberAcceptedClientsSemaphore = new Semaphore(numConnections, numConnections);
+            _protocolType = protocolType;
             Init();
             Start(localEndPoint);
         }
@@ -108,7 +110,7 @@ namespace System.Net.Sockets.Tests
         private void Start(EndPoint localEndPoint)
         {
             // Create the socket which listens for incoming connections.
-            _listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, _protocolType);
             _listenSocket.Bind(localEndPoint);
 
             // Start the server with a listen backlog of 100 connections.

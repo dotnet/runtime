@@ -5,11 +5,10 @@ using System.Security;
 
 namespace System.Diagnostics
 {
-#if PUBLIC_DEBUG
-    public static partial class Debug
-#else
-    internal static partial class Debug
-#endif
+    // Intentionally excluding visibility so it defaults to internal except for
+    // the one public version in System.Diagnostics.Debug which defines
+    // another version of this partial class with the public visibility 
+    static partial class Debug
     {
         // internal and not read only so that the tests can swap this out.
         internal static IDebugLogger s_logger = new WindowsDebugLogger();

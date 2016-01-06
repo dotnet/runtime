@@ -121,5 +121,45 @@ namespace Tests.ExpressionCompiler.Block
         }
 
         #endregion
+
+        private class ParameterChangingVisitor : ExpressionVisitor
+        {
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                return Expression.Parameter(node.IsByRef ? node.Type.MakeByRefType() : node.Type, node.Name);
+            }
+        }
+
+        [Fact]
+        public static void VisitChangingOnlyParmeters()
+        {
+            var block = Expression.Block(
+                new[] { Expression.Parameter(typeof(int)), Expression.Parameter(typeof(string)) },
+                Expression.Empty()
+                );
+            Assert.NotSame(block, new ParameterChangingVisitor().Visit(block));
+        }
+
+        [Fact]
+        public static void VisitChangingOnlyParmetersMultiStatementBody()
+        {
+            var block = Expression.Block(
+                new[] { Expression.Parameter(typeof(int)), Expression.Parameter(typeof(string)) },
+                Expression.Empty(),
+                Expression.Empty()
+                );
+            Assert.NotSame(block, new ParameterChangingVisitor().Visit(block));
+        }
+
+        [Fact]
+        public static void VisitChangingOnlyParmetersTyped()
+        {
+            var block = Expression.Block(
+                typeof(object),
+                new[] { Expression.Parameter(typeof(int)), Expression.Parameter(typeof(string)) },
+                Expression.Constant("")
+                );
+            Assert.NotSame(block, new ParameterChangingVisitor().Visit(block));
+        }
     }
 }

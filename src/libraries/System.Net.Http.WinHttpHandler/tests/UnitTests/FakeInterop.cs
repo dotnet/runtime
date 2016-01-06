@@ -259,10 +259,16 @@ internal static partial class Interop
             uint infoLevel, string name,
             StringBuilder buffer,
             ref uint bufferLength,
-            IntPtr index)
+            ref uint index)
         {
             string httpVersion = "HTTP/1.1";
             string statusText = "OK";
+
+            if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_SET_COOKIE)
+            {
+                TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND;
+                return false;
+            }
 
             if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_VERSION)
             {

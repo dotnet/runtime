@@ -134,6 +134,16 @@ internal partial class Interop
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
             string name,
+            [Out] StringBuilder buffer,
+            ref uint bufferLength,
+            ref uint index);
+
+        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool WinHttpQueryHeaders(
+            SafeWinHttpHandle requestHandle,
+            uint infoLevel,
+            string name,
             ref uint number,
             ref uint bufferLength,
             IntPtr index);

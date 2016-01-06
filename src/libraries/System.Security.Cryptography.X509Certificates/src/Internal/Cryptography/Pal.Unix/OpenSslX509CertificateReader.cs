@@ -165,13 +165,21 @@ namespace Internal.Cryptography.Pal
         public bool Archived
         {
             get { return false; }
-            set { throw new NotImplementedException(); }
+            set
+            {
+                throw new PlatformNotSupportedException(
+                    SR.Format(SR.Cryptography_Unix_X509_PropertyNotSettable, "Archived"));
+            }
         }
 
         public string FriendlyName
         {
             get { return ""; }
-            set { throw new NotImplementedException(); }
+            set
+            {
+                throw new PlatformNotSupportedException(
+                  SR.Format(SR.Cryptography_Unix_X509_PropertyNotSettable, "FriendlyName"));
+            }
         }
 
         public X500DistinguishedName SubjectName
@@ -258,6 +266,8 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
             {
+                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
+
                 return new ECDsaOpenSsl(publicKeyHandle);
             }
         }

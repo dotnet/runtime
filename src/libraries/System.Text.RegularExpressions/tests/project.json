@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc2-23610",
+    "System.Console": "4.0.0-rc2-23616",
     "System.Globalization": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",

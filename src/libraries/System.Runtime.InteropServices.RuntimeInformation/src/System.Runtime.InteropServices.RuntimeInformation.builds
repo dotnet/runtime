@@ -3,8 +3,29 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>FreeBSD</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Linux</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

@@ -398,31 +398,25 @@ namespace System.Net.Http
             }
         }
 
-        private void AddResponseCookies(Uri serverUri, HttpResponseMessage response)
+        private void AddResponseCookies(EasyRequest state, string cookieHeader)
         {
             if (!_useCookie)
             {
                 return;
             }
 
-            if (response.Headers.Contains(HttpKnownHeaderNames.SetCookie))
+            try
             {
-                IEnumerable<string> cookieHeaders = response.Headers.GetValues(HttpKnownHeaderNames.SetCookie);
-                foreach (var cookieHeader in cookieHeaders)
-                {
-                    try
-                    {
-                        _cookieContainer.SetCookies(serverUri, cookieHeader);
-                    }
-                    catch (CookieException e)
-                    {
-                        string msg = string.Format("Malformed cookie: SetCookies Failed with {0}, server: {1}, cookie:{2}",
-                                                   e.Message,
-                                                   serverUri.OriginalString,
-                                                   cookieHeader);
-                        VerboseTrace(msg);
-                    }
-                }
+                _cookieContainer.SetCookies(state._targetUri, cookieHeader);
+                state.SetCookieOption(state._requestMessage.RequestUri);
+            }
+            catch (CookieException e)
+            {
+                string msg = string.Format("Malformed cookie: SetCookies Failed with {0}, server: {1}, cookie:{2}",
+                                           e.Message,
+                                           state._requestMessage.RequestUri,
+                                           cookieHeader);
+                VerboseTrace(msg);
             }
         }
 
@@ -608,6 +602,8 @@ namespace System.Net.Http
                     // set cookies again
                     state.SetCookieOption(forwardUri);
                 }
+
+                state.SetRedirectUri(forwardUri);
             }
 
             // set the headers again. This is a workaround for libcurl's limitation in handling headers with empty values

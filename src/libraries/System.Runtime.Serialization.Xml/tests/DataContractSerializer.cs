@@ -23,7 +23,9 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
-        var offsetMinutes = TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
+        // DO NOT USE TimeZoneInfo.Local.BaseUtcOffset !
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var objs = new DateTimeOffset[]
         {
             // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
@@ -1376,7 +1378,9 @@ public static partial class DataContractSerializerTests
         var actual = SerializeAndDeserialize(value, @"<TypeWithDateTimeOffsetTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ModifiedTime xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>");
         Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
 
-        var offsetMinutes = TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
+        // DO NOT USE TimeZoneInfo.Local.BaseUtcOffset !
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         // Adding offsetMinutes to ModifiedTime property so the DateTime component in serialized strings are time-zone independent
         value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6).AddMinutes(offsetMinutes)) };
         actual = SerializeAndDeserialize(value, string.Format(@"<TypeWithDateTimeOffsetTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ModifiedTime xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{0}</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>", offsetMinutes));

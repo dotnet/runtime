@@ -36,7 +36,7 @@ namespace System.Net
                     name = Marshal.PtrToStringUni(unmanagedString);
                 }
 
-                GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + Logging.ObjectToString(name));
+                GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + LoggingHash.ObjectToString(name));
 
                 // An optimization for future string comparisons.
                 if (string.Compare(name, Kerberos, StringComparison.OrdinalIgnoreCase) == 0)

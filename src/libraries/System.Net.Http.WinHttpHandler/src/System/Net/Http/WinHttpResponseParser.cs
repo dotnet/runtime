@@ -86,31 +86,10 @@ namespace System.Net.Http
             // Parse raw response headers and place them into response message.
             ParseResponseHeaders(requestHandle, response, stripEncodingHeaders);
 
-            // Store response header cookies into custom CookieContainer.
-            if (cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
-            {
-                Debug.Assert(cookieContainer != null);
-
-                if (response.Headers.Contains(HeaderNameSetCookie))
-                {
-                    IEnumerable<string> cookieHeaders = response.Headers.GetValues(HeaderNameSetCookie);
-                    foreach (var cookieHeader in cookieHeaders)
-                    {
-                        try
-                        {
-                            cookieContainer.SetCookies(request.RequestUri, cookieHeader);
-                        }
-                        catch (CookieException)
-                        {
-                            // We ignore malformed cookies in the response.
-                        }
-                    }
-                }
-            }
-
             return response;
         }
 
+        // Returns the first header or throws if header isn't found.
         public static uint GetResponseHeaderNumberInfo(SafeWinHttpHandle requestHandle, uint infoLevel)
         {
             uint result = 0;
@@ -130,7 +109,39 @@ namespace System.Net.Http
             return result;
         }
 
-        private static string GetResponseHeaderStringInfo(SafeWinHttpHandle requestHandle, uint infoLevel)
+        // Returns the first header or null if header isn't found.
+        public static string GetResponseHeaderStringInfo(SafeWinHttpHandle requestHandle, uint infoLevel)
+        {
+            uint index = 0;
+            
+            return GetResponseHeaderStringHelper(requestHandle, infoLevel, ref index);
+        }
+
+        // Returns all headers or an empty list if header isn't found.
+        public static List<string> GetResponseHeaders(SafeWinHttpHandle requestHandle, uint infoLevel)
+        {
+            uint index = 0;
+            var headerList = new List<string>();
+            string header;
+            
+            while (true)
+            {
+                header = GetResponseHeaderStringHelper(requestHandle, infoLevel, ref index);
+                if (header == null)
+                {
+                    break;
+                }
+                
+                headerList.Add(header);
+            }
+            
+            return headerList;
+        }
+
+        private static string GetResponseHeaderStringHelper(
+            SafeWinHttpHandle requestHandle,
+            uint infoLevel,
+            ref uint index)
         {
             uint bytesNeeded = 0;
             bool results = false;
@@ -143,7 +154,7 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_HEADER_NAME_BY_INDEX,
                 null,
                 ref bytesNeeded,
-                IntPtr.Zero))
+                ref index))
             {
                 int lastError = Marshal.GetLastWin32Error();
                 if (lastError == Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND)
@@ -158,7 +169,7 @@ namespace System.Net.Http
             }
 
             // Allocate space for the buffer.
-            int charsNeeded = (int)bytesNeeded / 2;
+            int charsNeeded = (int)bytesNeeded / sizeof(char);
             var buffer = new StringBuilder(charsNeeded, charsNeeded);
 
             results = Interop.WinHttp.WinHttpQueryHeaders(
@@ -167,7 +178,7 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_HEADER_NAME_BY_INDEX,
                 buffer,
                 ref bytesNeeded,
-                IntPtr.Zero);
+                ref index);
             if (!results)
             {
                 WinHttpException.ThrowExceptionUsingLastError();

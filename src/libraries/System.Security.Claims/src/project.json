@@ -1,0 +1,21 @@
+{
+  "frameworks": {
+    "dotnet5.4": {
+      "dependencies": {
+        "System.Collections": "4.0.0",
+        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Globalization": "4.0.0",
+        "System.IO": "4.0.0",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.0",
+        "System.Security.Principal": "4.0.0"
+      }
+    },
+    "net46":{
+      "dependencies": {
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0",
+      }
+    }
+  }
+}

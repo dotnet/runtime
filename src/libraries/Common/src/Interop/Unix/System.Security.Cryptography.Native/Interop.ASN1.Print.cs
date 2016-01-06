@@ -60,6 +60,11 @@ internal static partial class Interop
                     throw CreateOpenSslCryptographicException();
                 }
 
+                if (len == 0)
+                {
+                    return "";
+                }
+
                 int bioSize = GetMemoryBioSize(bio);
                 utf8Bytes = new byte[bioSize + 1];
 

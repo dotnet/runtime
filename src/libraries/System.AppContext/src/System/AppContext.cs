@@ -29,6 +29,15 @@ namespace System
             }
         }
 
+        public static string TargetFrameworkName
+        {
+            get
+            {
+                // We are currently hard coding this.
+                return ".NETCore,Version=v5.0";
+            }
+        }
+
         /// <summary>
         /// Try to get the value of the switch.
         /// </summary>

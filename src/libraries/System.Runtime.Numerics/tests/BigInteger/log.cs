@@ -125,6 +125,47 @@ namespace System.Numerics.Tests
                 tempByteArray2 = GetRandomPosByteArray(s_random, s_random.Next(1, 100));
                 VerifyLogString(Print(tempByteArray1) + Print(tempByteArray2) + "bLog");
             }
+
+            // Log Method - Very Large BigInteger 1 << 128 << Int.MaxValue and 2
+            LargeValueLogTests(128, 1);
+
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunLargeValueLogTests()
+        {
+            LargeValueLogTests(0, 5, 64, 4);
+        }
+
+        /// <summary>
+        /// Test Log Method on Very Large BigInteger more than (1 &lt&lt Int.MaxValue) by base 2
+        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
+        /// Note: 
+        /// ToString() can not operate such large values
+        /// VerifyLogString() can not operate such large values, 
+        /// Math.Log() can not operate such large values
+        /// </summary>
+        private static void LargeValueLogTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
+        {
+            BigInteger init = BigInteger.One << startShift;
+            double logbase = 2D;
+
+            for (int i = 0; i < smallShiftLoopLimit; i++)
+            {
+                BigInteger temp = init << ((i + 1) * smallShift);
+
+                for (int j = 0; j<bigShiftLoopLimit; j++)
+                {
+                    temp = temp << Int32.MaxValue;
+                    double expected =
+                        (double)startShift +
+                        smallShift * (double)(i + 1) +
+                        Int32.MaxValue * (double)(j + 1);
+                    Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
+                }
+                
+            }
         }
 
         private static void VerifyLogString(string opstring)

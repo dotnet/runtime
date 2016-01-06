@@ -141,32 +141,20 @@ namespace System.IO.Compression.Tests
 
             using (ZipArchive archive = new ZipArchive(archiveFile, mode))
             {
-                var allFilesInDir = FileData.InPath(directory);
-                foreach (var file in allFilesInDir)
-                {
+                List<FileData> files = FileData.InPath(directory);
+                Assert.All<FileData>(files, (file) => {
                     count++;
                     String entryName = file.FullName;
                     if (file.IsFolder) entryName += Path.DirectorySeparatorChar;
-
                     ZipArchiveEntry entry = archive.GetEntry(entryName);
                     if (entry == null)
                     {
                         entryName = FlipSlashes(entryName);
                         entry = archive.GetEntry(entryName);
                     }
-
                     if (file.IsFile)
                     {
-                        try
-                        {
-                            Assert.NotNull(entry);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine("File Entry {0} in directory but not archive: {1}", entryName, file.FullName);
-                            throw;
-                        }
-
+                        Assert.NotNull(entry);
                         Int64 givenLength = entry.Length;
 
                         var buffer = new byte[entry.Length];
@@ -180,13 +168,11 @@ namespace System.IO.Compression.Tests
 
                         if (!dontCheckTimes)
                         {
-                            Double offBy = (file.LastModifiedDate - entry.LastWriteTime.DateTime).TotalSeconds;
-                            Assert.True(
-                                (offBy >= -2 && offBy <= 2) ||
-                                // Temporary adjustment for active issue 1326
-                                ((offBy >= 3598 && offBy <= 3602)),
-                                String.Format("{0}, {1}, {2}", file.LastModifiedDate.ToString(), entry.LastWriteTime.DateTime.ToString(), file.FullName));
-                        }
+                            const int zipTimestampResolution = 2; // Zip follows the FAT timestamp resolution of two seconds for file records
+                            DateTime lower = file.LastModifiedDate.AddSeconds(-zipTimestampResolution);
+                            DateTime upper = file.LastModifiedDate.AddSeconds(zipTimestampResolution);
+                            Assert.InRange(entry.LastWriteTime.Ticks, lower.Ticks, upper.Ticks);
+}
 
                         Assert.Equal(file.Name, entry.Name);
                         Assert.Equal(entryName, entry.FullName);
@@ -198,7 +184,7 @@ namespace System.IO.Compression.Tests
                         if (entry == null) //entry not found
                         {
                             string entryNameOtherSlash = FlipSlashes(entryName);
-                            Boolean isEmtpy = !allFilesInDir.Any(
+                            bool isEmtpy = !files.Any(
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
@@ -233,8 +219,7 @@ namespace System.IO.Compression.Tests
                             }
                         }
                     }
-                }
-
+                });
                 Assert.Equal(count, archive.Entries.Count);
             }
         }
@@ -247,7 +232,7 @@ namespace System.IO.Compression.Tests
                 name.Contains("/") ? name.Replace("/", "\\") :
                 name;
         }
-        
+
         public static void DirsEqual(String actual, String expected)
         {
             var expectedList = FileData.InPath(expected);
@@ -277,7 +262,7 @@ namespace System.IO.Compression.Tests
 
                 //we want it to be false that one of them is a directory and the other isn't
                 Assert.False(Directory.Exists(aEntry) ^ Directory.Exists(bEntry), "Directory in one is file in other");
-                
+
                 //contents same
                 if (isFile)
                 {
@@ -291,7 +276,6 @@ namespace System.IO.Compression.Tests
         public static async Task CreateFromDir(String directory, Stream archiveStream, ZipArchiveMode mode)
         {
             var files = FileData.InPath(directory);
-
             using (ZipArchive archive = new ZipArchive(archiveStream, mode, true))
             {
                 foreach (var i in files)
@@ -329,61 +313,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static void EmptyEntryTest(ZipArchiveMode mode)
-        {
-            String data1 = "test data written to file.";
-            String data2 = "more test data written to file.";
-            DateTimeOffset lastWrite = new DateTimeOffset(1992, 4, 5, 12, 00, 30, new TimeSpan(-5, 0, 0));
-
-            var baseline = new LocalMemoryStream();
-            using (ZipArchive archive = new ZipArchive(baseline, mode))
-            {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
-
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-                using (Stream s = e.Open()) { }
-
-                AddEntry(archive, "data2.txt", data2, lastWrite);
-            }
-
-            var test = new LocalMemoryStream();
-            using (ZipArchive archive = new ZipArchive(test, mode))
-            {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
-
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-
-                AddEntry(archive, "data2.txt", data2, lastWrite);
-            }
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match");
-
-            //second test, this time empty file at end
-            baseline = baseline.Clone();
-            using (ZipArchive archive = new ZipArchive(baseline, mode))
-            {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
-
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-                using (Stream s = e.Open()) { }
-            }
-
-            test = test.Clone();
-            using (ZipArchive archive = new ZipArchive(test, mode))
-            {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
-
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-            }
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
-        }
-
-        private static void AddEntry(ZipArchive archive, String name, String contents, DateTimeOffset lastWrite)
+        internal static void AddEntry(ZipArchive archive, String name, String contents, DateTimeOffset lastWrite)
         {
             ZipArchiveEntry e = archive.CreateEntry(name);
             e.LastWriteTime = lastWrite;

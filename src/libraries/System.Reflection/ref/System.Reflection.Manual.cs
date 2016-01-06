@@ -28,6 +28,7 @@ namespace System.Reflection
         public abstract System.Type GetElementType();
         public abstract Type[] GetGenericParameterConstraints();
         public virtual bool IsSubclassOf(System.Type c) { return default(bool); }
+        public virtual bool IsEquivalentTo(Type other) { return default(bool); }
         public abstract Type[] GenericTypeArguments { get; }
         public abstract Type GetGenericTypeDefinition();
         public abstract Assembly Assembly { get; }
