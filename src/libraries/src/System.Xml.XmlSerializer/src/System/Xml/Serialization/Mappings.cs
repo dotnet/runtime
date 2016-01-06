@@ -595,7 +595,7 @@ namespace System.Xml.Serialization
             StructMapping start = this;
 
             // find first mapping that does not have the sequence set
-            while (!start.BaseMapping.IsSequence && start.BaseMapping != null && !start.BaseMapping.TypeDesc.IsRoot)
+            while (start.BaseMapping != null && !start.BaseMapping.IsSequence && !start.BaseMapping.TypeDesc.IsRoot)
                 start = start.BaseMapping;
 
             start.IsSequence = true;
