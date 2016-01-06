@@ -4,16 +4,12 @@
 namespace System.Runtime.Serialization
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.Reflection;
-    using System.Threading;
     using System.Text;
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Xml.Schema;
     using System.Security;
     using XmlSchemaType = System.Object;
     using System.Text.RegularExpressions;
@@ -2027,37 +2023,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-
-        private static bool IsElemTypeNullOrNotEqualToRootType(string elemTypeName, Type rootType)
-        {
-            Type t = Type.GetType(elemTypeName, false);
-            if (t == null || !rootType.Equals(t))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private static bool IsCollectionElementTypeEqualToRootType(string collectionElementTypeName, Type rootType)
-        {
-            if (collectionElementTypeName.StartsWith(DataContract.GetClrTypeFullName(rootType), StringComparison.Ordinal))
-            {
-                Type t = Type.GetType(collectionElementTypeName, false);
-                if (t != null)
-                {
-                    if (t.GetTypeInfo().IsGenericType && !IsOpenGenericType(t))
-                    {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.KnownTypeConfigClosedGenericDeclared, collectionElementTypeName)));
-                    }
-                    else if (rootType.Equals(t))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
         internal static void CheckAndAdd(Type type, Dictionary<Type, Type> typesChecked, ref DataContractDictionary nameToDataContractTable)
         {
             type = DataContract.UnwrapNullableType(type);
@@ -2077,16 +2042,6 @@ namespace System.Runtime.Serialization
             }
             nameToDataContractTable.Add(dataContract.StableName, dataContract);
             ImportKnownTypeAttributes(type, typesChecked, ref nameToDataContractTable);
-        }
-
-        private static bool IsOpenGenericType(Type t)
-        {
-            Type[] args = t.GetGenericArguments();
-            for (int i = 0; i < args.Length; ++i)
-                if (!args[i].IsGenericParameter)
-                    return false;
-
-            return true;
         }
 
         /// <SecurityNote>
