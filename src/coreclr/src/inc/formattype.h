@@ -16,6 +16,8 @@
 #endif
 #endif
 
+#define MAX_PREFIX_SIZE 32
+
 struct ParamDescriptor
 {
     char*	name;
