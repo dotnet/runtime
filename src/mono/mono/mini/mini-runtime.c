@@ -2153,6 +2153,7 @@ typedef struct {
 	MonoClass *ret_box_class;
 	gboolean needs_rgctx;
 	MonoMethodSignature *sig;
+	gboolean gsharedvt_invoke;
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
@@ -2173,7 +2174,7 @@ mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig)
 }
 
 static RuntimeInvokeInfo*
-create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method)
+create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt)
 {
 	MonoMethod *invoke;
 	RuntimeInvokeInfo *info;
@@ -2271,12 +2272,12 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 #ifndef ENABLE_GSHAREDVT
 			supported = FALSE;
 #endif
-
-			if (supported) {
+			if (supported && !callee_gsharedvt) {
 				/* Invoke a gsharedvt out wrapper instead */
 				MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
 
+				info->gsharedvt_invoke = TRUE;
 				info->wrapper_arg = g_malloc0 (2 * sizeof (gpointer));
 				info->wrapper_arg [0] = info->compiled_method;
 				info->wrapper_arg [1] = mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL;
@@ -2286,6 +2287,16 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				g_free (wrapper_sig);
 
 				info->compiled_method = mono_jit_compile_method (wrapper);
+			} else if (supported) {
+				/* Gsharedvt methods can be invoked the same way */
+				/* The out wrapper has the same signature as the compiled gsharedvt method */
+				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
+
+				info->gsharedvt_invoke = TRUE;
+				info->wrapper_arg = mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL;
+
+				invoke = mono_marshal_get_runtime_invoke_for_sig (wrapper_sig);
+				g_free (wrapper_sig);
 			}
 		}
 		info->runtime_invoke = mono_jit_compile_method (invoke);
@@ -2309,6 +2320,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
 	RuntimeInvokeInfo *info, *info2;
+	MonoJitInfo *ji = NULL;
+	gboolean callee_gsharedvt = FALSE;
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
@@ -2373,12 +2386,18 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				}
 			}
 
-			compiled_method = mini_add_method_trampoline (callee, compiled_method, mono_method_needs_static_rgctx_invoke (callee, TRUE), FALSE);
+			if (mono_llvm_only) {
+				ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+				callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
+			}
+
+			if (!callee_gsharedvt)
+				compiled_method = mini_add_method_trampoline (callee, compiled_method, mono_method_needs_static_rgctx_invoke (callee, TRUE), FALSE);
 		} else {
 			compiled_method = NULL;
 		}
 
-		info = create_runtime_invoke_info (domain, method, compiled_method);
+		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt);
 
 		mono_domain_lock (domain);
 		info2 = (RuntimeInvokeInfo *)mono_conc_hashtable_insert (domain_info->runtime_invoke_hash, method, info);
@@ -2458,7 +2477,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
-	if (info->wrapper_arg) {
+	if (info->gsharedvt_invoke) {
 		MonoMethodSignature *sig = mono_method_signature (method);
 		gpointer *args;
 		gpointer retval_ptr;
@@ -2471,6 +2490,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 * The advantage of this is the gsharedvt out wrappers have a reduced set of
 		 * signatures, so we only have to generate runtime invoke wrappers for these
 		 * signatures.
+		 * This code also handles invocation of gsharedvt methods directly, no
+		 * out wrappers are used in that case.
 		 */
 		args = (void **)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
 		param_refs = (gpointer*)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
@@ -2499,7 +2520,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		runtime_invoke (NULL, args, exc, info->compiled_method);
 
 		if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
-				return mono_value_box (domain, info->ret_box_class, retval);
+			return mono_value_box (domain, info->ret_box_class, retval);
 		else
 			return *(MonoObject**)retval;
 	}

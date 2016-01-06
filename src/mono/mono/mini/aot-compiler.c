@@ -6966,7 +6966,12 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 			sig = copy;
 
 			if (gsharedvt_in) {
-				MonoMethod *wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+				wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+				add_extra_method (acfg, wrapper);
+			}
+
+			if (gsharedvt_out) {
+				wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
 				add_extra_method (acfg, wrapper);
 			}
 
