@@ -6915,6 +6915,42 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	return TRUE;
 }
 
+static gboolean
+is_concrete_type (MonoType *t)
+{
+	MonoClass *klass;
+	int i;
+
+	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR)
+		return FALSE;
+	if (t->type == MONO_TYPE_GENERICINST) {
+		MonoGenericContext *orig_ctx;
+		MonoGenericInst *inst;
+		MonoType *arg;
+
+		klass = mono_class_from_mono_type (t);
+		orig_ctx = &klass->generic_class->context;
+
+		inst = orig_ctx->class_inst;
+		if (inst) {
+			for (i = 0; i < inst->type_argc; ++i) {
+				arg = mini_get_underlying_type (inst->type_argv [i]);
+				if (!is_concrete_type (arg))
+					return FALSE;
+			}
+		}
+		inst = orig_ctx->method_inst;
+		if (inst) {
+			for (i = 0; i < inst->type_argc; ++i) {
+				arg = mini_get_underlying_type (inst->type_argv [i]);
+				if (!is_concrete_type (arg))
+					return FALSE;
+			}
+		}
+	}
+	return TRUE;
+}
+
 /* LOCKING: Assumes the loader lock is held */
 static void
 add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean gsharedvt_in, gboolean gsharedvt_out)
@@ -6959,37 +6995,12 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 		//printf ("%s\n", mono_signature_full_name (sig));
 
 		copy->ret = mini_get_underlying_type (sig->ret);
-		// FIXME: Add more cases
-		if (copy->ret->type == MONO_TYPE_VAR || copy->ret->type == MONO_TYPE_MVAR || copy->ret->type == MONO_TYPE_GENERICINST)
+		if (!is_concrete_type (copy->ret))
 			concrete = FALSE;
 		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = mini_get_underlying_type (sig->params [i]);
-			/*
-			 * Create a concrete type for Nullable<T_REF> etc.
-			 * FIXME: Generalize this
-			 */
-			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
-				MonoType *arg = mono_class_from_mono_type (t)->generic_class->context.class_inst->type_argv[0];
-				arg = mini_get_underlying_type (arg);
-				if (arg->type == MONO_TYPE_VAR || arg->type == MONO_TYPE_MVAR || arg->type == MONO_TYPE_GENERICINST) {
-					concrete = FALSE;
-				} else {
-					MonoGenericContext ctx;
-					MonoClass *klass;
-					MonoType *args [16];
-
-					memset (&ctx, 0, sizeof (MonoGenericContext));
-					args [0] = arg;
-					ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-
-					klass = mono_class_inflate_generic_class (mono_defaults.generic_nullable_class, &ctx);
-					t = &klass->byval_arg;
-				}
-			} else {
-				if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR || t->type == MONO_TYPE_GENERICINST)
-					concrete = FALSE;
-			}
-			copy->params [i] = t;
+			copy->params [i] = mini_get_underlying_type (sig->params [i]);
+			if (!is_concrete_type (copy->params [i]))
+				concrete = FALSE;
 		}
 		if (concrete) {
 			copy->has_type_parameters = 0;

@@ -1048,11 +1048,39 @@ get_wrapper_shared_type (MonoType *t)
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
-		return &mono_defaults.int_class->byval_arg;
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *klass;
+		MonoGenericContext ctx;
+		MonoGenericContext *orig_ctx;
+		MonoGenericInst *inst;
+		MonoType *args [16];
+		int i;
+
 		if (!MONO_TYPE_ISSTRUCT (t))
 			return &mono_defaults.int_class->byval_arg;
-		break;
+
+		klass = mono_class_from_mono_type (t);
+		orig_ctx = &klass->generic_class->context;
+
+		memset (&ctx, 0, sizeof (MonoGenericContext));
+
+		inst = orig_ctx->class_inst;
+		if (inst) {
+			g_assert (inst->type_argc < 16);
+			for (i = 0; i < inst->type_argc; ++i)
+				args [i] = get_wrapper_shared_type (inst->type_argv [i]);
+			ctx.class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		}
+		inst = orig_ctx->method_inst;
+		if (inst) {
+			g_assert (inst->type_argc < 16);
+			for (i = 0; i < inst->type_argc; ++i)
+				args [i] = get_wrapper_shared_type (inst->type_argv [i]);
+			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		}
+		klass = mono_class_inflate_generic_class (klass->generic_class->container_class, &ctx);
+		return &klass->byval_arg;
+	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_I8:
 		return &mono_defaults.int_class->byval_arg;
@@ -1662,6 +1690,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 					/* The virtual case doesn't go through this code */
 					g_assert (!virtual_);
 
+					sig = mono_method_signature (jinfo_get_method (callee_ji));
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
 					MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 

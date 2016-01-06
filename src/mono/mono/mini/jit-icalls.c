@@ -1468,10 +1468,9 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 
 	if (gsharedvt) {
 		/*
-		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
+		 * The caller uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
 		g_assert (out_arg);
-		g_assert (*out_arg);
 
 		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (imt_method), NULL, -1, FALSE);
 		MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, *out_arg);
