@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Runtime.InteropServices
 {
@@ -19,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                return FrameworkName;
+                return string.Format("{0} {1}", FrameworkName, typeof(object).GetTypeInfo().Assembly.GetName().Version);
             }
         }
     }
