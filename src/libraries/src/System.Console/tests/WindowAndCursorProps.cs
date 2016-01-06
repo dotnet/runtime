@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using System.Runtime.InteropServices;
 
 public class WindowAndCursorProps
 {
@@ -118,14 +119,17 @@ public class WindowAndCursorProps
     [Fact]
     public static void SetCursorPosition()
     {
-        // Nothing to verify; just run the code.
-        Console.SetCursorPosition(0, 0);
-        Console.SetCursorPosition(1, 2);
-        Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
-        Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        {
+            // Nothing to verify; just run the code.
+            // On windows, we might end of throwing IOException, since the handles are redirected.
+            Console.SetCursorPosition(0, 0);
+            Console.SetCursorPosition(1, 2);
+        }
+            Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
+            Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
     }
 
-    [ActiveIssue(4636, PlatformID.Windows)]
     [Fact]
     public static void GetCursorPosition()
     {
@@ -141,7 +145,7 @@ public class WindowAndCursorProps
             Assert.Equal(origLeft, Console.CursorLeft);
             Assert.Equal(origTop, Console.CursorTop);
         }
-        else
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
