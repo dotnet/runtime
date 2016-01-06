@@ -422,14 +422,20 @@ namespace System
 
         public static int CursorLeft
         {
-            // TODO #4636: Implement this
-            get { throw new NotImplementedException(); }
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.dwCursorPosition.X;
+            }
         }
 
         public static int CursorTop
         {
-            // TODO #4636: Implement this
-            get { throw new NotImplementedException(); }
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.dwCursorPosition.Y;
+            }
         }
 
         public static string Title
@@ -451,7 +457,31 @@ namespace System
 
         public static void SetCursorPosition(int left, int top)
         {
-            // TODO #4636: Implement this
+            // Note on argument checking - the upper bounds are NOT correct 
+            // here!  But it looks slightly expensive to compute them.  Let
+            // Windows calculate them, then we'll give a nice error message.
+            if (left < 0 || left >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (top < 0 || top >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            Contract.EndContractBlock();
+
+            IntPtr hConsole = OutputHandle;
+            Interop.mincore.COORD coords = new Interop.mincore.COORD();
+            coords.X = (short)left;
+            coords.Y = (short)top;
+            if (!Interop.mincore.SetConsoleCursorPosition(hConsole, coords))
+            {
+                // Give a nice error message for out of range sizes
+                int errorCode = Marshal.GetLastWin32Error();
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                if (left < 0 || left >= csbi.dwSize.X)
+                    throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                if (top < 0 || top >= csbi.dwSize.Y)
+                    throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
         }
 
         public static int BufferWidth
@@ -526,14 +556,14 @@ namespace System
             size.Y = csbi.dwSize.Y;
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
             {
-                if (csbi.srWindow.Left >= Int16.MaxValue - width)
+                if (csbi.srWindow.Left >= short.MaxValue - width)
                     throw new ArgumentOutOfRangeException("width", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.X = (short)(csbi.srWindow.Left + width);
                 resizeBuffer = true;
             }
             if (csbi.dwSize.Y < csbi.srWindow.Top + height)
             {
-                if (csbi.srWindow.Top >= Int16.MaxValue - height)
+                if (csbi.srWindow.Top >= short.MaxValue - height)
                     throw new ArgumentOutOfRangeException("height", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.Y = (short)(csbi.srWindow.Top + height);
                 resizeBuffer = true;
