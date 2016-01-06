@@ -161,11 +161,6 @@ namespace System.Net.WebSockets
         // as the Exception..ctor() throws on setting HResult to 0. The default for HResult is -2147467259.
         private void SetErrorCodeOnError(int nativeError)
         {
-            if (!Succeeded(nativeError))
-            {
-                HResult = nativeError;
-            }
-
             HResult = nativeError;
         }
 
