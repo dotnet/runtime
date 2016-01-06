@@ -2161,14 +2161,9 @@ gboolean
 mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig)
 {
 	gboolean supported = TRUE;
-	int i;
 
-	for (i = 0; i < sig->param_count; ++i) {
-		MonoType *t = sig->params [i];
-
-		if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
-			supported = FALSE;
-	}
+	if (sig->ret->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (sig->ret)))
+		supported = FALSE;
 
 	return supported;
 }
@@ -2508,6 +2503,20 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
+
+			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+				MonoClass *klass = mono_class_from_mono_type (t);
+				guint8 *nullable_buf;
+				int size;
+
+				size = mono_class_value_size (klass, NULL);
+				nullable_buf = g_alloca (size);
+				g_assert (nullable_buf);
+
+				/* The argument pointed to by params [i] is either a boxed vtype or null */
+				mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
+				params [i] = nullable_buf;
+			}
 
 			if (MONO_TYPE_IS_REFERENCE (t)) {
 				param_refs [i] = params [i];

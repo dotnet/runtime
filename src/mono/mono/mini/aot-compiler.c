@@ -6957,21 +6957,44 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 		if (copy->ret->type == MONO_TYPE_VAR || copy->ret->type == MONO_TYPE_MVAR || copy->ret->type == MONO_TYPE_GENERICINST)
 			concrete = FALSE;
 		for (i = 0; i < sig->param_count; ++i) {
-			copy->params [i] = mini_get_underlying_type (sig->params [i]);
-			if (copy->params [i]->type == MONO_TYPE_VAR || copy->params [i]->type == MONO_TYPE_MVAR || copy->params [i]->type == MONO_TYPE_GENERICINST)
-				concrete = FALSE;
+			MonoType *t = mini_get_underlying_type (sig->params [i]);
+			/*
+			 * Create a concrete type for Nullable<T_REF> etc.
+			 * FIXME: Generalize this
+			 */
+			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+				MonoType *arg = mono_class_from_mono_type (t)->generic_class->context.class_inst->type_argv[0];
+				arg = mini_get_underlying_type (arg);
+				if (arg->type == MONO_TYPE_VAR || arg->type == MONO_TYPE_MVAR || arg->type == MONO_TYPE_GENERICINST) {
+					concrete = FALSE;
+				} else {
+					MonoGenericContext ctx;
+					MonoClass *klass;
+					MonoType *args [16];
+
+					memset (&ctx, 0, sizeof (MonoGenericContext));
+					args [0] = arg;
+					ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+					klass = mono_class_inflate_generic_class (mono_defaults.generic_nullable_class, &ctx);
+					t = &klass->byval_arg;
+				}
+			} else {
+				if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR || t->type == MONO_TYPE_GENERICINST)
+					concrete = FALSE;
+			}
+			copy->params [i] = t;
 		}
 		if (concrete) {
 			copy->has_type_parameters = 0;
-			sig = copy;
 
 			if (gsharedvt_in) {
-				wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+				wrapper = mini_get_gsharedvt_in_sig_wrapper (copy);
 				add_extra_method (acfg, wrapper);
 			}
 
 			if (gsharedvt_out) {
-				wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+				wrapper = mini_get_gsharedvt_out_sig_wrapper (copy);
 				add_extra_method (acfg, wrapper);
 			}
 
