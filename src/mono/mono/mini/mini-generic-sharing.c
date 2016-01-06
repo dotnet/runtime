@@ -1087,7 +1087,6 @@ mini_get_underlying_signature (MonoMethodSignature *sig)
  * The extra argument is passed the same way as an rgctx to shared methods.
  * It calls <addr> using the gsharedvt version of SIG, passing in <rgctx> as an extra argument.
  */
- #ifndef DISABLE_JIT
 MonoMethod*
 mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 {
@@ -1142,6 +1141,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, sig->hasthis ? "gsharedvt_in_sig" : "gsharedvt_in_sig_static", MONO_WRAPPER_UNKNOWN);
 
+#ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)
 		retval_var = mono_mb_add_local (mb, sig->ret);
 
@@ -1168,6 +1168,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_ldloc (mb, retval_var);
 	mono_mb_emit_byte (mb, CEE_RET);
+#endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG);
 	info->d.gsharedvt.sig = sig;
@@ -1242,6 +1243,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out_sig", MONO_WRAPPER_UNKNOWN);
 
+#ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)
 		/* Load return address */
 		mono_mb_emit_ldarg (mb, sig->hasthis ? 1 : 0);
@@ -1281,6 +1283,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 			mono_mb_emit_byte (mb, stind_op);
 	}
 	mono_mb_emit_byte (mb, CEE_RET);
+#endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG);
 	info->d.gsharedvt.sig = sig;
@@ -1292,7 +1295,6 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 
 	return res;
 }
-#endif
 
 MonoMethodSignature*
 mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
