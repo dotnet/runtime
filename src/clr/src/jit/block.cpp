@@ -637,3 +637,69 @@ unsigned PtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     return ptr->bbNum;
 }
 
+//------------------------------------------------------------------------
+// inlExpLst: default constructor for an inlExpList
+//
+// Notes: use for the root instance. We set ixlCode to nullptr here
+// (rather than the IL buffer address of the root method) to preserve
+// existing behavior, which is to allow one recursive inline.
+
+inlExpLst::inlExpLst() : ixlParent(nullptr), ixlChild(nullptr), 
+                         ixlSibling(nullptr), ilOffset(BAD_IL_OFFSET), 
+                         ixlCode(nullptr)
+{
+#ifdef DEBUG
+   methodName = nullptr;
+   depth = 0;
+#endif
+}
+
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// Dump: Dump an inlExpLst entry and all descendants to stdout
+//
+// Arguments:
+//    indent: indentation level for this node
+
+void inlExpLst::Dump(int indent)
+{
+    // Handle fact that siblings are in reverse order.
+    if (ixlSibling != nullptr) 
+    {
+        ixlSibling->Dump(indent);
+    }
+    
+    // Dump this node
+    if (ixlParent == nullptr)
+    {
+        // root
+        printf("Inlines into %s\n", methodName);
+    }
+    else 
+    {
+        for (int i = 0; i < indent; i++) 
+        { 
+            printf(" ");
+        }
+        
+        if (ilOffset == BAD_IL_OFFSET) 
+        {
+            printf("[IL=?] %s\n", methodName);
+        }
+        else 
+        {
+            IL_OFFSET offset = jitGetILoffs(ilOffset);
+            printf("[IL=%d] %s\n", offset, methodName);
+        }
+    }
+    
+    // Recurse to first child
+    if (ixlChild != nullptr) 
+    {
+        ixlChild->Dump(indent + 2);
+    }
+}
+#endif
+
