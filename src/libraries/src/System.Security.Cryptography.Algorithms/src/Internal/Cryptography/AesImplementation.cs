@@ -65,10 +65,7 @@ namespace Internal.Cryptography
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, "rgbIV");
             }
 
-            if (encrypting)
-                return CreateEncryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte);
-            else
-                return CreateDecryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte);
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
         }
 
         private const int BitsPerByte = 8;

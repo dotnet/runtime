@@ -178,7 +178,7 @@ namespace System.Collections.Specialized
                 object oldKey = node.key;
                 if ((_comparer == null) ? oldKey.Equals(key) : _comparer.Compare(oldKey, key) == 0)
                 {
-                    throw new ArgumentException(SR.Argument_AddingDuplicate);
+                    throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
                 last = node;
             }

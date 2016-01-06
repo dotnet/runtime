@@ -197,6 +197,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestECDsa224PublicKey()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa224Certificate))
+            {
+                // It is an Elliptic Curve Cryptography public key.
+                Assert.Equal("1.2.840.10045.2.1", cert.PublicKey.Oid.Value);
+
+                ECDsa ecdsa;
+
+                try
+                {
+                    ecdsa = cert.GetECDsaPublicKey();
+                }
+                catch (CryptographicException)
+                {
+                    // Windows 7, Windows 8, CentOS.
+                    return;
+                }
+
+                // Other Unix
+                using (ecdsa)
+                {
+                    byte[] data = ByteUtils.AsciiBytes("Hello");
+
+                    byte[] signature = (
+                        // r
+                        "8ede5053d546d35c1aba829bca3ecf493eb7a73f751548bd4cf2ad10" +
+                        // s
+                        "5e3da9d359001a6be18e2b4e49205e5219f30a9daeb026159f41b9de").HexToByteArray();
+
+                    Assert.True(ecdsa.VerifyData(data, signature, HashAlgorithmName.SHA1));
+                }
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public static void TestKey_ECDsaCng256()
         {

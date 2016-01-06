@@ -131,7 +131,7 @@ namespace Microsoft.SqlServer.Server
                         DefaultNVarChar_NoCollation.MaxLength,
                         DefaultNVarChar_NoCollation.Precision,
                         DefaultNVarChar_NoCollation.Scale,
-                        LocaleInterop.GetCurrentCultureLcid(),
+                        Locale.GetCurrentCultureLcid(),
                         SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth
                         );
             }

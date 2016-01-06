@@ -261,13 +261,13 @@
   <data name="net_log_socket_connected" xml:space="preserve">
     <value>Created connection from {0} to {1}.</value>
   </data>
-  <data name="net_log_socket_accepted" xml:space="preserve">
+  <data name="event_Accepted" xml:space="preserve">
     <value>Accepted connection from {0} to {1}.</value>
   </data>
-  <data name="net_log_socket_not_logged_file" xml:space="preserve">
+  <data name="event_NotLoggedFile" xml:space="preserve">
     <value>Not logging data from file: {0}.</value>
   </data>
-  <data name="net_log_socket_connect_dnsendpoint" xml:space="preserve">
+  <data name="event_ConnectedAsyncDns" xml:space="preserve">
     <value>Connecting to a DnsEndPoint.</value>
   </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">

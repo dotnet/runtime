@@ -1,5 +1,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
+  <Import Project="src\BuildValues.props" />
 
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
@@ -10,7 +11,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00133</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00142</BuildToolsVersion>
     <DnxVersion>1.0.0-rc2-16128</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -26,10 +27,10 @@
       <Value>True</Value>
     </AssemblyMetadata>
   </ItemGroup>
-  
-  <!-- 
-    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer 
-    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks. 
+
+  <!--
+    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
+    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
     <BuildToolsTargets45>true</BuildToolsTargets45>
@@ -50,6 +51,17 @@
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+
+    <!-- Packaging configuration -->
+    <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
+    <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
+    <!-- Add a condition for this when we are able to run on .NET Core -->
+    <PackagingTaskDir>$(ToolsDir)net45/</PackagingTaskDir>
+    <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">$(RevisionNumber)</BuildNumberMajor>
+    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
   </PropertyGroup>
 
   <!-- Test runtime -->
@@ -66,7 +78,7 @@
 
   <ItemGroup>
     <ValidationPattern Include="^((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
-      <ExpectedPrerelease>rc2-23610</ExpectedPrerelease>
+      <ExpectedPrerelease>rc2-23616</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="^(System\..*TestData)$">
       <ExpectedVersion>1.0.0-prerelease</ExpectedVersion>
@@ -143,9 +155,9 @@
     <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">  
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->  
-    <RestorePackages>false</RestorePackages>  
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
+    <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
   <!--
@@ -181,14 +193,14 @@
     -->
     <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
-  <!-- 
+  <!--
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
   if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
@@ -196,7 +208,7 @@
   a single binary folder and can have a similar experience between the command line and Visual Studio.
   -->
 
-  <!-- 
+  <!--
   If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
   values for $(ConfigurationGroup), $(TargetGroup), or $(OSGroup) or accept the defaults for them.
   -->
@@ -204,7 +216,7 @@
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
     <Configuration>$(ConfigurationGroup)</Configuration>
     <Configuration Condition="'$(TargetGroup)'!=''">$(TargetGroup)_$(Configuration)</Configuration>
-    <Configuration Condition="'$(OSGroup)'!='' and '$(OSGroup)'!='Windows_NT'">$(OSGroup)_$(Configuration)</Configuration>
+    <Configuration Condition="'$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)_$(Configuration)</Configuration>
   </PropertyGroup>
 
   <!--
@@ -221,12 +233,13 @@
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
 
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50aot'))">netcore50aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net45'))">net45</TargetGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -256,6 +269,10 @@
 
   <!-- Setup properties per OSGroup -->
   <Choose>
+    <When Condition="'$(OSGroup)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
@@ -329,6 +346,13 @@
         <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='net45'">
+      <PropertyGroup>
+        <PackageTargetFramework>net45</PackageTargetFramework>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
+        <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown TargetGroup [$(TargetGroup)] specificed in your project.</ConfigurationErrorMsg>
@@ -391,7 +415,7 @@
 
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
-    <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true')">true</SkipTests>
+    <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -406,7 +430,7 @@
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
-  
+
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 
 </Project>

@@ -171,8 +171,6 @@ namespace System.Net.Http
 
         private static void OnRequestRedirect(WinHttpRequestState state, Uri redirectUri)
         {
-            const string EmptyCookieHeader = "Cookie:";
-
             Debug.Assert(state != null, "OnRequestRedirect: state is null");
             Debug.Assert(redirectUri != null, "OnRequestRedirect: redirectUri is null");
             Debug.Assert(state.TcsReceiveResponseHeaders != null, "TcsReceiveResponseHeaders is null");
@@ -181,34 +179,11 @@ namespace System.Net.Http
             // If we're manually handling cookies, we need to reset them based on the new URI.
             if (state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
             {
-                // Clear cookies.
-                if (!Interop.WinHttp.WinHttpAddRequestHeaders(
-                    state.RequestHandle,
-                    EmptyCookieHeader,
-                    (uint)EmptyCookieHeader.Length,
-                    Interop.WinHttp.WINHTTP_ADDREQ_FLAG_REPLACE))
-                {
-                    int lastError = Marshal.GetLastWin32Error();
-                    if (lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND)
-                    {
-                        throw WinHttpException.CreateExceptionUsingError(lastError);
-                    }
-                }
-
-                // Re-add cookies. The GetCookieHeader() method will return the correct set of
-                // cookies based on the redirectUri.
-                string cookieHeader = WinHttpHandler.GetCookieHeader(redirectUri, state.Handler.CookieContainer);
-                if (!string.IsNullOrEmpty(cookieHeader))
-                {
-                    if (!Interop.WinHttp.WinHttpAddRequestHeaders(
-                        state.RequestHandle,
-                        cookieHeader,
-                        (uint)cookieHeader.Length,
-                        Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
-                    {
-                        WinHttpException.ThrowExceptionUsingLastError();
-                    }
-                }
+                // Add any cookies that may have arrived with redirect response.
+                WinHttpCookieContainerAdapter.AddResponseCookiesToContainer(state);
+                
+                // Reset cookie request headers based on redirectUri.
+                WinHttpCookieContainerAdapter.ResetCookieRequestHeaders(state, redirectUri);
             }
 
             state.RequestMessage.RequestUri = redirectUri;

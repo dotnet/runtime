@@ -3,8 +3,18 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Net.Http.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <OSGroup>FreeBSD</OSGroup>
+    </Project>
+    <Project Include="System.Net.Http.csproj">
+      <OSGroup>Linux</OSGroup>
+    </Project>
+    <Project Include="System.Net.Http.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Net.Http.csproj">
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

@@ -586,17 +586,16 @@ namespace System.Net.Security
                 ForceAuthentication(Context.IsServer, null, asyncRequest);
 
                 // Not aync so the connection is completed at this point.
-                if (lazyResult == null && Logging.On)
+                if (lazyResult == null && SecurityEventSource.Log.IsEnabled())
                 {
-                    Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_selected_cipher_suite,
-                        "ProcessAuthentication",
+                    SecurityEventSource.Log.SspiSelectedCipherSuite("ProcessAuthentication",
                         SslProtocol,
                         CipherAlgorithm,
                         CipherStrength,
                         HashAlgorithm,
                         HashStrength,
                         KeyExchangeAlgorithm,
-                        KeyExchangeStrength));
+                        KeyExchangeStrength);
                 }
             }
             finally
@@ -713,17 +712,16 @@ namespace System.Net.Security
             InternalEndProcessAuthentication(lazyResult);
 
             // Connection is completed at this point.
-            if (Logging.On)
+            if (SecurityEventSource.Log.IsEnabled())
             {
-                Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_selected_cipher_suite,
-                    "EndProcessAuthentication",
+                SecurityEventSource.Log.SspiSelectedCipherSuite("EndProcessAuthentication",
                     SslProtocol,
                     CipherAlgorithm,
                     CipherStrength,
                     HashAlgorithm,
                     HashStrength,
                     KeyExchangeAlgorithm,
-                    KeyExchangeStrength));
+                    KeyExchangeStrength);
             }
         }
         //

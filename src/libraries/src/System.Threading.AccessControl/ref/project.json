@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "System.Runtime": "4.0.0",
-    "System.Security.AccessControl": "4.0.0-rc2-23610",
-    "System.Security.Principal.Windows": "4.0.0-rc2-23610",
+    "System.Security.AccessControl": "4.0.0-rc2-23616",
+    "System.Security.Principal.Windows": "4.0.0-rc2-23616",
     "System.Threading": "4.0.0",
     "System.Threading.Tasks": "4.0.0"
   },

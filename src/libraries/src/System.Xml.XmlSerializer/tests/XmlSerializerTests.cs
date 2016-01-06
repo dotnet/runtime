@@ -76,7 +76,9 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DateTimeAsRoot()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
+        // DO NOT USE TimeZoneInfo.Local.BaseUtcOffset !
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hh\:mm"));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2),
 @"<?xml version=""1.0""?>

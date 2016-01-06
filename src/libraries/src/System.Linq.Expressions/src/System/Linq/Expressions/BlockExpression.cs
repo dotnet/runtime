@@ -118,12 +118,6 @@ namespace System.Linq.Expressions
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual ParameterExpression GetVariable(int index)
-        {
-            throw ContractUtils.Unreachable;
-        }
-
         internal virtual int VariableCount
         {
             get
@@ -222,6 +216,7 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            Debug.Assert(args != null);
             Debug.Assert(args.Length == 2);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -267,6 +262,7 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            Debug.Assert(args != null);
             Debug.Assert(args.Length == 3);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -314,6 +310,7 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            Debug.Assert(args != null);
             Debug.Assert(args.Length == 4);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -363,6 +360,7 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            Debug.Assert(args != null);
             Debug.Assert(args.Length == 5);
             Debug.Assert(variables == null || variables.Count == 0);
 
@@ -404,6 +402,7 @@ namespace System.Linq.Expressions
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
             Debug.Assert(variables == null || variables.Count == 0);
+            Debug.Assert(args != null);
 
             return new BlockN(args);
         }
@@ -424,11 +423,6 @@ namespace System.Linq.Expressions
             {
                 return _variables.Count;
             }
-        }
-
-        internal override ParameterExpression GetVariable(int index)
-        {
-            return _variables[index];
         }
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
@@ -465,6 +459,11 @@ namespace System.Linq.Expressions
         private object _body;
 
         internal Scope1(IList<ParameterExpression> variables, Expression body)
+            : this(variables, (object)body)
+        {
+        }
+
+        private Scope1(IList<ParameterExpression> variables, object body)
             : base(variables)
         {
             _body = body;
@@ -494,6 +493,12 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            if (args == null)
+            {
+                Debug.Assert(variables.Count == VariableCount);
+                ValidateVariables(variables, "variables");
+                return new Scope1(variables, _body);
+            }
             Debug.Assert(args.Length == 1);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
@@ -509,6 +514,11 @@ namespace System.Linq.Expressions
             : base(variables)
         {
             _body = body;
+        }
+
+        protected IList<Expression> Body
+        {
+            get { return _body; }
         }
 
         internal override Expression GetExpression(int index)
@@ -531,6 +541,12 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            if (args == null)
+            {
+                Debug.Assert(variables.Count == VariableCount);
+                ValidateVariables(variables, "variables");
+                return new ScopeN(variables, _body);
+            }
             Debug.Assert(args.Length == ExpressionCount);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 
@@ -555,6 +571,12 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
+            if (args == null)
+            {
+                Debug.Assert(variables.Count == VariableCount);
+                ValidateVariables(variables, "variables");
+                return new ScopeWithType(variables, Body, _type);
+            }
             Debug.Assert(args.Length == ExpressionCount);
             Debug.Assert(variables == null || variables.Count == VariableCount);
 

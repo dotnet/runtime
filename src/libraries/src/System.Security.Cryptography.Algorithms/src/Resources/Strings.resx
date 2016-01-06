@@ -177,9 +177,6 @@
   <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
     <value>Unknown padding mode used.</value>
   </data>
-  <data name="WorkInProgress" xml:space="preserve">
-    <value>Implementation in progress.</value>
-  </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
   </data>

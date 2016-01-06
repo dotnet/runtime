@@ -558,7 +558,7 @@ namespace System.Runtime.Serialization
                 if (dataContract == null)
                 {
                     dataContract = CreateDataContract(id, typeHandle, type);
-                    s_dataContractCache[id] = dataContract;
+                    AssignDataContractToId(dataContract, id);
                 }
                 else
                 {
@@ -601,7 +601,8 @@ namespace System.Runtime.Serialization
                 {
                     return id;
                 }
-                for (int i = 0; i < DataContractCriticalHelper.s_dataContractID; i++)
+                int currentDataContractId = DataContractCriticalHelper.s_dataContractID;
+                for (int i = 0; i < currentDataContractId; i++)
                 {
                     if (ContractMatches(classContract, s_dataContractCache[i]))
                     {
@@ -657,55 +658,67 @@ namespace System.Runtime.Serialization
             // check whether a corresponding update is required in ClassDataContract.IsNonAttributedTypeValidForSerialization
             private static DataContract CreateDataContract(int id, RuntimeTypeHandle typeHandle, Type type)
             {
-                lock (s_createDataContractLock)
+                DataContract dataContract = s_dataContractCache[id];
+                if (dataContract == null)
                 {
-                    DataContract dataContract = s_dataContractCache[id];
-                    if (dataContract == null)
+                    lock (s_createDataContractLock)
                     {
-                        if (type == null)
-                            type = Type.GetTypeFromHandle(typeHandle);
-
-#if !NET_NATIVE
-                        type = UnwrapNullableType(type);
-#endif
-                        type = GetDataContractAdapterType(type);
-#if !NET_NATIVE
-                        dataContract = GetBuiltInDataContract(type);
+                        dataContract = s_dataContractCache[id];
                         if (dataContract == null)
                         {
-                            if (type.IsArray)
-                                dataContract = new CollectionDataContract(type);
-                            else if (type.GetTypeInfo().IsEnum)
-                                dataContract = new EnumDataContract(type);
-                            else if (Globals.TypeOfException.IsAssignableFrom(type))
-                                dataContract = new ExceptionDataContract(type);
-                            else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
-                                dataContract = new XmlDataContract(type);
-                            else if (Globals.TypeOfScriptObject_IsAssignableFrom(type))
-                                dataContract = Globals.CreateScriptObjectClassDataContract();
-                            else
+                            if (type == null)
+                                type = Type.GetTypeFromHandle(typeHandle);
+#if !NET_NATIVE
+                            type = UnwrapNullableType(type);
+#endif
+                            type = GetDataContractAdapterType(type);
+#if !NET_NATIVE
+                            dataContract = GetBuiltInDataContract(type);
+                            if (dataContract == null)
                             {
-                                //if (type.GetTypeInfo().ContainsGenericParameters)
-                                //    ThrowInvalidDataContractException(SR.Format(SR.TypeMustNotBeOpenGeneric, type), type);
-
-                                if (!CollectionDataContract.TryCreate(type, out dataContract))
+                                if (type.IsArray)
+                                    dataContract = new CollectionDataContract(type);
+                                else if (type.GetTypeInfo().IsEnum)
+                                    dataContract = new EnumDataContract(type);
+                                else if (Globals.TypeOfException.IsAssignableFrom(type))
+                                    dataContract = new ExceptionDataContract(type);
+                                else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+                                    dataContract = new XmlDataContract(type);
+                                else if (Globals.TypeOfScriptObject_IsAssignableFrom(type))
+                                    dataContract = Globals.CreateScriptObjectClassDataContract();
+                                else
                                 {
-                                    if (!IsTypeSerializable(type) && !type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
+                                    //if (type.GetTypeInfo().ContainsGenericParameters)
+                                    //    ThrowInvalidDataContractException(SR.Format(SR.TypeMustNotBeOpenGeneric, type), type);
+
+                                    if (!CollectionDataContract.TryCreate(type, out dataContract))
                                     {
-                                        ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
+                                        if (!IsTypeSerializable(type) && !type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
+                                        {
+                                            ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
+                                        }
+                                        dataContract = new ClassDataContract(type);
                                     }
-                                    dataContract = new ClassDataContract(type);
                                 }
                             }
-                        }
 #else
-                        dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
+                            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
 #endif
-                    }
 #if NET_NATIVE
-                    s_dataContractCache[id] = dataContract;
+                            AssignDataContractToId(dataContract, id);
 #endif
-                    return dataContract;
+                        }
+                    }
+                }
+                return dataContract;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssignDataContractToId(DataContract dataContract, int id)
+            {
+                lock (s_cacheLock)
+                {
+                    s_dataContractCache[id] = dataContract;
                 }
             }
 

@@ -124,7 +124,7 @@
     <value>The specified item does not exist in this KeyedCollection.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added.</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Arg_NonZeroLowerBound" xml:space="preserve">
     <value>The lower bound of target array must be zero.</value>

@@ -507,7 +507,7 @@ namespace System.Net.Security
 #if TRACE_VERBOSE
             GlobalLog.Enter("SafeDeleteContext::InitializeSecurityContext");
             GlobalLog.Print("    credential       = " + inCredentials.ToString());
-            GlobalLog.Print("    refContext       = " + Logging.ObjectToString(refContext));
+            GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
             GlobalLog.Print("    targetName       = " + targetName);
             GlobalLog.Print("    inFlags          = " + inFlags);
             GlobalLog.Print("    reservedI        = 0x0");
@@ -686,7 +686,7 @@ namespace System.Net.Security
                 }
             }
 
-            GlobalLog.Leave("SafeDeleteContext::InitializeSecurityContext() unmanaged InitializeSecurityContext()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + Logging.ObjectToString(refContext));
+            GlobalLog.Leave("SafeDeleteContext::InitializeSecurityContext() unmanaged InitializeSecurityContext()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
 
             return errorCode;
         }
@@ -792,7 +792,7 @@ namespace System.Net.Security
 #if TRACE_VERBOSE
             GlobalLog.Enter("SafeDeleteContext::AcceptSecurityContex");
             GlobalLog.Print("    credential       = " + inCredentials.ToString());
-            GlobalLog.Print("    refContext       = " + Logging.ObjectToString(refContext));
+            GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
 
             GlobalLog.Print("    inFlags          = " + inFlags);
 
@@ -963,7 +963,7 @@ namespace System.Net.Security
                 }
             }
 
-            GlobalLog.Leave("SafeDeleteContext::AcceptSecurityContex() unmanaged AcceptSecurityContex()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + Logging.ObjectToString(refContext));
+            GlobalLog.Leave("SafeDeleteContext::AcceptSecurityContex() unmanaged AcceptSecurityContex()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
 
             return errorCode;
         }
@@ -1057,7 +1057,7 @@ namespace System.Net.Security
             SecurityBuffer[] inSecBuffers)
         {
             GlobalLog.Enter("SafeDeleteContext::CompleteAuthToken");
-            GlobalLog.Print("    refContext       = " + Logging.ObjectToString(refContext));
+            GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
 #if TRACE_VERBOSE
             GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
 #endif
@@ -1142,7 +1142,7 @@ namespace System.Net.Security
                 }
             }
 
-            GlobalLog.Leave("SafeDeleteContext::CompleteAuthToken() unmanaged CompleteAuthToken()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + Logging.ObjectToString(refContext));
+            GlobalLog.Leave("SafeDeleteContext::CompleteAuthToken() unmanaged CompleteAuthToken()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
 
             return errorCode;
         }

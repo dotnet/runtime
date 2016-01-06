@@ -8,6 +8,7 @@ def project = GithubProject
 
 // Map of os -> osGroup.
 def osGroupMap = ['Ubuntu':'Linux',
+                  'Debian8.2':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'FreeBSD':'FreeBSD',
@@ -16,6 +17,7 @@ def osGroupMap = ['Ubuntu':'Linux',
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu' : 'ubuntu.14.04-x64',
+                             'Debian8.2' : 'ubuntu.14.04-x64',
                              'FreeBSD' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'ubuntu.14.04-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64']
@@ -82,13 +84,13 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
 def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt']
 [true, false].each { isPR ->
     ['Windows 10', 'Windows 7', 'Windows_NT'].each { os ->
-        ['Debug', 'Release'].each { configuration ->
+        ['Debug', 'Release'].each { configurationGroup ->
 
-            def newJobName = "outerloop_${osShortName[os]}_${configuration.toLowerCase()}"
+            def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:Configuration=${configuration} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
                 }
             }
 
@@ -103,7 +105,7 @@ def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : '
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configuration}", "(?i).*test\\W+outerloop.*")
+                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop.*")
             }
             else {
                 // Set a periodic trigger
@@ -118,9 +120,9 @@ def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : '
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
 [true, false].each { isPR ->
-    ['Debug', 'Release'].each { configuration ->
+    ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
             def osGroup = osGroupMap[os]
             
@@ -128,11 +130,11 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             // First define the nativecomp build
             //
             
-            def newNativeCompBuildJobName = "nativecomp_${os.toLowerCase()}_${configuration.toLowerCase()}"
+            def newNativeCompBuildJobName = "nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
             
             def newNativeCompJob = job(Utilities.getFullJobName(project, newNativeCompBuildJobName, isPR)) {
                 steps {
-                    shell("./build.sh native x64 ${configuration.toLowerCase()}")
+                    shell("./build.sh native x64 ${configurationGroup.toLowerCase()}")
                 }
             }
             
@@ -147,11 +149,11 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             // First we set up a build job that builds the corefx repo on Windows
             //
             
-            def newBuildJobName = "${os.toLowerCase()}_${configuration.toLowerCase()}_bld"
+            def newBuildJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld"
 
             def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:Configuration=${configuration} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]}")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup} /p:SkipTests=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[os]}")
                     // Package up the results.
                     batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                 }
@@ -162,7 +164,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR)
             // Archive the results
-            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configuration}/**,bin/ref/**,bin/packages/**,msbuild.log")
+            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
             
             //
             // Then we set up a job that runs the test on the target OS
@@ -171,7 +173,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             def fullNativeCompBuildJobName = Utilities.getFolderName(project) + '/' + newNativeCompJob.name
             def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
             
-            def newTestJobName = "${os.toLowerCase()}_${configuration.toLowerCase()}_tst"
+            def newTestJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}_tst"
             
             def newTestJob = job(Utilities.getFullJobName(project, newTestJobName, isPR)) {
                 steps {
@@ -216,9 +218,9 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
                     // Export the LTTNG environment variable and then run the tests
                     shell("""export LTTNG_HOME=/home/dotnet-bot
                     ./run-test.sh \\
-                        --configuration ${configuration} \\
+                        --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
-                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configuration} \\
+                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/
                     """)
@@ -244,7 +246,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             //
             
             def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
-            def flowJobName = "${os.toLowerCase()}_${configuration.toLowerCase()}"
+            def flowJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
             def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                 buildFlow("""
                     parallel (
@@ -273,8 +275,11 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             if (isPR) {
                 // Set PR trigger.
                 // Set of OS's that work currently. 
-                if (os in ['Ubuntu', 'OpenSUSE13.2', 'CentOS7.1']) {
-                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configuration} Build and Test")
+                if (os in ['Ubuntu', 'CentOS7.1']) {
+                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
+                }
+                else {
+                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test", "(?i).*test\\W+${os}.*")
                 }
             }
             else {
@@ -290,13 +295,13 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
 def supportedFullCyclePlatforms = ['Windows_NT']
 
 [true, false].each { isPR ->
-    ['Debug', 'Release'].each { configuration ->
+    ['Debug', 'Release'].each { configurationGroup ->
         supportedFullCyclePlatforms.each { osGroup ->
-            def newJobName = "${osGroup.toLowerCase()}_${configuration.toLowerCase()}"
+            def newJobName = "${osGroup.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:Configuration=${configuration} /p:OSGroup=${osGroup}")
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:OSGroup=${osGroup}")
                     batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                 }
             }
@@ -312,7 +317,7 @@ def supportedFullCyclePlatforms = ['Windows_NT']
             // Set up triggers
             if (isPR) {
                 // Set PR trigger.
-                Utilities.addGithubPRTrigger(newJob, "Innerloop ${osGroup} ${configuration} Build and Test")
+                Utilities.addGithubPRTrigger(newJob, "Innerloop ${osGroup} ${configurationGroup} Build and Test")
             }
             else {
                 // Set a push trigger

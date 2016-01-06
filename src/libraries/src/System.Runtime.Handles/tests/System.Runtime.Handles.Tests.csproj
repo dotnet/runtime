@@ -8,8 +8,8 @@
     <ProjectGuid>{9C77C3CA-7067-4D45-BDFE-CC62AB5C1ED5}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Runtime.Handles.csproj">

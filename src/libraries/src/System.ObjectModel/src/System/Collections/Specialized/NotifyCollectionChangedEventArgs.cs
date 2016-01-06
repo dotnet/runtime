@@ -369,36 +369,38 @@ namespace System.Collections.Specialized
     public delegate void NotifyCollectionChangedEventHandler(object sender, NotifyCollectionChangedEventArgs e);
 
 
-    internal class ReadOnlyList : IList
+    internal sealed class ReadOnlyList : IList
     {
         private readonly IList _list;
 
-        internal ReadOnlyList(IList l)
+        internal ReadOnlyList(IList list)
         {
-            _list = l;
+            Debug.Assert(list != null);
+
+            _list = list;
         }
 
-        public virtual int Count
+        public int Count
         {
             get { return _list.Count; }
         }
 
-        public virtual bool IsReadOnly
+        public bool IsReadOnly
         {
             get { return true; }
         }
 
-        public virtual bool IsFixedSize
+        public bool IsFixedSize
         {
             get { return true; }
         }
 
-        public virtual bool IsSynchronized
+        public bool IsSynchronized
         {
             get { return _list.IsSynchronized; }
         }
 
-        public virtual Object this[int index]
+        public object this[int index]
         {
             get
             {
@@ -410,56 +412,54 @@ namespace System.Collections.Specialized
             }
         }
 
-        public virtual Object SyncRoot
+        public object SyncRoot
         {
             get { return _list.SyncRoot; }
         }
 
-        public virtual int Add(Object obj)
+        public int Add(object value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        public virtual void Clear()
+        public void Clear()
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        public virtual bool Contains(Object obj)
+        public bool Contains(object value)
         {
-            return _list.Contains(obj);
+            return _list.Contains(value);
         }
 
-        public virtual void CopyTo(Array array, int index)
+        public void CopyTo(Array array, int index)
         {
             _list.CopyTo(array, index);
         }
 
-        public virtual IEnumerator GetEnumerator()
+        public IEnumerator GetEnumerator()
         {
             return _list.GetEnumerator();
         }
 
-        public virtual int IndexOf(Object value)
+        public int IndexOf(object value)
         {
             return _list.IndexOf(value);
         }
 
-        public virtual void Insert(int index, Object obj)
+        public void Insert(int index, object value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        public virtual void Remove(Object value)
+        public void Remove(object value)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
 
-        public virtual void RemoveAt(int index)
+        public void RemoveAt(int index)
         {
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
         }
     }
 }
-
-

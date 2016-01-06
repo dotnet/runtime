@@ -2,15 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.Reflection.Emit.Lightweight.csproj" />
     <Project Include="System.Reflection.Emit.Lightweight.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <TargetGroup>net46</TargetGroup>
     </Project>
-    <Project Include="System.Reflection.Emit.Lightweight.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties>
-    </Project>
-    <Project Include="System.Reflection.Emit.Lightweight.csproj" Condition="'$(TargetsWindows)' == 'true'">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    <Project Include="System.Reflection.Emit.Lightweight.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
+

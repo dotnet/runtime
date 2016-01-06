@@ -7,32 +7,8 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_CreateTests 
+    public class zip_CreateTests
     {
-        [Fact]
-        public static async Task CreateNormal()
-        {
-            await testCreate("small", true);
-            await testCreate("small", false);
-            await testCreate("normal", true);
-            await testCreate("normal", false);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
-            {
-                await testCreate("unicode", true);
-                await testCreate("unicode", false);
-            }
-            await testCreate("empty", true);
-            await testCreate("empty", false);
-            await testCreate("emptydir", true);
-            await testCreate("emptydir", false);
-        }
-
-        [Fact]
-        public static void CreateEmptyEntry()
-        {
-            ZipTest.EmptyEntryTest(ZipArchiveMode.Create);
-        }
-
         [Fact]
         public static void CreateModeInvalidOperations()
         {
@@ -74,7 +50,32 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ObjectDisposedException>(() => z.CreateEntry("dirka")); //"Can't create after dispose"
         }
 
-        public static async Task testCreate(String folder, bool seekable)
+        [Theory]
+        [InlineData("small", true)]
+        [InlineData("small", false)]
+        [InlineData("normal", true)]
+        [InlineData("normal", false)]
+        [InlineData("empty", true)]
+        [InlineData("empty", false)]
+        [InlineData("emptydir", true)]
+        [InlineData("emptydir", false)]
+        public static async Task CreateNormal(string folder, bool seekable)
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, seekable, null);
+                await ZipTest.CreateFromDir(ZipTest.zfolder(folder), testStream, ZipArchiveMode.Create);
+
+                ZipTest.IsZipSameAsDir(s, ZipTest.zfolder(folder), ZipArchiveMode.Read, false, false);
+            }
+        }
+
+
+        [Theory]
+        [InlineData("unicode", true)]
+        [InlineData("unicode", false)]
+        [ActiveIssue(5096, PlatformID.AnyUnix)]
+        public static async Task CreateNormal_Unicode(string folder, bool seekable)
         {
             using (var s = new MemoryStream())
             {
