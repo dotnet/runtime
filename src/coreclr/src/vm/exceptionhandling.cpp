@@ -4776,7 +4776,7 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
     BYTE rm = (modrm & 0x07);
 
     reg |= (rex_r << 3);
-    rm |= (rex_b << 3);
+    BYTE rmIndex = rm | (rex_b << 3);
 
     // 8 bit idiv without the REX prefix uses registers AH, CH, DH, BH for rm 4..8
     // which is an exception from the regular register indexes.
@@ -4859,7 +4859,7 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
             }
             else
             {
-                result = GetRegisterValueByIndex(pContext, rm);
+                result = GetRegisterValueByIndex(pContext, rmIndex);
 
                 if (mod == 1)
                 {
@@ -4881,10 +4881,10 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
         {
             // 8 bit idiv without the REX prefix uses registers AH, CH, DH or BH for rm 4..8.
             // So we shift the register index to get the real register index.
-            rm -= 4;
+            rmIndex -= 4;
         }
 
-        result = (DWORD64)GetRegisterAddressByIndex(pContext, rm);
+        result = (DWORD64)GetRegisterAddressByIndex(pContext, rmIndex);
 
         if (isAhChDhBh)
         {
