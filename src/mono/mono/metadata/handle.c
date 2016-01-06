@@ -33,9 +33,7 @@ struct _MonoHandleArena {
 
 static mono_lazy_init_t arena_status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
-#ifdef HAVE_SGEN_GC
 static MonoGCDescriptor arena_desc = MONO_GC_DESCRIPTOR_NULL;
-#endif
 
 static MonoHandleArenaChunk *chunk_free_list = NULL;
 
@@ -179,26 +177,20 @@ arena_scan (gpointer addr, MonoGCMarkFunc mark_func, gpointer gc_data)
 static void
 initialize (void)
 {
-#ifdef HAVE_SGEN_GC
 	arena_desc = mono_gc_make_root_descr_user (arena_scan);
-#endif
 }
 
 void
 mono_handle_arena_initialize (MonoHandleArena **arena_stack)
 {
-#ifdef HAVE_SGEN_GC
 	mono_lazy_initialize (&arena_status, initialize);
 	mono_gc_register_root ((char*) arena_stack, sizeof (MonoHandleArena*), arena_desc, MONO_ROOT_SOURCE_HANDLE, "runtime threads handle arena");
-#endif
 }
 
 void
 mono_handle_arena_deinitialize (MonoHandleArena **arena_stack)
 {
-#ifdef HAVE_SGEN_GC
 	mono_gc_deregister_root ((char*) arena_stack);
-#endif
 }
 
 MonoHandleArena*
