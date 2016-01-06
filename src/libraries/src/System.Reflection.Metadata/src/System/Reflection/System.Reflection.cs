@@ -4,7 +4,7 @@
 namespace System.Reflection
 {
     [Flags]
-    internal enum MethodSemanticsAttributes
+    public enum MethodSemanticsAttributes
     {
         /// <summary>
         /// Used to modify the value of the property.
