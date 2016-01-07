@@ -8,16 +8,21 @@ using Xunit;
 
 namespace StreamWriterTests
 {
-    public class Co5563Write_ch
+    public class WriteTests
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
+
         [Fact]
-        public static void WriteChars()
+        public void WriteChars()
         {
             char[] chArr = setupArray();
 
             // [] Write a wide variety of characters and read them back
 
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -56,35 +61,38 @@ namespace StreamWriterTests
 			,'\u00E6'
 		};
         }
+
         [Fact]
-        public static void NullArray()
+        public void NullArray()
         {
             // [] Exception for null array
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentNullException>(() => sw.Write(null, 0, 0));
             sw.Dispose();
         }
+
         [Fact]
-        public static void NegativeOffset()
+        public void NegativeOffset()
         {
             char[] chArr = setupArray();
 
             // [] Exception if offset is negative
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, -1, 0));
             sw.Dispose();
         }
+
         [Fact]
-        public static void NegativeCount()
+        public void NegativeCount()
         {
             char[] chArr = setupArray();
 
             // [] Exception if count is negative
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, 0, -1));
@@ -92,12 +100,12 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void WriteCustomLenghtStrings()
+        public void WriteCustomLenghtStrings()
         {
             char[] chArr = setupArray();
 
             // [] Write some custom length strings
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -115,12 +123,12 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void WriteToStreamWriter()
+        public void WriteToStreamWriter()
         {
             char[] chArr = setupArray();
             // [] Just construct a streamwriter and write to it	
             //------------------------------------------------- 			
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -135,11 +143,12 @@ namespace StreamWriterTests
             }
             ms.Dispose();
         }
+
         [Fact]
-        public static void TestWritingPastEndOfArray()
+        public void TestWritingPastEndOfArray()
         {
             char[] chArr = setupArray();
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentException>(() => sw.Write(chArr, 1, chArr.Length));
@@ -147,13 +156,13 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void VerifyWrittenString()
+        public void VerifyWrittenString()
         {
             char[] chArr = setupArray();
             // [] Write string with wide selection of characters and read it back		
 
             StringBuilder sb = new StringBuilder(40);
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -172,11 +181,11 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void NullStreamThrows()
+        public void NullStreamThrows()
         {
             // [] Null string should write nothing
 
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             sw.Write((String)null);
             sw.Flush();

@@ -8,20 +8,25 @@ namespace StreamWriterTests
 {
     public class FlushTests
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
+
         [Fact]
-        public static void AutoFlushSetTrue()
+        public void AutoFlushSetTrue()
         {
             // [] Set the autoflush to true
-            var sw2 = new StreamWriter(new MemoryStream());
+            var sw2 = new StreamWriter(CreateStream());
             sw2.AutoFlush = true;
             Assert.True(sw2.AutoFlush);
         }
 
         [Fact]
-        public static void AutoFlushSetFalse()
+        public void AutoFlushSetFalse()
         {
             // [] Set autoflush to false
-            var sw2 = new StreamWriter(new MemoryStream());
+            var sw2 = new StreamWriter(CreateStream());
             sw2.AutoFlush = false;
             Assert.False(sw2.AutoFlush);
         }

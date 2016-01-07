@@ -10,12 +10,16 @@ namespace BinaryWriterTests
 {
     public class BinaryWriter_WriteTests
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
 
         [Fact]
-        public static void BinaryWriter_WriteBoolTest()
+        public void BinaryWriter_WriteBoolTest()
         {
             // [] Write a series of booleans to a stream
-            using(MemoryStream mstr = new MemoryStream())
+            using(Stream mstr = CreateStream())
             using(BinaryWriter dw2 = new BinaryWriter(mstr))
             using(BinaryReader dr2 = new BinaryReader(mstr))
             {
@@ -41,7 +45,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteSingleTest()
+        public void BinaryWriter_WriteSingleTest()
         {
             Single[] sglArr = new Single[] { 
                 Single.MinValue, Single.MaxValue, Single.Epsilon, Single.PositiveInfinity, Single.NegativeInfinity, new Single(), 
@@ -52,7 +56,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteDecimalTest()
+        public void BinaryWriter_WriteDecimalTest()
         {
             Decimal[] decArr = new Decimal[] { 
                 Decimal.One, Decimal.Zero, Decimal.MinusOne, Decimal.MinValue, Decimal.MaxValue, 
@@ -64,7 +68,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteDoubleTest()
+        public void BinaryWriter_WriteDoubleTest()
         {
             Double[] dblArr = new Double[] { 
                 Double.NegativeInfinity, Double.PositiveInfinity, Double.Epsilon, Double.MinValue, Double.MaxValue, 
@@ -75,7 +79,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteInt16Test()
+        public void BinaryWriter_WriteInt16Test()
         {
             Int16[] i16Arr = new Int16[] { Int16.MinValue, Int16.MaxValue, 0, -10000, 10000, -50, 50 };
 
@@ -83,7 +87,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteInt32Test()
+        public void BinaryWriter_WriteInt32Test()
         {
             Int32[] i32arr = new Int32[] { Int32.MinValue, Int32.MaxValue, 0, -10000, 10000, -50, 50 };
 
@@ -91,7 +95,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteInt64Test()
+        public void BinaryWriter_WriteInt64Test()
         {
             Int64[] i64arr = new Int64[] { Int64.MinValue, Int64.MaxValue, 0, -10000, 10000, -50, 50 };
 
@@ -99,7 +103,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteUInt16Test()
+        public void BinaryWriter_WriteUInt16Test()
         {
             UInt16[] ui16Arr = new UInt16[] { UInt16.MinValue, UInt16.MaxValue, 0, 100, 1000, 10000, UInt16.MaxValue - 100 };
 
@@ -107,7 +111,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteUInt32Test()
+        public void BinaryWriter_WriteUInt32Test()
         {
             UInt32[] ui32Arr = new UInt32[] { UInt32.MinValue, UInt32.MaxValue, 0, 100, 1000, 10000, UInt32.MaxValue - 100 };
 
@@ -115,7 +119,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteUInt64Test()
+        public void BinaryWriter_WriteUInt64Test()
         {
             UInt64[] ui64Arr = new UInt64[] { UInt64.MinValue, UInt64.MaxValue, 0, 100, 1000, 10000, UInt64.MaxValue - 100 };
 
@@ -123,7 +127,7 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteStringTest()
+        public void BinaryWriter_WriteStringTest()
         {
             StringBuilder sb = new StringBuilder();
             String str1;
@@ -139,9 +143,9 @@ namespace BinaryWriterTests
             WriteTest<String>(strArr, (bw, s) => bw.Write(s), (br) => br.ReadString());
         }
 
-        private static void WriteTest<T>(T[] testElements, Action<BinaryWriter, T> write, Func<BinaryReader, T> read)
+        private void WriteTest<T>(T[] testElements, Action<BinaryWriter, T> write, Func<BinaryReader, T> read)
         {
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             using (BinaryWriter writer = new BinaryWriter(memStream))
             using (BinaryReader reader = new BinaryReader(memStream))
             {

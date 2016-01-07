@@ -16,6 +16,9 @@
     <Compile Include="BinaryWriter\BinaryWriter_WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter_WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
+    <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.cs" />
+    <Compile Include="BufferedStream\BufferedStream.FakeStream.cs" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
     <Compile Include="MemoryStream\MemoryStream_TryGetBufferTests.cs" />
     <Compile Include="StreamReader\StreamReaderCtorTests.cs" />

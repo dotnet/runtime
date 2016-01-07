@@ -10,29 +10,37 @@ namespace StreamTests
 {
     public class StreamMethods
     {
-        [Fact]
-        public static void MemoryStreamSeekStress()
+        protected virtual Stream CreateStream()
         {
-            //MemoryStream
-            var ms1 = new MemoryStream();
+            return new MemoryStream();
+        }
+
+        protected virtual Stream CreateStream(int bufferSize)
+        {
+            return new MemoryStream(new byte[bufferSize]);
+        }
+
+        [Fact]
+        public void MemoryStreamSeekStress()
+        {
+            var ms1 = CreateStream();
             SeekTest(ms1, false);
         }
         [Fact]
-        public static void MemoryStreamSeekStressWithInitialBuffer()
+        public void MemoryStreamSeekStressWithInitialBuffer()
         {
-            //MemoryStream
-            var ms1 = new MemoryStream(new Byte[1024], false);
+            var ms1 = CreateStream(1024);
             SeekTest(ms1, false);
         }
 
         [Fact]
-        public static async Task MemoryStreamStress()
+        public async Task MemoryStreamStress()
         {
-            var ms1 = new MemoryStream();
+            var ms1 = CreateStream();
             await StreamTest(ms1, false);
         }
 
-        static private void SeekTest(Stream stream, Boolean fSuppres)
+        public static void SeekTest(Stream stream, Boolean fSuppres)
         {
             long lngPos;
             Byte btValue;
@@ -98,7 +106,7 @@ namespace StreamTests
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Current));
         }
 
-        private static async Task StreamTest(Stream stream, Boolean fSuppress)
+        public static async Task StreamTest(Stream stream, Boolean fSuppress)
         {
 
             String strValue;
