@@ -16,13 +16,6 @@
     <ExternalOnTargetFramework Include="net" />
   </ItemGroup>
 
-  <!-- Manual (reflection) dependencies to pre-released packages -->
-  <ItemGroup>
-    <_FilePackageReference Include="System.Security.Cryptography.Cng">
-      <TargetFramework>dotnet54</TargetFramework>
-      <Version>4.0.0</Version>
-    </_FilePackageReference>
-  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
