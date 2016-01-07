@@ -1180,13 +1180,13 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval)
     _ASSERTE(!"ARM64:NYI");
 }
 
-void StompWriteBarrierEphemeral()
+void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     //ARM64TODO: implement this
     return;
 }
 
-void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
+void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     //ARM64TODO: implement this
     return;

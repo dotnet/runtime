@@ -378,7 +378,7 @@ void ValidateWriteBarriers()
 // Update the instructions in our various write barrier implementations that refer directly to the values
 // of GC globals such as g_lowest_address and g_card_table. We don't particularly care which values have
 // changed on each of these callbacks, it's pretty cheap to refresh them all.
-void UpdateGCWriteBarriers(BOOL postGrow = false)
+void UpdateGCWriteBarriers(bool postGrow = false)
 {
     // Define a helper macro that abstracts the minutia of patching the instructions to access the value of a
     // particular GC global.
@@ -455,7 +455,7 @@ void UpdateGCWriteBarriers(BOOL postGrow = false)
     FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
 
-void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
+void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     // The runtime is not always suspended when this is called (unlike StompWriteBarrierEphemeral) but we have
     // no way to update the barrier code atomically on ARM since each 32-bit value we change is loaded over
@@ -469,7 +469,7 @@ void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
     GCStressPolicy::InhibitHolder iholder;
 
     bool fSuspended = false;
-    if (!g_fEEInit && !GCHeap::IsGCInProgress())
+    if (!isRuntimeSuspended)
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
         fSuspended = true;
@@ -481,9 +481,10 @@ void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
         ThreadSuspend::RestartEE(FALSE, TRUE);
 }
 
-void StompWriteBarrierEphemeral(void)
+void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    _ASSERTE(GCHeap::IsGCInProgress() || g_fEEInit);
+    UNREFERENCED_PARAMETER(isRuntimeSuspended);
+    _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
 }
 #endif // CROSSGEN_COMPILE

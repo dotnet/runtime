@@ -79,6 +79,12 @@ public:
 
 Thread * GetThread();
 
+inline BOOL IsSuspendEEThread()
+{
+    // TODO: Implement
+    return false;
+}
+
 class ThreadStore
 {
 public:
