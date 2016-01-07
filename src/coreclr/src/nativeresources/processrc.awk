@@ -40,9 +40,9 @@ BEGIN {
             # some of the resource IDs have trailing L
             gsub(/L/, "", $i);
             expression = expression $i;
-            $i="";
             i++;
         }
+
         # evaluate the resource ID expression
         cmd = "echo $(("expression"))";
         cmd | getline var;
@@ -50,13 +50,17 @@ BEGIN {
         # in case shell returned the result as a string, ensure the var has numeric type
         var = var + 0;
 
+        # Extract string content starting with either " or L"
+        idx = match($0, /L?\"/);
+        content = substr($0, idx);
+
         # remove the L prefix from strings
-        gsub(/L"/, "\"", $0);
+        gsub(/L"/, "\"", content);
         # join strings "..." "..." into one
-        gsub(/" +"/, "", $0);
+        gsub(/" +"/, "", content);
 
         # write the resource entry to the target file
-        writestringentry(var, $0);
+        writestringentry(var, content);
     }
 }
 END {
