@@ -55,7 +55,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (baseReader == null)
                 {
-                    throw new ArgumentNullException("deltaReaders");
+                    throw new ArgumentNullException("baseReader");
                 }
 
                 if (baseReader.GetTableRowCount(TableIndex.EncMap) != 0)
@@ -64,14 +64,10 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 CalculateBaseCounts(baseReader, out baseTableRowCounts, out baseHeapSizes);
+                Debug.Assert(baseTableRowCounts != null);
             }
             else
             {
-                if (baseTableRowCounts == null)
-                {
-                    throw new ArgumentNullException("baseTableRowCounts");
-                }
-
                 if (baseTableRowCounts.Count != MetadataTokens.TableCount)
                 {
                     throw new ArgumentException("Must have " + MetadataTokens.TableCount + " elements", "baseTableRowCounts");

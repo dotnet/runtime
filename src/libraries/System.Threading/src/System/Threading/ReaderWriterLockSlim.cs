@@ -974,7 +974,7 @@ namespace System.Threading
                 ExitMyLock();      // Exit before signaling to improve efficiency (wakee will need the lock)
                 _writeEvent.Set();   // release one writer. 
             }
-            else if (readercount >= 0)
+            else
             {
                 if (_numReadWaiters != 0 || _numUpgradeWaiters != 0)
                 {
@@ -997,8 +997,6 @@ namespace System.Threading
                 else
                     ExitMyLock();
             }
-            else
-                ExitMyLock();
         }
 
         private bool IsWriterAcquired()

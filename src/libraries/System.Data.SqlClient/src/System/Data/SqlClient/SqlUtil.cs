@@ -90,27 +90,13 @@ namespace System.Data.SqlClient
                     }
                     else
                     {
-                        if (connectionToDoom != null || connectionToAbort != null)
+                        try
                         {
-                            try
-                            {
-                                onSuccess();
-                            }
-                            catch (Exception e)
-                            {
-                                completion.SetException(e);
-                            }
+                            onSuccess();
                         }
-                        else
-                        { // no connection to doom - reliability section not required
-                            try
-                            {
-                                onSuccess();
-                            }
-                            catch (Exception e)
-                            {
-                                completion.SetException(e);
-                            }
+                        catch (Exception e)
+                        {
+                            completion.SetException(e);
                         }
                     }
                 }, TaskScheduler.Default
