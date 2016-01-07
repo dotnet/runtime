@@ -348,11 +348,11 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 | System.Net.Http.WinHttpHandler |  |  |  | X | &larr; |
 | System.Net.NameResolution |  |  |  | X | &larr; |
 | System.Net.NetworkInformation | X | &larr; | &larr; | X | &larr; |
+| System.Net.Ping |  |  |  | X | &larr; |
 | System.Net.Primitives | X | X | &larr; | X | &larr; |
 | System.Net.Requests | X | X | &larr; | X | &larr; |
 | System.Net.Security |  |  |  | X | &larr; |
 | System.Net.Sockets |  |  |  | X | X |
-| System.Net.Utilities |  |  |  | X | &larr; |
 | System.Net.WebHeaderCollection |  |  |  | X | &larr; |
 | System.Net.WebSockets |  |  |  | X | &larr; |
 | System.Net.WebSockets.Client |  |  |  | X | &larr; |
