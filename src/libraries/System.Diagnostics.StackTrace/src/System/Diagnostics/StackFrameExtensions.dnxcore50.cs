@@ -9,12 +9,12 @@ namespace System.Diagnostics
     {
         public static IntPtr GetNativeIP(this StackFrame stackFrame)
         {
-            return (IntPtr)0;
+            return IntPtr.Zero;
         }
 
         public static IntPtr GetNativeImageBase(this StackFrame stackFrame)
         {
-            return (IntPtr)0;
+            return IntPtr.Zero;
         }
     }
 }
