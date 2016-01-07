@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -28,6 +29,7 @@ namespace System.Diagnostics.Tracing
         private readonly EventOpcode opcode = (EventOpcode)(-1);
         private readonly EventTags tags;
         private readonly Type dataType;
+        private readonly Func<object, PropertyValue> propertyValueFactory;
 
         internal TraceLoggingTypeInfo(Type dataType)
         {
@@ -40,6 +42,7 @@ namespace System.Diagnostics.Tracing
 
             this.name = dataType.Name;
             this.dataType = dataType;
+            this.propertyValueFactory = PropertyValue.GetFactory(dataType);
         }
 
         internal TraceLoggingTypeInfo(
@@ -70,6 +73,7 @@ namespace System.Diagnostics.Tracing
             this.opcode = opcode;
             this.tags = tags;
             this.dataType = dataType;
+            this.propertyValueFactory = PropertyValue.GetFactory(dataType);
         }
 
         /// <summary>
@@ -123,6 +127,11 @@ namespace System.Diagnostics.Tracing
             get { return this.dataType; }
         }
 
+        internal Func<object, PropertyValue> PropertyValueFactory
+        {
+            get { return this.propertyValueFactory; }
+        }
+
         /// <summary>
         /// When overridden by a derived class, writes the metadata (schema) for
         /// this type. Note that the sequence of operations in WriteMetadata should be
@@ -162,9 +171,9 @@ namespace System.Diagnostics.Tracing
         /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
         /// method.
         /// </param>
-        public abstract void WriteObjectData(
+        public abstract void WriteData(
             TraceLoggingDataCollector collector,
-            object value);
+            PropertyValue value);
 
         /// <summary>
         /// Fetches the event parameter data for internal serialization. 
@@ -174,6 +183,26 @@ namespace System.Diagnostics.Tracing
         public virtual object GetData(object value)
         {
             return value;
+        }
+
+        [ThreadStatic] // per-thread cache to avoid synchronization
+        private static Dictionary<Type, TraceLoggingTypeInfo> threadCache;
+
+        public static TraceLoggingTypeInfo GetInstance(Type type, List<Type> recursionCheck)
+        {
+            var cache = threadCache ?? (threadCache = new Dictionary<Type, TraceLoggingTypeInfo>());
+
+            TraceLoggingTypeInfo instance;
+            if (!cache.TryGetValue(type, out instance))
+            {
+                if (recursionCheck == null)
+                    recursionCheck = new List<Type>();
+                var recursionCheckCount = recursionCheck.Count;
+                instance = Statics.CreateDefaultTypeInfo(type, recursionCheck);
+                cache[type] = instance;
+                recursionCheck.RemoveRange(recursionCheckCount, recursionCheck.Count - recursionCheckCount);
+            }
+            return instance;
         }
     }
 }

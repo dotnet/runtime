@@ -9762,10 +9762,6 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Diagnostics.StackFrameHelper" />
 
-    <Type Status="ImplRoot" Name="System.Diagnostics.Tracing.EnumHelper&lt;UnderlyingType&gt;">
-      <Member Name="Identity(UnderlyingType)" />
-    </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventAttribute">
       <Member Name="#ctor(System.Int32)" />
       <Member Name="get_EventId" />

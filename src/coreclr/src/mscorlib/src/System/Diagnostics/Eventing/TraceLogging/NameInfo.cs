@@ -26,14 +26,14 @@ namespace System.Diagnostics.Tracing
         {
             for(;;)
             {
-                int snapshot =lastIdentity;
+                int snapshot = lastIdentity;
                 int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;
                 newIdentity = Math.Max(newIdentity, snapshot);      // Should be redundant.  as we only create descriptors once.  
                 if (Interlocked.CompareExchange(ref lastIdentity, newIdentity, snapshot) == snapshot)
                     break;
             }
         }
- 
+
         private static int lastIdentity = Statics.TraceLoggingChannel << 24;
         internal readonly string name;
         internal readonly EventTags tags;
