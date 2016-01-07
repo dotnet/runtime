@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using Tests.HashSet_HashSetTestSupport;
 
@@ -11,6 +12,30 @@ namespace Tests
 {
     public class HashSet_Constructor
     {
+        // Use parity only as a hashcode so as to have many collisions.
+        private class BadIntEqualityComparer : IEqualityComparer<int>
+        {
+            public bool Equals(int x, int y)
+            {
+                return x == y;
+            }
+
+            public int GetHashCode(int obj)
+            {
+                return obj % 2;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is BadIntEqualityComparer; // Equal to all other instances of this type, not to anything else.
+            }
+
+            public override int GetHashCode()
+            {
+                return unchecked((int)0xC001CAFE); // Doesn't matter as long as its constant.
+            }
+        }
+
         private static int s_nextInt;
         private static Func<int> s_intGenerator = () =>
         {
@@ -118,6 +143,7 @@ namespace Tests
             HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, items);
             driver.VerifyHashSetTests();
         }
+
         [Fact]
         public static void Ctor_IEnumerable_Single_Neg()
         {
@@ -155,6 +181,17 @@ namespace Tests
             HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, expected);
             driver.VerifyHashSetTests();
         }
+
+        [Fact]
+        public static void Ctor_IEnumerable_ManyDuplicates()
+        {
+            int[] items = new int[] { 4, -23, -23, -2, 4, 6, 0, 4, 123, -4, 123 };
+            HashSet<int> hashSet = new HashSet<int>(Enumerable.Range(0, 40).SelectMany(i => items).ToArray());
+            int[] expected = new int[] { -23, -2, 4, 6, 0, 123, -4 };
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, expected);
+            driver.VerifyHashSetTests();
+        }
+
         [Fact]
         public static void Ctor_IEnumerable_Duplicate_Neg()
         {
@@ -328,6 +365,65 @@ namespace Tests
             driver.VerifyHashSet_NegativeTests();
         }
 
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Fresh_HashSet()
+        {
+            HashSet<int> source = new HashSet<int>();
+            HashSet<int> hashSet = new HashSet<int>(source);
+
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, new int[0]);
+            driver.VerifyHashSetTests();
+        }
+
+        private static IEnumerable<int> NonSquares(int limit)
+        {
+            for (int i = 0; i != limit; ++i)
+            {
+                int root = (int)Math.Sqrt(i);
+                if (i != root * root)
+                    yield return i;
+            }
+        }
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Sparse()
+        {
+            HashSet<int> source = new HashSet<int>();
+            for (int i = 0; i != 1000; ++i)
+            {
+                source.Add(i);
+            }
+
+            foreach (int i in NonSquares(1000)) // Unevenly spaced survivors increases chance of catching any spacing-related bugs.
+            {
+                source.Remove(i);
+            }
+
+            HashSet<int> hashSet = new HashSet<int>(source);
+
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, new List<int>(source).ToArray());
+            driver.VerifyHashSetTests();
+        }
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_SparseManyCollisions()
+        {
+            HashSet<int> source = new HashSet<int>(new BadIntEqualityComparer());
+            for (int i = 0; i != 1000; ++i)
+            {
+                source.Add(i);
+            }
+
+            foreach (int i in NonSquares(1000)) // Unevenly spaced survivors increases chance of catching any spacing-related bugs.
+            {
+                source.Remove(i);
+            }
+
+            HashSet<int> hashSet = new HashSet<int>(source, new BadIntEqualityComparer());
+
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, new List<int>(source).ToArray(), new BadIntEqualityComparer());
+            driver.VerifyHashSetTests();
+        }
         #endregion
     }
 }
