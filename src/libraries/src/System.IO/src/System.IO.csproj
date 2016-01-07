@@ -27,13 +27,16 @@
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="System\IO\BufferedStream.cs" />
-    <Compile Include="System\IO\InvalidDataException.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <Compile Include="System\IO\BufferedStream.cs" />
+    <Compile Include="System\IO\InvalidDataException.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
@@ -63,6 +66,7 @@
 
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
