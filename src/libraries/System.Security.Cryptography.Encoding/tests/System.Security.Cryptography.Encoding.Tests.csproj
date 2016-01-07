@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Encoding.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Encoding.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.csproj">

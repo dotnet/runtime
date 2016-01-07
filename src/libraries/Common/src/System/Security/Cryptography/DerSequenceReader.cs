@@ -270,6 +270,7 @@ namespace System.Security.Cryptography
             OctetString = 0x04,
             Null = 0x05,
             ObjectIdentifier = 0x06,
+            UTF8String = 0x0C,
             Sequence = 0x10,
             Set = 0x11,
             PrintableString = 0x13,
