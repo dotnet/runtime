@@ -88,7 +88,8 @@ namespace System.Globalization
         private bool NeedsTurkishCasing(string localeName)
         {
             Contract.Assert(localeName != null);
-            return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("i", "I", CompareOptions.IgnoreCase) != 0;
+
+            return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }
 
         private bool IsInvariant { get { return m_cultureName.Length == 0; } }
