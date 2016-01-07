@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <sys/utsname.h>
 
-extern "C" int32_t GetUnixVersion(char* version, int* capacity)
+extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
 {
     struct utsname _utsname;
     if (uname(&_utsname) != -1)
@@ -26,7 +26,7 @@ extern "C" int32_t GetUnixVersion(char* version, int* capacity)
  0 - x86
  1 - x64
  2 - ARM */
-extern "C" int32_t GetUnixArchitecture()
+extern "C" int32_t SystemNative_GetUnixArchitecture()
 {
 #if defined(ARM)
     return ARCH_ARM;

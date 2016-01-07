@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, CharSet = CharSet.Ansi, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixVersion", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern int GetUnixVersion(StringBuilder version, out int capacity);
 
         internal static string GetUnixVersion()

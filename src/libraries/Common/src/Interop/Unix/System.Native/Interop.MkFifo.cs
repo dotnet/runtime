@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkFifo", SetLastError = true)]
         internal static extern int MkFifo(string path, int mode);
     }
 }

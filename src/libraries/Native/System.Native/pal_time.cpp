@@ -25,7 +25,15 @@ static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
     native.modtime = static_cast<time_t>(pal.ModTime);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t UTime(const char* path, UTimBuf* times)
+{
+    return SystemNative_UTime(path, times);
+}
+
+extern "C" int32_t SystemNative_UTime(const char* path, UTimBuf* times)
 {
     assert(times != nullptr);
 
@@ -37,7 +45,15 @@ extern "C" int32_t UTime(const char* path, UTimBuf* times)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t GetTimestampResolution(uint64_t* resolution)
+{
+    return SystemNative_GetTimestampResolution(resolution);
+}
+
+extern "C" int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
 {
     assert(resolution);
 
@@ -77,7 +93,15 @@ extern "C" int32_t GetTimestampResolution(uint64_t* resolution)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t GetTimestamp(uint64_t* timestamp)
+{
+    return SystemNative_GetTimestamp(timestamp);
+}
+
+extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
 {
     assert(timestamp);
 

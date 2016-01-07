@@ -9,7 +9,15 @@
 #include <string.h>
 #include <assert.h>
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" Error ConvertErrorPlatformToPal(int32_t platformErrno)
+{
+    return SystemNative_ConvertErrorPlatformToPal(platformErrno);
+}
+
+extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
 {
     switch (platformErrno)
     {
@@ -181,7 +189,15 @@ extern "C" Error ConvertErrorPlatformToPal(int32_t platformErrno)
     return PAL_ENONSTANDARD;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t ConvertErrorPalToPlatform(Error error)
+{
+    return SystemNative_ConvertErrorPalToPlatform(error);
+}
+
+extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
 {
     switch (error)
     {
@@ -354,7 +370,15 @@ extern "C" int32_t ConvertErrorPalToPlatform(Error error)
     return -1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" const char* StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
+{
+    return SystemNative_StrErrorR(platformErrno, buffer, bufferSize);
+}
+
+extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr);
     assert(bufferSize > 0);

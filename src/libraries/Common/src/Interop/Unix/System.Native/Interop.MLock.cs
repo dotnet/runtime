@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MLock", SetLastError = true)]
         internal static extern int MLock(IntPtr addr, ulong len);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MUnlock", SetLastError = true)]
         internal static extern int MUnlock(IntPtr addr, ulong len);
     }
 }

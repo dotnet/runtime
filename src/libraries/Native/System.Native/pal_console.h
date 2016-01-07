@@ -21,7 +21,7 @@ struct WinSize
  *
  * Returns 0 on success; otherwise, returns errorNo.
  */
-extern "C" int32_t GetWindowSize(WinSize* windowsSize);
+extern "C" int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -29,24 +29,24 @@ extern "C" int32_t GetWindowSize(WinSize* windowsSize);
  * Returns 1 if the file descriptor is referring to a terminal;
  * otherwise returns 0 and sets errno.
  */
-extern "C" int32_t IsATty(intptr_t fd);
+extern "C" int32_t SystemNative_IsATty(intptr_t fd);
 
 /**
  * Initializes the console for use by System.Console.
  */
-extern "C" void InitializeConsole();
+extern "C" void SystemNative_InitializeConsole();
 
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
  */
-extern "C" int32_t StdinReady();
+extern "C" int32_t SystemNative_StdinReady();
 
 /**
  * Reads the number of bytes specified into the provided buffer from stdin.
  * in a non-echo and non-canonical mode.
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize);
+extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t bufferSize);
 
 enum CtrlCode : int32_t
 {
@@ -66,7 +66,7 @@ typedef int32_t (*CtrlCallback)(CtrlCode signalCode);
  *
  * Returns 1 on success, 0 on failure.
  */
-extern "C" int32_t RegisterForCtrl(CtrlCallback callback);
+extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback);
 
 /**
  * Unregisters the previously registered ctrlCCallback.
@@ -78,4 +78,4 @@ extern "C" int32_t RegisterForCtrl(CtrlCallback callback);
  * previously registered must remain valid until all ctrl handling activity
  * has quiesced.
  */
-extern "C" void UnregisterForCtrl();
+extern "C" void SystemNative_UnregisterForCtrl();

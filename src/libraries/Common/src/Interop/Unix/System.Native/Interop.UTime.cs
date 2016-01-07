@@ -22,7 +22,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns 0 on success; otherwise, returns -1 
         /// </returns>
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UTime", SetLastError = true)]
         internal static extern int UTime(string path, ref UTimBuf time);
     }
 }

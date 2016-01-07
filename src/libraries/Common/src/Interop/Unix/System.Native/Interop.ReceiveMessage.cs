@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReceiveMessage")]
         internal static extern unsafe Error ReceiveMessage(int socket, MessageHeader* messageHeader, SocketFlags flags, long* received);
     }
 }

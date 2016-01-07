@@ -5,9 +5,9 @@
 
 #include "pal_types.h"
 
-extern "C" int32_t GetUnixVersion(char* version, int* capacity);
+extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
-extern "C" int32_t GetUnixArchitecture();
+extern "C" int32_t SystemNative_GetUnixArchitecture();
 
 enum 
 {

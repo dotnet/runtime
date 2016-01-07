@@ -38,16 +38,16 @@ internal static partial class Interop
             internal string     InodeName;
         }
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", SetLastError = true)]
         internal static extern Microsoft.Win32.SafeHandles.SafeDirectoryHandle OpenDir(string path);
 
-        [DllImport(Libraries.SystemNative, SetLastError = false)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDirentSize", SetLastError = false)]
         internal static extern int GetDirentSize();
 
-        [DllImport(Libraries.SystemNative, SetLastError = false)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]
         private static unsafe extern int ReadDirR(SafeDirectoryHandle dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static extern int CloseDir(IntPtr dir);
 
         // The calling pattern for ReadDir is described in src/Native/System.Native/pal_readdir.cpp

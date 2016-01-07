@@ -16,10 +16,10 @@ internal static partial class Interop
             PRIO_USER       = 2,
         }
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPriority", SetLastError = true)]
         private static extern int GetPriority(PriorityWhich which, int who);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPriority", SetLastError = true)]
         internal static extern int SetPriority(PriorityWhich which, int who, int nice);
 
         /// <summary>
