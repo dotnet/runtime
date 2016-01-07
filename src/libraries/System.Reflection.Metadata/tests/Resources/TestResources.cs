@@ -17,6 +17,8 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] CPPClassLibrary2 = ResourceHelper.GetResource("Misc.CPPClassLibrary2.obj");
         public static readonly byte[] EmptyType = ResourceHelper.GetResource("Misc.EmptyType.dll");
         public static readonly byte[] Members = ResourceHelper.GetResource("Misc.Members.dll");
+        public static readonly byte[] Deterministic = ResourceHelper.GetResource("Misc.Deterministic.dll");
+        public static readonly byte[] Debug = ResourceHelper.GetResource("Misc.Debug.dll");
     }
 
     internal static class NetModule

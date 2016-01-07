@@ -159,6 +159,9 @@
     <Compile Include="System\Reflection\PortableExecutable\CoffHeader.cs" />
     <Compile Include="System\Reflection\PortableExecutable\CorFlags.cs" />
     <Compile Include="System\Reflection\PortableExecutable\CorHeader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\CodeViewDebugDirectoryData.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryEntry.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryEntryType.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DirectoryEntry.cs" />
     <Compile Include="System\Reflection\PortableExecutable\Machine.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBinaryReader.cs" />
