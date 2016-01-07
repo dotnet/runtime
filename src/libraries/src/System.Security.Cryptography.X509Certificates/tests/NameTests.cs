@@ -9,7 +9,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class NameTests
     {
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestEncode()
         {
             byte[] expectedEncoding = "300e310c300a06035504031303466f6f".HexToByteArray();
