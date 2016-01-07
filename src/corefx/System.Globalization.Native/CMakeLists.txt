@@ -1,6 +1,5 @@
 
 project(System.Globalization.Native)
-include(CheckCXXSourceCompiles)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -29,27 +28,15 @@ if(NOT CLR_CMAKE_PLATFORM_DARWIN)
     endif()
 
     set(CMAKE_REQUIRED_INCLUDES ${ICU_HOMEBREW_INC_PATH})
-    CHECK_CXX_SOURCE_COMPILES("
-     #include <unicode/udat.h>
-     int main() { UDateFormatSymbolType e = UDAT_STANDALONE_SHORTER_WEEKDAYS; }
-    " HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
-
-    if(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
-        add_definitions(-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS=1)
-    endif(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
-
 else()
-
     find_library(ICUCORE icucore)
     if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
         message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
         return()
     endif()
-
-    # libicucore supports UDAT_STANDALONE_SHORTER_WEEKDAYS
-    add_definitions(-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS=1)
-
 endif()
+
+include(configure.cmake)
 
 add_compile_options(-fPIC)
 
