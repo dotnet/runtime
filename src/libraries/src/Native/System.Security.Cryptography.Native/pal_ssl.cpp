@@ -308,7 +308,6 @@ The values used in OpenSSL for SSL_CIPHER algorithm_enc.
 */
 enum class SSL_CipherAlgorithm : int64_t
 {
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
     SSL_DES = 1,
     SSL_3DES = 2,
     SSL_RC4 = 4,
@@ -323,29 +322,11 @@ enum class SSL_CipherAlgorithm : int64_t
     SSL_SEED = 2048,
     SSL_AES128GCM = 4096,
     SSL_AES256GCM = 8192
-#else
-    SSL_DES = 0x00008000L,
-    SSL_3DES = 0x00010000L,
-    SSL_RC4 = 0x00020000L,
-    SSL_RC2 = 0x00040000L,
-    SSL_IDEA = 0x00080000L,
-    // SSL_eFZA = 0x00100000L,  this value is defined in ssl_locl.h, but has no match
-    SSL_eNULL = 0x00200000L,
-    SSL_AES = 0x04000000L,
-    SSL_CAMELLIA = 0x08000000L,
-    SSL_SEED = 0x10000000L,
-#endif
 };
 
 static CipherAlgorithmType MapCipherAlgorithmType(const SSL_CIPHER* cipher)
 {
-    unsigned long enc;
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
-    enc = cipher->algorithm_enc;
-#else
-    const unsigned long SSL_ENC_MASK = 0x1C3F8000L;
-    enc = cipher->algorithms & SSL_ENC_MASK;
-#endif
+    unsigned long enc = cipher->algorithm_enc;
 
     SSL_CipherAlgorithm sslEnc = static_cast<SSL_CipherAlgorithm>(enc);
     switch (sslEnc)
@@ -371,7 +352,6 @@ static CipherAlgorithmType MapCipherAlgorithmType(const SSL_CIPHER* cipher)
         case SSL_CipherAlgorithm::SSL_SEED:
             return CipherAlgorithmType::SSL_SEED;
 
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
         case SSL_CipherAlgorithm::SSL_AES128:
             return CipherAlgorithmType::Aes128;
 
@@ -392,24 +372,6 @@ static CipherAlgorithmType MapCipherAlgorithmType(const SSL_CIPHER* cipher)
 
         case SSL_CipherAlgorithm::SSL_AES256GCM:
             return CipherAlgorithmType::Aes256;
-#else
-        case SSL_CipherAlgorithm::SSL_AES:
-            switch (cipher->alg_bits)
-            {
-                case 128:
-                    return CipherAlgorithmType::Aes128;
-                case 256:
-                    return CipherAlgorithmType::Aes256;
-            }
-        case SSL_CipherAlgorithm::SSL_CAMELLIA:
-            switch (cipher->alg_bits)
-            {
-                case 128:
-                    return CipherAlgorithmType::SSL_CAMELLIA128;
-                case 256:
-                    return CipherAlgorithmType::SSL_CAMELLIA256;
-            }
-#endif
     }
 
     return CipherAlgorithmType::None;
@@ -420,7 +382,6 @@ The values used in OpenSSL for SSL_CIPHER algorithm_mkey.
 */
 enum class SSL_KeyExchangeAlgorithm : int64_t
 {
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
     SSL_kRSA = 1,
     /* DH cert, RSA CA cert */
     SSL_kDHr = 2,
@@ -438,27 +399,11 @@ enum class SSL_KeyExchangeAlgorithm : int64_t
     SSL_kPSK = 256,
     SSL_kGOST = 512,
     SSL_kSRP = 1024,
-#else
-    SSL_kRSA = 0x00000001L,
-    SSL_kDHr = 0x00000002L,
-    SSL_kDHd = 0x00000004L,
-    // SSL_kFZA = 0x00000008L,  this value is defined in ssl_locl.h, but has no match
-    SSL_kEDH = 0x00000010L,
-    SSL_kKRB5 = 0x00000020L,
-    SSL_kECDH = 0x00000040L,
-    SSL_kECDHE = 0x00000080L,
-#endif
 };
 
 static ExchangeAlgorithmType MapExchangeAlgorithmType(const SSL_CIPHER* cipher)
 {
-    unsigned long mkey;
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
-    mkey = cipher->algorithm_mkey;
-#else
-    const unsigned long SSL_MKEY_MASK = 0x000000FFL;
-    mkey = cipher->algorithms & SSL_MKEY_MASK;
-#endif
+    unsigned long mkey = cipher->algorithm_mkey;
 
     SSL_KeyExchangeAlgorithm sslMkey = static_cast<SSL_KeyExchangeAlgorithm>(mkey);
     switch (sslMkey)
@@ -478,7 +423,6 @@ static ExchangeAlgorithmType MapExchangeAlgorithmType(const SSL_CIPHER* cipher)
         case SSL_KeyExchangeAlgorithm::SSL_kKRB5:
             return ExchangeAlgorithmType::SSL_kKRB5;
 
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
         case SSL_KeyExchangeAlgorithm::SSL_kECDHr:
             return ExchangeAlgorithmType::SSL_ECDH;
 
@@ -496,13 +440,6 @@ static ExchangeAlgorithmType MapExchangeAlgorithmType(const SSL_CIPHER* cipher)
 
         case SSL_KeyExchangeAlgorithm::SSL_kSRP:
             return ExchangeAlgorithmType::SSL_kSRP;
-#else
-        case SSL_KeyExchangeAlgorithm::SSL_kECDH:
-            return ExchangeAlgorithmType::SSL_ECDH;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kECDHE:
-            return ExchangeAlgorithmType::SSL_ECDSA;
-#endif
     }
 
     return ExchangeAlgorithmType::None;
@@ -513,7 +450,6 @@ The values used in OpenSSL for SSL_CIPHER algorithm_mac.
 */
 enum class SSL_DataHashAlgorithm : int64_t
 {
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
     SSL_MD5 = 1,
     SSL_SHA1 = 2,
     SSL_GOST94 = 4,
@@ -521,22 +457,12 @@ enum class SSL_DataHashAlgorithm : int64_t
     SSL_SHA256 = 16,
     SSL_SHA384 = 32,
     SSL_AEAD = 64
-#else
-    SSL_MD5 = 0x00400000L,
-    SSL_SHA1 = 0x00800000L,
-#endif
 };
 
 static void
 GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHashAlg, DataHashSize* hashKeySize)
 {
-    unsigned long mac;
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
-    mac = cipher->algorithm_mac;
-#else
-    const unsigned long SSL_MAC_MASK = 0x00c00000L;
-    mac = cipher->algorithms & SSL_MAC_MASK;
-#endif
+    unsigned long mac = cipher->algorithm_mac;
 
     SSL_DataHashAlgorithm sslMac = static_cast<SSL_DataHashAlgorithm>(mac);
     switch (sslMac)
@@ -551,7 +477,6 @@ GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHas
             *hashKeySize = DataHashSize::SHA1_HashKeySize;
             return;
 
-#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
         case SSL_DataHashAlgorithm::SSL_GOST94:
             *dataHashAlg = HashAlgorithmType::SSL_GOST94;
             *hashKeySize = DataHashSize::GOST_HashKeySize;
@@ -576,7 +501,6 @@ GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHas
             *dataHashAlg = HashAlgorithmType::SSL_AEAD;
             *hashKeySize = DataHashSize::Default;
             return;
-#endif
     }
 
     *dataHashAlg = HashAlgorithmType::None;
