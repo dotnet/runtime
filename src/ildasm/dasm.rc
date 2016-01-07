@@ -297,10 +297,11 @@ BEGIN
     IDS_USAGE_05            L"Options for GUI or file/console output (EXE and DLL files only):\n"
 #else
     IDS_USAGE_03            L"  /OUT=<file name>    Direct output to file rather than to console.\n"
+    IDS_USAGE_04            L""
     IDS_USAGE_04A           L"  /HTML               Output in HTML format (valid with /OUT option only).\n"
     IDS_USAGE_04B           L"  /RTF                Output in rich text format (valid with /OUT option only).\n"
     IDS_USAGE_05            L"Options for file/console output:\n"
-#endif
+#endif // !FEATURE_PAL
 #ifdef OWNER_OPTION_ENABLED
     IDS_USAGE_06            L"  /OWNER=<owner name> Set owner name to disassemble a protected PE file.\n"
 #endif
@@ -326,7 +327,11 @@ BEGIN
     IDS_USAGE_16            L"  /NOBAR              Suppress disassembly progress bar window pop-up.\n\n"
     IDS_USAGE_17            L"The following options are valid for file/console output only:\n"
     IDS_USAGE_18            L"Options for EXE and DLL files:\n"
-#endif
+#else
+    IDS_USAGE_16            L""
+    IDS_USAGE_17            L""
+    IDS_USAGE_18            L""
+#endif // !FEATURE_PAL
     IDS_USAGE_19            L"  /UTF8               Use UTF-8 encoding for output (default - ANSI).\n"
     IDS_USAGE_20            L"  /UNICODE            Use UNICODE encoding for output.\n"
     IDS_USAGE_21            L"  /NOIL               Suppress IL assembler code output.\n"
@@ -344,7 +349,9 @@ BEGIN
     IDS_USAGE_26            L"  /ALL                Combination of /HEADER,/BYTES,/STATS,/CLASSLIST,/TOKENS\n\n"
 #ifndef FEATURE_PAL
     IDS_USAGE_27            L"Options for EXE,DLL,OBJ and LIB files:\n"
-#endif
+#else
+    IDS_USAGE_27            L""
+#endif // !FEATURE_PAL
     IDS_USAGE_28            L"  /METADATA[=<specifier>] Show MetaData, where <specifier> is:\n"
     IDS_USAGE_29            L"          MDHEADER    Show MetaData header information and sizes.\n"
     IDS_USAGE_30            L"          HEX         Show more things in hex as well as words.\n"
@@ -352,7 +359,9 @@ BEGIN
     IDS_USAGE_32            L"          UNREX       Show unresolved externals.\n"
 #ifndef FEATURE_PAL
     IDS_USAGE_33            L"          DEBUG       Show debug information in addition to other MetaData.\n"
-#endif
+#else
+    IDS_USAGE_33            L""
+#endif // !FEATURE_PAL
     IDS_USAGE_34            L"          SCHEMA      Show the MetaData header and schema information.\n"
     IDS_USAGE_35            L"          RAW         Show the raw MetaData tables.\n"
     IDS_USAGE_36            L"          HEAPS       Show the raw heaps.\n"
@@ -360,7 +369,10 @@ BEGIN
 #ifndef FEATURE_PAL
     IDS_USAGE_38            L"Options for LIB files only:\n"
     IDS_USAGE_39            L"  /OBJECTFILE=<obj_file_name> Show MetaData of a single object file in library\n"
-#endif
+#else
+    IDS_USAGE_38            L""
+    IDS_USAGE_39            L""
+#endif // !FEATURE_PAL
 END
 
 STRINGTABLE DISCARDABLE 
