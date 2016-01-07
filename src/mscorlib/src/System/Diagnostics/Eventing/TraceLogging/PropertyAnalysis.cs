@@ -17,18 +17,20 @@ namespace System.Diagnostics.Tracing
     internal sealed class PropertyAnalysis
     {
         internal readonly string name;
-        internal readonly MethodInfo getterInfo;
+        internal readonly PropertyInfo propertyInfo;
+        internal readonly Func<PropertyValue, PropertyValue> getter;
         internal readonly TraceLoggingTypeInfo typeInfo;
         internal readonly EventFieldAttribute fieldAttribute;
 
         public PropertyAnalysis(
             string name,
-            MethodInfo getterInfo,
+            PropertyInfo propertyInfo,
             TraceLoggingTypeInfo typeInfo,
             EventFieldAttribute fieldAttribute)
         {
             this.name = name;
-            this.getterInfo = getterInfo;
+            this.propertyInfo = propertyInfo;
+            this.getter = PropertyValue.GetPropertyGetter(propertyInfo);
             this.typeInfo = typeInfo;
             this.fieldAttribute = fieldAttribute;
         }

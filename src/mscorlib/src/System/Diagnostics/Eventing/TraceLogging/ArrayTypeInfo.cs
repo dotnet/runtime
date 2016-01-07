@@ -10,12 +10,12 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 #endif
 {
-    internal sealed class ArrayTypeInfo<ElementType>
-        : TraceLoggingTypeInfo<ElementType[]>
+    internal sealed class ArrayTypeInfo : TraceLoggingTypeInfo
     {
-        private readonly TraceLoggingTypeInfo<ElementType> elementInfo;
+        private readonly TraceLoggingTypeInfo elementInfo;
 
-        public ArrayTypeInfo(TraceLoggingTypeInfo<ElementType> elementInfo)
+        public ArrayTypeInfo(Type type, TraceLoggingTypeInfo elementInfo)
+            : base(type)
         {
             this.elementInfo = elementInfo;
         }
@@ -30,19 +30,18 @@ namespace System.Diagnostics.Tracing
             collector.EndBufferedArray();
         }
 
-        public override void WriteData(
-            TraceLoggingDataCollector collector,
-            ref ElementType[] value)
+        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
             var bookmark = collector.BeginBufferedArray();
 
             var count = 0;
-            if (value != null)
+            Array array = (Array)value.ReferenceValue;
+            if (array != null)
             {
-                count = value.Length;
-                for (int i = 0; i < value.Length; i++)
+                count = array.Length;
+                for (int i = 0; i < array.Length; i++)
                 {
-                    this.elementInfo.WriteData(collector, ref value[i]);
+                    this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(array.GetValue(i)));
                 }
             }
 
@@ -51,11 +50,11 @@ namespace System.Diagnostics.Tracing
 
         public override object GetData(object value)
         {
-            var array = (ElementType[])value;
+            var array = (Array)value;
             var serializedArray = new object[array.Length];
             for (int i = 0; i < array.Length; i++)
             {
-                serializedArray[i] = this.elementInfo.GetData(array[i]);
+                serializedArray[i] = this.elementInfo.GetData(array.GetValue(i));
             }
             return serializedArray;
         }
