@@ -1728,7 +1728,6 @@ namespace System.Data.SqlTypes
             bPrecD = x.m_bPrec;
             ResScale = Math.Max(x.m_bScale + y.m_bPrec + 1, s_cNumeDivScaleMin);
             ResInteger = x.m_bPrec - x.m_bScale + y.m_bScale;
-            ResPrec = ResScale + x.m_bPrec + y.m_bPrec + 1;
             MinScale = Math.Min(ResScale, s_cNumeDivScaleMin);
 
             ResInteger = Math.Min(ResInteger, s_NUMERIC_MAX_PRECISION);
