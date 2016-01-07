@@ -17,5 +17,5 @@ enum class NetworkChangeKind : int32_t
 
 typedef void (*NetworkChangeEvent)(NetworkChangeKind notificationKind);
 
-extern "C" NetworkChangeKind ReadSingleEvent(int sock);
+extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int sock);
 NetworkChangeKind ReadNewLinkMessage(nlmsghdr* hdr);

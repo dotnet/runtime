@@ -30,10 +30,10 @@ internal static partial class Interop
             internal ulong MaximumLimit;
         }
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetRLimit", SetLastError = true)]
         internal static extern int GetRLimit(RlimitResources resourceType, out RLimit limits);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetRLimit", SetLastError = true)]
         internal static extern int SetRLimit(RlimitResources resourceType, ref RLimit limits);
     }
 }

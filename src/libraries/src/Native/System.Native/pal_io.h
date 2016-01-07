@@ -282,85 +282,85 @@ enum NotifyEvents : int32_t
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t FStat(intptr_t fd, FileStatus* output);
+extern "C" int32_t SystemNative_FStat(intptr_t fd, FileStatus* output);
 
 /**
  * Get file status from a full path. Implemented as shim to stat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Stat(const char* path, FileStatus* output);
+extern "C" int32_t SystemNative_Stat(const char* path, FileStatus* output);
 
 /**
  * Get file stats from a full path. Implemented as shim to lstat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t LStat(const char* path, FileStatus* output);
+extern "C" int32_t SystemNative_LStat(const char* path, FileStatus* output);
 
 /**
  * Open or create a file or device. Implemented as shim to open(2).
  *
  * Returns file descriptor or -1 for failure. Sets errno on failure.
  */
-extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode);
+extern "C" intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
 
 /**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Close(intptr_t fd);
+extern "C" int32_t SystemNative_Close(intptr_t fd);
 
 /**
  * Duplicates a file descriptor.
  *
  * Returns the duplication descriptor for success, -1 for failure. Sets errno on failure.
  */
-extern "C" intptr_t Dup(intptr_t oldfd);
+extern "C" intptr_t SystemNative_Dup(intptr_t oldfd);
 
 /**
  * Delete an entry from the file system. Implemented as shim to unlink(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Unlink(const char* path);
+extern "C" int32_t SystemNative_Unlink(const char* path);
 
 /**
  * Open or create a shared memory object. Implemented as shim to shm_open(3).
  *
  * Returns file descriptor or -1 on fiailure. Sets errno on failure.
  */
-extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode);
+extern "C" intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode);
 
 /**
  * Unlink a shared memory object. Implemented as shim to shm_unlink(3).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t ShmUnlink(const char* name);
+extern "C" int32_t SystemNative_ShmUnlink(const char* name);
 
 /**
  * Returns the size of the dirent struct on the current architecture
  */
-extern "C" int32_t GetDirentSize();
+extern "C" int32_t SystemNative_GetDirentSize();
 
 /**
  * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
+extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.
  */
-extern "C" DIR* OpenDir(const char* path);
+extern "C" DIR* SystemNative_OpenDir(const char* path);
 
 /**
  * Closes the directory stream opened by opendir and returns 0 on success. On fail, -1 is returned and errno is set
  */
-extern "C" int32_t CloseDir(DIR* dir);
+extern "C" int32_t SystemNative_CloseDir(DIR* dir);
 
 /**
  * Creates a pipe. Implemented as shim to pipe(2) or pipe2(2) if available.
@@ -368,7 +368,7 @@ extern "C" int32_t CloseDir(DIR* dir);
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
+extern "C" int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
@@ -380,7 +380,7 @@ extern "C" int32_t Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pi
  *
  * Returns true (non-zero) if supported, false (zero) if not.
  */
-extern "C" int32_t FcntlCanGetSetPipeSz();
+extern "C" int32_t SystemNative_FcntlCanGetSetPipeSz();
 
 /**
  * Gets the capacity of a pipe.
@@ -389,7 +389,7 @@ extern "C" int32_t FcntlCanGetSetPipeSz();
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-extern "C" int32_t FcntlGetPipeSz(intptr_t fd);
+extern "C" int32_t SystemNative_FcntlGetPipeSz(intptr_t fd);
 
 /**
  * Sets the capacity of a pipe.
@@ -398,56 +398,56 @@ extern "C" int32_t FcntlGetPipeSz(intptr_t fd);
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size);
+extern "C" int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size);
 
 /**
  * Sets whether or not a file descriptor is non-blocking.
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
+extern "C" int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C" int32_t MkDir(const char* path, int32_t mode);
+extern "C" int32_t SystemNative_MkDir(const char* path, int32_t mode);
 
 /**
  * Change permissions of a file. Implemented as a shim to chmod(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C" int32_t ChMod(const char* path, int32_t mode);
+extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode);
 
 /**
  * Create a FIFO (named pipe). Implemented as a shim to mkfifo(3).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C" int32_t MkFifo(const char* path, int32_t mode);
+extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode);
 
 /**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
-extern "C" int32_t FSync(intptr_t fd);
+extern "C" int32_t SystemNative_FSync(intptr_t fd);
 
 /**
  * Changes the advisory lock status on a given File Descriptor
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-extern "C" int32_t FLock(intptr_t fd, LockOperations operation);
+extern "C" int32_t SystemNative_FLock(intptr_t fd, LockOperations operation);
 
 /**
  * Changes the current working directory to be the specified path.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set
  */
-extern "C" int32_t ChDir(const char* path);
+extern "C" int32_t SystemNative_ChDir(const char* path);
 
 /**
  * Checks the access permissions of the current calling user on the specified path for the specified mode.
@@ -455,7 +455,7 @@ extern "C" int32_t ChDir(const char* path);
  * Returns -1 if the path cannot be found or the if desired access is not granted and errno is set; otherwise, returns
  * 0.
  */
-extern "C" int32_t Access(const char* path, AccessMode mode);
+extern "C" int32_t SystemNative_Access(const char* path, AccessMode mode);
 
 /**
  * Tests whether a pathname matches a specified pattern.
@@ -463,7 +463,7 @@ extern "C" int32_t Access(const char* path, AccessMode mode);
  * Returns 0 if the string matches; returns FNM_NOMATCH if the call succeeded but the
  * string does not match; otherwise, returns a non-zero error code.
  */
-extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags);
+extern "C" int32_t SystemNative_FnMatch(const char* pattern, const char* path, FnMatchFlags flags);
 
 /**
  * Seek to a specified location within a seekable stream
@@ -471,14 +471,14 @@ extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags f
  * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
  * returns -1 and errno is set.
  */
-extern "C" int64_t LSeek(intptr_t fd, int64_t offset, SeekWhence whence);
+extern "C" int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, SeekWhence whence);
 
 /**
  * Creates a hard-link at link pointing to source.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-extern "C" int32_t Link(const char* source, const char* linkTarget);
+extern "C" int32_t SystemNative_Link(const char* source, const char* linkTarget);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
@@ -486,7 +486,7 @@ extern "C" int32_t Link(const char* source, const char* linkTarget);
  *
  * Returns a valid File Descriptor on success; otherwise, returns -1 and errno is set.
  */
-extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength);
+extern "C" intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength);
 
 /**
  * Map file or device into memory. Implemented as shim to mmap(2).
@@ -496,7 +496,7 @@ extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength);
  * Note that null failure result is a departure from underlying
  * mmap(2) using non-null sentinel.
  */
-extern "C" void* MMap(void* address,
+extern "C" void* SystemNative_MMap(void* address,
                       uint64_t length,
                       int32_t protection, // bitwise OR of PAL_PROT_*
                       int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
@@ -508,42 +508,42 @@ extern "C" void* MMap(void* address,
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MUnmap(void* address, uint64_t length);
+extern "C" int32_t SystemNative_MUnmap(void* address, uint64_t length);
 
 /**
  * Give advice about use of memory. Implemented as shim to madvise(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice);
+extern "C" int32_t SystemNative_MAdvise(void* address, uint64_t length, MemoryAdvice advice);
 
 /**
  * Lock memory from being swapped out. Implemented as shim to mlock(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MLock(void* address, uint64_t length);
+extern "C" int32_t SystemNative_MLock(void* address, uint64_t length);
 
 /**
  * Unlock memory, allowing it to be swapped out. Implemented as shim to munlock(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MUnlock(void* address, uint64_t length);
+extern "C" int32_t SystemNative_MUnlock(void* address, uint64_t length);
 
 /**
  * Set protection on a region of memory. Implemented as shim to mprotect(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection);
+extern "C" int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection);
 
 /**
  * Sycnhronize a file with a memory map. Implemented as shim to mmap(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags);
+extern "C" int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags);
 
 /**
  * Get system configuration value. Implemented as shim to sysconf(3).
@@ -554,14 +554,14 @@ extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags);
  * note that -1 can also be a meaningful successful return value, in
  * which case errno is unchanged.
  */
-extern "C" int64_t SysConf(SysConfName name);
+extern "C" int64_t SystemNative_SysConf(SysConfName name);
 
 /**
  * Truncate a file to given length. Implemented as shim to ftruncate(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t FTruncate(intptr_t fd, int64_t length);
+extern "C" int32_t SystemNative_FTruncate(intptr_t fd, int64_t length);
 
 /**
  * Examines one or more file descriptors for the specified state(s) and blocks until the state(s) occur or the timeout
@@ -570,7 +570,7 @@ extern "C" int32_t FTruncate(intptr_t fd, int64_t length);
  * Returns an error or PAL_SUCCESS. `triggered` is set to the number of ready descriptors if any. The number of
  * triggered descriptors may be zero in the event of a timeout.
  */
-extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered);
+extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered);
 
 /**
  * Notifies the OS kernel that the specified file will be accessed in a particular way soon; this allows the kernel to
@@ -578,7 +578,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
  *
  * Returns 0 on success; otherwise, the error code is returned and errno is NOT set.
  */
-extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice);
+extern "C" int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
@@ -587,7 +587,7 @@ extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, Fil
  *
  * Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
  */
-extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize);
+extern "C" int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
@@ -595,7 +595,7 @@ extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize);
  *
  * Returns the number of bytes placed into the buffer on success; otherwise, -1 is returned and errno is set.
  */
-extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize);
+extern "C" int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize);
 
 /**
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2
@@ -603,26 +603,26 @@ extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize);
  *
  * Returns 0 on succes; otherwise, returns -1 and errno is set.
  */
-extern "C" int32_t Rename(const char* oldPath, const char* newPath);
+extern "C" int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
 
 /**
  * Deletes the specified empty directory.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-extern "C" int32_t RmDir(const char* path);
+extern "C" int32_t SystemNative_RmDir(const char* path);
 
 /**
  * Forces a write of all modified I/O buffers to their storage mediums.
  */
-extern "C" void Sync();
+extern "C" void SystemNative_Sync();
 
 /**
  * Writes the specified buffer to the provided open file descriptor
  *
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
-extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize);
+extern "C" int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
 * Initializes a new inotify instance and returns a file
@@ -631,7 +631,7 @@ extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 * Returns a new file descriptor on success.
 * On error, -1 is returned, and errno is set to indicate the error.
 */
-extern "C" intptr_t INotifyInit();
+extern "C" intptr_t SystemNative_INotifyInit();
 
 /**
 * Adds a new watch, or modifies an existing watch,
@@ -640,7 +640,7 @@ extern "C" intptr_t INotifyInit();
 * Returns a nonnegative watch descriptor on success.
 * On error -1 is returned and errno is set appropriately.
 */
-extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask);
+extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask);
 
 /**
 * Removes the watch associated with the watch descriptor wd
@@ -648,4 +648,4 @@ extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t m
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
-extern "C" int32_t INotifyRemoveWatch(intptr_t fd, int32_t wd);
+extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);

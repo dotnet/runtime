@@ -146,7 +146,15 @@ static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Stat(const char* path, FileStatus* output)
+{
+    return SystemNative_Stat(path, output);
+}
+
+extern "C" int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -160,7 +168,15 @@ extern "C" int32_t Stat(const char* path, FileStatus* output)
     return ret;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FStat(intptr_t fd, FileStatus* output)
+{
+    return SystemNative_FStat(fd, output);
+}
+
+extern "C" int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -174,7 +190,15 @@ extern "C" int32_t FStat(intptr_t fd, FileStatus* output)
     return ret;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t LStat(const char* path, FileStatus* output)
+{
+    return SystemNative_LStat(path, output);
+}
+
+extern "C" int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -227,7 +251,15 @@ static int32_t ConvertOpenFlags(int32_t flags)
     return ret;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode)
+{
+    return SystemNative_Open(path, flags, mode);
+}
+
+extern "C" intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
@@ -241,26 +273,58 @@ extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Close(intptr_t fd)
+{
+    return SystemNative_Close(fd);
+}
+
+extern "C" int32_t SystemNative_Close(intptr_t fd)
 {
     return close(ToFileDescriptor(fd));
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" intptr_t Dup(intptr_t oldfd)
+{
+    return SystemNative_Dup(oldfd);
+}
+
+extern "C" intptr_t SystemNative_Dup(intptr_t oldfd)
 {
     int result;
     while (CheckInterrupted(result = dup(ToFileDescriptor(oldfd))));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Unlink(const char* path)
+{
+    return SystemNative_Unlink(path);
+}
+
+extern "C" int32_t SystemNative_Unlink(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = unlink(path)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
+{
+    return SystemNative_ShmOpen(name, flags, mode);
+}
+
+extern "C" intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
@@ -278,7 +342,15 @@ extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t ShmUnlink(const char* name)
+{
+    return SystemNative_ShmUnlink(name);
+}
+
+extern "C" int32_t SystemNative_ShmUnlink(const char* name)
 {
     int32_t result;
     while (CheckInterrupted(result = shm_unlink(name)));
@@ -300,11 +372,27 @@ static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t GetDirentSize()
+{
+    return SystemNative_GetDirentSize();
+}
+
+extern "C" int32_t SystemNative_GetDirentSize()
 {
     // dirent should be under 2k in size
     static_assert(sizeof(dirent) < 2048, "");
     return sizeof(dirent);
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
+extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+{
+    return SystemNative_ReadDirR(dir, buffer, bufferSize, outputEntry);
 }
 
 // To reduce the number of string copies, this function calling pattern works as follows:
@@ -318,7 +406,7 @@ extern "C" int32_t GetDirentSize()
 //    in the byte[] buffer so the managed code and find it and copy it out of the
 //    buffer into a managed string that the caller of the framework can use, making
 //    the 2nd and final strcpy.
-extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
     assert(buffer != nullptr);
     assert(dir != nullptr);
@@ -355,17 +443,41 @@ extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, Director
     return 0;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" DIR* OpenDir(const char* path)
+{
+    return SystemNative_OpenDir(path);
+}
+
+extern "C" DIR* SystemNative_OpenDir(const char* path)
 {
     return opendir(path);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t CloseDir(DIR* dir)
+{
+    return SystemNative_CloseDir(dir);
+}
+
+extern "C" int32_t SystemNative_CloseDir(DIR* dir)
 {
     return closedir(dir);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
+{
+    return SystemNative_Pipe(pipeFds, flags);
+}
+
+extern "C" int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
     switch (flags)
     {
@@ -389,7 +501,15 @@ extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FcntlCanGetSetPipeSz()
+{
+    return SystemNative_FcntlCanGetSetPipeSz();
+}
+
+extern "C" int32_t SystemNative_FcntlCanGetSetPipeSz()
 {
 #if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)
     return true;
@@ -398,7 +518,15 @@ extern "C" int32_t FcntlCanGetSetPipeSz()
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
+{
+    return SystemNative_FcntlGetPipeSz(fd);
+}
+
+extern "C" int32_t SystemNative_FcntlGetPipeSz(intptr_t fd)
 {
 #ifdef F_GETPIPE_SZ
     int32_t result;
@@ -411,7 +539,15 @@ extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size)
+{
+    return SystemNative_FcntlSetPipeSz(fd, size);
+}
+
+extern "C" int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size)
 {
 #ifdef F_SETPIPE_SZ
     int32_t result;
@@ -424,7 +560,15 @@ extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size)
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
+{
+    return SystemNative_FcntlSetIsNonBlocking(fd, isNonBlocking);
+}
+
+extern "C" int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
@@ -446,73 +590,161 @@ extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
     return fcntl(fileDescriptor, F_SETFL, flags);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MkDir(const char* path, int32_t mode)
+{
+    return SystemNative_MkDir(path, mode);
+}
+
+extern "C" int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = mkdir(path, static_cast<mode_t>(mode))));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t ChMod(const char* path, int32_t mode)
+{
+    return SystemNative_ChMod(path, mode);
+}
+
+extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = chmod(path, static_cast<mode_t>(mode))));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MkFifo(const char* path, int32_t mode)
+{
+    return SystemNative_MkFifo(path, mode);
+}
+
+extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = mkfifo(path, static_cast<mode_t>(mode))));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FSync(intptr_t fd)
+{
+    return SystemNative_FSync(fd);
+}
+
+extern "C" int32_t SystemNative_FSync(intptr_t fd)
 {
     int32_t result;
     while (CheckInterrupted(result = fsync(ToFileDescriptor(fd))));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FLock(intptr_t fd, LockOperations operation)
+{
+    return SystemNative_FLock(fd, operation);
+}
+
+extern "C" int32_t SystemNative_FLock(intptr_t fd, LockOperations operation)
 {
     int32_t result;
     while (CheckInterrupted(result = flock(ToFileDescriptor(fd), operation)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t ChDir(const char* path)
+{
+    return SystemNative_ChDir(path);
+}
+
+extern "C" int32_t SystemNative_ChDir(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = chdir(path)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Access(const char* path, AccessMode mode)
+{
+    return SystemNative_Access(path, mode);
+}
+
+extern "C" int32_t SystemNative_Access(const char* path, AccessMode mode)
 {
     return access(path, mode);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
+{
+    return SystemNative_FnMatch(pattern, path, flags);
+}
+
+extern "C" int32_t SystemNative_FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
 {
     return fnmatch(pattern, path, flags);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int64_t LSeek(intptr_t fd, int64_t offset, SeekWhence whence)
+{
+    return SystemNative_LSeek(fd, offset, whence);
+}
+
+extern "C" int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, SeekWhence whence)
 {
     int64_t result;
     while (CheckInterrupted(result = lseek(ToFileDescriptor(fd), offset, whence)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Link(const char* source, const char* linkTarget)
+{
+    return SystemNative_Link(source, linkTarget);
+}
+
+extern "C" int32_t SystemNative_Link(const char* source, const char* linkTarget)
 {
     int32_t result;
     while (CheckInterrupted(result = link(source, linkTarget)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength)
+{
+    return SystemNative_MksTemps(pathTemplate, suffixLength);
+}
+
+extern "C" intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
     while (CheckInterrupted(result = mkstemps(pathTemplate, suffixLength)));
@@ -582,14 +814,27 @@ static int32_t ConvertMSyncFlags(int32_t flags)
     return ret;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" void* MMap(void* address,
-                      uint64_t length,
-                      int32_t protection, // bitwise OR of PAL_PROT_*
-                      int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
-                      intptr_t fd,
-                      int64_t offset)
+    uint64_t length,
+    int32_t protection, // bitwise OR of PAL_PROT_*
+    int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+    intptr_t fd,
+    int64_t offset)
 {
-    if (length > SIZE_MAX)
+    return SystemNative_MMap(address, length, protection, flags, fd, offset);
+}
+
+extern "C" void* SystemNative_MMap(void* address,
+    uint64_t length,
+    int32_t protection, // bitwise OR of PAL_PROT_*
+    int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+    intptr_t fd,
+    int64_t offset)
+{
+        if (length > SIZE_MAX)
     {
         errno = ERANGE;
         return nullptr;
@@ -615,7 +860,15 @@ extern "C" void* MMap(void* address,
     return ret;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MUnmap(void* address, uint64_t length)
+{
+    return SystemNative_MUnmap(address, length);
+}
+
+extern "C" int32_t SystemNative_MUnmap(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -626,7 +879,15 @@ extern "C" int32_t MUnmap(void* address, uint64_t length)
     return munmap(address, static_cast<size_t>(length));
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
+{
+    return SystemNative_MAdvise(address, length, advice);
+}
+
+extern "C" int32_t SystemNative_MAdvise(void* address, uint64_t length, MemoryAdvice advice)
 {
     if (length > SIZE_MAX)
     {
@@ -651,7 +912,15 @@ extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
     return -1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MLock(void* address, uint64_t length)
+{
+    return SystemNative_MLock(address, length);
+}
+
+extern "C" int32_t SystemNative_MLock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -662,7 +931,15 @@ extern "C" int32_t MLock(void* address, uint64_t length)
     return mlock(address, static_cast<size_t>(length));
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MUnlock(void* address, uint64_t length)
+{
+    return SystemNative_MUnlock(address, length);
+}
+
+extern "C" int32_t SystemNative_MUnlock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -673,7 +950,15 @@ extern "C" int32_t MUnlock(void* address, uint64_t length)
     return munlock(address, static_cast<size_t>(length));
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection)
+{
+    return SystemNative_MProtect(address, length, protection);
+}
+
+extern "C" int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
 {
     if (length > SIZE_MAX)
     {
@@ -691,7 +976,15 @@ extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection)
     return mprotect(address, static_cast<size_t>(length), protection);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags)
+{
+    return SystemNative_MSync(address, length, flags);
+}
+
+extern "C" int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
 {
     if (length > SIZE_MAX)
     {
@@ -709,7 +1002,15 @@ extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags)
     return msync(address, static_cast<size_t>(length), flags);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int64_t SysConf(SysConfName name)
+{
+    return SystemNative_SysConf(name);
+}
+
+extern "C" int64_t SystemNative_SysConf(SysConfName name)
 {
     switch (name)
     {
@@ -724,14 +1025,30 @@ extern "C" int64_t SysConf(SysConfName name)
     return -1;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t FTruncate(intptr_t fd, int64_t length)
+{
+    return SystemNative_FTruncate(fd, length);
+}
+
+extern "C" int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
 {
     int32_t result;
     while (CheckInterrupted(result = ftruncate(ToFileDescriptor(fd), length)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
+{
+    return SystemNative_Poll(pollEvents, eventCount, milliseconds, triggered);
+}
+
+extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     if (pollEvents == nullptr || triggered == nullptr)
     {
@@ -764,7 +1081,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
         }
 
         *triggered = 0;
-        return ConvertErrorPlatformToPal(errno);
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
     for (uint32_t i = 0; i < eventCount; i++)
@@ -786,7 +1103,15 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
     return PAL_SUCCESS;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice)
+{
+    return SystemNative_PosixFAdvise(fd, offset, length, advice);
+}
+
+extern "C" int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice)
 {
 #if HAVE_POSIX_ADVISE
     int32_t result;
@@ -799,7 +1124,15 @@ extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, Fil
 #endif
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize)
+{
+    return SystemNative_Read(fd, buffer, bufferSize);
+}
+
+extern "C" int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -817,7 +1150,15 @@ extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
+{
+    return SystemNative_ReadLink(path, buffer, bufferSize);
+}
+
+extern "C" int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -833,26 +1174,58 @@ extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Rename(const char* oldPath, const char* newPath)
+{
+    return SystemNative_Rename(oldPath, newPath);
+}
+
+extern "C" int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
 {
     int32_t result;
     while (CheckInterrupted(result = rename(oldPath, newPath)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t RmDir(const char* path)
+{
+    return SystemNative_RmDir(path);
+}
+
+extern "C" int32_t SystemNative_RmDir(const char* path)
 {
     int32_t result;
     while (CheckInterrupted(result = rmdir(path)));
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" void Sync()
+{
+    SystemNative_Sync();
+}
+
+extern "C" void SystemNative_Sync()
 {
     sync();
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the managed assemblies
+// are synced up with the native assemblies.
 extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize)
+{
+    return SystemNative_Write(fd, buffer, bufferSize);
+}
+
+extern "C" int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -870,7 +1243,7 @@ extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C" intptr_t INotifyInit()
+extern "C" intptr_t SystemNative_INotifyInit()
 {
 #if HAVE_INOTIFY
     return inotify_init();
@@ -880,7 +1253,7 @@ extern "C" intptr_t INotifyInit()
 #endif
 }
 
-extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
+extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask)
 {
     assert(fd >= 0);
     assert(pathName != nullptr);
@@ -894,7 +1267,7 @@ extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t m
 #endif
 }
 
-extern "C" int32_t INotifyRemoveWatch(intptr_t fd, int32_t wd)
+extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
 {
     assert(fd >= 0);
     assert(wd >= 0);

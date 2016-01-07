@@ -15,7 +15,7 @@ internal static partial class Interop
             FNM_NONE = 0,
         }
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FnMatch", SetLastError = true)]
         internal static extern int FnMatch(string pattern, string path, FnMatchFlags flags);
     }
 }

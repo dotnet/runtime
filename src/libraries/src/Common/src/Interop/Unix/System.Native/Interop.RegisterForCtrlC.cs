@@ -15,10 +15,10 @@ internal partial class Interop
 
         internal delegate bool CtrlCallback(CtrlCode ctrlCode);
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForCtrl", SetLastError = true)]
         internal static extern bool RegisterForCtrl(CtrlCallback handler);
 
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnregisterForCtrl")]
         internal static extern void UnregisterForCtrl();
     }
 }

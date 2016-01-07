@@ -57,12 +57,12 @@ static int32_t GetMountInfo(MountPointFound onFound)
 
 #endif
 
-extern "C" int32_t GetAllMountPoints(MountPointFound onFound)
+extern "C" int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
     return GetMountInfo(onFound);
 }
 
-extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
+extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {
     assert(name != nullptr);
     assert(mpi != nullptr);
@@ -92,7 +92,7 @@ extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInforma
 }
 
 extern "C" int32_t
-GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
+SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert((formatNameBuffer != nullptr) && (formatType != nullptr));
     assert(bufferLength > 0);

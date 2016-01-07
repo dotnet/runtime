@@ -26,7 +26,7 @@ internal static partial class Interop
         /// success; if the return value is equal to the size then the result may have been truncated. 
         /// On failure, returns a negative value.
         /// </returns>
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]
         internal static unsafe extern int SNPrintF(byte* str, int size, string format, string arg1);
 
         /// <summary>
@@ -47,7 +47,7 @@ internal static partial class Interop
         /// success; if the return value is equal to the size then the result may have been truncated. 
         /// On failure, returns a negative value.
         /// </returns>
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]
         internal static unsafe extern int SNPrintF(byte* str, int size, string format, int arg1);
     }
 }

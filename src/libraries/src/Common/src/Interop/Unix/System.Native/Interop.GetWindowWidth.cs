@@ -17,7 +17,7 @@ internal static partial class Interop
             internal ushort YPixel;
         };
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetWindowSize", SetLastError = true)]
         internal static extern int GetWindowSize(out WinSize winSize);
     }
 }

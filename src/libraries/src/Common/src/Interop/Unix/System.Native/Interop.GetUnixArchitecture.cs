@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative)]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixArchitecture")]
         internal static extern int GetUnixArchitecture();
 
         internal enum ProcessorArchitecture

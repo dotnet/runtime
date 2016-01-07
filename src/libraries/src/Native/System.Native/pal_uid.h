@@ -27,7 +27,7 @@ struct Passwd
 * number for any other failure.
 *
 */
-extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
+extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
 * Gets and returns the effective user's identity.
@@ -35,7 +35,7 @@ extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t bufle
 *
 * Always succeeds.
 */
-extern "C" uint32_t GetEUid();
+extern "C" uint32_t SystemNative_GetEUid();
 
 /**
 * Gets and returns the effective group's identity.
@@ -43,4 +43,4 @@ extern "C" uint32_t GetEUid();
 *
 * Always succeeds.
 */
-extern "C" uint32_t GetEGid();
+extern "C" uint32_t SystemNative_GetEGid();

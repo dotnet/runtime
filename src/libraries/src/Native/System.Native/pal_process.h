@@ -17,7 +17,7 @@
  * is failure; if failure, error information is provided in errno.
  */
 extern "C" int32_t
-ForkAndExecProcess(const char* filename,   // filename argument to execve
+SystemNative_ForkAndExecProcess(const char* filename,   // filename argument to execve
                    char* const argv[],     // argv argument to execve
                    char* const envp[],     // envp argument to execve
                    const char* cwd,        // path passed to chdir in child process
@@ -164,40 +164,40 @@ struct CpuSetBits
  * Get the current limit for the specified resource of the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-extern "C" int32_t GetRLimit(RLimitResources resourceType, RLimit* limits);
+extern "C" int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits);
 
 /**
  * Set the soft and hard limits for the specified resource.
  * Only a super-user can increase hard limits for the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-extern "C" int32_t SetRLimit(RLimitResources resourceType, const RLimit* limits);
+extern "C" int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits);
 
 /**
  * Kill the specified process (or process group) identified by the supplied pid; the
  * process or process group will be killed by the specified signal.
  * Returns 0 on success; on failure, -1 is returned and errno is set
  */
-extern "C" int32_t Kill(int32_t pid, int32_t signal);
+extern "C" int32_t SystemNative_Kill(int32_t pid, int32_t signal);
 
 /**
  * Returns the Process ID of the current executing process.
  * This call should never fail
  */
-extern "C" int32_t GetPid();
+extern "C" int32_t SystemNative_GetPid();
 
 /**
  * Returns the sessions ID of the specified process; if 0 is passed in, returns the
  * session ID of the current process.
  * Returns a session ID on success; otherwise, returns -1 and sets errno.
  */
-extern "C" int32_t GetSid(int32_t pid);
+extern "C" int32_t SystemNative_GetSid(int32_t pid);
 
 /**
  * Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
  * See man 3 syslog for more info
  */
-extern "C" void SysLog(SysLogPriority priority, const char* message, const char* arg1);
+extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
  * Waits for child process(s) or gathers resource utilization information about child processes
@@ -208,18 +208,18 @@ extern "C" void SysLog(SysLogPriority priority, const char* message, const char*
  * 3) if WNOHANG is specified and there are no stopped or exited children, 0 is returned
  * 4) on error, -1 is returned and errno is set
  */
-extern "C" int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options);
+extern "C" int32_t SystemNative_WaitPid(int32_t pid, int32_t* status, WaitPidOptions options);
 
 /**
  * The four functions below are wrappers around the platform-specific macros of the same name.
  */
-extern "C" int32_t WExitStatus(int32_t status);
+extern "C" int32_t SystemNative_WExitStatus(int32_t status);
 
-extern "C" int32_t WIfExited(int32_t status);
+extern "C" int32_t SystemNative_WIfExited(int32_t status);
 
-extern "C" int32_t WIfSignaled(int32_t status);
+extern "C" int32_t SystemNative_WIfSignaled(int32_t status);
 
-extern "C" int32_t WTermSig(int32_t status);
+extern "C" int32_t SystemNative_WTermSig(int32_t status);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.
@@ -227,14 +227,14 @@ extern "C" int32_t WTermSig(int32_t status);
  * Returns the requested variable value on success; if the variable does not have a limit, -1 is returned and errno
  * is not set; otherwise, -1 is returned and errno is set.
  */
-extern "C" int64_t PathConf(const char* path, PathConfName name);
+extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name);
 
 /**
  * Gets the current (or default, on failure) Maximum Path allowed by the system.
  *
  * This is called out explicitly, rather than using PathConf, since the default value changes depending on the platform.
  */
-extern "C" int64_t GetMaximumPath();
+extern "C" int64_t SystemNative_GetMaximumPath();
 
 /**
  * Gets the priority (nice value) of a certain execution group.
@@ -243,19 +243,19 @@ extern "C" int64_t GetMaximumPath();
  * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so
  * we need to reset errno before a call and check the value if we get -1.
  */
-extern "C" int32_t GetPriority(PriorityWhich which, int32_t who);
+extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
 
 /**
  * Sets the priority (nice value) of a certain execution group.
  *
  * Returns 0 on success; otherwise, -1 and errno is set.
  */
-extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice);
+extern "C" int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
 
 /**
  * Gets the current working directory of the currently executing process.
  */
-extern "C" char* GetCwd(char* buffer, int32_t bufferSize);
+extern "C" char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
 #if HAVE_SCHED_SETAFFINITY
 /**
@@ -263,7 +263,7 @@ extern "C" char* GetCwd(char* buffer, int32_t bufferSize);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask);
+extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -272,5 +272,5 @@ extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
-extern "C" int32_t SchedGetAffinity(int32_t pid, intptr_t* mask);
+extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
