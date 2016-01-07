@@ -2834,9 +2834,9 @@ mono_get_unique_iid (MonoClass *klass)
 	}
 #endif
 
-	/* I've confirmed iids safe past 16 bits, however haven't bitset code still uses a signed
-	 * int while testing. Once this changes, it should be safe for us to allow 2^32-1 interfaces. */
-	g_assert (iid <= 1000000000);
+	/* I've confirmed iids safe past 16 bits, however bitset code uses a signed int while testing.
+	 * Once this changes, it should be safe for us to allow 2^32-1 interfaces, until then 2^31-2 is the max. */
+	g_assert (iid < INT_MAX);
 	return iid;
 }
 
@@ -5905,7 +5905,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 
 		/* This is required now that it is possible for more than 2^16 interfaces to exist. */
-		g_assert(icount < 65535);
+		g_assert(icount <= 65535);
 
 		klass->interfaces = interfaces;
 		klass->interface_count = icount;
