@@ -3343,9 +3343,7 @@ Lowering::LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data)
     GenTreePtr arrObjNode = arrElem->gtArrObj;
     assert(arrObjNode->IsLocal());
 
-    GenTreePtr nextNode = arrElem->gtNext;
-    // ??? Can we have a top-level GT_ARR_ELEM ???
-    noway_assert(nextNode != nullptr);
+    GenTreePtr nextNode = arrElem;
 
     // We need to evaluate the index expressions up-front if they have side effects.
     for (unsigned char dim = 0; dim < rank; dim++)
@@ -3371,7 +3369,6 @@ Lowering::LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data)
     GenTree* prevArrOffs = new(comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
     comp->fgInsertLinearNodeBefore(prevArrOffs, arrObjNode);
 
-    comp->fgSnipInnerNode(arrElem);
     for (unsigned char dim = 0; dim < rank; dim++)
     {
         GenTree* currIndexTree = arrElem->gtArrElem.gtArrInds[dim];
@@ -3449,6 +3446,19 @@ Lowering::LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data)
     comp->fgInsertLinearNodeBefore(leaNode, nextNode);
 
     *ppTree = leaNode;
+
+    if (arrElem->gtNext != nullptr)
+    {
+        comp->fgSnipInnerNode(arrElem);
+    }
+    else
+    {
+        // We can have a top-level GT_ARR_ELEM. For example, a function call
+        // with a parameter of GT_ARR_ELEM can end up being simplified by the
+        // inliner to single GT_ARR_ELEM node if the function has an empty body.
+        arrElem->gtPrev->gtNext = nullptr;
+        curStmt->gtStmt.gtStmtExpr = *ppTree;
+    }
 
     // Update the costs.
     comp->gtSetStmtInfo(curStmt);
