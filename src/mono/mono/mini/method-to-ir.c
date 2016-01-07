@@ -12729,6 +12729,75 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 2;
 				break;
 			}
+			case CEE_MONO_CALLI_EXTRA_ARG: {
+				MonoInst *addr;
+				MonoMethodSignature *fsig;
+				MonoInst *arg;
+
+				/*
+				 * This is the same as CEE_CALLI, but passes an additional argument
+				 * to the called method in llvmonly mode.
+				 * This is only used by delegate invoke wrappers to call the
+				 * actual delegate method.
+				 */
+				g_assert (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE);
+
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+
+				ins = NULL;
+
+				cmethod = NULL;
+				CHECK_STACK (1);
+				--sp;
+				addr = *sp;
+				fsig = mini_get_signature (method, token, generic_context);
+
+				n = fsig->param_count + fsig->hasthis + 1;
+
+				CHECK_STACK (n);
+
+				sp -= n;
+				arg = sp [n - 1];
+
+				if (cfg->llvm_only) {
+					if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig)) {
+						MonoInst *callee = addr;
+
+						GSHAREDVT_FAILURE (*ip);
+
+						addr = emit_get_rgctx_sig (cfg, context_used,
+												   fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
+						ins = emit_extra_arg_calli (cfg, fsig, sp, arg->dreg, callee);
+					} else {
+						ins = emit_extra_arg_calli (cfg, fsig, sp, arg->dreg, addr);
+					}
+				} else {
+					/* Same as CEE_CALLI */
+					if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig)) {
+						/*
+						 * We pass the address to the gsharedvt trampoline in the rgctx reg
+						 */
+						MonoInst *callee = addr;
+
+						addr = emit_get_rgctx_sig (cfg, context_used,
+												   fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
+						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, callee);
+					} else {
+						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+					}
+				}
+
+				if (!MONO_TYPE_IS_VOID (fsig->ret))
+					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
+
+				CHECK_CFG_EXCEPTION;
+
+				ip += 6;
+				ins_flag = 0;
+				constrained_class = NULL;
+				break;
+			}
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
