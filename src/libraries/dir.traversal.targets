@@ -21,7 +21,10 @@
       </Project>
       <Project>
         <!-- If a project isn't setting the OSGroup via metadata then undefine it so that the globally set OSGroup doesn't override empty OSGroup -->
-        <UndefineProperties Condition="'%(Project.OSGroup)'==''">$(UndefineProperties);OSGroup</UndefineProperties>
+        <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
+      </Project>
+      <Project>
+        <UndefineProperties Condition="'%(Project.Extension)'!='.builds'">%(Project.UndefineProperties);FilterToOSGroup</UndefineProperties>
       </Project>
     </ItemGroup>
 
