@@ -55,7 +55,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (baseReader == null)
                 {
-                    throw new ArgumentNullException("deltaReaders");
+                    throw new ArgumentNullException("baseReader");
                 }
 
                 if (baseReader.GetTableRowCount(TableIndex.EncMap) != 0)
