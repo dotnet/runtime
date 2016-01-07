@@ -2918,7 +2918,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
-			encode_value (info->d.runtime_invoke.pass_rgctx, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
 				encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL)
@@ -3324,13 +3323,13 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
 	m = mono_mb_create_method (mb, sig, 16);
-	return mono_marshal_get_runtime_invoke (m, FALSE, FALSE);
+	return mono_marshal_get_runtime_invoke (m, FALSE);
 }
 
 static MonoMethod*
 get_runtime_invoke (MonoAotCompile *acfg, MonoMethod *method, gboolean virtual_)
 {
-	return mono_marshal_get_runtime_invoke (method, virtual_, acfg->aot_opts.llvm_only && mono_method_needs_static_rgctx_invoke (method, TRUE));
+	return mono_marshal_get_runtime_invoke (method, virtual_);
 }
 
 static gboolean

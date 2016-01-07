@@ -6035,7 +6035,7 @@ mono_runtime_capture_context (MonoDomain *domain)
 		MonoMethod *wrapper;
 		if (!method)
 			return NULL;
-		wrapper = mono_marshal_get_runtime_invoke (method, FALSE, FALSE);
+		wrapper = mono_marshal_get_runtime_invoke (method, FALSE);
 		domain->capture_context_runtime_invoke = mono_compile_method (wrapper);
 		domain->capture_context_method = mono_compile_method (method);
 	}

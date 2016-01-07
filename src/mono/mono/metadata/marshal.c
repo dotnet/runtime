@@ -3872,11 +3872,9 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoImage *image, MonoMethod *m
  * it means that the compiled code for METHOD does not have to be looked up 
  * before calling the runtime invoke wrapper. In this case, the wrapper ignores
  * its METHOD argument.
- * If PASS_RGCTX is TRUE, the signature of the called method is changed to include a 'gpointer rgctx' as the
- * last argument (after 'this').
  */
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean pass_rgctx)
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoMethodBuilder *mb;
@@ -3942,11 +3940,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean
 
 	sig = mono_method_signature (method);
 
-	if (pass_rgctx) {
-		sig = sig_to_rgctx_sig (sig);
-		callsig = sig_to_rgctx_sig (callsig);
-	}
-
 	target_klass = get_wrapper_target_class (method->klass->image);
 
 	/* Try to share wrappers for non-corlib methods with simple signatures */
@@ -4006,7 +3999,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean
 	csig->call_convention = MONO_CALL_C;
 #endif
 
-	name = mono_signature_to_name (callsig, pass_rgctx ? (virtual_ ? "runtime_invoke_virtual_rgctx" : "runtime_invoke_rgctx") : (virtual_ ? "runtime_invoke_virtual" : "runtime_invoke"));
+	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : "runtime_invoke");
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
 
@@ -4035,7 +4028,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_, gboolean
 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
 		info->d.runtime_invoke.sig = callsig;
-		info->d.runtime_invoke.pass_rgctx = pass_rgctx;
 
 		/* Somebody may have created it before us */
 		if (!res) {
