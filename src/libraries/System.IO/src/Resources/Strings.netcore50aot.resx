@@ -213,4 +213,13 @@
   <data name="InvalidOperation_Calling" xml:space="preserve">
     <value>WinRT Interop has already been initialized and cannot be initialized again.</value>
   </data>
+  <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
+    <value>'{0}' must be greater than zero.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
+    <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
+  </data>
 </root>

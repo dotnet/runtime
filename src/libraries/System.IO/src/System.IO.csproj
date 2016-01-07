@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO</AssemblyName>
     <ProjectGuid>{07390899-C8F6-4e83-A3A9-6867B8CB46A0}</ProjectGuid>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
@@ -27,7 +27,15 @@
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
+      <Name>System.Diagnostics.Debug</Name>
+    </ProjectReference>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
   </ItemGroup>
 
@@ -58,6 +66,7 @@
 
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
