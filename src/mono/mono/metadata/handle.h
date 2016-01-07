@@ -145,6 +145,14 @@ mono_handle_domain (MonoHandle handle)
 		MONO_FINISH_GC_CRITICAL_REGION;					\
 	} while (0)
 
+#define MONO_HANDLE_SETREF_NULL(handle,fieldname)			\
+	do {								\
+		MONO_PREPARE_GC_CRITICAL_REGION;			\
+		MONO_OBJECT_SETREF (mono_handle_obj ((handle)), fieldname, NULL); \
+		MONO_FINISH_GC_CRITICAL_REGION;				\
+	} while (0)
+
+
 #define MONO_HANDLE_SET(handle,fieldname,value)	\
 	do {	\
 		MONO_PREPARE_GC_CRITICAL_REGION;	\
@@ -159,6 +167,14 @@ mono_handle_domain (MonoHandle handle)
 		mono_array_setref (mono_handle_obj ((handle)), (index), mono_handle_obj (__value)); \
 		MONO_FINISH_GC_CRITICAL_REGION;					\
 	} while (0)
+
+#define MONO_HANDLE_ARRAY_SETREF_NULL(handle,index)			\
+	do {								\
+		MONO_PREPARE_GC_CRITICAL_REGION;			\
+		mono_array_setref (mono_handle_obj ((handle)), (index), NULL); \
+		MONO_FINISH_GC_CRITICAL_REGION;				\
+	} while (0)
+	
 
 #define MONO_HANDLE_ARRAY_SET(handle,type,index,value)	\
 	do {	\
