@@ -19,14 +19,6 @@ namespace System.IO
     // There are methods on the Stream class for reading bytes. 
     public abstract class TextReader : IDisposable
     {
-        private static Func<object, string> s_readLineDelegate = state => ((TextReader)state).ReadLine();
-
-        private static Func<object, int> s_readDelegate = state =>
-        {
-            Tuple<TextReader, char[], int, int> tuple = (Tuple<TextReader, char[], int, int>)state;
-            return tuple.Item1.Read(tuple.Item2, tuple.Item3, tuple.Item4);
-        };
-
         public static readonly TextReader Null = new NullTextReader();
 
         protected TextReader() { }
@@ -163,7 +155,11 @@ namespace System.IO
         #region Task based Async APIs
         public virtual Task<string> ReadLineAsync()
         {
-            return Task<string>.Factory.StartNew(s_readLineDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task<String>.Factory.StartNew(state =>
+            {
+                return ((TextReader)state).ReadLine();
+            },
+            this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public async virtual Task<string> ReadToEndAsync()
@@ -203,8 +199,13 @@ namespace System.IO
             Debug.Assert(count >= 0);
             Debug.Assert(buffer.Length - index >= count);
 
-            Tuple<TextReader, char[], int, int> tuple = new Tuple<TextReader, char[], int, int>(this, buffer, index, count);
-            return Task<int>.Factory.StartNew(s_readDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextReader, char[], int, int>(this, buffer, index, count);
+            return Task<int>.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextReader, char[], int, int>)state;
+                return t.Item1.Read(t.Item2, t.Item3, t.Item4);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
