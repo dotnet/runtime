@@ -49,10 +49,13 @@ namespace System.Net.Sockets
         {
             lock (_lockObject)
             {
-                GlobalLog.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
-                     endPoint.AddressFamily == AddressFamily.InterNetwork ||
-                     endPoint.AddressFamily == AddressFamily.InterNetworkV6,
-                     "MultipleConnectAsync.StartConnectAsync(): Unexpected endpoint address family - " + endPoint.AddressFamily.ToString());
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
+                         endPoint.AddressFamily == AddressFamily.InterNetwork ||
+                         endPoint.AddressFamily == AddressFamily.InterNetworkV6,
+                         "MultipleConnectAsync.StartConnectAsync(): Unexpected endpoint address family - " + endPoint.AddressFamily.ToString());
+                }
 
                 _userArgs = args;
                 _endPoint = endPoint;

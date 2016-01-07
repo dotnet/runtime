@@ -142,7 +142,7 @@ namespace System.Net
             {
                 if (InternalPeekCompleted)
                 {
-                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0 && GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Called on completed result.", LoggingHash.HashString(this));
                     }
@@ -157,7 +157,7 @@ namespace System.Net
                 }
 
                 // Make sure the context was requested.
-                if (AsyncCallback == null && (_flags & StateFlags.CaptureContext) == 0)
+                if (AsyncCallback == null && (_flags & StateFlags.CaptureContext) == 0 && GlobalLog.IsEnabled)
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", LoggingHash.HashString(this));
                 }
@@ -175,7 +175,7 @@ namespace System.Net
 
                 if (InternalPeekCompleted)
                 {
-                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0 && GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Result became completed during call.", LoggingHash.HashString(this));
                     }
@@ -210,7 +210,7 @@ namespace System.Net
                 }
 
                 // Make sure the identity was requested.
-                if ((_flags & StateFlags.CaptureIdentity) == 0)
+                if ((_flags & StateFlags.CaptureIdentity) == 0 && GlobalLog.IsEnabled)
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
                 }
@@ -263,7 +263,7 @@ namespace System.Net
         // object from being created.
         internal object StartPostingAsyncOp(bool lockCapture)
         {
-            if (InternalPeekCompleted)
+            if (InternalPeekCompleted && GlobalLog.IsEnabled)
             {
                 GlobalLog.AssertFormat("ContextAwareResult#{0}::StartPostingAsyncOp|Called on completed result.", LoggingHash.HashString(this));
             }
@@ -341,7 +341,11 @@ namespace System.Net
         {
             base.Cleanup();
 
-            GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::Cleanup()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::Cleanup()");
+            }
+
 #if !NetNative
             if (_windowsIdentity != null)
             {
@@ -359,7 +363,7 @@ namespace System.Net
         // Returns whether the operation completed sync or not.
         private bool CaptureOrComplete(ref ExecutionContext cachedContext, bool returnContext)
         {
-            if ((_flags & StateFlags.PostBlockStarted) == 0)
+            if ((_flags & StateFlags.PostBlockStarted) == 0 && GlobalLog.IsEnabled)
             {
                 GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", LoggingHash.HashString(this));
             }
@@ -367,12 +371,18 @@ namespace System.Net
             // See if we're going to need to capture the context.
             bool capturingContext = AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0;
 
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+
             // Peek if we've already completed, but don't fix CompletedSynchronously yet
             // Capture the identity if requested, unless we're going to capture the context anyway, unless
             // capturing the context won't be sufficient.
             if ((_flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
             {
-                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting identity capture");
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting identity capture");
+                }
+
                 SafeCaptureIdentity();
             }
 
@@ -380,7 +390,11 @@ namespace System.Net
             // Note that Capture() can return null, for example if SuppressFlow() is in effect.
             if (capturingContext && !InternalPeekCompleted)
             {
-                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting capture");
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting capture");
+                }
+
                 if (cachedContext == null)
                 {
                     cachedContext = ExecutionContext.Capture();
@@ -398,14 +412,22 @@ namespace System.Net
                         _context = cachedContext.CreateCopy();
                     }
                 }
-                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() _Context:" + LoggingHash.HashString(_context));
+
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() _Context:" + LoggingHash.HashString(_context));
+                }
             }
             else
             {
                 // Otherwise we have to have completed synchronously, or not needed the context.
-                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() skipping capture");
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() skipping capture");
+                }
+
                 cachedContext = null;
-                if (AsyncCallback != null && !CompletedSynchronously)
+                if (AsyncCallback != null && !CompletedSynchronously && globalLogEnabled)
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Didn't capture context, but didn't complete synchronously!", LoggingHash.HashString(this));
                 }
@@ -418,7 +440,11 @@ namespace System.Net
             DebugProtectState(false);
             if (CompletedSynchronously)
             {
-                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() completing synchronously");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() completing synchronously");
+                }
+
                 base.Complete(IntPtr.Zero);
                 return true;
             }
@@ -429,7 +455,10 @@ namespace System.Net
         // This method is guaranteed to be called only once.  If called with a non-zero userToken, the context is not flowed.
         protected override void Complete(IntPtr userToken)
         {
-            GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::Complete() _Context(set):" + (_context != null).ToString() + " userToken:" + userToken.ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::Complete() _Context(set):" + (_context != null).ToString() + " userToken:" + userToken.ToString());
+            }
 
             // If no flowing, just complete regularly.
             if ((_flags & StateFlags.PostBlockStarted) == 0)

@@ -29,7 +29,10 @@ namespace System.Net
         private void Trace()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
-            GlobalLog.Print("Creating SafeHandle, type = " + this.GetType().FullName);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Creating SafeHandle, type = " + this.GetType().FullName);
+            }
 #if TRACE_VERBOSE
             string stacktrace = Environment.StackTrace;
             _trace += stacktrace;

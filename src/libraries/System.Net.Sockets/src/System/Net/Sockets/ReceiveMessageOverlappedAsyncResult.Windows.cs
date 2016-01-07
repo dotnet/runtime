@@ -160,7 +160,7 @@ namespace System.Net.Sockets
 
         private void LogBuffer(int size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
+            if (!SocketsEventSource.Log.IsEnabled() && GlobalLog.IsEnabled)
             {
                 GlobalLog.AssertFormat("ReceiveMessageOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
             }

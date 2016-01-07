@@ -69,7 +69,7 @@ namespace System.Net
                 (kind & ~(ThreadKinds.OwnerMask | ThreadKinds.SyncMask)) |
                 source);
 
-            if (CurrentThreadKind != threadKind)
+            if (CurrentThreadKind != threadKind && IsEnabled)
             {
                 Print("Thread becomes:(" + CurrentThreadKind.ToString() + ")");
             }
@@ -101,7 +101,7 @@ namespace System.Net
 
                 ThreadKinds previous = ThreadKindStack.Pop();
 
-                if (CurrentThreadKind != previous)
+                if (CurrentThreadKind != previous && IsEnabled)
                 {
                     Print("Thread reverts:(" + CurrentThreadKind.ToString() + ")");
                 }

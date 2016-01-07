@@ -65,7 +65,11 @@ namespace System.Net.Sockets
                     {
                         errorCode = (SocketError)Marshal.GetLastWin32Error();
                     }
-                    GlobalLog.Print("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::PostCallback() setsockopt handle:" + handle.ToString() + " AcceptSocket:" + LoggingHash.HashString(_acceptSocket) + " itsHandle:" + _acceptSocket.SafeHandle.DangerousGetHandle().ToString() + " returns:" + errorCode.ToString());
+
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::PostCallback() setsockopt handle:" + handle.ToString() + " AcceptSocket:" + LoggingHash.HashString(_acceptSocket) + " itsHandle:" + _acceptSocket.SafeHandle.DangerousGetHandle().ToString() + " returns:" + errorCode.ToString());
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
