@@ -85,7 +85,10 @@ namespace System.Net.Sockets
 
                 object returnObject = null;
 
-                GlobalLog.Assert(!asyncResult.InternalPeekCompleted, "BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
+                if (asyncResult.InternalPeekCompleted)
+                {
+                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
+                }
 
                 GlobalLog.Print(
                     "BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback" +
@@ -129,10 +132,16 @@ namespace System.Net.Sockets
                             if (!success)
                             {
                                 socketError = (SocketError)Marshal.GetLastWin32Error();
-                                GlobalLog.Assert(socketError != 0, "BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|socketError:0 numBytes:{1}", LoggingHash.HashString(asyncResult), numBytes);
+                                if (socketError == 0)
+                                {
+                                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|socketError:0 numBytes:{1}", LoggingHash.HashString(asyncResult), numBytes);
+                                }
                             }
 
-                            GlobalLog.Assert(!success, "BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|Unexpectedly succeeded. errorCode:{1} numBytes:{2}", LoggingHash.HashString(asyncResult), errorCode, numBytes);
+                            if (success)
+                            {
+                                GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|Unexpectedly succeeded. errorCode:{1} numBytes:{2}", LoggingHash.HashString(asyncResult), errorCode, numBytes);
+                            }
                         }
                         catch (ObjectDisposedException)
                         {

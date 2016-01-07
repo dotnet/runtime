@@ -101,7 +101,10 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            GlobalLog.Assert(SocketsEventSource.Log.IsEnabled(), "AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+            if (!SocketsEventSource.Log.IsEnabled())
+            {
+                GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+            }
             IntPtr pinnedBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0);
             if (pinnedBuffer != IntPtr.Zero)
             {
