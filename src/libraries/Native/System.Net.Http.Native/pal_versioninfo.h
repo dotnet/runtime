@@ -10,8 +10,7 @@ Gets the curl version information.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t GetCurlVersionInfo(
-    int32_t* age, 
-    int32_t* supportsSsl, 
-    int32_t* supportsAutoDecompression,
-    int32_t* supportsHttp2Multiplexing);
+extern "C" int32_t HttpNative_GetCurlVersionInfo(int32_t* age,
+                                                 int32_t* supportsSsl,
+                                                 int32_t* supportsAutoDecompression,
+                                                 int32_t* supportsHttp2Multiplexing);

@@ -9,39 +9,39 @@ internal static partial class Interop
 {
     internal static partial class Http
     {
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiCreate")]
         public static extern SafeCurlMultiHandle MultiCreate();
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiDestroy")]
         private static extern CURLMcode MultiDestroy(IntPtr handle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiAddHandle")]
         public static extern CURLMcode MultiAddHandle(SafeCurlMultiHandle multiHandle, SafeCurlHandle easyHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiRemoveHandle")]
         public static extern CURLMcode MultiRemoveHandle(SafeCurlMultiHandle multiHandle, SafeCurlHandle easyHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiWait")]
         public static extern CURLMcode MultiWait(
             SafeCurlMultiHandle multiHandle,
             SafeFileHandle extraFileDescriptor,
             out bool isExtraFileDescriptorActive,
             out bool isTimeout);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiPerform")]
         public static extern CURLMcode MultiPerform(SafeCurlMultiHandle multiHandle);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiInfoRead")]
         public static extern bool MultiInfoRead(
             SafeCurlMultiHandle multiHandle,
             out CURLMSG message,
             out IntPtr easyHandle,
             out CURLcode result);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiGetErrorString")]
         public static extern IntPtr MultiGetErrorString(int code);
 
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_MultiSetOptionLong")]
         public static extern CURLMcode MultiSetOptionLong(SafeCurlMultiHandle curl, CURLMoption option, long value);
 
         // Enum for constants defined for the enum CURLMcode in multi.h

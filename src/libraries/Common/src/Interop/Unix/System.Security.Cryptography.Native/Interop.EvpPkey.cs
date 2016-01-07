@@ -9,13 +9,13 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
         internal static extern SafeEvpPKeyHandle EvpPkeyCreate();
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
     }
 }

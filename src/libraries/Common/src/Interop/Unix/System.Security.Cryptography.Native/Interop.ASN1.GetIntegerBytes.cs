@@ -13,10 +13,10 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1IntegerDerSize")]
         private static extern int GetAsn1IntegerDerSize(SafeSharedAsn1IntegerHandle i);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeAsn1Integer")]
         private static extern int EncodeAsn1Integer(SafeSharedAsn1IntegerHandle i, byte[] buf);
 
         internal static byte[] GetAsn1IntegerBytes(SafeSharedAsn1IntegerHandle asn1Integer)

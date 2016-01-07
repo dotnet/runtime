@@ -69,12 +69,12 @@ static_assert(PAL_CURL_READFUNC_ABORT == CURL_READFUNC_ABORT, "");
 static_assert(PAL_CURL_READFUNC_PAUSE == CURL_READFUNC_PAUSE, "");
 static_assert(PAL_CURL_WRITEFUNC_PAUSE == CURL_WRITEFUNC_PAUSE, "");
 
-extern "C" CURL* EasyCreate()
+extern "C" CURL* HttpNative_EasyCreate()
 {
     return curl_easy_init();
 }
 
-extern "C" void EasyDestroy(CURL* handle)
+extern "C" void HttpNative_EasyDestroy(CURL* handle)
 {
     curl_easy_cleanup(handle);
 }
@@ -84,22 +84,22 @@ inline static CURLoption ConvertOption(PAL_CURLoption option)
     return static_cast<CURLoption>(option);
 }
 
-extern "C" int32_t EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value)
+extern "C" int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value)
 {
     return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
-extern "C" int32_t EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
+extern "C" int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
 {
     return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
-extern "C" int32_t EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)
+extern "C" int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)
 {
     return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
-extern "C" const char* EasyGetErrorString(PAL_CURLcode code)
+extern "C" const char* HttpNative_EasyGetErrorString(PAL_CURLcode code)
 {
     return curl_easy_strerror(static_cast<CURLcode>(code));
 }
@@ -109,22 +109,22 @@ inline static CURLINFO ConvertInfo(PAL_CURLINFO info)
     return static_cast<CURLINFO>(info);
 }
 
-extern "C" int32_t EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value)
+extern "C" int32_t HttpNative_EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value)
 {
     return curl_easy_getinfo(handle, ConvertInfo(info), value);
 }
 
-extern "C" int32_t EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value)
+extern "C" int32_t HttpNative_EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value)
 {
     return curl_easy_getinfo(handle, ConvertInfo(info), value);
 }
 
-extern "C" int32_t EasyPerform(CURL* handle)
+extern "C" int32_t HttpNative_EasyPerform(CURL* handle)
 {
     return curl_easy_perform(handle);
 }
 
-extern "C" int32_t EasyUnpause(CURL* handle)
+extern "C" int32_t HttpNative_EasyUnpause(CURL* handle)
 {
     return curl_easy_pause(handle, CURLPAUSE_CONT);
 }
@@ -142,7 +142,7 @@ struct CallbackHandle
 
     ReadWriteCallback headerCallback;
     void* headerUserPointer;
-    
+
     SslCtxCallback sslCtxCallback;
     void* sslUserPointer;
 };
@@ -163,7 +163,8 @@ static int seek_callback(void* userp, curl_off_t offset, int origin)
     return handle->seekCallback(handle->seekUserPointer, offset, origin);
 }
 
-extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle)
+extern "C" void
+HttpNative_RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle)
 {
     EnsureCallbackHandle(callbackHandle);
 
@@ -178,22 +179,29 @@ extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* us
 static size_t write_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return static_cast<size_t>(handle->writeCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->writeUserPointer));
+    return static_cast<size_t>(
+        handle->writeCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->writeUserPointer));
 }
 
 static size_t read_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return static_cast<size_t>(handle->readCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->readUserPointer));
+    return static_cast<size_t>(
+        handle->readCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->readUserPointer));
 }
 
 static size_t header_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return static_cast<size_t>(handle->headerCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->headerUserPointer));
+    return static_cast<size_t>(
+        handle->headerCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->headerUserPointer));
 }
 
-extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle)
+extern "C" void HttpNative_RegisterReadWriteCallback(CURL* curl,
+                                                     ReadWriteFunction functionType,
+                                                     ReadWriteCallback callback,
+                                                     void* userPointer,
+                                                     CallbackHandle** callbackHandle)
 {
     EnsureCallbackHandle(callbackHandle);
 
@@ -232,7 +240,10 @@ static CURLcode ssl_ctx_callback(CURL* curl, void* sslCtx, void* userPointer)
     return static_cast<CURLcode>(result);
 }
 
-extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, void* userPointer, CallbackHandle** callbackHandle)
+extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
+                                                     SslCtxCallback callback,
+                                                     void* userPointer,
+                                                     CallbackHandle** callbackHandle)
 {
     EnsureCallbackHandle(callbackHandle);
 
@@ -244,7 +255,7 @@ extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, v
     return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
 }
 
-extern "C" void FreeCallbackHandle(CallbackHandle* callbackHandle)
+extern "C" void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle)
 {
     delete callbackHandle;
 }

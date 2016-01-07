@@ -14,4 +14,4 @@
  *
  * Returns 0 on success and non-zero on failure.
  */
-extern "C" int32_t EnsureCurlIsInitialized();
+extern "C" int32_t HttpNative_EnsureCurlIsInitialized();

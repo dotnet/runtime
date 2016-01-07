@@ -117,72 +117,72 @@ typedef int32_t (*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
 typedef int32_t (*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
 
 // the function pointer definition for the callback used in SslCtxSetClientCertCallback
-typedef int32_t (*SslClientCertCallback)(SSL *ssl, X509 **x509, EVP_PKEY **pkey);
+typedef int32_t (*SslClientCertCallback)(SSL* ssl, X509** x509, EVP_PKEY** pkey);
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
-extern "C" void EnsureLibSslInitialized();
+extern "C" void CryptoNative_EnsureLibSslInitialized();
 
 /*
 Shims the SSLv23_method method.
 
 Returns the requested SSL_METHOD.
 */
-extern "C" const SSL_METHOD* SslV2_3Method();
+extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method();
 
 /*
 Shims the SSLv3_method method.
 
 Returns the requested SSL_METHOD.
 */
-extern "C" const SSL_METHOD* SslV3Method();
+extern "C" const SSL_METHOD* CryptoNative_SslV3Method();
 
 /*
 Shims the TLSv1_method method.
 
 Returns the requested SSL_METHOD.
 */
-extern "C" const SSL_METHOD* TlsV1Method();
+extern "C" const SSL_METHOD* CryptoNative_TlsV1Method();
 
 /*
 Shims the TLSv1_1_method method.
 
 Returns the requested SSL_METHOD.
 */
-extern "C" const SSL_METHOD* TlsV1_1Method();
+extern "C" const SSL_METHOD* CryptoNative_TlsV1_1Method();
 
 /*
 Shims the TLSv1_2_method method.
 
 Returns the requested SSL_METHOD.
 */
-extern "C" const SSL_METHOD* TlsV1_2Method();
+extern "C" const SSL_METHOD* CryptoNative_TlsV1_2Method();
 
 /*
 Shims the SSL_CTX_new method.
 
 Returns the new SSL_CTX instance.
 */
-extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method);
+extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method);
 
 /*
 Sets the specified protocols in the SSL_CTX options.
 */
-extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
+extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
 Shims the SSL_new method.
 
 Returns the new SSL instance.
 */
-extern "C" SSL* SslCreate(SSL_CTX* ctx);
+extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx);
 
 /*
 Shims the SSL_get_error method.
 
 Returns the error code for the specified result.
 */
-extern "C" int32_t SslGetError(SSL* ssl, int32_t ret);
+extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret);
 
 /*
 Cleans up and deletes an SSL instance.
@@ -193,7 +193,7 @@ No-op if ssl is null.
 The given X509 SSL is invalid after this call.
 Always succeeds.
 */
-extern "C" void SslDestroy(SSL* ssl);
+extern "C" void CryptoNative_SslDestroy(SSL* ssl);
 
 /*
 Cleans up and deletes an SSL_CTX instance.
@@ -204,24 +204,24 @@ No-op if ctx is null.
 The given X509 SSL_CTX is invalid after this call.
 Always succeeds.
 */
-extern "C" void SslCtxDestroy(SSL_CTX* ctx);
+extern "C" void CryptoNative_SslCtxDestroy(SSL_CTX* ctx);
 
 /*
 Shims the SSL_set_connect_state method.
 */
-extern "C" void SslSetConnectState(SSL* ssl);
+extern "C" void CryptoNative_SslSetConnectState(SSL* ssl);
 
 /*
 Shims the SSL_set_accept_state method.
 */
-extern "C" void SslSetAcceptState(SSL* ssl);
+extern "C" void CryptoNative_SslSetAcceptState(SSL* ssl);
 
 /*
 Shims the SSL_get_version method.
 
 Returns the protocol version string for the SSL instance.
 */
-extern "C" const char* SslGetVersion(SSL* ssl);
+extern "C" const char* CryptoNative_SslGetVersion(SSL* ssl);
 
 /*
 Returns the connection information for the SSL instance.
@@ -229,12 +229,12 @@ Returns the connection information for the SSL instance.
 Returns 1 upon success, otherwise 0.
 */
 
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
-                                        CipherAlgorithmType* dataCipherAlg,
-                                        ExchangeAlgorithmType* keyExchangeAlg,
-                                        HashAlgorithmType* dataHashAlg,
-                                        int32_t* dataKeySize,
-                                        DataHashSize* hashKeySize);
+extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
+                                                     CipherAlgorithmType* dataCipherAlg,
+                                                     ExchangeAlgorithmType* keyExchangeAlg,
+                                                     HashAlgorithmType* dataHashAlg,
+                                                     int32_t* dataKeySize,
+                                                     DataHashSize* hashKeySize);
 
 /*
 Shims the SSL_write method.
@@ -242,7 +242,7 @@ Shims the SSL_write method.
 Returns the positive number of bytes written when successful, 0 or a negative number
 when an error is encountered.
 */
-extern "C" int32_t SslWrite(SSL* ssl, const void* buf, int32_t num);
+extern "C" int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num);
 
 /*
 Shims the SSL_read method.
@@ -250,14 +250,14 @@ Shims the SSL_read method.
 Returns the positive number of bytes read when successful, 0 or a negative number
 when an error is encountered.
 */
-extern "C" int32_t SslRead(SSL* ssl, void* buf, int32_t num);
+extern "C" int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num);
 
 /*
 Shims the SSL_renegotiate_pending method.
 
 Returns 1 when negotiation is requested; 0 once a handshake has finished.
 */
-extern "C" int32_t IsSslRenegotiatePending(SSL* ssl);
+extern "C" int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl);
 
 /*
 Shims the SSL_shutdown method.
@@ -267,12 +267,12 @@ Returns:
 0 if the shutdown is not yet finished;
 <0 if the shutdown was not successful because a fatal error.
 */
-extern "C" int32_t SslShutdown(SSL* ssl);
+extern "C" int32_t CryptoNative_SslShutdown(SSL* ssl);
 
 /*
 Shims the SSL_set_bio method.
 */
-extern "C" void SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
+extern "C" void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
 
 /*
 Shims the SSL_do_handshake method.
@@ -283,107 +283,108 @@ Returns:
 and by the specifications of the TLS/SSL protocol;
 <0 if the handshake was not successful because of a fatal error.
 */
-extern "C" int32_t SslDoHandshake(SSL* ssl);
+extern "C" int32_t CryptoNative_SslDoHandshake(SSL* ssl);
 
 /*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.
 
 Returns 1 if the state is OK, otherwise 0.
 */
-extern "C" int32_t IsSslStateOK(SSL* ssl);
+extern "C" int32_t CryptoNative_IsSslStateOK(SSL* ssl);
 
 /*
 Shims the SSL_get_peer_certificate method.
 
 Returns the certificate presented by the peer.
 */
-extern "C" X509* SslGetPeerCertificate(SSL* ssl);
+extern "C" X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
 
 /*
 Shims the SSL_get_peer_cert_chain method.
 
 Returns the certificate chain presented by the peer.
 */
-extern "C" X509Stack* SslGetPeerCertChain(SSL* ssl);
+extern "C" X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl);
 
 /*
 Shims the SSL_CTX_use_certificate method.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t SslCtxUseCertificate(SSL_CTX* ctx, X509* x);
+extern "C" int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x);
 
 /*
 Shims the SSL_CTX_use_PrivateKey method.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey);
+extern "C" int32_t CryptoNative_SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey);
 
 /*
 Shims the SSL_CTX_check_private_key method.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx);
+extern "C" int32_t CryptoNative_SslCtxCheckPrivateKey(SSL_CTX* ctx);
 
 /*
 Shims the SSL_CTX_set_quiet_shutdown method.
 */
-extern "C" void SslCtxSetQuietShutdown(SSL_CTX* ctx);
+extern "C" void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx);
 
 /*
 Shims the SSL_get_client_CA_list method.
 
 Returns the list of CA names explicity set.
 */
-extern "C" X509NameStack* SslGetClientCAList(SSL* ssl);
+extern "C" X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 
 /*
 Shims the SSL_CTX_set_verify method.
 */
-extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
+extern "C" void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
 
 /*
 Shims the SSL_CTX_set_cert_verify_callback method.
 */
-extern "C" void SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg);
+extern "C" void
+CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg);
 
 /*
 Sets the specified encryption policy on the SSL_CTX.
 */
-extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+extern "C" void CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
 
 /*
 Shims the SSL_CTX_set_client_CA_list method.
 */
-extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list);
+extern "C" void CryptoNative_SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list);
 
 /*
 Shims the SSL_CTX_set_client_cert_cb method
 */
-extern "C" void SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback);
+extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback);
 
 /*
 Gets the SSL stream sizes to use.
 */
-extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);
+extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);
 
 /*
 Shims the SSL_get_finished method.
 */
-extern "C" int32_t SslGetFinished(SSL* ssl, void* buf, int32_t count);
+extern "C" int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count);
 
 /*
 Shims the SSL_get_peer_finished method.
 */
-extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count);
+extern "C" int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count);
 
 /*
 Returns true/false based on if existing ssl session was re-used or not.
 Shims the SSL_session_reused macro.
 */
-extern "C" int32_t SslSessionReused(SSL* ssl);
+extern "C" int32_t CryptoNative_SslSessionReused(SSL* ssl);
 
 /*
 adds the given certificate to the extra chain certificates associated with ctx that is associated with the ssl.
@@ -391,4 +392,4 @@ adds the given certificate to the extra chain certificates associated with ctx t
 libssl frees the x509 object.
 Returns 1 if success and 0 in case of failure
 */
-extern "C" int32_t SslAddExtraChainCert(SSL* ssl, X509* x509);
+extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);

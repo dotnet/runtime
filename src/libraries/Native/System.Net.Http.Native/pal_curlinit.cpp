@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <curl/curl.h>
 
-extern "C" int32_t EnsureCurlIsInitialized()
+extern "C" int32_t HttpNative_EnsureCurlIsInitialized()
 {
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     static bool initializationAttempted = false;

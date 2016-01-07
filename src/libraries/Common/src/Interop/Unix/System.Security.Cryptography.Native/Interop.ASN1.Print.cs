@@ -10,13 +10,13 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeAsn1TypeBytes")]
         private static extern SafeAsn1StringHandle DecodeAsn1TypeBytes(byte[] buf, int len, Asn1StringTypeFlags flags);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1StringPrintEx")]
         private static extern int Asn1StringPrintEx(SafeBioHandle bio, SafeAsn1StringHandle str, Asn1StringPrintFlags flags);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1StringPrintEx")]
         private static extern int Asn1StringPrintEx(SafeBioHandle bio, SafeSharedAsn1StringHandle str, Asn1StringPrintFlags flags);
 
         internal static string DerStringToManagedString(byte[] derString)
