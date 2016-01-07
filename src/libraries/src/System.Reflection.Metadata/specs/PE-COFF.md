@@ -29,10 +29,10 @@ The associated .pdb file may not exist at the path indicated by Path field. If i
 
 If the containing PE/COFF file is deterministic the Guid field above and DateTimeStamp field of the directory entry are  calculated deterministically based solely on the content of the associated .pdb file. Otherwise the value of Guid is random and the value of DateTimeStamp indicates the time and date that the debug data was created.
 
-*Version Major=0x0100, Minor=0x504d* of the data format has the same structure as above. The Age mus be 1. The format of the associated .pdb file is Portable PDB. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
+*Version Major=0x0100, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the associated .pdb file is Portable PDB. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
 
 ### Deterministic Debug Directory Entry (type 16)
 
-The entry doesn't have any data associated with it. All fields of the entry, but Type must be zero.
+The entry doesn't have any data associated with it. All fields of the entry, but Type shall be zero.
 
 Presence of this entry indicates that the containing PE/COFF file is deterministic. 
