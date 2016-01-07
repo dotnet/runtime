@@ -282,7 +282,7 @@ extern "C" int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionI
         in_pcb = head_xtcpb->xt_inp;
 
         NativeTcpConnectionInformation* ntci = &infos[connectionIndex];
-        ntci->State = MapTcpState(tcp_pcb.t_state);
+        ntci->State = SystemNative_MapTcpState(tcp_pcb.t_state);
 
         uint8_t vflag = in_pcb.inp_vflag; // INP_IPV4 or INP_IPV6
         bool isIpv4 = (vflag & INP_IPV4) == INP_IPV4;
