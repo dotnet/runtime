@@ -140,9 +140,13 @@ namespace System.Net
         {
             get
             {
-                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Called on completed result.", LoggingHash.HashString(this));
                 if (InternalPeekCompleted)
                 {
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Called on completed result.", LoggingHash.HashString(this));
+                    }
+
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
@@ -153,19 +157,29 @@ namespace System.Net
                 }
 
                 // Make sure the context was requested.
-                GlobalLog.Assert(AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0, "ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", LoggingHash.HashString(this));
+                if (AsyncCallback == null && (_flags & StateFlags.CaptureContext) == 0)
+                {
+                    GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", LoggingHash.HashString(this));
+                }
 
                 // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
                 // don't need a context anyway.
                 if ((_flags & StateFlags.PostBlockFinished) == 0)
                 {
-                    GlobalLog.Assert(_lock != null, "ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
+                    if (_lock == null)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
+                    }
                     lock (_lock) { }
                 }
 
-                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Result became completed during call.", LoggingHash.HashString(this));
                 if (InternalPeekCompleted)
                 {
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Result became completed during call.", LoggingHash.HashString(this));
+                    }
+
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
@@ -180,9 +194,13 @@ namespace System.Net
         {
             get
             {
-                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Called on completed result.", LoggingHash.HashString(this));
                 if (InternalPeekCompleted)
                 {
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Called on completed result.", LoggingHash.HashString(this));
+                    }
+
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
@@ -192,19 +210,29 @@ namespace System.Net
                 }
 
                 // Make sure the identity was requested.
-                GlobalLog.Assert((_flags & StateFlags.CaptureIdentity) != 0, "ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
+                if ((_flags & StateFlags.CaptureIdentity) == 0)
+                {
+                    GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
+                }
 
                 // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
                 // don't need an identity anyway.
                 if ((_flags & StateFlags.PostBlockFinished) == 0)
                 {
-                    GlobalLog.Assert(_lock != null, "ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
+                    if (_lock == null)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
+                    }
                     lock (_lock) { }
                 }
 
-                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Result became completed during call.", LoggingHash.HashString(this));
                 if (InternalPeekCompleted)
                 {
+                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
+                    {
+                        GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Result became completed during call.", LoggingHash.HashString(this));
+                    }
+
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
@@ -235,7 +263,10 @@ namespace System.Net
         // object from being created.
         internal object StartPostingAsyncOp(bool lockCapture)
         {
-            GlobalLog.Assert(!InternalPeekCompleted, "ContextAwareResult#{0}::StartPostingAsyncOp|Called on completed result.", LoggingHash.HashString(this));
+            if (InternalPeekCompleted)
+            {
+                GlobalLog.AssertFormat("ContextAwareResult#{0}::StartPostingAsyncOp|Called on completed result.", LoggingHash.HashString(this));
+            }
 
             DebugProtectState(true);
 
@@ -328,7 +359,10 @@ namespace System.Net
         // Returns whether the operation completed sync or not.
         private bool CaptureOrComplete(ref ExecutionContext cachedContext, bool returnContext)
         {
-            GlobalLog.Assert((_flags & StateFlags.PostBlockStarted) != 0, "ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", LoggingHash.HashString(this));
+            if ((_flags & StateFlags.PostBlockStarted) == 0)
+            {
+                GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", LoggingHash.HashString(this));
+            }
 
             // See if we're going to need to capture the context.
             bool capturingContext = AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0;
@@ -371,7 +405,10 @@ namespace System.Net
                 // Otherwise we have to have completed synchronously, or not needed the context.
                 GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() skipping capture");
                 cachedContext = null;
-                GlobalLog.Assert(AsyncCallback == null || CompletedSynchronously, "ContextAwareResult#{0}::CaptureOrComplete|Didn't capture context, but didn't complete synchronously!", LoggingHash.HashString(this));
+                if (AsyncCallback != null && !CompletedSynchronously)
+                {
+                    GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Didn't capture context, but didn't complete synchronously!", LoggingHash.HashString(this));
+                }
             }
 
             // Now we want to see for sure what to do.  We might have just captured the context for no reason.

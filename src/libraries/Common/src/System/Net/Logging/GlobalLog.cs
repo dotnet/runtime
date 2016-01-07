@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
 
 namespace System.Net
 {
@@ -136,7 +134,10 @@ namespace System.Net
             {
                 EventSourceLogging.Log.WarningMessage("The stack has been corrupted.");
                 ThreadKinds last = ThreadKindStack.Pop() & ThreadKinds.SourceMask;
-                Assert(last == source || last == ThreadKinds.Other, "Thread source changed.|Was:({0}) Now:({1})", last, source);
+                if (last != source && last != ThreadKinds.Other)
+                {
+                    AssertFormat("Thread source changed.|Was:({0}) Now:({1})", last, source);
+                }
                 ThreadKindStack.Push(source);
             }
         }
@@ -154,8 +155,14 @@ namespace System.Net
             }
 
             ThreadKinds threadKind = CurrentThreadKind;
-            Assert((threadKind & allowedSources) != 0, errorMsg, "Thread Contract Violation.|Expected source:({0}) Actual source:({1})", allowedSources, threadKind & ThreadKinds.SourceMask);
-            Assert((threadKind & kind) == kind, errorMsg, "Thread Contract Violation.|Expected kind:({0}) Actual kind:({1})", kind, threadKind & ~ThreadKinds.SourceMask);
+            if ((threadKind & allowedSources) != 0)
+            {
+                AssertFormat(errorMsg, "Thread Contract Violation.|Expected source:({0}) Actual source:({1})", allowedSources, threadKind & ThreadKinds.SourceMask);
+            }
+            if ((threadKind & kind) == kind)
+            {
+                AssertFormat(errorMsg, "Thread Contract Violation.|Expected kind:({0}) Actual kind:({1})", kind, threadKind & ~ThreadKinds.SourceMask);
+            }
         }
 
         public static void Print(string msg)
@@ -173,21 +180,39 @@ namespace System.Net
             EventSourceLogging.Log.FunctionStart(functionName, parameters);
         }
 
-        public static void Assert(bool condition, string messageFormat, params object[] data)
+        public static void Assert(bool condition, string message)
         {
             if (!condition)
             {
-                string fullMessage = string.Format(CultureInfo.InvariantCulture, messageFormat, data);
-                int pipeIndex = fullMessage.IndexOf('|');
-                if (pipeIndex == -1)
-                {
-                    Assert(fullMessage);
-                }
-                else
-                {
-                    int detailLength = fullMessage.Length - pipeIndex - 1;
-                    Assert(fullMessage.Substring(0, pipeIndex), detailLength > 0 ? fullMessage.Substring(pipeIndex + 1, detailLength) : null);
-                }
+                Assert(message);
+            }
+        }
+
+        public static void Assert(bool condition, string messageFormat, params object[] data)
+        {
+            if (!condition && !IsEnabled)
+            {
+                AssertFormat(messageFormat, data);
+            }
+        }
+
+        public static void AssertFormat(string messageFormat, params object[] data)
+        {
+            if (!IsEnabled)
+            {
+                return;
+            }
+
+            string fullMessage = string.Format(CultureInfo.InvariantCulture, messageFormat, data);
+            int pipeIndex = fullMessage.IndexOf('|');
+            if (pipeIndex == -1)
+            {
+                Assert(fullMessage);
+            }
+            else
+            {
+                int detailLength = fullMessage.Length - pipeIndex - 1;
+                Assert(fullMessage.Substring(0, pipeIndex), detailLength > 0 ? fullMessage.Substring(pipeIndex + 1, detailLength) : null);
             }
         }
 
@@ -198,14 +223,7 @@ namespace System.Net
 
         public static void Assert(string message, string detailMessage)
         {
-            try
-            {
-                EventSourceLogging.Log.AssertFailed(message, detailMessage);
-            }
-            finally
-            {
-                Debug.Fail(message, detailMessage);
-            }
+            EventSourceLogging.Log.AssertFailed(message, detailMessage);
         }
 
         public static void Leave(string functionName)
@@ -235,32 +253,28 @@ namespace System.Net
 
         public static void Dump(byte[] buffer, int offset, int length)
         {
-            if (buffer == null)
+            if (!IsEnabled)
             {
-                EventSourceLogging.Log.WarningDumpArray("buffer is null");
                 return;
             }
 
-            if (offset >= buffer.Length)
+            string warning =
+                buffer == null ? "buffer is null" :
+                offset >= buffer.Length ? "offset out of range" :
+                (length < 0) || (length > buffer.Length - offset) ? "length out of range" :
+                null;
+            if (warning != null)
             {
-                EventSourceLogging.Log.WarningDumpArray("offset out of range");
-                return;
-            }
-
-            if ((length < 0) || (length > buffer.Length - offset))
-            {
-                EventSourceLogging.Log.WarningDumpArray("length out of range");
+                EventSourceLogging.Log.WarningDumpArray(warning);
                 return;
             }
 
             var bufferSegment = new byte[length];
-            for (int i = 0; i < length; i++)
-            {
-                bufferSegment[i] = buffer[offset + i];
-            }
-
+            Array.Copy(buffer, offset, bufferSegment, 0, length);
             EventSourceLogging.Log.DebugDumpArray(bufferSegment);
         }
+
+        public static bool IsEnabled { get { return EventSourceLogging.Log.IsEnabled(); } }
     }
 
     [Flags]
