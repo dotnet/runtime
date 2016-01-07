@@ -25,7 +25,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <!-- Files shared between desktop and core -->
+  <!-- Files shared between net46 and core -->
   <ItemGroup>
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\Crc32Helper.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
@@ -50,8 +50,9 @@
     <Compile Include="System\IO\Compression\ZLibException.cs" />
     <Compile Include="System\IO\Compression\ZLibNative.cs" />
   </ItemGroup>
-  <!-- Windows specific files common to both Desktop and Core -->
+  <!-- Windows specific files common to both net46 and Core -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
@@ -59,7 +60,6 @@
   <!-- Windows specific files exclusive to Core -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\IO\Compression\ZLibNative.Windows.cs" />
-    <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
     <Compile Include="Interop\Interop.zlib.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -80,9 +80,8 @@
       <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Files exclusive to Desktop -->
+  <!-- Files exclusive to net46 -->
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <Compile Include="System\IO\Compression\ZipArchiveEntry.net46.cs" />
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
