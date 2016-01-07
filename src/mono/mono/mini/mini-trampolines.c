@@ -459,7 +459,11 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 
 	if (ji && !ji->is_trampoline)
 		jmethod = jinfo_get_method (ji);
-	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod))) {
+
+	if (callee_gsharedvt)
+		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod));
+
+	if (!caller_gsharedvt && callee_gsharedvt) {
 		MonoMethodSignature *sig, *gsig;
 
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
@@ -480,14 +484,12 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 	if (!(*out_arg) && mono_method_needs_static_rgctx_invoke (m, FALSE))
 		*out_arg = mini_method_get_rgctx (m);
 
-	if (caller_gsharedvt) {
+	if (caller_gsharedvt && !callee_gsharedvt) {
 		/*
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
 		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (m), NULL, -1, FALSE);
-		gpointer *out_wrapper_arg = g_malloc0 (2 * sizeof (gpointer));
-		out_wrapper_arg [0] = addr;
-		out_wrapper_arg [1] = *out_arg;
+		MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, *out_arg);
 
 		addr = out_wrapper;
 		*out_arg = out_wrapper_arg;
