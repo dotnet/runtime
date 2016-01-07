@@ -1210,16 +1210,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    if (memberTypeDesc.IsArray)
-                    {
-                        LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
-                        ilg.For(localI, 0, ilg.GetLocal(aVar));
-                    }
-                    else
-                    {
-                        LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
-                        ilg.For(localI, 0, ilg.GetLocal(aVar));
-                    }
+                    LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
+                    ilg.For(localI, 0, ilg.GetLocal(aVar));
                     WriteLocalDecl(aiVar, RaCodeGen.GetStringForArrayMember(aVar, iVar, memberTypeDesc), arrayElementTypeDesc.Type);
                 }
                 if (attribute.IsList)
