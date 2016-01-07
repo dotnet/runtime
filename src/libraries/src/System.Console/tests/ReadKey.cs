@@ -7,7 +7,6 @@ using Xunit;
 
 public class ReadKey : RemoteExecutorTestBase
 {
-    [ActiveIssue(4636, PlatformID.Windows)]
     [Fact]
     public static void KeyAvailable()
     {
