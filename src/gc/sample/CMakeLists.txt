@@ -17,6 +17,7 @@ set(SOURCES
     ../handletablecore.cpp
     ../handletablescan.cpp
     ../objecthandle.cpp
+    ../softwarewritewatch.cpp
 )
 
 if(WIN32)
