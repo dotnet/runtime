@@ -7,53 +7,58 @@ using Xunit;
 
 namespace StreamWriterTests
 {
-	public class CloseTests
-	{
-		[Fact]
-		public static void AfterDisposeThrows()
-		{
-			StreamWriter sw2;
+    public class CloseTests
+    {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
 
-			// [] Calling methods after closing the stream should throw
-			//-----------------------------------------------------------------
-			sw2 = new StreamWriter(new MemoryStream());
-			sw2.Dispose();
+        [Fact]
+        public void AfterDisposeThrows()
+        {
+            StreamWriter sw2;
 
-			Assert.Throws<ObjectDisposedException>(() => sw2.Write('A'));
-			Assert.Throws<ObjectDisposedException>(() => sw2.Write("hello"));
-			Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
-			Assert.Null(sw2.BaseStream);
+            // [] Calling methods after closing the stream should throw
+            //-----------------------------------------------------------------
+            sw2 = new StreamWriter(CreateStream());
+            sw2.Dispose();
 
-			Assert.Throws<ObjectDisposedException>(() => sw2.AutoFlush = true);
-		}
+            Assert.Throws<ObjectDisposedException>(() => sw2.Write('A'));
+            Assert.Throws<ObjectDisposedException>(() => sw2.Write("hello"));
+            Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
+            Assert.Null(sw2.BaseStream);
 
-		[Fact]
-		public static void CloseCausesFlush() {
-		 StreamWriter sw2;
-			MemoryStream memstr2;
+            Assert.Throws<ObjectDisposedException>(() => sw2.AutoFlush = true);
+        }
 
-			// [] Check that flush updates the underlying stream
-			//-----------------------------------------------------------------
-			memstr2 = new MemoryStream();
-			sw2 = new StreamWriter(memstr2);
+        [Fact]
+        public void CloseCausesFlush() {
+            StreamWriter sw2;
+            Stream memstr2;
 
-			var strTemp = "HelloWorld" ;
-			sw2.Write( strTemp);
-			Assert.Equal(0, memstr2.Length);
+            // [] Check that flush updates the underlying stream
+            //-----------------------------------------------------------------
+            memstr2 = CreateStream();
+            sw2 = new StreamWriter(memstr2);
 
-			sw2.Flush();
-			Assert.Equal(strTemp.Length, memstr2.Length);
-		}
-		[Fact]
-		public static void CantFlushAfterDispose() {
-			// [] Flushing closed writer should throw
-			//-----------------------------------------------------------------
-			
-			MemoryStream memstr2 = new MemoryStream();
-			StreamWriter sw2 = new StreamWriter(memstr2);
-			
-			sw2.Dispose();
-			Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
-		}
-	}
+            var strTemp = "HelloWorld" ;
+            sw2.Write( strTemp);
+            Assert.Equal(0, memstr2.Length);
+
+            sw2.Flush();
+            Assert.Equal(strTemp.Length, memstr2.Length);
+        }
+        [Fact]
+        public void CantFlushAfterDispose() {
+            // [] Flushing closed writer should throw
+            //-----------------------------------------------------------------
+
+            Stream memstr2 = CreateStream();
+            StreamWriter sw2 = new StreamWriter(memstr2);
+            
+            sw2.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
+        }
+    }
 }

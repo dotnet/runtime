@@ -29,6 +29,7 @@ namespace StreamWriterTests
             str2 = sr2.ReadToEnd();
             Assert.Equal("HelloWorld", str2);
         }
+
         [Fact]
         public static void NullEncodingThrows()
         {
