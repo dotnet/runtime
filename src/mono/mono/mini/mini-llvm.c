@@ -7651,16 +7651,21 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = AddJitGlobal (module, eltype, "method_addresses");
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "blob");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "class_name_table");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "class_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "method_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "ex_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "extra_method_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "extra_method_table");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "got_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "llvm_got_info_offsets");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "image_table");
+	if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
+		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+			fields [tindex ++] = LLVMConstNull (eltype);
+	} else {
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "blob");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "class_name_table");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "class_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "method_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "ex_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "extra_method_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "extra_method_table");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "got_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "llvm_got_info_offsets");
+		fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "image_table");
+	}
 	/* Not needed (mem_end) */
 	fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule, "assembly_guid");
