@@ -1,7 +1,7 @@
 # Package projects
 Package projects bring together all the assemblies that make up a library on different platforms into a set of NuGet packages.
 
-## Package heirarchy
+## Package hierarchy
 All libraries should have at least one package if they represent public surface area.  This is called the *reference package* and is named the same as the library's assembly, EG: System.Collections.Immutable.
 
 Packages may have platform specific implementation packages.  These are referred to as *runtime packages* and follow the naming convention of runtime.{rid}.{assemblyName}, EG: runtime.unix.System.IO.FileSystem.
