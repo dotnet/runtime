@@ -60,70 +60,10 @@ namespace System.Diagnostics.Tracing
             return this;
         }
 
-        /// <summary>
-        /// Adds a Boolean value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(bool value)
+        public void AddScalar(PropertyValue value)
         {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(bool));
-        }
-
-        /// <summary>
-        /// Adds an SByte value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        //[CLSCompliant(false)]
-        public void AddScalar(sbyte value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(sbyte));
-        }
-
-        /// <summary>
-        /// Adds a Byte value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(byte value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(byte));
-        }
-
-        /// <summary>
-        /// Adds an Int16 value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(short value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(short));
-        }
-
-        /// <summary>
-        /// Adds a UInt16 value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        //[CLSCompliant(false)]
-        public void AddScalar(ushort value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(ushort));
-        }
-
-        /// <summary>
-        /// Adds an Int32 value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(int value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(int));
-        }
-
-        /// <summary>
-        /// Adds a UInt32 value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        //[CLSCompliant(false)]
-        public void AddScalar(uint value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(uint));
+            var scalar = value.ScalarValue;
+            DataCollector.ThreadInstance.AddScalar(&scalar, value.ScalarLength);
         }
 
         /// <summary>
@@ -136,68 +76,12 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Adds a UInt64 value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        //[CLSCompliant(false)]
-        public void AddScalar(ulong value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(ulong));
-        }
-
-        /// <summary>
-        /// Adds an IntPtr value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(IntPtr value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, IntPtr.Size);
-        }
-
-        /// <summary>
-        /// Adds a UIntPtr value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        //[CLSCompliant(false)]
-        public void AddScalar(UIntPtr value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, UIntPtr.Size);
-        }
-
-        /// <summary>
-        /// Adds a Single value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(float value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(float));
-        }
-
-        /// <summary>
         /// Adds a Double value to the event payload.
         /// </summary>
         /// <param name="value">Value to be added.</param>
         public void AddScalar(double value)
         {
             DataCollector.ThreadInstance.AddScalar(&value, sizeof(double));
-        }
-
-        /// <summary>
-        /// Adds a Char value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(char value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, sizeof(char));
-        }
-
-        /// <summary>
-        /// Adds a Guid value to the event payload.
-        /// </summary>
-        /// <param name="value">Value to be added.</param>
-        public void AddScalar(Guid value)
-        {
-            DataCollector.ThreadInstance.AddScalar(&value, 16);
         }
 
         /// <summary>
@@ -211,185 +95,10 @@ namespace System.Diagnostics.Tracing
             DataCollector.ThreadInstance.AddBinary(value, value == null ? 0 : value.Length * 2);
         }
 
-        /// <summary>
-        /// Adds an array of Byte values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddBinary(byte[] value)
+        public void AddArray(PropertyValue value, int elementSize)
         {
-            DataCollector.ThreadInstance.AddBinary(value, value == null ? 0 : value.Length);
-        }
-
-        /// <summary>
-        /// Adds an array of Boolean values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(bool[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(bool));
-        }
-
-        /// <summary>
-        /// Adds an array of SByte values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        //[CLSCompliant(false)]
-        public void AddArray(sbyte[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(sbyte));
-        }
-
-        /// <summary>
-        /// Adds an array of Int16 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(short[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(short));
-        }
-
-        /// <summary>
-        /// Adds an array of UInt16 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        //[CLSCompliant(false)]
-        public void AddArray(ushort[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(ushort));
-        }
-
-        /// <summary>
-        /// Adds an array of Int32 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(int[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(int));
-        }
-
-        /// <summary>
-        /// Adds an array of UInt32 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        //[CLSCompliant(false)]
-        public void AddArray(uint[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(uint));
-        }
-
-        /// <summary>
-        /// Adds an array of Int64 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(long[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(long));
-        }
-
-        /// <summary>
-        /// Adds an array of UInt64 values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        //[CLSCompliant(false)]
-        public void AddArray(ulong[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(ulong));
-        }
-
-        /// <summary>
-        /// Adds an array of IntPtr values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(IntPtr[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, IntPtr.Size);
-        }
-
-        /// <summary>
-        /// Adds an array of UIntPtr values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        //[CLSCompliant(false)]
-        public void AddArray(UIntPtr[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, UIntPtr.Size);
-        }
-
-        /// <summary>
-        /// Adds an array of Single values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(float[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(float));
-        }
-
-        /// <summary>
-        /// Adds an array of Double values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(double[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(double));
-        }
-
-        /// <summary>
-        /// Adds an array of Char values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(char[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(char));
-        }
-
-        /// <summary>
-        /// Adds an array of Guid values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddArray(Guid[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, 16);
-        }
-
-        /// <summary>
-        /// Adds an array of Byte values to the event payload.
-        /// </summary>
-        /// <param name="value">
-        /// Value to be added. A null value is treated as a zero-length array.
-        /// </param>
-        public void AddCustom(byte[] value)
-        {
-            DataCollector.ThreadInstance.AddArray(value, value == null ? 0 : value.Length, sizeof(byte));
+            Array array = (Array)value.ReferenceValue;
+            DataCollector.ThreadInstance.AddArray(array, array == null ? 0 : array.Length, elementSize);
         }
     }
 }
