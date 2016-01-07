@@ -27,6 +27,11 @@ EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN  g_sw_ww_table:QWORD
+EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
+endif
+
 ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
 g_GCShadow                      TEXTEQU <?g_GCShadow@@3PEAEEA>
@@ -466,6 +471,67 @@ ifdef _DEBUG
         jmp     JIT_WriteBarrier_Debug
 endif
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        ; JIT_WriteBarrier_WriteWatch_PostGrow64
+
+        ; Regarding patchable constants:
+        ; - 64-bit constants have to be loaded into a register
+        ; - The constants have to be aligned to 8 bytes so that they can be patched easily
+        ; - The constant loads have been located to minimize NOP padding required to align the constants
+        ; - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
+        ;   non-volatile calling convention, this should be changed to use just one register.
+
+        ; Do the move into the GC .  It is correct to take an AV here, the EH code
+        ; figures out that this came from a WriteBarrier and correctly maps it back
+        ; to the managed method which called the WriteBarrier (see setup in
+        ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rcx], rdx
+
+        ; Update the write watch table if necessary
+        mov     rax, rcx
+        mov     r8, 0F0F0F0F0F0F0F0F0h
+        shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
+        NOP_2_BYTE ; padding for alignment of constant
+        mov     r9, 0F0F0F0F0F0F0F0F0h
+        add     rax, r8
+        cmp     byte ptr [rax], 0h
+        jne     CheckCardTable
+        mov     byte ptr [rax], 0FFh
+
+        NOP_3_BYTE ; padding for alignment of constant
+
+        ; Check the lower and upper ephemeral region bounds
+    CheckCardTable:
+        cmp     rdx, r9
+        jb      Exit
+
+        NOP_3_BYTE ; padding for alignment of constant
+
+        mov     r8, 0F0F0F0F0F0F0F0F0h
+
+        cmp     rdx, r8
+        jae     Exit
+
+        nop ; padding for alignment of constant
+
+        mov     rax, 0F0F0F0F0F0F0F0F0h
+
+        ; Touch the card table entry, if not already dirty.
+        shr     rcx, 0Bh
+        cmp     byte ptr [rcx + rax], 0FFh
+        jne     UpdateCardTable
+        REPRET
+
+    UpdateCardTable:
+        mov     byte ptr [rcx + rax], 0FFh
+        ret
+
+    align 16
+    Exit:
+        REPRET
+else
+        ; JIT_WriteBarrier_PostGrow64
+
         ; Do the move into the GC .  It is correct to take an AV here, the EH code
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
@@ -510,6 +576,8 @@ endif
     align 16
     Exit:
         REPRET
+endif
+
     ; make sure this guy is bigger than any of the other guys
     align 16
         nop
@@ -577,7 +645,8 @@ LEAF_END JIT_PatchedCodeLast, _TEXT
 ; Entry:
 ;   RDI - address of ref-field (assigned to)
 ;   RSI - address of the data  (source)
-;   RCX can be trashed
+;   RCX is trashed
+;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
@@ -653,7 +722,20 @@ ifdef WRITE_BARRIER_CHECK
         pop     r10
 endif
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        ; Update the write watch table if necessary
+        cmp     byte ptr [g_sw_ww_enabled_for_gc_heap], 0h
+        je      CheckCardTable
+        mov     rax, rdi
+        shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
+        add     rax, qword ptr [g_sw_ww_table]
+        cmp     byte ptr [rax], 0h
+        jne     CheckCardTable
+        mov     byte ptr [rax], 0FFh
+endif
+
         ; See if we can just quick out
+    CheckCardTable:
         cmp     rcx, [g_ephemeral_low]
         jb      Exit
         cmp     rcx, [g_ephemeral_high]

@@ -106,7 +106,7 @@ inline void FATAL_GC_ERROR()
 #define MARK_ARRAY      //Mark bit in an array
 #endif //BACKGROUND_GC
 
-#if defined(BACKGROUND_GC) || defined (CARD_BUNDLE)
+#if defined(BACKGROUND_GC) || defined (CARD_BUNDLE) || defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
 #define WRITE_WATCH     //Write Watch feature
 #endif //BACKGROUND_GC || CARD_BUNDLE
 
@@ -1648,6 +1648,12 @@ protected:
     void rearrange_large_heap_segments();
     PER_HEAP
     void rearrange_heap_segments(BOOL compacting);
+
+    PER_HEAP_ISOLATED
+    void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
+    PER_HEAP_ISOLATED
+    void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
+
     PER_HEAP
     void switch_one_quantum();
     PER_HEAP

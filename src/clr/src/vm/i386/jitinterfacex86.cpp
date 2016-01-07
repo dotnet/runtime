@@ -1727,7 +1727,7 @@ void ValidateWriteBarrierHelpers()
 // When a GC happens, the upper and lower bounds of the ephemeral
 // generation change.  This routine updates the WriteBarrier thunks
 // with the new values.
-void StompWriteBarrierEphemeral()
+void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
     CONTRACTL {
         NOTHROW;
@@ -1785,7 +1785,7 @@ void StompWriteBarrierEphemeral()
 // to the PostGrow thunk that checks both upper and lower bounds.
 // regardless we need to update the thunk with the
 // card_table - lowest_address.
-void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
+void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     CONTRACTL {
         NOTHROW;
@@ -1801,7 +1801,7 @@ void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
     bool bWriteBarrierIsPreGrow = WriteBarrierIsPreGrow();
     bool bStompWriteBarrierEphemeral = false;
 
-    BOOL bEESuspended = FALSE;
+    BOOL bEESuspendedHere = FALSE;
 
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
@@ -1817,9 +1817,9 @@ void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
             if (bReqUpperBoundsCheck)
             {
                 GCX_MAYBE_COOP_NO_THREAD_BROKEN((GetThread()!=NULL));
-                if( !IsGCThread() && !bEESuspended) {
+                if( !isRuntimeSuspended && !bEESuspendedHere) {
                     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_GC_PREP);
-                    bEESuspended = TRUE;
+                    bEESuspendedHere = TRUE;
                 }
 
                 pfunc = (size_t *) JIT_WriteBarrierReg_PostGrow;
@@ -1906,12 +1906,17 @@ void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
     }
 
     if (bStompWriteBarrierEphemeral)
-        StompWriteBarrierEphemeral();
+    {
+        _ASSERTE(isRuntimeSuspended || bEESuspendedHere);
+        StompWriteBarrierEphemeral(true);
+    }
     else
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierStart, 
+    {
+        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierStart,
             (BYTE*)JIT_PatchedWriteBarrierLast - (BYTE*)JIT_PatchedWriteBarrierStart);
+    }
 
-    if(bEESuspended)
+    if(bEESuspendedHere)
         ThreadSuspend::RestartEE(FALSE, TRUE);
 }
 

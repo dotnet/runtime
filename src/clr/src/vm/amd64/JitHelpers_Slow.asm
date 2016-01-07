@@ -28,6 +28,11 @@ EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN  g_sw_ww_table:QWORD
+EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
+endif
+
 ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
 g_GCShadow                      TEXTEQU <?g_GCShadow@@3PEAEEA>
@@ -118,6 +123,19 @@ ifdef WRITE_BARRIER_CHECK
     DoneShadow:
 endif
 
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        ; Update the write watch table if necessary
+        cmp     byte ptr [g_sw_ww_enabled_for_gc_heap], 0h
+        je      CheckCardTable
+        mov     r10, rcx
+        shr     r10, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
+        add     r10, qword ptr [g_sw_ww_table]
+        cmp     byte ptr [r10], 0h
+        jne     CheckCardTable
+        mov     byte ptr [r10], 0FFh
+endif
+
+    CheckCardTable:
         ; See if we can just quick out
         cmp     rax, [g_ephemeral_low]
         jb      Exit

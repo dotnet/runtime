@@ -10,6 +10,45 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
         ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
+
+// There is an even more optimized version of these helpers possible which takes
+// advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
+// that check (this is more significant in the JIT_WriteBarrier case).
+//
+// Additionally we can look into providing helpers which will take the src/dest from
+// specific registers (like x86) which _could_ (??) make for easier register allocation
+// for the JIT64, however it might lead to having to have some nasty code that treats
+// these guys really special like... :(.
+//
+// Version that does the move, checks whether or not it's in the GC and whether or not
+// it needs to have it's card updated
+//
+// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+
+        // When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        // but if it isn't then it will just return.
+        //
+        // See if this is in GCHeap
+        PREPARE_EXTERNAL_VAR g_lowest_address, rax
+        cmp     rdi, [rax]
+        // jb      NotInHeap
+        .byte 0x72, 0x0e
+        PREPARE_EXTERNAL_VAR g_highest_address, rax
+        cmp     rdi, [rax]
+        // jnb     NotInHeap
+        .byte 0x73, 0x02
+        
+        // call C_FUNC(JIT_WriteBarrier)
+        .byte 0xeb, 0x05
+
+    NotInHeap:
+        // See comment above about possible AV
+        mov     [rdi], rsi
+        ret
+LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
+
+
 // This is used by the mechanism to hold either the JIT_WriteBarrier_PreGrow 
 // or JIT_WriteBarrier_PostGrow code (depending on the state of the GC). It _WILL_
 // change at runtime as the GC changes. Initially it should simply be a copy of the 
@@ -21,6 +60,71 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         // In debug builds, this just contains jump to the debug version of the write barrier by default
         jmp C_FUNC(JIT_WriteBarrier_Debug)
 #endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // JIT_WriteBarrier_WriteWatch_PostGrow64
+
+        // Regarding patchable constants:
+        // - 64-bit constants have to be loaded into a register
+        // - The constants have to be aligned to 8 bytes so that they can be patched easily
+        // - The constant loads have been located to minimize NOP padding required to align the constants
+        // - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
+        //   non-volatile calling convention, this should be changed to use just one register.
+
+        // Do the move into the GC .  It is correct to take an AV here, the EH code
+        // figures out that this came from a WriteBarrier and correctly maps it back
+        // to the managed method which called the WriteBarrier (see setup in
+        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
+        mov     [rdi], rsi
+
+        // Update the write watch table if necessary
+        mov     rax, rdi
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        NOP_2_BYTE // padding for alignment of constant
+        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        add     rax, r10
+        cmp     byte ptr [rax], 0h
+        .byte 0x75, 0x06
+        // jne     CheckCardTable
+        mov     byte ptr [rax], 0FFh
+
+        NOP_3_BYTE // padding for alignment of constant
+
+        // Check the lower and upper ephemeral region bounds
+    CheckCardTable:
+        cmp     rsi, r11
+        .byte 0x72,0x3D
+        // jb      Exit
+
+        NOP_3_BYTE // padding for alignment of constant
+
+        movabs  r10, 0xF0F0F0F0F0F0F0F0
+
+        cmp     rsi, r10
+        .byte 0x73,0x2B
+        // jae     Exit
+
+        nop // padding for alignment of constant
+
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+
+        // Touch the card table entry, if not already dirty.
+        shr     rdi, 0Bh
+        cmp     byte ptr [rdi + rax], 0FFh
+        .byte 0x75, 0x02
+        // jne     UpdateCardTable
+        REPRET
+
+    UpdateCardTable:
+        mov     byte ptr [rdi + rax], 0FFh
+        ret
+
+    .balign 16
+    Exit:
+        REPRET
+#else
+        // JIT_WriteBarrier_PostGrow64
 
         // Do the move into the GC .  It is correct to take an AV here, the EH code
         // figures out that this came from a WriteBarrier and correctly maps it back
@@ -69,6 +173,8 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
     .balign 16
     Exit:
         REPRET
+#endif
+
     // make sure this guy is bigger than any of the other guys
     .balign 16
         nop
@@ -78,43 +184,6 @@ LEAF_END_MARKED JIT_WriteBarrier, _TEXT
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
-
-// There is an even more optimized version of these helpers possible which takes
-// advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
-// that check (this is more significant in the JIT_WriteBarrier case).
-//
-// Additionally we can look into providing helpers which will take the src/dest from
-// specific registers (like x86) which _could_ (??) make for easier register allocation
-// for the JIT64, however it might lead to having to have some nasty code that treats
-// these guys really special like... :(.
-//
-// Version that does the move, checks whether or not it's in the GC and whether or not
-// it needs to have it's card updated
-//
-// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-
-        // When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        // but if it isn't then it will just return.
-        //
-        // See if this is in GCHeap
-        PREPARE_EXTERNAL_VAR g_lowest_address, rax
-        cmp     rdi, [rax]
-        // jb      NotInHeap
-        .byte 0x72, 0x0e
-        PREPARE_EXTERNAL_VAR g_highest_address, rax
-        cmp     rdi, [rax]
-        // jnb     NotInHeap
-        .byte 0x73, 0x02
-        
-        // call C_FUNC(JIT_WriteBarrier)
-        .byte 0xeb, 0x84
-
-    NotInHeap:
-        // See comment above about possible AV
-        mov     [rdi], rsi
-        ret
-LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 // JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
 //
@@ -128,7 +197,7 @@ LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 //
 //   RCX is trashed
 //   RAX is trashed
-//   R10 is trashed on Debug build
+//   R10 is trashed
 //   R11 is trashed on Debug build
 // Exit:
 //   RDI, RSI are incremented by SIZEOF(LPVOID)
@@ -202,6 +271,21 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     DoneShadow_ByRefWriteBarrier:
 #endif
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // Update the write watch table if necessary
+        PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, rax
+        cmp     byte ptr [rax], 0h
+        je      CheckCardTable_ByRefWriteBarrier
+        mov     rax, rdi
+        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        PREPARE_EXTERNAL_VAR g_sw_ww_table, r10
+        add     rax, qword ptr [r10]
+        cmp     byte ptr [rax], 0h
+        jne     CheckCardTable_ByRefWriteBarrier
+        mov     byte ptr [rax], 0FFh
+#endif
+
+    CheckCardTable_ByRefWriteBarrier:
         // See if we can just quick out
         PREPARE_EXTERNAL_VAR g_ephemeral_low, rax
         cmp     rcx, [rax]
