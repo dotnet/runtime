@@ -446,5 +446,103 @@ namespace System.Reflection.PortableExecutable
 
             return new PEMemoryBlock(block, relativeOffset);
         }
+
+        /// <summary>
+        /// Reads all Debug Directory table entries.
+        /// </summary>
+        /// <exception cref="BadImageFormatException">Bad format of the entry.</exception>
+        public unsafe ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
+        {
+            var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
+            if (debugDirectory.Size == 0)
+            {
+                return ImmutableArray<DebugDirectoryEntry>.Empty;
+            }
+
+            int position;
+            if (!PEHeaders.TryGetDirectoryOffset(debugDirectory, out position))
+            {
+                throw new BadImageFormatException(SR.InvalidDirectoryRVA);
+            }
+
+            const int entrySize = 0x1c;
+
+            if (debugDirectory.Size % entrySize != 0)
+            {
+                throw new BadImageFormatException(SR.InvalidDirectorySize);
+            }
+
+            using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(position, debugDirectory.Size))
+            {
+                var reader = new BlobReader(block.Pointer, block.Size);
+
+                int entryCount = debugDirectory.Size / entrySize;
+                var builder = ImmutableArray.CreateBuilder<DebugDirectoryEntry>(entryCount);
+                for (int i = 0; i < entryCount; i++)
+                {
+                    // Reserved, must be zero.
+                    int characteristics = reader.ReadInt32();
+                    if (characteristics != 0)
+                    {
+                        throw new BadImageFormatException(SR.InvalidDebugDirectoryEntryCharacteristics);
+                    }
+
+                    uint stamp = reader.ReadUInt32();
+                    ushort majorVersion = reader.ReadUInt16();
+                    ushort minorVersion = reader.ReadUInt16();
+
+                    var type = (DebugDirectoryEntryType)reader.ReadInt32();
+
+                    int dataSize = reader.ReadInt32();
+                    int dataRva = reader.ReadInt32();
+                    int dataPointer = reader.ReadInt32();
+
+                    builder.Add(new DebugDirectoryEntry(stamp, majorVersion, minorVersion, type, dataSize, dataRva, dataPointer));
+                }
+
+                return builder.MoveToImmutable();
+            }
+        }
+
+        /// <summary>
+        /// Reads the data pointed to by the specifed Debug Directory entry and interprets them as CodeView.
+        /// </summary>
+        /// <exception cref="ArgumentException"><paramref name="entry"/> is not a CodeView entry.</exception>
+        /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
+        public unsafe CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
+        {
+            if (entry.Type != DebugDirectoryEntryType.CodeView)
+            {
+                throw new ArgumentException("entry");
+            }
+
+            using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(entry.DataPointer, entry.DataSize))
+            {
+                var reader = new BlobReader(block.Pointer, block.Size);
+
+                if (reader.ReadByte() != (byte)'R' ||
+                    reader.ReadByte() != (byte)'S' ||
+                    reader.ReadByte() != (byte)'D' ||
+                    reader.ReadByte() != (byte)'S')
+                {
+                    throw new BadImageFormatException(SR.UnexpectedCodeViewDataSignature);
+                }
+
+                Guid guid = reader.ReadGuid();
+                int age = reader.ReadInt32();
+                string path = reader.ReadUtf8NullTerminated();
+
+                // path may be padded with NULs
+                while (reader.RemainingBytes > 0)
+                {
+                    if (reader.ReadByte() != 0)
+                    {
+                        throw new BadImageFormatException(SR.InvalidPathPadding);
+                    }
+                }
+
+                return new CodeViewDebugDirectoryData(guid, age, path);
+            }
+        }
     }
 }

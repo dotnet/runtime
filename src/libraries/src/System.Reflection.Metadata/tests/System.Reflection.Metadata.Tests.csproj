@@ -45,6 +45,7 @@
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
     <Compile Include="PortableExecutable\AbstractMemoryBlockTests.cs" />
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
+    <Compile Include="PortableExecutable\DebugDirectoryTests.cs" />
     <Compile Include="PortableExecutable\PEBinaryReaderTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
@@ -74,6 +75,10 @@
     <EmbeddedResource Include="Resources\Misc\EmptyType.dll" />
     <None Include="Resources\Misc\Members.cs" />
     <EmbeddedResource Include="Resources\Misc\Members.dll" />
+    <None Include="Resources\Misc\Deterministic.cs" />
+    <EmbeddedResource Include="Resources\Misc\Deterministic.dll" />
+    <None Include="Resources\Misc\Debug.cs" />
+    <EmbeddedResource Include="Resources\Misc\Debug.dll" />
     <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
     <EmbeddedResource Include="Resources\Namespace\NamespaceTests.dll" />
     <None Include="Resources\NetModule\AppCS.cs" />
