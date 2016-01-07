@@ -11,17 +11,17 @@ GetX509NameStackFieldCount
 
 Direct shim to sk_X509_NAME_num
 */
-extern "C" int32_t GetX509NameStackFieldCount(X509NameStack* sk);
+extern "C" int32_t CryptoNative_GetX509NameStackFieldCount(X509NameStack* sk);
 
 /*
 Direct shim to sk_X509_NAME_value
 */
-extern "C" X509_NAME* GetX509NameStackField(X509NameStack* sk, int32_t loc);
+extern "C" X509_NAME* CryptoNative_GetX509NameStackField(X509NameStack* sk, int32_t loc);
 
 /*
 Shims the d2i_X509_NAME method and makes it easier to invoke from managed code.
 */
-extern "C" X509_NAME* DecodeX509Name(const uint8_t* buf, int32_t len);
+extern "C" X509_NAME* CryptoNative_DecodeX509Name(const uint8_t* buf, int32_t len);
 
 /*
 Cleans up and deletes an X509_NAME instance.
@@ -32,7 +32,7 @@ No-op if a is null.
 The given X509_NAME pointer is invalid after this call.
 Always succeeds.
 */
-extern "C" void X509NameDestroy(X509_NAME* a);
+extern "C" void CryptoNative_X509NameDestroy(X509_NAME* a);
 
 /*
 Function:
@@ -40,7 +40,7 @@ NewX509NameStack
 
 Direct shim to sk_X509_NAME_new_null
 */
-extern "C" STACK_OF(X509_NAME) * NewX509NameStack();
+extern "C" STACK_OF(X509_NAME) * CryptoNative_NewX509NameStack();
 
 /*
 Function:
@@ -51,7 +51,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_NAME_push
 */
-extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME * x509Name);
+extern "C" int32_t CryptoNative_PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME* x509Name);
 
 /*
 Function:
@@ -59,7 +59,7 @@ RecursiveFreeX509NameStack
 
 Direct shim to sk_X509_NAME_pop_free
 */
-extern "C" void RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack);
+extern "C" void CryptoNative_RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack);
 
 /*
 Function:
@@ -67,24 +67,24 @@ DuplicateX509Name
 
 Direct shim to X509_NAME_dup
 */
-extern "C" X509_NAME* DuplicateX509Name(X509_NAME* x509Name);
+extern "C" X509_NAME* CryptoNative_DuplicateX509Name(X509_NAME* x509Name);
 
 /*
 Direct shim to X509_NAME_entry_count
 */
-extern "C" int32_t GetX509NameEntryCount(X509_NAME* x509Name);
+extern "C" int32_t CryptoNative_GetX509NameEntryCount(X509_NAME* x509Name);
 
 /*
 Direct shim to X509_NAME_get_entry
 */
-extern "C" X509_NAME_ENTRY* GetX509NameEntry(X509_NAME* x509Name, int32_t loc);
+extern "C" X509_NAME_ENTRY* CryptoNative_GetX509NameEntry(X509_NAME* x509Name, int32_t loc);
 
 /*
 Direct shim to X509_NAME_ENTRY_get_object
 */
-extern "C" ASN1_OBJECT* GetX509NameEntryOid(X509_NAME_ENTRY* nameEntry);
+extern "C" ASN1_OBJECT* CryptoNative_GetX509NameEntryOid(X509_NAME_ENTRY* nameEntry);
 
 /*
 Direct shim to X509_NAME_ENTRY_get_data
 */
-extern "C" ASN1_STRING* GetX509NameEntryData(X509_NAME_ENTRY* nameEntry);
+extern "C" ASN1_STRING* CryptoNative_GetX509NameEntryData(X509_NAME_ENTRY* nameEntry);

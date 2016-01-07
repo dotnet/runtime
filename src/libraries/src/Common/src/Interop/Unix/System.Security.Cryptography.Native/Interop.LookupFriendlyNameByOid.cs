@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_LookupFriendlyNameByOid")]
         internal static extern int LookupFriendlyNameByOid(string oidValue, ref IntPtr friendlyNamePtr);
     }
 }

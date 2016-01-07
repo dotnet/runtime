@@ -6,11 +6,10 @@
 
 #include <curl/curl.h>
 
-extern "C" int32_t GetCurlVersionInfo(
-    int32_t* age, 
-    int32_t* supportsSsl, 
-    int32_t* supportsAutoDecompression,
-    int32_t* supportsHttp2Multiplexing)
+extern "C" int32_t HttpNative_GetCurlVersionInfo(int32_t* age,
+                                                 int32_t* supportsSsl,
+                                                 int32_t* supportsAutoDecompression,
+                                                 int32_t* supportsHttp2Multiplexing)
 {
     curl_version_info_data* versionInfo = curl_version_info(CURLVERSION_NOW);
 

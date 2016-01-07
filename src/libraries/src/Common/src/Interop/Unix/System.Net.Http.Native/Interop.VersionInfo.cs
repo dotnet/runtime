@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Http
     {
-        [DllImport(Libraries.HttpNative)]
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_GetCurlVersionInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetCurlVersionInfo(
             out int age,

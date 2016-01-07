@@ -15,19 +15,19 @@ No-op if a is null.
 The given BIGNUM pointer is invalid after this call.
 Always succeeds.
 */
-extern "C" void BigNumDestroy(BIGNUM* a);
+extern "C" void CryptoNative_BigNumDestroy(BIGNUM* a);
 
 /*
 Shims the BN_bin2bn method.
 */
-extern "C" BIGNUM* BigNumFromBinary(const uint8_t* s, int32_t len);
+extern "C" BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len);
 
 /*
 Shims the BN_bn2bin method.
 */
-extern "C" int32_t BigNumToBinary(const BIGNUM* a, uint8_t* to);
+extern "C" int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to);
 
 /*
 Returns the number of bytes needed to export a BIGNUM.
 */
-extern "C" int32_t GetBigNumBytes(const BIGNUM* a);
+extern "C" int32_t CryptoNative_GetBigNumBytes(const BIGNUM* a);

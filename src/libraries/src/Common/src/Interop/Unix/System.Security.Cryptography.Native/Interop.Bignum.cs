@@ -9,16 +9,16 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumDestroy")]
         internal static extern void BigNumDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
         private static extern IntPtr BigNumFromBinary(byte[] s, int len);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
         private static extern unsafe int BigNumToBinary(SafeBignumHandle a, byte* to);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
         private static extern int GetBigNumBytes(SafeBignumHandle a);
 
         private static IntPtr CreateBignumPtr(byte[] bigEndianValue)

@@ -10,21 +10,21 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
         internal static extern void EcKeyDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByCurveName")]
         internal static extern SafeEcKeyHandle EcKeyCreateByCurveName(int nid);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EcKeyGenerateKey(SafeEcKeyHandle eckey);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EcKeyUpRef(IntPtr r);
 
-        [DllImport(Libraries.CryptoNative)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGetCurveName")]
         internal static extern int EcKeyGetCurveName(SafeEcKeyHandle ecKey);
     }
 }
