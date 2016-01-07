@@ -428,8 +428,8 @@ def generateLttngFiles(etwmanifest,intermediate):
 
 #Top level Cmake
     topCmake          = open(eventprovider_directory + "/CMakeLists.txt", 'w')
-    print >>topCmake, stdprolog_cmake
-    print >>topCmake, """cmake_minimum_required(VERSION 2.8.12.2)
+    topCmake.write(stdprolog_cmake + "\n")
+    topCmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
 
     project(eventprovider)
 
@@ -441,7 +441,7 @@ def generateLttngFiles(etwmanifest,intermediate):
 
     add_library(eventprovider
         STATIC
-"""
+""")
 
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
@@ -451,21 +451,22 @@ def generateLttngFiles(etwmanifest,intermediate):
         providerName_File = providerName.replace('-','')
         providerName_File = providerName_File.lower()
         
-        print >>topCmake,'        "'+ lttngevntprovPre + providerName_File + ".cpp" + '"'
+        topCmake.write('        "'+ lttngevntprovPre + providerName_File + ".cpp" + '"\n')
 
-    print >>topCmake, """)
+    topCmake.write(""")
     add_subdirectory(tracepointprovider)
     
     # Install the static eventprovider library 
-    install (TARGETS eventprovider DESTINATION lib)"""
+    install (TARGETS eventprovider DESTINATION lib)
+    """)
     topCmake.close()
 
 #TracepointProvider  Cmake
     
     tracepointprovider_Cmake          = open(tracepointprovider_directory + "/CMakeLists.txt", 'w')
     
-    print >>tracepointprovider_Cmake, stdprolog_cmake
-    print >>tracepointprovider_Cmake, """cmake_minimum_required(VERSION 2.8.12.2)
+    tracepointprovider_Cmake.write(stdprolog_cmake + "\n")
+    tracepointprovider_Cmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
     
     project(coreclrtraceptprovider)
     
@@ -477,7 +478,8 @@ def generateLttngFiles(etwmanifest,intermediate):
     add_compile_options(-fPIC)
     
     add_library(coreclrtraceptprovider
-        SHARED"""
+        SHARED
+    """)
     
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
@@ -487,16 +489,17 @@ def generateLttngFiles(etwmanifest,intermediate):
         providerName_File = providerName.replace('-','')
         providerName_File = providerName_File.lower()
         
-        print >>tracepointprovider_Cmake,'        "'+ lttngevntprovTpPre + providerName_File +".cpp" + '"'
+        tracepointprovider_Cmake.write('        "'+ lttngevntprovTpPre + providerName_File +".cpp" + '"\n')
 
-    print >>tracepointprovider_Cmake, """    )
+    tracepointprovider_Cmake.write("""    )
     
     target_link_libraries(coreclrtraceptprovider
                          -llttng-ust
     )
             
    #Install the static coreclrtraceptprovider library
-   install (TARGETS coreclrtraceptprovider DESTINATION .)"""
+   install (TARGETS coreclrtraceptprovider DESTINATION .)
+   """)
     tracepointprovider_Cmake.close()
 
 # Generate Lttng specific instrumentation
@@ -520,40 +523,43 @@ def generateLttngFiles(etwmanifest,intermediate):
         lTTngImpl         = open(lttngevntprov, 'w')
         lTTngTpImpl       = open(lttngevntprovTp, 'w')
 
-        print >>lTTngHdr, stdprolog
-        print >>lTTngImpl, stdprolog
-        print >>lTTngTpImpl, stdprolog
+        lTTngHdr.write(stdprolog + "\n")
+        lTTngImpl.write(stdprolog + "\n")
+        lTTngTpImpl.write(stdprolog + "\n")
 
-        print >>lTTngTpImpl,"\n#define TRACEPOINT_CREATE_PROBES\n"
+        lTTngTpImpl.write("\n#define TRACEPOINT_CREATE_PROBES\n")
         
        
-        print >>lTTngTpImpl,"#include \"./"+lttngevntheadershortname + "\""
+        lTTngTpImpl.write("#include \"./"+lttngevntheadershortname + "\"\n")
         
-        print >>lTTngHdr, """
+        lTTngHdr.write("""
 #include "palrt.h"
 #include "pal.h"
 
 #undef TRACEPOINT_PROVIDER
-"""
+
+""")
 
 
-        print >>lTTngHdr, "#define TRACEPOINT_PROVIDER " + providerName
-        print >>lTTngHdr,"""
+        lTTngHdr.write("#define TRACEPOINT_PROVIDER " + providerName + "\n")
+        lTTngHdr.write("""
 
-#undef TRACEPOINT_INCLUDE"""
+#undef TRACEPOINT_INCLUDE
+""")
 
-        print >>lTTngHdr,"#define TRACEPOINT_INCLUDE \"./" + lttngevntheadershortname + "\"\n"
+        lTTngHdr.write("#define TRACEPOINT_INCLUDE \"./" + lttngevntheadershortname + "\"\n\n")
 
 
-        print >>lTTngHdr, "#if !defined(LTTNG_CORECLR_H" + providerName + ") || defined(TRACEPOINT_HEADER_MULTI_READ)\n"
-        print >>lTTngHdr, "#define LTTNG_CORECLR_H" + providerName
+        lTTngHdr.write("#if !defined(LTTNG_CORECLR_H" + providerName + ") || defined(TRACEPOINT_HEADER_MULTI_READ)\n\n")
+        lTTngHdr.write("#define LTTNG_CORECLR_H" + providerName + "\n")
 
-        print >>lTTngHdr, "\n#include <lttng/tracepoint.h>\n"
+        lTTngHdr.write("\n#include <lttng/tracepoint.h>\n\n")
 
-        print >>lTTngImpl, """
+        lTTngImpl.write("""
 #define TRACEPOINT_DEFINE
-#define TRACEPOINT_PROBE_DYNAMIC_LINKAGE"""
-        print >>lTTngImpl,"#include \"" + lttngevntheadershortname + "\"\n"
+#define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
+""")
+        lTTngImpl.write("#include \"" + lttngevntheadershortname + "\"\n\n")
         
 
 
@@ -562,10 +568,10 @@ def generateLttngFiles(etwmanifest,intermediate):
 
         allTemplates  = parseTemplateNodes(templateNodes)
         #generate the header
-        print >>lTTngHdr,generateLttngHeader(providerName,allTemplates,eventNodes)
+        lTTngHdr.write(generateLttngHeader(providerName,allTemplates,eventNodes) + "\n")
 
         #create the implementation of eventing functions : lttngeventprov*.cp
-        print >>lTTngImpl,generateLttngTpProvider(providerName,eventNodes,allTemplates)
+        lTTngImpl.write(generateLttngTpProvider(providerName,eventNodes,allTemplates) + "\n")
         
         lTTngHdr.close()
         lTTngImpl.close()

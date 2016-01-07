@@ -7,7 +7,7 @@ def walk_recursively_and_update(dcmp):
     for name in dcmp.diff_files:
         srcpath = dcmp.right + "/" + name
         destpath = dcmp.left + "/" + name
-        print "Updating %s" % (destpath)
+        print("Updating %s" % (destpath))
         if  os.path.isfile(srcpath):
             shutil.copyfile(srcpath, destpath)
         else :
@@ -17,7 +17,7 @@ def walk_recursively_and_update(dcmp):
     for name in dcmp.right_only:
         srcpath = dcmp.right + "/" + name
         destpath = dcmp.left + "/" + name
-        print "Updating %s" % (destpath)
+        print("Updating %s" % (destpath))
         if  os.path.isfile(srcpath):
             shutil.copyfile(srcpath, destpath)
         elif  os.path.isdir(srcpath):
@@ -28,7 +28,7 @@ def walk_recursively_and_update(dcmp):
     #delete left only files
     for name in dcmp.left_only:
         path = dcmp.left + "/" + name
-        print "Deleting " % (path)
+        print("Deleting " % (path))
         if  os.path.isfile(path):
             os.remove(path)
         elif  os.path.isdir(path):
