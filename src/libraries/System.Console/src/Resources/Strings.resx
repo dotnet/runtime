@@ -219,6 +219,9 @@
   <data name="ArgumentOutOfRange_ConsoleBufferBoundaries" xml:space="preserve">
     <value>The value must be greater than or equal to zero and less than the console's buffer size in that dimension.</value>
   </data>
+  <data name="ArgumentOutOfRange_ConsoleWindowPos" xml:space="preserve">
+    <value>The window position must be set such that the current window size fits within the console's buffer, and the numbers must not be negative.</value>
+  </data>
   <data name="InvalidOperation_ConsoleKeyAvailableOnFile" xml:space="preserve">
     <value>Cannot see if a key has been pressed when either application does not have a console or when console input has been redirected from a file. Try Console.In.Peek.</value>
   </data>
