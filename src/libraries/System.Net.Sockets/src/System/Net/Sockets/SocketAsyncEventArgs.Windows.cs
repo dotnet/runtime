@@ -837,21 +837,25 @@ namespace System.Net.Sockets
                 if (_socketAddressGCHandle.IsAllocated)
                 {
                     _socketAddressGCHandle.Free();
+                    _pinnedSocketAddress = null;
                 }
 
                 if (_wsaMessageBufferGCHandle.IsAllocated)
                 {
                     _wsaMessageBufferGCHandle.Free();
+                    _ptrWSAMessageBuffer = IntPtr.Zero;
                 }
 
                 if (_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
                 {
                     _wsaRecvMsgWSABufferArrayGCHandle.Free();
+                    _ptrWSARecvMsgWSABufferArray = IntPtr.Zero;
                 }
 
                 if (_controlBufferGCHandle.IsAllocated)
                 {
                     _controlBufferGCHandle.Free();
+                    _ptrControlBuffer = IntPtr.Zero;
                 }
             }
         }
