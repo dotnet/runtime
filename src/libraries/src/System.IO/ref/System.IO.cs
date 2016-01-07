@@ -79,6 +79,27 @@ namespace System.IO
         public virtual void Write(ulong value) { }
         protected void Write7BitEncodedInt(int value) { }
     }
+    public sealed partial class BufferedStream : System.IO.Stream 
+    {
+        public BufferedStream(Stream stream) { }
+        public BufferedStream(Stream stream, int bufferSize) { }
+        public override bool CanRead { get { return default(bool); } }
+        public override bool CanSeek { get { return default(bool); } }
+        public override bool CanWrite { get { return default(bool); } }
+        public override long Length { get { return default(long); } }
+        public override long Position { get { return default(long); } set { } }
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override int Read(byte[] array, int offset, int count) { return default(int); }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
+        public override int ReadByte() { return default(int); }
+        public override long Seek(long offset, SeekOrigin origin) { return default(long); }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] array, int offset, int count) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override void WriteByte(byte value) { }
+    }
     public partial class EndOfStreamException : System.IO.IOException
     {
         public EndOfStreamException() { }
