@@ -112,6 +112,16 @@ namespace System.ComponentModel.DataAnnotations
             get { return _method; }
         }
 
+        public override bool RequiresValidationContext 
+        {
+            get 
+            {
+                // If attribute is not valid, throw an exception right away to inform the developer
+                ThrowIfAttributeNotWellFormed();
+                // We should return true when 2-parameter form of the validation method is used
+                return !_isSingleArgumentMethod;
+            }
+        }
         #endregion
 
         /// <summary>

@@ -34,6 +34,60 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         [Fact]
+        public static void RequiresValidationContext_return_false_for_valid_validation_type_and_one_arg_method() {
+            var attribute = new CustomValidationAttribute(typeof(CustomValidator), "CorrectValidationMethodOneArg");
+            Assert.False(attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "CorrectValidationMethodOneArgStronglyTyped");
+            Assert.False(attribute.RequiresValidationContext);
+        }
+
+        [Fact]
+        public static void RequiresValidationContext_return_true_for_valid_validation_type_and_two_arg_method() {
+            var attribute = new CustomValidationAttribute(typeof(CustomValidator), "CorrectValidationMethodTwoArgs");
+            Assert.True(attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "CorrectValidationMethodTwoArgsStronglyTyped");
+            Assert.True(attribute.RequiresValidationContext);
+        }
+
+        [Fact]
+        public static void RequiresValidationContext_throws_InvalidOperationException_if_attribute_not_well_formed() {
+            var attribute = new CustomValidationAttribute(null, "Does not matter");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(NonPublicCustomValidator), "Does not matter");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), null);
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), string.Empty);
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "NonExistentMethod");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "NonPublicValidationMethod");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "NonStaticValidationMethod");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "ValidationMethodDoesNotReturnValidationResult");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "ValidationMethodWithNoArgs");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "ValidationMethodWithByRefArg");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+
+            attribute = new CustomValidationAttribute(typeof(CustomValidator), "ValidationMethodTwoArgsButSecondIsNotValidationContext");
+            Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+        }
+
+        [Fact]
         public static void Validate_throws_InvalidOperationException_for_invalid_ValidatorType()
         {
             var attribute = new CustomValidationAttribute(null, "Does not matter");
