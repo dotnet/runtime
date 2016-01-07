@@ -97,7 +97,7 @@ doc_free (gpointer key)
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 {
-	MonoImage *ppdb_image;
+	MonoImage *ppdb_image = NULL;
 	const char *filename;
 	char *s, *ppdb_filename;
 	MonoImageOpenStatus status;
@@ -107,7 +107,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoPPDBFile *ppdb;
 
 	if (raw_contents) {
-		ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
+		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
+			ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);
