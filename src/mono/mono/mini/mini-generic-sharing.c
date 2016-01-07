@@ -1103,6 +1103,8 @@ mini_get_underlying_signature (MonoMethodSignature *sig)
 	res->ret = get_wrapper_shared_type (sig->ret);
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = get_wrapper_shared_type (sig->params [i]);
+	res->generic_param_count = 0;
+	res->is_inflated = 0;
 
 	return res;
 }
