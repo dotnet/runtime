@@ -57,6 +57,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     // cleanup necessary.
     memset(this, 0, sizeof(*this));
 
+    // Because of the above memset the embeded classes/structs need to be reinitialized especially
+    // the two way pipe; it expects the in/out handles to be -1 instead of 0.
+    m_pipe = TwoWayPipe();
+    m_sStateLock = DbgTransportLock();
+
     // Initialize all per-session state variables.
     InitSessionState();
 
