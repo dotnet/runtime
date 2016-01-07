@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.DependencyModel
                 compileTargetProperty.Key,
                 runtimeTargetProperty.Key.Substring(compileTargetProperty.Key.Length + 1),
                 ReadCompilationOptions((JObject)root[DependencyContextStrings.CompilationOptionsPropertName]),
-                ReadLibraries((JObject)runtimeTargetProperty.Value, true, libraryStubs),
-                ReadLibraries((JObject)compileTargetProperty.Value, false, libraryStubs)
+                ReadLibraries((JObject)compileTargetProperty.Value, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
+                ReadLibraries((JObject)runtimeTargetProperty.Value, true, libraryStubs).Cast<RuntimeLibrary>().ToArray()
                 );
         }
 
@@ -59,12 +59,12 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        private Library[] ReadLibraries(JObject librariesObject, bool runtime, Dictionary<string, DependencyContextReader.LibraryStub> libraryStubs)
+        private IEnumerable<Library> ReadLibraries(JObject librariesObject, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
         {
-            return librariesObject.Properties().Select(property => ReadLibrary(property, runtime, libraryStubs)).ToArray();
+            return librariesObject.Properties().Select(property => ReadLibrary(property, runtime, libraryStubs));
         }
 
-        private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, DependencyContextReader.LibraryStub> libraryStubs)
+        private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
         {
             var nameWithVersion = property.Name;
             LibraryStub stub;
@@ -84,7 +84,14 @@ namespace Microsoft.Extensions.DependencyModel
             var dependencies = ReadDependencies(libraryObject);
             var assemblies = ReadAssemblies(libraryObject, runtime);
 
-            return new Library(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
+            if (runtime)
+            {
+                return new RuntimeLibrary(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
+            }
+            else
+            {
+                return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
+            }
         }
 
         private static string[] ReadAssemblies(JObject libraryObject, bool runtime)

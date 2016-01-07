@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -78,25 +81,49 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject WriteTargets(DependencyContext context)
         {
             return new JObject(
-                new JProperty(context.Target, WriteTarget(context.CompileLibraries, false)),
+                new JProperty(context.Target, WriteTarget(context.CompileLibraries)),
                 new JProperty(context.Target + DependencyContextStrings.VersionSeperator + context.Runtime,
-                    WriteTarget(context.RuntimeLibraries, true))
+                    WriteTarget(context.RuntimeLibraries))
                 );
         }
 
-        private JObject WriteTarget(IReadOnlyList<Library> libraries, bool runtime)
+        private JObject WriteTarget(IReadOnlyList<Library> libraries)
         {
             return new JObject(
                 libraries.Select(library =>
-                    new JProperty(library.PackageName + DependencyContextStrings.VersionSeperator + library.Version, WriteTargetLibrary(library, runtime))));
+                    new JProperty(library.PackageName + DependencyContextStrings.VersionSeperator + library.Version, WriteTargetLibrary(library))));
         }
 
-        private JObject WriteTargetLibrary(Library library, bool runtime)
+        private JObject WriteTargetLibrary(Library library)
         {
+            string propertyName;
+            string[] assemblies;
+
+            var runtimeLibrary = library as RuntimeLibrary;
+            if (runtimeLibrary != null)
+            {
+                propertyName = DependencyContextStrings.RunTimeAssembliesKey;
+                assemblies = runtimeLibrary.Assemblies.Select(assembly => assembly.Path).ToArray();
+            }
+            else
+            {
+                var compilationLibrary = library as CompilationLibrary;
+                if (compilationLibrary != null)
+                {
+                    propertyName = DependencyContextStrings.CompileTimeAssembliesKey;
+                    assemblies = compilationLibrary.Assemblies.ToArray();
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+
+
             return new JObject(
                 new JProperty(DependencyContextStrings.DependenciesPropertyName, WriteDependencies(library.Dependencies)),
-                new JProperty(runtime ? DependencyContextStrings.RunTimeAssembliesKey : DependencyContextStrings.CompileTimeAssembliesKey,
-                    WriteAssemblies(library.Assemblies))
+                new JProperty(propertyName,
+                    WriteAssemblies(assemblies))
                 );
         }
 
@@ -115,7 +142,7 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject WriteLibraries(DependencyContext context)
         {
             var allLibraries =
-                context.RuntimeLibraries.Concat(context.CompileLibraries)
+                context.RuntimeLibraries.Cast<Library>().Concat(context.CompileLibraries)
                     .GroupBy(library => library.PackageName + DependencyContextStrings.VersionSeperator + library.Version);
 
             return new JObject(allLibraries.Select(libraries=> new JProperty(libraries.Key, WriteLibrary(libraries.First()))));
