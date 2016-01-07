@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
-        public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, Library[] compileLibraries, Library[] runtimeLibraries)
+        public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, CompilationLibrary[] compileLibraries, RuntimeLibrary[] runtimeLibraries)
         {
             Target = target;
             Runtime = runtime;
@@ -31,9 +31,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         public CompilationOptions CompilationOptions { get; }
 
-        public IReadOnlyList<Library> CompileLibraries { get; }
+        public IReadOnlyList<CompilationLibrary> CompileLibraries { get; }
 
-        public IReadOnlyList<Library> RuntimeLibraries { get; }
+        public IReadOnlyList<RuntimeLibrary> RuntimeLibraries { get; }
 
         private static DependencyContext LoadDefault()
         {
