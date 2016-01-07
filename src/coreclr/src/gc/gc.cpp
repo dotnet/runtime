@@ -21674,6 +21674,14 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                 (size_t)new_address + ps, ps, 
                                 (is_plug_padded (plug_start) ? 1 : 0)));
 #endif //SIMPLE_DPRINTF
+
+#ifdef SHORT_PLUGS
+                        if (is_plug_padded (plug_start))
+                        {
+                            dprintf (3, ("%Ix was padded", plug_start));
+                            dd_padding_size (dd_active_old) += Align (min_obj_size);
+                        }
+#endif //SHORT_PLUGS
                     }
                 }
             }
