@@ -23,32 +23,35 @@ _Mono installation instructions are taken from ["Install Mono"](http://www.mono-
 _**Note:** CI packages are not produced for Mac. As CoreFx needs current bits you must build Mono [yourself](http://www.mono-project.com/docs/compiling-mono/)._
 ### Add Mono key and package sources
 ##### Debian/Ubuntu (and other derivatives)
+Add the Mono Project GPG signing key and the package repository to your system:
 ```
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
-echo "deb http://jenkins.mono-project.com/repo/debian sid main" | sudo tee /etc/apt/sources.list.d/mono-jenkins.list
+```
+Debian requires a second package repository for libgdiplus (this is not applicable to Ubuntu):
+```
+echo "deb http://download.mono-project.com/repo/debian wheezy-libjpeg62-compat main" | sudo tee -a /etc/apt/sources.list.d/mono-xamarin.list
+```
+Then, run a package upgrade:
+```
 sudo apt-get update
 ```
+
 ##### Fedora/CentOS (and other derivatives)
 ```
 sudo rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF"
 sudo yum-config-manager --add-repo http://download.mono-project.com/repo/centos/
-sudo yum-config-manager --add-repo http://jenkins.mono-project.com/repo/centos/
 sudo yum upgrade
 ``` 
-### Install CI build and reference assemblies
-Install a recent (Continuous Integration) Mono build and the PCL reference assemblies. (_This instruction installs latest. To see available Mono builds, use `apt-cache search mono-snapshot` (Ubuntu) or `yum search mono-snapshot` (Fedora)_)
+### Install Mono build and reference assemblies
+Install a recent Mono build and the PCL reference assemblies.
 ##### Debian/Ubuntu (and other derivatives)
 ```
-sudo apt-get install mono-snapshot-latest referenceassemblies-pcl
+sudo apt-get install mono-devel referenceassemblies-pcl
 ```
 ##### Fedora/CentOS (and other derivatives)
 ```
-sudo yum install mono-snapshot-latest referenceassemblies-pcl
-```
-### Switch to the mono snapshot build
-```
-. mono-snapshot mono
+sudo yum install mono-devel referenceassemblies-pcl
 ```
 
 # Known Issues
