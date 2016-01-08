@@ -12761,14 +12761,48 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				arg = sp [n - 1];
 
 				if (cfg->llvm_only) {
-					if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig)) {
+					/*
+					 * The lowest bit of 'arg' determines whenever the callee uses the gsharedvt
+					 * cconv. This is set by mono_init_delegate ().
+					 */
+					if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
 						MonoInst *callee = addr;
+						MonoInst *call, *localloc_ins;
+						MonoBasicBlock *is_gsharedvt_bb, *end_bb;
+						int low_bit_reg = alloc_preg (cfg);
 
-						GSHAREDVT_FAILURE (*ip);
+						NEW_BBLOCK (cfg, is_gsharedvt_bb);
+						NEW_BBLOCK (cfg, end_bb);
 
+						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PAND_IMM, low_bit_reg, arg->dreg, 1);
+						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, low_bit_reg, 0);
+						MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_gsharedvt_bb);
+
+						/* Normal case: callee uses a normal cconv, have to add an out wrapper */
 						addr = emit_get_rgctx_sig (cfg, context_used,
 												   fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
+						/*
+						 * ADDR points to a gsharedvt-out wrapper, have to pass <callee, arg> as an extra arg.
+						 */
+						MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+						ins->dreg = alloc_preg (cfg);
+						ins->inst_imm = 2 * SIZEOF_VOID_P;
+						MONO_ADD_INS (cfg->cbb, ins);
+						localloc_ins = ins;
+						cfg->flags |= MONO_CFG_HAS_ALLOCA;
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, 0, callee->dreg);
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, SIZEOF_VOID_P, arg->dreg);
+
+						call = emit_extra_arg_calli (cfg, fsig, sp, localloc_ins->dreg, addr);
+						MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+						/* Gsharedvt case: callee uses a gsharedvt cconv, no conversion is needed */
+						MONO_START_BB (cfg, is_gsharedvt_bb);
+						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PXOR_IMM, arg->dreg, arg->dreg, 1);
 						ins = emit_extra_arg_calli (cfg, fsig, sp, arg->dreg, callee);
+						ins->dreg = call->dreg;
+
+						MONO_START_BB (cfg, end_bb);
 					} else {
 						ins = emit_extra_arg_calli (cfg, fsig, sp, arg->dreg, addr);
 					}

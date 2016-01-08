@@ -6927,6 +6927,8 @@ is_concrete_type (MonoType *t)
 		MonoGenericInst *inst;
 		MonoType *arg;
 
+		if (!MONO_TYPE_ISSTRUCT (t))
+			return TRUE;
 		klass = mono_class_from_mono_type (t);
 		orig_ctx = &klass->generic_class->context;
 
