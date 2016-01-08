@@ -9,17 +9,24 @@ setlocal
 if not defined VisualStudioVersion (
     if defined VS140COMNTOOLS (
         call "%VS140COMNTOOLS%\VsDevCmd.bat"
-        goto :EnvSet
+        goto :CheckNative
     )
 
     if defined VS120COMNTOOLS (
         call "%VS120COMNTOOLS%\VsDevCmd.bat"
-        goto :EnvSet
+        goto :CheckNative
     )
 
     echo Error: build.cmd requires Visual Studio 2013 or 2015.  
     echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
+)
+
+:CheckNative
+:: Run the Native Windows build
+call %~dp0src\native\Windows\build-native.cmd %*
+IF ERRORLEVEL 1 (
+    echo Native component build failed.
 )
 
 :EnvSet
