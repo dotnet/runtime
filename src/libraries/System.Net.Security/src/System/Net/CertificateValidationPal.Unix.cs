@@ -92,7 +92,12 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+            if (globalLogEnabled)
+            {
+                GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
+            }
+
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
@@ -146,8 +151,10 @@ namespace System.Net
                 SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
             }
 
-            GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
-
+            if (globalLogEnabled)
+            {
+                GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
+            }
             return result;
         }      
 
@@ -211,6 +218,7 @@ namespace System.Net
 
                     if (store == null)
                     {
+                        bool globalLogEnabled = GlobalLog.IsEnabled;
                         try
                         {
                             store = new X509Store(StoreName.My, storeLocation);
@@ -218,16 +226,21 @@ namespace System.Net
 
                             Volatile.Write(ref storeField, store);
 
-                            GlobalLog.Print(
-                                "CertModule::EnsureStoreOpened() storeLocation:" + storeLocation +
-                                    " returned store:" + store.GetHashCode().ToString("x"));
+                            if (globalLogEnabled)
+                            {
+                                GlobalLog.Print(
+                                    "CertModule::EnsureStoreOpened() storeLocation:" + storeLocation +
+                                        " returned store:" + store.GetHashCode().ToString("x"));
+                            }
                         }
                         catch (CryptographicException e)
                         {
-                            GlobalLog.Assert(
-                                "CertModule::EnsureStoreOpened()",
-                                "Failed to open cert store, location:" + storeLocation + " exception:" + e);
-
+                            if (globalLogEnabled)
+                            {
+                                GlobalLog.Assert(
+                                    "CertModule::EnsureStoreOpened()",
+                                    "Failed to open cert store, location:" + storeLocation + " exception:" + e);
+                            }
                             throw;
                         }
                     }
