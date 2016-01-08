@@ -3526,7 +3526,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 #endif
 
-		if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT))
+		if (acfg->aot_opts.llvm_only)
 			/* Supported by the gsharedvt based runtime-invoke wrapper */
 			skip = TRUE;
 
@@ -7302,7 +7302,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		add_gsharedvt_wrappers (acfg, mono_method_signature (cfg->method), FALSE, TRUE);
 
 	/* Add gsharedvt wrappers for signatures used by the method */
-	if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT)) {
+	if (acfg->aot_opts.llvm_only) {
 		GSList *l;
 
 		for (l = cfg->signatures; l; l = l->next) {
@@ -9804,12 +9804,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 #endif
 
-#if defined(ENABLE_GSHAREDVT)
 	if (acfg->aot_opts.llvm_only) {
+#ifndef ENABLE_GSHAREDVT
+		aot_printerrf (acfg, "--aot=llvmonly requires a runtime compiled with --enable-gsharedvt.\n");
+		return 1;
+#else
 		acfg->opts |= MONO_OPT_GSHAREDVT;
 		opts |= MONO_OPT_GSHAREDVT;
-	}
 #endif
+	}
 
 	if (opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
