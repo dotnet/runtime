@@ -1182,20 +1182,6 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
-	dnl ****************************************************************
-	dnl *** Check for SCHED_BATCH                                    ***
-	dnl ****************************************************************
-	AC_MSG_CHECKING(for SCHED_BATCH)
-	AC_TRY_COMPILE([#include <sched.h>], [
-			int policy = SCHED_BATCH;
-			return 0;
-	], [
-		# Yes, we have it...
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SCHED_BATCH, 1, [Have HAVE_SCHED_BATCH])
-	], [
-		AC_MSG_RESULT(no)
-	])
 
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
