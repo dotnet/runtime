@@ -125,9 +125,14 @@ namespace System.Net.Security
         //
         internal static SafeFreeCredentials TryCachedCredential(byte[] thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+
             if (s_CachedCreds.Count == 0)
             {
-                GlobalLog.Print("TryCachedCredential() Not found, Current Cache Count = " + s_CachedCreds.Count);
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("TryCachedCredential() Not found, Current Cache Count = " + s_CachedCreds.Count);
+                }
                 return null;
             }
 
@@ -137,11 +142,17 @@ namespace System.Net.Security
 
             if (cached == null || cached.IsClosed || cached.Target.IsInvalid)
             {
-                GlobalLog.Print("TryCachedCredential() Not found or invalid, Current Cache Count = " + s_CachedCreds.Count);
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("TryCachedCredential() Not found or invalid, Current Cache Count = " + s_CachedCreds.Count);
+                }
                 return null;
             }
 
-            GlobalLog.Print("TryCachedCredential() Found a cached Handle = " + cached.Target.ToString());
+            if (globalLogEnabled)
+            {
+                GlobalLog.Print("TryCachedCredential() Found a cached Handle = " + cached.Target.ToString());
+            }
 
             return cached.Target;
         }
@@ -153,10 +164,19 @@ namespace System.Net.Security
         //
         internal static void CacheCredential(SafeFreeCredentials creds, byte[] thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            GlobalLog.Assert(creds != null, "CacheCredential|creds == null");
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+
+            if (creds == null && globalLogEnabled)
+            {
+                GlobalLog.Assert("CacheCredential|creds == null");
+            }
+
             if (creds.IsInvalid)
             {
-                GlobalLog.Print("CacheCredential() Refused to cache an Invalid Handle = " + creds.ToString() + ", Current Cache Count = " + s_CachedCreds.Count);
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("CacheCredential() Refused to cache an Invalid Handle = " + creds.ToString() + ", Current Cache Count = " + s_CachedCreds.Count);
+                }
                 return;
             }
 
@@ -181,7 +201,10 @@ namespace System.Net.Security
                         }
 
                         s_CachedCreds[key] = cached;
-                        GlobalLog.Print("CacheCredential() Caching New Handle = " + creds.ToString() + ", Current Cache Count = " + s_CachedCreds.Count);
+                        if (globalLogEnabled)
+                        {
+                            GlobalLog.Print("CacheCredential() Caching New Handle = " + creds.ToString() + ", Current Cache Count = " + s_CachedCreds.Count);
+                        }
 
                         //
                         // A simplest way of preventing infinite cache grows.
@@ -217,16 +240,19 @@ namespace System.Net.Security
                                     }
                                 }
                             }
-                            GlobalLog.Print("Scavenged cache, New Cache Count = " + s_CachedCreds.Count);
+                            if (globalLogEnabled)
+                            {
+                                GlobalLog.Print("Scavenged cache, New Cache Count = " + s_CachedCreds.Count);
+                            }
                         }
                     }
-                    else
+                    else if (globalLogEnabled)
                     {
                         GlobalLog.Print("CacheCredential() (locked retry) Found already cached Handle = " + cached.Target.ToString());
                     }
                 }
             }
-            else
+            else if (globalLogEnabled)
             {
                 GlobalLog.Print("CacheCredential() Ignoring incoming handle = " + creds.ToString() + " since found already cached Handle = " + cached.Target.ToString());
             }

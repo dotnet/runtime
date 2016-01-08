@@ -5,10 +5,6 @@ namespace System.Net
 {
     public static class GlobalLog
     {
-        public static void Assert(bool condition, string arg1, string arg2, object arg3)
-        {
-        }
-
         public static void Assert(string message)
         {
         }
@@ -20,6 +16,8 @@ namespace System.Net
         internal static void SetThreadSource(ThreadKinds source)
         {
         }
+
+        public static bool IsEnabled { get { return false; } }
     }
 
     [Flags]

@@ -25,7 +25,11 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", hostName);
             IPHostEntry ipHostEntry = null;
 
-            GlobalLog.Print("Dns.GetHostByName: " + hostName);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.GetHostByName: " + hostName);
+            }
+
             NameResolutionPal.EnsureSocketsAreInitialized();
 
             if (hostName.Length > MaxHostName // If 255 chars, the last one must be a dot.
@@ -75,7 +79,11 @@ namespace System.Net
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
         internal static IPHostEntry InternalGetHostByAddress(IPAddress address, bool includeIPv6)
         {
-            GlobalLog.Print("Dns.InternalGetHostByAddress: " + address.ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.InternalGetHostByAddress: " + address.ToString());
+            }
+            
             //
             // IPv6 Changes: We need to use the new getnameinfo / getaddrinfo functions
             //               for resolution of IPv6 addresses.
@@ -156,7 +164,11 @@ namespace System.Net
         /// </devdoc>
         public static string GetHostName()
         {
-            GlobalLog.Print("Dns.GetHostName");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.GetHostName");
+            }
+
             return NameResolutionPal.GetHostName();
         }
 
@@ -220,7 +232,10 @@ namespace System.Net
                 throw new ArgumentNullException("hostName");
             }
 
-            GlobalLog.Print("Dns.HostResolutionBeginHelper: " + hostName);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.HostResolutionBeginHelper: " + hostName);
+            }
 
             // See if it's an IP Address.
             IPAddress address;
@@ -276,7 +291,10 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, "address");
             }
 
-            GlobalLog.Print("Dns.HostResolutionBeginHelper: " + address);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.HostResolutionBeginHelper: " + address);
+            }
 
             // Set up the context, possibly flow.
             ResolveAsyncResult asyncResult = new ResolveAsyncResult(address, null, includeIPv6, state, requestCallback);
@@ -317,7 +335,10 @@ namespace System.Net
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndResolve"));
             }
 
-            GlobalLog.Print("Dns.HostResolutionEndHelper");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Dns.HostResolutionEndHelper");
+            }
 
             castedResult.InternalWaitForCompletion();
             castedResult.EndCalled = true;

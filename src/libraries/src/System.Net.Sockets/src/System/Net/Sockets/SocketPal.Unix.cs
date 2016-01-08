@@ -1267,7 +1267,10 @@ namespace System.Net.Sockets
             int socketCount;
             Interop.Error err = Interop.Sys.Select(fdCount, readFds, writeFds, errorFds, microseconds, &socketCount);
 
-            GlobalLog.Print("Socket::Select() Interop.Sys.Select returns socketCount:" + socketCount);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Socket::Select() Interop.Sys.Select returns socketCount:" + socketCount);
+            }
 
             if (err != Interop.Error.SUCCESS)
             {

@@ -28,7 +28,10 @@ namespace System.Net
                 }
                 catch (OverflowException)
                 {
-                    GlobalLog.Assert(false, "SecSizes::.ctor", "Negative size.");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("SecSizes::.ctor", "Negative size.");
+                    }
                     throw;
                 }
             }
