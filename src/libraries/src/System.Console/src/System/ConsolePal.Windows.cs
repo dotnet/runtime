@@ -511,12 +511,12 @@ namespace System
             }
         }
 
-        const int beepFrequencyInHz = 800;
-        const int beepDurationInMs = 200;
+        private const int BeepFrequencyInHz = 800;
+        private const int BeepDurationInMs = 200;
 
         public static void Beep()
         {
-            Interop.mincore.Beep(beepFrequencyInHz, beepDurationInMs);
+            Interop.mincore.Beep(BeepFrequencyInHz, BeepDurationInMs);
         }
 
         public static void Clear()
@@ -564,9 +564,9 @@ namespace System
             // Note on argument checking - the upper bounds are NOT correct 
             // here!  But it looks slightly expensive to compute them.  Let
             // Windows calculate them, then we'll give a nice error message.
-            if (left < 0 || left >= Int16.MaxValue)
+            if (left < 0 || left >= short.MaxValue)
                 throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (top < 0 || top >= Int16.MaxValue)
+            if (top < 0 || top >= short.MaxValue)
                 throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             Contract.EndContractBlock();
 
@@ -698,14 +698,14 @@ namespace System
             size.Y = csbi.dwSize.Y;
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
             {
-                if (csbi.srWindow.Left >= Int16.MaxValue - width)
+                if (csbi.srWindow.Left >= short.MaxValue - width)
                     throw new ArgumentOutOfRangeException("width", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.X = (short)(csbi.srWindow.Left + width);
                 resizeBuffer = true;
             }
             if (csbi.dwSize.Y < csbi.srWindow.Top + height)
             {
-                if (csbi.srWindow.Top >= Int16.MaxValue - height)
+                if (csbi.srWindow.Top >= short.MaxValue - height)
                     throw new ArgumentOutOfRangeException("height", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.Y = (short)(csbi.srWindow.Top + height);
                 resizeBuffer = true;

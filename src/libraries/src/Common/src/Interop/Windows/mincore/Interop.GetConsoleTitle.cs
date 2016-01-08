@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.Console_L1, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetConsoleTitleW")]
-        private static extern int GetConsoleTitle(StringBuilder title, int nSize);
+        private static extern int GetConsoleTitle([Out]StringBuilder title, int nSize);
 
         private const int InitialBufferSizeInChars = 256;
 
@@ -28,8 +28,9 @@ internal partial class Interop
             int len = GetConsoleTitle(sb, InitialBufferSizeInChars);
 
             if (len <= 0)
+            {
                 lastError = Marshal.GetLastWin32Error();
-
+            }
             else if (len > MaxAllowedBufferSizeInChars)
             {
                 // Title is greater than the allowed buffer so we do not read the title and only pass the length to the caller.
