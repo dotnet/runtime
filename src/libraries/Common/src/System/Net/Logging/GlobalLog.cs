@@ -183,24 +183,6 @@ namespace System.Net
             EventSourceLogging.Log.FunctionStart(functionName, parameters);
         }
 
-        // TODO #5144: The Assert(bool, ...) overloads should be removed.  They lead to bad
-        // habits, with code doing work at the call sites to generate the messages, data, etc.
-        public static void Assert(bool condition, string message)
-        {
-            if (!condition)
-            {
-                Assert(message);
-            }
-        }
-
-        public static void Assert(bool condition, string messageFormat, params object[] data)
-        {
-            if (!condition)
-            {
-                AssertFormat(messageFormat, data);
-            }
-        }
-
         public static void AssertFormat(string messageFormat, params object[] data)
         {
             string fullMessage = string.Format(CultureInfo.InvariantCulture, messageFormat, data);

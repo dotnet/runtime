@@ -42,7 +42,10 @@ namespace System.Net
         ~DebugSafeHandleMinusOneIsInvalid()
         {
             GlobalLog.SetThreadSource(ThreadKinds.Finalization);
-            GlobalLog.Print(_trace);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print(_trace);
+            }
         }
     }
 #endif // DEBUG

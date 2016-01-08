@@ -353,7 +353,10 @@ namespace System.Net.Security
         {
             int result = 0;
 
-            GlobalLog.Assert(InternalBufferCount == 0, "SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
+            if (GlobalLog.IsEnabled && InternalBufferCount != 0)
+            {
+                GlobalLog.AssertFormat("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
+            }
 
             do
             {
@@ -488,7 +491,10 @@ namespace System.Net.Security
             // ERROR - examine what kind
             ProtocolToken message = new ProtocolToken(null, errorCode);
 
-            GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
+            }
 
             if (message.Renegotiate)
             {

@@ -424,10 +424,19 @@ namespace System.Net
                                 }
                             }
                         }
-                        
+
                         // Backup validate the new sizes.
-                        GlobalLog.Assert(iBuffer.offset >= 0 && iBuffer.offset <= (iBuffer.token == null ? 0 : iBuffer.token.Length), "SSPIWrapper::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
-                        GlobalLog.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), "SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
+                        if (GlobalLog.IsEnabled)
+                        {
+                            if (iBuffer.offset == 0 || iBuffer.offset > (iBuffer.token == null ? 0 : iBuffer.token.Length))
+                            {
+                                GlobalLog.AssertFormat("SSPIWrapper::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
+                            }
+                            if (iBuffer.size == 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
+                            {
+                                GlobalLog.AssertFormat("SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
+                            }
+                        }
                     }
 
                     if (errorCode != 0 && NetEventSource.Log.IsEnabled())
