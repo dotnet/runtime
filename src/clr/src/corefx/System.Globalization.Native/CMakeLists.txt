@@ -26,8 +26,6 @@ if(NOT CLR_CMAKE_PLATFORM_DARWIN)
         message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
         return()
     endif()
-
-    set(CMAKE_REQUIRED_INCLUDES ${ICU_HOMEBREW_INC_PATH})
 else()
     find_library(ICUCORE icucore)
     if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
