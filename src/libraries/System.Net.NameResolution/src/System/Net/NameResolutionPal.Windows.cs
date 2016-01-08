@@ -50,7 +50,10 @@ namespace System.Net
             if (Host.h_name != IntPtr.Zero)
             {
                 HostEntry.HostName = Marshal.PtrToStringAnsi(Host.h_name);
-                GlobalLog.Print("HostEntry.HostName: " + HostEntry.HostName);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("HostEntry.HostName: " + HostEntry.HostName);
+                }
             }
 
             // decode h_addr_list to ArrayList of IP addresses.
@@ -87,7 +90,10 @@ namespace System.Net
                                         ((uint)IPAddressToAdd >> 24));
 #endif
 
-                GlobalLog.Print("currentArrayElement: " + currentArrayElement.ToString() + " nativePointer: " + nativePointer.ToString() + " IPAddressToAdd:" + IPAddressToAdd.ToString());
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("currentArrayElement: " + currentArrayElement.ToString() + " nativePointer: " + nativePointer.ToString() + " IPAddressToAdd:" + IPAddressToAdd.ToString());
+                }
 
                 //
                 // ...and add it to the list
@@ -114,7 +120,10 @@ namespace System.Net
 
             while (nativePointer != IntPtr.Zero)
             {
-                GlobalLog.Print("currentArrayElement: " + ((long)currentArrayElement).ToString() + "nativePointer: " + ((long)nativePointer).ToString());
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("currentArrayElement: " + ((long)currentArrayElement).ToString() + "nativePointer: " + ((long)nativePointer).ToString());
+                }
 
                 //
                 // if it's not null it points to an Alias,
