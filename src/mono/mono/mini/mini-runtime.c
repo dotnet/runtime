@@ -2197,6 +2197,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
+	info->sig = mono_method_signature (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	info->vtable = mono_class_vtable_full (domain, method->klass, TRUE);
@@ -2310,6 +2311,77 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	}
 
 	return info;
+}
+
+static MonoObject*
+mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc)
+{
+	MonoMethodSignature *sig = info->sig;
+	MonoDomain *domain = mono_domain_get ();
+	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
+	gpointer *args;
+	gpointer retval_ptr;
+	guint8 retval [256];
+	gpointer *param_refs;
+	int i, pindex;
+
+	g_assert (info->gsharedvt_invoke);
+
+	/*
+	 * Instead of invoking the method directly, we invoke a gsharedvt out wrapper.
+	 * The advantage of this is the gsharedvt out wrappers have a reduced set of
+	 * signatures, so we only have to generate runtime invoke wrappers for these
+	 * signatures.
+	 * This code also handles invocation of gsharedvt methods directly, no
+	 * out wrappers are used in that case.
+	 */
+	args = (void **)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
+	param_refs = (gpointer*)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
+	pindex = 0;
+	/*
+	 * The runtime invoke wrappers expects pointers to primitive types, so have to
+	 * use indirections.
+	 */
+	if (sig->hasthis)
+		args [pindex ++] = &obj;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		retval_ptr = (gpointer)&retval;
+		args [pindex ++] = &retval_ptr;
+	}
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *t = sig->params [i];
+
+		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+			MonoClass *klass = mono_class_from_mono_type (t);
+			guint8 *nullable_buf;
+			int size;
+
+			size = mono_class_value_size (klass, NULL);
+			nullable_buf = g_alloca (size);
+			g_assert (nullable_buf);
+
+			/* The argument pointed to by params [i] is either a boxed vtype or null */
+			mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
+			params [i] = nullable_buf;
+		}
+
+		if (MONO_TYPE_IS_REFERENCE (t)) {
+			param_refs [i] = params [i];
+			params [i] = &(param_refs [i]);
+		}
+		args [pindex ++] = &params [i];
+	}
+	/* The gsharedvt out wrapper has an extra argument which contains the method to call */
+	args [pindex ++] = &info->wrapper_arg;
+
+	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
+
+	runtime_invoke (NULL, args, exc, info->compiled_method);
+
+	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
+		return mono_value_box (domain, info->ret_box_class, retval);
+	else
+		return *(MonoObject**)retval;
 }
 
 /**
@@ -2477,71 +2549,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 #endif
 
+	if (mono_llvm_only)
+		return mono_llvmonly_runtime_invoke (method, info, obj, params, exc);
+
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
-
-	if (mono_llvm_only) {
-		MonoMethodSignature *sig = mono_method_signature (method);
-		gpointer *args;
-		gpointer retval_ptr;
-		guint8 retval [256];
-		gpointer *param_refs;
-		int i, pindex;
-
-		g_assert (info->gsharedvt_invoke);
-
-		/*
-		 * Instead of invoking the method directly, we invoke a gsharedvt out wrapper.
-		 * The advantage of this is the gsharedvt out wrappers have a reduced set of
-		 * signatures, so we only have to generate runtime invoke wrappers for these
-		 * signatures.
-		 * This code also handles invocation of gsharedvt methods directly, no
-		 * out wrappers are used in that case.
-		 */
-		args = (void **)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
-		param_refs = (gpointer*)g_alloca ((sig->param_count + sig->hasthis + 2) * sizeof (gpointer));
-		pindex = 0;
-		/*
-		 * The runtime invoke wrappers expects pointers to primitive types, so have to
-		 * use indirections.
-		 */
-		if (sig->hasthis)
-			args [pindex ++] = &obj;
-		if (sig->ret->type != MONO_TYPE_VOID) {
-			retval_ptr = (gpointer)&retval;
-			args [pindex ++] = &retval_ptr;
-		}
-		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
-
-			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
-				MonoClass *klass = mono_class_from_mono_type (t);
-				guint8 *nullable_buf;
-				int size;
-
-				size = mono_class_value_size (klass, NULL);
-				nullable_buf = g_alloca (size);
-				g_assert (nullable_buf);
-
-				/* The argument pointed to by params [i] is either a boxed vtype or null */
-				mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
-				params [i] = nullable_buf;
-			}
-
-			if (MONO_TYPE_IS_REFERENCE (t)) {
-				param_refs [i] = params [i];
-				params [i] = &(param_refs [i]);
-			}
-			args [pindex ++] = &params [i];
-		}
-		/* The gsharedvt out wrapper has an extra argument which contains the method to call */
-		args [pindex ++] = &info->wrapper_arg;
-		runtime_invoke (NULL, args, exc, info->compiled_method);
-
-		if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
-			return mono_value_box (domain, info->ret_box_class, retval);
-		else
-			return *(MonoObject**)retval;
-	}
 
 	return runtime_invoke ((MonoObject *)obj, params, exc, info->compiled_method);
 }
