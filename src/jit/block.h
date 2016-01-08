@@ -159,8 +159,22 @@ struct EntryState
 
 struct inlExpLst
 {
-    inlExpLst*      ixlNext;
-    BYTE*           ixlCode;
+   // Default constructor, suitable for root instance
+   inlExpLst();
+
+   inlExpLst*      ixlParent;    // logical caller (parent)
+   inlExpLst*      ixlChild;     // first child
+   inlExpLst*      ixlSibling;   // next child of the parent
+   IL_OFFSETX      ilOffset;     // call site location within parent
+   BYTE*           ixlCode;      // address of IL buffer for the method
+
+#ifdef DEBUG
+   const char *    methodName;
+   unsigned        depth;
+
+   // Dump this entry and all descendants
+   void Dump(int indent = 0);
+#endif
 };
 
 typedef inlExpLst* inlExpPtr;
