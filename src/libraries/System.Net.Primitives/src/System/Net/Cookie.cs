@@ -858,23 +858,26 @@ namespace System.Net
         internal void Dump()
         {
 #if !NETNative_SystemNetHttp
-            GlobalLog.Print("Cookie: " + ToString() + "->\n"
-                            + "\tComment    = " + Comment + "\n"
-                            + "\tCommentUri = " + CommentUri + "\n"
-                            + "\tDiscard    = " + Discard + "\n"
-                            + "\tDomain     = " + Domain + "\n"
-                            + "\tExpired    = " + Expired + "\n"
-                            + "\tExpires    = " + Expires + "\n"
-                            + "\tName       = " + Name + "\n"
-                            + "\tPath       = " + Path + "\n"
-                            + "\tPort       = " + Port + "\n"
-                            + "\tSecure     = " + Secure + "\n"
-                            + "\tTimeStamp  = " + TimeStamp + "\n"
-                            + "\tValue      = " + Value + "\n"
-                            + "\tVariant    = " + Variant + "\n"
-                            + "\tVersion    = " + Version + "\n"
-                            + "\tHttpOnly    = " + HttpOnly + "\n"
-                            );
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Cookie: " + ToString() + "->\n"
+                                + "\tComment    = " + Comment + "\n"
+                                + "\tCommentUri = " + CommentUri + "\n"
+                                + "\tDiscard    = " + Discard + "\n"
+                                + "\tDomain     = " + Domain + "\n"
+                                + "\tExpired    = " + Expired + "\n"
+                                + "\tExpires    = " + Expires + "\n"
+                                + "\tName       = " + Name + "\n"
+                                + "\tPath       = " + Path + "\n"
+                                + "\tPort       = " + Port + "\n"
+                                + "\tSecure     = " + Secure + "\n"
+                                + "\tTimeStamp  = " + TimeStamp + "\n"
+                                + "\tValue      = " + Value + "\n"
+                                + "\tVariant    = " + Variant + "\n"
+                                + "\tVersion    = " + Version + "\n"
+                                + "\tHttpOnly    = " + HttpOnly + "\n"
+                                );
+            }
 #endif
         }
 #endif
