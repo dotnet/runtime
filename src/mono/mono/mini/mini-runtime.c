@@ -2111,6 +2111,32 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	return NULL;
 }
 
+static guint32 bisect_opt = 0;
+static GHashTable *bisect_methods_hash = NULL;
+
+void
+mono_set_bisect_methods (guint32 opt, const char *method_list_filename)
+{
+	FILE *file;
+	char method_name [2048];
+
+	bisect_opt = opt;
+	bisect_methods_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	g_assert (bisect_methods_hash);
+
+	file = fopen (method_list_filename, "r");
+	g_assert (file);
+
+	while (fgets (method_name, sizeof (method_name), file)) {
+		size_t len = strlen (method_name);
+		g_assert (len > 0);
+		g_assert (method_name [len - 1] == '\n');
+		method_name [len - 1] = 0;
+		g_hash_table_insert (bisect_methods_hash, g_strdup (method_name), GINT_TO_POINTER (1));
+	}
+	g_assert (feof (file));
+}
+
 gboolean mono_do_single_method_regression = FALSE;
 guint32 mono_single_method_regression_opt = 0;
 MonoMethod *mono_current_single_method;
@@ -2122,6 +2148,13 @@ mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
 {
 	g_assert (method);
 
+	if (bisect_methods_hash) {
+		char *name = mono_method_full_name (method, TRUE);
+		void *res = g_hash_table_lookup (bisect_methods_hash, name);
+		g_free (name);
+		if (res)
+			return default_opt | bisect_opt;
+	}
 	if (!mono_do_single_method_regression)
 		return default_opt;
 	if (!mono_current_single_method) {
