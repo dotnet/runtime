@@ -8,8 +8,8 @@
     <NuGetTargetMoniker>.NETPlatform,Version=v5.4</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Net.Utilities.cs" />
-    <Compile Include="System.Net.Utilities.Manual.cs" />
+    <Compile Include="System.Net.Ping.cs" />
+    <Compile Include="System.Net.Ping.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

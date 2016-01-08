@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Utilities", "src\System.Net.Utilities.csproj", "{85FD05E8-A4B1-4B89-ABED-33AFD200CABD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Ping", "src\System.Net.Ping.csproj", "{85FD05E8-A4B1-4B89-ABED-33AFD200CABD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{DFBAB4FC-17E0-4928-9620-2C4692984487}"
 EndProject
@@ -11,11 +11,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FFE41062-5FD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C693AA4E-6829-490E-8AF7-9A411BB0E266}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Utilities", "ref\System.Net.Utilities.csproj", "{1B802547-471C-4278-AEA9-5FFC81037F20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Ping", "ref\System.Net.Ping.csproj", "{1B802547-471C-4278-AEA9-5FFC81037F20}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FunctionalTests", "FunctionalTests", "{5447F7A2-7401-44B1-BF7B-5D572ACD0067}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Utilities.Functional.Tests", "tests\FunctionalTests\System.Net.Utilities.Functional.Tests.csproj", "{43CE20B7-389B-41BB-8390-447521DF3BD4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Ping.Functional.Tests", "tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj", "{43CE20B7-389B-41BB-8390-447521DF3BD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

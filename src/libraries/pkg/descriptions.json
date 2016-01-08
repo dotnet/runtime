@@ -777,6 +777,17 @@
         ]
     },
     {
+        "Name": "System.Net.Ping",
+        "Description": "Provides the System.Net.NetworkInformation.Ping class, which allows an application to determine whether a remote computer is accessible over the network.",
+        "CommonTypes": [
+            "System.Net.NetworkInformation.Ping",
+            "System.Net.NetworkInformation.PingReply",
+            "System.Net.NetworkInformation.IPStatus",
+            "System.Net.NetworkInformation.PingException",
+            "System.Net.NetworkInformation.PingOptions"
+        ]
+    },
+    {
         "Name": "System.Net.Primitives",
         "Description": "Provides common types for network-based libraries, including System.Net.IPAddress, System.Net.IPEndPoint, and System.Net.CookieContainer.",
         "CommonTypes": [
@@ -814,17 +825,6 @@
             "System.Net.Sockets.SocketType",
             "System.Net.Sockets.UdpClient",
             "System.Net.Sockets.SocketShutdown"
-        ]
-    },
-    {
-        "Name": "System.Net.Utilities",
-        "Description": "Provides the System.Net.NetworkInformation.Ping class, which allows an application to determine whether a remote computer is accessible over the network.",
-        "CommonTypes": [
-            "System.Net.NetworkInformation.Ping",
-            "System.Net.NetworkInformation.PingReply",
-            "System.Net.NetworkInformation.IPStatus",
-            "System.Net.NetworkInformation.PingException",
-            "System.Net.NetworkInformation.PingOptions"
         ]
     },
     {
