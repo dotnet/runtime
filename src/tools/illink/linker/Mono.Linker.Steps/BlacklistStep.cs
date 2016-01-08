@@ -47,7 +47,7 @@ namespace Mono.Linker.Steps {
 		protected override void Process ()
 		{
 			foreach (string name in Assembly.GetExecutingAssembly ().GetManifestResourceNames ()) {
-				if (Path.GetExtension (name) != ".xml" || !IsReferenced (GetAssemblyName (name)))
+				if (!name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase) || !IsReferenced (GetAssemblyName (name)))
 					continue;
 
 				try {
@@ -65,7 +65,7 @@ namespace Mono.Linker.Steps {
 				foreach (var rsc in asm.Modules
 									.SelectMany (mod => mod.Resources)
 									.Where (res => res.ResourceType == ResourceType.Embedded)
-									.Where (res => Path.GetExtension (res.Name) == ".xml")
+									.Where (res => res.Name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase))
 									.Where (res => IsReferenced (GetAssemblyName (res.Name)))
 									.Cast<EmbeddedResource> ()) {
 					try {
