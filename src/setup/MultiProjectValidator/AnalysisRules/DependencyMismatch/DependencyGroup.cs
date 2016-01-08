@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ProjectSanity.AnalysisRules.DependencyMismatch
+namespace MultiProjectValidator.AnalysisRules.DependencyMismatch
 {
     internal class DependencyGroup
     {

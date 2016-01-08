@@ -5,16 +5,16 @@ namespace MultiProjectValidator
     public class AnalysisResult
     {
 
-        private List<string> _messages;
+        private IEnumerable<string> _messages;
         private bool _passed;
 
-        public AnalysisResult(List<string> messages, bool passed)
+        public AnalysisResult(IEnumerable<string> messages, bool passed)
         {
             _messages = messages;
             _passed = passed;
         }
 
-        public List<string> Messages
+        public IEnumerable<string> Messages
         {
             get
             {
