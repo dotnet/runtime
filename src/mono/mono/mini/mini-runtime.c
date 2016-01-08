@@ -3045,6 +3045,65 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	return cache [idx];
 }
 
+gboolean
+mini_parse_debug_option (const char *arg)
+{
+	if (!strcmp (arg, "handle-sigint"))
+		debug_options.handle_sigint = TRUE;
+	else if (!strcmp (arg, "keep-delegates"))
+		debug_options.keep_delegates = TRUE;
+	else if (!strcmp (arg, "reverse-pinvoke-exceptions"))
+		debug_options.reverse_pinvoke_exceptions = TRUE;
+	else if (!strcmp (arg, "collect-pagefault-stats"))
+		debug_options.collect_pagefault_stats = TRUE;
+	else if (!strcmp (arg, "break-on-unverified"))
+		debug_options.break_on_unverified = TRUE;
+	else if (!strcmp (arg, "no-gdb-backtrace"))
+		debug_options.no_gdb_backtrace = TRUE;
+	else if (!strcmp (arg, "suspend-on-sigsegv"))
+		debug_options.suspend_on_sigsegv = TRUE;
+	else if (!strcmp (arg, "suspend-on-exception"))
+		debug_options.suspend_on_exception = TRUE;
+	else if (!strcmp (arg, "suspend-on-unhandled"))
+		debug_options.suspend_on_unhandled = TRUE;
+	else if (!strcmp (arg, "dont-free-domains"))
+		mono_dont_free_domains = TRUE;
+	else if (!strcmp (arg, "dyn-runtime-invoke"))
+		debug_options.dyn_runtime_invoke = TRUE;
+	else if (!strcmp (arg, "gdb"))
+		debug_options.gdb = TRUE;
+	else if (!strcmp (arg, "explicit-null-checks"))
+		debug_options.explicit_null_checks = TRUE;
+	else if (!strcmp (arg, "gen-seq-points"))
+		debug_options.gen_sdb_seq_points = TRUE;
+	else if (!strcmp (arg, "gen-compact-seq-points"))
+		debug_options.gen_seq_points_compact_data = TRUE;
+	else if (!strcmp (arg, "single-imm-size"))
+		debug_options.single_imm_size = TRUE;
+	else if (!strcmp (arg, "init-stacks"))
+		debug_options.init_stacks = TRUE;
+	else if (!strcmp (arg, "casts"))
+		debug_options.better_cast_details = TRUE;
+	else if (!strcmp (arg, "soft-breakpoints"))
+		debug_options.soft_breakpoints = TRUE;
+	else if (!strcmp (arg, "check-pinvoke-callconv"))
+		debug_options.check_pinvoke_callconv = TRUE;
+	else if (!strcmp (arg, "arm-use-fallback-tls"))
+		debug_options.arm_use_fallback_tls = TRUE;
+	else if (!strcmp (arg, "debug-domain-unload"))
+		mono_enable_debug_domain_unload (TRUE);
+	else if (!strcmp (arg, "partial-sharing"))
+		mono_set_partial_sharing_supported (TRUE);
+	else if (!strcmp (arg, "align-small-structs"))
+		mono_align_small_structs = TRUE;
+	else if (!strcmp (arg, "native-debugger-break"))
+		debug_options.native_debugger_break = TRUE;
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
 static void
 mini_parse_debug_options (void)
 {
@@ -3059,57 +3118,7 @@ mini_parse_debug_options (void)
 	for (ptr = args; ptr && *ptr; ptr++) {
 		const char *arg = *ptr;
 
-		if (!strcmp (arg, "handle-sigint"))
-			debug_options.handle_sigint = TRUE;
-		else if (!strcmp (arg, "keep-delegates"))
-			debug_options.keep_delegates = TRUE;
-		else if (!strcmp (arg, "reverse-pinvoke-exceptions"))
-			debug_options.reverse_pinvoke_exceptions = TRUE;
-		else if (!strcmp (arg, "collect-pagefault-stats"))
-			debug_options.collect_pagefault_stats = TRUE;
-		else if (!strcmp (arg, "break-on-unverified"))
-			debug_options.break_on_unverified = TRUE;
-		else if (!strcmp (arg, "no-gdb-backtrace"))
-			debug_options.no_gdb_backtrace = TRUE;
-		else if (!strcmp (arg, "suspend-on-sigsegv"))
-			debug_options.suspend_on_sigsegv = TRUE;
-		else if (!strcmp (arg, "suspend-on-exception"))
-			debug_options.suspend_on_exception = TRUE;
-		else if (!strcmp (arg, "suspend-on-unhandled"))
-			debug_options.suspend_on_unhandled = TRUE;
-		else if (!strcmp (arg, "dont-free-domains"))
-			mono_dont_free_domains = TRUE;
-		else if (!strcmp (arg, "dyn-runtime-invoke"))
-			debug_options.dyn_runtime_invoke = TRUE;
-		else if (!strcmp (arg, "gdb"))
-			debug_options.gdb = TRUE;
-		else if (!strcmp (arg, "explicit-null-checks"))
-			debug_options.explicit_null_checks = TRUE;
-		else if (!strcmp (arg, "gen-seq-points"))
-			debug_options.gen_sdb_seq_points = TRUE;
-		else if (!strcmp (arg, "gen-compact-seq-points"))
-			debug_options.gen_seq_points_compact_data = TRUE;
-		else if (!strcmp (arg, "single-imm-size"))
-			debug_options.single_imm_size = TRUE;
-		else if (!strcmp (arg, "init-stacks"))
-			debug_options.init_stacks = TRUE;
-		else if (!strcmp (arg, "casts"))
-			debug_options.better_cast_details = TRUE;
-		else if (!strcmp (arg, "soft-breakpoints"))
-			debug_options.soft_breakpoints = TRUE;
-		else if (!strcmp (arg, "check-pinvoke-callconv"))
-			debug_options.check_pinvoke_callconv = TRUE;
-		else if (!strcmp (arg, "arm-use-fallback-tls"))
-			debug_options.arm_use_fallback_tls = TRUE;
-		else if (!strcmp (arg, "debug-domain-unload"))
-			mono_enable_debug_domain_unload (TRUE);
-		else if (!strcmp (arg, "partial-sharing"))
-			mono_set_partial_sharing_supported (TRUE);
-		else if (!strcmp (arg, "align-small-structs"))
-			mono_align_small_structs = TRUE;
-		else if (!strcmp (arg, "native-debugger-break"))
-			debug_options.native_debugger_break = TRUE;
-		else {
+		if (!mini_parse_debug_option (arg)) {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
 			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dont-free-domains', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'gen-seq-points', 'gen-compact-seq-points', 'single-imm-size', 'init-stacks', 'casts', 'soft-breakpoints', 'check-pinvoke-callconv', 'arm-use-fallback-tls', 'debug-domain-unload', 'partial-sharing', 'align-small-structs', 'native-debugger-break'\n");
 			exit (1);
