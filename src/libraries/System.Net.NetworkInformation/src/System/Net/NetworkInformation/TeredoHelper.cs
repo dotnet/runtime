@@ -53,8 +53,11 @@ namespace System.Net.NetworkInformation
         // 'Unsafe' because it does not flow ExecutionContext to the callback.
         public static bool UnsafeNotifyStableUnicastIpAddressTable(Action<object> callback, object state)
         {
-            GlobalLog.Assert(callback != null,
-                "UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+            if (globalLogEnabled && callback == null)
+            {
+                GlobalLog.Assert("UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
+            }
 
             TeredoHelper helper = new TeredoHelper(callback, state);
 
@@ -81,8 +84,10 @@ namespace System.Net.NetworkInformation
 
                 if (err == Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
-                    GlobalLog.Assert(!helper._cancelHandle.IsInvalid,
-                        "CancelHandle invalid despite returning ERROR_IO_PENDING");
+                    if (globalLogEnabled && helper._cancelHandle.IsInvalid)
+                    {
+                        GlobalLog.Assert("CancelHandle invalid despite returning ERROR_IO_PENDING");
+                    }
 
                     // Async completion: add us to the s_pendingNotifications list so we'll be canceled in the
                     // event of an AppDomain unload.
@@ -101,7 +106,11 @@ namespace System.Net.NetworkInformation
 
         private void RunCallback(object o)
         {
-            GlobalLog.Assert(_runCallbackCalled, "RunCallback called without setting runCallbackCalled!");
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+            if (globalLogEnabled && !_runCallbackCalled)
+            {
+                GlobalLog.Assert("RunCallback called without setting runCallbackCalled!");
+            }
 
             // If OnAppDomainUnload beats us to the lock, do nothing: the AppDomain is going down soon anyways.
             // Otherwise, wait until the call to CancelMibChangeNotify2 is done before giving it up.
@@ -114,14 +123,18 @@ namespace System.Net.NetworkInformation
 
 #if DEBUG
                 bool successfullyRemoved = s_pendingNotifications.Remove(this);
-                GlobalLog.Assert(successfullyRemoved,
-                    "RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
+                if (globalLogEnabled && !successfullyRemoved)
+                {
+                    GlobalLog.Assert("RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
+                }
 #else
                 s_pendingNotifications.Remove(this);
 #endif
 
-                GlobalLog.Assert(_cancelHandle != null && !_cancelHandle.IsInvalid,
-                    "Invalid cancelHandle in RunCallback");
+                if (globalLogEnabled && (_cancelHandle == null || _cancelHandle.IsInvalid))
+                {
+                    GlobalLog.Assert("Invalid cancelHandle in RunCallback");
+                }
 
                 _cancelHandle.Dispose();
             }
