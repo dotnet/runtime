@@ -178,13 +178,13 @@ int TwoWayPipe::Write(const void *data, DWORD dataSize)
 bool TwoWayPipe::Disconnect()
 {
 
-    if (m_outboundPipe != INVALID_PIPE)
+    if (m_outboundPipe != INVALID_PIPE && m_outboundPipe != 0)
     {
         close(m_outboundPipe);
         m_outboundPipe = INVALID_PIPE;
     }
 
-    if (m_inboundPipe != INVALID_PIPE)
+    if (m_inboundPipe != INVALID_PIPE && m_inboundPipe != 0)
     {
         close(m_inboundPipe);
         m_inboundPipe = INVALID_PIPE;
