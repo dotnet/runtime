@@ -73,7 +73,9 @@ namespace System.Net
         // If a derived class ever uses this and overloads Cleanup, this may need to change.
         internal LazyAsyncResult(object myObject, object myState, AsyncCallback myCallBack, object result)
         {
-            if (result == DBNull.Value)
+            bool globalLogEnabled = GlobalLog.IsEnabled;
+
+            if (result == DBNull.Value && globalLogEnabled)
             {
                 GlobalLog.AssertFormat("LazyAsyncResult#{0}::.ctor()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
             }
@@ -83,8 +85,6 @@ namespace System.Net
             _asyncCallback = myCallBack;
             _result = result;
             _intCompleted = 1;
-
-            bool globalLogEnabled = GlobalLog.IsEnabled;
 
             if (_asyncCallback != null)
             {

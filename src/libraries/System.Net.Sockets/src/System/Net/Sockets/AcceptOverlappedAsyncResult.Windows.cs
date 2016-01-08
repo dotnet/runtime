@@ -105,7 +105,7 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
+            if (!SocketsEventSource.Log.IsEnabled() && GlobalLog.IsEnabled)
             {
                 GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
             }

@@ -91,13 +91,13 @@ namespace System.Net.Sockets
 
                 object returnObject = null;
 
-                if (asyncResult.InternalPeekCompleted && GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
-                }
-
                 if (GlobalLog.IsEnabled)
                 {
+                    if (asyncResult.InternalPeekCompleted)
+                    {
+                        GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
+                    }
+
                     GlobalLog.Print(
                         "BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback" +
                         " errorCode:" + errorCode.ToString() +

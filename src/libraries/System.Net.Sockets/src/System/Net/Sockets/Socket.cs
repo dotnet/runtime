@@ -758,7 +758,10 @@ namespace System.Net.Sockets
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::InternalBind() localEP:" + localEP.ToString());
-                GlobalLog.Assert(!(localEP is DnsEndPoint), "Calling InternalBind with a DnsEndPoint, about to get NotImplementedException");
+                if (localEP is DnsEndPoint)
+                {
+                    GlobalLog.Assert("Calling InternalBind with a DnsEndPoint, about to get NotImplementedException");
+                }
             }
 
             // Ask the EndPoint to generate a SocketAddress that we can pass down to native code.
@@ -1576,8 +1579,10 @@ namespace System.Net.Sockets
             }
             catch (ObjectDisposedException) { }
 #endif
-            GlobalLog.Dump(buffer, offset, bytesTransferred);
-
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Dump(buffer, offset, bytesTransferred);
+            }
             if (s_loggingEnabled)
             {
                 SocketsEventSource.Dump(SocketsEventSource.MethodType.Receive, buffer, offset, bytesTransferred);
@@ -1885,8 +1890,10 @@ namespace System.Net.Sockets
                 }
             }
 
-            GlobalLog.Dump(buffer, offset, bytesTransferred);
-
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Dump(buffer, offset, bytesTransferred);
+            }
             if (s_loggingEnabled)
             {
                 SocketsEventSource.Dump(SocketsEventSource.MethodType.ReceiveFrom, buffer, offset, size);

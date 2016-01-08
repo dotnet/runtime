@@ -49,12 +49,12 @@ namespace System.Net.Sockets
         {
             lock (_lockObject)
             {
-                if (GlobalLog.IsEnabled)
+                if (GlobalLog.IsEnabled &&
+                    endPoint.AddressFamily != AddressFamily.Unspecified &&
+                    endPoint.AddressFamily != AddressFamily.InterNetwork &&
+                    endPoint.AddressFamily != AddressFamily.InterNetworkV6)
                 {
-                    GlobalLog.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
-                         endPoint.AddressFamily == AddressFamily.InterNetwork ||
-                         endPoint.AddressFamily == AddressFamily.InterNetworkV6,
-                         "MultipleConnectAsync.StartConnectAsync(): Unexpected endpoint address family - " + endPoint.AddressFamily.ToString());
+                    GlobalLog.Assert("MultipleConnectAsync.StartConnectAsync(): Unexpected endpoint address family - " + endPoint.AddressFamily.ToString());
                 }
 
                 _userArgs = args;
@@ -68,7 +68,10 @@ namespace System.Net.Sockets
                     return false;
                 }
 
-                GlobalLog.Assert(_state == State.NotStarted, "MultipleConnectAsync.StartConnectAsync(): Unexpected object state");
+                if (_state != State.NotStarted && GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.StartConnectAsync(): Unexpected object state");
+                }
 
                 _state = State.DnsQuery;
 
@@ -109,12 +112,18 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                GlobalLog.Assert(_state == State.DnsQuery, "MultipleConnectAsync.DoDnsCallback(): Unexpected object state");
+                if (_state != State.DnsQuery && GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.DoDnsCallback(): Unexpected object state");
+                }
 
                 try
                 {
                     _addressList = DnsAPMExtensions.EndGetHostAddresses(result);
-                    GlobalLog.Assert(_addressList != null, "MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
+                    if (_addressList == null && GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
+                    }
                 }
                 catch (Exception e)
                 {
@@ -239,8 +248,17 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    GlobalLog.Assert(_state == State.UserConnectAttempt, "MultipleConnectAsync.InternalConnectCallback(): Unexpected object state");
-                    GlobalLog.Assert(RequiresUserConnectAttempt, "MultipleConnectAsync.InternalConnectCallback(): State.UserConnectAttempt without RequiresUserConnectAttempt");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        if (_state != State.UserConnectAttempt)
+                        {
+                            GlobalLog.Assert("MultipleConnectAsync.InternalConnectCallback(): Unexpected object state");
+                        }
+                        if (!RequiresUserConnectAttempt)
+                        {
+                            GlobalLog.Assert("MultipleConnectAsync.InternalConnectCallback(): State.UserConnectAttempt without RequiresUserConnectAttempt");
+                        }
+                    }
 
                     if (args.SocketError == SocketError.Success)
                     {
@@ -285,7 +303,10 @@ namespace System.Net.Sockets
                     return new SocketException((int)SocketError.NoData);
                 }
 
-                GlobalLog.Assert(attemptAddress != null, "MultipleConnectAsync.AttemptConnection: attemptAddress is null!");
+                if (attemptAddress == null && GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.AttemptConnection: attemptAddress is null!");
+                }
 
                 _internalArgs.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint.Port);
 
@@ -293,7 +314,10 @@ namespace System.Net.Sockets
             }
             catch (Exception e)
             {
-                GlobalLog.Assert(!(e is ObjectDisposedException), "MultipleConnectAsync.AttemptConnection: unexpected ObjectDisposedException");
+                if (e is ObjectDisposedException && GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.AttemptConnection: unexpected ObjectDisposedException");
+                }
                 return e;
             }
         }
@@ -314,7 +338,10 @@ namespace System.Net.Sockets
             }
             catch (Exception e)
             {
-                GlobalLog.Assert(!(e is ObjectDisposedException), "MultipleConnectAsync.AttemptConnection: unexpected ObjectDisposedException");
+                if (e is ObjectDisposedException && GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.AttemptConnection: unexpected ObjectDisposedException");
+                }
                 return e;
             }
         }
@@ -323,7 +350,10 @@ namespace System.Net.Sockets
         {
             try
             {
-                GlobalLog.Assert(attemptSocket != null, "MultipleConnectAsync.AttemptConnection: attemptSocket is null!");
+                if (attemptSocket == null)
+                {
+                    GlobalLog.Assert("MultipleConnectAsync.AttemptConnection: attemptSocket is null!");
+                }
 
                 if (!attemptSocket.ConnectAsync(args))
                 {
@@ -456,7 +486,10 @@ namespace System.Net.Sockets
                         break;
 
                     default:
-                        GlobalLog.Assert("MultipleConnectAsync.Cancel(): Unexpected object state");
+                        if (GlobalLog.IsEnabled)
+                        {
+                            GlobalLog.Assert("MultipleConnectAsync.Cancel(): Unexpected object state");
+                        }
                         break;
                 }
 

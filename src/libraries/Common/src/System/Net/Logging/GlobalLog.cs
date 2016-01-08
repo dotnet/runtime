@@ -134,7 +134,7 @@ namespace System.Net
             {
                 EventSourceLogging.Log.WarningMessage("The stack has been corrupted.");
                 ThreadKinds last = ThreadKindStack.Pop() & ThreadKinds.SourceMask;
-                if (last != source && last != ThreadKinds.Other)
+                if (last != source && last != ThreadKinds.Other && IsEnabled)
                 {
                     AssertFormat("Thread source changed.|Was:({0}) Now:({1})", last, source);
                 }
@@ -154,14 +154,17 @@ namespace System.Net
                 throw new InternalException();
             }
 
-            ThreadKinds threadKind = CurrentThreadKind;
-            if ((threadKind & allowedSources) != 0)
+            if (IsEnabled)
             {
-                AssertFormat(errorMsg, "Thread Contract Violation.|Expected source:({0}) Actual source:({1})", allowedSources, threadKind & ThreadKinds.SourceMask);
-            }
-            if ((threadKind & kind) == kind)
-            {
-                AssertFormat(errorMsg, "Thread Contract Violation.|Expected kind:({0}) Actual kind:({1})", kind, threadKind & ~ThreadKinds.SourceMask);
+                ThreadKinds threadKind = CurrentThreadKind;
+                if ((threadKind & allowedSources) != 0)
+                {
+                    AssertFormat(errorMsg, "Thread Contract Violation.|Expected source:({0}) Actual source:({1})", allowedSources, threadKind & ThreadKinds.SourceMask);
+                }
+                if ((threadKind & kind) == kind)
+                {
+                    AssertFormat(errorMsg, "Thread Contract Violation.|Expected kind:({0}) Actual kind:({1})", kind, threadKind & ~ThreadKinds.SourceMask);
+                }
             }
         }
 
@@ -180,6 +183,8 @@ namespace System.Net
             EventSourceLogging.Log.FunctionStart(functionName, parameters);
         }
 
+        // TODO #5144: The Assert(bool, ...) overloads should be removed.  They lead to bad
+        // habits, with code doing work at the call sites to generate the messages, data, etc.
         public static void Assert(bool condition, string message)
         {
             if (!condition)
@@ -190,7 +195,7 @@ namespace System.Net
 
         public static void Assert(bool condition, string messageFormat, params object[] data)
         {
-            if (!condition && !IsEnabled)
+            if (!condition)
             {
                 AssertFormat(messageFormat, data);
             }
@@ -198,11 +203,6 @@ namespace System.Net
 
         public static void AssertFormat(string messageFormat, params object[] data)
         {
-            if (!IsEnabled)
-            {
-                return;
-            }
-
             string fullMessage = string.Format(CultureInfo.InvariantCulture, messageFormat, data);
             int pipeIndex = fullMessage.IndexOf('|');
             if (pipeIndex == -1)
@@ -253,11 +253,6 @@ namespace System.Net
 
         public static void Dump(byte[] buffer, int offset, int length)
         {
-            if (!IsEnabled)
-            {
-                return;
-            }
-
             string warning =
                 buffer == null ? "buffer is null" :
                 offset >= buffer.Length ? "offset out of range" :
