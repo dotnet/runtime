@@ -5,7 +5,7 @@
 #include "native.h"
 
 
-MCC_API VType0 __cdecl sum(unsigned __int64 first, ...) {
+MCC_API VType0 sum(unsigned __int64 first, ...) {
     VType0 result;
 
     int count = 0;
