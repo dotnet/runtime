@@ -41,17 +41,6 @@ namespace System.Globalization.Tests
             }
         }
 
-        // PosTest3: Specific regression cases
-        [Fact]
-        public void RegressionTests()
-        {
-            CultureInfo oldCi = CultureInfo.CurrentCulture;
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("hu-HU");
-            TestStrings("Foodzsdzsbar", "ddzs");
-            CultureInfo.DefaultThreadCurrentCulture = oldCi;
-            TestStrings("\u00C0nimal", "A\u0300");
-        }
-
         private void TestStrings(string str1, string str2)
         {
             int expectValue = PredictValue(str1, str2);
