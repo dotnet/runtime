@@ -2,7 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="*\pkg\**\*.builds" />
+    <Project Include="Native\pkg\**\*.builds">
+      <AdditionalProperties>SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
+    </Project>
+    <Project Include="*\pkg\*.builds" />
   </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
