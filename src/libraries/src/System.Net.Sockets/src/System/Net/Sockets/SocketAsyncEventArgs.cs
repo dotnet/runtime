@@ -69,7 +69,6 @@ namespace System.Net.Sockets
 
         // Misc state variables.
         private ExecutionContext _context;
-        private ExecutionContext _contextCopy;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
         private Socket _currentSocket;
         private bool _disposeCalled;
@@ -400,36 +399,18 @@ namespace System.Net.Sockets
             }
 
             // Prepare execution context for callback.
-            if (ExecutionContext.IsFlowSuppressed())
+            // If event delegates have changed or socket has changed
+            // then discard any existing context.
+            if (_completedChanged || socket != _currentSocket)
             {
-                // Fast path for when flow is suppressed.
+                _completedChanged = false;
                 _context = null;
-                _contextCopy = null;
             }
-            else
+
+            // Capture execution context if none already.
+            if (_context == null)
             {
-                // Flow is not suppressed.
-
-                // If event delegates have changed or socket has changed
-                // then discard any existing context.
-                if (_completedChanged || socket != _currentSocket)
-                {
-                    _completedChanged = false;
-                    _context = null;
-                    _contextCopy = null;
-                }
-
-                // Capture execution context if none already.
-                if (_context == null)
-                {
-                    _context = ExecutionContext.Capture();
-                }
-
-                // If there is an execution context we need a fresh copy for each completion.
-                if (_context != null)
-                {
-                    _contextCopy = _context.CreateCopy();
-                }
+                _context = ExecutionContext.Capture();
             }
 
             // Remember current socket.
@@ -621,7 +602,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
+                ExecutionContext.Run(_context, s_executionCallback, this);
             }
         }
 
@@ -641,7 +622,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
+                ExecutionContext.Run(_context, s_executionCallback, this);
             }
         }
 
@@ -653,13 +634,13 @@ namespace System.Net.Sockets
 
             // Complete the operation and raise the event.
             Complete();
-            if (_contextCopy == null)
+            if (_context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
+                ExecutionContext.Run(_context, s_executionCallback, this);
             }
         }
 
@@ -867,13 +848,13 @@ namespace System.Net.Sockets
 
             // Complete the operation and raise completion event.
             Complete();
-            if (_contextCopy == null)
+            if (_context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
+                ExecutionContext.Run(_context, s_executionCallback, this);
             }
         }
     }
