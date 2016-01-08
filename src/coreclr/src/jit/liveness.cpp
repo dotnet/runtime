@@ -443,6 +443,17 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
             break;
 
         case GT_CLS_VAR:
+            // For Volatile indirection, first mutate the global heap
+            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // This models Volatile reads as def-then-use of the heap.
+            // and allows for a CSE of a subsequent non-volatile read
+            if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
+            {
+                // For any Volatile indirection, we must handle it as a 
+                // definition of the global heap
+                fgCurHeapDef = true;
+
+            }
             // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to assignment.
             // Otherwise, we treat it as a use here.
             if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
@@ -452,7 +463,19 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
             break;
 
         case GT_IND:
-            // If the GT_IND is the lhs of an assignment, we'll handle it as a heap def, when we get to assignment.
+            // For Volatile indirection, first mutate the global heap
+            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // This models Volatile reads as def-then-use of the heap.
+            // and allows for a CSE of a subsequent non-volatile read
+            if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+            {
+                // For any Volatile indirection, we must handle it as a 
+                // definition of the global heap
+                fgCurHeapDef = true;
+            }
+
+            // If the GT_IND is the lhs of an assignment, we'll handle it 
+            // as a heap def, when we get to assignment.
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
@@ -492,6 +515,11 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
             }
             fgCurHeapDef = true;
             fgCurHeapHavoc = true;
+            break;
+
+        case GT_MEMORYBARRIER:
+            // Simliar to any Volatile indirection, we must handle this as a definition of the global heap
+            fgCurHeapDef = true;
             break;
 
             // For now, all calls read/write the heap, the latter in its entirety.  Might tighten this case later.
