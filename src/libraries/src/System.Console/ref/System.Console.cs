@@ -10,6 +10,8 @@ namespace System
     public static partial class Console
     {
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static void Beep() { }
+        public static void Clear() { }
         public static bool CursorVisible { get { return default(bool); } set { } }
         public static int CursorTop { get { return default(int); } set { } }
         public static int CursorLeft { get { return default(int); } set { } }
@@ -19,6 +21,7 @@ namespace System
         public static bool IsOutputRedirected { get { return false; } }
         public static bool IsErrorRedirected { get { return false; } }
         public static System.IO.TextReader In { get { return default(System.IO.TextReader); } }
+        public static bool KeyAvailable { get { return default(bool); } }
         public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
         public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
         public static System.IO.Stream OpenStandardError() { return default(System.IO.Stream); }
@@ -29,10 +32,15 @@ namespace System
         public static ConsoleKeyInfo ReadKey(bool intercept) { return default(ConsoleKeyInfo); }
         public static string ReadLine() { return default(string); }
         public static void ResetColor() { }
+        public static void SetCursorPosition(int left, int top) { }
         public static void SetError(System.IO.TextWriter newError) { }
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
+        public static string Title { get { return default(string); } set { } }
         public static int WindowWidth { get { return default(int); } set { } }
+        public static int WindowHeight { get { return default(int); } set { } }
+        public static int WindowLeft { get { return default(int); } set { } }
+        public static int WindowTop { get { return default(int); } set { } }
         public static void Write(bool value) { }
         public static void Write(char value) { }
         public static void Write(char[] buffer) { }

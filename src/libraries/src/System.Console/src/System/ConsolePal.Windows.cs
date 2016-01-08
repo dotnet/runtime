@@ -212,8 +212,41 @@ namespace System
 
         public static bool KeyAvailable
         {
-            // TODO #4636: Implement this
-            get { throw new NotImplementedException(); }
+            get
+            {
+                if (_cachedInputRecord.eventType == Interop.KEY_EVENT)
+                    return true;
+
+                Interop.InputRecord ir = new Interop.InputRecord();
+                int numEventsRead = 0;
+                while (true)
+                {
+                    bool r = Interop.mincore.PeekConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                    if (!r)
+                    {
+                        int errorCode = Marshal.GetLastWin32Error();
+                        if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
+                            throw new InvalidOperationException(SR.InvalidOperation_ConsoleKeyAvailableOnFile);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, "stdin");
+                    }
+
+                    if (numEventsRead == 0)
+                        return false;
+
+                    // Skip non key-down && mod key events.
+                    if (!IsKeyDownEvent(ir) || IsModKey(ir))
+                    {
+                        r = Interop.mincore.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+
+                        if (!r)
+                            throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+            }  // get
         }
 
         private const short AltVKCode = 0x12;
@@ -438,21 +471,92 @@ namespace System
             }
         }
 
+        // Although msdn states that the max allowed limit is 65K,
+        // desktop limits this to 24500 as buffer sizes greater than it
+        // throw.
+        private const int MaxConsoleTitleLength = 24500;
+
         public static string Title
         {
-            // TODO #4636: Implement this
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                string title = null;
+                int titleLength = -1;
+                Int32 r = Interop.mincore.GetConsoleTitle(out title, out titleLength);
+
+                if (0 != r)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(r, string.Empty);
+                }
+
+                if (titleLength > MaxConsoleTitleLength)
+                    throw new InvalidOperationException(SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+
+                Debug.Assert(title.Length == titleLength);
+                return title;
+            }
+
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+                if (value.Length > MaxConsoleTitleLength)
+                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+                Contract.EndContractBlock();
+
+                if (!Interop.mincore.SetConsoleTitle(value))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
         }
+
+        private const int BeepFrequencyInHz = 800;
+        private const int BeepDurationInMs = 200;
 
         public static void Beep()
         {
-            // TODO #4636: Implement this
+            Interop.mincore.Beep(BeepFrequencyInHz, BeepDurationInMs);
         }
 
         public static void Clear()
         {
-            // TODO #4636: Implement this
+            Interop.mincore.COORD coordScreen = new Interop.mincore.COORD();
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi;
+            bool success;
+            int conSize;
+
+            IntPtr hConsole = OutputHandle;
+            if (hConsole == s_InvalidHandleValue)
+                throw new IOException(SR.IO_NoConsole);
+
+            // get the number of character cells in the current buffer
+            // Go through my helper method for fetching a screen buffer info
+            // to correctly handle default console colors.
+            csbi = GetBufferInfo();
+            conSize = csbi.dwSize.X * csbi.dwSize.Y;
+
+            // fill the entire screen with blanks
+
+            int numCellsWritten = 0;
+            success = Interop.mincore.FillConsoleOutputCharacter(hConsole, ' ',
+                conSize, coordScreen, out numCellsWritten);
+            if (!success)
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+            // now set the buffer's attributes accordingly
+
+            numCellsWritten = 0;
+            success = Interop.mincore.FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
+                conSize, coordScreen, out numCellsWritten);
+            if (!success)
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+            // put the cursor at (0, 0)
+
+            success = Interop.mincore.SetConsoleCursorPosition(hConsole, coordScreen);
+            if (!success)
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
         }
 
         public static void SetCursorPosition(int left, int top)
@@ -500,16 +604,28 @@ namespace System
 
         public static int WindowLeft
         {
-            // TODO #4636: Implement this
-            get { return ConsolePal.WindowLeft; }
-            set { ConsolePal.WindowLeft = value; }
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.srWindow.Left;
+            }
+            set
+            {
+                SetWindowPosition(value, WindowTop);
+            }
         }
 
         public static int WindowTop
         {
-            // TODO #4636: Implement this
-            get { return ConsolePal.WindowTop; }
-            set { ConsolePal.WindowTop = value; }
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.srWindow.Left;
+            }
+            set
+            {
+                SetWindowPosition(WindowLeft, value);
+            }
         }
 
         public static int WindowWidth
@@ -536,6 +652,32 @@ namespace System
             {
                 SetWindowSize(WindowWidth, value);
             }
+        }
+
+        public static unsafe void SetWindowPosition(int left, int top)
+        {
+            // Get the size of the current console window
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+
+            Interop.mincore.SMALL_RECT srWindow = csbi.srWindow;
+
+            // Check for arithmetic underflows & overflows.
+            int newRight = left + srWindow.Right - srWindow.Left + 1;
+            if (left < 0 || newRight > csbi.dwSize.X || newRight < 0)
+                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleWindowPos);
+            int newBottom = top + srWindow.Bottom - srWindow.Top + 1;
+            if (top < 0 || newBottom > csbi.dwSize.Y || newBottom < 0)
+                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleWindowPos);
+
+            // Preserve the size, but move the position.
+            srWindow.Bottom -= (short)(srWindow.Top - top);
+            srWindow.Right -= (short)(srWindow.Left - left);
+            srWindow.Left = (short)left;
+            srWindow.Top = (short)top;
+
+            bool r = Interop.mincore.SetConsoleWindowInfo(OutputHandle, true, &srWindow);
+            if (!r)
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
         }
 
         public static unsafe void SetWindowSize(int width, int height)
