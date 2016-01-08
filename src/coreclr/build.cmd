@@ -422,18 +422,32 @@ REM === Test build section
 REM ===
 REM =========================================================================================
 
-:PerformTestBuild
 if defined __SkipTestBuild (
     echo %__MsgPrefix%Skipping test build
     goto SkipTestBuild
 )
 
+if /i not "%__BuildArch%" == "x64" (
+    echo %__MsgPrefix%Skipping test build: architecture %__BuildArch% not supported for test build.
+    goto SkipTestBuild
+)
+
 echo %__MsgPrefix%Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-set __BuildtestArgs=
+REM Construct the arguments to pass to the test build script.
+
+set __BuildtestArgs=%__BuildArch% %__BuildType% %__VSVersion%
+
+if defined __CleanBuild (
+    set "__BuildtestArgs=%__BuildtestArgs% clean"
+)
+
+if defined __BuildSequential (
+    set "__BuildtestArgs=%__BuildtestArgs% sequential"
+)
 
 if defined __TestPriority (
-    set "__BuildtestArgs=Priority %__TestPriority%"
+    set "__BuildtestArgs=%__BuildtestArgs% Priority %__TestPriority%"
 )
 
 call %__ProjectDir%\tests\buildtest.cmd %__BuildtestArgs%
