@@ -14,12 +14,22 @@
 #include <unicode/usearch.h>
 #include <unicode/utf16.h>
 
+#include "config.h"
+
 const int32_t CompareOptionsIgnoreCase = 0x1;
 const int32_t CompareOptionsIgnoreNonSpace = 0x2;
 const int32_t CompareOptionsIgnoreSymbols = 0x4;
 const int32_t CompareOptionsIgnoreKanaType = 0x8;
 const int32_t CompareOptionsIgnoreWidth = 0x10;
 // const int32_t CompareOptionsStringSort = 0x20000000;
+// ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric.
+// When StringSort is not specified (.NET's default), the sort order will be different between
+// Windows and Unix platforms. The nonalphanumeric symbols will come after alphanumeric
+// characters on Windows, but before on Unix.
+// Since locale - specific string sort order can change from one version of Windows to the next,
+// there is no reason to guarantee string sort order between Windows and ICU. Thus trying to 
+// change ICU's default behavior here isn't really justified unless someone has a strong reason
+// for !StringSort to behave differently.
 
 typedef std::map<int32_t, UCollator*> TCollatorMap;
 typedef std::pair<int32_t, UCollator*> TCollatorMapPair;
@@ -260,6 +270,18 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
     if (isIgnoreSymbols)
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
+
+        // by default, ICU alternate shifted handling only ignores punctuation, but
+        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
+        // to include all symbols and currency
+#if HAVE_SET_MAX_VARIABLE
+        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
+#else
+        // 0xfdfc is the last currency character before the first digit character
+        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
+        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
+        ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
+#endif
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
