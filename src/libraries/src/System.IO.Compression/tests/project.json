@@ -6,7 +6,7 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.Compression": "4.0.0",
-    "System.IO.Compression.TestData": "1.0.0-prerelease",
+    "System.IO.Compression.TestData": "1.0.1-prerelease",
     "System.IO.FileSystem": "4.0.0",
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
+
 namespace System.IO.Compression
 {
     public partial class ZipArchiveEntry
@@ -13,23 +15,13 @@ namespace System.IO.Compression
         /// This method takes in a FullName and the platform of the ZipArchiveEntry and returns
         /// the platform-correct file name.
         /// </summary>
+        /// <remarks>This method ensures no validation on the paths. Invalid characters are allowed.</remarks>
         internal static string ParseFileName(string path, ZipVersionMadeByPlatform madeByPlatform)
         {
-            // Validation checking is done based on current OS, not source OS.
-            PathInternal.CheckInvalidPathChars(path);
-
             if (madeByPlatform == ZipVersionMadeByPlatform.Unix)
-            {
-                int length = path.Length;
-                for (int i = length; --i >= 0;)
-                    if (path[i] == '/')
-                        return path.Substring(i + 1);
-                return path;
-            }
+                return GetFileName_Unix(path);
             else
-            {
-                return Path.GetFileName(path);
-            }
+                return GetFileName_Windows(path);
         }
     }
 }

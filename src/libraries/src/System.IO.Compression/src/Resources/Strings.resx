@@ -318,4 +318,7 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
+  <data name="FileNameContainsInvalidCharacters" xml:space="preserve">
+    <value>An entry in the ZipArchive has a path that contains invalid characters.</value>
+  </data>
 </root>

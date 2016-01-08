@@ -18,12 +18,6 @@ namespace System.IO.Compression
 
         private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
 
-
-        internal static Boolean EndsWithDirChar(String test)
-        {
-            return Path.GetFileName(test) == "";
-        }
-
         internal static Boolean RequiresUnicode(String test)
         {
             Debug.Assert(test != null);
