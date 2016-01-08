@@ -423,7 +423,7 @@ namespace System.Threading.Tasks
             {
                 unsafe
                 {
-                    EventData* eventPayload = stackalloc EventData[5];
+                    EventData* eventPayload = stackalloc EventData[6];
                     eventPayload[0].Size = sizeof(int);
                     eventPayload[0].DataPointer = ((IntPtr) (&OriginatingTaskSchedulerID));
                     eventPayload[1].Size = sizeof(int);
@@ -434,13 +434,15 @@ namespace System.Threading.Tasks
                     eventPayload[3].DataPointer = ((IntPtr) (&CreatingTaskID));
                     eventPayload[4].Size = sizeof(int);
                     eventPayload[4].DataPointer = ((IntPtr) (&TaskCreationOptions));
+                    eventPayload[5].Size = sizeof(int);
+                    eventPayload[5].DataPointer = ((IntPtr) (&appDomain));
                     if (TasksSetActivityIds)
                     {
                         Guid childActivityId = CreateGuidForTaskID(TaskID);
-                        WriteEventWithRelatedActivityIdCore(TASKSCHEDULED_ID, &childActivityId, 5, eventPayload);
+                        WriteEventWithRelatedActivityIdCore(TASKSCHEDULED_ID, &childActivityId, 6, eventPayload);
                     }
                     else 
-                        WriteEventCore(TASKSCHEDULED_ID, 5, eventPayload);
+                        WriteEventCore(TASKSCHEDULED_ID, 6, eventPayload);
                 }
             }
         }
