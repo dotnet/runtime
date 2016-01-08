@@ -1,0 +1,16 @@
+{
+    "frameworks": {
+        "dnxcore50": {
+            "dependencies": {
+                "System.Runtime": "4.0.0",
+                "System.Runtime.Extensions": "4.0.0",
+                "System.Diagnostics.Contracts": "4.0.1-rc2-23616"
+            }
+        },
+        "net46": {
+            "dependencies": {
+                "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
+            }
+        }
+    }
+}
