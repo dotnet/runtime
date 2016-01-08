@@ -40,8 +40,17 @@ namespace System.Net
 
         public AsyncProtocolRequest(LazyAsyncResult userAsyncResult)
         {
-            GlobalLog.Assert(userAsyncResult != null, "AsyncProtocolRequest()|userAsyncResult == null");
-            GlobalLog.Assert(!userAsyncResult.InternalPeekCompleted, "AsyncProtocolRequest()|userAsyncResult is already completed.");
+            if (GlobalLog.IsEnabled)
+            {
+                if (userAsyncResult == null)
+                {
+                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult == null");
+                }
+                if (userAsyncResult.InternalPeekCompleted)
+                {
+                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult is already completed.");
+                }
+            }
             UserAsyncResult = userAsyncResult;
         }
 

@@ -207,7 +207,10 @@ namespace System.Net
                     s_cacheTraceSource = new NclTraceSource(TraceSourceCacheName);
                     s_traceSourceHttpName = new NclTraceSource(TraceSourceHttpName);
 
-                    GlobalLog.Print("Initalizating tracing");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("Initalizating tracing");
+                    }
 
                     try
                     {

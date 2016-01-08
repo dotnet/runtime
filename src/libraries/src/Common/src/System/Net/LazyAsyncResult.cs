@@ -440,14 +440,19 @@ namespace System.Net
             ThreadContext threadContext = CurrentThreadContext;
             try
             {
+                bool globalLogEnabled = GlobalLog.IsEnabled;
+
                 ++threadContext._nestedIOCount;
                 if (_asyncCallback != null)
                 {
-                    GlobalLog.Print("LazyAsyncResult#" + LoggingHash.HashString(this) + "::Complete() invoking callback");
+                    if (globalLogEnabled)
+                    {
+                        GlobalLog.Print("LazyAsyncResult#" + LoggingHash.HashString(this) + "::Complete() invoking callback");
+                    }
 
                     if (threadContext._nestedIOCount >= ForceAsyncCount)
                     {
-                        if (GlobalLog.IsEnabled)
+                        if (globalLogEnabled)
                         {
                             GlobalLog.Print("LazyAsyncResult::Complete *** OFFLOADED the user callback ***");
                         }
@@ -466,7 +471,7 @@ namespace System.Net
                         _asyncCallback(this);
                     }
                 }
-                else if (GlobalLog.IsEnabled)
+                else if (globalLogEnabled)
                 {
                     GlobalLog.Print("LazyAsyncResult#" + LoggingHash.HashString(this) + "::Complete() no callback to invoke");
                 }

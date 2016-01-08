@@ -491,7 +491,11 @@ namespace System.Net
 
         private void CompleteCallback(object state)
         {
-            GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CompleteCallback() Context set, calling callback.");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CompleteCallback() Context set, calling callback.");
+            }
+
             base.Complete(IntPtr.Zero);
         }
     }

@@ -10,7 +10,11 @@ namespace System.Net
     {
         internal SslStreamContext(SslStream sslStream)
         {
-            GlobalLog.Assert(sslStream != null, "SslStreamContext..ctor(): Not expecting a null sslStream!");
+            if (sslStream == null && GlobalLog.IsEnabled)
+            {
+                GlobalLog.Assert("SslStreamContext..ctor(): Not expecting a null sslStream!");
+            }
+
             _sslStream = sslStream;
         }
 
