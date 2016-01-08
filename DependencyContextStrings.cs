@@ -44,5 +44,7 @@ namespace Microsoft.Extensions.DependencyModel
         internal const string PublicSignPropertyName = "publicSign";
 
         internal const string EmitEntryPointPropertyName = "emitEntryPoint";
+
+        internal const string GenerateXmlDocumentationPropertyName = "xmlDoc";
     }
 }

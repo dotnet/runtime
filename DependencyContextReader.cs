@@ -55,7 +55,8 @@ namespace Microsoft.Extensions.DependencyModel
                 compilationOptionsObject[DependencyContextStrings.KeyFilePropertyName]?.Value<string>(),
                 compilationOptionsObject[DependencyContextStrings.DelaySignPropertyName]?.Value<bool>(),
                 compilationOptionsObject[DependencyContextStrings.PublicSignPropertyName]?.Value<bool>(),
-                compilationOptionsObject[DependencyContextStrings.EmitEntryPointPropertyName]?.Value<bool>()
+                compilationOptionsObject[DependencyContextStrings.EmitEntryPointPropertyName]?.Value<bool>(),
+                compilationOptionsObject[DependencyContextStrings.GenerateXmlDocumentationPropertyName]?.Value<bool>()
                 );
         }
 
