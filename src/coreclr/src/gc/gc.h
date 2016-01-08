@@ -204,6 +204,7 @@ struct ScanContext
 {
     Thread* thread_under_crawl;
     int thread_number;
+    uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     BOOL promotion; //TRUE: Promotion, FALSE: Relocation.
     BOOL concurrent; //TRUE: concurrent scanning 
 #if CHECK_APP_DOMAIN_LEAKS || defined (FEATURE_APPDOMAIN_RESOURCE_MONITORING) || defined (DACCESS_COMPILE)
@@ -225,6 +226,7 @@ struct ScanContext
 
         thread_under_crawl = 0;
         thread_number = -1;
+        stack_limit = 0;
         promotion = FALSE;
         concurrent = FALSE;
 #ifdef GC_PROFILING
