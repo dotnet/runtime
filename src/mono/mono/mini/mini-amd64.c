@@ -1312,7 +1312,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				add_general (&gr, &stack_size, ainfo);
 				break;
 			}
-			if (mini_is_gsharedvt_type (ptype)) {
+			if (mini_is_gsharedvt_variable_type (ptype)) {
 				/* gsharedvt arguments are passed by ref */
 				add_general (&gr, &stack_size, ainfo);
 				if (ainfo->storage == ArgInIReg)
