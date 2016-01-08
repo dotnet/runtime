@@ -2594,6 +2594,9 @@ void Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     }
 #endif // DEBUG
 
+    // bbHeapDef must be set to true for any block that Mutates the global Heap
+    assert(compCurBB->bbHeapDef);
+
     fgCurHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurHeapVN, elemTypeEqVN, newValAtArrType);
 }
 
@@ -4426,6 +4429,9 @@ void Compiler::fgMutateHeap(GenTreePtr tree
 {
     ValueNum newHeapVal = vnStore->VNForExpr(TYP_REF);
 
+    // bbHeapDef must be set to true for any block that Mutates the global Heap
+    assert(compCurBB->bbHeapDef);
+
     // We make this a phi definition (of only one value), so we can tell what block the definition occurred in.
     fgCurHeapVN = vnStore->VNForFunc(TYP_REF, VNF_PhiHeapDef,
                                      vnStore->VNForHandle(ssize_t(compCurBB), 0),
@@ -5508,6 +5514,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                     printf("  fgCurHeapVN assigned:\n");
                                 }
 #endif // DEBUG
+                                // bbHeapDef must be set to true for any block that Mutates the global Heap
+                                assert(compCurBB->bbHeapDef);
+
                                 // Update the field map for firstField in Heap to this new value.
                                 fgCurHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, firstFieldOnly, newFldMapVN, indType);                          
 
@@ -5516,7 +5525,12 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         }
                         else
                         {
-                            fgMutateHeap(tree DEBUGARG("assign-of-IND"));
+                            GenTreeLclVarCommon* dummyLclVarTree = nullptr;
+                            if (!tree->DefinesLocal(this, &dummyLclVarTree))
+                            {
+                                // If it doesn't define a local, then it might update the heap.
+                                fgMutateHeap(tree DEBUGARG("assign-of-IND"));
+                            }                           
                         }
                     }
 
@@ -5551,6 +5565,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         printf("  fgCurHeapVN assigned:\n");
                     }
 #endif // DEBUG
+                    // bbHeapDef must be set to true for any block that Mutates the global Heap
+                    assert(compCurBB->bbHeapDef);
+
                     // Update the field map for the fgCurHeapVN
                     fgCurHeapVN = storeVal;
                     fgValueNumberRecordHeapSsa(tree);
