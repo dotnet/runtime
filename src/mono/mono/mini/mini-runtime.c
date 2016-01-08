@@ -3072,6 +3072,14 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	return cache [idx];
 }
 
+/**
+ * mini_parse_debug_option:
+ * @option: The option to parse.
+ *
+ * Parses debug options for the mono runtime. The options are the same as for
+ * the MONO_DEBUG environment variable.
+ *
+ */
 gboolean
 mini_parse_debug_option (const char *option)
 {
