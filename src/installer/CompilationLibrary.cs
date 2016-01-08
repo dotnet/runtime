@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class CompilationLibrary : Library
     {
-        private static Lazy<string> _refsLocation = new Lazy<string>(GetRefsLocation);
+        private static Lazy<Assembly> _entryAssembly = new Lazy<Assembly>(GetEntryAssembly);
 
         public CompilationLibrary(string libraryType, string packageName, string version, string hash, string[] assemblies, Dependency[] dependencies, bool serviceable)
             : base(libraryType, packageName, version, hash,  dependencies, serviceable)
@@ -22,10 +22,18 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IEnumerable<string> ResolveReferencePaths()
         {
-            var basePath = _refsLocation.Value;
+            var entryAssembly = _entryAssembly.Value;
+            var entryAssemblyName = entryAssembly.GetName().Name;
+            var basePath = GetRefsLocation();
 
             foreach (var assembly in Assemblies)
             {
+                if (Path.GetFileNameWithoutExtension(assembly) == entryAssemblyName)
+                {
+                    yield return entryAssembly.Location;
+                    continue;
+                }
+
                 var fullName = Path.Combine(basePath, Path.GetFileName(assembly));
                 if (!File.Exists(fullName))
                 {
@@ -34,16 +42,19 @@ namespace Microsoft.Extensions.DependencyModel
                 yield return fullName;
             }
         }
-
-        private static string GetRefsLocation()
+        private static Assembly GetEntryAssembly()
         {
             var entryAssembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetEntryAssembly").Invoke(null, null);
             if (entryAssembly == null)
             {
                 throw new InvalidOperationException("Could not determine entry assembly");
             }
+            return entryAssembly;
+        }
 
-            return Path.Combine(Path.GetDirectoryName(entryAssembly.Location), "refs");
+        private static string GetRefsLocation()
+        {
+            return Path.Combine(Path.GetDirectoryName(_entryAssembly.Value.Location), "refs");
         }
     }
 }
