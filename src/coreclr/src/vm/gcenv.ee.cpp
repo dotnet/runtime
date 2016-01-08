@@ -492,6 +492,17 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
     pThread->SetHasPromotedBytes();
 
+    Frame* pTopFrame = pThread->GetFrame();
+    Object ** topStack = (Object **)pTopFrame;
+    if ((pTopFrame != ((Frame*)-1)) 
+        && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
+        // It is an InlinedCallFrame. Get SP from it.
+        InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
+        topStack = (Object **)pInlinedFrame->GetCallSiteSP();
+    } 
+
+    sc->stack_limit = (uintptr_t)topStack;
+
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
     {
@@ -500,14 +511,6 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         // Since we report every thing as pinned, we don't need to run following code for relocation phase.
         if (sc->promotion)
         {
-            Frame* pTopFrame = pThread->GetFrame();
-            Object ** topStack = (Object **)pTopFrame;
-            if ((pTopFrame != ((Frame*)-1)) 
-                && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
-                // It is an InlinedCallFrame. Get SP from it.
-                InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
-                topStack = (Object **)pInlinedFrame->GetCallSiteSP();
-            } 
             Object ** bottomStack = (Object **) pThread->GetCachedStackBase();
             Object ** walk;
             for (walk = topStack; walk < bottomStack; walk ++)
