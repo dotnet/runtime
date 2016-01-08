@@ -28,5 +28,30 @@ namespace System.IO.Compression.Tests
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.compat(withTrailing)), ZipTest.compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
         }
+
+        /// <summary>
+        /// This test ensures that a zipfile created on one platform with a file containing potentially invalid characters elsewhere
+        /// will be interpreted based on the source OS path name validation rules. 
+        /// 
+        /// For example, the file "aa\bb\cc\dd" in a zip created on Unix should be one file "aa\bb\cc\dd" whereas the same file
+        /// in a zip created on Windows should be interpreted as the file "dd" underneath three subdirectories.
+        /// </summary>
+        [Theory]
+        [InlineData("backslashes_FromUnix.zip", "aa\\bb\\cc\\dd")]
+        [InlineData("backslashes_FromWindows.zip", "dd")]
+        [InlineData("WindowsInvalid_FromUnix.zip", "aa<b>d")]
+        [InlineData("WindowsInvalid_FromWindows.zip", "aa<b>d")]
+        [InlineData("NullCharFileName_FromWindows.zip", "a\06b6d")]
+        [InlineData("NullCharFileName_FromUnix.zip", "a\06b6d")]
+        public static async Task ZipWithInvalidFileNames_ParsedBasedOnSourceOS(string zipName, string fileName)
+        {
+            using (Stream stream = await StreamHelpers.CreateTempCopyStream(ZipTest.compat(zipName)))
+            using (ZipArchive archive = new ZipArchive(stream))
+            {
+                Assert.Equal(1, archive.Entries.Count);
+                ZipArchiveEntry entry = archive.Entries[0];
+                Assert.Equal(fileName, entry.Name);
+            }
+        }
     }
 }
