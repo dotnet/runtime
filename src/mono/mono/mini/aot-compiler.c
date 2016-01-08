@@ -137,11 +137,20 @@ typedef struct MonoAotOptions {
 	gboolean dump_json;
 } MonoAotOptions;
 
+typedef enum {
+	METHOD_CAT_NORMAL,
+	METHOD_CAT_GSHAREDVT,
+	METHOD_CAT_INST,
+	METHOD_CAT_WRAPPER,
+	METHOD_CAT_NUM
+} MethodCategory;
+
 typedef struct MonoAotStats {
 	int ccount, mcount, lmfcount, abscount, gcount, ocount, genericcount;
 	gint64 code_size, info_size, ex_info_size, unwind_info_size, got_size, class_info_size, got_info_size, plt_size;
 	int methods_without_got_slots, direct_calls, all_calls, llvm_count;
 	int got_slots, offsets_size;
+	int method_categories [METHOD_CAT_NUM];
 	int got_slot_types [MONO_PATCH_INFO_NONE];
 	int got_slot_info_sizes [MONO_PATCH_INFO_NONE];
 	int jit_time, gen_time, link_time;
@@ -7159,6 +7168,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	/* Lock for the rest of the code */
 	mono_acfg_lock (acfg);
 
+	if (cfg->gsharedvt)
+		acfg->stats.method_categories [METHOD_CAT_GSHAREDVT] ++;
+	else if (cfg->gshared)
+		acfg->stats.method_categories [METHOD_CAT_INST] ++;
+	else if (cfg->method->wrapper_type)
+		acfg->stats.method_categories [METHOD_CAT_WRAPPER] ++;
+	else
+		acfg->stats.method_categories [METHOD_CAT_NORMAL] ++;
+
 	/*
 	 * Check for methods/klasses we can't encode.
 	 */
@@ -10150,6 +10168,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
 			if (acfg->stats.got_slot_types [i])
 				aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
+		aot_printf (acfg, "\nMethod stats:\n");
+		aot_printf (acfg, "\tNormal:    %d\n", acfg->stats.method_categories [METHOD_CAT_NORMAL]);
+		aot_printf (acfg, "\tInstance:  %d\n", acfg->stats.method_categories [METHOD_CAT_INST]);
+		aot_printf (acfg, "\tGSharedvt: %d\n", acfg->stats.method_categories [METHOD_CAT_GSHAREDVT]);
+		aot_printf (acfg, "\tWrapper:   %d\n", acfg->stats.method_categories [METHOD_CAT_WRAPPER]);
 	}
 
 	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
