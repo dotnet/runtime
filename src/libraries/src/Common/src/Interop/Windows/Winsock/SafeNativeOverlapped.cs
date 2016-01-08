@@ -20,7 +20,10 @@ namespace System.Net.Sockets
         protected SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
-            GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(null)");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(null)");
+            }
         }
 
         protected SafeNativeOverlapped(IntPtr handle)
@@ -34,7 +37,11 @@ namespace System.Net.Sockets
         {
             _safeCloseSocket = socketHandle;
 
-            GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(socket#" + LoggingHash.HashString(socketHandle) + ")");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ctor(socket#" + LoggingHash.HashString(socketHandle) + ")");
+            }
+
 #if DEBUG
             _safeCloseSocket.AddRef();
 #endif
@@ -45,7 +52,11 @@ namespace System.Net.Sockets
             if (disposing)
             {
                 // It is important that the boundHandle is released immediately to allow new overlapped operations.
-                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::Dispose(true)");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::Dispose(true)");
+                }
+
                 FreeNativeOverlapped();
             }
         }
@@ -57,7 +68,10 @@ namespace System.Net.Sockets
 
         protected override bool ReleaseHandle()
         {
-            GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ReleaseHandle()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SafeNativeOverlapped#" + LoggingHash.HashString(this) + "::ReleaseHandle()");
+            }
 
             FreeNativeOverlapped();
             return true;

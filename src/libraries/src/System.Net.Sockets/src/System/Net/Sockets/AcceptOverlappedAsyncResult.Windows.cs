@@ -65,7 +65,11 @@ namespace System.Net.Sockets
                     {
                         errorCode = (SocketError)Marshal.GetLastWin32Error();
                     }
-                    GlobalLog.Print("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::PostCallback() setsockopt handle:" + handle.ToString() + " AcceptSocket:" + LoggingHash.HashString(_acceptSocket) + " itsHandle:" + _acceptSocket.SafeHandle.DangerousGetHandle().ToString() + " returns:" + errorCode.ToString());
+
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::PostCallback() setsockopt handle:" + handle.ToString() + " AcceptSocket:" + LoggingHash.HashString(_acceptSocket) + " itsHandle:" + _acceptSocket.SafeHandle.DangerousGetHandle().ToString() + " returns:" + errorCode.ToString());
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
@@ -101,7 +105,10 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            GlobalLog.Assert(SocketsEventSource.Log.IsEnabled(), "AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+            if (!SocketsEventSource.Log.IsEnabled() && GlobalLog.IsEnabled)
+            {
+                GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+            }
             IntPtr pinnedBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0);
             if (pinnedBuffer != IntPtr.Zero)
             {
