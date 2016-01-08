@@ -1545,12 +1545,6 @@ void Lowering::LowerCall(GenTree* node)
                 break;
             }
 #endif
-#if defined(_TARGET_AMD64_) && defined(FEATURE_READYTORUN_COMPILER)
-            if (call->gtEntryPoint.addr != nullptr)
-            {
-                break;
-            }
-#endif
             if  (call->gtCallType == CT_INDIRECT)
             {
                 result = LowerIndirectNonvirtCall(call);
