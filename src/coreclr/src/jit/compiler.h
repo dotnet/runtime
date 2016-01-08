@@ -4772,7 +4772,8 @@ private:
     unsigned            fgBigOffsetMorphingTemps[TYP_COUNT];
 
     static bool         fgIsUnboundedInlineRecursion(inlExpPtr expLst,
-                                                     BYTE *    ilCode);
+                                                     BYTE *    ilCode,
+                                                     DWORD&    depth);
 
     JitInlineResult     fgInvokeInlineeCompiler(GenTreeCall*   call);
     void                fgInsertInlineeBlocks (InlineInfo * pInlineInfo);
@@ -4813,15 +4814,9 @@ private:
     bool                gtIsTypeHandleToRuntimeTypeHelper(GenTreePtr tree);
     bool                gtIsActiveCSE_Candidate(GenTreePtr tree);
 
-    //--------------- The following are used when copying trees ---------------
-
-    inlExpPtr           fgInlineExpList;
-
-    int                 fgInlCount;
-    int                 fgInlQMarkCount;
-
 #ifdef DEBUG
     unsigned            fgInlinedCount; // Number of successful inline expansion of this method.
+    bool                fgPrintInlinedMethods;
 #endif
     
     bool fgIsBigOffset(size_t offset);
