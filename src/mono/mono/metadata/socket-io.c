@@ -1979,12 +1979,12 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		obj=mono_object_new(domain, obj_class);
 		
 		/* Locate and set the fields "bool enabled" and "int
-		 * seconds"
+		 * lingerTime"
 		 */
 		field=mono_class_get_field_from_name(obj_class, "enabled");
 		*(guint8 *)(((char *)obj)+field->offset)=linger.l_onoff;
 
-		field=mono_class_get_field_from_name(obj_class, "seconds");
+		field=mono_class_get_field_from_name(obj_class, "lingerTime");
 		*(guint32 *)(((char *)obj)+field->offset)=linger.l_linger;
 		
 		break;
@@ -2196,12 +2196,12 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 		
 		switch(name) {
 		case SocketOptionName_Linger:
-			/* Dig out "bool enabled" and "int seconds"
+			/* Dig out "bool enabled" and "int lingerTime"
 			 * fields
 			 */
 			field=mono_class_get_field_from_name(obj_val->vtable->klass, "enabled");
 			linger.l_onoff=*(guint8 *)(((char *)obj_val)+field->offset);
-			field=mono_class_get_field_from_name(obj_val->vtable->klass, "seconds");
+			field=mono_class_get_field_from_name(obj_val->vtable->klass, "lingerTime");
 			linger.l_linger=*(guint32 *)(((char *)obj_val)+field->offset);
 			
 			valsize=sizeof(linger);
@@ -2220,14 +2220,14 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 				/*
 				 *	Get group address
 				 */
-				field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
+				field = mono_class_get_field_from_name (obj_val->vtable->klass, "m_Group");
 				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 				
 				if(address) {
 					mreq6.ipv6mr_multiaddr = ipaddress_to_struct_in6_addr (address);
 				}
 
-				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
+				field=mono_class_get_field_from_name(obj_val->vtable->klass, "m_Interface");
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
 				
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -2268,7 +2268,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 					mreq.imr_multiaddr = ipaddress_to_struct_in_addr (address);
 				}
 
-				field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
+				field = mono_class_get_field_from_name (obj_val->vtable->klass, "localAddress");
 				address = *(MonoObject **)(((char *)obj_val) + field->offset);
 
 #ifdef HAVE_STRUCT_IP_MREQN
@@ -2276,7 +2276,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 					mreq.imr_address = ipaddress_to_struct_in_addr (address);
 				}
 
-				field = mono_class_get_field_from_name(obj_val->vtable->klass, "iface_index");
+				field = mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
 				mreq.imr_ifindex = *(gint32 *)(((char *)obj_val)+field->offset);
 #else
 				if(address) {
