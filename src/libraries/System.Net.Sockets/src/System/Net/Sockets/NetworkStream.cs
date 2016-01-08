@@ -1018,7 +1018,10 @@ namespace System.Net.Sockets
         private int _currentWriteTimeout = -1;
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
-            GlobalLog.Print("NetworkStream#" + LoggingHash.HashString(this) + "::SetSocketTimeoutOption() mode:" + mode + " silent:" + silent + " timeout:" + timeout + " m_CurrentReadTimeout:" + _currentReadTimeout + " m_CurrentWriteTimeout:" + _currentWriteTimeout);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("NetworkStream#" + LoggingHash.HashString(this) + "::SetSocketTimeoutOption() mode:" + mode + " silent:" + silent + " timeout:" + timeout + " m_CurrentReadTimeout:" + _currentReadTimeout + " m_CurrentWriteTimeout:" + _currentWriteTimeout);
+            }
             GlobalLog.ThreadContract(ThreadKinds.Unknown, "NetworkStream#" + LoggingHash.HashString(this) + "::SetSocketTimeoutOption");
 
             if (timeout < 0)
@@ -1054,7 +1057,11 @@ namespace System.Net.Sockets
         {
             if (_streamSocket != null)
             {
-                GlobalLog.Print("_streamSocket:");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("_streamSocket:");
+                }
+
                 _streamSocket.DebugMembers();
             }
         }
