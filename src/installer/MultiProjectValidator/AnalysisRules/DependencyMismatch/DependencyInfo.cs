@@ -1,6 +1,6 @@
 ﻿using Microsoft.DotNet.ProjectModel;
 
-namespace ProjectSanity.AnalysisRules.DependencyMismatch
+namespace MultiProjectValidator.AnalysisRules.DependencyMismatch
 {
     internal class DependencyInfo
     {

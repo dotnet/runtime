@@ -3,24 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ProjectModel;
 using System.Text;
-using ProjectSanity.AnalysisRules.DependencyMismatch;
+using MultiProjectValidator.AnalysisRules.DependencyMismatch;
 
 namespace MultiProjectValidator.AnalysisRules
 {
     public class DependencyMismatchRule : IAnalysisRule
     {
-        public AnalysisResult Evaluate(List<ProjectContext> projectContexts)
+        public AnalysisResult Evaluate(IEnumerable<ProjectContext> projectContexts)
         {
-            var targetGroupedContexts = GroupContextsByTarget(projectContexts);
+            var filteredContexts = FilterContextList(projectContexts);
+            var targetGroupedContexts = GroupContextsByTarget(filteredContexts);
 
             var failureMessages = EvaluateProjectContextTargetGroups(targetGroupedContexts);
-            var pass = failureMessages.Count == 0;
+            var pass = failureMessages.Count() == 0;
 
             var result = new AnalysisResult(failureMessages, pass);
             return result;
         }
 
-        private List<string> EvaluateProjectContextTargetGroups(Dictionary<string, List<ProjectContext>> targetGroupedProjectContexts)
+        private IEnumerable<ProjectContext> FilterContextList(IEnumerable<ProjectContext> projectContexts)
+        {
+            return projectContexts.Where(context=> !context.TargetIsDesktop());
+        }
+
+        private IEnumerable<string> EvaluateProjectContextTargetGroups(Dictionary<string, List<ProjectContext>> targetGroupedProjectContexts)
         {
             var failureMessages = new List<string>();
 
@@ -42,13 +48,12 @@ namespace MultiProjectValidator.AnalysisRules
             return failureMessages;
         }
 
-        private List<string> EvaluateProjectContextTargetGroup(List<ProjectContext> targetProjectContextGroup)
+        private List<string> EvaluateProjectContextTargetGroup(IEnumerable<ProjectContext> targetProjectContextGroup)
         {
             var failedMessages = new List<string>();
 
             var dependencyGroups = CreateDependencyGroups(targetProjectContextGroup);
 
-            
             foreach (var dependencyGroup in dependencyGroups)
             {
                 if(dependencyGroup.HasConflict)
@@ -80,7 +85,7 @@ namespace MultiProjectValidator.AnalysisRules
             return sb.ToString();
         }
 
-        private Dictionary<string, List<ProjectContext>> GroupContextsByTarget(List<ProjectContext> projectContexts)
+        private Dictionary<string, List<ProjectContext>> GroupContextsByTarget(IEnumerable<ProjectContext> projectContexts)
         {
             var targetContextMap = new Dictionary<string, List<ProjectContext>>();
             foreach (var context in projectContexts)
@@ -103,7 +108,7 @@ namespace MultiProjectValidator.AnalysisRules
             return targetContextMap;
         }
 
-        private List<DependencyGroup> CreateDependencyGroups(List<ProjectContext> projectContexts)
+        private List<DependencyGroup> CreateDependencyGroups(IEnumerable<ProjectContext> projectContexts)
         {
             var libraryNameDependencyGroupMap = new Dictionary<string, DependencyGroup>();
 
