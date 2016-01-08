@@ -27,6 +27,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         public bool? EmitEntryPoint { get; }
 
+        public bool? GenerateXmlDocumentation { get; }
+
         public CompilationOptions(IEnumerable<string> defines,
             string languageVersion,
             string platform,
@@ -36,7 +38,8 @@ namespace Microsoft.Extensions.DependencyModel
             string keyFile,
             bool? delaySign,
             bool? publicSign,
-            bool? emitEntryPoint)
+            bool? emitEntryPoint,
+            bool? generateXmlDocumentation)
         {
             Defines = defines;
             LanguageVersion = languageVersion;
@@ -48,6 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
             DelaySign = delaySign;
             PublicSign = publicSign;
             EmitEntryPoint = emitEntryPoint;
+            GenerateXmlDocumentation = generateXmlDocumentation;
         }
     }
 }
