@@ -718,7 +718,10 @@ namespace System.Net
             {
                 // Only set by HttpListenerRequest::Cookies_get()
 #if !NETNative_SystemNetHttp
-                GlobalLog.Assert(value == CookieVariant.Rfc2965, "Cookie#{0}::set_Variant()|value:{1}", Logging.HashString(this), value);
+                if (GlobalLog.IsEnabled && value != CookieVariant.Rfc2965)
+                {
+                    GlobalLog.AssertFormat("Cookie#{0}::set_Variant()|value:{1}", Logging.HashString(this), value);
+                }
 #endif
                 _cookieVariant = value;
             }

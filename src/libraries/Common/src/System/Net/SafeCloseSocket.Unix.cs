@@ -114,20 +114,28 @@ namespace System.Net.Sockets
                     _asyncContext.Close();
                 }
 
+                bool globalLogEnabled = GlobalLog.IsEnabled;
+
                 // If _blockable was set in BlockingRelease, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
                 // case we need to do some recovery.
                 if (_blockable)
                 {
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
+                    if (globalLogEnabled)
+                    {
+                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
+                    }
 
                     errorCode = Interop.Sys.Close(handle);
                     if (errorCode == -1)
                     {
                         errorCode = (int)Interop.Sys.GetLastError();
                     }
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#1:" + errorCode.ToString());
 
+                    if (globalLogEnabled)
+                    {
+                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#1:" + errorCode.ToString());
+                    }
 #if DEBUG
                     _closeSocketHandle = handle;
                     _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -151,7 +159,10 @@ namespace System.Net.Sockets
                         // The socket successfully made blocking; retry the close().
                         errorCode = Interop.Sys.Close(handle);
 
-                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#2:" + errorCode.ToString());
+                        if (globalLogEnabled)
+                        {
+                            GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#2:" + errorCode.ToString());
+                        }
 #if DEBUG
                         _closeSocketHandle = handle;
                         _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -176,7 +187,10 @@ namespace System.Net.Sockets
 #if DEBUG
                 _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
+                }
 
                 if (errorCode != 0 && errorCode != (int)Interop.Error.EINVAL && errorCode != (int)Interop.Error.ENOPROTOOPT)
                 {
@@ -189,7 +203,10 @@ namespace System.Net.Sockets
                 _closeSocketHandle = handle;
                 _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close#3():" + (errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode).ToString());
+                if (globalLogEnabled)
+                {
+                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close#3():" + (errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode).ToString());
+                }
 
                 return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
             }

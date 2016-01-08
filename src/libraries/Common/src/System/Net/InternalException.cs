@@ -7,7 +7,10 @@ namespace System.Net
     {
         internal InternalException()
         {
-            GlobalLog.Assert("InternalException thrown.");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Assert("InternalException thrown.");
+            }
         }
     }
 }

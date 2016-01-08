@@ -149,7 +149,11 @@ namespace System.Net
                         for (int i = 0; i < count; ++i)
                         {
                             Interop.Secur32._CERT_CHAIN_ELEMENT* pIL2 = pIL + i;
-                            GlobalLog.Assert(pIL2->cbSize > 0, "SecureChannel::GetIssuers()", "Interop.Secur32._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
+                            if (GlobalLog.IsEnabled && pIL2->cbSize <= 0)
+                            {
+                                GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.Secur32._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
+                            }
+
                             if (pIL2->cbSize > 0)
                             {
                                 uint size = pIL2->cbSize;
