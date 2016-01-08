@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Reflection.Metadata.Decoding;
 
 namespace System.Reflection.Metadata
 {
@@ -29,6 +30,13 @@ namespace System.Reflection.Metadata
         public BlobHandle Signature
         {
             get { return _reader.TypeSpecTable.GetSignature(Handle); }
+        }
+
+        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        {
+            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var blobReader = _reader.GetBlobReader(Signature);
+            return decoder.DecodeType(ref blobReader);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
