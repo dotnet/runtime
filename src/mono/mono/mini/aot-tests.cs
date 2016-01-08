@@ -238,6 +238,16 @@ class Tests
 		public static T GetValue<T>(Nullable<T> value) where T : struct {
 			return value.Value;
 		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static Nullable<T> Get<T>(T t) where T : struct {
+			return t;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static Nullable<T> GetNull<T>() where T : struct {
+			return null;
+		}
 	}
 
 	[Category ("DYNCALL")]
@@ -259,6 +269,14 @@ class Tests
 		var res = (int)typeof (NullableMethods).GetMethod ("GetValue").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { v });
 		if (res != 42)
 			return 3;
+
+		NullableMethods.Get (42);
+		var res2 = (int?)typeof (NullableMethods).GetMethod ("Get").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { 42 });
+		if (res2 != 42)
+			return 4;
+		res2 = (int?)typeof (NullableMethods).GetMethod ("GetNull").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { });
+		if (res2.HasValue)
+			return 5;
 		return 0;
 	}
 

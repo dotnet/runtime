@@ -2156,18 +2156,6 @@ typedef struct {
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
-gboolean
-mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig)
-{
-	gboolean supported = TRUE;
-
-	// FIXME:
-	if (sig->ret->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (sig->ret)))
-		supported = FALSE;
-
-	return supported;
-}
-
 static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt)
 {
@@ -2255,17 +2243,10 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
-			gboolean supported;
-
-			supported = mini_gsharedvt_runtime_invoke_supported (sig);
-
-			if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
-				supported = FALSE;
-
 #ifndef ENABLE_GSHAREDVT
-			supported = FALSE;
+			g_assert_not_reached ();
 #endif
-			if (supported && !callee_gsharedvt) {
+			if (!callee_gsharedvt) {
 				/* Invoke a gsharedvt out wrapper instead */
 				MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
@@ -2280,7 +2261,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				g_free (wrapper_sig);
 
 				info->compiled_method = mono_jit_compile_method (wrapper);
-			} else if (supported) {
+			} else {
 				/* Gsharedvt methods can be invoked the same way */
 				/* The out wrapper has the same signature as the compiled gsharedvt method */
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
@@ -2465,13 +2446,15 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
-	if (info->gsharedvt_invoke) {
+	if (mono_llvm_only) {
 		MonoMethodSignature *sig = mono_method_signature (method);
 		gpointer *args;
 		gpointer retval_ptr;
 		guint8 retval [256];
 		gpointer *param_refs;
 		int i, pindex;
+
+		g_assert (info->gsharedvt_invoke);
 
 		/*
 		 * Instead of invoking the method directly, we invoke a gsharedvt out wrapper.

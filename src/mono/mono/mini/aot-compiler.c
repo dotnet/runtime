@@ -3517,7 +3517,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 #endif
 
-		if (!skip && acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT) && mini_gsharedvt_runtime_invoke_supported (sig))
+		if (acfg->aot_opts.llvm_only && (acfg->opts & MONO_OPT_GSHAREDVT))
 			/* Supported by the gsharedvt based runtime-invoke wrapper */
 			skip = TRUE;
 
@@ -3793,7 +3793,7 @@ add_wrappers (MonoAotCompile *acfg)
 			continue;
 		}
 
-		if (klass->rank && MONO_TYPE_IS_PRIMITIVE (&klass->element_class->byval_arg)) {
+		if (!acfg->aot_opts.llvm_only && klass->rank && MONO_TYPE_IS_PRIMITIVE (&klass->element_class->byval_arg)) {
 			MonoMethod *m, *wrapper;
 
 			/* Add runtime-invoke wrappers too */
