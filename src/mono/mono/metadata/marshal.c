@@ -3319,23 +3319,21 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	mb->skip_visibility = 1;
 #endif /* DISABLE_JIT */
 
+	info = mono_wrapper_info_create (mb, subtype);
+
 	if (ctx) {
 		MonoMethod *def;
 
-		def = mono_mb_create_and_cache (cache, cache_key, mb, sig, sig->param_count + 16);
+		def = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
 	} else if (callvirt) {
 		new_key = g_new0 (SignaturePointerPair, 1);
 		*new_key = key;
 
-		info = mono_wrapper_info_create (mb, subtype);
-
 		res = mono_mb_create_and_cache_full (cache, new_key, mb, sig, sig->param_count + 16, info, &found);
 		if (found)
 			g_free (new_key);
 	} else {
-		info = mono_wrapper_info_create (mb, subtype);
-
 		res = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 	}
 	mono_mb_free (mb);
