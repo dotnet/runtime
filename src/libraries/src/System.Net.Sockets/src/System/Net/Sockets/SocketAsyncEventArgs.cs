@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         // Misc state variables.
         private ExecutionContext _context;
         private ExecutionContext _contextCopy;
-        private ContextCallback _executionCallback;
+        private static readonly ContextCallback s_executionCallback = ExecutionCallback;
         private Socket _currentSocket;
         private bool _disposeCalled;
 
@@ -87,8 +87,6 @@ namespace System.Net.Sockets
 
         public SocketAsyncEventArgs()
         {
-            _executionCallback = new ContextCallback(ExecutionCallback);
-
             InitializeInternals();
         }
 
@@ -320,9 +318,10 @@ namespace System.Net.Sockets
             }
         }
 
-        private void ExecutionCallback(object ignored)
+        private static void ExecutionCallback(object state)
         {
-            OnCompleted(this);
+            var thisRef = (SocketAsyncEventArgs)state;
+            thisRef.OnCompleted(thisRef);
         }
 
         // Marks this object as no longer "in-use". Will also execute a Dispose deferred
@@ -622,7 +621,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, _executionCallback, null);
+                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
             }
         }
 
@@ -642,7 +641,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, _executionCallback, null);
+                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
             }
         }
 
@@ -660,7 +659,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, _executionCallback, null);
+                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
             }
         }
 
@@ -874,7 +873,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExecutionContext.Run(_contextCopy, _executionCallback, null);
+                ExecutionContext.Run(_contextCopy, s_executionCallback, this);
             }
         }
     }
