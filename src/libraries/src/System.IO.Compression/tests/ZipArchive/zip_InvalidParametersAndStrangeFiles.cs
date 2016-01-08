@@ -181,12 +181,11 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [ActiveIssue(1904, PlatformID.AnyUnix)]
         public static async Task StrangeFiles4()
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(
                  ZipTest.strange("dataDescriptor.zip")), ZipTest.zfolder("normalWithoutBinary"), ZipArchiveMode.Update, true, false);
-	    }
+        }
 
         [Fact]
         public static async Task StrangeFiles5()
