@@ -57,6 +57,13 @@ ICU
 ---
 ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/) with `brew install icu4c`.
 
+OpenSSL
+-------
+The CoreFX cryptography libraries are built on OpenSSL. The version of OpenSSL included on OS X (0.9.8) has gone out of support, and a newer version is required. A supported version can be obtained via [Homebrew](http://brew.sh).
+
+    brew install openssl
+    brew link --force openssl
+
 Demo directory
 --------------
 
