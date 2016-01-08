@@ -30,6 +30,13 @@ namespace System.Reflection.Metadata.Ecma335
         UseProjectionInfo = 3,
     }
 
+    internal enum TypeRefSignatureTreatment : byte
+    {
+        None = 0,
+        ProjectedToClass = 1,
+        ProjectedToValueType = 2,
+    }
+
     [Flags]
     internal enum MethodDefTreatment : byte
     {

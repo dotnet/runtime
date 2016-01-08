@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Reflection.Metadata.Decoding;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
@@ -66,6 +67,12 @@ namespace System.Reflection.Metadata
             }
         }
 
+        /// <summary>
+        /// Gets a handle to the signature blob.
+        ///
+        /// Decode using <see cref="DecodeMethodSignature"/> if <see cref="GetKind"/> returns <see cref="MemberReferenceKind.Method"/>
+        /// Decode using <see cref="DecodeFieldSignature"/> if <see cref="GetKind"/> returns <see cref="MemberReferenceKind.Field"/>
+        /// </summary>
         public BlobHandle Signature
         {
             get
@@ -79,9 +86,24 @@ namespace System.Reflection.Metadata
             }
         }
 
+        public TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        {
+            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var blobReader = _reader.GetBlobReader(Signature);
+            return decoder.DecodeFieldSignature(ref blobReader);
+        }
+
+        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        {
+            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var blobReader = _reader.GetBlobReader(Signature);
+            return decoder.DecodeMethodSignature(ref blobReader);
+        }
+
         /// <summary>
         /// Determines if the member reference is to a method or field.
         /// </summary>
+        /// <exception cref="BadImageFormatException">The member reference signature is invalid.</exception>
         public MemberReferenceKind GetKind()
         {
             BlobReader blobReader = _reader.GetBlobReader(this.Signature);

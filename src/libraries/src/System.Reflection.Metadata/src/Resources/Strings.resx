@@ -162,9 +162,6 @@
   <data name="NotMetadataHeapHandle" xml:space="preserve">
     <value>Specified handle is not a valid metadata heap handle.</value>
   </data>
-  <data name="NotMetadataTableHandle" xml:space="preserve">
-    <value>Specified handle is not a valid metadata table handle.</value>
-  </data>
   <data name="NotMetadataTableOrUserStringHandle" xml:space="preserve">
     <value>Specified handle is not a valid metadata table or UserString heap handle.</value>
   </data>
@@ -338,5 +335,20 @@
   </data>
   <data name="InvalidPathPadding" xml:space="preserve">
     <value>The path must be padded with NUL characters.</value>
+  </data>
+  <data name="UnexpectedSignatureHeader" xml:space="preserve">
+    <value>Expected signature header for '{0}', but found '{1}' (0x{2:x2}).</value>
+  </data>
+  <data name="UnexpectedSignatureHeader2" xml:space="preserve">
+    <value>Expected signature header for '{0}' or '{1}', but found '{2}' (0x{3:x2}).</value>
+  </data>
+  <data name="NotTypeDefOrRefHandle" xml:space="preserve">
+    <value>Specified handle is not a TypeDefinitionHandle or TypeRefererenceHandle.</value>
+  </data>
+  <data name="UnexpectedSignatureTypeCode" xml:space="preserve">
+    <value>Unexpected SignatureTypeCode: (0x{0:x}).</value>
+  </data>
+  <data name="SignatureTypeSequenceMustHaveAtLeastOneElement" xml:space="preserve">
+    <value>Signature type sequence must have at least one element.</value>
   </data>
 </root>

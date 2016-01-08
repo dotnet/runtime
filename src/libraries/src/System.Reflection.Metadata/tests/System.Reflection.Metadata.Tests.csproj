@@ -34,6 +34,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Metadata\ClassLayoutRow.cs" />
+    <Compile Include="Metadata\Decoding\DisassemblingTypeProvider.cs" />
+    <Compile Include="Metadata\Decoding\MethodSignatureTests.cs" />
+    <Compile Include="Metadata\Decoding\OpaqueHandleTypeProvider.cs" />
+    <Compile Include="Metadata\Decoding\SignatureDecoderTests.cs" />
     <Compile Include="Metadata\Ecma335\MetadataAggregatorTests.cs" />
     <Compile Include="Metadata\Ecma335\MetadataTokensTests.cs" />
     <Compile Include="Metadata\HandleComparerTests.cs" />
@@ -53,6 +57,7 @@
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
     <Compile Include="TestUtilities\DiffUtil.cs" />
+    <Compile Include="TestUtilities\TestMetadataResolver.cs" />
     <Compile Include="Utilities\StringUtilsTests.cs" />
     <Compile Include="Utilities\BlobReaderTests.cs" />
     <Compile Include="Utilities\CompressedIntegerTests.cs" />

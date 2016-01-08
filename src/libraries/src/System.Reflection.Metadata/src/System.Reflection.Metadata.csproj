@@ -63,6 +63,17 @@
     <Compile Include="System\Reflection\Metadata\CustomAttribute.cs" />
     <Compile Include="System\Reflection\Metadata\CustomAttributeNamedArgumentKind.cs" />
     <Compile Include="System\Reflection\Metadata\DeclarativeSecurityAttribute.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ArrayShape.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ISZArrayTypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ISignatureTypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ITypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\SignatureTypeHandleCode.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\SignatureDecoderOptions.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\MethodSignature.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\PrimitiveTypeCode.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueLogEntry.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueOperation.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\ExportedTypeExtensions.cs" />
@@ -107,6 +118,7 @@
     <Compile Include="System\Reflection\Metadata\Internal\TypeOrMethodDefTag.cs" />
     <Compile Include="System\Reflection\Metadata\ManifestResource.cs" />
     <Compile Include="System\Reflection\Metadata\MemberReference.cs" />
+    <Compile Include="System\Reflection\Metadata\StandaloneSignatureKind.cs" />
     <Compile Include="System\Reflection\Metadata\MemberReferenceKind.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataAggregator.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataKind.cs" />
