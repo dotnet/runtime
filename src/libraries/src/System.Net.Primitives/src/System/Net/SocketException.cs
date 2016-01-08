@@ -23,7 +23,10 @@ namespace System.Net.Sockets
         /// </devdoc>
         public SocketException() : base(Marshal.GetLastWin32Error())
         {
-            GlobalLog.Print("SocketException::.ctor() " + NativeErrorCode.ToString() + ":" + Message);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SocketException::.ctor() " + NativeErrorCode.ToString() + ":" + Message);
+            }
         }
 
         internal SocketException(EndPoint endPoint) : base(Marshal.GetLastWin32Error())
@@ -38,7 +41,10 @@ namespace System.Net.Sockets
         /// </devdoc>
         public SocketException(int errorCode) : base(errorCode)
         {
-            GlobalLog.Print("SocketException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SocketException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
+            }
         }
 
         internal SocketException(int errorCode, EndPoint endPoint) : base(errorCode)
