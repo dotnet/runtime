@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
     internal  class XplatEventLogger : EventListener
     {
         public XplatEventLogger() {}
-        
+
         private static bool initializedPersistentListener = false;
 
         [System.Security.SecuritySafeCritical]
@@ -78,16 +78,17 @@ namespace System.Diagnostics.Tracing
             if (payloadName.Count == 0 || payload.Count == 0)
                 return String.Empty;
 
-            Contract.Assert(payloadName.Count == payload.Count);
+            int eventDataCount = payloadName.Count;
+
             if(payloadName.Count != payload.Count)
             {
-                return string.Empty;
+               eventDataCount = Math.Min(payloadName.Count, payload.Count);
             }
-            
+
             var sb = StringBuilderCache.Acquire();
 
             sb.Append('{');
-            for (int i = 0; i < payloadName.Count; i++)
+            for (int i = 0; i < eventDataCount; i++)
             {
                 var fieldstr = payloadName[i].ToString();
 
@@ -108,7 +109,7 @@ namespace System.Diagnostics.Tracing
                 {
                     sb.Append(payload[i].ToString());
                 }
-                
+
                 sb.Append(sep);
 
             }
@@ -135,7 +136,13 @@ namespace System.Diagnostics.Tracing
             string payload = "";
             if (eventData.Payload != null)
             {
-                payload = Serialize(eventData.PayloadNames, eventData.Payload);
+                try{
+                    payload = Serialize(eventData.PayloadNames, eventData.Payload);
+                }
+                catch (Exception ex)
+                {
+                    payload = "XplatEventLogger failed with Exception " + ex.ToString();
+                }
             }
 
             LogEventSource( eventData.EventId, eventData.EventName,eventData.EventSource.Name,payload);
