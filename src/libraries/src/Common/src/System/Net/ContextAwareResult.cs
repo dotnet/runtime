@@ -484,10 +484,10 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext.Run(context, new ContextCallback(CompleteCallback), null);
+            ExecutionContext.Run(context, s => ((ContextAwareResult)s).CompleteCallback(), this);
         }
 
-        private void CompleteCallback(object state)
+        private void CompleteCallback()
         {
             if (GlobalLog.IsEnabled)
             {
