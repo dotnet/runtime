@@ -225,10 +225,9 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 		GCObject *__old = *(ptr);				\
 		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {            \
-			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (__old);	\
 			if (G_UNLIKELY (!sgen_ptr_in_nursery (ptr) &&	\
 					sgen_safe_object_is_small (__old, sgen_obj_get_descriptor (__old) & DESC_TYPE_MASK) && \
-					major_block_is_evacuating (block))) { \
+					major_block_is_evacuating (MS_BLOCK_FOR_OBJ (__old)))) { \
 				mark_mod_union_card ((full_object), (void**)(ptr), __old); \
 			} else {					\
 				PREFETCH_READ (__old);			\
