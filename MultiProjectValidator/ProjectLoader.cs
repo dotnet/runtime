@@ -6,7 +6,7 @@ namespace MultiProjectValidator
 {
     public class ProjectLoader
     {
-        private static readonly string PROJECT_FILENAME = "project.json";
+        private static readonly string s_projectFileName = "project.json";
 
         public static List<ProjectContext> Load(string rootPath, bool recursive=true)
         {
@@ -18,7 +18,7 @@ namespace MultiProjectValidator
 
         private static string[] DiscoverProjectFiles(string rootPath)
         {
-            return Directory.GetFiles(rootPath, PROJECT_FILENAME, SearchOption.AllDirectories);
+            return Directory.GetFiles(rootPath, s_projectFileName, SearchOption.AllDirectories);
         }
 
         private static List<ProjectContext> LoadProjectContexts(string[] projectFiles)
@@ -29,7 +29,7 @@ namespace MultiProjectValidator
             {
                 var fileTargetContexts = ProjectContext.CreateContextForEachTarget(file);
 
-                projectContexts.AddRange(fileTargetContexts);    
+                projectContexts.AddRange(fileTargetContexts);
             }
 
             return projectContexts;

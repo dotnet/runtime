@@ -5,6 +5,6 @@ namespace MultiProjectValidator
 {
     public interface IAnalysisRule
     {
-        AnalysisResult Evaluate(List<ProjectContext> projectContexts);
+        AnalysisResult Evaluate(IEnumerable<ProjectContext> projectContexts);
     }
 }
