@@ -6,6 +6,7 @@
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Facade\System.IO.FileSystem.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="win\System.IO.FileSystem.pkgproj" />
     <ProjectReference Include="unix\System.IO.FileSystem.pkgproj" />
