@@ -6087,24 +6087,13 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                 if (opts.IsReadyToRun())
                 {
                     call->gtCall.gtEntryPoint = callInfo->codePointerLookup.constLookup;
-                    if (canTailCall)
-                    {
-                        canTailCall = false;
-                        szCanTailCallFailReason = "Ready To Run";
-                    }
                 }
 #endif
                 break;
             }
 
         case CORINFO_CALL_CODE_POINTER:
-            {     
-                if (compIsForInlining())
-                {
-                    inlineFailReason = "Inlinee calls through code pointer";
-                    goto ABORT_THIS_INLINE_ONLY;
-                }
-                                
+            {
                 // The EE has asked us to call by computing a code pointer and then doing an 
                 // indirect call.  This is because a runtime lookup is required to get the code entry point.
 
