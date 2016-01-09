@@ -230,7 +230,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
     return false;
 }
 
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
+bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
 {
     // TODO: Implement for background GC
     return false;
