@@ -16,7 +16,7 @@ namespace System.Net.Security
         public abstract bool IsServer { get; }
         public abstract bool IsSigned { get; }
         public bool LeaveInnerStreamOpen { get { return default(bool); } }
-        protected System.IO.Stream InnerStream { get { return default(System.IO.Stream);} }
+        protected System.IO.Stream InnerStream { get { return default(System.IO.Stream); } }
         protected override void Dispose(bool disposing) { }
     }
     public enum EncryptionPolicy
@@ -28,7 +28,7 @@ namespace System.Net.Security
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate remoteCertificate, string[] acceptableIssuers);
     public partial class NegotiateStream : AuthenticatedStream
     {
-        public NegotiateStream(System.IO.Stream innerStream) : base(innerStream, false) { } 
+        public NegotiateStream(System.IO.Stream innerStream) : base(innerStream, false) { }
         public NegotiateStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen) { }
         public override bool CanRead { get { return default(bool); } }
         public override bool CanSeek { get { return default(bool); } }

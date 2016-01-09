@@ -28,8 +28,8 @@ namespace System.Net.Security.Tests
         private bool RemoteHttpsCertValidation(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
-            
+
             return true;
         }
-     }
+    }
 }

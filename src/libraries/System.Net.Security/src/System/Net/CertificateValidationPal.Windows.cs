@@ -40,7 +40,7 @@ namespace System.Net
                 {
                     uint status = 0;
 
-                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA() 
+                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
                     {
                         cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
                         dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
@@ -48,7 +48,7 @@ namespace System.Net
                         pwszServerName = null
                     };
 
-                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA() 
+                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
                     {
                         cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
                         dwFlags = 0,
@@ -98,7 +98,7 @@ namespace System.Net
             SafeFreeCertContext remoteContext = null;
             try
             {
-                remoteContext = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.Secur32.ContextAttribute.RemoteCertificate) as SafeFreeCertContext;
+                remoteContext = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.SspiCli.ContextAttribute.RemoteCertificate) as SafeFreeCertContext;
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
@@ -129,13 +129,13 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            Interop.Secur32.IssuerListInfoEx issuerList = 
-                (Interop.Secur32.IssuerListInfoEx)SSPIWrapper.QueryContextAttributes(
-                    GlobalSSPI.SSPISecureChannel, 
-                    securityContext, 
-                    Interop.Secur32.ContextAttribute.IssuerListInfoEx);
+            Interop.SspiCli.IssuerListInfoEx issuerList =
+                (Interop.SspiCli.IssuerListInfoEx)SSPIWrapper.QueryContextAttributes(
+                    GlobalSSPI.SSPISecureChannel,
+                    securityContext,
+                    Interop.SspiCli.ContextAttribute.IssuerListInfoEx);
 
-            string [] issuers = Array.Empty<string>();
+            string[] issuers = Array.Empty<string>();
 
             try
             {
@@ -145,13 +145,13 @@ namespace System.Net
                     {
                         uint count = issuerList.cIssuers;
                         issuers = new string[issuerList.cIssuers];
-                        Interop.Secur32._CERT_CHAIN_ELEMENT* pIL = (Interop.Secur32._CERT_CHAIN_ELEMENT*)issuerList.aIssuers.DangerousGetHandle();
+                        Interop.SspiCli._CERT_CHAIN_ELEMENT* pIL = (Interop.SspiCli._CERT_CHAIN_ELEMENT*)issuerList.aIssuers.DangerousGetHandle();
                         for (int i = 0; i < count; ++i)
                         {
-                            Interop.Secur32._CERT_CHAIN_ELEMENT* pIL2 = pIL + i;
+                            Interop.SspiCli._CERT_CHAIN_ELEMENT* pIL2 = pIL + i;
                             if (GlobalLog.IsEnabled && pIL2->cbSize <= 0)
                             {
-                                GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.Secur32._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
+                                GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
                             }
 
                             if (pIL2->cbSize > 0)
@@ -206,7 +206,8 @@ namespace System.Net
                             // For app-compat We want to ensure the store is opened under the **process** account.
                             try
                             {
-                                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () => {
+                                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                                {
                                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                                     GlobalLog.Print("SecureChannel::EnsureStoreOpened() storeLocation:" + storeLocation + " returned store:" + store.GetHashCode().ToString("x"));
                                 });

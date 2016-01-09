@@ -349,7 +349,6 @@ namespace System.Net
 #if !NetNative
             if (_windowsIdentity != null)
             {
-
                 _windowsIdentity.Dispose();
                 _windowsIdentity = null;
             }

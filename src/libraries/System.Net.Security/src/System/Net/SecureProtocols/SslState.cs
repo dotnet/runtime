@@ -48,14 +48,14 @@ namespace System.Net.Security
         }
         private CachedSessionStatus _CachedSession;
 
-        // This block is used by rehandshake code to buffer data decryptred with the old key.
+        // This block is used by re-handshake code to buffer data decrypted with the old key.
         private byte[] _queuedReadData;
         private int _queuedReadCount;
         private bool _pendingReHandshake;
         private const int MaxQueuedReadBytes = 1024 * 128;
 
         //
-        // This block is used to rule the >>re-handshakes<< that are concurent with read/write io requests.
+        // This block is used to rule the >>re-handshakes<< that are concurrent with read/write I/O requests.
         //
         private const int LockNone = 0;
         private const int LockWrite = 1;
@@ -85,9 +85,7 @@ namespace System.Net.Security
             _certSelectionDelegate = certSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
         }
-        //
-        //
-        //
+
         internal void ValidateCreateContext(bool isServer, string targetHost, SslProtocols enabledSslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertRevocationStatus)
         {
             ValidateCreateContext(isServer, targetHost, enabledSslProtocols, serverCertificate, clientCertificates, remoteCertRequired,

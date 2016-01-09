@@ -21,6 +21,7 @@ namespace System.Net
                 IntPtr unmanagedAddress = new IntPtr(voidPtr);
                 try
                 {
+                    // TODO (Issue #3114): replace with Marshal.PtrToStructure.
                     MaxToken = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
                     MaxSignature = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
                     BlockSize = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
