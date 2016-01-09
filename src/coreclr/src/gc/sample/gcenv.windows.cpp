@@ -366,10 +366,15 @@ struct GCThreadStubParam
 };
 
 // GC thread stub to convert GC thread function to an OS specific thread function
-static DWORD GCThreadStub(void* param)
+static DWORD __stdcall GCThreadStub(void* param)
 {
     GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    stubParam->GCThreadFunction(stubParam->GCThreadParam);
+    GCThreadFunction function = stubParam->GCThreadFunction;
+    void* threadParam = stubParam->GCThreadParam;
+
+    delete stubParam;
+
+    function(threadParam);
 
     return 0;
 }
@@ -384,15 +389,16 @@ static DWORD GCThreadStub(void* param)
 bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
 {
     DWORD thread_id;
-    GCThreadStubParam stubParam;
 
-    stubParam.GCThreadFunction = function;
-    stubParam.GCThreadParam = param;
+    GCThreadStubParam* stubParam = new (nothrow) GCThreadStubParam();
+    stubParam->GCThreadFunction = function;
+    stubParam->GCThreadParam = param;
 
-    HANDLE gc_thread = ::CreateThread(NULL, 0, GCThreadStub, &stubParam, CREATE_SUSPENDED, &thread_id);
+    HANDLE gc_thread = ::CreateThread(NULL, 0, GCThreadStub, stubParam, CREATE_SUSPENDED, &thread_id);
 
     if (!gc_thread)
     {
+        delete stubParam;
         return false;
     }
 

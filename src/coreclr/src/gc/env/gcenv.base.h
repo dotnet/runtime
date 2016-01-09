@@ -82,7 +82,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define TRUE true
 #define FALSE false
 
-#define CALLBACK
+#define CALLBACK __stdcall
 #define FORCEINLINE inline
 
 #define INFINITE 0xFFFFFFFF
