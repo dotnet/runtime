@@ -4,6 +4,9 @@
   <ItemGroup>
     <Project Include="System.AppContext.csproj" />
     <Project Include="System.AppContext.csproj">
+      <TargetGroup>net462</TargetGroup>
+    </Project>
+    <Project Include="redist\System.AppContext.depproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.AppContext.csproj">
