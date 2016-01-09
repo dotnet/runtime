@@ -1422,8 +1422,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                //need perf improvement on this
-                T[] elements = (new List<T>(other)).ToArray();
+                T[] elements = EnumerableHelpers.ToArray(other);
                 Array.Sort(elements, this.Comparer);
                 SymmetricExceptWithSameEC(elements);
             }
