@@ -17,6 +17,7 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
+
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
@@ -28,14 +29,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+  </PropertyGroup>
+
+  <!-- Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\BitConverter.cs" />
+    <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -58,22 +66,17 @@
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
-    <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
@@ -84,14 +87,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
       <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
@@ -106,6 +109,19 @@
       <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <!-- WINDOWS: CoreCLR -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">
+    <Compile Include="System\IO\Path.Win32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- UNIX: CoreCLR -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
@@ -143,16 +159,41 @@
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <!-- WINDOWS: .NET Native -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <Compile Include="System\Random.cs" />
+    <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
+    <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
+    <Compile Include="System\IO\LowLevelTextWriter.cs" />
+    <Compile Include="System\IO\LowLevelStringWriter.cs" />
+    <Compile Include="System\IO\Path.WinRT.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" />
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
+    <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Threading" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
