@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    // we keep it simple since we use this only to know if NTLM or
+    // This class is used to determine if NTLM or
     // Kerberos are used in the context of a Negotiate handshake
     internal class NegotiationInfoClass
     {
@@ -26,8 +26,8 @@ namespace System.Net
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
             GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
 
-            if (negotiationState == Interop.Secur32.SECPKG_NEGOTIATION_COMPLETE 
-                || negotiationState == Interop.Secur32.SECPKG_NEGOTIATION_OPTIMISTIC)
+            if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE
+                || negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
             {
                 IntPtr unmanagedString = Marshal.ReadIntPtr(packageInfo, SecurityPackageInfo.NameOffest);
                 string name = null;

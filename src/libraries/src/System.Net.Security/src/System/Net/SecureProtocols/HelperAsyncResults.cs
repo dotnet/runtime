@@ -11,8 +11,8 @@ namespace System.Net
     //
     // The class mimics LazyAsyncResult although it does not need to be thread safe nor it does need an Event.
     // We use this to implement iterative protocol logic:
-    // 1) it can be reused for handshake-like or multi-IO request protocols
-    // 2) it won't block async IO since there is NO event handler exposed
+    // 1) It can be reused for handshake-like or multi-IO request protocols.
+    // 2) It won't block async IO since there is NO event handler exposed.
     //
     // UserAsyncResult property is a link into original user IO request (could be a BufferAsyncResult).
     //
@@ -22,8 +22,8 @@ namespace System.Net
         internal object _DebugAsyncChain;         // Optionally used to track chains of async calls.
 #endif
 
-        private AsyncProtocolCallback _Callback;
-        private int _CompletionStatus;
+        private AsyncProtocolCallback _callback;
+        private int _completionStatus;
 
         private const int StatusNotStarted = 0;
         private const int StatusCompleted = 1;
@@ -34,7 +34,7 @@ namespace System.Net
         public int Result;
         public object AsyncState;
 
-        public byte[] Buffer;                  // temp buffer reused by a protocol.
+        public byte[] Buffer; // Temporary buffer reused by a protocol.
         public int Offset;
         public int Count;
 
@@ -56,15 +56,15 @@ namespace System.Net
 
         public void SetNextRequest(byte[] buffer, int offset, int count, AsyncProtocolCallback callback)
         {
-            if (_CompletionStatus != StatusNotStarted)
+            if (_completionStatus != StatusNotStarted)
             {
-                throw new InternalException(); // pending op is in progress
+                throw new InternalException(); // Pending operation is in progress.
             }
 
             Buffer = buffer;
             Offset = offset;
             Count = count;
-            _Callback = callback;
+            _callback = callback;
         }
 
         internal object AsyncObject
@@ -76,21 +76,21 @@ namespace System.Net
         }
 
         //
-        // Notify protocol so a next stage could be started
+        // Notify protocol so a next stage could be started.
         //
         internal void CompleteRequest(int result)
         {
             Result = result;
-            int status = Interlocked.Exchange(ref _CompletionStatus, StatusCompleted);
+            int status = Interlocked.Exchange(ref _completionStatus, StatusCompleted);
             if (status == StatusCompleted)
             {
-                throw new InternalException(); // only allow one call
+                throw new InternalException(); // Only allow one call.
             }
 
             if (status == StatusCheckedOnSyncCompletion)
             {
-                _CompletionStatus = StatusNotStarted;
-                _Callback(this);
+                _completionStatus = StatusNotStarted;
+                _callback(this);
             }
         }
 
@@ -98,15 +98,15 @@ namespace System.Net
         {
             get
             {
-                int status = Interlocked.Exchange(ref _CompletionStatus, StatusCheckedOnSyncCompletion);
+                int status = Interlocked.Exchange(ref _completionStatus, StatusCheckedOnSyncCompletion);
                 if (status == StatusCheckedOnSyncCompletion)
                 {
-                    throw new InternalException(); // only allow one call
+                    throw new InternalException(); // Only allow one call.
                 }
 
                 if (status == StatusCompleted)
                 {
-                    _CompletionStatus = StatusNotStarted;
+                    _completionStatus = StatusNotStarted;
                     return true;
                 }
                 return false;

@@ -158,7 +158,7 @@ namespace System.Net.Security
         internal void Close()
         {
         }
-        
+
         //
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
@@ -166,10 +166,10 @@ namespace System.Net.Security
         internal void ProcessAuthentication(LazyAsyncResult lazyResult)
         {
         }
-                        
+
         internal void EndProcessAuthentication(IAsyncResult result)
         {
-        }       
+        }
     }
 
     internal class _SslStream : Stream
@@ -244,5 +244,4 @@ namespace System.Net.Security
             throw new NotImplementedException();
         }
     }
-
 }

@@ -45,8 +45,6 @@ internal static partial class Interop
         internal const string Registry_L1 = "api-ms-win-core-registry-l1-1-0.dll";
         internal const string Registry_L2 = "api-ms-win-core-registry-l2-1-0.dll";
         internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";
-        // TODO #4661: Move all calls to Secur32 and replace with Sspi.
-        internal const string Secur32 = "sspicli.dll";
         internal const string SecurityBase = "api-ms-win-security-base-l1-1-0.dll";
         internal const string SecurityCpwl = "api-ms-win-security-cpwl-l1-1-0.dll";
         internal const string SecurityLsa = "api-ms-win-security-lsalookup-l2-1-0.dll";

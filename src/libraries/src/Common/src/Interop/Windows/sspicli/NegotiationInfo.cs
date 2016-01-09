@@ -9,7 +9,6 @@ namespace System.Net
     [StructLayout(LayoutKind.Sequential)]
     internal struct NegotiationInfo
     {
-        // [MarshalAs(UnmanagedType.LPStruct)] internal SecurityPackageInfo PackageInfo;
         internal IntPtr PackageInfo;
         internal uint NegotiationState;
         internal static readonly int Size = Marshal.SizeOf<NegotiationInfo>();
