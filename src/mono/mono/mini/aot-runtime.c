@@ -1663,6 +1663,14 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+static void
+find_amodule_symbol (MonoAotModule *amodule, const char *name, gpointer *value)
+{
+	g_assert (!(amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY));
+
+	find_symbol (amodule->sofile, amodule->globals, name, value);
+}
+
 void
 mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, gpointer user_data)
 {
@@ -1919,7 +1927,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		/* Statically linked AOT module */
 		aot_name = g_strdup_printf ("%s", assembly->aname.name);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.\n", aot_name);
-		globals = (void **)info->globals;
+		if (!(info->flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) {
+			globals = (void **)info->globals;
+			g_assert (globals);
+		}
 	} else {
 		if (enable_aot_cache)
 			sofile = aot_cache_load_module (assembly, &aot_name);
@@ -1942,13 +1953,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 			}
 		}
-	}
-
-	if (!sofile && !globals) {
-		if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows)
-			g_error ("Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
-		g_free (aot_name);
-		return;
+		if (!sofile) {
+			if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows)
+				g_error ("Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
+			g_free (aot_name);
+			return;
+		}
 	}
 
 	if (!info) {
@@ -2177,9 +2187,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->image->aot_module = amodule;
 
-	if (mono_aot_only) {
+	if (mono_aot_only && !mono_llvm_only) {
 		char *code;
-		find_symbol (amodule->sofile, amodule->globals, "specific_trampolines_page", (gpointer *)&code);
+		find_amodule_symbol (amodule, "specific_trampolines_page", (gpointer *)&code);
 		amodule->use_page_trampolines = code != NULL;
 		/*g_warning ("using page trampolines: %d", amodule->use_page_trampolines);*/
 	}
@@ -2245,8 +2255,10 @@ mono_aot_register_module (gpointer *aot_info)
 
 	g_assert (info->version == MONO_AOT_FILE_VERSION);
 
-	globals = (void **)info->globals;
-	g_assert (globals);
+	if (!(info->flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) {
+		globals = (void **)info->globals;
+		g_assert (globals);
+	}
 
 	aname = (char *)info->assembly_name;
 
@@ -4750,7 +4762,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 	/* Load the code */
 
 	symbol = g_strdup_printf ("%s", name);
-	find_symbol (amodule->sofile, amodule->globals, symbol, (gpointer *)&code);
+	find_amodule_symbol (amodule, symbol, (gpointer *)&code);
 	g_free (symbol);
 	if (!code)
 		g_error ("Symbol '%s' not found in AOT file '%s'.\n", name, amodule->aot_name);
@@ -4760,7 +4772,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 	/* Load info */
 
 	symbol = g_strdup_printf ("%s_p", name);
-	find_symbol (amodule->sofile, amodule->globals, symbol, (gpointer *)&p);
+	find_amodule_symbol (amodule, symbol, (gpointer *)&p);
 	g_free (symbol);
 	if (!p)
 		/* Nothing to patch */
@@ -4934,7 +4946,7 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	guint32 uw_offset, uw_info_len;
 	guint8 *uw_info;
 
-	find_symbol (amodule->sofile, amodule->globals, symbol_name, &symbol_addr);
+	find_amodule_symbol (amodule, symbol_name, &symbol_addr);
 
 	if (!symbol_addr)
 		return NULL;

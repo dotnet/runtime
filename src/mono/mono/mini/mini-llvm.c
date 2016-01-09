@@ -7681,7 +7681,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 	}
-	if (module->static_link)
+	if (module->static_link && !module->llvm_only)
 		fields [tindex ++] = AddJitGlobal (module, eltype, "globals");
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);

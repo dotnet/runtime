@@ -8687,6 +8687,10 @@ emit_globals (MonoAotCompile *acfg)
 
 	if (!acfg->aot_opts.static_link)
 		return;
+	if (acfg->aot_opts.llvm_only) {
+		g_assert (acfg->globals->len == 0);
+		return;
+	}
 
 	/* 
 	 * When static linking, we emit a table containing our globals.
