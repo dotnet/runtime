@@ -170,6 +170,13 @@
         ]
     },
     {
+        "Name": "System.Buffers",
+        "Description": "Provides resource pooling of any type for performance-critical applications that allocate and deallocate objects frequently.",
+        "CommonTypes": [
+            "System.Buffers.ArrayPool<T>"
+        ]
+    },
+    {
         "Name": "System.Collections",
         "Description": "Provides classes that define generic collections, which allow developers to create strongly typed collections that provide better type safety and performance than non-generic strongly typed collections.",
         "CommonTypes": [
