@@ -427,11 +427,6 @@ if defined __SkipTestBuild (
     goto SkipTestBuild
 )
 
-if /i not "%__BuildArch%" == "x64" (
-    echo %__MsgPrefix%Skipping test build: architecture %__BuildArch% not supported for test build.
-    goto SkipTestBuild
-)
-
 echo %__MsgPrefix%Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 REM Construct the arguments to pass to the test build script.
