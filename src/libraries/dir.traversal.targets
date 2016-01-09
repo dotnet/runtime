@@ -24,7 +24,7 @@
         <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
       </Project>
       <Project>
-        <UndefineProperties Condition="'%(Project.Extension)'!='.builds'">%(Project.UndefineProperties);FilterToOSGroup</UndefineProperties>
+        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);FilterToOSGroup</UndefineProperties>
       </Project>
     </ItemGroup>
 
