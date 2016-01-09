@@ -9993,21 +9993,22 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 #endif
 
-	if (acfg->aot_opts.asm_only) {
+	if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_only) {
 		if (acfg->aot_opts.outfile)
 			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-		acfg->fp = fopen (acfg->tmpfname, "w+");
+			acfg->fp = fopen (acfg->tmpfname, "w+");
 	} else {
 		int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
 		acfg->fp = fdopen (i, "w+");
 	}
-	if (acfg->fp == 0) {
+	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
 		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
 		return 1;
 	}
-	acfg->w = mono_img_writer_create (acfg->fp, FALSE);
+	if (acfg->fp)
+		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
 
 	tmp_outfile_name = NULL;
 	outfile_name = NULL;
@@ -10045,7 +10046,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE, !acfg->gas_line_numbers);
 	}
 
-	mono_img_writer_emit_start (acfg->w);
+	if (acfg->w)
+		mono_img_writer_emit_start (acfg->w);
 
 	if (acfg->dwarf)
 		mono_dwarf_writer_emit_base_info (acfg->dwarf, g_path_get_basename (acfg->image->name), mono_unwind_get_cie_program ());
@@ -10155,15 +10157,17 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		aot_printf (acfg, "%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
 
 	TV_GETTIME (atv);
-	res = mono_img_writer_emit_writeout (acfg->w);
-	if (res != 0) {
-		acfg_free (acfg);
-		return res;
-	}
-	res = compile_asm (acfg);
-	if (res != 0) {
-		acfg_free (acfg);
-		return res;
+	if (acfg->w) {
+		res = mono_img_writer_emit_writeout (acfg->w);
+		if (res != 0) {
+			acfg_free (acfg);
+			return res;
+		}
+		res = compile_asm (acfg);
+		if (res != 0) {
+			acfg_free (acfg);
+			return res;
+		}
 	}
 	TV_GETTIME (btv);
 	acfg->stats.link_time = TV_ELAPSED (atv, btv);
