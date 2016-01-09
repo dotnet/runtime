@@ -153,7 +153,7 @@ namespace System.Net
                 ExecutionContext context = _context;
                 if (context != null)
                 {
-                    return context.CreateCopy();
+                    return context; // No need to copy on CoreCLR; ExecutionContext is immutable
                 }
 
                 // Make sure the context was requested.
@@ -183,8 +183,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                context = _context;
-                return context == null ? null : context.CreateCopy();
+                return _context; // No need to copy on CoreCLR; ExecutionContext is immutable
             }
         }
 
@@ -408,7 +407,7 @@ namespace System.Net
                     }
                     else
                     {
-                        _context = cachedContext.CreateCopy();
+                        _context = cachedContext;
                     }
                 }
 
@@ -484,11 +483,10 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext.Run((_flags & StateFlags.ThreadSafeContextCopy) != 0 ? context.CreateCopy() : context,
-                                 new ContextCallback(CompleteCallback), null);
+            ExecutionContext.Run(context, s => ((ContextAwareResult)s).CompleteCallback(), this);
         }
 
-        private void CompleteCallback(object state)
+        private void CompleteCallback()
         {
             if (GlobalLog.IsEnabled)
             {
