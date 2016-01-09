@@ -17,14 +17,18 @@
 {
   .class auto ansi App extends [mscorlib]System.Object
   {
+    .field private static bool signal
+
     .method private hidebysig instance void
             Func() il managed
     {
       .maxstack  8
       IL_0002:  call       void [mscorlib]System.GC::Collect()
-      			ldc.i4 100
-  		        call       void [mscorlib]System.Threading.Thread::Sleep(int32)
-      			br.s       IL_0002
+                ldc.i4 100
+                call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+                ldsfld     bool Test.App::signal
+                brfalse.s  IL_0002
+                ret
     } // end of method 'App::Func'
 
     .method private hidebysig static int32
@@ -48,7 +52,9 @@
       IL_0013:  ldloc.1
       IL_0014:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
       IL_0019:  stloc.2
-      IL_001a:  ldloc.2
+                ldc.i4.0
+                stsfld     bool  Test.App::signal
+      IL_001a:  ldloc.2     
       IL_001b:  call       instance void [mscorlib]System.Threading.Thread::Start()
       IL_0020:  ldc.r8     11.
       IL_0029:  stloc.s    V_5
@@ -67,48 +73,48 @@
       IL_0047:  ldind.r8
       IL_0048:  stloc.s    V_5
       IL_004a:  ldloca.s   V_5
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
-      			ldobj        [mscorlib]System.Double
-      			box        [mscorlib]System.Double
-      			unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
+                ldobj        [mscorlib]System.Double
+                box        [mscorlib]System.Double
+                unbox      [mscorlib]System.Double
       IL_0092:  ldind.r8
       IL_0093:  stloc.s    V_5
       IL_0095:  ldloc.s   V_5
@@ -129,8 +135,8 @@
       IL_00ba:  ldc.i4     50
       IL_00bf:  blt      IL_0041
 
-      IL_00c1:  ldloc.2
-      IL_00c2:  call       instance void [mscorlib]System.Threading.Thread::Abort()
+      IL_00c1:  ldc.i4.1
+      IL_00c2:  stsfld     bool  Test.App::signal
       IL_00c7:  ldstr      "**** PASSED ****"
       IL_00cc:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00d1:  ldc.i4    0x64
