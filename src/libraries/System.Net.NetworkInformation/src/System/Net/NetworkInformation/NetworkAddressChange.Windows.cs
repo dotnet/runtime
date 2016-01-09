@@ -79,7 +79,7 @@ namespace System.Net.NetworkInformation
                             }
                             else
                             {
-                                ExecutionContext.Run(context.CreateCopy(), s_RunHandlerCallback, handler);
+                                ExecutionContext.Run(context, s_RunHandlerCallback, handler);
                             }
                         }
                     }
@@ -172,7 +172,7 @@ namespace System.Net.NetworkInformation
                         }
                         else
                         {
-                            ExecutionContext.Run(context.CreateCopy(), s_runHandlerCallback, handler);
+                            ExecutionContext.Run(context, s_runHandlerCallback, handler);
                         }
                     }
                 }

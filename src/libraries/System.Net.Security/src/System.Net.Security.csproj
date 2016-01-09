@@ -105,9 +105,6 @@
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\ExecutionContext.cs">
-      <Link>Common\System\Net\Shims\ExecutionContext.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
       <Link>Common\System\Net\Shims\DBNull.cs</Link>
     </Compile>
