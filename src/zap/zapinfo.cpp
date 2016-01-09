@@ -4497,6 +4497,12 @@ bool ZapInfo::canTailCall(CORINFO_METHOD_HANDLE caller,
                                          CORINFO_METHOD_HANDLE exactCallee,
                                          bool fIsTailPrefix)
 {
+#ifdef FEATURE_READYTORUN_COMPILER
+    // READYTORUN: FUTURE: Delay load fixups for tailcalls
+    if (IsReadyToRunCompilation())
+        return false;
+#endif
+
     return m_pEEJitInfo->canTailCall(caller, declaredCallee, exactCallee, fIsTailPrefix);
 }
 
