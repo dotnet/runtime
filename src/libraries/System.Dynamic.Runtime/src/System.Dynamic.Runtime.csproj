@@ -28,6 +28,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
       <Link>Common\System\Dynamic\Utils\CacheDict.cs</Link>
     </Compile>
