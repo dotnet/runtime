@@ -96,14 +96,14 @@ bool pal::getenv(const char_t* name, string_t* recv)
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
         {
-            trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         }
         return false;
     }
     auto buf = new char_t[length];
     if (::GetEnvironmentVariableW(name, buf, length) == 0)
     {
-        trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
