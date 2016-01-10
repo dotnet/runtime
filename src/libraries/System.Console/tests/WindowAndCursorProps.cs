@@ -148,14 +148,17 @@ public class WindowAndCursorProps
     [OuterLoop] // clears the screen, not very inner-loop friendly
     public static void Clear()
     {
-        // Nothing to verify; just run the code.
-        Console.Clear();
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        {
+            // Nothing to verify; just run the code.
+            Console.Clear();
+        }
     }
 
     [Fact]
     public static void SetCursorPosition()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             int origLeft = Console.CursorLeft;
             int origTop = Console.CursorTop;
@@ -186,7 +189,7 @@ public class WindowAndCursorProps
             Assert.Equal(origLeft, Console.CursorLeft);
             Assert.Equal(origTop, Console.CursorTop);
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
