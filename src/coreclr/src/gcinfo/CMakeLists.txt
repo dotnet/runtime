@@ -1,4 +1,3 @@
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set( GCINFO_SOURCES
@@ -9,7 +8,7 @@ set( GCINFO_SOURCES
 if(CLR_CMAKE_PLATFORM_ARCH_I386)
   list(APPEND GCINFO_SOURCES
     ../gcdump/gcdump.cpp
-    ../gcdump/i386/gcdumpx86.cpp
+    ../gcdump/${ARCH_SOURCES_DIR}/gcdumpx86.cpp
   )
 endif(CLR_CMAKE_PLATFORM_ARCH_I386)
 
