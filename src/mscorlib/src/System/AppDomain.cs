@@ -3623,6 +3623,8 @@ namespace System {
 
             if(propertyNames!=null && propertyValues != null)
             {
+                char[] pathSeparators = null;
+                StringBuilder normalisedAppPathList = null;
                 for (int i=0; i<propertyNames.Length; i++)
                 {
                     
@@ -3675,20 +3677,32 @@ namespace System {
                         nSetNativeDllSearchDirectories(paths);
                     }
                     else
-                    if (propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
-                        propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
-                        propertyNames[i]=="APP_PATHS" ||
-                        propertyNames[i]=="APP_NI_PATHS")
+                    if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
+                       propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
+                       propertyNames[i]=="APP_PATHS" ||
+                       propertyNames[i]=="APP_NI_PATHS")
                     {
                         if(propertyValues[i]==null)
                             throw new ArgumentNullException(propertyNames[i]);
 
-                        StringBuilder normalisedAppPathList = new StringBuilder();
-                        foreach(string path in propertyValues[i].Split(Path.PathSeparator))
+                        int estimatedLength = propertyValues[i].Length + 1; // +1 for extra separator temporarily added at end
+                        if (normalisedAppPathList == null) {
+                            normalisedAppPathList = new StringBuilder(estimatedLength);
+                        }
+                        else {
+                            normalisedAppPathList.Clear();
+                            if (normalisedAppPathList.Capacity < estimatedLength)
+                                normalisedAppPathList.Capacity = estimatedLength;
+                        }
+
+                        if (pathSeparators == null)
+                            pathSeparators = new[] { Path.PathSeparator };
+
+                        foreach(string path in propertyValues[i].Split(pathSeparators))
                         {
                             if( path.Length==0 )                  // skip empty dirs
                                 continue;
-                               
+
                             if (Path.IsRelative(path))
                                 throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
 
