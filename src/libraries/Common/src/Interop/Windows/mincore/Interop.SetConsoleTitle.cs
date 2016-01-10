@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Console_L1, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "SetConsoleTitleW")]
+        [DllImport(Libraries.Console_L2, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "SetConsoleTitleW")]
         internal static extern bool SetConsoleTitle(string title);
     }
 }
