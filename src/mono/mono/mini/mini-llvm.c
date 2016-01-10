@@ -6251,7 +6251,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	char *method_name;
 	LLVMValueRef *values;
 	int i, max_block_num, bb_index;
-	gboolean last = FALSE;
+	gboolean last = FALSE, is_linkonce = FALSE;
 	GPtrArray *phi_values;
 	LLVMCallInfo *linfo;
 	GSList *l;
@@ -6300,7 +6300,28 @@ mono_llvm_emit_method (MonoCompile *cfg)
  
 	if (cfg->compile_aot) {
 		ctx->module = &aot_module;
-		method_name = mono_aot_get_method_name (cfg);
+
+		method_name = NULL;
+		/*
+		 * Allow the linker to discard duplicate copies of wrappers, generic instances etc. by using the 'linkonce'
+		 * linkage for them. This requires the following:
+		 * - the method needs to have a unique mangled name
+		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
+		 */
+		is_linkonce = ctx->module->llvm_only && ctx->module->static_link && mono_aot_is_linkonce_method (cfg->method);
+		if (is_linkonce) {
+			method_name = mono_aot_get_mangled_method_name (cfg->method);
+			if (!method_name)
+				is_linkonce = FALSE;
+			/*
+			if (method_name)
+				printf ("%s %s\n", mono_method_full_name (cfg->method, 1), method_name);
+			else
+				printf ("%s\n", mono_method_full_name (cfg->method, 1));
+			*/
+		}
+		if (!method_name)
+			method_name = mono_aot_get_method_name (cfg);
 		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
 		init_jit_module (cfg->domain);
@@ -6357,6 +6378,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		if (ctx->module->external_symbols) {
 			LLVMSetLinkage (method, LLVMExternalLinkage);
 			LLVMSetVisibility (method, LLVMHiddenVisibility);
+		}
+		if (is_linkonce) {
+			LLVMSetLinkage (method, LLVMLinkOnceAnyLinkage);
+			LLVMSetVisibility (method, LLVMDefaultVisibility);
 		}
 	} else {
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
@@ -7457,6 +7482,10 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	/* The first few entries are reserved */
 	module->max_got_offset = 16;
 	module->context = LLVMContextCreate ();
+
+	if (llvm_only)
+		/* clang ignores our debug info because it has an invalid version */
+		module->emit_dwarf = FALSE;
 
 	add_intrinsics (module->lmodule);
 	add_types (module);
