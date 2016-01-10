@@ -1,11 +1,11 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "common/trace.h"
-#include "common/pal.h"
-#include "common/utils.h"
+#include "trace.h"
+#include "pal.h"
+#include "utils.h"
+#include "libhost.h"
 
-extern const pal::char_t* g_LIBHOST_NAME;
 extern int corehost_main(const int argc, const pal::char_t* argv[]);
 
 namespace
@@ -36,7 +36,7 @@ typedef int (*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
 StatusCode load_host_lib(const pal::string_t& lib_dir, pal::dll_t* h_host, corehost_main_fn* main_fn)
 {
     pal::string_t host_path = lib_dir;
-    append_path(&host_path, g_LIBHOST_NAME);
+    append_path(&host_path, LIBHOST_NAME);
 
     // Missing library
     if (!pal::file_exists(host_path))
@@ -136,12 +136,7 @@ int main(const int argc, const pal::char_t* argv[])
         trace::info(_X("Calling host entrypoint from library at own dir %s"), own_dir.c_str());
         return host_main(argc, argv);
 
-    // DLL missing is not fatal.
-    case StatusCode::CoreHostLibMissingFailure:
-        trace::info(_X("Calling statically linked entrypoint from own exe"));
-        return corehost_main(argc, argv);
-
-    // Some other fatal error.
+    // Some other fatal error including StatusCode::CoreHostLibMissingFailure.
     default:
         trace::error(_X("Error loading the host library from own dir: %s; Status=%08X"), own_dir.c_str(), code);
         return code;

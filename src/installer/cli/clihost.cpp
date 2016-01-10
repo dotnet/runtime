@@ -8,8 +8,6 @@
 #include "utils.h"
 #include "coreclr.h"
 
-SHARED_API const pal::char_t* g_LIBHOST_NAME = MAKE_LIBNAME("clihost");
-
 enum StatusCode
 {
     // 0x80 prefix to distinguish from corehost main's error codes.
