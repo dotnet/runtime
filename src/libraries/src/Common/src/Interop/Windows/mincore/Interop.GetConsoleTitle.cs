@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Console_L1, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetConsoleTitleW")]
+        [DllImport(Libraries.Console_L2, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetConsoleTitleW")]
         private static extern int GetConsoleTitle([Out]StringBuilder title, int nSize);
 
         private const int InitialBufferSizeInChars = 256;
