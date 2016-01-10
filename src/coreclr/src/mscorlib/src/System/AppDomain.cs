@@ -3675,96 +3675,17 @@ namespace System {
                         nSetNativeDllSearchDirectories(paths);
                     }
                     else
-                    if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES")
+                    if (propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
+                        propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
+                        propertyNames[i]=="APP_PATHS" ||
+                        propertyNames[i]=="APP_NI_PATHS")
                     {
                         if(propertyValues[i]==null)
-                            throw new ArgumentNullException("TRUSTED_PLATFORM_ASSEMBLIES");
+                            throw new ArgumentNullException(propertyNames[i]);
 
                         StringBuilder normalisedAppPathList = new StringBuilder();
                         foreach(string path in propertyValues[i].Split(Path.PathSeparator))
                         {
-
-                            if( path.Length==0 )                  // skip empty dirs
-                                continue;
-                               
-                            if (Path.IsRelative(path))
-                                throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
-
-                            string appPath=Path.NormalizePath(path,true);
-                            normalisedAppPathList.Append(appPath);
-                            normalisedAppPathList.Append(Path.PathSeparator);
-                        }
-                        // Strip the last separator
-                        if (normalisedAppPathList.Length > 0)
-                        {
-                            normalisedAppPathList.Remove(normalisedAppPathList.Length - 1, 1);
-                        }
-                        ad.SetDataHelper(propertyNames[i],normalisedAppPathList.ToString(),null);        // not supported by fusion, so set explicitly                
-                    }
-                    else
-                    if(propertyNames[i]=="PLATFORM_RESOURCE_ROOTS")
-                    {
-                        if(propertyValues[i]==null)
-                            throw new ArgumentNullException("PLATFORM_RESOURCE_ROOTS");
-
-                        StringBuilder normalisedAppPathList = new StringBuilder();
-                        foreach(string path in propertyValues[i].Split(Path.PathSeparator))
-                        {
-
-                            if( path.Length==0 )                  // skip empty dirs
-                                continue;
-                               
-                            if (Path.IsRelative(path))
-                                throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
-
-                            string appPath=Path.NormalizePath(path,true);
-                            normalisedAppPathList.Append(appPath);
-                            normalisedAppPathList.Append(Path.PathSeparator);
-                        }
-                        // Strip the last separator
-                        if (normalisedAppPathList.Length > 0)
-                        {
-                            normalisedAppPathList.Remove(normalisedAppPathList.Length - 1, 1);
-                        }
-                        ad.SetDataHelper(propertyNames[i],normalisedAppPathList.ToString(),null);        // not supported by fusion, so set explicitly                
-                    }
-                    else
-                    if(propertyNames[i]=="APP_PATHS")
-                    {
-                        if(propertyValues[i]==null)
-                            throw new ArgumentNullException("APP_PATHS");
-
-                        StringBuilder normalisedAppPathList = new StringBuilder();
-                        foreach(string path in propertyValues[i].Split(Path.PathSeparator))
-                        {
-
-                            if( path.Length==0 )                  // skip empty dirs
-                                continue;
-                               
-                            if (Path.IsRelative(path))
-                                throw new ArgumentException( Environment.GetResourceString( "Argument_AbsolutePathRequired" ) );
-
-                            string appPath=Path.NormalizePath(path,true);
-                            normalisedAppPathList.Append(appPath);
-                            normalisedAppPathList.Append(Path.PathSeparator);
-                        }
-                        // Strip the last separator
-                        if (normalisedAppPathList.Length > 0)
-                        {
-                            normalisedAppPathList.Remove(normalisedAppPathList.Length - 1, 1);
-                        }
-                        ad.SetDataHelper(propertyNames[i],normalisedAppPathList.ToString(),null);        // not supported by fusion, so set explicitly                
-                    }
-                    else
-                    if(propertyNames[i]=="APP_NI_PATHS")
-                    {
-                        if(propertyValues[i]==null)
-                            throw new ArgumentNullException("APP_NI_PATHS");
-
-                        StringBuilder normalisedAppPathList = new StringBuilder();
-                        foreach(string path in propertyValues[i].Split(Path.PathSeparator))
-                        {
-
                             if( path.Length==0 )                  // skip empty dirs
                                 continue;
                                
