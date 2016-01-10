@@ -783,13 +783,7 @@ namespace System.IO {
                 return null;  // Unreachable - silence a compiler error.
             }
 
-            String returnVal = newBuffer.ToString();
-            if (String.Equals(returnVal, path, StringComparison.Ordinal))
-            {
-                returnVal = path;
-            }
-            return returnVal;
-
+            return newBuffer.ToStringOrExisting(path);
         }
         internal const int MaxLongPath = 32000;
 
