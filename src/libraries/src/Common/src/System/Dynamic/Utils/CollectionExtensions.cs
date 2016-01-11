@@ -37,22 +37,10 @@ namespace System.Dynamic.Utils
                 return builder.ToReadOnlyCollection();
             }
 
-            var collection = enumerable as ICollection<T>;
-            if (collection != null)
-            {
-                int count = collection.Count;
-                if (count == 0)
-                {
-                    return EmptyReadOnlyCollection<T>.Instance;
-                }
-
-                T[] clone = new T[count];
-                collection.CopyTo(clone, 0);
-                return new TrueReadOnlyCollection<T>(clone);
-            }
-
-            // ToArray trims the excess space and speeds up access
-            return new TrueReadOnlyCollection<T>(new List<T>(enumerable).ToArray());
+            T[] array = EnumerableHelpers.ToArray(enumerable);
+            return array.Length == 0 ?
+                EmptyReadOnlyCollection<T>.Instance :
+                new TrueReadOnlyCollection<T>(array);
         }
 
         // We could probably improve the hashing here
