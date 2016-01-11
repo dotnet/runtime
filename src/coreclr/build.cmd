@@ -1,5 +1,25 @@
 @if not defined __echo @echo off
-setlocal EnableDelayedExpansion
+setlocal EnableDelayedExpansion EnableExtensions
+
+set __ThisScriptShort=%0
+set __ThisScriptFull="%~f0"
+
+:: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
+::      __BuildArch         -- default: x64
+::      __BuildType         -- default: Debug
+::      __BuildOS           -- default: Windows_NT
+::      __ProjectDir        -- default: directory of the dir.props file
+::      __SourceDir         -- default: %__ProjectDir%\src\
+::      __PackagesDir       -- default: %__ProjectDir%\packages\
+::      __RootBinDir        -- default: %__ProjectDir%\bin\
+::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
+::      __IntermediatesDir
+::      __PackagesBinDir    -- default: %__BinDir%\.nuget
+::      __TestWorkingDir    -- default: %__RootBinDir%\tests\%__BuildOS%.%__BuildArch.%__BuildType%\
+::
+:: Thus, these variables are not simply internal to this script!
+::
+:: The UseRoslynCompiler variable is used by src\mscorlib\GenerateCompilerResponseFile.targets.
 
 :: Set the default arguments for build
 set __BuildArch=x64
@@ -36,6 +56,21 @@ set __BuildSequential=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 
+set __BuildAll=
+
+set __BuildArchX64=0
+set __BuildArchX86=0
+set __BuildArchArm=0
+set __BuildArchArm64=0
+
+set __BuildTypeDebug=0
+set __BuildTypeChecked=0
+set __BuildTypeRelease=0
+
+REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
+REM when using "all".
+set __PassThroughArgs=
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -46,14 +81,20 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                 (set __BuildArch=x64&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArch=x86&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArch=arm&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArch=arm64&shift&goto Arg_Loop)
+if /i "%1" == "all"                 (set __BuildAll=1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"               (set __BuildType=Debug&shift&goto Arg_Loop)
-if /i "%1" == "release"             (set __BuildType=Release&shift&goto Arg_Loop)
-if /i "%1" == "checked"             (set __BuildType=Checked&shift&goto Arg_Loop)
+if /i "%1" == "x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
+
+if /i "%1" == "debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
+if /i "%1" == "checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
+if /i "%1" == "release"             (set __BuildTypeRelease=1&shift&goto Arg_Loop)
+
+REM All arguments after this point will be passed through directly to build.cmd on nested invocations
+REM using the "all" argument, and must be added to the __PassThroughArgs variable.
+set __PassThroughArgs=%__PassThroughArgs% %1
 
 if /i "%1" == "clean"               (set __CleanBuild=1&shift&goto Arg_Loop)
 
@@ -69,14 +110,14 @@ if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "docrossgen"          (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
-if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
 
 @REM For backwards compatibility, continue accepting "skiptestbuild", which was the original name of the option.
 if /i "%1" == "skiptestbuild"       (set __SkipTestBuild=1&shift&goto Arg_Loop)
 
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
-if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -84,6 +125,7 @@ if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 shift
 if "%1"=="" goto ArgsDone
 set __msbuildExtraArgs=%__msbuildExtraArgs% %1
+set __PassThroughArgs=%__PassThroughArgs% %1
 goto CollectMsbuildArgs
 :SkipMsbuildArgs
 
@@ -96,6 +138,29 @@ if defined __SkipMscorlibBuild if defined __MscorlibOnly (
     echo Error: option 'skipmscorlib' is incompatible with 'freebsdmscorlib', 'linuxmscorlib', 'osxmscorlib', and 'windowsmscorlib'.
     goto Usage
 )
+
+if defined __BuildAll goto BuildAll
+
+set /A __TotalSpecifiedBuildArch=__BuildArchX64 + __BuildArchX86 + __BuildArchArm + __BuildArchArm64
+if %__TotalSpecifiedBuildArch% GTR 1 (
+    echo Error: more than one build architecture specified, but "all" not specified.
+    goto Usage
+)
+
+if %__BuildArchX64%==1      set __BuildArch=x64
+if %__BuildArchX86%==1      set __BuildArch=x86
+if %__BuildArchArm%==1      set __BuildArch=arm
+if %__BuildArchArm64%==1    set __BuildArch=arm64
+
+set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
+if %__TotalSpecifiedBuildType% GTR 1 (
+    echo Error: more than one build type specified, but "all" not specified.
+    goto Usage
+)
+
+if %__BuildTypeDebug%==1    set __BuildType=Debug
+if %__BuildTypeChecked%==1  set __BuildType=Checked
+if %__BuildTypeRelease%==1  set __BuildType=Release
 
 echo %__MsgPrefix%Commencing CoreCLR Repo build
 
@@ -196,7 +261,7 @@ if defined __SkipNativeBuild (
 echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 REM Use setlocal to restrict environment changes form vcvarsall.bat and more to just this native components build section.
-setlocal EnableDelayedExpansion
+setlocal EnableDelayedExpansion EnableExtensions
 
 if /i not "%__BuildArch%" == "arm64" goto NotArm64Build
 
@@ -343,7 +408,7 @@ if defined __SkipMscorlibBuild (
 echo %__MsgPrefix%Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
 REM setlocal to prepare for vsdevcmd.bat
-setlocal EnableDelayedExpansion
+setlocal EnableDelayedExpansion EnableExtensions
 
 rem Explicitly set Platform causes conflicts in mscorlib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
@@ -469,14 +534,92 @@ exit /b 0
 
 REM =========================================================================================
 REM ===
+REM === Handle the "all" case.
+REM ===
+REM =========================================================================================
+
+:BuildAll
+
+set __BuildArchList=
+
+set /A __TotalSpecifiedBuildArch=__BuildArchX64 + __BuildArchX86 + __BuildArchArm + __BuildArchArm64
+if %__TotalSpecifiedBuildArch% EQU 0 (
+    REM Nothing specified means we want to build all architectures.
+    set __BuildArchList=x64 x86 arm arm64
+)
+
+REM Otherwise, add all the specified architectures to the list.
+
+if %__BuildArchX64%==1      set __BuildArchList=%__BuildArchList% x64
+if %__BuildArchX86%==1      set __BuildArchList=%__BuildArchList% x86
+if %__BuildArchArm%==1      set __BuildArchList=%__BuildArchList% arm
+if %__BuildArchArm64%==1    set __BuildArchList=%__BuildArchList% arm64
+
+set __BuildTypeList=
+
+set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
+if %__TotalSpecifiedBuildType% EQU 0 (
+    REM Nothing specified means we want to build all build types.
+    set __BuildTypeList=Debug Checked Release
+)
+
+if %__BuildTypeDebug%==1    set __BuildTypeList=%__BuildTypeList% Debug
+if %__BuildTypeChecked%==1  set __BuildTypeList=%__BuildTypeList% Checked
+if %__BuildTypeRelease%==1  set __BuildTypeList=%__BuildTypeList% Release
+
+REM Create a temporary file to collect build results. We always build all flavors specified, and
+REM report a summary of the results at the end.
+
+set __AllBuildSuccess=true
+set __BuildResultFile=%TEMP%\build-all-summary-%RANDOM%.txt
+if exist %__BuildResultFile% del /f /q %__BuildResultFile%
+
+for %%i in (%__BuildArchList%) do (
+    for %%j in (%__BuildTypeList%) do (
+        call :BuildOne %%i %%j
+    )
+)
+
+if %__AllBuildSuccess%==true (
+    echo %__MsgPrefix%All builds succeeded!
+    exit /b 0
+) else (
+    echo %__MsgPrefix%Builds failed:
+    type %__BuildResultFile%
+    del /f /q %__BuildResultFile%
+    exit /b 1
+)
+
+REM This code is unreachable, but leaving it nonetheless, just in case things change.
+exit /b 99
+
+:BuildOne
+set __BuildArch=%1
+set __BuildType=%2
+set __NextCmd=call %__ThisScriptFull% %__BuildArch% %__BuildType% %__PassThroughArgs%
+echo %__MsgPrefix%Invoking: %__NextCmd%
+%__NextCmd%
+if errorlevel 1 (
+    echo %__MsgPrefix%    %__BuildArch% %__BuildType% %__PassThroughArgs% >> %__BuildResultFile%
+    set __AllBuildSuccess=false
+)
+exit /b 0
+
+REM =========================================================================================
+REM ===
 REM === Helper routines
 REM ===
 REM =========================================================================================
 
 :Usage
 echo.
+echo Build the CoreCLR repo.
+echo.
 echo Usage:
-echo     %0 [option1] [option2] ...
+echo     %__ThisScriptShort% [option1] [option2] ...
+echo or:
+echo     %__ThisScriptShort% all [option1] [option2] ...
+echo.
 echo All arguments are optional. The options are:
 echo.
 echo./? -? /h -h /help -help: view this message.
@@ -498,6 +641,18 @@ echo skipmscorlib: skip building mscorlib ^(default: mscorlib is built^).
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
+echo.
+echo If "all" is specified, then all build architectures and types are built. If, in addition,
+echo one or more build architectures or types is specified, then only those build architectures
+echo and types are built.
+echo.
+echo For example:
+echo     build all
+echo        -- builds all architectures, and all build types per architecture
+echo     build all x86
+echo        -- builds all build types for x86
+echo     build all x64 x86 Checked Release
+echo        -- builds x64 and x86 architectures, Checked and Release build types for each
 exit /b 1
 
 :NoVS
