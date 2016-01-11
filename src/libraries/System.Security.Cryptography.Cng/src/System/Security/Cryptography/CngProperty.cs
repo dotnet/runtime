@@ -48,10 +48,7 @@ namespace System.Security.Cryptography
 
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is CngProperty))
-                return false;
-
-            return Equals((CngProperty)obj);
+            return obj is CngProperty && Equals((CngProperty)obj);
         }
 
         public bool Equals(CngProperty other)

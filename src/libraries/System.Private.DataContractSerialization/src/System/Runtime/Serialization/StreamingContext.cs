@@ -40,12 +40,8 @@ namespace System.Runtime.Serialization
             {
                 return false;
             }
-            if (((StreamingContext)obj).m_additionalContext == m_additionalContext &&
-                ((StreamingContext)obj).m_state == m_state)
-            {
-                return true;
-            }
-            return false;
+            StreamingContext ctx = (StreamingContext)obj;
+            return ctx.m_additionalContext == m_additionalContext && ctx.m_state == m_state;
         }
 
         public override int GetHashCode()

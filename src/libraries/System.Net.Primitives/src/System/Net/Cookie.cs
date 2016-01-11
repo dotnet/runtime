@@ -772,14 +772,10 @@ namespace System.Net
 
         public override bool Equals(object comparand)
         {
-            if (!(comparand is Cookie))
-            {
-                return false;
-            }
+            Cookie other = comparand as Cookie;
 
-            Cookie other = (Cookie)comparand;
-
-            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
+            return other != null
+                    && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
                     && string.Equals(Domain, other.Domain, StringComparison.OrdinalIgnoreCase)

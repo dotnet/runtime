@@ -462,13 +462,7 @@ namespace Windows.UI.Xaml.Media.Media3D
 
         public override bool Equals(object o)
         {
-            if ((null == o) || !(o is Matrix3D))
-            {
-                return false;
-            }
-
-            Matrix3D value = (Matrix3D)o;
-            return Matrix3D.Equals(this, value);
+            return o is Matrix3D && Matrix3D.Equals(this, (Matrix3D)o);
         }
 
         public bool Equals(Matrix3D value)

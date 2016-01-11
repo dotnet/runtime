@@ -346,13 +346,7 @@ namespace Windows.Foundation
 
         public override bool Equals(object o)
         {
-            if ((null == o) || !(o is Rect))
-            {
-                return false;
-            }
-
-            Rect value = (Rect)o;
-            return (this == value);
+            return o is Rect && this == (Rect)o;
         }
 
         public override int GetHashCode()
