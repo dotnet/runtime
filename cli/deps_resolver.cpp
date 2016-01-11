@@ -340,7 +340,7 @@ bool deps_resolver_t::load()
 }
 
 // -----------------------------------------------------------------------------
-// Resolve path to the deps file from "args" and parse the deps file.
+// Parse the deps file.
 //
 // Returns:
 //    True if the file parse is successful or if file doesn't exist. False,
@@ -348,14 +348,7 @@ bool deps_resolver_t::load()
 //
 bool deps_resolver_t::parse_deps_file(const arguments_t& args)
 {
-    const auto& app_base = args.app_dir;
-    auto app_name = get_filename(args.managed_application);
-
-    m_deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
-    m_deps_path.append(app_base);
-    m_deps_path.push_back(DIR_SEPARATOR);
-    m_deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
-    m_deps_path.append(_X(".deps"));
+    m_deps_path = args.deps_path;
 
     return load();
 }

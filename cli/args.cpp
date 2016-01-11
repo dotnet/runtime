@@ -10,7 +10,8 @@ arguments_t::arguments_t() :
     own_path(_X("")),
     app_dir(_X("")),
     app_argc(0),
-    app_argv(nullptr)
+    app_argv(nullptr),
+    deps_path(_X(""))
 {
 }
 
@@ -70,6 +71,35 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         args.app_dir = own_dir;
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;
+    }
+
+    if(args.app_argc > 0)
+    {
+        auto depsfile_candidate = pal::string_t(args.app_argv[0]);
+        
+        if (starts_with(depsfile_candidate, s_depsArgPrefix))
+        {
+            args.deps_path = depsfile_candidate.substr(s_depsArgPrefix.length());
+            if (!pal::realpath(&args.deps_path))
+            {
+                trace::error(_X("Failed to locate deps file: %s"), args.deps_path.c_str());
+                return false;
+            }            
+            args.app_argc = args.app_argc - 1;
+            args.app_argv = &args.app_argv[1];
+        }
+    }
+    
+    if (args.deps_path.empty())
+    {
+        const auto& app_base = args.app_dir;
+        auto app_name = get_filename(args.managed_application);
+
+        args.deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
+        args.deps_path.append(app_base);
+        args.deps_path.push_back(DIR_SEPARATOR);
+        args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
+        args.deps_path.append(_X(".deps"));
     }
 
     pal::getenv(_X("DOTNET_PACKAGES"), &args.dotnet_packages);
