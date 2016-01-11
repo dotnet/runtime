@@ -92,7 +92,8 @@ static z_stream* GetCurrentZStream(PAL_ZStream* stream)
     return zStream;
 }
 
-extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy)
+extern "C" int32_t CompressionNative_DeflateInit2_(
+    PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy)
 {
     assert(stream != nullptr);
 
@@ -105,7 +106,7 @@ extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t met
     return result;
 }
 
-extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
+extern "C" int32_t CompressionNative_Deflate(PAL_ZStream* stream, int32_t flush)
 {
     assert(stream != nullptr);
 
@@ -116,7 +117,7 @@ extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
     return result;
 }
 
-extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
+extern "C" int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream)
 {
     assert(stream != nullptr);
 
@@ -127,7 +128,7 @@ extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
     return result;
 }
 
-extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
+extern "C" int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
 {
     assert(stream != nullptr);
 
@@ -140,7 +141,7 @@ extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
     return result;
 }
 
-extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
+extern "C" int32_t CompressionNative_Inflate(PAL_ZStream* stream, int32_t flush)
 {
     assert(stream != nullptr);
 
@@ -151,7 +152,7 @@ extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
     return result;
 }
 
-extern "C" int32_t InflateEnd(PAL_ZStream* stream)
+extern "C" int32_t CompressionNative_InflateEnd(PAL_ZStream* stream)
 {
     assert(stream != nullptr);
 
@@ -162,7 +163,7 @@ extern "C" int32_t InflateEnd(PAL_ZStream* stream)
     return result;
 }
 
-extern "C" uint32_t Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
+extern "C" uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
 {
     assert(buffer != nullptr);
 
