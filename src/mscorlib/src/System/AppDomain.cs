@@ -3623,7 +3623,9 @@ namespace System {
 
             if(propertyNames!=null && propertyValues != null)
             {
+#if FEATURE_CORECLR
                 StringBuilder normalisedAppPathList = null;
+#endif // FEATURE_CORECLR
                 for (int i=0; i<propertyNames.Length; i++)
                 {
                     if(propertyNames[i]=="APPBASE") // make sure in sync with Fusion
