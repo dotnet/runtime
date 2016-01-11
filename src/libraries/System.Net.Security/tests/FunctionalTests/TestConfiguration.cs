@@ -14,7 +14,7 @@ namespace System.Net.Security.Tests
         public const int PassingTestTimeoutMilliseconds = 15 * 1000;
         public const int FailingTestTimeoutMiliseconds = 250;
 
-        public const string HttpsTestServer = "corefx-networking.azurewebsites.net";
+        public const string HttpsTestServer = "corefx-net.azurewebsites.net";
 
         private const string CertificatePassword = "testcertificate";
         private const string TestDataFolder = "TestData";
