@@ -36,7 +36,9 @@
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj"/>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj"/>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <AdditionalProperties>OSGroup=AnyOS</AdditionalProperties>
+    </ProjectReference>
     <Compile Include="System\IO\StreamOperationAsyncResult.dotnet53.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
