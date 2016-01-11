@@ -172,7 +172,7 @@
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
   </ItemGroup>

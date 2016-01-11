@@ -16,12 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <Name>System.Runtime</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
-      <Name>System.Diagnostics.Debug</Name>
+      <AdditionalProperties>OSGroup=Windows_NT</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
