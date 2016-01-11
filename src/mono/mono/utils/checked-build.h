@@ -88,12 +88,17 @@ Functions that can be called from both coop or preept modes.
 		void* __critical_gc_region_cookie = critical_gc_region_begin()
 
 #define MONO_FINISH_GC_CRITICAL_REGION			\
-	critical_gc_region_end(__critical_gc_region_cookie);	\
+		critical_gc_region_end(__critical_gc_region_cookie);	\
 	} while(0)
 
 /* Verify that the thread is not currently in a GC critical region. */
 #define MONO_REQ_GC_NOT_CRITICAL do {			\
 		assert_not_in_gc_critical_region();	\
+	} while(0)
+
+/* Verify that the thread is currently in a GC critical region. */
+#define MONO_REQ_GC_CRITICAL do {			\
+		assert_in_gc_critical_region();	\
 	} while(0)
 
 // Use when writing a pointer from one image or imageset to another.
@@ -137,6 +142,7 @@ void assert_gc_neutral_mode (void);
 void* critical_gc_region_begin(void);
 void critical_gc_region_end(void* token);
 void assert_not_in_gc_critical_region(void);
+void assert_in_gc_critical_region (void);
 
 void checked_build_init (void);
 void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
@@ -158,6 +164,7 @@ void check_metadata_store_local(void *from, void *to);
 #define MONO_FINISH_GC_CRITICAL_REGION
 
 #define MONO_REQ_GC_NOT_CRITICAL
+#define MONO_REQ_GC_CRITICAL
 
 
 #define CHECKED_MONO_INIT()

@@ -15,6 +15,8 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/class.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/checked-build.h>
 
 G_BEGIN_DECLS
 
@@ -103,7 +105,7 @@ mono_handle_elevate (MonoHandle handle)
 static inline void
 mono_handle_check_in_critical_section ()
 {
-	MONO_REQ_GC_UNSAFE_MODE;
+	MONO_REQ_GC_CRITICAL;
 }
 
 #define mono_handle_obj(handle) (mono_handle_check_in_critical_section (), (handle)->__private_obj)

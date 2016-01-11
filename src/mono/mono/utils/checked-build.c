@@ -253,10 +253,16 @@ assert_not_in_gc_critical_region(void)
 {
 	CheckState *state = get_state();
 	if (state->in_gc_critical_region > 0) {
-		MonoThreadInfo *cur = mono_thread_info_current();
-		state = mono_thread_info_current_state(cur);
-		assertion_fail("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name(state));
+		assertion_fail("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name (mono_thread_info_current_state (mono_thread_info_current ())));
 	}
+}
+
+void
+assert_in_gc_critical_region (void)
+{
+	CheckState *state = get_state();
+	if (state->in_gc_critical_region == 0)
+		assertion_fail("Expected GC critical region");
 }
 
 // check_metadata_store et al: The goal of these functions is to verify that if there is a pointer from one mempool into
