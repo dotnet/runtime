@@ -37,9 +37,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b108129\b108129\*" >
             <Issue>2234</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b99969\b99969\*" >
-            <Issue>2286</Issue>
-        </ExcludeList>
 	<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
 	     <Issue>2329</Issue>
 	</ExcludeList>
