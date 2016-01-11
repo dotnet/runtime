@@ -1927,14 +1927,6 @@ ves_icall_MonoField_ResolveType (MonoReflectionField *ref_field)
 	return mono_type_get_object (mono_object_domain (ref_field), type);
 }
 
-ICALL_EXPORT MonoReflectionType*
-ves_icall_MonoGenericMethod_get_ReflectedType (MonoReflectionGenericMethod *rmethod)
-{
-	MonoMethod *method = rmethod->method.method;
-
-	return mono_type_get_object (mono_object_domain (rmethod), &method->klass->byval_arg);
-}
-
 /* From MonoProperty.cs */
 typedef enum {
 	PInfo_Attributes = 1,
