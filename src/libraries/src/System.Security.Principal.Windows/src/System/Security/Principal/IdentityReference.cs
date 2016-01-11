@@ -27,7 +27,7 @@ namespace System.Security.Principal
             object l = left;
             object r = right;
 
-            if (l == null && r == null)
+            if (l == r)
             {
                 return true;
             }

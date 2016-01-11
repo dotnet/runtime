@@ -95,13 +95,7 @@ namespace Windows.Foundation
 
         public override bool Equals(object o)
         {
-            if ((null == o) || !(o is Point))
-            {
-                return false;
-            }
-
-            Point value = (Point)o;
-            return (this == value);
+            return o is Point && this == (Point)o;
         }
 
         public bool Equals(Point value)

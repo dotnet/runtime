@@ -61,12 +61,7 @@ namespace Windows.UI.Xaml.Media.Animation
 
         public override bool Equals(object value)
         {
-            if (value == null || !(value is KeyTime))
-            {
-                return false;
-            }
-
-            return this == (KeyTime)value;
+            return value is KeyTime && this == (KeyTime)value;
         }
 
         public override int GetHashCode()

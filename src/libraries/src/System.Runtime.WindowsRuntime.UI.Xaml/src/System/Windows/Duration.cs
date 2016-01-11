@@ -255,18 +255,7 @@ namespace Windows.UI.Xaml
 
         public override bool Equals(Object value)
         {
-            if (value == null)
-            {
-                return false;
-            }
-            else if (value is Duration)
-            {
-                return Equals((Duration)value);
-            }
-            else
-            {
-                return false;
-            }
+            return value is Duration && Equals((Duration)value);
         }
 
         public bool Equals(Duration duration)

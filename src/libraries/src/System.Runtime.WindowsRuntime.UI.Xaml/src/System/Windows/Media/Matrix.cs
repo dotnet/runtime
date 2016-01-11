@@ -189,13 +189,7 @@ namespace Windows.UI.Xaml.Media
 
         public override bool Equals(object o)
         {
-            if ((null == o) || !(o is Matrix))
-            {
-                return false;
-            }
-
-            Matrix value = (Matrix)o;
-            return Matrix.Equals(this, value);
+            return o is Matrix && Matrix.Equals(this, (Matrix)o);
         }
 
         public bool Equals(Matrix value)
