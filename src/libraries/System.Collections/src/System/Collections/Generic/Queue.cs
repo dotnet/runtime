@@ -276,12 +276,7 @@ namespace System.Collections.Generic
             EqualityComparer<T> c = EqualityComparer<T>.Default;
             while (count-- > 0)
             {
-                if (((Object)item) == null)
-                {
-                    if (((Object)_array[index]) == null)
-                        return true;
-                }
-                else if (_array[index] != null && c.Equals(_array[index], item))
+                if (c.Equals(_array[index], item))
                 {
                     return true;
                 }
