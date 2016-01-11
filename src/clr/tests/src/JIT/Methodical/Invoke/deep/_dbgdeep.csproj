@@ -28,7 +28,7 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
-    <Optimize></Optimize>
+    <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="deep.cs" />

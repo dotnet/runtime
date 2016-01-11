@@ -29,7 +29,7 @@
   </ItemGroup>
   <PropertyGroup>
     
-    <Optimize>False</Optimize>
+    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TailcallVerifyWithPrefix.il TailcallVerifyTransparentLibraryWithPrefix.il TailcallVerifyVerifiableLibraryWithPrefix.il" />

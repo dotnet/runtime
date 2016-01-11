@@ -28,7 +28,7 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <Optimize>False</Optimize>
+    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="b38269.cs" />
