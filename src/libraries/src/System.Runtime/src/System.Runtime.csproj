@@ -27,7 +27,9 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj"/>
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
+      <AdditionalProperties>OSGroup=Windows_NT</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <TargetingPackReference Include="mscorlib"/>
