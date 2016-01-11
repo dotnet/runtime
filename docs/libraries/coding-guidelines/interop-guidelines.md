@@ -285,6 +285,10 @@ one flavor's ABI and the shim's ABI.
     API.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it
     turns out there are many cases where being strictly 1:1 isn't practical.
+  - In order to reduce the chance of collisions when linking with CoreRT, all
+    exports should have a prefix that corresponds to the Libraries' name, e.g.
+    "SystemNative_" or "CryptoNative_" to make the method name more unique.
+    See https://github.com/dotnet/corefx/issues/4818.
 - Stick to data types which are guaranteed not to vary in size across flavors.
   - Use int32_t, int64_t, etc. from stdint.h and not int, long, etc.
   - Use char* for ASCII or UTF-8 strings and uint8_t* for byte buffers.
