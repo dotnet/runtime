@@ -449,12 +449,14 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
+        [ActiveIssue(5234, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAsync_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
+        [ActiveIssue(5234, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv4()
         {
