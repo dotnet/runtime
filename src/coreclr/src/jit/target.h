@@ -726,7 +726,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM15
   #define FIRST_FP_ARGREG          REG_XMM0
-  #define LAST_FP_ARGREG           REG_XMM3
+
+#ifdef    UNIX_AMD64_ABI
+  #define LAST_FP_ARGREG        REG_XMM7
+#else // !UNIX_AMD64_ABI
+  #define LAST_FP_ARGREG        REG_XMM3
+#endif // !UNIX_AMD64_ABI
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define TINY_REGNUM_BITS         6       // number used in a tiny instrdesc (same)
