@@ -20,8 +20,7 @@ bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
 
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix)
 {
-    return prefix.length() <= value.length() &&
-        (0 == value.compare(0, prefix.length(), prefix));
+    return value.find(prefix.c_str(), 0, prefix.length()) == 0;
 }
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
