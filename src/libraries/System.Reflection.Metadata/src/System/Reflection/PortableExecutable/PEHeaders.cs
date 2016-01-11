@@ -55,12 +55,12 @@ namespace System.Reflection.PortableExecutable
         {
             if (peStream == null)
             {
-                throw new ArgumentNullException("peStream");
+                throw new ArgumentNullException(nameof(peStream));
             }
 
             if (!peStream.CanRead || !peStream.CanSeek)
             {
-                throw new ArgumentException(SR.StreamMustSupportReadAndSeek, "peStream");
+                throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
             int size = PEBinaryReader.GetAndValidateSize(peStream, sizeOpt);
