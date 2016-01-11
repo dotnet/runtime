@@ -88,10 +88,10 @@ namespace System.Resources
             while (totalRead != stringLength);
 
             if (utf16) {
-                return Encoding.Unicode.GetString(buffer);
+                return Encoding.Unicode.GetString(buffer, 0, buffer.Length);
             }
             else {
-                return Encoding.UTF8.GetString(buffer);
+                return Encoding.UTF8.GetString(buffer, 0, buffer.Length);
             }
         }
 
