@@ -3623,11 +3623,9 @@ namespace System {
 
             if(propertyNames!=null && propertyValues != null)
             {
-                char[] pathSeparators = null;
                 StringBuilder normalisedAppPathList = null;
                 for (int i=0; i<propertyNames.Length; i++)
                 {
-                    
                     if(propertyNames[i]=="APPBASE") // make sure in sync with Fusion
                     {
                         if(propertyValues[i]==null)
@@ -3682,10 +3680,11 @@ namespace System {
                        propertyNames[i]=="APP_PATHS" ||
                        propertyNames[i]=="APP_NI_PATHS")
                     {
-                        if(propertyValues[i]==null)
+                        string values = propertyValues[i];
+                        if(values==null)
                             throw new ArgumentNullException(propertyNames[i]);
 
-                        int estimatedLength = propertyValues[i].Length + 1; // +1 for extra separator temporarily added at end
+                        int estimatedLength = values.Length + 1; // +1 for extra separator temporarily added at end
                         if (normalisedAppPathList == null) {
                             normalisedAppPathList = new StringBuilder(estimatedLength);
                         }
@@ -3695,11 +3694,22 @@ namespace System {
                                 normalisedAppPathList.Capacity = estimatedLength;
                         }
 
-                        if (pathSeparators == null)
-                            pathSeparators = new[] { Path.PathSeparator };
-
-                        foreach(string path in propertyValues[i].Split(pathSeparators))
+                        for (int pos = 0; pos < values.Length; pos++)
                         {
+                            string path;
+
+                            int nextPos = values.IndexOf(Path.PathSeparator, pos);
+                            if (nextPos == -1)
+                            {
+                                path = values.Substring(pos);
+                                pos = values.Length - 1;
+                            }
+                            else
+                            {
+                                path = values.Substring(pos, nextPos - pos);
+                                pos = nextPos;
+                            }
+
                             if( path.Length==0 )                  // skip empty dirs
                                 continue;
 
