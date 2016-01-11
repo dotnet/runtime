@@ -416,6 +416,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LingerOption.cs">
       <Link>Interop\Unix\System.Native\Interop.LingerOption.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetSendTimeout.cs">
+      <Link>Interop\Unix\System.Native\Interop.SetSendTimeout.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetReceiveTimeout.cs">
+      <Link>Interop\Unix\System.Native\Interop.SetReceiveTimeout.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Listen.cs">
       <Link>Interop\Unix\System.Native\Interop.Listen.cs</Link>
     </Compile>

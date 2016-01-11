@@ -461,20 +461,9 @@ namespace System.Net.Sockets
             {
                 Debug.Assert(fd != -1);
 
-                // If the accept completed successfully, ensure that the accepted socket is non-blocking.
-                int err = Interop.Sys.Fcntl.SetIsNonBlocking((IntPtr)fd, 1);
-                if (err == 0)
-                {
-                    socketAddressLen = sockAddrLen;
-                    errorCode = SocketError.Success;
-                    acceptedFd = fd;
-                }
-                else
-                {
-                    errorCode = GetSocketErrorForErrorCode(Interop.Sys.GetLastError());
-                    acceptedFd = -1;
-                    Interop.Sys.Close((IntPtr)fd);
-                }
+                socketAddressLen = sockAddrLen;
+                errorCode = SocketError.Success;
+                acceptedFd = fd;
 
                 return true;
             }
@@ -692,10 +681,6 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeCloseSocket handle, bool shouldBlock, out bool willBlock)
         {
-            // NOTE: since we need to emulate blocking I/O on *nix (!), this does NOT change the blocking
-            //       mode of the socket. Instead, it toggles a bit on the handle to indicate whether or not
-            //       the PAL methods with blocking semantics should retry in the case of an operation that
-            //       cannot be completed synchronously.
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;
             return SocketError.Success;
@@ -901,21 +886,25 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
+            Interop.Error err;
+
             if (optionLevel == SocketOptionLevel.Socket)
             {
                 if (optionName == SocketOptionName.ReceiveTimeout)
                 {
                     handle.ReceiveTimeout = optionValue == 0 ? -1 : optionValue;
-                    return SocketError.Success;
+                    err = Interop.Sys.SetReceiveTimeout(handle.FileDescriptor, optionValue);
+                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
                 }
                 else if (optionName == SocketOptionName.SendTimeout)
                 {
                     handle.SendTimeout = optionValue == 0 ? -1 : optionValue;
-                    return SocketError.Success;
+                    err = Interop.Sys.SetSendTimeout(handle.FileDescriptor, optionValue);
+                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
                 }
             }
 
-            Interop.Error err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
+            err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
