@@ -18,6 +18,11 @@ bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
         (0 == value.compare(value.length() - suffix.length(), suffix.length(), suffix));
 }
 
+bool starts_with(const pal::string_t& value, const pal::string_t& prefix)
+{
+    return value.find(prefix.c_str(), 0, prefix.length()) == 0;
+}
+
 void append_path(pal::string_t* path1, const pal::char_t* path2)
 {
     if (pal::is_path_rooted(path2))

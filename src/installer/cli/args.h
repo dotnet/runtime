@@ -8,10 +8,13 @@
 #include "pal.h"
 #include "trace.h"
 
+static const pal::string_t s_depsArgPrefix = _X("--depsfile:");
+
 struct arguments_t
 {
     pal::string_t own_path;
     pal::string_t app_dir;
+    pal::string_t deps_path;
     pal::string_t dotnet_servicing;
     pal::string_t dotnet_runtime_servicing;
     pal::string_t dotnet_home;
