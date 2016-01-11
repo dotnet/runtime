@@ -432,7 +432,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         threadCtr++;
     }
 
-    if (!bDoGcHist && ((file = fopen(fileName, "w")) != NULL))
+    if (!bDoGcHist && ((file = fopen(fileName, "w")) == NULL))
     {
         hr = GetLastError();
         goto FREE_MEM;
