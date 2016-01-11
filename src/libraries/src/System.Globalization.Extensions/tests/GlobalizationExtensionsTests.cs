@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class GlobalizationExtensionsTests
     {
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
         [Fact]
         public static void CompareInfoThrows()
         {
@@ -20,7 +23,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public static void CompareInfoBasicTests()
         {
             string one = "A test string";
@@ -43,15 +45,28 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         [InlineData("abc", "def", -1, "fr-FR", CompareOptions.IgnoreCase)]
         [InlineData("abc", "ABC", 0, "fr-FR", CompareOptions.IgnoreCase)]
         [InlineData("def", "ABC", 1, "fr-FR", CompareOptions.IgnoreCase)]
         [InlineData("abc", "ABC", 32, "en-US", CompareOptions.Ordinal)]     // this test generates a 32 for some reason
         [InlineData("abc", "ABC", 0, "en-US", CompareOptions.OrdinalIgnoreCase)]
         [InlineData("Cot\u00E9", "cot\u00E9", 0, "fr-FR", CompareOptions.IgnoreCase)]
-        [InlineData("cot\u00E9", "c\u00F4te", 1, "fr-FR", CompareOptions.None)]
-        public static void CompareVarying(string one, string two, int compareValue, string culture, CompareOptions compareOptions)
+        public static void CompareVaryingTheory(string one, string two, int compareValue, string culture, CompareOptions compareOptions)
+        {
+            CompareVarying(one, two, compareValue, culture, compareOptions);
+        }
+
+        // some strings compare in different order between Windows and ICU
+        [Theory]
+        [InlineData("cot\u00E9", "c\u00F4te", 1, -1, "fr-FR", CompareOptions.None)]
+        public static void CompareVaryingDiffCompareValue(string one, string two, int windowsCompareValue, int nonWindowsCompareValue,
+            string culture, CompareOptions compareOptions)
+        {
+            int compareValue = s_isWindows ? windowsCompareValue : nonWindowsCompareValue;
+            CompareVarying(one, two, compareValue, culture, compareOptions);
+        }
+
+        private static void CompareVarying(string one, string two, int compareValue, string culture, CompareOptions compareOptions)
         {
             StringComparer comp = new CultureInfo(culture).CompareInfo.GetStringComparer(compareOptions);
 
@@ -67,7 +82,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public static void CompareInfoIdentityTests()
         {
             StringComparer us = new CultureInfo("en-US").CompareInfo.GetStringComparer(CompareOptions.IgnoreCase);
