@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Sockets;
+using System.Net.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -16,11 +17,11 @@ namespace System.Net.Security.Tests
         {
             using (var client = new TcpClient(AddressFamily.InterNetwork))
             {
-                await client.ConnectAsync(TestConfiguration.HttpsTestServer, 443);
+                await client.ConnectAsync(HttpTestServers.Host, 443);
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
-                    await sslStream.AuthenticateAsClientAsync(TestConfiguration.HttpsTestServer);
+                    await sslStream.AuthenticateAsClientAsync(HttpTestServers.Host);
                 }
             }
         }
