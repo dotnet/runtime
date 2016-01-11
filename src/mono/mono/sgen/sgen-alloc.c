@@ -426,8 +426,6 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
 
-#ifndef DISABLE_CRITICAL_REGION
-
 	if (G_UNLIKELY (has_per_allocation_action)) {
 		static int alloc_count;
 		int current_alloc = InterlockedIncrement (&alloc_count);
@@ -452,7 +450,7 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 		return res;
 	}
 	EXIT_CRITICAL_REGION;
-#endif
+
 	LOCK_GC;
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;

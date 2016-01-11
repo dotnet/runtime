@@ -675,8 +675,6 @@ extern MonoNativeTlsKey thread_info_key;
 #define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
 #endif
 
-#ifndef DISABLE_CRITICAL_REGION
-
 #ifdef HAVE_KW_THREAD
 #define IN_CRITICAL_REGION sgen_thread_info->client_info.in_critical_region
 #else
@@ -690,8 +688,6 @@ extern MonoNativeTlsKey thread_info_key;
  * We don't need to emit a full barrier since we
  */
 #define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
-
-#endif
 
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
