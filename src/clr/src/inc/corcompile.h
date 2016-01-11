@@ -249,7 +249,9 @@ enum CorCompileHeaderFlags
 struct CORCOMPILE_HEADER
 {
     // For backward compatibility reasons, VersionInfo field must be at offset 40, ManifestMetaData
-    // must be at 88, size of CORCOMPILE_HEADER must be 164/168 bytes.  Be careful when you modify this struct.  See code:PEDecoder::GetMetaDataHelper.
+    // must be at 88, PEKind must be at 112/116 bytes, Machine must be at 120/124 bytes, and
+    // size of CORCOMPILE_HEADER must be 164/168 bytes.  Be careful when you modify this struct.
+    // See code:PEDecoder::GetMetaDataHelper.
     DWORD                   Signature;
     USHORT                  MajorVersion;
     USHORT                  MinorVersion;
@@ -274,7 +276,6 @@ struct CORCOMPILE_HEADER
                                                 // training data. They can also be used to have better nidump support for
                                                 // decoding virtual section information ( start - end ranges for each
                                                 // virtual section )
-    IMAGE_DATA_DIRECTORY    EEInfoTable;    // points to a code:CORCOMPILE_EE_INFO_TABLE
 
     TADDR                   ImageBase;      // Actual image base address (ASLR fakes the image base in PE header while applying relocations in kernel)
     DWORD                   Flags;          // Flags, see CorCompileHeaderFlags above
@@ -284,6 +285,8 @@ struct CORCOMPILE_HEADER
     ULONG                   COR20Flags;     // Cached value of code:IMAGE_COR20_HEADER.Flags from original IL image
     WORD                    Machine;        // Cached value of _IMAGE_FILE_HEADER.Machine from original IL image
     WORD                    Characteristics;// Cached value of _IMAGE_FILE_HEADER.Characteristics from original IL image
+
+    IMAGE_DATA_DIRECTORY    EEInfoTable;    // points to a code:CORCOMPILE_EE_INFO_TABLE
 
     // For backward compatibility (see above)
     IMAGE_DATA_DIRECTORY    Dummy1;
