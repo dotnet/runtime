@@ -67,6 +67,7 @@ namespace System.Net.Sockets.Tests
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
         }
 
+        [ActiveIssue(5291, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectAsyncV6IPEndPointToV6Host_Success()
         {
