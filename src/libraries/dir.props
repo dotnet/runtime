@@ -11,10 +11,6 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00144</BuildToolsVersion>
-    <DnxVersion>1.0.0-rc2-16128</DnxVersion>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
@@ -49,7 +45,10 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
+    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/bin/</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
 
     <!-- Packaging configuration -->
@@ -63,6 +62,9 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
   </PropertyGroup>
+
+  <!-- Import Build tools common props file where repo-independent properties are found -->
+  <Import Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Test runtime -->
   <PropertyGroup>
@@ -140,6 +142,9 @@
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+    <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
 
@@ -416,19 +421,6 @@
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Work around known Dev14 bug - see
-         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
-    -->
-    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
-    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
-    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
-    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
-    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
-    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
-    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
 
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
