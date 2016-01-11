@@ -1422,15 +1422,18 @@ namespace System.Collections.Generic
             }
             else
             {
-                T[] elements = EnumerableHelpers.ToArray(other);
-                Array.Sort(elements, this.Comparer);
-                SymmetricExceptWithSameEC(elements);
+                int length;
+                T[] elements = EnumerableHelpers.ToArray(other, out length);
+                Array.Sort(elements, 0, length, Comparer);
+                SymmetricExceptWithSameEC(elements, length);
             }
         }
 
-        //OTHER must be a set
-        internal void SymmetricExceptWithSameEC(ISet<T> other)
+        private void SymmetricExceptWithSameEC(SortedSet<T> other)
         {
+            Debug.Assert(other != null);
+            Debug.Assert(AreComparersEqual(this, other));
+
             foreach (T item in other)
             {
                 //yes, it is classier to say
@@ -1448,18 +1451,21 @@ namespace System.Collections.Generic
         }
 
         //OTHER must be a sorted array
-        internal void SymmetricExceptWithSameEC(T[] other)
+        private void SymmetricExceptWithSameEC(T[] other, int count)
         {
-            if (other.Length == 0)
+            Debug.Assert(other != null);
+            Debug.Assert(count >= 0 && count <= other.Length);
+
+            if (count == 0)
             {
                 return;
             }
             T last = other[0];
-            for (int i = 0; i < other.Length; i++)
+            for (int i = 0; i < count; i++)
             {
-                while (i < other.Length && i != 0 && _comparer.Compare(other[i], last) == 0)
+                while (i < count && i != 0 && _comparer.Compare(other[i], last) == 0)
                     i++;
-                if (i >= other.Length)
+                if (i >= count)
                     break;
                 if (this.Contains(other[i]))
                 {
