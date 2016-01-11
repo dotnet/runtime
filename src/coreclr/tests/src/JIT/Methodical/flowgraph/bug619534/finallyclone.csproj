@@ -28,7 +28,7 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="finallyclone.cs" />

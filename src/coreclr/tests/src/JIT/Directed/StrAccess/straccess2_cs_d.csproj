@@ -28,7 +28,7 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
-    <Optimize></Optimize>
+    <Optimize>False</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
