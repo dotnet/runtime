@@ -2884,40 +2884,27 @@ void Lowering::LowerCmp(GenTreePtr tree)
             }
         }
     }
-    else if (op2->isMemoryOp())
-    {
-        if (op1Type == op2Type)
-        {
-            MakeSrcContained(tree, op2);
+	else if (op1Type == op2Type)
+	{
+		if (op2->isMemoryOp())
+		{
+			MakeSrcContained(tree, op2);
+		}
+		else if (op1->isMemoryOp() && IsSafeToContainMem(tree, op1))
+		{
+			MakeSrcContained(tree, op1);
+		}
 
-            // Mark the tree as doing unsigned comparison if
-            // both the operands are small and unsigned types.
-            // Otherwise we will end up performing a signed comparison
-            // of two small unsigned values without zero extending them to
-            // TYP_INT size and which is incorrect.
-            if (varTypeIsSmall(op1Type) && varTypeIsUnsigned(op1Type))
-            {
-                tree->gtFlags |= GTF_UNSIGNED;
-            }
-        }
-    }
-    else if (op1->isMemoryOp()) 
-    {
-        if ((op1Type == op2Type) && IsSafeToContainMem(tree, op1))
-        {
-            MakeSrcContained(tree, op1);
-
-            // Mark the tree as doing unsigned comparison if
-            // both the operands are small and unsigned types.
-            // Otherwise we will end up performing a signed comparison
-            // of two small unsigned values without zero extending them to
-            // TYP_INT size and which is incorrect.
-            if (varTypeIsSmall(op1Type) && varTypeIsUnsigned(op1Type))
-            {
-                tree->gtFlags |= GTF_UNSIGNED;
-            }
-        }
-    }
+		if (varTypeIsSmall(op1Type) && varTypeIsUnsigned(op1Type))
+		{
+			// Mark the tree as doing unsigned comparison if
+			// both the operands are small and unsigned types.
+			// Otherwise we will end up performing a signed comparison
+			// of two small unsigned values without zero extending them to
+			// TYP_INT size and which is incorrect.
+			tree->gtFlags |= GTF_UNSIGNED;
+		}
+	}
 }
 
 /* Lower GT_CAST(srcType, DstType) nodes. 
