@@ -107,6 +107,8 @@ namespace List_ForEach_Action
             for (int i = 0; i < items.Length; ++i)
                 list.Add(items[i]);
 
+            Assert.Throws<ArgumentNullException>("action", () => list.ForEach(null));
+
             list.ForEach(action);
         }
     }
