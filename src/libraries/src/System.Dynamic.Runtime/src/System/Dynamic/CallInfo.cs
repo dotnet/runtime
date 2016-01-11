@@ -92,7 +92,7 @@ namespace System.Dynamic
         public override bool Equals(object obj)
         {
             var other = obj as CallInfo;
-            return _argCount == other._argCount && _argNames.ListEquals(other._argNames);
+            return other != null && _argCount == other._argCount && _argNames.ListEquals(other._argNames);
         }
     }
 }
