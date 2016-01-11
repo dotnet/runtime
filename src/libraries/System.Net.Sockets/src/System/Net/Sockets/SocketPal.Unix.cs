@@ -179,45 +179,30 @@ namespace System.Net.Sockets
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0);
 
-            var pinnedSocketAddress = default(GCHandle);
-            byte* sockAddr = null;
-            int sockAddrLen = 0;
-
             long received;
-            try
+
+            int sockAddrLen = 0;
+            if (socketAddress != null)
+                sockAddrLen = socketAddressLen;
+
+            fixed (byte* sockAddr = socketAddress)
+            fixed (byte* b = buffer)
             {
-                if (socketAddress != null)
-                {
-                    pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
-                    sockAddrLen = socketAddressLen;
-                }
+                var iov = new Interop.Sys.IOVector {
+                    Base = &b[offset],
+                    Count = (UIntPtr)count
+                };
 
-                fixed (byte* b = buffer)
-                {
-                    var iov = new Interop.Sys.IOVector {
-                        Base = &b[offset],
-                        Count = (UIntPtr)count
-                    };
+                var messageHeader = new Interop.Sys.MessageHeader {
+                    SocketAddress = sockAddr,
+                    SocketAddressLen = sockAddrLen,
+                    IOVectors = &iov,
+                    IOVectorCount = 1
+                };
 
-                    var messageHeader = new Interop.Sys.MessageHeader {
-                        SocketAddress = sockAddr,
-                        SocketAddressLen = sockAddrLen,
-                        IOVectors = &iov,
-                        IOVectorCount = 1
-                    };
-
-                    errno = Interop.Sys.ReceiveMessage(fd, &messageHeader, flags, &received);
-                    receivedFlags = messageHeader.Flags;
-                    sockAddrLen = messageHeader.SocketAddressLen;
-                }
-            }
-            finally
-            {
-                if (pinnedSocketAddress.IsAllocated)
-                {
-                    pinnedSocketAddress.Free();
-                }
+                errno = Interop.Sys.ReceiveMessage(fd, &messageHeader, flags, &received);
+                receivedFlags = messageHeader.Flags;
+                sockAddrLen = messageHeader.SocketAddressLen;
             }
 
             if (errno != Interop.Error.SUCCESS)
@@ -231,46 +216,31 @@ namespace System.Net.Sockets
 
         private static unsafe int Send(int fd, SocketFlags flags, byte[] buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
-            var pinnedSocketAddress = default(GCHandle);
-            byte* sockAddr = null;
-            int sockAddrLen = 0;
-
             int sent;
-            try
+
+            int sockAddrLen = 0;
+            if (socketAddress != null)
+                sockAddrLen = socketAddressLen;
+
+            fixed (byte* sockAddr = socketAddress)
+            fixed (byte* b = buffer)
             {
-                if (socketAddress != null)
-                {
-                    pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
-                    sockAddrLen = socketAddressLen;
-                }
+                var iov = new Interop.Sys.IOVector {
+                    Base = &b[offset],
+                    Count = (UIntPtr)count
+                };
 
-                fixed (byte* b = buffer)
-                {
-                    var iov = new Interop.Sys.IOVector {
-                        Base = &b[offset],
-                        Count = (UIntPtr)count
-                    };
+                var messageHeader = new Interop.Sys.MessageHeader {
+                    SocketAddress = sockAddr,
+                    SocketAddressLen = sockAddrLen,
+                    IOVectors = &iov,
+                    IOVectorCount = 1
+                };
 
-                    var messageHeader = new Interop.Sys.MessageHeader {
-                        SocketAddress = sockAddr,
-                        SocketAddressLen = sockAddrLen,
-                        IOVectors = &iov,
-                        IOVectorCount = 1
-                    };
+                long bytesSent;
+                errno = Interop.Sys.SendMessage(fd, &messageHeader, flags, &bytesSent);
 
-                    long bytesSent;
-                    errno = Interop.Sys.SendMessage(fd, &messageHeader, flags, &bytesSent);
-
-                    sent = checked((int)bytesSent);
-                }
-            }
-            finally
-            {
-                if (pinnedSocketAddress.IsAllocated)
-                {
-                    pinnedSocketAddress.Free();
-                }
+                sent = checked((int)bytesSent);
             }
 
             if (errno != Interop.Error.SUCCESS)
@@ -289,9 +259,9 @@ namespace System.Net.Sockets
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            var pinnedSocketAddress = default(GCHandle);
-            byte* sockAddr = null;
             int sockAddrLen = 0;
+            if (socketAddress != null)
+                sockAddrLen = socketAddressLen;
 
             int maxBuffers = buffers.Count - startIndex;
             var handles = new GCHandle[maxBuffers];
@@ -313,14 +283,8 @@ namespace System.Net.Sockets
                     iovecs[i].Count = (UIntPtr)(buffer.Count - startOffset);
                 }
 
-                if (socketAddress != null)
-                {
-                    pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
-                    sockAddrLen = socketAddressLen;
-                }
-
                 // Make the call
+                fixed (byte* sockAddr = socketAddress)
                 fixed (Interop.Sys.IOVector* iov = iovecs)
                 {
                     var messageHeader = new Interop.Sys.MessageHeader {
@@ -345,11 +309,6 @@ namespace System.Net.Sockets
                     {
                         handles[i].Free();
                     }
-                }
-
-                if (pinnedSocketAddress.IsAllocated)
-                {
-                    pinnedSocketAddress.Free();
                 }
             }
 
@@ -384,9 +343,9 @@ namespace System.Net.Sockets
             var handles = new GCHandle[maxBuffers];
             var iovecs = new Interop.Sys.IOVector[maxBuffers];
 
-            var pinnedSocketAddress = default(GCHandle);
-            byte* sockAddr = null;
             int sockAddrLen = 0;
+            if (socketAddress != null)
+                sockAddrLen = socketAddressLen;
 
             long received = 0;
             int toReceive = 0, iovCount = maxBuffers;
@@ -411,14 +370,8 @@ namespace System.Net.Sockets
                     iovecs[i].Count = (UIntPtr)space;
                 }
 
-                if (socketAddress != null)
-                {
-                    pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
-                    sockAddrLen = socketAddressLen;
-                }
-
                 // Make the call.
+                fixed (byte* sockAddr = socketAddress)
                 fixed (Interop.Sys.IOVector* iov = iovecs)
                 {
                     var messageHeader = new Interop.Sys.MessageHeader {
@@ -442,11 +395,6 @@ namespace System.Net.Sockets
                     {
                         handles[i].Free();
                     }
-                }
-
-                if (pinnedSocketAddress.IsAllocated)
-                {
-                    pinnedSocketAddress.Free();
                 }
             }
 
