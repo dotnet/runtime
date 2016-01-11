@@ -184,6 +184,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5283, PlatformID.Windows)]
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
@@ -218,6 +219,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5284, PlatformID.Windows)]
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
