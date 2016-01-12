@@ -150,7 +150,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return TaskHelpers.FromCancellation<int>(cancellationToken);
             }
             else
             {
@@ -166,7 +166,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<int>(e);
+                    return TaskHelpers.FromException<int>(e);
                 }
                 finally
                 {
@@ -199,7 +199,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DbDataReader>(cancellationToken);
+                return TaskHelpers.FromCancellation<DbDataReader>(cancellationToken);
             }
             else
             {
@@ -215,7 +215,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<DbDataReader>(e);
+                    return TaskHelpers.FromException<DbDataReader>(e);
                 }
                 finally
                 {
@@ -233,7 +233,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<object>(cancellationToken);
+                return TaskHelpers.FromCancellation<object>(cancellationToken);
             }
             else
             {
@@ -249,7 +249,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<object>(e);
+                    return TaskHelpers.FromException<object>(e);
                 }
                 finally
                 {

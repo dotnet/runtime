@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.Threading.Tasks
 {
     /// <summary>
     /// Helpers for assemblies that don't yet depend on the System.Threading.Tasks contract
