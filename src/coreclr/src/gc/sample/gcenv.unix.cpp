@@ -81,40 +81,6 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
     pthread_mutex_destroy(&lpCriticalSection->mutex);
 }
 
-
-void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    pGCMemStatus->dwMemoryLoad = 0;
-    pGCMemStatus->ullTotalPageFile = 0;
-    pGCMemStatus->ullAvailPageFile = 0;
-
-    // There is no API to get the total virtual address space size on 
-    // Unix, so we use a constant value representing 128TB, which is 
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
-    static const uint64_t _128TB = (1ull << 47);
-    pGCMemStatus->ullTotalVirtual = _128TB;
-    pGCMemStatus->ullAvailVirtual = _128TB;
-
-    // TODO: Implement
-    pGCMemStatus->ullTotalPhys = _128TB;
-    pGCMemStatus->ullAvailPhys = _128TB;
-
-    // If the machine has more RAM than virtual address limit, let us cap it.
-    // Our GC can never use more than virtual address limit.
-    if (pGCMemStatus->ullAvailPhys > pGCMemStatus->ullTotalVirtual)
-    {
-        pGCMemStatus->ullAvailPhys = pGCMemStatus->ullAvailVirtual;
-    }
-}
-
 #if 0
 void CLREventStatic::CreateManualEvent(bool bInitialState)
 {
@@ -209,15 +175,6 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
     return sched_yield() == 0;
 }
 
-void * ClrVirtualAlloc(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect)
-{
-    return ClrVirtualAllocAligned(lpAddress, dwSize, flAllocationType, flProtect, OS_PAGE_SIZE);
-}
-
 static int W32toUnixAccessControl(uint32_t flProtect)
 {
     int prot = 0;
@@ -235,87 +192,6 @@ static int W32toUnixAccessControl(uint32_t flProtect)
         break;
     }
     return prot;
-}
-
-void * ClrVirtualAllocAligned(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect,
-    size_t dwAlignment)
-{
-    if ((flAllocationType & ~(MEM_RESERVE | MEM_COMMIT)) != 0)
-    {
-        // TODO: Implement
-        return NULL;
-    }
-
-    _ASSERTE(((size_t)lpAddress & (OS_PAGE_SIZE - 1)) == 0);
-
-    // Align size to whole pages
-    dwSize = (dwSize + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
-
-    if (flAllocationType & MEM_RESERVE)
-    {
-        size_t alignedSize = dwSize;
-
-        if (dwAlignment > OS_PAGE_SIZE)
-            alignedSize += (dwAlignment - OS_PAGE_SIZE);
-
-        void * pRetVal = mmap(lpAddress, alignedSize, W32toUnixAccessControl(flProtect),
-            MAP_ANON | MAP_PRIVATE, -1, 0);
-         
-        if (dwAlignment > OS_PAGE_SIZE && pRetVal != NULL)
-        {
-            void * pAlignedRetVal = (void *)(((size_t)pRetVal + (dwAlignment - 1)) & ~(dwAlignment - 1));
-
-            size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
-            if (startPadding != 0)
-            {
-                int ret = munmap(pRetVal, startPadding);
-                _ASSERTE(ret == 0);
-            }
-
-            size_t endPadding = alignedSize - (startPadding + dwSize);
-            if (endPadding != 0)
-            {
-                int ret = munmap((void *)((size_t)pAlignedRetVal + dwSize), endPadding);
-                _ASSERTE(ret == 0);
-            }
-
-            pRetVal = pAlignedRetVal;
-        }
-
-        return pRetVal;
-    }
-
-    if (flAllocationType & MEM_COMMIT)
-    {
-        int ret = mprotect(lpAddress, dwSize, W32toUnixAccessControl(flProtect));
-        return (ret == 0) ? lpAddress : NULL;
-    }
-
-    return NULL;
-}
-
-bool ClrVirtualFree(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t dwFreeType)
-{
-    // TODO: Implement
-    return false;
-}
-
-bool
-ClrVirtualProtect(
-           void * lpAddress,
-           size_t dwSize,
-           uint32_t flNewProtect,
-           uint32_t * lpflOldProtect)
-{
-    // TODO: Implement, not currently used
-    return false;
 }
 
 MethodTable * g_pFreeObjectMethodTable;
@@ -469,19 +345,6 @@ ResetWriteWatch(
     return 1;
 }
 
-WINBASEAPI
-BOOL
-WINAPI
-VirtualUnlock(
-    LPVOID lpAddress,
-    SIZE_T dwSize
-    )
-{
-    // TODO: Implement
-    return false;
-}
-
-
 const int tccSecondsToMillieSeconds = 1000;
 const int tccSecondsToMicroSeconds = 1000000;
 const int tccMillieSecondsToMicroSeconds = 1000;       // 10^3
@@ -562,19 +425,6 @@ MemoryBarrier()
 }
 
 // File I/O - Used for tracking only
-
-WINBASEAPI
-DWORD
-WINAPI
-SetFilePointer(
-    HANDLE hFile,
-    int32_t lDistanceToMove,
-    int32_t * lpDistanceToMoveHigh,
-    DWORD dwMoveMethod)
-{
-    // TODO: Reimplement callers using CRT
-    return 0;
-}
 
 WINBASEAPI
 BOOL
