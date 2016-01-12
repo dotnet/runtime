@@ -35,13 +35,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsFreeBSD)'=='true'">
-    <Compile Include="RuntimeInformation.FreeBSD.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.FreeBSD.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)'=='true'">
-    <Compile Include="RuntimeInformation.Linux.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Linux.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsOSX)'=='true'">
-    <Compile Include="RuntimeInformation.OSX.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
@@ -53,7 +53,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="RuntimeInformation.Unix.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(TargetGroup)'!='netcore50' And '$(TargetGroup)'!='netcore50aot'">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
@@ -64,7 +64,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)'=='true' ">
-    <Compile Include="RuntimeInformation.Windows.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -79,15 +79,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnknownUnix)' == 'true' ">
-    <Compile Include="RuntimeInformation.UnknownUnix.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RuntimeInformation.cs" />
-    <Compile Include="Architecture.cs" />
-    <Compile Include="OSPlatform.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
