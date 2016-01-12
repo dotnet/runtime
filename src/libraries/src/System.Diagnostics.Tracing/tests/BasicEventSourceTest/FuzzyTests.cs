@@ -2671,7 +2671,7 @@ namespace BasicEventSourceTests
                               logger.Write("FWKFKXHDFY",
                   new
                   {
-                      typeToCheck = new DateTimeOffset(30147, TimeZoneInfo.Local.GetUtcOffset(new DateTime(6875))),
+                      typeToCheck = new DateTimeOffset(30147, TimeSpan.FromHours(-8)),
                       A = new Char[] { 'X', 'T' },
                       D = new UInt16[] { 23656 },
                       P = new UIntPtr[] { new UIntPtr(162), new UIntPtr(224) },
