@@ -354,6 +354,7 @@ namespace System.Net.Tests
             WebResponse response = await request.GetResponseAsync();
         }
 
+        [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
         [Fact]
         public void GetResponseAsync_ServerNameNotInDns_ThrowsWebException()
         {
