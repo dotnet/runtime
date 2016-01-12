@@ -2790,7 +2790,11 @@ namespace System.Linq.Expressions.Interpreter
             var node = (TypeBinaryExpression)expr;
 
             Compile(node.Expression);
-            if (node.TypeOperand.GetTypeInfo().IsGenericType && node.TypeOperand.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (node.Expression.Type == typeof(void))
+            {
+                _instructions.EmitLoad(node.TypeOperand == node.Expression.Type, typeof(bool));
+            }
+            else if (node.TypeOperand.GetTypeInfo().IsGenericType && node.TypeOperand.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 _instructions.EmitLoad(node.TypeOperand.GenericTypeArguments[0]);
                 _instructions.EmitNullableTypeEquals();
