@@ -1548,7 +1548,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 /*
  * mono_resolve_generic_virtual_call:
  *
- *   Resolve a generic virtual call on interfaces.
+ *   Resolve a generic virtual/variant iface call on interfaces.
  * This function is called on a slowpath, so it doesn't need to be fast.
  */
 MonoFtnDesc*
@@ -1564,7 +1564,6 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 	imt = (gpointer*)vt - MONO_IMT_SIZE;
 
 	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface);
-	g_assert (!variant_iface);
 
 	if (vt->klass->valuetype)
 		need_unbox_tramp = TRUE;
@@ -1584,7 +1583,7 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 
 	mono_method_add_generic_virtual_invocation (mono_domain_get (),
 												vt, imt + imt_slot,
-												generic_virtual, ftndesc);
+												variant_iface ? variant_iface : generic_virtual, ftndesc);
 	return ftndesc;
 }
 

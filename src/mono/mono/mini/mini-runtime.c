@@ -2638,14 +2638,14 @@ mono_llvmonly_imt_thunk_3 (gpointer *arg, MonoMethod *imt_method)
 }
 
 /*
- * A version of the imt thunk used for generic virtual methods.
+ * A version of the imt thunk used for generic virtual/variant iface methods.
  * Unlikely a normal imt thunk, its possible that IMT_METHOD is not found
  * in the search table. The original JIT code had a 'fallback' trampoline it could
  * call, but we can't do that, so we just return NULL, and the compiled code
  * will handle it.
  */
 static gpointer
-mono_llvmonly_generic_virtual_imt_thunk (gpointer *arg, MonoMethod *imt_method)
+mono_llvmonly_fallback_imt_thunk (gpointer *arg, MonoMethod *imt_method)
 {
 	int i = 0;
 
@@ -2679,6 +2679,9 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		if (item->has_target_code)
 			virtual_generic = TRUE;
 	}
+
+	if (virtual_generic)
+		g_assert (fail_tramp);
 
 	/*
 	 * Initialize all vtable entries reachable from this imt slot, so the compiled
@@ -2733,8 +2736,8 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		res [0] = mono_llvmonly_imt_thunk;
 		break;
 	}
-	if (virtual_generic)
-		res [0] = mono_llvmonly_generic_virtual_imt_thunk;
+	if (fail_tramp)
+		res [0] = mono_llvmonly_fallback_imt_thunk;
 	res [1] = buf;
 
 	return res;

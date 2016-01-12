@@ -990,6 +990,20 @@ class Tests
 		return 0;
 	}
 
+	class AClass {
+	}
+
+	class BClass : AClass {
+	}
+
+	public static int test_0_fullaot_variant_iface () {
+		var arr = new BClass [10];
+		var enumerable = (IEnumerable<AClass>)arr;
+		Console.WriteLine (enumerable);
+		enumerable.GetEnumerator ();
+		return 0;
+	}
+
 	struct Record : Foo2<Record>.IRecord {
 		int counter;
 		int Foo2<Record>.IRecord.DoSomething () {

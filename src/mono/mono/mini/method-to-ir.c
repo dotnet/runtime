@@ -7619,6 +7619,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	int arg_reg, this_reg, vtable_reg;
 	gboolean is_iface = cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE;
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
+	gboolean variant_iface = FALSE;
 	guint32 slot;
 	int offset;
 
@@ -7634,6 +7635,9 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		slot = mono_method_get_vtable_index (cmethod);
 
 	this_reg = sp [0]->dreg;
+
+	if (is_iface && mono_class_has_variant_generic_params (cmethod->klass))
+		variant_iface = TRUE;
 
 	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
 		/*
@@ -7676,7 +7680,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !is_gsharedvt) {
+	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt) {
 		/*
 		 * A simple interface call
 		 *
@@ -7715,7 +7719,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	if (fsig->generic_param_count && !is_gsharedvt) {
+	if ((fsig->generic_param_count || variant_iface) && !is_gsharedvt) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
