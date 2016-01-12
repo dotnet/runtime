@@ -6703,7 +6703,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   (strcmp (cmethod->klass->name_space, "System.Reflection") == 0) &&
 			   (strcmp (cmethod->klass->name, "Assembly") == 0)) {
 		if (cfg->llvm_only && !strcmp (cmethod->name, "GetExecutingAssembly")) {
-			/* No stack walks are current available, so implement this as an intrinsic */
+			/* No stack walks are currently available, so implement this as an intrinsic */
 			MonoInst *assembly_ins;
 
 			EMIT_NEW_AOTCONST (cfg, assembly_ins, MONO_PATCH_INFO_IMAGE, cfg->method->klass->image);
@@ -6727,10 +6727,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (cfg->backend->have_objc_get_selector &&
 			!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
 		    (args [0]->opcode == OP_GOT_ENTRY || args [0]->opcode == OP_AOTCONST) &&
-		    cfg->compile_aot) {
+		    cfg->compile_aot && !cfg->llvm_only) {
 			MonoInst *pi;
 			MonoJumpInfoToken *ji;
 			MonoString *s;
+
+			// FIXME: llvmonly
 
 			cfg->exception_message = g_strdup ("GetHandle");
 			cfg->disable_llvm = TRUE;
