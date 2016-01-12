@@ -92,7 +92,16 @@ static z_stream* GetCurrentZStream(PAL_ZStream* stream)
     return zStream;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy)
+{
+    return CompressionNative_DeflateInit2_(stream, level, method, windowBits, memLevel, strategy);
+}
+
+extern "C" int32_t CompressionNative_DeflateInit2_(
+    PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy)
 {
     assert(stream != nullptr);
 
@@ -105,7 +114,15 @@ extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t met
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
+{
+    return CompressionNative_Deflate(stream, flush);
+}
+
+extern "C" int32_t CompressionNative_Deflate(PAL_ZStream* stream, int32_t flush)
 {
     assert(stream != nullptr);
 
@@ -116,7 +133,15 @@ extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
+{
+    return CompressionNative_DeflateEnd(stream);
+}
+
+extern "C" int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream)
 {
     assert(stream != nullptr);
 
@@ -127,7 +152,15 @@ extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
+{
+    return CompressionNative_InflateInit2_(stream, windowBits);
+}
+
+extern "C" int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
 {
     assert(stream != nullptr);
 
@@ -140,7 +173,15 @@ extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
+{
+    return CompressionNative_Inflate(stream, flush);
+}
+
+extern "C" int32_t CompressionNative_Inflate(PAL_ZStream* stream, int32_t flush)
 {
     assert(stream != nullptr);
 
@@ -151,7 +192,15 @@ extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" int32_t InflateEnd(PAL_ZStream* stream)
+{
+    return CompressionNative_InflateEnd(stream);
+}
+
+extern "C" int32_t CompressionNative_InflateEnd(PAL_ZStream* stream)
 {
     assert(stream != nullptr);
 
@@ -162,7 +211,15 @@ extern "C" int32_t InflateEnd(PAL_ZStream* stream)
     return result;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method  
+// to keep tests running in CI. This will be removed once the managed assemblies  
+// are synced up with the native assemblies.  
 extern "C" uint32_t Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
+{
+    return CompressionNative_Crc32(crc, buffer, len);
+}
+
+extern "C" uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
 {
     assert(buffer != nullptr);
 
