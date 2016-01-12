@@ -551,18 +551,18 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [InlineData(1, DataflowBlockOptions.Unbounded, null)]
         [InlineData(2, 2, true)]
         [InlineData(2, 1, false)] // no force ordered, but dop == 1, so it doesn't matter
-        public async Task TestOrdering_Sync_OrderedEnabled(int mmpt, int dop, bool? forceOrdered)
+        public async Task TestOrdering_Sync_OrderedEnabled(int mmpt, int dop, bool? EnsureOrdered)
         {
             const int iters = 1000;
 
             var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
-            if (forceOrdered == null)
+            if (EnsureOrdered == null)
             {
-                Assert.True(options.ForceOrdered);
+                Assert.True(options.EnsureOrdered);
             }
             else
             {
-                options.ForceOrdered = forceOrdered.Value;
+                options.EnsureOrdered = EnsureOrdered.Value;
             }
 
             var tb = new TransformBlock<int, int>(i => i, options);
@@ -584,18 +584,18 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [InlineData(1, DataflowBlockOptions.Unbounded, null)]
         [InlineData(2, 2, true)]
         [InlineData(2, 1, false)] // no force ordered, but dop == 1, so it doesn't matter
-        public async Task TestOrdering_Async_OrderedEnabled(int mmpt, int dop, bool? forceOrdered)
+        public async Task TestOrdering_Async_OrderedEnabled(int mmpt, int dop, bool? EnsureOrdered)
         {
             const int iters = 1000;
 
             var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
-            if (forceOrdered == null)
+            if (EnsureOrdered == null)
             {
-                Assert.True(options.ForceOrdered);
+                Assert.True(options.EnsureOrdered);
             }
             else
             {
-                options.ForceOrdered = forceOrdered.Value;
+                options.EnsureOrdered = EnsureOrdered.Value;
             }
 
             var tb = new TransformBlock<int, int>(i => Task.FromResult(i), options);
@@ -613,7 +613,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             // If ordering were enabled, this test would hang.
 
-            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, ForceOrdered = false };
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, EnsureOrdered = false };
 
             var tasks = new TaskCompletionSource<int>[10];
             for (int i = 0; i < tasks.Length; i++)
@@ -639,7 +639,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             // If ordering were enabled, this test would hang.
 
-            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, ForceOrdered = false };
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, EnsureOrdered = false };
 
             var mres = new ManualResetEventSlim();
             var tb = new TransformBlock<int, int>(i =>

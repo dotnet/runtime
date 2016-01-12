@@ -113,8 +113,8 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved);
 
             // If parallelism is employed, we will need to support reordering messages that complete out-of-order.
-            // However, a developer can override this with ForceOrdered == false.
-            if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.ForceOrdered)
+            // However, a developer can override this with EnsureOrdered == false.
+            if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.EnsureOrdered)
             {
                 _reorderingBuffer = new ReorderingBuffer<TOutput>(this, (owningSource, message) => ((TransformBlock<TInput, TOutput>)owningSource)._source.AddMessage(message));
             }

@@ -34,7 +34,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.Equal(expected: CancellationToken.None, actual: dbo.CancellationToken);
                 Assert.Equal(expected: -1, actual: DataflowBlockOptions.Unbounded);
                 Assert.Equal(expected: @"{0} Id={1}", actual: dbo.NameFormat);
-                Assert.Equal(expected: true, actual: dbo.ForceOrdered);
+                Assert.Equal(expected: true, actual: dbo.EnsureOrdered);
             };
 
             verifyBaseDefaults(new DataflowBlockOptions());
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
             foreach (bool value in DataflowTestHelpers.BooleanValues)
             {
-                SetAndTest(dbo, (o, v) => o.ForceOrdered = v, o => o.ForceOrdered, value);
+                SetAndTest(dbo, (o, v) => o.EnsureOrdered = v, o => o.EnsureOrdered, value);
             }
 
             foreach (bool value in DataflowTestHelpers.BooleanValues)
