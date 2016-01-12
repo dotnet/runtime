@@ -439,7 +439,12 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
 
     uint32_t thread_id;
 
-    GCThreadStubParam* stubParam = new (nothrow) GCThreadStubParam();
+    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
+    if (stubParam == NULL)
+    {
+        return false;
+    }
+
     stubParam->GCThreadFunction = function;
     stubParam->GCThreadParam = param;
 
@@ -449,6 +454,8 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     {
         return false;
     }
+
+    stubParam.SuppressRelease();
 
     SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
 
