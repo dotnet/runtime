@@ -638,28 +638,11 @@ namespace System.Security.Principal
 
         public override bool Equals(object o)
         {
-            if (o == null)
-            {
-                return false;
-            }
-
-            SecurityIdentifier sid = o as SecurityIdentifier;
-
-            if (sid == null)
-            {
-                return false;
-            }
-
-            return (this == sid); // invokes operator==
+            return (this == o as SecurityIdentifier); // invokes operator==
         }
 
         public bool Equals(SecurityIdentifier sid)
         {
-            if (sid == null)
-            {
-                return false;
-            }
-
             return (this == sid); // invokes operator==
         }
 
@@ -805,7 +788,7 @@ namespace System.Security.Principal
             object l = left;
             object r = right;
 
-            if (l == null && r == null)
+            if (l == r)
             {
                 return true;
             }

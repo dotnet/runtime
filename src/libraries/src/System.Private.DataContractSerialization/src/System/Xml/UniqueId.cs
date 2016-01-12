@@ -391,7 +391,7 @@ namespace System.Xml
 
         static public bool operator ==(UniqueId id1, UniqueId id2)
         {
-            if (object.ReferenceEquals(id1, null) && object.ReferenceEquals(id2, null))
+            if (object.ReferenceEquals(id1, id2))
                 return true;
 
             if (object.ReferenceEquals(id1, null) || object.ReferenceEquals(id2, null))

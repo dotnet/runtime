@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 //------------------------------------------------------------
 
+using System;
 using System.Runtime.Serialization;
 using System.Diagnostics;
 
@@ -16,7 +17,7 @@ namespace System.Xml
         Item = 2
     }
 
-    internal class StringHandle
+    internal class StringHandle : IEquatable<StringHandle>
     {
         private XmlBufferReader _bufferReader;
         private StringHandleType _type;
@@ -227,15 +228,17 @@ namespace System.Xml
             return GetString() == _bufferReader.GetString(offset2, length2);
         }
 
-        private bool Equals2(StringHandle s2)
+        public bool Equals(StringHandle other)
         {
-            StringHandleType type = s2._type;
+            if (ReferenceEquals(other, null))
+                return false;
+            StringHandleType type = other._type;
             if (type == StringHandleType.Dictionary)
-                return Equals2(s2._key, s2._bufferReader);
+                return Equals2(other._key, other._bufferReader);
             if (type == StringHandleType.UTF8)
-                return Equals2(s2._offset, s2._length, s2._bufferReader);
+                return Equals2(other._offset, other._length, other._bufferReader);
             DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
-            return Equals2(s2.GetString());
+            return Equals2(other.GetString());
         }
 
         static public bool operator ==(StringHandle s1, XmlDictionaryString xmlString2)
@@ -259,12 +262,12 @@ namespace System.Xml
 
         static public bool operator ==(StringHandle s1, StringHandle s2)
         {
-            return s1.Equals2(s2);
+            return s1.Equals(s2);
         }
 
         static public bool operator !=(StringHandle s1, StringHandle s2)
         {
-            return !s1.Equals2(s2);
+            return !s1.Equals(s2);
         }
 
         public int CompareTo(StringHandle that)
@@ -276,10 +279,7 @@ namespace System.Xml
         }
         public override bool Equals(object obj)
         {
-            StringHandle that = obj as StringHandle;
-            if (object.ReferenceEquals(that, null))
-                return false;
-            return this == that;
+            return Equals(obj as StringHandle);
         }
 
         public override int GetHashCode()

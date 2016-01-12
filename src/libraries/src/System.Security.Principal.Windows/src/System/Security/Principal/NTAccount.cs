@@ -142,19 +142,7 @@ namespace System.Security.Principal
 
         public override bool Equals(object o)
         {
-            if (o == null)
-            {
-                return false;
-            }
-
-            NTAccount nta = o as NTAccount;
-
-            if (nta == null)
-            {
-                return false;
-            }
-
-            return (this == nta); // invokes operator==
+            return (this == o as NTAccount); // invokes operator==
         }
 
         public override int GetHashCode()
@@ -217,7 +205,7 @@ namespace System.Security.Principal
             object l = left;
             object r = right;
 
-            if (l == null && r == null)
+            if (l == r)
             {
                 return true;
             }
