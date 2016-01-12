@@ -6816,7 +6816,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	if (method->is_inflated) {
 		MonoReflectionGenericMethod *gret;
 
-		refclass = method->klass;
+		if (!refclass)
+			refclass = method->klass;
 		CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
 		if ((*method->name == '.') && (!strcmp (method->name, ".ctor") || !strcmp (method->name, ".cctor"))) {
 			if (!System_Reflection_MonoGenericCMethod)

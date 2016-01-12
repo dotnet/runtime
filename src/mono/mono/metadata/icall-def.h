@@ -590,16 +590,9 @@ ICALL(MFIELD_6, "ResolveType", ves_icall_MonoField_ResolveType)
 ICALL(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
 ICALL(MFIELD_7, "get_core_clr_security_level", ves_icall_MonoField_get_core_clr_security_level)
 
-ICALL_TYPE(MGENCM, "System.Reflection.MonoGenericCMethod", MGENCM_1)
-ICALL(MGENCM_1, "get_ReflectedType", ves_icall_MonoGenericMethod_get_ReflectedType)
-
 ICALL_TYPE(MGENCL, "System.Reflection.MonoGenericClass", MGENCL_5)
 ICALL(MGENCL_5, "initialize", mono_reflection_generic_class_initialize)
 ICALL(MGENCL_6, "register_with_runtime", mono_reflection_register_with_runtime)
-
-/* note this is the same as above: unify */
-ICALL_TYPE(MGENM, "System.Reflection.MonoGenericMethod", MGENM_1)
-ICALL(MGENM_1, "get_ReflectedType", ves_icall_MonoGenericMethod_get_ReflectedType)
 
 ICALL_TYPE(MMETH, "System.Reflection.MonoMethod", MMETH_2)
 ICALL(MMETH_2, "GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments)
