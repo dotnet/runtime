@@ -29,7 +29,7 @@ namespace System.Runtime.Loader
         
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext);
+        private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext);
         
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -45,26 +45,34 @@ namespace System.Runtime.Loader
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
 #endif // FEATURE_MULTICOREJIT
 
-        [System.Security.SecuritySafeCritical]
         protected AssemblyLoadContext()
+        {
+            // Initialize the ALC representing non-TPA LoadContext
+            InitializeLoadContext(false);
+        }
+
+        internal AssemblyLoadContext(bool fRepresentsTPALoadContext)
+        {
+            // Initialize the ALC representing TPA LoadContext
+            InitializeLoadContext(fRepresentsTPALoadContext);
+        }
+        
+        [System.Security.SecuritySafeCritical]
+        void InitializeLoadContext(bool fRepresentsTPALoadContext)
         {
             // Initialize the VM side of AssemblyLoadContext if not already done.
             GCHandle gchALC = GCHandle.Alloc(this);
             IntPtr ptrALC = GCHandle.ToIntPtr(gchALC);
-            m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(ptrALC);
+            m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(ptrALC, fRepresentsTPALoadContext);
         }
 
-        internal AssemblyLoadContext(bool fDummy)
-        {
-        }
-        
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
         
         // These are helpers that can be used by AssemblyLoadContext derivations.
         // They are used to load assemblies in DefaultContext.
-        protected Assembly LoadFromAssemblyPath(string assemblyPath)
+        public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
             if (assemblyPath == null)
             {
@@ -81,7 +89,7 @@ namespace System.Runtime.Loader
             return loadedAssembly;
         }
         
-        protected Assembly LoadFromNativeImagePath(string nativeImagePath, string assemblyPath)
+        public Assembly LoadFromNativeImagePath(string nativeImagePath, string assemblyPath)
         {
             if (nativeImagePath == null)
             {
@@ -112,12 +120,12 @@ namespace System.Runtime.Loader
             return loadedAssembly;
         }
         
-        protected Assembly LoadFromStream(Stream assembly)
+        public Assembly LoadFromStream(Stream assembly)
         {
             return LoadFromStream(assembly, null);
         }
         
-        protected Assembly LoadFromStream(Stream assembly, Stream assemblySymbols)
+        public Assembly LoadFromStream(Stream assembly, Stream assemblySymbols)
         {
             if (assembly == null)
             {
@@ -359,7 +367,7 @@ namespace System.Runtime.Loader
     [System.Security.SecuritySafeCritical]
     class AppPathAssemblyLoadContext : AssemblyLoadContext
     {
-        internal AppPathAssemblyLoadContext() : base(false)
+        internal AppPathAssemblyLoadContext() : base(true)
         {
         }
 
