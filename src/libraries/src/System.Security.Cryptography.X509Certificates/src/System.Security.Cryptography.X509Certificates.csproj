@@ -16,6 +16,10 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">
+    <ProjectJson>netcore50\project.json</ProjectJson>
+    <ProjectLockJson>netcore50\project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>win\project.json</ProjectJson>
     <ProjectLockJson>win\project.lock.json</ProjectLockJson>
@@ -30,6 +34,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
+    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
