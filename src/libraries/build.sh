@@ -105,6 +105,10 @@ prepare_managed_build()
             exit 1
         fi
     fi
+
+    # Run Init-Tools to restore BuildTools and ToolRuntime
+    chmod a+x $__scriptpath/init-tools.sh
+    sh $__scriptpath/init-tools.sh
 }
 
 prepare_native_build()
