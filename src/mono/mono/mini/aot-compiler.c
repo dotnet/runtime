@@ -7604,9 +7604,37 @@ append_mangled_type (GString *s, MonoType *t)
 	case MONO_TYPE_R8:
 		g_string_append_printf (s, "do");
 		break;
-	default:
-		//printf ("%s\n", mono_type_full_name (t));
-		return FALSE;
+	default: {
+		char *fullname = mono_type_full_name (t);
+		GString *temp;
+		char *temps;
+		int i, len;
+
+		/*
+		 * Have to create a mangled name which is:
+		 * - a valid symbol
+		 * - unique
+		 */
+		temp = g_string_new ("");
+		len = strlen (fullname);
+		for (i = 0; i < len; ++i) {
+			char c = fullname [i];
+			if (isalnum (c)) {
+				g_string_append_c (temp, c);
+			} else if (c == '_') {
+				g_string_append_c (temp, '_');
+				g_string_append_c (temp, '_');
+			} else {
+				g_string_append_c (temp, '_');
+				g_string_append_printf (temp, "%x", (int)c);
+			}
+		}
+		temps = g_string_free (temp, FALSE);
+		/* Include the length to avoid different length type names aliasing each other */
+		g_string_append_printf (s, "cl%x_%s_", strlen (temps), temps);
+		g_free (temps);
+		return TRUE;
+	}
 	}
 	return TRUE;
 }
