@@ -77,7 +77,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 
 #if !defined(FEATURE_CORESYSTEM)
     SetThreadIdealProcessor(GetCurrentThread(), (DWORD)affinity->Processor);
-#elif !defined(FEATURE_PAL)
+#else
     PROCESSOR_NUMBER proc;
 
     if (affinity->Group != -1)
@@ -207,13 +207,11 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
     bool success = ::VirtualAlloc(address, size, MEM_RESET, PAGE_READWRITE) != NULL;
-#ifndef FEATURE_PAL
     if (success && unlock)
     {
         // Remove the page range from the working set
         ::VirtualUnlock(address, size);
     }
-#endif // FEATURE_PAL
 
     return success;
 }
@@ -391,6 +389,11 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     DWORD thread_id;
 
     GCThreadStubParam* stubParam = new (nothrow) GCThreadStubParam();
+    if (stubParam == NULL)
+    {
+        return false;
+    }
+
     stubParam->GCThreadFunction = function;
     stubParam->GCThreadParam = param;
 
