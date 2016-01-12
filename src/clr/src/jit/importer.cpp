@@ -10779,6 +10779,10 @@ _CONV:
 
             if  ((op1->gtFlags & GTF_SIDE_EFFECT) || opts.compDbgCode)
             {
+#if FEATURE_MULTIREG_STRUCT_RET
+                bool isStructTailCall = varTypeIsStruct(op1) && (op1->gtOper == GT_CALL) 
+                                        && op1->gtCall.CanTailCall();                
+#endif
                 // Since we are throwing away the value, just normalize
                 // it to its address.  This is more efficient.
 
@@ -10805,7 +10809,15 @@ _CONV:
                     op1 = gtUnusedValNode(op1);
                 }
 
-                /* Append the value to the tree list */
+                // Append the value to the tree list
+#if FEATURE_MULTIREG_STRUCT_RET
+                // On Unix, a call with a structral return value will have either an assignment
+                // copying the return registers to stack or an address taken expression of the 
+                // hidden parameter inserted, depends on the size of the return value. We don't
+                // want to insert any more instructions after the call, since it will screw up
+                // the tail call morphing logic.
+                if (!isStructTailCall)
+#endif
                 goto SPILL_APPEND;
             }
             
