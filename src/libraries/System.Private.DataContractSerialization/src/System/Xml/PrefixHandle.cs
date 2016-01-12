@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 //------------------------------------------------------------
 
+using System;
 using System.Runtime.Serialization;
 using System.Diagnostics;
 
@@ -17,7 +18,7 @@ namespace System.Xml
         Max,
     }
 
-    internal class PrefixHandle
+    internal class PrefixHandle : IEquatable<PrefixHandle>
     {
         private XmlBufferReader _bufferReader;
         private PrefixHandleType _type;
@@ -178,8 +179,10 @@ namespace System.Xml
             return GetString().CompareTo(that.GetString());
         }
 
-        private bool Equals2(PrefixHandle prefix2)
+        public bool Equals(PrefixHandle prefix2)
         {
+            if (ReferenceEquals(prefix2, null))
+                return false;
             PrefixHandleType type1 = _type;
             PrefixHandleType type2 = prefix2._type;
             if (type1 != type2)
@@ -226,19 +229,16 @@ namespace System.Xml
 
         static public bool operator ==(PrefixHandle prefix1, PrefixHandle prefix2)
         {
-            return prefix1.Equals2(prefix2);
+            return prefix1.Equals(prefix2);
         }
 
         static public bool operator !=(PrefixHandle prefix1, PrefixHandle prefix2)
         {
-            return !prefix1.Equals2(prefix2);
+            return !prefix1.Equals(prefix2);
         }
         public override bool Equals(object obj)
         {
-            PrefixHandle that = obj as PrefixHandle;
-            if (object.ReferenceEquals(that, null))
-                return false;
-            return this == that;
+            return Equals(obj as PrefixHandle);
         }
 
         public override string ToString()
