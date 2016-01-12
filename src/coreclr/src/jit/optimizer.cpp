@@ -3428,8 +3428,9 @@ void                Compiler::fgOptWhileLoop(BasicBlock * block)
 #ifdef  DEBUG
     if  (verbose)
     {
-            printf("\nDuplication of loop condition %s, because the cost of duplication (%i) is %s than %i,"
+            printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
                    "\n   loopIterations = %7.3f, countOfHelpers = %d, validProfileWeights = %s\n",
+                      condTree->gtTreeID,
                       costIsTooHigh ? "not done" : "performed",
                       estDupCostSz, 
                       costIsTooHigh ? "greater" : "less or equal",
@@ -3446,8 +3447,13 @@ void                Compiler::fgOptWhileLoop(BasicBlock * block)
 
     /* Looks good - duplicate the condition test */
 
+    condTree->gtFlags |= GTF_RELOP_ZTT;
+
     condTree = gtCloneExpr(condTree);
     gtReverseCond(condTree);
+
+    // Make sure clone expr copied the flag
+    assert(condTree->gtFlags & GTF_RELOP_ZTT);
 
     condTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condTree);
 
@@ -7270,6 +7276,13 @@ bool               Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneC
                 GenTree::NodeName(pLoop->lpTestOper()), GenTree::NodeName(pLoop->lpIterOper()));
         return false;
     }
+
+    if (!(pLoop->lpTestTree->OperKind() & GTK_RELOP) || !(pLoop->lpTestTree->gtFlags & GTF_RELOP_ZTT))
+    {
+        JITDUMP("> Loop inversion NOT present, loop test [%06u] may not protect entry from head.\n", pLoop->lpTestTree->gtTreeID);
+        return false;
+    }
+
 #ifdef DEBUG
     GenTreePtr op1 = pLoop->lpIterator();
     noway_assert((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.gtLclNum == ivLclNum));
