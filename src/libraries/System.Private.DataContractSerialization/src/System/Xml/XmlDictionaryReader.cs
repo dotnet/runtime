@@ -76,8 +76,6 @@ namespace System.Xml
             return reader;
         }
 
-
-
         static public XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
             if (buffer == null)

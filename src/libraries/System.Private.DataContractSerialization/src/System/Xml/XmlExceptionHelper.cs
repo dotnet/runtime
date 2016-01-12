@@ -128,7 +128,6 @@ namespace System.Xml
             ThrowXmlException(reader, SR.XmlMaxArrayLengthExceeded, maxArrayLength.ToString(NumberFormatInfo.CurrentInfo));
         }
 
-
         static public void ThrowMaxBytesPerReadExceeded(XmlDictionaryReader reader, int maxBytesPerRead)
         {
             ThrowXmlException(reader, SR.XmlMaxBytesPerReadExceeded, maxBytesPerRead.ToString(NumberFormatInfo.CurrentInfo));
@@ -137,6 +136,16 @@ namespace System.Xml
         static public void ThrowMaxNameTableCharCountExceeded(XmlDictionaryReader reader, int maxNameTableCharCount)
         {
             ThrowXmlException(reader, SR.XmlMaxNameTableCharCountExceeded, maxNameTableCharCount.ToString(NumberFormatInfo.CurrentInfo));
+        }
+
+        static public void ThrowMaxDepthExceeded(XmlDictionaryReader reader, int maxDepth)
+        {
+            ThrowXmlException(reader, SR.XmlMaxDepthExceeded, maxDepth.ToString());
+        }
+
+        static public void ThrowMaxStringContentLengthExceeded(XmlDictionaryReader reader, int maxStringContentLength)
+        {
+            ThrowXmlException(reader, SR.XmlMaxStringContentLengthExceeded, maxStringContentLength.ToString(NumberFormatInfo.CurrentInfo));
         }
 
         static public void ThrowBase64DataExpected(XmlDictionaryReader reader)

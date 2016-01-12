@@ -1925,6 +1925,41 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Theory]
+    [MemberData("XmlDictionaryReaderQuotasData")]
+    public static void DCS_XmlDictionaryQuotas(XmlDictionaryReaderQuotas quotas, bool shouldSucceed)
+    {
+        var input = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><TestLevelTwo><TestOne><SampleInt>10</SampleInt><SampleString>Sample string</SampleString></TestOne></TestLevelTwo>";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes(input));
+        using (var reader = XmlDictionaryReader.CreateTextReader(content, Encoding.UTF8, quotas, onClose: null))
+        {
+            var serializer = new DataContractSerializer(typeof(TestLevelTwo), new DataContractSerializerSettings());
+            if (shouldSucceed)
+            {
+                var deserializedObject = (TestLevelTwo)serializer.ReadObject(reader);
+                Assert.StrictEqual(10, deserializedObject.TestOne.SampleInt);
+                Assert.StrictEqual("Sample string", deserializedObject.TestOne.SampleString);
+            }
+            else
+            {
+                Assert.Throws<SerializationException>(() => { serializer.ReadObject(reader); });
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> XmlDictionaryReaderQuotasData
+    {
+        get
+        {
+            return new[]
+            {
+                new object[] { new XmlDictionaryReaderQuotas(), true },
+                new object[] { new XmlDictionaryReaderQuotas() { MaxDepth = 1}, false },
+                new object[] { new XmlDictionaryReaderQuotas() { MaxStringContentLength = 1}, false }
+            };
+        }
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
