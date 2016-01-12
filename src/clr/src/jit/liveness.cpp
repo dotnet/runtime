@@ -281,156 +281,33 @@ void                Compiler::fgLocalVarLivenessInit()
     }
 }
 
- /*****************************************************************************/
- // <BUGNUM> VSW 322033 <BUGNUM>
- //
- // This method calculates the USE and DEF values for a statement.
- // It also calls fgSetRngChkTarget for the statement.
- //
- // We refactor out this code from fgPerBlockLocalVarLiveness
- // and add QMARK logics to it.
- //
- // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
- //
- // The usage of this method is very limited.
- // We should only call it for the first node in the statement or
- // for the node after the GTF_RELOP_QMARK node.
- //
- // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
-
-
- /*
-        Since a GT_QMARK tree can take two paths (i.e. the thenTree Path or the elseTree path),
-        when we calculate its fgCurDefSet and fgCurUseSet, we need to combine the results
-        from both trees.
-
-        Note that the GT_QMARK trees are threaded as shown below with nodes 1 to 11
-        linked by gtNext.
-
-        The algorithm we use is:
-        (1) We walk these nodes according the the evaluation order (i.e. from node 1 to node 11).
-        (2) When we see the GTF_RELOP_QMARK node, we know we are about to split the path.
-            We cache copies of current fgCurDefSet and fgCurUseSet.
-            (The fact that it is recursively calling itself is for nested QMARK case,
-             where we need to remember multiple copies of fgCurDefSet and fgCurUseSet.)
-        (3) We walk the thenTree.
-        (4) When we see GT_COLON node, we know that we just finished the thenTree.
-            We then make a copy of the current fgCurDefSet and fgCurUseSet,
-            restore them to the ones before the thenTree, and then continue walking
-            the elseTree.
-        (5) When we see the GT_QMARK node, we know we just finished the elseTree.
-            So we combine the results from the thenTree and elseTree and then return.
-
-
-                                  +--------------------+
-                                  |      GT_QMARK    11|
-                                  +----------+---------+
-                                             |
-                                             *
-                                            / \
-                                          /     \
-                                        /         \
-                   +---------------------+       +--------------------+
-                   |      GT_<cond>    3 |       |     GT_COLON     7 |
-                   |  w/ GTF_RELOP_QMARK |       |  w/ GTF_COLON_COND |
-                   +----------+----------+       +---------+----------+
-                              |                            |
-                              *                            *
-                             / \                          / \
-                           /     \                      /     \
-                         /         \                  /         \
-                        2           1          thenTree 6       elseTree 10
-                                   x               |                |
-                                  /                *                *
-      +----------------+        /                 / \              / \
-      |prevExpr->gtNext+------/                 /     \          /     \
-      +----------------+                      /         \      /         \
-                                             5           4    9           8
-
-
- */
-
-GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // The node to start walking with.
-                                                    GenTreePtr relopNode,   // The node before the startNode.
-                                                                            // (It should either be NULL or
-                                                                            // a GTF_RELOP_QMARK node.)
-                                                    GenTreePtr lhsNode
-                                                    )
+//------------------------------------------------------------------------
+// fgPerStatementLocalVarLiveness: 
+//   Set fgCurHeapUse and fgCurHeapDef when the global heap is read or updated
+//   Call fgMarkUseDef for any Local variables encountered 
+//
+// Arguments:
+//    startNode   must be the first node in the statement
+//    asgdLclVar  is either nullptr or the assignement's left-hand-side GT_LCL_VAR
+//                it is used as an argument to fgMarkUseDef()
+//
+void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr asgdLclVar)
 {
-    GenTreePtr tree;
+    // The startNode must be the 1st node of the statement.
+    assert(startNode == compCurStmt->gtStmt.gtStmtList);
 
-    VARSET_TP  VARSET_INIT(this, defSet_BeforeSplit, fgCurDefSet);  // Store the current fgCurDefSet and fgCurUseSet so
-    VARSET_TP  VARSET_INIT(this, useSet_BeforeSplit, fgCurUseSet);  // we can restore then before entering the elseTree.
+    // The asgdLclVar node must be either nullptr or a GT_LCL_VAR or GT_STORE_LCL_VAR
+    assert((asgdLclVar == nullptr) || (asgdLclVar->gtOper == GT_LCL_VAR || asgdLclVar->gtOper == GT_STORE_LCL_VAR));
 
-    bool heapUse_BeforeSplit   = fgCurHeapUse;
-    bool heapDef_BeforeSplit   = fgCurHeapDef;
-    bool heapHavoc_BeforeSplit = fgCurHeapHavoc;
-
-    VARSET_TP  VARSET_INIT_NOCOPY(defSet_AfterThenTree, VarSetOps::MakeEmpty(this));    // These two variables will store the USE and DEF sets after
-    VARSET_TP  VARSET_INIT_NOCOPY(useSet_AfterThenTree, VarSetOps::MakeEmpty(this));    // evaluating the thenTree.
-
-    bool heapUse_AfterThenTree   = fgCurHeapUse;
-    bool heapDef_AfterThenTree   = fgCurHeapDef;
-    bool heapHavoc_AfterThenTree = fgCurHeapHavoc;
-
-    // relopNode is either NULL or a GTF_RELOP_QMARK node.
-    assert(!relopNode ||
-           (relopNode->OperKind() & GTK_RELOP) && (relopNode->gtFlags & GTF_RELOP_QMARK)
-          );
-
-    // If relopNode is NULL, then the startNode must be the 1st node of the statement.
-    // If relopNode is non-NULL, then the startNode must be the node right after the GTF_RELOP_QMARK node.
-    assert( (!relopNode && startNode == compCurStmt->gtStmt.gtStmtList) ||
-            (relopNode && startNode == relopNode->gtNext)
-          );
-
-    for (tree = startNode; tree; tree = tree->gtNext)
+    // We always walk every node in statement list
+    for (GenTreePtr tree = startNode; (tree != nullptr); tree = tree->gtNext)
     {
         switch (tree->gtOper)
         {
-
         case GT_QMARK:
-
-            // This must be a GT_QMARK node whose GTF_RELOP_QMARK node is recursively calling us.
-            noway_assert(relopNode && tree->gtOp.gtOp1 == relopNode);
-
-            // By the time we see a GT_QMARK, we must have finished processing the elseTree.
-            // So it's the time to combine the results
-            // from the the thenTree and the elseTree, and then return.
-
-            VarSetOps::IntersectionD(this, fgCurDefSet, defSet_AfterThenTree);
-            VarSetOps::UnionD(this, fgCurUseSet, useSet_AfterThenTree);
-
-            fgCurHeapDef   = fgCurHeapDef   && heapDef_AfterThenTree;
-            fgCurHeapHavoc = fgCurHeapHavoc && heapHavoc_AfterThenTree;
-            fgCurHeapUse   = fgCurHeapUse   || heapUse_AfterThenTree;
-
-            // Return the GT_QMARK node itself so the caller can continue from there.
-            // NOTE: the caller will get to the next node by doing the "tree = tree->gtNext"
-            // in the "for" statement.
-            goto _return;
-
         case GT_COLON:
-            // By the time we see GT_COLON, we must have just walked the thenTree.
-            // So we need to do two things here.
-            // (1) Save the current fgCurDefSet and fgCurUseSet so that later we can combine them
-            //     with the result from the elseTree.
-            // (2) Restore fgCurDefSet and fgCurUseSet to the points before the thenTree is walked.
-            //     and then continue walking the elseTree.
-            VarSetOps::Assign(this, defSet_AfterThenTree, fgCurDefSet);
-            VarSetOps::Assign(this, useSet_AfterThenTree, fgCurUseSet);
-
-            heapDef_AfterThenTree   = fgCurHeapDef;
-            heapHavoc_AfterThenTree = fgCurHeapHavoc;
-            heapUse_AfterThenTree   = fgCurHeapUse;
-
-            VarSetOps::Assign(this, fgCurDefSet, defSet_BeforeSplit);
-            VarSetOps::Assign(this, fgCurUseSet, useSet_BeforeSplit);
-
-            fgCurHeapDef   = heapDef_BeforeSplit;
-            fgCurHeapHavoc = heapHavoc_BeforeSplit;
-            fgCurHeapUse   = heapUse_BeforeSplit;
-
+            // We never should encounter a GT_QMARK or GT_COLON node
+            noway_assert(!"unexpected GT_QMARK/GT_COLON");
             break;
 
         case GT_LCL_VAR:
@@ -439,7 +316,7 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-            fgMarkUseDef(tree->AsLclVarCommon(), lhsNode);
+            fgMarkUseDef(tree->AsLclVarCommon(), asgdLclVar);
             break;
 
         case GT_CLS_VAR:
@@ -493,7 +370,7 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
                 {
                     // Defines a local addr
                     assert(dummyLclVarTree != nullptr);
-                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), lhsNode);
+                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), asgdLclVar);
                 }
             }
             break;
@@ -590,28 +467,9 @@ GenTreePtr Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode,   // T
                     fgCurHeapDef = true;
                 }
             }
-
-            // Are we seeing a GT_<cond> for a GT_QMARK node?
-            if ( (tree->OperKind() & GTK_RELOP) &&
-                 (tree->gtFlags & GTF_RELOP_QMARK)
-               ) {
-                // We are about to enter the parallel paths (i.e. the thenTree and the elseTree).
-                // Recursively call fgPerStatementLocalVarLiveness.
-                // At the very beginning of fgPerStatementLocalVarLiveness, we will cache the values of the current
-                // fgCurDefSet and fgCurUseSet into local variables defSet_BeforeSplit and useSet_BeforeSplit.
-                // The cached values will be used to restore fgCurDefSet and fgCurUseSet once we see the GT_COLON node.
-                tree = fgPerStatementLocalVarLiveness(tree->gtNext, tree, lhsNode);
-
-                // We must have been returned here after seeing a GT_QMARK node.
-                noway_assert(tree->gtOper == GT_QMARK);
-            }
-
             break;
         }
     }
-
-_return:
-    return tree;
 }
 
 
@@ -688,7 +546,7 @@ void                Compiler::fgPerBlockLocalVarLiveness()
     {
         GenTreePtr      stmt;
         GenTreePtr      tree;
-        GenTreePtr      lhsNode;
+        GenTreePtr      asgdLclVar;
 
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
@@ -712,7 +570,7 @@ void                Compiler::fgPerBlockLocalVarLiveness()
 
             compCurStmt = stmt;
 
-            lhsNode = nullptr;
+            asgdLclVar = nullptr;
             tree = stmt->gtStmt.gtStmtExpr;
             noway_assert(tree);
 
@@ -727,36 +585,33 @@ void                Compiler::fgPerBlockLocalVarLiveness()
                 if (tree->gtOper == GT_ASG)
                 {
                     noway_assert(tree->gtOp.gtOp2);
-                    lhsNode = tree->gtOp.gtOp1;
+                    asgdLclVar = tree->gtOp.gtOp1;
                     rhsNode = tree->gtOp.gtOp2;
                 }
                 else
                 {
-                    lhsNode = tree;
+                    asgdLclVar = tree;
                     rhsNode = tree->gtOp.gtOp1;
                 }
 
 
                 // If this is an assignment to local var with no SIDE EFFECTS,
-                // set lhsNode so that genMarkUseDef will flag potential
+                // set asgdLclVar so that genMarkUseDef will flag potential
                 // x=f(x) expressions as GTF_VAR_USEDEF.
                 // Reset the flag before recomputing it - it may have been set before,
                 // but subsequent optimizations could have removed the rhs reference.
-                lhsNode->gtFlags &= ~GTF_VAR_USEDEF;
+                asgdLclVar->gtFlags &= ~GTF_VAR_USEDEF;
                 if ((rhsNode->gtFlags & GTF_SIDE_EFFECT) == 0)
                 {
-                    noway_assert(lhsNode->gtFlags & GTF_VAR_DEF);
+                    noway_assert(asgdLclVar->gtFlags & GTF_VAR_DEF);
                 }
                 else
                 {
-                    lhsNode = nullptr;
+                    asgdLclVar = nullptr;
                 }
             }
 
-            tree = fgPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, NULL, lhsNode);
-
-            // We must have walked to the end of this statement.
-            noway_assert(!tree);
+            fgPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, asgdLclVar);
         }
 
 #if INLINE_NDIRECT

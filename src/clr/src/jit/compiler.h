@@ -3611,9 +3611,9 @@ public :
     void                fgLocalVarLiveness();
 
     void                fgLocalVarLivenessInit();
-    GenTreePtr          fgPerStatementLocalVarLiveness(GenTreePtr startNode,
-                                                       GenTreePtr relopNode,
-                                                       GenTreePtr lshNode);
+
+    void                fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr asgdLclVar);
+
     void                fgPerBlockLocalVarLiveness();
 
     VARSET_VALRET_TP    fgGetHandlerLiveVars(BasicBlock *block);
