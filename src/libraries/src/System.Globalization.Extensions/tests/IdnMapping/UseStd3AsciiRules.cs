@@ -1,9 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
-using System;
-using System.Globalization;
 
 namespace System.Globalization.Tests
 {
@@ -21,12 +20,23 @@ namespace System.Globalization.Tests
     /// </summary>
     public class UseStd3AsciiRules
     {
-        private void VerifyStd3AsciiRules(string unicode)
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        private void VerifyStd3AsciiRules(string unicode, bool containsInvalidHyphen)
         {
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
             var idnStd3True = new IdnMapping { UseStd3AsciiRules = true };
 
-            Assert.Equal(unicode, idnStd3False.GetAscii(unicode));
+            if (containsInvalidHyphen && !s_isWindows)
+            {
+                // ICU always fails on leading/trailing hyphens regardless of the Std3 rules option.
+                Assert.Throws<ArgumentException>(() => idnStd3False.GetAscii(unicode));
+            }
+            else
+            {
+                Assert.Equal(unicode, idnStd3False.GetAscii(unicode));
+            }
+
             Assert.Throws<ArgumentException>(() => idnStd3True.GetAscii(unicode));
         }
 
@@ -39,74 +49,66 @@ namespace System.Globalization.Tests
         [Fact]
         public void SanityCheck()
         {
-            VerifyStd3AsciiRules("\u0020\u0061\u0062");
-            VerifyStd3AsciiRules("\u0061\u002F\u0062");
-            VerifyStd3AsciiRules("\u0061\u0062\u003D");
-            VerifyStd3AsciiRules("\u0061\u0062\u005D");
-            VerifyStd3AsciiRules("\u007E\u0061\u0062");
-            VerifyStd3AsciiRules("\u0020\u002E\u003D\u005D\u007E");
-            VerifyStd3AsciiRules("\u007E\u002E\u0061");
-            VerifyStd3AsciiRules("\u0061\u002E\u007E");
+            VerifyStd3AsciiRules("\u0020\u0061\u0062", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u0061\u002F\u0062", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u0061\u0062\u003D", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u0061\u0062\u005D", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u007E\u0061\u0062", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u0020\u002E\u003D\u005D\u007E", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u007E\u002E\u0061", containsInvalidHyphen: false);
+            VerifyStd3AsciiRules("\u0061\u002E\u007E", containsInvalidHyphen: false);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinus()
         {
-            VerifyStd3AsciiRules("\u002D\u0061\u0062");
+            VerifyStd3AsciiRules("\u002D\u0061\u0062", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinusInFirstLabel()
         {
-            VerifyStd3AsciiRules("\u002D\u0061\u0062\u002E\u0063\u0064");
+            VerifyStd3AsciiRules("\u002D\u0061\u0062\u002E\u0063\u0064", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinusInSecondLabel()
         {
-            VerifyStd3AsciiRules("\u0061\u0062\u002E\u002D\u0063\u0064");
+            VerifyStd3AsciiRules("\u0061\u0062\u002E\u002D\u0063\u0064", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinus()
         {
-            VerifyStd3AsciiRules("\u0061\u0062\u002D");
+            VerifyStd3AsciiRules("\u0061\u0062\u002D", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinusInFirstLabel()
         {
-            VerifyStd3AsciiRules("\u0061\u0062\u002D\u002E\u0063\u0064");
+            VerifyStd3AsciiRules("\u0061\u0062\u002D\u002E\u0063\u0064", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinusInSecondLabel()
         {
-            VerifyStd3AsciiRules("\u0061\u0062\u002E\u0063\u0064\u002D");
+            VerifyStd3AsciiRules("\u0061\u0062\u002E\u0063\u0064\u002D", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingAndTrailingHyphenMinus()
         {
-            VerifyStd3AsciiRules("\u002D");
-            VerifyStd3AsciiRules("\u002D\u0062\u002D");
+            VerifyStd3AsciiRules("\u002D", containsInvalidHyphen: true);
+            VerifyStd3AsciiRules("\u002D\u0062\u002D", containsInvalidHyphen: true);
         }
 
         [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void NonLDH_ASCII_Codepoint()
         {
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
             var unicode = "\u0030\u002D\u0045\u007A";
 
-            Assert.Equal(unicode, idnStd3False.GetAscii(unicode));
+            Assert.Equal(unicode, idnStd3False.GetAscii(unicode), ignoreCase: true);
         }
     }
 }
