@@ -68,11 +68,13 @@ namespace System.Globalization.Tests
             Assert.Equal("abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", idn.GetAscii("\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0"));
         }
 
-        [Fact]
-        [ActiveIssue(3406, PlatformID.AnyUnix)]
-        public void EmbeddedNulls()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EmbeddedNulls(bool useStd3AsciiRules)
         {
             var idn = new IdnMapping();
+            idn.UseStd3AsciiRules = useStd3AsciiRules;
 
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000"));
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000", 0));
@@ -85,6 +87,30 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000\u0101\u0000", 0, 4));
             Assert.Throws<ArgumentException>(() => idn.GetUnicode("abc\u0000", 0, 4));
             Assert.Throws<ArgumentException>(() => idn.GetUnicode("ab\u0000c", 0, 4));
+        }
+
+        /// <summary>
+        /// Tests certain illegal characters (U+0000 to U+001F and U+007F) always cause an ArgumentException.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IllegalChars(bool useStd3AsciiRules)
+        {
+            var idn = new IdnMapping();
+            idn.UseStd3AsciiRules = useStd3AsciiRules;
+            string testString;
+
+            for (int i = 0; i <= 0x1F; i++)
+            {
+                testString = "abc" + new string((char)i, 1) + "def";
+                Assert.Throws<ArgumentException>(() => idn.GetAscii(testString));
+                Assert.Throws<ArgumentException>(() => idn.GetUnicode(testString));
+            }
+
+            testString = "abc" + new string((char)0x7F, 1) + "def";
+            Assert.Throws<ArgumentException>(() => idn.GetAscii(testString));
+            Assert.Throws<ArgumentException>(() => idn.GetUnicode(testString));
         }
 
         /// <summary>
