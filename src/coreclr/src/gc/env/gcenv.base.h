@@ -19,7 +19,7 @@
 #ifndef _MSC_VER
 #define __stdcall
 #ifdef __clang__
-#define __forceinline __attribute__((always_inline))
+#define __forceinline __attribute__((always_inline)) inline
 #else // __clang__
 #define __forceinline inline
 #endif // __clang__
