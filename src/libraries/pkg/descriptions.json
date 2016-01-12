@@ -1033,10 +1033,24 @@
         ]
     },
     {
+        "Name": "System.Resources.Reader",
+        "Description": "Provides classes which read resources from streams in the system-default format.",
+        "CommonTypes": [
+            "System.Resources.ResourceReader"
+        ]
+    },
+    {
         "Name": "System.Resources.ReaderWriter",
         "Description": "Provides classes which read and write resources to streams in the system-default format.",
         "CommonTypes": [
             "System.Resources.ResourceReader",
+            "System.Resources.ResourceWriter"
+        ]
+    },
+    {
+        "Name": "System.Resources.Writer",
+        "Description": "Provides classes which write resources to streams in the system-default format.",
+        "CommonTypes": [
             "System.Resources.ResourceWriter"
         ]
     },
