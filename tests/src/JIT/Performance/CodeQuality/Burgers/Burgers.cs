@@ -177,7 +177,13 @@ public class Burgers
         }
 
         int nx = 10001;
+
+#if DEBUG
+        int nt = 10;
+#else
         int nt = 10000;
+#endif
+
         double dx = 2.0 * Math.PI / (nx - 1.0);
         double nu = 0.07;
         double dt = dx * nu;
