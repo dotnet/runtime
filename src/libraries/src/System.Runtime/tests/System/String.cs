@@ -94,7 +94,7 @@ public static unsafe class StringTests
     [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 0, 8, "abcdefgh")]
     [InlineData(new char[] { 'a', 'b', 'c', 'd', '\0', 'e', 'f', 'g', 'h' }, 0, 9, "abcd\0efgh")]
     [InlineData(new char[] { 'П', 'Р', 'И', 'В', 'Е', 'Т' }, 0, 6, "ПРИВЕТ")]
-    public static void TestCtorCharArrar(char[] c, int startIndex, int length, string expected)
+    public static void TestCtorCharArray(char[] c, int startIndex, int length, string expected)
     {
         if (c == null)
         {
@@ -196,22 +196,17 @@ public static unsafe class StringTests
         Assert.Equal("1211", s);
     }
 
-    [Fact]
-    public static void TestCopyTo()
+    [Theory]
+    [InlineData("Hello", 1, 5, 3, new char[] { '\0', '\0', '\0', '\0', '\0', 'e', 'l', 'l', '\0', '\0' })]
+    [InlineData("Hello", 2, 0, 3, new char[] { 'l', 'l', 'o', '\0', '\0', '\0', '\0', '\0', '\0', '\0' })]
+    [InlineData("Hello", 0, 7, 3, new char[] { '\0', '\0', '\0', '\0', '\0', '\0', '\0', 'H', 'e', 'l' })]
+    [InlineData("Hello", 5, 10, 0, new char[] { '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' })]
+    [InlineData("H" + c_SoftHyphen + "ello", 0, 0, 3, new char[] { 'H', '\u00AD', 'e' })]
+    public static void TestCopyTo(string s, int sourceIndex, int destinationIndex, int count, char[] expected)
     {
-        String s = "Hello";
-        char[] dst = new char[10];
-        s.CopyTo(1, dst, 5, 3);
-        Assert.Equal(0, dst[0]);
-        Assert.Equal(0, dst[1]);
-        Assert.Equal(0, dst[2]);
-        Assert.Equal(0, dst[3]);
-        Assert.Equal(0, dst[4]);
-        Assert.Equal('e', dst[5]);
-        Assert.Equal('l', dst[6]);
-        Assert.Equal('l', dst[7]);
-        Assert.Equal(0, dst[8]);
-        Assert.Equal(0, dst[9]);
+        char[] dst = new char[expected.Length];
+        s.CopyTo(sourceIndex, dst, destinationIndex, count);
+        Assert.Equal(expected, dst);
     }
 
     [Fact]
@@ -221,10 +216,16 @@ public static unsafe class StringTests
         char[] dst = new char[10];
 
         Assert.Throws<ArgumentNullException>("destination", () => s.CopyTo(0, null, 0, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(-1, dst, 0, 0)); //Source index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.CopyTo(-1, dst, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(-1, dst, -1, 0)); //Source index < 0
         Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => s.CopyTo(0, dst, -1, 0)); //Destination index < 0
         Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(0, dst, 0, 6));
+        Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => s.CopyTo(0, dst, 11, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => s.CopyTo(0, dst, 9, 2));
+
+        dst = new char[2];
+
+        Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => s.CopyTo(0, dst, 0, 4));
     }
 
     [Theory]
@@ -572,12 +573,14 @@ public static unsafe class StringTests
         }
     }
 
-    [Fact]
-    public static void TestGetHashCode()
+    [Theory]
+    [InlineData("Hello", new char[] { 'H', 'e', 'l', 'l', 'o' }, true)]
+    [InlineData("", new char[] { }, true)]
+    [InlineData("Hello", new char[] { }, false)] // Technically could be equal but if so its an inadequate implementation
+    public static void TestGetHashCode(string strA, char[] arrayB, bool expectedResult)
     {
-        int h1 = "Hello".GetHashCode();
-        int h2 = (new String(new char[] { 'H', 'e', 'l', 'l', 'o' })).GetHashCode();
-        Assert.Equal(h1, h2);
+        string strB = new String(arrayB);
+        Assert.Equal(expectedResult, strA.GetHashCode() == strB.GetHashCode());
     }
 
     [Theory]
@@ -592,6 +595,8 @@ public static unsafe class StringTests
     [InlineData("Hello", 'l', 0, 3, 2)]
     [InlineData("Hello", 'l', 4, 1, -1)]
     [InlineData("Hello", 'x', 1, 4, -1)]
+    [InlineData("Hello", 'o', 5, 0, -1)]
+    [InlineData("H" + c_SoftHyphen + "ello", 'e', 0, 3, 2)]
     public static void TestIndexOf_SingleLetter(string source, char target, int startIndex, int count, int expectedResult)
     {
         if (count == source.Length - startIndex)
@@ -656,6 +661,43 @@ public static unsafe class StringTests
         Assert.Equal(
             ignoringCase ? i : -1,
             source.IndexOf(substring, comparison));
+    }
+
+    [Fact]
+    public static void TestIndexOf_Invalid()
+    {
+        string s = "Hello";
+
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf('e', -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf('e', -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf('e', 6));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf('e', 6, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf('e', 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf('e', 0, 6));
+
+        Assert.Throws<ArgumentNullException>("value", () => s.IndexOf(null));
+        Assert.Throws<ArgumentNullException>("value", () => s.IndexOf(null, -1));
+        Assert.Throws<ArgumentNullException>("value", () => s.IndexOf(null, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentNullException>("value", () => s.IndexOf(null, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentNullException>("value", () => s.IndexOf(null, -1, 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf(null, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", -1, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", 6));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf(null, 6, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.IndexOf("e", 6, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf(null, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf("e", 1, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf(null, 0, 6));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOf("e", 0, 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", StringComparison.OrdinalIgnoreCase + 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", 0, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", 0, StringComparison.OrdinalIgnoreCase + 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", 0, 1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.IndexOf("e", 0, 1, StringComparison.OrdinalIgnoreCase + 1));
     }
 
     [Fact]
@@ -842,16 +884,42 @@ public static unsafe class StringTests
         });
     }
 
-    [Fact]
-    public static void TestIndexOfAny()
+    [Theory]
+    [InlineData("Hello", new char[] { 'd', 'o', 'l' }, 0, 5, 2)]
+    [InlineData("Hello", new char[] { 'd', 'e', 'H' }, 0, 0, -1)]
+    [InlineData("Hello", new char[] { 'd', 'e', 'f' }, 1, 3, 1)]
+    [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, 3, -1)]
+    [InlineData("Hello", new char[] { }, 2, 3, -1)]
+    [InlineData("H" + c_SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 0, 2, 1)]
+    [InlineData("", new char[] { 'd', 'e', 'f' }, 0, 0, -1)]
+    public static void TestIndexOfAny(string text, char[] c, int startIndex, int count, int expected)
     {
-        int i;
+        if (count == text.Length - startIndex)
+        {
+            if (startIndex == 0)
+            {
+                Assert.Equal(expected, text.IndexOfAny(c));
+            }
+            Assert.Equal(expected, text.IndexOfAny(c, startIndex));
+        }
+        Assert.Equal(expected, text.IndexOfAny(c, startIndex, count));
+    }
 
-        i = "Hello".IndexOfAny(new char[] { 'd', 'e', 'f' }, 0, 3);
-        Assert.Equal(1, i);
+    [Fact]
+    public static void TestIndexOfAny_Invalid()
+    {
+        string s = "Hello";
+        char[] find = new char[] { 'a', 'b', 'c' };
 
-        i = "Hello".IndexOfAny(new char[] { 'a', 'b', 'c' }, 0, 3);
-        Assert.Equal(-1, i);
+        Assert.Throws<ArgumentNullException>(() => s.IndexOfAny(null));
+        Assert.Throws<ArgumentNullException>(() => s.IndexOfAny(null, -1));
+        Assert.Throws<ArgumentNullException>(() => s.IndexOfAny(null, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.IndexOfAny(find, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.IndexOfAny(find, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.IndexOfAny(find, 6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.IndexOfAny(find, 6, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOfAny(find, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.IndexOfAny(find, 3, 3));
     }
 
     [Theory]
@@ -983,6 +1051,7 @@ public static unsafe class StringTests
     [InlineData("Hello", 'l', 4, 3, 3)]
     [InlineData("Hello", 'l', 0, 1, -1)]
     [InlineData("Hello", 'x', 3, 4, -1)]
+    [InlineData("H" + c_SoftHyphen + "ello", 'H', 2, 3, 0)]
     public static void TestLastIndexOf_SingleLetter(string source, char target, int startIndex, int count, int expectedResult)
     {
         if (count == source.Length)
@@ -1001,6 +1070,15 @@ public static unsafe class StringTests
         Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
         Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
         Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [InlineData("Hello", "o", 5, 0, -1)]
+    [InlineData("Hello", "o", 5, 6, -1)]
+    public static void TestLastIndexOf_OutsideIndex(string source, string target, int startIndex, int count, int expectedResult)
+    {
+        Assert.Equal(expectedResult, source.LastIndexOf(target, startIndex));
+        Assert.Equal(expectedResult, source.LastIndexOf(target, startIndex, count));
+        Assert.Equal(expectedResult, source.LastIndexOf(target, startIndex, count, StringComparison.CurrentCulture));
     }
 
     [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
@@ -1053,6 +1131,42 @@ public static unsafe class StringTests
             source.LastIndexOf(substring, comparison));
     }
 
+    [Fact]
+    public static void TestLastIndexOf_Invalid()
+    {
+        string s = "Hello";
+
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf('e', -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf('e', -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf('e', 5));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf('e', 5, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf('e', 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf('e', 0, 6));
+
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null));
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null, -1));
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null, 0, 6));
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentNullException>("value", () => s.LastIndexOf(null, -1, 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", -1, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", 6));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOf("e", 6, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf(null, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf("e", 1, -1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf("e", 0, 6, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOf("e", 5, 7, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", StringComparison.OrdinalIgnoreCase + 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", 1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", 1, StringComparison.OrdinalIgnoreCase + 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", 1, 1, StringComparison.CurrentCulture - 1));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.LastIndexOf("e", 1, 1, StringComparison.OrdinalIgnoreCase + 1));
+    }
+
     [Theory]
     [InlineData("foo", 2)]
     [InlineData("hello", 4)]
@@ -1063,12 +1177,41 @@ public static unsafe class StringTests
     }
 
     [Theory]
+    [InlineData("Hello", new char[] { 'd', 'e', 'l' }, 4, 5, 3)]
+    [InlineData("Hello", new char[] { 'd', 'e', 'l' }, 4, 0, -1)]
     [InlineData("Hello", new char[] { 'd', 'e', 'f' }, 2, 3, 1)]
     [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, 3, -1)]
+    [InlineData("Hello", new char[] { }, 2, 3, -1)]
+    [InlineData("H" + c_SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 2, 3, 1)]
+    [InlineData("", new char[] { 'd', 'e', 'f' }, -1, -1, -1)]
     public static void TestLastIndexOfAny(string text, char[] c, int startIndex, int count, int expected)
     {
-        int i = text.LastIndexOfAny(c, startIndex, count);
-        Assert.Equal(expected, i);
+        if (count == startIndex + 1)
+        {
+            if (startIndex == text.Length - 1)
+            {
+                Assert.Equal(expected, text.LastIndexOfAny(c));
+            }
+            Assert.Equal(expected, text.LastIndexOfAny(c, startIndex));
+        }
+        Assert.Equal(expected, text.LastIndexOfAny(c, startIndex, count));
+    }
+
+    [Fact]
+    public static void TestLastIndexOfAny_Invalid()
+    {
+        string s = "Hello";
+        char[] find = new char[] { 'a', 'b', 'c' };
+
+        Assert.Throws<ArgumentNullException>(() => s.LastIndexOfAny(null));
+        Assert.Throws<ArgumentNullException>(() => s.LastIndexOfAny(null, -1));
+        Assert.Throws<ArgumentNullException>(() => s.LastIndexOfAny(null, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOfAny(find, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOfAny(find, -1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOfAny(find, 5));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.LastIndexOfAny(find, 5, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOfAny(find, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.LastIndexOfAny(find, 1, 3));
     }
 
     [Fact]
@@ -1333,6 +1476,15 @@ public static unsafe class StringTests
 
         c = "Hello".ToCharArray(5, 0);
         Assert.Equal(0, c.Length);
+    }
+
+    [Fact]
+    public static void TestToCharArray_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".ToCharArray(-1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".ToCharArray(6, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".ToCharArray(0, 6));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => "Hello".ToCharArray(0, -1));
     }
 
     [Fact]
