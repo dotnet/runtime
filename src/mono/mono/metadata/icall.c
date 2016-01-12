@@ -100,6 +100,10 @@
 #include "decimal-ms.h"
 #include "number-ms.h"
 
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
+#include <sys/utsname.h>
+#endif
+
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
 ICALL_EXPORT MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
@@ -5885,6 +5889,28 @@ ves_icall_System_Environment_get_NewLine (void)
 	return mono_string_new (mono_domain_get (), "\r\n");
 #else
 	return mono_string_new (mono_domain_get (), "\n");
+#endif
+}
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
+{
+#if SIZEOF_VOID_P == 8
+	return TRUE;
+#else
+#ifdef HOST_WIN32
+	gboolean isWow64Process = FALSE;
+	if (IsWow64Process (GetCurrentProcess (), &isWow64Process)) {
+		return (MonoBoolean)isWow64Process;
+	}
+#elif defined(HAVE_SYS_UTSNAME_H)
+	struct utsname name;
+
+	if (uname (&name) >= 0) {
+		return strcmp (name.machine, "x86_64") == 0 || strncmp (name.machine, "aarch64", 7) == 0 || strncmp (name.machine, "ppc64", 5) == 0;
+	}
+#endif
+	return FALSE;
 #endif
 }
 
