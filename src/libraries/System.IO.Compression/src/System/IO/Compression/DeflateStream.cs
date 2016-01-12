@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,7 +95,7 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Decompress;
             _leaveOpen = leaveOpen;
-            _buffer = new byte[DefaultBufferSize];
+            _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
         /// <summary>
@@ -111,7 +112,7 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
-            _buffer = new byte[DefaultBufferSize];
+            _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
         #endregion
@@ -531,6 +532,9 @@ namespace System.IO.Compression
                     }
                     finally
                     {
+                        if (_buffer != null)
+                            ArrayPool<byte>.Shared.Return(_buffer, clearArray: true);
+                        _buffer = null;
                         _deflater = null;
                         _inflater = null;
                         base.Dispose(disposing);
