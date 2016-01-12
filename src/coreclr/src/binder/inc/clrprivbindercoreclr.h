@@ -66,6 +66,9 @@ public:
 
 #ifndef CROSSGEN_COMPILE
     HRESULT PreBindByteArray(PEImage  *pPEImage, BOOL fInspectionOnly);
+    HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
+                              /* in */ BOOL fIsNativeImage, 
+                              /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 #endif // CROSSGEN_COMPILE
 
     HRESULT BindAssemblyByNameWorker(
@@ -73,11 +76,25 @@ public:
             BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
             bool excludeAppPaths);
 
+    INT_PTR GetManagedTPABinderInstance()
+    {
+        return m_ptrManagedAssemblyLoadContext;
+    }
+
+    void SetManagedTPABinderInstance(INT_PTR ptrManagedTPABinderInstance)
+    {
+        _ASSERTE(m_ptrManagedAssemblyLoadContext == NULL);
+
+        m_ptrManagedAssemblyLoadContext = ptrManagedTPABinderInstance;
+    }
+    
     //=========================================================================
     // Internal implementation details
     //-------------------------------------------------------------------------
 private:
     BINDER_SPACE::ApplicationContext m_appContext;
+
+    INT_PTR m_ptrManagedAssemblyLoadContext;
 };
 
 #endif // __CLR_PRIV_BINDER_CORECLR_H__
