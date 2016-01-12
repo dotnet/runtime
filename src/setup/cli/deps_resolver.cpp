@@ -453,6 +453,11 @@ void deps_resolver_t::resolve_tpa_list(
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
+        // Is this entry present in the secondary package cache?
+        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
+        {
+            add_tpa_asset(entry.asset_name, candidate, &items, output);
+        }
         // Is this entry present locally?
         else if (m_local_assemblies.count(entry.asset_name))
         {
@@ -461,11 +466,6 @@ void deps_resolver_t::resolve_tpa_list(
         }
         // Is this entry present in the package restore dir?
         else if (entry.to_full_path(package_dir, &candidate))
-        {
-            add_tpa_asset(entry.asset_name, candidate, &items, output);
-        }
-        // Is this entry present in the secondary package cache?
-        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
@@ -535,25 +535,24 @@ void deps_resolver_t::resolve_probe_dirs(
         }
     }
 
-    // App local path
-    add_unique_path(asset_type, app_dir, &items, output);
+    pal::string_t candidate;
 
-    // Take care of the packages cached path
+    // Take care of the secondary cache path
     for (const deps_entry_t& entry : m_deps_entries)
     {
-        if (entry.asset_type != asset_type)
-        {
-            continue;
-        }
-
-        pal::string_t candidate;
-        // Package restore directory
-        if (entry.to_full_path(package_dir, &candidate))
+        if (entry.asset_type == asset_type && entry.to_hash_matched_path(package_cache_dir, &candidate))
         {
             add_unique_path(asset_type, action(candidate), &items, output);
         }
-        // Secondary cache
-        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
+    }
+
+    // App local path
+    add_unique_path(asset_type, app_dir, &items, output);
+
+    // Take care of the package restore path
+    for (const deps_entry_t& entry : m_deps_entries)
+    {
+        if (entry.asset_type == asset_type && entry.to_full_path(package_dir, &candidate))
         {
             add_unique_path(asset_type, action(candidate), &items, output);
         }
