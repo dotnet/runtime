@@ -266,7 +266,6 @@ namespace System.Collections.Generic
         // Returns true if the queue contains at least one object equal to item.
         // Equality is determined using item.Equals().
         //
-        // Exceptions: ArgumentNullException if item == null.
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Contains"]/*' />
         public bool Contains(T item)
         {
