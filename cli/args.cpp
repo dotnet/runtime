@@ -11,6 +11,11 @@ arguments_t::arguments_t() :
     app_dir(_X("")),
     app_argc(0),
     app_argv(nullptr),
+    nuget_packages(_X("")),
+    dotnet_packages_cache(_X("")),
+    dotnet_servicing(_X("")),
+    dotnet_runtime_servicing(_X("")),
+    dotnet_home(_X("")),
     deps_path(_X(""))
 {
 }
@@ -102,7 +107,7 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         args.deps_path.append(_X(".deps"));
     }
 
-    pal::getenv(_X("DOTNET_PACKAGES"), &args.dotnet_packages);
+    pal::getenv(_X("NUGET_PACKAGES"), &args.nuget_packages);
     pal::getenv(_X("DOTNET_PACKAGES_CACHE"), &args.dotnet_packages_cache);
     pal::getenv(_X("DOTNET_SERVICING"), &args.dotnet_servicing);
     pal::getenv(_X("DOTNET_RUNTIME_SERVICING"), &args.dotnet_runtime_servicing);
