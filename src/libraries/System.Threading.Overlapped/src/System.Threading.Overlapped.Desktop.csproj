@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="..\dir.settings.targets" />
+  <PropertyGroup>
+    <AssemblyName>System.Threading.Overlapped</AssemblyName>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsDesktopLibrary>true</IsDesktopLibrary>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ResInputPath>$(MSBuildThisFileDirectory)Resources</ResInputPath>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Common\Interop\Windows\Interop.HResult.cs">
+      <Link>Interop\Windows\Interop.HResult.cs</Link>
+    </Compile>
+    <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="..\Common\System\NotImplemented.cs">
+      <Link>NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="System\Threading\DeferredDisposableLifetime.cs" />
+  </ItemGroup>
+  <Import Project="..\dir.targets" />
+</Project>
