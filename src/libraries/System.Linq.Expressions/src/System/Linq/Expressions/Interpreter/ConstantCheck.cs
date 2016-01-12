@@ -53,9 +53,13 @@ namespace System.Linq.Expressions.Interpreter
         {
             Type operandType = operand.Type;
 
-            // Oddly, we allow void operands
-            // This is LinqV1 behavior of TypeIs
+            // An expression is either of type void, or it isn't.
             if (operandType == typeof(void))
+            {
+                return testType == typeof(void) ? AnalyzeTypeIsResult.KnownTrue : AnalyzeTypeIsResult.KnownFalse;
+            }
+
+            if (testType == typeof(void))
             {
                 return AnalyzeTypeIsResult.KnownFalse;
             }

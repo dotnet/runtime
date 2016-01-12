@@ -78,9 +78,6 @@ namespace System.Linq.Expressions.Tests
         [MemberData("ExpressionAndTypeCombinations")]
         public void ExpressionEvaluationCompiled(Expression expression, Type type)
         {
-            if (type == typeof(void))
-                return; // ActiveIssue 5244
-
             bool expected = expression.Type == typeof(void)
                 ? type == typeof(void)
                 : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
@@ -93,7 +90,7 @@ namespace System.Linq.Expressions.Tests
         public void ExpressionEvaluationInterpretted(Expression expression, Type type)
         {
             bool expected = expression.Type == typeof(void)
-                ? false // type == typeof(void) // ActiveIssue 5244
+                ? type == typeof(void)
                 : type.IsInstanceOfType(Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()());
 
             Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeIs(expression, type)).Compile(true)());
@@ -103,9 +100,6 @@ namespace System.Linq.Expressions.Tests
         [MemberData("ExpressionAndTypeCombinations")]
         public void ExpressionEvaluationWithParameterCompiled(Expression expression, Type type)
         {
-            if (type == typeof(void))
-                return; // ActiveIssue 5244
-
             if (expression.Type == typeof(void))
                 return; // Can't have void parameter.
 
