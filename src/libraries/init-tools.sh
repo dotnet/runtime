@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
@@ -10,12 +12,31 @@ __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
 
+OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        OS=OSX
+        __DOTNET_PKG=dotnet-osx-x64
+        ;;
+
+    Linux)
+        OS=Linux
+        __DOTNET_PKG=dotnet-ubuntu-x64
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected. Downloading ubuntu-x64 tools"
+        OS=Linux
+        __DOTNET_PKG=dotnet-ubuntu-x64
+        ;;
+esac
+
 if [ ! -e $__PROJECT_JSON_FILE ]; then
  if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
 
  if [ ! -e $__DOTNET_PATH ]; then
-    mkdir "$__DOTNET_PATH" -p
-    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz
+    mkdir -p "$__DOTNET_PATH"
+    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__DOTNET_PKG}.latest.tar.gz
     cd $__DOTNET_PATH
     tar -xvf $__DOTNET_PATH/dotnet.tar
     cd $__scriptpath
