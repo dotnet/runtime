@@ -5,7 +5,7 @@ namespace System.Net.Tests
 {
     internal class WebSocketTestServers
     {
-        public const string Host = "corefx-net.azurewebsites.net";
+        public const string Host = "corefx-net.cloudapp.net";
 
         private const string EchoHandler = "WebSocket/EchoWebSocket.ashx";
         private const string EchoHeadersHandler = "WebSocket/EchoWebSocketHeaders.ashx";
