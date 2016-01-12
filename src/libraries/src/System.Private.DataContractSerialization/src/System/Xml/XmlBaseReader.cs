@@ -70,7 +70,7 @@ namespace System.Xml
         {
             _bufferReader = new XmlBufferReader(this);
             _nsMgr = new NamespaceManager(_bufferReader);
-            _quotas = XmlDictionaryReaderQuotas.Max;
+            _quotas = new XmlDictionaryReaderQuotas();
             _rootElementNode = new XmlElementNode(_bufferReader);
             _atomicTextNode = new XmlAtomicTextNode(_bufferReader);
             _node = s_closedNode;
@@ -95,6 +95,14 @@ namespace System.Xml
             }
         }
 
+        public override XmlDictionaryReaderQuotas Quotas
+        {
+            get
+            {
+                return _quotas;
+            }
+        }
+
         protected XmlNode Node
         {
             get
@@ -114,6 +122,11 @@ namespace System.Xml
 
         protected void MoveToInitial(XmlDictionaryReaderQuotas quotas)
         {
+            if (quotas == null)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("quotas");
+
+            quotas.InternalCopyTo(_quotas);
+            _quotas.MakeReadOnly();
             _nsMgr.Clear();
             _depth = 0;
             _attributeCount = 0;
@@ -276,6 +289,8 @@ namespace System.Xml
             }
             _nsMgr.EnterScope();
             _depth++;
+            if (_depth > _quotas.MaxDepth)
+                XmlExceptionHelper.ThrowMaxDepthExceeded(this, _quotas.MaxDepth);
             if (_elementNodes == null)
             {
                 _elementNodes = new XmlElementNode[4];
@@ -1474,6 +1489,8 @@ namespace System.Xml
                 {
                     value = node.Value.GetString();
                     SkipValue(node);
+                    if (value.Length > _quotas.MaxStringContentLength)
+                        XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, _quotas.MaxStringContentLength);
                 }
                 return value;
             }

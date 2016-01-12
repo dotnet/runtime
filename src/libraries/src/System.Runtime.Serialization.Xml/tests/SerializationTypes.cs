@@ -2712,3 +2712,20 @@ public class TypeWithByteProperty
 {
     public byte ByteProperty;
 }
+
+[DataContract(Name = "TestLevelOne", Namespace = "")]
+public class TestLevelOne
+{
+    [DataMember]
+    public int SampleInt { get; set; }
+
+    [DataMember]
+    public string SampleString { get; set; }
+}
+
+[DataContract(Name = "TestLevelTwo", Namespace = "")]
+public class TestLevelTwo
+{
+    [DataMember]
+    public TestLevelOne TestOne { get; set; }
+}
