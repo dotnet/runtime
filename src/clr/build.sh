@@ -29,7 +29,6 @@ setup_dirs()
     mkdir -p "$__IntermediatesDir"
     # Ensure there are no stale generated files
     rm -rf "$__GeneratedIntermediatesDir"
-
 }
 
 # Performs "clean build" type actions (deleting and remaking directories)
@@ -46,11 +45,11 @@ clean()
     rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
 }
 
-# Check the system to ensure the right pre-reqs are in place
+# Check the system to ensure the right prereqs are in place
 
 check_prereqs()
 {
-    echo "Checking pre-requisites..."
+    echo "Checking prerequisites..."
 
     # Check presence of CMake on the path
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
@@ -94,9 +93,10 @@ build_coreclr()
     # Do not do any more processing from now on:
     # All set to commence the build
 
+    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType in $__IntermediatesDir"
+
     export __GeneratedIntermediatesDir="$__GeneratedIntermediatesDirPresent"
     cd "$__IntermediatesDir"
-    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
 
     generator=""
     buildFile="Makefile"
@@ -108,7 +108,7 @@ build_coreclr()
     fi
 
     # Regenerate the CMake solution
-    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType $__CodeCoverage"
+    echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator"
     "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator
 
     # Check that the makefiles were created.
@@ -129,7 +129,7 @@ build_coreclr()
 
     # Build CoreCLR
 
-    echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
+    echo "Executing $buildTool install -j $NumProc $__UnprocessedBuildArgs"
 
     $buildTool install -j $NumProc $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
@@ -214,7 +214,7 @@ echo "Commencing CoreCLR Repo build"
 #
 # Set the default arguments for build
 
-# Obtain the location of the bash script to figure out whether the root of the repo is.
+# Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Use uname to determine what the CPU is.
@@ -277,6 +277,7 @@ case $OSName in
         __BuildOS=Linux
         ;;
 esac
+
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=Include_Tests
@@ -306,78 +307,100 @@ for i in "$@"
     do
         lowerI="$(echo $i | awk '{print tolower($0)}')"
         case $lowerI in
-        -?|-h|--help)
-        usage
-        exit 1
-        ;;
-        x86)
-        __BuildArch=x86
-        ;;
-        x64)
-        __BuildArch=x64
-        ;;
-        arm)
-        __BuildArch=arm
-        ;;
-        arm64)
-        __BuildArch=arm64
-        ;;
-        debug)
-        __BuildType=Debug
-        ;;
-		checked)
-        __BuildType=Checked
-        ;;
-        release)
-        __BuildType=Release
-        ;;
-        coverage)
-        __CodeCoverage=Coverage
-        ;;
-        clean)
-        __CleanBuild=1
-        ;;
-        verbose)
-        __VerboseBuild=1
-        ;;
-        cross)
-        __CrossBuild=1
-        ;;
-        clang3.5)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=5
-        ;;
-        clang3.6)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=6
-        ;;
-        clang3.7)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=7
-        ;;
-        ninja)
-        __UseNinja=1
-        ;;
-        skipnative)
-        # Use "skipnative" to use the same option name as build.cmd.
-        __SkipCoreCLR=1
-        ;;
-        skipcoreclr)
-        # Accept "skipcoreclr" for backwards-compatibility.
-        __SkipCoreCLR=1
-        ;;
-        skipmscorlib)
-        __SkipMSCorLib=1
-        ;;
-        includetests)
-        ;;
-        skiptests)
-        __IncludeTests=
-        ;;
-        *)
-        __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
-    esac
-done
+            -\?|-h|--help)
+                usage
+                exit 1
+                ;;
+
+            x86)
+                __BuildArch=x86
+                ;;
+
+            x64)
+                __BuildArch=x64
+                ;;
+
+            arm)
+                __BuildArch=arm
+                ;;
+
+            arm64)
+                __BuildArch=arm64
+                ;;
+
+            debug)
+                __BuildType=Debug
+                ;;
+
+            checked)
+                __BuildType=Checked
+                ;;
+
+            release)
+                __BuildType=Release
+                ;;
+
+            coverage)
+                __CodeCoverage=Coverage
+                ;;
+
+            clean)
+                __CleanBuild=1
+                ;;
+
+            verbose)
+                __VerboseBuild=1
+                ;;
+
+            cross)
+                __CrossBuild=1
+                ;;
+
+            clang3.5)
+                __ClangMajorVersion=3
+                __ClangMinorVersion=5
+                ;;
+
+            clang3.6)
+                __ClangMajorVersion=3
+                __ClangMinorVersion=6
+                ;;
+
+            clang3.7)
+                __ClangMajorVersion=3
+                __ClangMinorVersion=7
+                ;;
+
+            ninja)
+                __UseNinja=1
+                ;;
+
+            skipnative)
+                # Use "skipnative" to use the same option name as build.cmd.
+                __SkipCoreCLR=1
+                ;;
+
+            skipcoreclr)
+                # Accept "skipcoreclr" for backwards-compatibility.
+                __SkipCoreCLR=1
+                ;;
+
+            skipmscorlib)
+                __SkipMSCorLib=1
+                ;;
+
+            includetests)
+                ;;
+
+            skiptests)
+                __IncludeTests=
+                ;;
+
+            *)
+                __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+                ;;
+        esac
+    done
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
@@ -422,7 +445,7 @@ check_prereqs
 
 build_coreclr
 
-# Build mscolrib.
+# Build mscorlib.
 
 build_mscorlib
 
