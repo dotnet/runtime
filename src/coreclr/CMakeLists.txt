@@ -308,6 +308,8 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
+  add_compile_options(-fstack-protector-strong)
+
   # set the CLANG sanitizer flags for debug build
   if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # obtain settings from running enablesanitizers.sh
