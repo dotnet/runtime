@@ -117,18 +117,18 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                return TaskHelpers.FromCancellation(cancellationToken);
             }
             else
             {
                 try
                 {
                     Open();
-                    return Task.CompletedTask;
+                    return TaskHelpers.CompletedTask();
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException(e);
+                    return TaskHelpers.FromException(e);
                 }
             }
         }
