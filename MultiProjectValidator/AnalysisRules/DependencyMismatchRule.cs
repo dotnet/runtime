@@ -70,11 +70,11 @@ namespace MultiProjectValidator.AnalysisRules
             StringBuilder sb = new StringBuilder();
 
             sb.Append($"Conflict for {dependencyGroup.DependencyName} in projects:{Environment.NewLine}");
-            
+
             foreach (var version in dependencyGroup.VersionDependencyInfoMap.Keys)
             {
                 var dependencyInfoList = dependencyGroup.VersionDependencyInfoMap[version];
-                
+
                 foreach (var dependencyInfo in dependencyInfoList)
                 {
                     sb.Append($"Version: {dependencyInfo.Version} Path: {dependencyInfo.ProjectPath} {Environment.NewLine}");
@@ -134,12 +134,8 @@ namespace MultiProjectValidator.AnalysisRules
                     }
                 }
             }
-           
+
             return libraryNameDependencyGroupMap.Values.ToList();
         }
-
-       
-
-       
     }
 }
