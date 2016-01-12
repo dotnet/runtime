@@ -7,6 +7,7 @@
 #include <string.h>
 #include <vector>
 
+#include "config.h"
 #include "locale.hpp"
 #include "holders.h"
 
@@ -577,8 +578,7 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
         case SuperShortDayNames:
             // UDAT_STANDALONE_SHORTER_WEEKDAYS was added in ICU 51, and CentOS 7 currently uses ICU 50.
             // fallback to UDAT_STANDALONE_NARROW_WEEKDAYS in that case.
-
-#ifdef HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS
+#if HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
 #else
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
