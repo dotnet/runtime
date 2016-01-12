@@ -18,7 +18,7 @@ struct arguments_t
     pal::string_t dotnet_servicing;
     pal::string_t dotnet_runtime_servicing;
     pal::string_t dotnet_home;
-    pal::string_t dotnet_packages;
+    pal::string_t nuget_packages;
     pal::string_t dotnet_packages_cache;
     pal::string_t managed_application;
 

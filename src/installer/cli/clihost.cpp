@@ -83,7 +83,7 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
     }
 
     // Add packages directory
-    pal::string_t packages_dir = args.dotnet_packages;
+    pal::string_t packages_dir = args.nuget_packages;
     if (!pal::directory_exists(packages_dir))
     {
         (void)pal::get_default_packages_directory(&packages_dir);
