@@ -5125,6 +5125,7 @@ handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, unsigned char *ip)
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 	/* mono_array_new_va () needs a vararg calling convention */
+	cfg->exception_message = g_strdup ("array-new");
 	cfg->disable_llvm = TRUE;
 
 	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
@@ -6731,6 +6732,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoJumpInfoToken *ji;
 			MonoString *s;
 
+			cfg->exception_message = g_strdup ("GetHandle");
 			cfg->disable_llvm = TRUE;
 
 			if (args [0]->opcode == OP_GOT_ENTRY) {

@@ -6084,6 +6084,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			has_terminator = TRUE;
 			break;
 		}
+		case OP_IL_SEQ_POINT:
+			break;
 		default: {
 			char reason [128];
 
