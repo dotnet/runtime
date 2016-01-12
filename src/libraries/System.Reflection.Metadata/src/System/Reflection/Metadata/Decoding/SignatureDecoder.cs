@@ -46,14 +46,17 @@ namespace System.Reflection.Metadata.Decoding
         /// Decodes a type embedded in a signature and advances the reader past the type.
         /// </summary>
         /// <param name="blobReader">The blob reader positioned at the leading SignatureTypeCode</param>
+        /// <param name="allowTypeSpecifications">Allow a <see cref="TypeSpecificationHandle"/> to follow a (CLASS | VALUETYPE) in the signature.
+        /// At present, the only context where that would be valid is in a LocalConstantSig as defined by the Portable PDB specification.
+        /// </param>
         /// <returns>The decoded type.</returns>
         /// <exception cref="System.BadImageFormatException">The reader was not positioned at a valid signature type.</exception>
-        public TType DecodeType(ref BlobReader blobReader)
+        public TType DecodeType(ref BlobReader blobReader, bool allowTypeSpecifications = false)
         {
-            return DecodeType(ref blobReader, blobReader.ReadCompressedInteger());
+            return DecodeType(ref blobReader, allowTypeSpecifications, blobReader.ReadCompressedInteger());
         }
 
-        private TType DecodeType(ref BlobReader blobReader, int typeCode)
+        private TType DecodeType(ref BlobReader blobReader, bool allowTypeSpecifications, int typeCode)
         {
             TType elementType;
             int index;
@@ -192,7 +195,7 @@ namespace System.Reflection.Metadata.Decoding
                     {
                         break;
                     }
-                    parameterBuilder.Add(DecodeType(ref blobReader, typeCode));
+                    parameterBuilder.Add(DecodeType(ref blobReader, allowTypeSpecifications: false, typeCode: typeCode));
                 }
 
                 requiredParameterCount = parameterIndex;
@@ -287,12 +290,23 @@ namespace System.Reflection.Metadata.Decoding
 
         private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)
         {
-            EntityHandle modifier = blobReader.ReadTypeHandle();
+            TType modifier = DecodeTypeDefOrRefOrSpec(ref blobReader, SignatureTypeHandleCode.Unresolved);
             TType unmodifiedType = DecodeType(ref blobReader);
+
             return _provider.GetModifiedType(_metadataReaderOpt, isRequired, modifier, unmodifiedType);
         }
 
         private TType DecodeTypeDefOrRef(ref BlobReader blobReader, SignatureTypeHandleCode code)
+        {
+            return DecodeTypeHandle(ref blobReader, code, alllowTypeSpecifications: false);
+        }
+
+        private TType DecodeTypeDefOrRefOrSpec(ref BlobReader blobReader, SignatureTypeHandleCode code)
+        {
+            return DecodeTypeHandle(ref blobReader, code, alllowTypeSpecifications: true);
+        }
+
+        private TType DecodeTypeHandle(ref BlobReader blobReader, SignatureTypeHandleCode code, bool alllowTypeSpecifications)
         {
             // Force no differentiation of class vs. value type unless the option is enabled.
             // Avoids cost of WinRT projection.
@@ -302,25 +316,50 @@ namespace System.Reflection.Metadata.Decoding
             }
  
             EntityHandle handle = blobReader.ReadTypeHandle();
-            switch (handle.Kind)
+            if (!handle.IsNil)
             {
-                case HandleKind.TypeDefinition:
-                    var typeDef = (TypeDefinitionHandle)handle;
-                    return _provider.GetTypeFromDefinition(_metadataReaderOpt, typeDef, code);
+                switch (handle.Kind)
+                {
+                    case HandleKind.TypeDefinition:
+                        var typeDef = (TypeDefinitionHandle)handle;
+                        return _provider.GetTypeFromDefinition(_metadataReaderOpt, typeDef, code);
 
-                case HandleKind.TypeReference:
-                    var typeRef = (TypeReferenceHandle)handle;
-                    if (code != SignatureTypeHandleCode.Unresolved)
-                    {
-                        ProjectClassOrValueType(typeRef, ref code);
-                    }
-                    return _provider.GetTypeFromReference(_metadataReaderOpt, typeRef, code);
+                    case HandleKind.TypeReference:
+                        var typeRef = (TypeReferenceHandle)handle;
+                        if (code != SignatureTypeHandleCode.Unresolved)
+                        {
+                            ProjectClassOrValueType(typeRef, ref code);
+                        }
+                        return _provider.GetTypeFromReference(_metadataReaderOpt, typeRef, code);
 
-                default:
-                    // To prevent cycles, the token following (CLASS | VALUETYPE) must not be a type spec
-                    // https://github.com/dotnet/coreclr/blob/8ff2389204d7c41b17eff0e9536267aea8d6496f/src/md/compiler/mdvalidator.cpp#L6154-L6160
-                    throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
+                    case HandleKind.TypeSpecification:
+                        if (!alllowTypeSpecifications)
+                        {
+                            // To prevent cycles, the token following (CLASS | VALUETYPE) must not be a type spec.
+                            // https://github.com/dotnet/coreclr/blob/8ff2389204d7c41b17eff0e9536267aea8d6496f/src/md/compiler/mdvalidator.cpp#L6154-L6160
+                            throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
+                        }
+
+                        if (code != SignatureTypeHandleCode.Unresolved)
+                        {
+                            // TODO: We need more work here in differentiating case because instantiations can project class 
+                            // to value type as in IReference<T> -> Nullable<T>. Unblocking Roslyn work where the differentiation
+                            // feature is not used. Note that the use-case of custom-mods will not hit this because there is no
+                            // CLASS | VALUETYPE before the modifier token and so it always comes in unresolved.
+                            code = SignatureTypeHandleCode.Unresolved; // never lie in the meantime.
+                        }
+
+                        var typeSpec = (TypeSpecificationHandle)handle;
+                        return _provider.GetTypeFromSpecification(_metadataReaderOpt, typeSpec, SignatureTypeHandleCode.Unresolved);
+
+                    default:
+                        // indicates an error returned from ReadTypeHandle, otherwise unreachable.
+                        Debug.Assert(handle.IsNil); // will fall through to throw in release.
+                        break;
+                }
             }
+
+            throw new BadImageFormatException(SR.NotTypeDefOrRefOrSpecHandle);
         }
 
         private void ProjectClassOrValueType(TypeReferenceHandle handle, ref SignatureTypeHandleCode code)
