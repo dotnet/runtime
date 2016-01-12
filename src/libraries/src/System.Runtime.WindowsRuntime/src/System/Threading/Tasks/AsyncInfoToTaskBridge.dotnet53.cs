@@ -120,6 +120,11 @@ namespace System.Threading.Tasks
             if (asyncInfo == null)
                 throw new ArgumentNullException("asyncInfo");
             Contract.EndContractBlock();
+            
+            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+			{
+				System.Threading.Tasks.Task.RemoveFromActiveTasks(base.Task.Id);
+			}
 
             try
             {
@@ -198,6 +203,10 @@ namespace System.Threading.Tasks
                     switch (asyncStatus)
                     {
                         case AsyncStatus.Completed:
+                            if (AsyncCausalityTracer.LoggingOn)
+                            {
+                                AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, base.Task.Id, AsyncCausalityStatus.Completed);
+                            }
                             success = base.TrySetResult(result);
                             break;
 
@@ -214,10 +223,15 @@ namespace System.Threading.Tasks
                     Debug.Assert(success, "Expected the outcome to be successfully transfered to the task.");
                 }
                 catch (Exception exc)
-                {
+                {                    
                     // This really shouldn't happen, but could in a variety of misuse cases
                     // such as a faulty underlying IAsyncInfo implementation.
                     Debug.Assert(false, string.Format("Unexpected exception in Complete: {0}", exc.ToString()));
+                    
+                    if (AsyncCausalityTracer.LoggingOn)
+					{
+						AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, base.Task.Id, AsyncCausalityStatus.Error);
+					}
 
                     // For these cases, store the exception into the task so that it makes its way
                     // back to the caller.  Only if something went horribly wrong and we can't store the exception

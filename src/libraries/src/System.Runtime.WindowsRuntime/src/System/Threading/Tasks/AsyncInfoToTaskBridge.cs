@@ -125,6 +125,8 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException("asyncInfo");
 
             Contract.EndContractBlock();
+            
+            AsyncCausalitySupport.RemoveFromActiveTasks(this.Task);
 
             try
             {
