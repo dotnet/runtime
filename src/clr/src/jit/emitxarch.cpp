@@ -1551,7 +1551,7 @@ UNATIVE_OFFSET      emitter::emitInsSizeRR(instruction ins, regNumber reg1, regN
         sz = 5;
     }
     else
-#endif // _TARGET_AMD64
+#endif // _TARGET_AMD64_
     {
         size_t code = insCodeRM(ins);
         sz = emitInsSize(insEncodeRMreg(ins, code));
@@ -7027,13 +7027,13 @@ PRINT_CONSTANT:
         {
             printf("%s, %s", emitXMMregName((unsigned)id->idReg1()), emitXMMregName((unsigned)id->idReg2()));
         }
-#ifdef _TARGET_AMD64
+#ifdef _TARGET_AMD64_
         else if  (ins == INS_movsxd)
         {
             printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE),
                              emitRegName(id->idReg2(), EA_4BYTE));
         }
-#endif // _TARGET_AMD64
+#endif // _TARGET_AMD64_
         else if  (ins == INS_movsx || ins == INS_movzx)
         {
             printf("%s, %s", emitRegName(id->idReg1(),  EA_PTRSIZE),

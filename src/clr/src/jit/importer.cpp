@@ -11741,9 +11741,9 @@ DO_LDFTN:
 
             lclTyp = JITtype2varType(ciType);
 
-#ifdef _TARGET_AMD64
+#ifdef _TARGET_AMD64_
             noway_assert(varTypeIsIntegralOrI(lclTyp) || varTypeIsFloating(lclTyp) || lclTyp == TYP_STRUCT);
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
             if (compIsForInlining())
             {
