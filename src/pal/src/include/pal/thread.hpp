@@ -673,17 +673,31 @@ namespace CorUnix
             void
             );
 
-        // Get base address of this thread's stack
-        // Can be called only for the current thread.
+        // Get base address of the current thread's stack
+        static
         void *
         GetStackBase(
             void
             );
 
-        // Get limit address of this thread's stack
+        // Get cached base address of this thread's stack
         // Can be called only for the current thread.
         void *
+        GetCachedStackBase(
+            void
+            );
+
+        // Get limit address of the current thread's stack
+        static
+        void *
         GetStackLimit(
+            void
+            );
+
+        // Get cached limit address of this thread's stack
+        // Can be called only for the current thread.
+        void *
+        GetCachedStackLimit(
             void
             );
         
