@@ -799,7 +799,7 @@ namespace System {
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             unsafe {
-                fixed (char *src = this) {
+                fixed (char* src = &m_firstChar) {
                     Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
@@ -856,7 +856,7 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
-                fixed (char *src = this) {
+                fixed (char* src = &m_firstChar) {
                     Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
@@ -1537,7 +1537,7 @@ namespace System {
                 String result = FastAllocateString(value.Length);
 
                 unsafe {
-                    fixed (char * dest = result, source = value) {
+                    fixed (char* dest = &result.m_firstChar, source = value) {
                         wstrcpy(dest, source, value.Length);
                     }
                 }
@@ -1567,7 +1567,7 @@ namespace System {
                 String result = FastAllocateString(length);
 
                 unsafe {
-                    fixed (char * dest = result, source = value) {
+                    fixed (char* dest = &result.m_firstChar, source = value) {
                         wstrcpy(dest, source + startIndex, length);
                     }
                 }
@@ -1585,7 +1585,7 @@ namespace System {
                 if (c != 0)
                 {
                     unsafe {
-                        fixed (char *dest = result) {
+                        fixed (char* dest = &result.m_firstChar) {
                             char *dmem = dest;
                             while (((uint)dmem & 3) != 0 && count > 0) {
                                 *dmem++ = c;
@@ -1670,7 +1670,7 @@ namespace System {
                     return String.Empty;
 
                 String result = FastAllocateString(count);
-                fixed (char *dest = result)
+                fixed (char* dest = &result.m_firstChar)
                     wstrcpy(dest, ptr, count);
                 return result;
             }
@@ -1704,7 +1704,7 @@ namespace System {
             String result = FastAllocateString(length);
 
             try {
-                fixed(char *dest = result)
+                fixed (char* dest = &result.m_firstChar)
                     wstrcpy(dest, pFrom, length);
                 return result;
             }
