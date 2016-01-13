@@ -505,6 +505,7 @@ namespace System.Xml.Serialization
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType];
                 return xmlReader.IsStartElement(typeDesc.DataType.Name, string.Empty);
             }
+#if !NET_NATIVE
             else if (_tempAssembly != null)
             {
                 return _tempAssembly.CanRead(_mapping, xmlReader);
@@ -513,6 +514,14 @@ namespace System.Xml.Serialization
             {
                 return false;
             }
+#else
+            if (this.innerSerializer == null)
+            {
+                return false;
+            }
+
+            return this.innerSerializer.CanDeserialize(xmlReader);
+#endif
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromMappings"]/*' />
