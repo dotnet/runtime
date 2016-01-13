@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'netcore50aot'">None</ResourcesSourceOutputDirectory>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot'">true</SkipCommonResourcesIncludes>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -12,15 +15,38 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectJson>netcore50aot/project.json</ProjectJson>
+    <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
 
   <ItemGroup>
     <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <Compile Include="System\Resources\MissingManifestResourceException.cs" />
+    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" />
+    <Compile Include="System\Resources\ResourceManager.cs" />
+    <Compile Include="System\Resources\SatelliteContractVersionAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SR.Core.cs">
+      <Link>Common\System\SR.Core.cs</Link>
+    </Compile>
+    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
