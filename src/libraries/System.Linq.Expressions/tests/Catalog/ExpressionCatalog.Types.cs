@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Tests.Expressions
+namespace System.Linq.Expressions.Tests
 {
     public struct S1
     {
@@ -193,13 +193,6 @@ namespace Tests.Expressions
         {
             return _b.GetHashCode();
         }
-    }
-
-    public enum E
-    {
-        Red,
-        Green,
-        Blue
     }
 
     public class Holder<T>
