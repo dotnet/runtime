@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0025",
-    "System.Diagnostics.Process": "4.0.0-rc2-23616",
+    "System.Diagnostics.Process": "4.1.0-rc2-23616",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
     "System.Runtime": "4.0.20",
@@ -15,6 +15,8 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
   }
 }
