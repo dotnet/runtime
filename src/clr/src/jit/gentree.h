@@ -846,6 +846,7 @@ public:
     #define GTF_RELOP_JMP_USED  0x40000000  // GT_<relop> -- result of compare used for jump or ?:
     #define GTF_RELOP_QMARK     0x20000000  // GT_<relop> -- the node is the condition for ?:
     #define GTF_RELOP_SMALL     0x10000000  // GT_<relop> -- We should use a byte or short sized compare (op1->gtType is the small type)
+    #define GTF_RELOP_ZTT       0x08000000  // GT_<relop> -- Loop test cloned for converting while-loops into do-while with explicit "loop test" in the header block.
 
     #define GTF_QMARK_CAST_INSTOF 0x80000000  // GT_QMARK   -- Is this a top (not nested) level qmark created for castclass or instanceof?
 
