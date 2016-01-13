@@ -213,7 +213,8 @@ namespace GCPerfTestFramework
             var probePath = Environment.GetEnvironmentVariable(ProbePathEnvironmentVariable);
             if (probePath == null)
             {
-                throw new InvalidOperationException($"Environment variable {ProbePathEnvironmentVariable} must be set!");
+                // fall back to the current working directory if the probe path is not set
+                probePath = Directory.GetCurrentDirectory();
             }
 
             var path = ProbeForFileImpl(fileName, probePath);
