@@ -73,7 +73,7 @@ Exit:;
     return hr;
 }
 
-#if !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
 HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage, 
                                                             /* in */ BOOL fIsNativeImage, 
                                                             /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
@@ -145,7 +145,7 @@ Exit:;
 
     return hr;
 }
-#endif // !defined(CROSSGEN_COMPILE)
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
 
 HRESULT CLRPrivBinderCoreCLR::VerifyBind(IAssemblyName        *AssemblyName,
                                          ICLRPrivAssembly     *pAssembly,
