@@ -13,12 +13,15 @@ namespace System.Globalization
         [SecurityCritical]
         private readonly Interop.GlobalizationInterop.SafeSortHandle m_sortHandle;
 
+        private readonly bool m_isAsciiEqualityOrdinal;
+
         [SecuritySafeCritical]
         internal CompareInfo(CultureInfo culture)
         {
             m_name = culture.m_name;
             m_sortName = culture.SortName;
             m_sortHandle = Interop.GlobalizationInterop.GetSortHandle(System.Text.Encoding.UTF8.GetBytes(m_sortName));
+            m_isAsciiEqualityOrdinal = (m_sortName == "en-US" || m_sortName == "");
         }
 
         [SecurityCritical]
@@ -161,6 +164,11 @@ namespace System.Globalization
                 return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            {
+                return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+            }
+
             fixed (char* pSource = source)
             {
                 int index = Interop.GlobalizationInterop.IndexOf(m_sortHandle, target, target.Length, pSource + startIndex, count, options);
@@ -180,10 +188,15 @@ namespace System.Globalization
             {
                 return startIndex;
             }
-            
+
             if (options == CompareOptions.Ordinal)
             {
                 return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+            }
+
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && target.IsAscii())
+            {
+                return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
 
             // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
@@ -205,6 +218,11 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(prefix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && prefix.IsAscii())
+            {
+                return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
+            }
+
             return Interop.GlobalizationInterop.StartsWith(m_sortHandle, prefix, prefix.Length, source, source.Length, options);
         }
 
@@ -214,6 +232,11 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(source));
             Contract.Assert(!string.IsNullOrEmpty(suffix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            if (m_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsAscii() && suffix.IsAscii())
+            {
+                return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
+            }
 
             return Interop.GlobalizationInterop.EndsWith(m_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
@@ -251,5 +274,23 @@ namespace System.Globalization
         [DllImport(JitHelpers.QCall)]
         [SuppressUnmanagedCodeSecurity]
         private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength, [MarshalAs(UnmanagedType.Bool)] bool forceRandomizedHashing, long additionalEntropy);
+
+        private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
+        {
+            if ((options & CompareOptions.IgnoreCase) == CompareOptions.IgnoreCase)
+            {
+                return CompareOptions.OrdinalIgnoreCase;
+            }
+            else
+            {
+                return CompareOptions.Ordinal;
+            }
+        }
+
+        private static bool CanUseAsciiOrdinalForOptions(CompareOptions options)
+        {
+            // Unlike the other Ignore options, IgnoreSymbols impacts ASCII characters (e.g. ').
+            return (options & CompareOptions.IgnoreSymbols) == 0;
+        }
     }
 }
