@@ -38,6 +38,7 @@ namespace System.Net.Security.Tests
         {
             return GetCertificateCollection("testclient1_at_contoso.com.pfx");
         }
+
         private static X509Certificate2Collection GetCertificateCollection(string certificateFileName)
         {
             var certCollection = new X509Certificate2Collection();

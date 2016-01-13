@@ -21,7 +21,7 @@
     <ProjectLockJson>unix\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   
-<!-- Help VS understand available configurations -->
+  <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
@@ -47,6 +47,7 @@
     <Compile Include="ServerNoEncryptionTest.cs" />
     <Compile Include="ServerRequireEncryptionTest.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
+    <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="StreamAPMExtensions.cs" />
     <Compile Include="TransportContextTest.cs" />
 
