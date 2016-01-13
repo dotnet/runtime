@@ -29,7 +29,7 @@
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
-#if defined(HAVE_KW_THREAD) && defined(__linux__) \
+#if (defined(HAVE_KW_THREAD) && defined(__linux__) && defined(__ARM_EABI__)) \
 	|| defined(TARGET_ANDROID) \
 	|| (defined(TARGET_IOS) && !defined(TARGET_WATCHOS))
 #define HAVE_FAST_TLS
@@ -645,30 +645,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 
 #endif /* #ifndef DISABLE_JIT */
 
-#ifndef MONO_CROSS_COMPILE
-static gboolean
-mono_arm_have_fast_tls (void)
-{
-	if (mini_get_debug_options ()->arm_use_fallback_tls)
-		return FALSE;
-#if (defined(HAVE_KW_THREAD) && defined(__linux__)) \
-	|| defined(TARGET_ANDROID)
-	guint32* kuser_get_tls = (void*)0xffff0fe0;
-	guint32 expected [] = {0xee1d0f70, 0xe12fff1e};
-
-	/* Expecting mrc + bx lr in the kuser_get_tls kernel helper */
-	return memcmp (kuser_get_tls, expected, 8) == 0;
-#elif defined(TARGET_IOS)
-	guint32 expected [] = {0x1f70ee1d, 0x0103f021, 0x0020f851, 0xbf004770};
-	/* Discard thumb bit */
-	guint32* pthread_getspecific_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
-	return memcmp ((void*)pthread_getspecific_addr, expected, 16) == 0;
-#else
-	return FALSE;
-#endif
-}
-#endif
-
 /*
  * mono_arm_have_tls_get:
  *
@@ -678,7 +654,6 @@ mono_arm_have_fast_tls (void)
 gboolean
 mono_arm_have_tls_get (void)
 {
-	return FALSE;
 #ifdef HAVE_FAST_TLS
 	return TRUE;
 #else
@@ -5992,15 +5967,17 @@ mono_arch_register_lowlevel_calls (void)
 
 #ifndef MONO_CROSS_COMPILE
 	if (mono_arm_have_tls_get ()) {
-		if (mono_arm_have_fast_tls ()) {
-			mono_register_jit_icall (mono_fast_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
-			mono_register_jit_icall (mono_fast_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+		MonoTlsImplementation tls_imp = mono_arm_get_tls_implementation ();
 
+		mono_register_jit_icall (tls_imp.get_tls_thunk, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
+		mono_register_jit_icall (tls_imp.set_tls_thunk, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+
+		if (tls_imp.get_tls_thunk_end) {
 			mono_tramp_info_register (
 				mono_tramp_info_create (
 					"mono_get_tls_key",
-					(guint8*)mono_fast_get_tls_key,
-					(guint8*)mono_fast_get_tls_key_end - (guint8*)mono_fast_get_tls_key,
+					(guint8*)tls_imp.get_tls_thunk,
+					(guint8*)tls_imp.get_tls_thunk_end - (guint8*)tls_imp.get_tls_thunk,
 					NULL,
 					mono_arch_get_cie_program ()
 					),
@@ -6009,17 +5986,13 @@ mono_arch_register_lowlevel_calls (void)
 			mono_tramp_info_register (
 				mono_tramp_info_create (
 					"mono_set_tls_key",
-					(guint8*)mono_fast_set_tls_key,
-					(guint8*)mono_fast_set_tls_key_end - (guint8*)mono_fast_set_tls_key,
+					(guint8*)tls_imp.set_tls_thunk,
+					(guint8*)tls_imp.set_tls_thunk_end - (guint8*)tls_imp.set_tls_thunk,
 					NULL,
 					mono_arch_get_cie_program ()
 					),
 				NULL
 				);
-		} else {
-			g_warning ("No fast tls on device. Using fallbacks.");
-			mono_register_jit_icall (mono_fallback_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
-			mono_register_jit_icall (mono_fallback_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
 		}
 	}
 #endif
