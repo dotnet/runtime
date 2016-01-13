@@ -47,10 +47,10 @@ namespace System.Net.WebSockets
                 WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
                 var inner = new Exception(status.ToString(), ex);
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, inner);
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", wex);
-                }
+                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, "ConnectAsync", wex);
+                }                
 
                 throw wex;
             }
