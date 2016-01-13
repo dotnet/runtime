@@ -287,9 +287,10 @@ namespace System {
     
         //
         // The pos should point to a quote character. This method will
-        // get the string encloed by the quote character.
+        // get the length, including beginning and ending quote, of the
+        // quoted string.
         //
-        internal static int ParseQuoteString(String format, int pos, StringBuilder result)
+        internal static int ParseQuoteString(String format, int pos)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -314,15 +315,13 @@ namespace System {
                     //  minute: 45"
                     // because the second double quote is escaped.
                     if (pos < formatLen) {
-                        result.Append(format[pos++]);
+                        pos++;
                     } else {
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
                             throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
                     }                    
-                } else {
-                    result.Append(ch);
                 }
             }
             
@@ -334,7 +333,7 @@ namespace System {
                             CultureInfo.CurrentCulture,
                             Environment.GetResourceString("Format_BadQuote"), quoteChar));
             }
-            
+
             //
             // Return the character count including the begin/end quote characters and enclosed string.
             //
@@ -629,9 +628,8 @@ namespace System {
                         break;
                     case '\'':
                     case '\"':
-                        StringBuilder enquotedString = new StringBuilder();
-                        tokenLen = ParseQuoteString(format, i, enquotedString); 
-                        result.Append(enquotedString);
+                        tokenLen = ParseQuoteString(format, i);
+                        result.Append(format, i + 1, tokenLen - 2);
                         break;
                     case '%':
                         // Optional format character.
