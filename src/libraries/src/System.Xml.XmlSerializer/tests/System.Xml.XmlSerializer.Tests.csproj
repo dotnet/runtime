@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="Performance\XmlDeserializationTests.cs" />
     <Compile Include="XmlSerializerTests.Internal.cs" />
     <Compile Include="XmlSerializerTests.cs" />
   </ItemGroup>
@@ -32,6 +33,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Performance\XmlSerializationTests.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
