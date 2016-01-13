@@ -2713,8 +2713,8 @@ public class TypeWithByteProperty
     public byte ByteProperty;
 }
 
-[DataContract(Name = "TestLevelOne", Namespace = "")]
-public class TestLevelOne
+[DataContract(Name = "TypeWithIntAndStringProperty", Namespace = "")]
+public class TypeWithIntAndStringProperty
 {
     [DataMember]
     public int SampleInt { get; set; }
@@ -2723,9 +2723,9 @@ public class TestLevelOne
     public string SampleString { get; set; }
 }
 
-[DataContract(Name = "TestLevelTwo", Namespace = "")]
-public class TestLevelTwo
+[DataContract(Name = "TypeWithTypeWithIntAndStringPropertyProperty", Namespace = "")]
+public class TypeWithTypeWithIntAndStringPropertyProperty
 {
     [DataMember]
-    public TestLevelOne TestOne { get; set; }
+    public TypeWithIntAndStringProperty ObjectProperty { get; set; }
 }

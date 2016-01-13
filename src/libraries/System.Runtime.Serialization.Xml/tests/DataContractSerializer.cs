@@ -1929,16 +1929,16 @@ public static partial class DataContractSerializerTests
     [MemberData("XmlDictionaryReaderQuotasData")]
     public static void DCS_XmlDictionaryQuotas(XmlDictionaryReaderQuotas quotas, bool shouldSucceed)
     {
-        var input = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><TestLevelTwo><TestOne><SampleInt>10</SampleInt><SampleString>Sample string</SampleString></TestOne></TestLevelTwo>";
+        var input = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><TypeWithTypeWithIntAndStringPropertyProperty><ObjectProperty><SampleInt>10</SampleInt><SampleString>Sample string</SampleString></ObjectProperty></TypeWithTypeWithIntAndStringPropertyProperty>";
         var content = new MemoryStream(Encoding.UTF8.GetBytes(input));
         using (var reader = XmlDictionaryReader.CreateTextReader(content, Encoding.UTF8, quotas, onClose: null))
         {
-            var serializer = new DataContractSerializer(typeof(TestLevelTwo), new DataContractSerializerSettings());
+            var serializer = new DataContractSerializer(typeof(TypeWithTypeWithIntAndStringPropertyProperty), new DataContractSerializerSettings());
             if (shouldSucceed)
             {
-                var deserializedObject = (TestLevelTwo)serializer.ReadObject(reader);
-                Assert.StrictEqual(10, deserializedObject.TestOne.SampleInt);
-                Assert.StrictEqual("Sample string", deserializedObject.TestOne.SampleString);
+                var deserializedObject = (TypeWithTypeWithIntAndStringPropertyProperty)serializer.ReadObject(reader);
+                Assert.StrictEqual(10, deserializedObject.ObjectProperty.SampleInt);
+                Assert.StrictEqual("Sample string", deserializedObject.ObjectProperty.SampleString);
             }
             else
             {
