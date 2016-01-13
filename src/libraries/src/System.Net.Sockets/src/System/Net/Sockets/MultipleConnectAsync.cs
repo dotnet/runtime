@@ -350,7 +350,7 @@ namespace System.Net.Sockets
         {
             try
             {
-                if (attemptSocket == null)
+                if (attemptSocket == null && GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("MultipleConnectAsync.AttemptConnection: attemptSocket is null!");
                 }

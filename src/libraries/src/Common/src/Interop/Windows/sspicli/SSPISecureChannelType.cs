@@ -25,7 +25,10 @@ namespace System.Net
 
         public int EnumerateSecurityPackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            GlobalLog.Print("SSPISecureChannelType::EnumerateSecurityPackages()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SSPISecureChannelType::EnumerateSecurityPackages()");
+            }
             return SafeFreeContextBuffer.EnumeratePackages(out pkgnum, out pkgArray);
         }
 

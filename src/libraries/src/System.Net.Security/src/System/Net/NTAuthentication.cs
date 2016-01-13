@@ -61,7 +61,10 @@ namespace System.Net
                 }
 
                 string name = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, _securityContext, Interop.SspiCli.ContextAttribute.Names) as string;
-                GlobalLog.Print("NTAuthentication: The context is associated with [" + name + "]");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NTAuthentication: The context is associated with [" + name + "]");
+                }
                 return name;
             }
         }
@@ -253,7 +256,11 @@ namespace System.Net
 
         private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, Interop.SspiCli.ContextFlags requestedContextFlags, ChannelBinding channelBinding)
         {
-            GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor() package:" + LoggingHash.ObjectToString(package) + " spn:" + LoggingHash.ObjectToString(spn) + " flags :" + requestedContextFlags.ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor() package:" + LoggingHash.ObjectToString(package) + " spn:" + LoggingHash.ObjectToString(spn) + " flags :" + requestedContextFlags.ToString());
+            }
+
             _tokenSize = SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPIAuth, package, true).MaxToken;
             _isServer = isServer;
             _spn = spn;
@@ -262,7 +269,10 @@ namespace System.Net
             _package = package;
             _channelBinding = channelBinding;
 
-            GlobalLog.Print("Peer SPN-> '" + _spn + "'");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("Peer SPN-> '" + _spn + "'");
+            }
 
             //
             // Check if we're using DefaultCredentials.
@@ -271,7 +281,11 @@ namespace System.Net
             Debug.Assert(CredentialCache.DefaultCredentials == CredentialCache.DefaultNetworkCredentials);
             if (credential == CredentialCache.DefaultCredentials)
             {
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor(): using DefaultCredentials");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor(): using DefaultCredentials");
+                }
+
                 _credentialsHandle = SSPIWrapper.AcquireDefaultCredential(
                     GlobalSSPI.SSPIAuth,
                     package,
@@ -368,7 +382,10 @@ namespace System.Net
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError, out Interop.SecurityStatus statusCode)
         {
-            GlobalLog.Enter("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", ((incomingBlob == null) ? "0" : incomingBlob.Length.ToString(NumberFormatInfo.InvariantInfo)) + " bytes");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Enter("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", ((incomingBlob == null) ? "0" : incomingBlob.Length.ToString(NumberFormatInfo.InvariantInfo)) + " bytes");
+            }
 
             var list = new List<SecurityBuffer>(2);
 
@@ -407,7 +424,10 @@ namespace System.Net
                         outSecurityBuffer,
                         ref _contextFlags);
 
-                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.InitializeSecurityContext() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.InitializeSecurityContext() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                    }
 
                     if (statusCode == Interop.SecurityStatus.CompleteNeeded)
                     {
@@ -419,7 +439,11 @@ namespace System.Net
                             ref _securityContext,
                             inSecurityBuffers);
 
-                        GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingDigestBlob() SSPIWrapper.CompleteAuthToken() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                        if (GlobalLog.IsEnabled)
+                        {
+                            GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingDigestBlob() SSPIWrapper.CompleteAuthToken() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                        }
+
                         outSecurityBuffer.token = null;
                     }
                 }
@@ -436,7 +460,10 @@ namespace System.Net
                         outSecurityBuffer,
                         ref _contextFlags);
 
-                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.AcceptSecurityContext() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.AcceptSecurityContext() returns statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                    }
                 }
             }
             finally
@@ -461,11 +488,17 @@ namespace System.Net
                 if (throwOnError)
                 {
                     var exception = new Win32Exception((int)statusCode);
-                    GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "Win32Exception:" + exception);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "Win32Exception:" + exception);
+                    }
                     throw exception;
                 }
-                
-                GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "null statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "null statusCode:0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
+                }
                 return null;
             }
             else if (firstTime && _credentialsHandle != null)
@@ -487,13 +520,17 @@ namespace System.Net
 
                 _isCompleted = true;
             }
-            else
+            else if (GlobalLog.IsEnabled)
             {
                 // We need to continue.
                 GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() need continue statusCode:[0x" + ((int)statusCode).ToString("x8", NumberFormatInfo.InvariantInfo) + "] (" + statusCode.ToString() + ") m_SecurityContext#" + LoggingHash.HashString(_securityContext) + "::Handle:" + LoggingHash.ObjectToString(_securityContext) + "]");
             }
 
-            GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "IsCompleted:" + IsCompleted.ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "IsCompleted:" + IsCompleted.ToString());
+            }
+
             return outSecurityBuffer.token;
         }
 
@@ -552,7 +589,10 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Encrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Encrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                }
                 throw new Win32Exception(errorCode);
             }
 
@@ -630,7 +670,10 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                }
                 throw new Win32Exception(errorCode);
             }
 
@@ -645,7 +688,7 @@ namespace System.Net
 
         private string GetClientSpecifiedSpn()
         {
-            if ((IsValidContext && IsCompleted) && GlobalLog.IsEnabled)
+            if (GlobalLog.IsEnabled && (IsValidContext && IsCompleted))
             {
                 GlobalLog.Assert("NTAuthentication: Trying to get the client SPN before handshaking is done!");
             }
@@ -653,7 +696,10 @@ namespace System.Net
             string spn = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, _securityContext,
                 Interop.SspiCli.ContextAttribute.ClientSpecifiedSpn) as string;
 
-            GlobalLog.Print("NTAuthentication: The client specified SPN is [" + spn + "]");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("NTAuthentication: The client specified SPN is [" + spn + "]");
+            }
             return spn;
         }
 
@@ -690,7 +736,10 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
+                }
                 throw new Win32Exception(errorCode);
             }
 
