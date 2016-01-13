@@ -11,21 +11,25 @@ namespace System.Buffers
     /// Provides a thread-safe bucket containing buffers that can be Rented and Returned as part 
     /// of a buffer pool; it should not be used independent of the pool.
     /// </summary>
-    internal sealed class ArrayPoolBucket<T>
+    internal sealed class DefaultArrayPoolBucket<T>
     {
         private int _index;
         private readonly T[][] _data;
         private readonly int _bufferLength;
         private SpinLock _lock;
+        private bool _exhaustedEventSent;
+        private readonly int _poolId;
 
         /// <summary>
         /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
         /// </summary>
-        internal ArrayPoolBucket(int bufferLength, int numberOfBuffers)
+        internal DefaultArrayPoolBucket(int bufferLength, int numberOfBuffers, int poolId)
         {
             _lock = new SpinLock();
             _data = new T[numberOfBuffers][];
             _bufferLength = bufferLength;
+            _exhaustedEventSent = false;
+            _poolId = poolId;
         }
 
         /// <summary>
@@ -48,8 +52,25 @@ namespace System.Buffers
                 // Check if all of our buffers have been rented
                 if (_index < _data.Length)
                 {
-                    buffer = _data[_index] ?? new T[_bufferLength];
+                    buffer = _data[_index];
+                    if (buffer == null)
+                    {
+                        buffer = new T[_bufferLength];
+                        if (ArrayPoolEventSource.Log.IsEnabled())
+                            ArrayPoolEventSource.Log.BufferAllocated(
+                                Utilities.GetBufferId(buffer),
+                                _bufferLength,
+                                _poolId,
+                                Utilities.GetBucketId(this),
+                                ArrayPoolEventSource.BufferAllocationReason.Pooled);
+                    }
                     _data[_index++] = null;
+                }
+                else if (_exhaustedEventSent == false)
+                {
+                    if (ArrayPoolEventSource.Log.IsEnabled())
+                        ArrayPoolEventSource.Log.BucketExhausted(Utilities.GetBucketId(this), _bufferLength, _data.Length, _poolId);
+                    _exhaustedEventSent = true;
                 }
             }
             finally
@@ -81,6 +102,7 @@ namespace System.Buffers
                 if (_index != 0)
                 {
                     _data[--_index] = buffer;
+                    _exhaustedEventSent = false; // always setting this should be cheaper than a branch
                 }
             }
             finally
