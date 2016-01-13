@@ -644,6 +644,7 @@ namespace System.Diagnostics.Tests
         [InlineData(@"a\\\\""b c"" d e", @"a\\b c,d,e")]
         [InlineData(@"a""b c""d e""f g""h i""j k""l", @"ab cd,ef gh,ij kl")]
         [InlineData(@"a b c""def", @"a,b,cdef")]
+        [InlineData(@"""\a\"" \\""\\\ b c", @"\a"" \\\\,b,c")]
         public void TestArgumentParsing(string inputArguments, string expectedArgv)
         {
             using (var handle = RemoteInvokeRaw((Func<string, string, string, int>)ConcatThreeArguments,
