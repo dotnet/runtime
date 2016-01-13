@@ -37,6 +37,16 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>The source side.</summary>
         private readonly SourceCore<TOutput> _source;
 
+        /// <summary>Gets the object to use for writing to the source when multiple threads may be involved.</summary>
+        /// <remarks>
+        /// If a reordering buffer is used, it is safe for multiple threads to write to concurrently and handles safe 
+        /// access to the source. If there's no reordering buffer because no parallelism is used, then only one thread at
+        /// a time will try to access the source, anyway.  But, if there's no reordering buffer and parallelism is being
+        /// employed, then multiple threads may try to access the source concurrently, in which case we need to manually
+        /// synchronize all such access, and this lock is used for that purpose.
+        /// </remarks>
+        private object ParallelSourceLock { get { return _source; } }
+
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function.</summary>
         /// <param name="transform">
         /// The function to invoke with each data element received.  All of the data from the returned <see cref="System.Collections.Generic.IEnumerable{TOutput}"/>
@@ -114,7 +124,8 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved);
 
             // If parallelism is employed, we will need to support reordering messages that complete out-of-order.
-            if (dataflowBlockOptions.SupportsParallelExecution)
+            // However, a developer can override this with EnsureOrdered == false.
+            if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.EnsureOrdered)
             {
                 _reorderingBuffer = new ReorderingBuffer<IEnumerable<TOutput>>(
                     this, (source, messages) => ((TransformManyBlock<TInput, TOutput>)source)._source.AddMessages(messages));
@@ -459,7 +470,18 @@ namespace System.Threading.Tasks.Dataflow
             Contract.Requires(_reorderingBuffer == null, "Expected not to have a reordering buffer");
             Contract.Requires(outputItems is TOutput[] || outputItems is List<TOutput>, "outputItems must be a list we've already vetted as trusted");
             if (_target.IsBounded) UpdateBoundingCountWithOutputCount(count: ((ICollection<TOutput>)outputItems).Count);
-            _source.AddMessages(outputItems);
+
+            if (_target.DataflowBlockOptions.MaxDegreeOfParallelism == 1)
+            {
+                _source.AddMessages(outputItems);
+            }
+            else
+            {
+                lock (ParallelSourceLock)
+                {
+                    _source.AddMessages(outputItems);
+                }
+            }
         }
 
         /// <summary>
@@ -469,6 +491,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="outputItems">The untrusted enumerable.</param>
         private void StoreOutputItemsNonReorderedWithIteration(IEnumerable<TOutput> outputItems)
         {
+            bool isSerial = _target.DataflowBlockOptions.MaxDegreeOfParallelism == 1;
+
             // If we're bounding, we need to increment the bounded count
             // for each individual item as we enumerate it.
             if (_target.IsBounded)
@@ -484,7 +508,18 @@ namespace System.Threading.Tasks.Dataflow
                     {
                         if (outputFirstItem) _target.ChangeBoundingCount(count: 1);
                         else outputFirstItem = true;
-                        _source.AddMessage(item);
+
+                        if (isSerial)
+                        {
+                            _source.AddMessage(item);
+                        }
+                        else
+                        {
+                            lock (ParallelSourceLock) // don't hold lock while enumerating
+                            {
+                                _source.AddMessage(item);
+                            }
+                        }
                     }
                 }
                 finally
@@ -495,7 +530,19 @@ namespace System.Threading.Tasks.Dataflow
             // If we're not bounding, just output each individual item.
             else
             {
-                foreach (TOutput item in outputItems) _source.AddMessage(item);
+                if (isSerial)
+                {
+                    foreach (TOutput item in outputItems)
+                        _source.AddMessage(item);
+                }
+                else
+                {
+                    lock (ParallelSourceLock) // don't hold lock while enumerating
+                    {
+                        foreach (TOutput item in outputItems)
+                            _source.AddMessage(item);
+                    }
+                }
             }
         }
 
