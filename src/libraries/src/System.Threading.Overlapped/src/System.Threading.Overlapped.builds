@@ -2,8 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Threading.Overlapped.CoreCLR.csproj">
+    <Project Include="System.Threading.Overlapped.csproj">
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Threading.Overlapped.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>      
+    </Project>
+    <Project Include="System.Threading.Overlapped.csproj">
+      <TargetGroup>net46</TargetGroup>      
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
