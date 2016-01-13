@@ -2250,6 +2250,7 @@ LinearScan::setLastUses(BasicBlock * block)
         {
             unsigned varNum = currentRefPosition->getInterval()->varNum;
             unsigned varIndex = currentRefPosition->getInterval()->getVarIndex(compiler);
+
             // We should always have a tree node for a localVar, except for the "special" RefPositions.
             GenTreePtr tree = currentRefPosition->treeNode;
             assert(tree != nullptr || currentRefPosition->refType == RefTypeExpUse || currentRefPosition->refType == RefTypeDummyDef);
@@ -2285,7 +2286,8 @@ LinearScan::setLastUses(BasicBlock * block)
                 }
             }
 
-            if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
+            if ((currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef) && 
+                (varNum != keepAliveVarNum))
             {
                 VarSetOps::RemoveElemD(compiler, temp, varIndex);
             }
