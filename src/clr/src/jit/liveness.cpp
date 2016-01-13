@@ -23,7 +23,6 @@
  *  'asgdLclVar' is set when 'tree' is part of an expression with no side-effects
  *  which is assigned to asgdLclVar, ie. asgdLclVar = (... tree ...)
  */
-inline
 void                 Compiler::fgMarkUseDef(GenTreeLclVarCommon *tree, GenTree *asgdLclVar)
 {
     bool            rhsUSEDEF = false;
@@ -281,6 +280,10 @@ void                Compiler::fgLocalVarLivenessInit()
     }
 }
 
+// Note that for the LEGACY_BACKEND this method is replaced with
+// fgLegacyPerStatementLocalVarLiveness and it lives in codegenlegacy.cpp
+//
+#ifndef LEGACY_BACKEND
 //------------------------------------------------------------------------
 // fgPerStatementLocalVarLiveness: 
 //   Set fgCurHeapUse and fgCurHeapDef when the global heap is read or updated
@@ -471,6 +474,7 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
         }
     }
 }
+#endif // LEGACY_BACKEND
 
 
 /*****************************************************************************/
@@ -611,7 +615,14 @@ void                Compiler::fgPerBlockLocalVarLiveness()
                 }
             }
 
+#ifdef LEGACY_BACKEND
+            tree = fgLegacyPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, NULL, asgdLclVar);
+
+            // We must have walked to the end of this statement.
+            noway_assert(!tree);
+#else
             fgPerStatementLocalVarLiveness(stmt->gtStmt.gtStmtList, asgdLclVar);
+#endif // LEGACY_BACKEND
         }
 
 #if INLINE_NDIRECT
