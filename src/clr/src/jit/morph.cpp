@@ -1997,6 +1997,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
 
     // Create a copy of the temp to go into the late argument list
     GenTreePtr arg = gtNewLclvNode(tmpVarNum, type);
+    GenTreePtr addrNode = nullptr;
 
     if (varTypeIsStruct(type))
     {
@@ -2017,6 +2018,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         else
         {
             arg = gtNewOperNode(GT_ADDR, TYP_STRUCT, arg);
+            addrNode = arg;
         }
 
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING 
@@ -2073,9 +2075,9 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
                 // as that is how FEATURE_UNIX_AMD64_STRUCT_PASSING works.
             
                 // Pass by value in two registers
-                arg->gtFlags |= GTF_DONT_CSE;
                 arg = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
-                
+                addrNode = arg;
+
                 // Ldobj the temp to use it as a call argument
                 arg = gtNewLdObjNode(lvaGetStruct(tmpVarNum), arg);
             }
@@ -2083,8 +2085,8 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
 #endif // _TARGET_ARM64_
 #endif // FEATURE_MULTIREG_STRUCTS
             {
-                arg->gtFlags |= GTF_DONT_CSE;
                 arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
+                addrNode = arg;
             }
         }
         else // type was changed from a struct to a scalar type
@@ -2099,9 +2101,9 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         // other targets, we pass the struct by value 
         assert(varTypeIsStruct(type));
 
-        arg->gtFlags |= GTF_DONT_CSE;
         arg = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
-        
+        addrNode = arg;
+
         // Ldobj the temp to use it as a call argument
         arg = gtNewLdObjNode(lvaGetStruct(tmpVarNum), arg);
         arg->gtFlags |= GTF_EXCEPT;
@@ -2109,6 +2111,17 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
 #endif  // not (_TARGET_AMD64_ or _TARGET_ARM64_)
 
     } // (varTypeIsStruct(type))
+
+    if (addrNode != nullptr)
+    {
+        assert(addrNode->gtOper == GT_ADDR);
+
+        // This will prevent this LclVar from being optimized away
+        lvaSetVarAddrExposed(tmpVarNum); 
+
+        // the child of a GT_ADDR is required to have this flag set
+        addrNode->gtOp.gtOp1->gtFlags |= GTF_DONT_CSE;
+    }
 
     return arg;
 }
