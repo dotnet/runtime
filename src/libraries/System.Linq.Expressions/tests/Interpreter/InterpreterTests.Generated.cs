@@ -3,10 +3,9 @@
 
 #if FEATURE_INTERPRET
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using Xunit;
 
-namespace Tests.Expressions
+namespace System.Linq.Expressions.Tests
 {
     partial class InterpreterTests
     {

@@ -4,10 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 
-namespace Tests.Expressions
+namespace System.Linq.Expressions.Tests
 {
     partial class ExpressionCatalog
     {
