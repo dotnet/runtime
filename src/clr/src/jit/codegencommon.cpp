@@ -891,10 +891,6 @@ void Compiler::compUpdateLifeVar(GenTreePtr tree, VARSET_TP* pLastUseVars)
     if (!varDsc->lvTracked && !varDsc->lvPromoted)
         return;
 
-    // Don't update life for thisptr that is kept alive
-    if (lvaKeepAliveAndReportThis() && lclNum == info.compThisArg)
-        return;
-
     bool isBorn  = ((tree->gtFlags & GTF_VAR_DEF) != 0 &&
                     (tree->gtFlags & GTF_VAR_USEASG) == 0); // if it's "x <op>= ..." then variable "x" must have had a previous, original, site to be born.
     bool isDying = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
