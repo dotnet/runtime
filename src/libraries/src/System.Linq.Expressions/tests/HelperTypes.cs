@@ -2,13 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using Tests.ExpressionCompiler;
 
-namespace Tests.ExpressionCompiler
+namespace System.Linq.Expressions.Tests
 {
     public interface I
     {
@@ -75,7 +70,10 @@ namespace Tests.ExpressionCompiler
     public enum E
     {
         A = 1,
-        B = 2
+        B = 2,
+        Red = 0,
+        Green,
+        Blue
     }
 
     public enum El : long

@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using Xunit;
 
-namespace Tests.ExpressionCompiler.Array
+namespace System.Linq.Expressions.Tests
 {
     public static class ArrayArrayLengthTests
     {

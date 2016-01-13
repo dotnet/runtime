@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq;
+using System.Reflection;
 
-namespace System.Reflection
+namespace System.Linq.Expressions.Tests
 {
     static class ReflectionExtensions
     {
