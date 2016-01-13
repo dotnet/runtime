@@ -55,9 +55,9 @@ namespace System.Net.WebSockets
             catch (Win32Exception ex)
             {
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, ex);
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", wex);
+                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, "ConnectAsync", wex);
                 }
                 throw wex;
             }

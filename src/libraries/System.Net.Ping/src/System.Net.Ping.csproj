@@ -50,9 +50,6 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\Logging.cs">
-      <Link>Common\System\Net\Logging\Logging.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
       <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
     </Compile>

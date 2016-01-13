@@ -661,7 +661,7 @@ namespace System.Net
             bool globalLogEnabled = GlobalLog.IsEnabled;
             if (globalLogEnabled)
             {
-                GlobalLog.Print("CookieContainer#" + Logging.HashString(this) + "::CookieCutter() uri:" + uri + " headerName:" + headerName + " setCookieHeader:" + setCookieHeader + " isThrow:" + isThrow);
+                GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() uri:" + uri + " headerName:" + headerName + " setCookieHeader:" + setCookieHeader + " isThrow:" + isThrow);
             }
 
             CookieCollection cookies = new CookieCollection();
@@ -690,7 +690,7 @@ namespace System.Net
                     Cookie cookie = parser.Get();
                     if (globalLogEnabled)
                     {
-                        GlobalLog.Print("CookieContainer#" + Logging.HashString(this) + "::CookieCutter() CookieParser returned cookie:" + Logging.ObjectToString(cookie));
+                        GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() CookieParser returned cookie:" + LoggingHash.ObjectToString(cookie));
                     }
 
                     if (cookie == null)
