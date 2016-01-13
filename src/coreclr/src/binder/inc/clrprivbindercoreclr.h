@@ -66,10 +66,13 @@ public:
 
 #ifndef CROSSGEN_COMPILE
     HRESULT PreBindByteArray(PEImage  *pPEImage, BOOL fInspectionOnly);
+#endif // CROSSGEN_COMPILE
+
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
                               /* in */ BOOL fIsNativeImage, 
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-#endif // CROSSGEN_COMPILE
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
 
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,
