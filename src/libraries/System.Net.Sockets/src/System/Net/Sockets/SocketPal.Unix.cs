@@ -93,6 +93,7 @@ namespace System.Net.Sockets
                     return SocketError.ProtocolType;
 
                 case Interop.Error.ENOPROTOOPT:
+                case Interop.Error.ENOTSUP:
                     return SocketError.ProtocolOption;
 
                 case Interop.Error.EPROTONOSUPPORT:
@@ -140,18 +141,6 @@ namespace System.Net.Sockets
                 default:
                     return SocketError.SocketError;
             }
-        }
-
-        private static SocketError GetSocketOptionErrorForErrorCode(Interop.Error error)
-        {
-            // Interop.Sys.{Get,Set}SockOpt return Interop.Error.ENOTSUP for unsupported
-            // socket options. In this case we want to throw PlatformNotSupportedException.
-            if (error == Interop.Error.ENOTSUP)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            return GetSocketErrorForErrorCode(error);
         }
 
         private static unsafe IPPacketInformation GetIPPacketInformation(Interop.Sys.MessageHeader* messageHeader, bool isIPv4, bool isIPv6)
@@ -996,7 +985,7 @@ namespace System.Net.Sockets
             }
 
             Interop.Error err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
@@ -1014,7 +1003,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
@@ -1094,7 +1083,7 @@ namespace System.Net.Sockets
             Interop.Error err = Interop.Sys.GetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&value, &optLen);
 
             optionValue = value;
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
@@ -1121,7 +1110,7 @@ namespace System.Net.Sockets
                 return SocketError.Success;
             }
 
-            return GetSocketOptionErrorForErrorCode(err);
+            return GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out MulticastOption optionValue)
