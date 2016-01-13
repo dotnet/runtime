@@ -412,6 +412,9 @@ struct _MonoDomain {
 	/* Maps MonoMethod* to weak links to DynamicMethod objects */
 	GHashTable *method_to_dyn_method;
 
+	/* <ThrowUnobservedTaskExceptions /> support */
+	gboolean throw_unobserved_task_exceptions;
+
 	guint32 execution_context_field_offset;
 };
 
@@ -637,6 +640,9 @@ ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
 MonoString *
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
 
+MonoBoolean
+ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (void);
+
 MonoAssembly *
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
 
@@ -670,7 +676,7 @@ MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 						MonoImageOpenStatus *status,
 						gboolean refonly);
 
-void mono_set_private_bin_path_from_config (MonoDomain *domain);
+void mono_domain_set_options_from_config (MonoDomain *domain);
 
 int mono_framework_version (void);
 
