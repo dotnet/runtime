@@ -208,7 +208,6 @@ namespace CoreXml.Test.XLinq
                 }
 
                 [Fact]
-                [ActiveIssue(641)]
                 public void ReadOuterXmlOnXmlDeclarationAttributes()
                 {
                     XmlReader DataReader = GetReader();//GetReader(pGenericXml);
