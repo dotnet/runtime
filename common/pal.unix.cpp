@@ -87,7 +87,7 @@ bool pal::get_default_packages_directory(pal::string_t* recv)
     {
         return false;
     }
-    append_path(&*recv, _X(".dnx"));
+    append_path(&*recv, _X(".nuget"));
     append_path(&*recv, _X("packages"));
     return true;
 }
