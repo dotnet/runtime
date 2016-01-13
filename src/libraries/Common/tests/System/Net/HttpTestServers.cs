@@ -7,7 +7,7 @@ namespace System.Net.Tests
 {
     internal class HttpTestServers
     {
-        public const string Host = "corefx-net.azurewebsites.net";
+        public const string Host = "corefx-net.cloudapp.net";
         public const string Http2Host = "http2.akamai.com";
 
         private const string HttpScheme = "http";
