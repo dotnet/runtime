@@ -1972,6 +1972,38 @@ public static partial class DataContractSerializerTests
         });
     }
 
+    [Fact]
+    public static void DCS_XmlElementAsRoot()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement expected = xDoc.CreateElement("Element");
+        expected.InnerText = "Element innertext";
+        var actual = SerializeAndDeserialize(expected,
+@"<Element>Element innertext</Element>");
+        Assert.NotNull(actual);
+        Assert.StrictEqual(expected.InnerText, actual.InnerText);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithXmlElementProperty()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml(@"<html></html>");
+        XmlElement productElement = xDoc.CreateElement("Product");
+        productElement.InnerText = "Product innertext";
+        XmlElement categoryElement = xDoc.CreateElement("Category");
+        categoryElement.InnerText = "Category innertext";
+        var expected = new TypeWithXmlElementProperty() { Elements = new[] { productElement, categoryElement } };
+        var actual = SerializeAndDeserialize(expected,
+@"<TypeWithXmlElementProperty xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Elements xmlns:a=""http://schemas.datacontract.org/2004/07/System.Xml""><a:XmlElement><Product xmlns="""">Product innertext</Product></a:XmlElement><a:XmlElement><Category xmlns="""">Category innertext</Category></a:XmlElement></Elements></TypeWithXmlElementProperty>");
+        Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
+        for (int i = 0; i < expected.Elements.Length; ++i)
+        {
+            Assert.StrictEqual(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
+        }
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;

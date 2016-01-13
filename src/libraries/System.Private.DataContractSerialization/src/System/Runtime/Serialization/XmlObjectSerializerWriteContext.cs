@@ -555,6 +555,21 @@ namespace System.Runtime.Serialization
             IXmlSerializable xmlSerializable = obj as IXmlSerializable;
             if (xmlSerializable != null)
                 xmlSerializable.WriteXml(xmlSerializableWriter);
+            else
+            {
+                XmlElement xmlElement = obj as XmlElement;
+                if (xmlElement != null)
+                    xmlElement.WriteTo(xmlSerializableWriter);
+                else
+                {
+                    XmlNode[] xmlNodes = obj as XmlNode[];
+                    if (xmlNodes != null)
+                        foreach (XmlNode xmlNode in xmlNodes)
+                            xmlNode.WriteTo(xmlSerializableWriter);
+                    else
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnknownXmlType, DataContract.GetClrTypeFullName(obj.GetType()))));
+                }
+            }
             xmlSerializableWriter.EndWrite();
         }
 
