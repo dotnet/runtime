@@ -77,6 +77,17 @@ namespace System.Diagnostics
         /// <param name="method">The method to invoke.</param>
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
+        /// <param name="psi">The ProcessStartInfo to use, or null for a default.</param>
+        internal static RemoteInvokeHandle RemoteInvokeRaw(Delegate method, string unparsedArg, bool start, ProcessStartInfo psi)
+        {
+            return RemoteInvoke(method.GetMethodInfo(), new[] { unparsedArg }, start, psi);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="args">The arguments to pass to the method.</param>
+        /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
+        /// <param name="psi">The ProcessStartInfo to use, or null for a default.</param>
         private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, bool start, ProcessStartInfo psi)
         {
             // Verify the specified method is and that it returns an int (the exit code),
