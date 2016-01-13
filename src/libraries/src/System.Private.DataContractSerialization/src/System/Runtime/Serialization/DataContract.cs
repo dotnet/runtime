@@ -712,7 +712,7 @@ namespace System.Runtime.Serialization
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static void AssignDataContractToId(DataContract dataContract, int id)
+            private static void AssignDataContractToId(DataContract dataContract, int id)
             {
                 lock (s_cacheLock)
                 {
@@ -903,6 +903,8 @@ namespace System.Runtime.Serialization
                         }
                         else if (type == typeof(Array))
                             dataContract = new CollectionDataContract(type);
+                        else if (type == typeof(XmlElement) || type == typeof(XmlNode[]))
+                            dataContract = new XmlDataContract(type);
                         break;
                 }
 #endif
@@ -963,6 +965,13 @@ namespace System.Runtime.Serialization
                         dataContract = new CharDataContract();
                     else if ("ArrayOfanyType" == name)
                         dataContract = new CollectionDataContract(typeof(Array));
+                }
+                else if (ns == Globals.DataContractXmlNamespace)
+                {
+                    if (name == "XmlElement")
+                        dataContract = new XmlDataContract(typeof(XmlElement));
+                    else if (name == "ArrayOfXmlNode")
+                        dataContract = new XmlDataContract(typeof(XmlNode[]));
                 }
                 return dataContract != null;
             }

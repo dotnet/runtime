@@ -168,7 +168,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                return false;
+                return UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
             }
         }
         [SecurityCritical]

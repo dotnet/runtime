@@ -1098,4 +1098,7 @@
   <data name="FactoryObjectContainsSelfReference" xml:space="preserve">
     <value>Object graph of type '{0}' with Id '{2}' contains a reference to itself. The object has been replaced with a new object of type '{1}' either because it implements IObjectReference or because it is surrogated. The serializer does not support fixing up the nested reference to the new object and cannot deserialize this object. Consider changing the object to remove the nested self-reference.</value>
   </data>
+  <data name="UnknownXmlType" xml:space="preserve">
+    <value>Type '{0}' is not a valid XML type.</value>
+  </data>
 </root>

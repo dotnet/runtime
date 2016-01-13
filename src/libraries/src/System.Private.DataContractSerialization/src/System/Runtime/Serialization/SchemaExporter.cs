@@ -87,10 +87,33 @@ namespace System.Runtime.Serialization
             return new Object();
         }
 
+        private static XmlSchemaComplexType CreateAnyType()
+        {
+            return new Object();
+        }
+
         internal static bool IsSpecialXmlType(Type type, out XmlQualifiedName typeName, out XmlSchemaType xsdType, out bool hasRoot)
         {
             xsdType = null;
             hasRoot = true;
+            if (type == Globals.TypeOfXmlElement || type == Globals.TypeOfXmlNodeArray)
+            {
+                string name = null;
+                if (type == Globals.TypeOfXmlElement)
+                {
+                    xsdType = CreateAnyElementType();
+                    name = "XmlElement";
+                    hasRoot = false;
+                }
+                else
+                {
+                    xsdType = CreateAnyType();
+                    name = "ArrayOfXmlNode";
+                    hasRoot = true;
+                }
+                typeName = new XmlQualifiedName(name, DataContract.GetDefaultStableNamespace(type));
+                return true;
+            }
             typeName = null;
             return false;
         }

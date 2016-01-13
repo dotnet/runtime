@@ -851,6 +851,32 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [SecurityCritical]
+        private static Type s_typeOfXmlElement;
+        internal static Type TypeOfXmlElement
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_typeOfXmlElement == null)
+                    s_typeOfXmlElement = typeof(XmlElement);
+                return s_typeOfXmlElement;
+            }
+        }
+
+        [SecurityCritical]
+        private static Type s_typeOfXmlNodeArray;
+        internal static Type TypeOfXmlNodeArray
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_typeOfXmlNodeArray == null)
+                    s_typeOfXmlNodeArray = typeof(XmlNode[]);
+                return s_typeOfXmlNodeArray;
+            }
+        }
+
         private static bool s_shouldGetDBNullType = true;
 
         [SecurityCritical]
