@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
 using System.IO;
 using System.Reflection;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
@@ -76,7 +77,12 @@ namespace CoreXml.Test.XLinq
 
                 private string AppendXmlDecl(string xml)
                 {
-                    return _mode == "Save" ? @"<?xml version='1.0' encoding='utf-16'?>" + xml : xml;
+                    return _mode == "Save" ? GetXmlStringWithXmlDecl(xml) : xml;
+                }
+
+                private static string GetXmlStringWithXmlDecl(string xml)
+                {
+                    return @"<?xml version='1.0' encoding='utf-16'?>" + xml;
                 }
 
                 private object Parse(string xml)
@@ -156,11 +162,55 @@ namespace CoreXml.Test.XLinq
                 //                                                                                                        "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A>" })]
                 //[Variation(Desc = "Conflicts: NS undeclaration, default NS", Priority = 2, Params = new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>", 
                 //                                                                                                    "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C></B></A>" })]
-                public void testConflicts()
+                public static object[][] ConFlictsNSRedefenitionParams = new object[][] {
+                    new object[] {   "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D xmlns:p='nsp'/></p:C></p:B></p:A>",
+                        "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xmlns:p='nsp'><D/></p:C></p:B></p:A>" },
+                    new object[] {   "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
+                        "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'><D/></C></B></A>" },
+                    new object[] {   "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xmlns=''/></C></B></A>",
+                        "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A>" },
+                    new object[] {  "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns='nsp'/></C></B></A>",
+                        "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C></B></A>" }
+                };
+
+                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                public void XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(string xml1, string xml2)
                 {
-                    object e1 = Parse(CurrentChild.Params[0] as string);
-                    TestLog.WriteLineIgnore(SaveXElement(e1, SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting));
-                    ReaderDiff.Compare(SaveXElement(e1, SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting), AppendXmlDecl(CurrentChild.Params[1] as string));
+                    XDocument doc = XDocument.Parse(xml1);
+                    SaveOptions so = SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting;
+                    using (StringWriter sw = new StringWriter())
+                    {
+                        doc.Save(sw, so);
+                        ReaderDiff.Compare(GetXmlStringWithXmlDecl(xml2), sw.ToString());
+                    }
+                }
+
+                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                public void XDocumentConflictsNSRedefinitionToString(string xml1, string xml2)
+                {
+                    XDocument doc = XDocument.Parse(xml1);
+                    SaveOptions so = SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting;
+                    ReaderDiff.Compare(xml2, doc.ToString(so));
+                }
+
+                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                public void XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(string xml1, string xml2)
+                {
+                    XElement el = XElement.Parse(xml1);
+                    SaveOptions so = SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting;
+                    using (StringWriter sw = new StringWriter())
+                    {
+                        el.Save(sw, so);
+                        ReaderDiff.Compare(GetXmlStringWithXmlDecl(xml2), sw.ToString());
+                    }
+                }
+
+                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                public void XElementConflictsNSRedefinitionToString(string xml1, string xml2)
+                {
+                    XElement el = XElement.Parse(xml1);
+                    SaveOptions so = SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting;
+                    ReaderDiff.Compare(xml2, el.ToString(so));
                 }
 
                 //[Variation(Desc = "Not from root", Priority = 1)]

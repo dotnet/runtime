@@ -78,7 +78,14 @@ namespace CoreXml.Test.XLinq
         public XmlReader GetReader()
         {
             string file = Path.Combine("TestData", "XmlReader", "API", pGenericXml);
-            using (XmlReader r = XmlReader.Create(FilePathUtil.getStream(file), _rsx))
+            Stream s = FilePathUtil.getStream(file);
+
+            if (s == null)
+            {
+                TestLog.WriteLine("Could not find stream");
+            }
+
+            using (XmlReader r = XmlReader.Create(s, _rsx))
             {
                 XDocument doc = XDocument.Load(r, LoadOptions.PreserveWhitespace);
                 return doc.CreateReader();

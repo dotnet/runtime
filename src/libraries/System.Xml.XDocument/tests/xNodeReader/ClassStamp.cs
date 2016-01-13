@@ -12,7 +12,6 @@ namespace CoreXml.Test.XLinq
     public class FunctionalTests_XNodeReaderTests_TCRegressions1
     {
         [Fact]
-        [ActiveIssue(641)]
         public void IncorrentBehaviorOfReadAttributeValue()
         {
             string xml = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -23,20 +22,64 @@ namespace CoreXml.Test.XLinq
 									<text id1='a 123 b' id2='2'/>";
             XmlReaderSettings rs = new XmlReaderSettings();
             rs.DtdProcessing = DtdProcessing.Ignore;
-            XmlReader tr = XmlReader.Create(new StringReader(xml), rs);
-            XmlReader DataReader = XDocument.Load(tr).CreateReader();
-            DataReader.ReadToFollowing("text");
-            Assert.True(DataReader.MoveToNextAttribute());
-            Assert.True(BridgeHelpers.VerifyNode(DataReader, XmlNodeType.Attribute, "id1", "a 123 b"));
-            Assert.True(DataReader.ReadAttributeValue());
-            Assert.True(BridgeHelpers.VerifyNode(DataReader, XmlNodeType.Text, "", "a "));
-            Assert.True(DataReader.MoveToNextAttribute());
-            Assert.True(BridgeHelpers.VerifyNode(DataReader, XmlNodeType.Attribute, "id2", "2"));
-            Assert.True(DataReader.ReadAttributeValue());
-            Assert.True(BridgeHelpers.VerifyNode(DataReader, XmlNodeType.Text, "", "2"));
-            Assert.False(DataReader.MoveToNextAttribute());
-            Assert.True(BridgeHelpers.VerifyNode(DataReader, XmlNodeType.Text, "", "2"));
-            Assert.False(DataReader.ReadAttributeValue());
+            using (XmlReader tr = XmlReader.Create(new StringReader(xml), rs))
+            {
+                using (XmlReader reader = XDocument.Load(tr).CreateReader())
+                {
+                    reader.ReadToFollowing("text");
+
+                    Assert.True(reader.MoveToNextAttribute());
+                    Assert.Equal(XmlNodeType.Attribute, reader.NodeType);
+                    Assert.Equal("id1", reader.Name);
+                    Assert.Equal("a 123 b", reader.Value);
+
+                    Assert.True(reader.ReadAttributeValue());
+                    Assert.Equal(XmlNodeType.Text, reader.NodeType);
+                    Assert.Equal("", reader.Name);
+                    Assert.Equal("a 123 b", reader.Value);
+
+                    Assert.True(reader.MoveToNextAttribute());
+                    Assert.Equal(XmlNodeType.Attribute, reader.NodeType);
+                    Assert.Equal("id2", reader.Name);
+                    Assert.Equal("2", reader.Value);
+
+                    Assert.True(reader.ReadAttributeValue());
+                    Assert.Equal(XmlNodeType.Text, reader.NodeType);
+                    Assert.Equal("", reader.Name);
+                    Assert.Equal("2", reader.Value);
+
+                    Assert.False(reader.MoveToNextAttribute());
+                    Assert.Equal(XmlNodeType.Text, reader.NodeType);
+                    Assert.Equal("", reader.Name);
+                    Assert.Equal("2", reader.Value);
+                    Assert.False(reader.ReadAttributeValue());
+                }
+            }
+        }
+
+         [Fact]
+         public void EnsureReadToFollowingMovesToAttributeAndNotToDtd()
+         {
+            string xml = @"<?xml version='1.0' encoding='utf-8' ?>
+									<!DOCTYPE text [
+										<!ATTLIST book id CDATA #REQUIRED>
+										<!ENTITY a '123'>
+									]>
+									<text id1='a 123 b' id2='2'/>";
+             XmlReaderSettings rs = new XmlReaderSettings();
+             rs.DtdProcessing = DtdProcessing.Ignore;
+             using (XmlReader tr = XmlReader.Create(new StringReader(xml), rs))
+             {
+                 using (XmlReader reader = XDocument.Load(tr).CreateReader())
+                 {
+                     reader.ReadToFollowing("text");
+                     Assert.True(reader.MoveToNextAttribute());
+                     Assert.True(reader.ReadAttributeValue());
+                     Assert.Equal(XmlNodeType.Text, reader.NodeType);
+                     Assert.Equal("", reader.Name);
+                     Assert.Equal("a 123 b", reader.Value);
+                 }
+             }
         }
     }
 }
