@@ -92,6 +92,25 @@ namespace CoreXml.Test.XLinq
             }
         }
 
+        public XmlReader GetPGenericXmlReader()
+        {
+            string file = Path.Combine("TestData", "XmlReader", "API", pGenericXml);
+            {
+                Stream s = FilePathUtil.getStreamDirect(file);
+
+                if (s == null)
+                {
+                    TestLog.WriteLine("getStream returned null");
+                }
+
+                using (XmlReader r = XmlReader.Create(s, _rsx))
+                {
+                    XDocument doc = XDocument.Load(r, LoadOptions.PreserveWhitespace);
+                    return doc.CreateReader();
+                }
+            }
+        }
+
         public XmlReader GetReader(string strSource, bool preserveWhitespace)
         {
             using (XmlReader r = XmlReader.Create(FilePathUtil.getStream(strSource), preserveWhitespace ? _rsx : _rsxNoWs))

@@ -210,7 +210,7 @@ namespace CoreXml.Test.XLinq
                 [Fact]
                 public void ReadOuterXmlOnXmlDeclarationAttributes()
                 {
-                    using (XmlReader DataReader = GetReader())//GetReader(pGenericXml);
+                    using (XmlReader DataReader = GetPGenericXmlReader())
                     {
                         DataReader.Read();
                         try

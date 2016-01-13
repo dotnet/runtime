@@ -845,7 +845,7 @@ namespace CoreXml.Test.XLinq
                 [Fact]
                 public void TestReadEndElementOnEndElementWithoutNamespace()
                 {
-                    using (XmlReader DataReader = GetReader())
+                    using (XmlReader DataReader = GetPGenericXmlReader())
                     {
                         PositionOnElement(DataReader, "NONAMESPACE");
                         PositionOnNodeType(DataReader, XmlNodeType.EndElement);
@@ -856,7 +856,7 @@ namespace CoreXml.Test.XLinq
                 [Fact]
                 public void TestReadEndElementOnEndElementWithNamespace()
                 {
-                    using (XmlReader DataReader = GetReader())
+                    using (XmlReader DataReader = GetPGenericXmlReader())
                     {
                         PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                         PositionOnElement(DataReader, "bar:check");
