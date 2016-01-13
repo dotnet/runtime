@@ -106,6 +106,7 @@ extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t buffer
     return static_cast<int32_t>(count);
 }
 
+static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers
 static volatile CtrlCallback g_ctrlCallback = nullptr; // Callback invoked for SIGINT/SIGQUIT
 static bool g_signalHandlingInitialized = false; // Whether signal handling is initialized
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
@@ -164,15 +165,9 @@ void* CtrlHandleLoop(void* arg)
         int rv = callback != nullptr ? callback(signalCode == SIGQUIT ? Break : Interrupt) : 0;
         if (rv == 0) // callback removed or was invoked and didn't handle the signal
         {
-            // The proper behavior for unhandled SIGINT/SIGQUIT is to set the signal
-            // handler to the default and then send the signal to self and let the
-            // default handler do its work.
-            struct sigaction resetAction = {.sa_handler = SIG_DFL, .sa_flags = 0};
-            sigemptyset(&resetAction.sa_mask);
-
-            sigaction(SIGINT, &resetAction, nullptr);
-            sigaction(SIGQUIT, &resetAction, nullptr);
-
+            // restore original handlers, then reissue the signal
+            sigaction(SIGINT, &g_origSigIntHandler, NULL);
+            sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
             kill(getpid(), signalCode);
         }
     }
@@ -230,9 +225,9 @@ static bool InitializeSignalHandling()
     };
     sigemptyset(&newAction.sa_mask);
 
-    int rv = sigaction(SIGINT, &newAction, nullptr);
+    int rv = sigaction(SIGINT, &newAction, &g_origSigIntHandler);
     assert(rv == 0);
-    rv = sigaction(SIGQUIT, &newAction, nullptr);
+    rv = sigaction(SIGQUIT, &newAction, &g_origSigQuitHandler);
     assert(rv == 0);
 
     g_signalHandlingInitialized = true;
