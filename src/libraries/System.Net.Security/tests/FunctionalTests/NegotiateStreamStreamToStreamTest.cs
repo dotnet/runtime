@@ -67,6 +67,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5284, PlatformID.Windows)]
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_TargetName_Success()
@@ -122,6 +123,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5284, PlatformID.Windows)]
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
