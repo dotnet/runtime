@@ -1,0 +1,4 @@
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft\0"
+
+#include <fxver.h>
+#include <fxver.rc>
