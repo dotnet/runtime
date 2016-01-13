@@ -539,7 +539,7 @@ namespace System.Collections.Generic {
 
         public void ForEach(Action<T> action) {
             if( action == null) {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
             Contract.EndContractBlock();
 
@@ -991,7 +991,7 @@ namespace System.Collections.Generic {
 
         public void Sort(Comparison<T> comparison) {
             if( comparison == null) {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
             Contract.EndContractBlock();
 
