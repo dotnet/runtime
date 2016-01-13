@@ -6,6 +6,10 @@ if(WIN32)
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO})
 endif(WIN32)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_compile_options(-fPIC)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 add_subdirectory(full)
 
 # Only add the small version of the resources if the platform is Windows.
