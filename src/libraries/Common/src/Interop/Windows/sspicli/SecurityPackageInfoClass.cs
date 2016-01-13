@@ -26,12 +26,18 @@ namespace System.Net
         {
             if (safeHandle.IsInvalid)
             {
-                GlobalLog.Print("SecurityPackageInfoClass::.ctor() the pointer is invalid: " + (safeHandle.DangerousGetHandle()).ToString("x"));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("SecurityPackageInfoClass::.ctor() the pointer is invalid: " + (safeHandle.DangerousGetHandle()).ToString("x"));
+                }
                 return;
             }
 
             IntPtr unmanagedAddress = IntPtrHelper.Add(safeHandle.DangerousGetHandle(), SecurityPackageInfo.Size * index);
-            GlobalLog.Print("SecurityPackageInfoClass::.ctor() unmanagedPointer: " + ((long)unmanagedAddress).ToString("x"));
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SecurityPackageInfoClass::.ctor() unmanagedPointer: " + ((long)unmanagedAddress).ToString("x"));
+            }
 
             // TODO (Issue #3114): replace with Marshal.PtrToStructure.
             Capabilities = Marshal.ReadInt32(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Capabilities"));
@@ -45,17 +51,26 @@ namespace System.Net
             if (unmanagedString != IntPtr.Zero)
             {
                 Name = Marshal.PtrToStringUni(unmanagedString);
-                GlobalLog.Print("Name: " + Name);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("Name: " + Name);
+                }
             }
 
             unmanagedString = Marshal.ReadIntPtr(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Comment"));
             if (unmanagedString != IntPtr.Zero)
             {
                 Comment = Marshal.PtrToStringUni(unmanagedString);
-                GlobalLog.Print("Comment: " + Comment);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("Comment: " + Comment);
+                }
             }
 
-            GlobalLog.Print("SecurityPackageInfoClass::.ctor(): " + ToString());
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SecurityPackageInfoClass::.ctor(): " + ToString());
+            }
         }
 
         public override string ToString()
