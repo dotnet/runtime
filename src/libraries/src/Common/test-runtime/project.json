@@ -5,7 +5,7 @@
     "Microsoft.NETCore.Console": "1.0.0-rc2-23616",
     "System.IO.Compression": "4.1.0-rc2-23616",
     "coveralls.io": "1.4",
-    "OpenCover": "4.6.261-rc",
+    "OpenCover": "4.6.401-rc",
     "ReportGenerator": "2.4.0-beta2",
     "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0025",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0025",
