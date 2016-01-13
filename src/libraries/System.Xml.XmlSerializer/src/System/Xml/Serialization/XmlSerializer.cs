@@ -637,6 +637,16 @@ namespace System.Xml.Serialization
         {
             if (types == null)
                 return Array.Empty<XmlSerializer>();
+
+#if NET_NATIVE
+            var serializers = new List<XmlSerializer>();
+            foreach (var t in types)
+            {
+                serializers.Add(new XmlSerializer(t));
+            }
+
+            return serializers.ToArray();
+#else
             XmlReflectionImporter importer = new XmlReflectionImporter();
             XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
             for (int i = 0; i < types.Length; i++)
@@ -644,6 +654,7 @@ namespace System.Xml.Serialization
                 mappings[i] = importer.ImportTypeMapping(types[i]);
             }
             return FromMappings(mappings);
+#endif
         }
 
 #if NET_NATIVE
