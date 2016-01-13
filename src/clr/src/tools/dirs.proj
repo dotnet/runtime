@@ -48,7 +48,12 @@
     <ProjectFile Include="McjProfofileUtil\McjProfileUtil.csproj" Condition="'$(BuildArchitecture)' != 'arm' and '$(BuildArchitecture)' != 'arm64'" />
     <ProjectFile Include="winphoneintegrate\winphoneintegrate.csproj" />
     <ProjectFile Include="crossgen\crossgen.nativeproj" />
-    <ProjectFile Include="GenClrDebugResource\GenClrDebugResource.nativeproj" />
+    <ProjectFile Include="GenClrDebugResource\GenClrDebugResource.nativeproj" >
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
+    <ProjectFile Include="InjectResource\InjectResource.nativeproj" Condition="'$(BuildArchitecture)' == 'i386'">
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
   </ItemGroup>
   
   <!-- CoreClr -->
