@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Linq.Expressions.Test
+namespace System.Linq.Expressions.Tests
 {
     public abstract class SharedBlockTests
     {
