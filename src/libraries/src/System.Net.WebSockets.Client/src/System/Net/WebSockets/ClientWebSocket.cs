@@ -27,9 +27,9 @@ namespace System.Net.WebSockets
 
         public ClientWebSocket()
         {
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Enter(Logging.WebSockets, this, ".ctor", null);
+                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, ".ctor", null);
             }
 
             WebSocketHandle.CheckPlatformSupport();
@@ -38,9 +38,9 @@ namespace System.Net.WebSockets
             _options = new ClientWebSocketOptions();
             _cts = new CancellationTokenSource();
 
-            if (Logging.On)
+            if (NetEventSource.Log.IsEnabled())
             {
-                Logging.Exit(Logging.WebSockets, this, ".ctor", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, ".ctor", null);
             }
         }
 
@@ -161,9 +161,9 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", ex);
+                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, "ConnectAsync", ex);
                 }
                 throw;
             }

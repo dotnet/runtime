@@ -24,7 +24,6 @@
   <ItemGroup>
     <Compile Include="NameResolutionPalTests.cs" />
     <Compile Include="Fakes\GlobalLog.cs" />
-    <Compile Include="Fakes\Logging.cs" />
     
     <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
       <Link>Common\System\Net\Logging\LoggingHash.cs</Link>

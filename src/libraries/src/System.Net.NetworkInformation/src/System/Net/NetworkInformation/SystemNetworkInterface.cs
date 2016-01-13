@@ -72,9 +72,9 @@ namespace System.Net.NetworkInformation
             }
             catch (NetworkInformationException nie)
             {
-                if (Logging.On)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    Logging.Exception(Logging.Web, "SystemNetworkInterface", "InternalGetIsNetworkAvailable", nie);
+                    NetEventSource.Exception(NetEventSource.ComponentType.NetworkInformation, "SystemNetworkInterface", "InternalGetIsNetworkAvailable", nie);
                 }
             }
 
