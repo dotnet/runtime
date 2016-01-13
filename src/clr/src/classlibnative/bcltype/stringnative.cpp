@@ -402,7 +402,7 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
     if (thisRef == NULL)
         FCThrow(kNullReferenceException);
     if (valueRef == NULL)
-        FCThrow(kArgumentNullException);
+        FCThrowArgumentNull(W("anyOf"));
 
     WCHAR *thisChars;
     WCHAR *valueChars;
@@ -412,7 +412,7 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
     thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
 
     if (startIndex < 0 || startIndex > thisLength) {
-        FCThrow(kArgumentOutOfRangeException);
+        FCThrowArgumentOutOfRange(W("startIndex"), W("ArgumentOutOfRange_Index"));
     }
 
     if (count < 0 || count > thisLength - startIndex) {
@@ -514,7 +514,7 @@ FCIMPL4(INT32, COMString::LastIndexOfCharArray, StringObject* thisRef, CHARArray
     }
 
     if (valueRef == NULL)
-        FCThrow(kArgumentNullException);
+        FCThrowArgumentNull(W("anyOf"));
 
     thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
 
