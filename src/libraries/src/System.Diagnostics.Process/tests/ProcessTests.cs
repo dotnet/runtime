@@ -634,6 +634,33 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(@"""abc"" d e", @"abc,d,e")]
+        [InlineData(@"""abc""      d e", @"abc,d,e")]
+        [InlineData("\"abc\"\t\td\te", @"abc,d,e")]
+        [InlineData(@"a\\b d""e f""g h", @"a\\b,de fg,h")]
+        [InlineData(@"\ \\ \\\", @"\,\\,\\\")]
+        [InlineData(@"a\\\""b c d", @"a\""b,c,d")]
+        [InlineData(@"a\\\\""b c"" d e", @"a\\b c,d,e")]
+        [InlineData(@"a""b c""d e""f g""h i""j k""l", @"ab cd,ef gh,ij kl")]
+        [InlineData(@"a b c""def", @"a,b,cdef")]
+        [InlineData(@"""\a\"" \\""\\\ b c", @"\a"" \\\\,b,c")]
+        public void TestArgumentParsing(string inputArguments, string expectedArgv)
+        {
+            using (var handle = RemoteInvokeRaw((Func<string, string, string, int>)ConcatThreeArguments,
+                inputArguments,
+                start: true,
+                psi: new ProcessStartInfo { RedirectStandardOutput = true }))
+            {
+                Assert.Equal(expectedArgv, handle.Process.StandardOutput.ReadToEnd());
+            }
+        }
+
+        private static int ConcatThreeArguments(string one, string two, string three)
+        {
+            Console.Write(string.Join(",", one, two, three));
+            return SuccessExitCode;
+        }
 
         // [Fact] // uncomment for diagnostic purposes to list processes to console
         public void TestDiagnosticsWithConsoleWriteLine()
