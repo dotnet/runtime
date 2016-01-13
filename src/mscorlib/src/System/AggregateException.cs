@@ -17,6 +17,7 @@ using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
 using System.Security;
+using System.Text;
 using System.Threading;
 
 namespace System
@@ -429,6 +430,30 @@ namespace System
 
 
             return new AggregateException(Message, flattenedExceptions);
+        }
+
+        /// <summary>Gets a message that describes the exception.</summary>
+        public override string Message
+        {
+            get
+            {
+                if (m_innerExceptions.Count == 0)
+                {
+                    return base.Message;
+                }
+
+                StringBuilder sb = StringBuilderCache.Acquire();
+                sb.Append(base.Message);
+                sb.Append(' ');
+                for (int i = 0; i < m_innerExceptions.Count; i++)
+                {
+                    sb.Append('(');
+                    sb.Append(m_innerExceptions[i].Message);
+                    sb.Append(") ");
+                }
+                sb.Length -= 1;
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
         }
 
         /// <summary>
