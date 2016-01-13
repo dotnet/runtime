@@ -67,19 +67,19 @@ typedef ucontext_t native_context_t;
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
-#define FPREG_Xmm(uc, index) *(M128U*)&((uc)->__fpregs_mem._xmm[index])
+#define FPREG_Xmm(uc, index) *(M128U*)&((uc)->uc_mcontext.fpregs->_xmm[index])
 
-#define FPREG_St(uc, index) *(M128U*)&((uc)->__fpregs_mem._st[index])
+#define FPREG_St(uc, index) *(M128U*)&((uc)->uc_mcontext.fpregs->_st[index])
 
-#define FPREG_ControlWord(uc) ((uc)->__fpregs_mem.cwd)
-#define FPREG_StatusWord(uc) ((uc)->__fpregs_mem.swd)
-#define FPREG_TagWord(uc) ((uc)->__fpregs_mem.ftw)
-#define FPREG_ErrorOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rip)
-#define FPREG_ErrorSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rip)) + 2)
-#define FPREG_DataOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rdp)
-#define FPREG_DataSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rdp)) + 2)
-#define FPREG_MxCsr(uc) ((uc)->__fpregs_mem.mxcsr)
-#define FPREG_MxCsr_Mask(uc) ((uc)->__fpregs_mem.mxcr_mask)
+#define FPREG_ControlWord(uc) ((uc)->uc_mcontext.fpregs->cwd)
+#define FPREG_StatusWord(uc) ((uc)->uc_mcontext.fpregs->swd)
+#define FPREG_TagWord(uc) ((uc)->uc_mcontext.fpregs->ftw)
+#define FPREG_ErrorOffset(uc) *(DWORD*)&((uc)->uc_mcontext.fpregs->rip)
+#define FPREG_ErrorSelector(uc) *(((WORD*)&((uc)->uc_mcontext.fpregs->rip)) + 2)
+#define FPREG_DataOffset(uc) *(DWORD*)&((uc)->uc_mcontext.fpregs->rdp)
+#define FPREG_DataSelector(uc) *(((WORD*)&((uc)->uc_mcontext.fpregs->rdp)) + 2)
+#define FPREG_MxCsr(uc) ((uc)->uc_mcontext.fpregs->mxcsr)
+#define FPREG_MxCsr_Mask(uc) ((uc)->uc_mcontext.fpregs->mxcr_mask)
 
 #else // BIT64
 
