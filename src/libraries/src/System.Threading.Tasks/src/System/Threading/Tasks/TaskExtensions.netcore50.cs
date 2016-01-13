@@ -25,7 +25,10 @@ namespace System.Threading.Tasks
         /// <returns>A Task that represents the asynchronous operation of the provided Task{Task}.</returns>
         public static Task Unwrap(this Task<Task> task)
         {
-            if (task == null) throw new ArgumentNullException("task");
+            if (task == null)
+            {
+                throw new ArgumentNullException("task");
+            }
 
             // Creates a proxy Task and hooks up the logic to have it represent the task.Result
             Task promise = Task.CreateUnwrapPromise<VoidResult>(task, lookForOce: false);
@@ -50,7 +53,10 @@ namespace System.Threading.Tasks
         /// <returns>A Task{TResult} that represents the asynchronous operation of the provided Task{Task{TResult}}.</returns>        
         public static Task<TResult> Unwrap<TResult>(this Task<Task<TResult>> task)
         {
-            if (task == null) throw new ArgumentNullException("task");
+            if (task == null)
+            {
+                throw new ArgumentNullException("task");
+            }
 
             // Creates a proxy Task<TResult> and hooks up the logic to have it represent the task.Result
             Task<TResult> promise = Task.CreateUnwrapPromise<TResult>(task, lookForOce: false);
