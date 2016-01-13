@@ -2831,29 +2831,33 @@ mono_llvm_load_exception (void)
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
-	g_assert (mono_ex->trace_ips);
 
-	GList *trace_ips = NULL;
-	gpointer ip = __builtin_return_address (0);
+	if (mono_ex->trace_ips) {
+		GList *trace_ips = NULL;
+		gpointer ip = __builtin_return_address (0);
 
-	size_t upper = mono_array_length (mono_ex->trace_ips);
+		size_t upper = mono_array_length (mono_ex->trace_ips);
 
-	for (int i = 0; i < upper; i++) {
-		gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
-		trace_ips = g_list_prepend (trace_ips, curr_ip);
+		for (int i = 0; i < upper; i++) {
+			gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
+			trace_ips = g_list_prepend (trace_ips, curr_ip);
 
-		if (ip == curr_ip)
-			break;
+			if (ip == curr_ip)
+				break;
+		}
+
+		// FIXME: Does this work correctly for rethrows?
+		// We may be discarding useful information
+		// when this gets GC'ed
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace_ips, mono_defaults.int_class));
+		g_list_free (trace_ips);
+
+		// FIXME:
+		//MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+	} else {
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_array_new (mono_domain_get (), mono_defaults.int_class, 0));
+		MONO_OBJECT_SETREF (mono_ex, stack_trace, mono_array_new (mono_domain_get (), mono_defaults.stack_frame_class, 0));
 	}
-
-	// FIXME: Does this work correctly for rethrows?
-	// We may be discarding useful information
-	// when this gets GC'ed
-	MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace_ips, mono_defaults.int_class));
-	g_list_free (trace_ips);
-
-	// FIXME:
-	//MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 
 	return &mono_ex->object;
 }
