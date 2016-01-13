@@ -210,16 +210,18 @@ namespace CoreXml.Test.XLinq
                 [Fact]
                 public void ReadOuterXmlOnXmlDeclarationAttributes()
                 {
-                    XmlReader DataReader = GetReader();//GetReader(pGenericXml);
-                    DataReader.Read();
-                    try
+                    using (XmlReader DataReader = GetReader())//GetReader(pGenericXml);
                     {
-                        DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
-                        throw new TestException(TestResult.Failed, "");
+                        DataReader.Read();
+                        try
+                        {
+                            DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
+                            throw new TestException(TestResult.Failed, "");
+                        }
+                        catch (ArgumentOutOfRangeException) { }
+                        Assert.True(TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer"));
+                        Assert.True((DataReader.NodeType != XmlNodeType.Attribute) || (DataReader.Name != String.Empty) || (DataReader.Value != "UTF-8"));
                     }
-                    catch (ArgumentOutOfRangeException) { }
-                    Assert.True(TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer"));
-                    Assert.True(TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Attribute, String.Empty, "UTF-8"), false, "vn"));
                 }
 
                 //[Variation("ReadOuterXml on element with entities, EntityHandling = ExpandCharEntities")]
