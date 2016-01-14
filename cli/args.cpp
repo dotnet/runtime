@@ -89,7 +89,8 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
             {
                 trace::error(_X("Failed to locate deps file: %s"), args.deps_path.c_str());
                 return false;
-            }            
+            }      
+            args.app_dir = get_directory(args.deps_path);      
             args.app_argc = args.app_argc - 1;
             args.app_argv = &args.app_argv[1];
         }
