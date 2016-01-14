@@ -1,6 +1,6 @@
 #!/bin/sh
 
-TESTRESULT_FILE=TestResult-op_il_seq_point.xml
+TESTRESULT_FILE=TestResult-op_il_seq_point.tmp
 TOTAL=$(grep -c "<test-case" $TESTRESULT_FILE)
 FAILURES=$(grep -c "<failure>" $TESTRESULT_FILE)
 if [ "$FAILURES" -eq "0" ]
@@ -36,6 +36,5 @@ echo "        <results>" >> $TESTRESULT_FILE.header
 echo "          <test-suite name=\"op_il_seq_point\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> $TESTRESULT_FILE.header
 echo "            <results>" >> $TESTRESULT_FILE.header
 
-cat $TESTRESULT_FILE.header $TESTRESULT_FILE > $TESTRESULT_FILE.new
-mv $TESTRESULT_FILE.new $TESTRESULT_FILE
-rm -f $TESTRESULT_FILE.header
+cat $TESTRESULT_FILE.header $TESTRESULT_FILE > $(basename $TESTRESULT_FILE .tmp).xml
+rm -f $TESTRESULT_FILE.header $TESTRESULT_FILE
