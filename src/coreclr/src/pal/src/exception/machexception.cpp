@@ -612,8 +612,9 @@ static DWORD exception_from_trap_code(
 
         return EXCEPTION_ACCESS_VIOLATION; 
 
-    // Instruction failed. Illegal or undefined instruction or operand. 
-    case EXC_BAD_INSTRUCTION :
+    // Instruction failed. Illegal, privileged, or undefined instruction or operand.
+    case EXC_BAD_INSTRUCTION:
+        // TODO: Identify privileged instruction. Need to get the thread state and read the machine code. May be better to do this in the place that calls SEHProcessException, similar to how it's done on Linux.
         return EXCEPTION_ILLEGAL_INSTRUCTION; 
 
     // Arithmetic exception; exact nature of exception is in subcode field. 
