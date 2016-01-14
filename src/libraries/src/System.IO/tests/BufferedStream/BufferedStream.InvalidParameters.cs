@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace BufferedStreamTests
+namespace System.IO.Tests
 {
     public class BufferedStream_InvalidParameters
     {
@@ -51,7 +51,7 @@ namespace BufferedStreamTests
             using (BufferedStream stream = new BufferedStream(new MemoryStream()))
             {
                 byte[] array = new byte[10];
-                Assert.Throws<ArgumentNullException>(() => stream.Read(null, 1, 1));
+                Assert.Throws<ArgumentNullException>("array", () => stream.Read(null, 1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(array, -1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(array, 1, -1));
                 Assert.Throws<ArgumentException>(() => stream.Read(array, 9, 2));
@@ -64,7 +64,7 @@ namespace BufferedStreamTests
             using (BufferedStream stream = new BufferedStream(new MemoryStream()))
             {
                 byte[] array = new byte[10];
-                Assert.Throws<ArgumentNullException>(() => stream.Write(null, 1, 1));
+                Assert.Throws<ArgumentNullException>("array", () => stream.Write(null, 1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(array, -1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(array, 1, -1));
                 Assert.Throws<ArgumentException>(() => stream.Write(array, 9, 2));
@@ -87,7 +87,7 @@ namespace BufferedStreamTests
         [Fact]
         public static void ReadOnUnreadableStream_Throws_NotSupportedException()
         {
-            using (FakeStream underlying = new FakeStream(false, true, true))
+            using (WrappedMemoryStream underlying = new WrappedMemoryStream(false, true, true))
             using (BufferedStream stream = new BufferedStream(underlying))
             {
                 Assert.Throws<NotSupportedException>(() => stream.Read(new byte[] { 1 }, 0, 1));
@@ -97,7 +97,7 @@ namespace BufferedStreamTests
         [Fact]
         public static void WriteOnUnwritableStream_Throws_NotSupportedException()
         {
-            using (FakeStream underlying = new FakeStream(true, false, true))
+            using (WrappedMemoryStream underlying = new WrappedMemoryStream(true, false, true))
             using (BufferedStream stream = new BufferedStream(underlying))
             {
                 Assert.Throws<NotSupportedException>(() => stream.Write(new byte[] { 1 }, 0, 1));
@@ -107,7 +107,7 @@ namespace BufferedStreamTests
         [Fact]
         public static void SeekOnUnseekableStream_Throws_NotSupportedException()
         {
-            using (FakeStream underlying = new FakeStream(true, true, false))
+            using (WrappedMemoryStream underlying = new WrappedMemoryStream(true, true, false))
             using (BufferedStream stream = new BufferedStream(underlying))
             {
                 Assert.Throws<NotSupportedException>(() => stream.Seek(0, new SeekOrigin()));

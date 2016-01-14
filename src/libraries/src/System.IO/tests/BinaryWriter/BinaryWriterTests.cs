@@ -7,7 +7,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace BinaryWriterTests
+namespace System.IO.Tests
 {
     public class BinaryWriterTests
     {
@@ -91,11 +91,11 @@ namespace BinaryWriterTests
         [Fact]
         public void BinaryWriter_SeekTests()
         {
-            int[] iArrLargeValues = new Int32[] { 10000, 100000, Int32.MaxValue / 200, Int32.MaxValue / 1000, Int16.MaxValue, Int32.MaxValue, Int32.MaxValue - 1, Int32.MaxValue / 2, Int32.MaxValue / 10, Int32.MaxValue / 100 };
+            int[] iArrLargeValues = new int[] { 10000, 100000, int.MaxValue / 200, int.MaxValue / 1000, short.MaxValue, int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
 
             BinaryWriter dw2 = null;
             MemoryStream mstr = null;
-            Byte[] bArr = null;
+            byte[] bArr = null;
             StringBuilder sb = new StringBuilder();
             Int64 lReturn = 0;
 
@@ -124,7 +124,7 @@ namespace BinaryWriterTests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("lki3456789", sb.ToString());
 
@@ -144,7 +144,7 @@ namespace BinaryWriterTests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("012lk56789", sb.ToString());
 
@@ -164,7 +164,7 @@ namespace BinaryWriterTests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123456ll9", sb.ToString());
 
@@ -185,7 +185,7 @@ namespace BinaryWriterTests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123ll6789", sb.ToString());
 
@@ -227,7 +227,7 @@ namespace BinaryWriterTests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123456789ll", sb.ToString());
 
@@ -239,7 +239,7 @@ namespace BinaryWriterTests
         [InlineData(-1)]
         [InlineData(-2)]
         [InlineData(-10000)]
-        [InlineData(Int32.MinValue)]
+        [InlineData(int.MinValue)]
         public void BinaryWriter_SeekTests_NegativeOffset(int invalidValue)
         {
             // [] IOException if offset is negative
@@ -324,23 +324,23 @@ namespace BinaryWriterTests
                 binaryWriter.Dispose();
 
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Seek(1, SeekOrigin.Begin));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Byte[2], 0, 2));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Char[2], 0, 2));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new byte[2], 0, 2));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new char[2], 0, 2));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(true));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Byte)4));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Byte[] { 1, 2 }));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((byte)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new byte[] { 1, 2 }));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write('a'));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Char[] { 'a', 'b' }));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new char[] { 'a', 'b' }));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(5.3));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Int16)3));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((short)3));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(33));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Int64)42));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((SByte)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((sbyte)4));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write("Hello There"));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Single)4.3));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((float)4.3));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt16)3));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt32)4));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt64)5));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((uint)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((ulong)5));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write("Bah"));
             }
         }

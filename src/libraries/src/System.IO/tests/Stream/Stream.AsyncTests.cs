@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public class StreamAsync
     {

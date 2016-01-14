@@ -8,19 +8,19 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public class StringWriterTests
     {
-        static int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue, Int16.MinValue };
-        static int[] iArrLargeValues = new Int32[] { Int32.MaxValue, Int32.MaxValue - 1, Int32.MaxValue / 2, Int32.MaxValue / 10, Int32.MaxValue / 100 };
-        static int[] iArrValidValues = new Int32[] { 10000, 100000, Int32.MaxValue / 2000, Int32.MaxValue / 5000, Int16.MaxValue };
+        static int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
+        static int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
+        static int[] iArrValidValues = new int[] { 10000, 100000, int.MaxValue / 2000, int.MaxValue / 5000, short.MaxValue };
 
         private static char[] getCharArray()
         {
             return new char[]{
-            Char.MinValue
-            ,Char.MaxValue
+            char.MinValue
+            ,char.MaxValue
             ,'\t'
             ,' '
             ,'$'
@@ -166,15 +166,15 @@ namespace StreamTests
         {
             for (int i = 0; i < iArrValidValues.Length; i++)
             {
-                StringBuilder sb = new StringBuilder(Int32.MaxValue / 2000);
+                StringBuilder sb = new StringBuilder(int.MaxValue / 2000);
                 StringWriter sw = new StringWriter(sb);
 
-                var chArr = new Char[Int32.MaxValue / 2000];
+                var chArr = new char[int.MaxValue / 2000];
                 for (int j = 0; j < chArr.Length; j++)
                     chArr[j] = (char)(j % 256);
                 sw.Write(chArr, iArrValidValues[i] - 1, 1);
 
-                String strTemp = sw.GetStringBuilder().ToString();
+                string strTemp = sw.GetStringBuilder().ToString();
                 Assert.Equal(1, strTemp.Length);
             }
         }
@@ -184,16 +184,16 @@ namespace StreamTests
         {
             for (int i = 0; i < iArrValidValues.Length; i++)
             {
-                StringBuilder sb = new StringBuilder(Int32.MaxValue / 2000);
+                StringBuilder sb = new StringBuilder(int.MaxValue / 2000);
                 StringWriter sw = new StringWriter(sb);
 
-                var chArr = new Char[Int32.MaxValue / 2000];
+                var chArr = new char[int.MaxValue / 2000];
                 for (int j = 0; j < chArr.Length; j++)
                     chArr[j] = (char)(j % 256);
 
                 sw.Write(chArr, 0, iArrValidValues[i]);
 
-                String strTemp = sw.GetStringBuilder().ToString();
+                string strTemp = sw.GetStringBuilder().ToString();
                 Assert.Equal(iArrValidValues[i], strTemp.Length);
             }
         }
@@ -202,14 +202,14 @@ namespace StreamTests
         public static void NewStringWriterIsEmpty()
         {
             var sw = new StringWriter();
-            Assert.Equal(String.Empty, sw.ToString());
+            Assert.Equal(string.Empty, sw.ToString());
         }
 
         [Fact]
         public static void NewStringWriterHasEmptyStringBuilder()
         {
             var sw = new StringWriter();
-            Assert.Equal(String.Empty, sw.GetStringBuilder().ToString());
+            Assert.Equal(string.Empty, sw.GetStringBuilder().ToString());
         }
 
         [Fact]
@@ -306,13 +306,13 @@ namespace StreamTests
 
                 sw.Write(true);
                 sw.Write((char)'a');
-                sw.Write(new Decimal(1234.01));
+                sw.Write(new decimal(1234.01));
                 sw.Write((double)3452342.01);
                 sw.Write((int)23456);
                 sw.Write((long)long.MinValue);
                 sw.Write((float)1234.50f);
-                sw.Write((UInt32)UInt32.MaxValue);
-                sw.Write((UInt64)UInt64.MaxValue);
+                sw.Write((uint)uint.MaxValue);
+                sw.Write((ulong)ulong.MaxValue);
 
                 Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
             }
@@ -342,9 +342,9 @@ namespace StreamTests
                 sw.WriteLine((char)'B');
                 sw.WriteLine((int)987);
                 sw.WriteLine((long)875634);
-                sw.WriteLine((Single)1.23457f);
-                sw.WriteLine((UInt32)45634563);
-                sw.WriteLine((UInt64.MaxValue));
+                sw.WriteLine((float)1.23457f);
+                sw.WriteLine((uint)45634563);
+                sw.WriteLine((ulong.MaxValue));
 
                 Assert.Equal(
                     string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),

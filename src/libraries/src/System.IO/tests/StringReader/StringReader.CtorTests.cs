@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace StringReaderTests
+namespace System.IO.Tests
 {
     public class ReaderTests
     {
@@ -21,8 +21,8 @@ namespace StringReaderTests
 
             // [] Check vanilla construction
             //-----------------------------------------------------------
-            StringReader sr = new StringReader(String.Empty);
-            Assert.Equal(String.Empty, sr.ReadToEnd());
+            StringReader sr = new StringReader(string.Empty);
+            Assert.Equal(string.Empty, sr.ReadToEnd());
         }
 
         [Fact]
@@ -37,14 +37,14 @@ namespace StringReaderTests
 
         [Fact]
         public static void ReadEmtpyString() {
-            StringReader sr = new StringReader(String.Empty);
+            StringReader sr = new StringReader(string.Empty);
             Assert.Equal(-1, sr.Read());
 
         }
 
         [Fact]
         public static void ReadString() {
-            String str1 = "Hello\0\t\v   \\ World";
+            string str1 = "Hello\0\t\v   \\ World";
             StringReader sr = new StringReader(str1);
             for (int i = 0; i < str1.Length; i++)
             {
@@ -56,10 +56,10 @@ namespace StringReaderTests
         [Fact]
         public static void ReadPsudoRandomString()
         {
-            String str1 = String.Empty;
+            string str1 = string.Empty;
             Random r = new Random(-55);
             for (int i = 0; i < 5000; i++)
-                str1 += (Char)r.Next(0, 255);
+                str1 += (char)r.Next(0, 255);
 
             StringReader sr = new StringReader(str1);
             for (int i = 0; i < str1.Length; i++)
@@ -75,7 +75,7 @@ namespace StringReaderTests
         [Fact]
         public static void PeedEmtpyString()
         {
-            StringReader sr = new StringReader(String.Empty);
+            StringReader sr = new StringReader(string.Empty);
             Assert.Equal(-1, sr.Peek());
 
         }
@@ -83,7 +83,7 @@ namespace StringReaderTests
         [Fact]
         public static void PeekString()
         {
-            String str1 = "Hello\0\t\v   \\ World";
+            string str1 = "Hello\0\t\v   \\ World";
             StringReader sr = new StringReader(str1);
             for (int i = 0; i < str1.Length; i++)
             {
@@ -97,10 +97,10 @@ namespace StringReaderTests
         [Fact]
         public static void PeekPsudoRandomString()
         {
-            String str1 = String.Empty;
+            string str1 = string.Empty;
             Random r = new Random(-55);
             for (int i = 0; i < 5000; i++)
-                str1 += (Char)r.Next(0, 255);
+                str1 += (char)r.Next(0, 255);
 
             StringReader sr = new StringReader(str1);
             for (int i = 0; i < str1.Length; i++)
@@ -119,14 +119,14 @@ namespace StringReaderTests
 
             StringReader sr;
 
-            sr = new StringReader(String.Empty);
-            Assert.Equal(String.Empty, sr.ReadToEnd());
+            sr = new StringReader(string.Empty);
+            Assert.Equal(string.Empty, sr.ReadToEnd());
 
         }
 
         [Fact]
         public static void ReadToEndString() {
-            String str1 = "Hello\0\t\v   \\ World";
+            string str1 = "Hello\0\t\v   \\ World";
             StringReader sr = new StringReader(str1);
             Assert.Equal(str1, sr.ReadToEnd());
         }
@@ -135,10 +135,10 @@ namespace StringReaderTests
         public static void ReadToEndPsuedoRandom() {
             // [] Try with large random strings
             //-----------------------------------------------------------
-            String str1 = String.Empty;
+            string str1 = string.Empty;
             Random r = new Random(-55);
             for (int i = 0; i < 10000; i++)
-                str1 += (Char)r.Next(0, 255);
+                str1 += (char)r.Next(0, 255);
 
             StringReader sr = new StringReader(str1);
             Assert.Equal(str1, sr.ReadToEnd());

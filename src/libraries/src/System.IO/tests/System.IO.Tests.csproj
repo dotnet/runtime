@@ -13,28 +13,30 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="BinaryWriter\BinaryWriter_WriteByteCharTests.cs" />
-    <Compile Include="BinaryWriter\BinaryWriter_WriteTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
     <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
-    <Compile Include="BufferedStream\BufferedStream.FakeStream.cs" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
-    <Compile Include="MemoryStream\MemoryStream_TryGetBufferTests.cs" />
-    <Compile Include="StreamReader\StreamReaderCtorTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
+    <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
-    <Compile Include="StreamWriter\BaseStream.cs" />
-    <Compile Include="StreamWriter\CloseTests.cs" />
-    <Compile Include="StreamWriter\CtorTests.cs" />
-    <Compile Include="StreamWriter\FlushTests.cs" />
-    <Compile Include="StreamWriter\WriteTests.cs" />
-    <Compile Include="Stream\NullTests.cs" />
-    <Compile Include="Stream\StreamAsyncTests.cs" />
-    <Compile Include="Stream\StreamMethods.cs" />
-    <Compile Include="Stream\TestLeaveOpen.cs" />
-    <Compile Include="Stream\TimeoutTests.cs" />
-    <Compile Include="StringReader\StringReaderCtorTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
+    <Compile Include="StreamWriter\StreamWriter.CloseTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
+    <Compile Include="Stream\Stream.NullTests.cs" />
+    <Compile Include="Stream\Stream.AsyncTests.cs" />
+    <Compile Include="Stream\Stream.Methods.cs" />
+    <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
+    <Compile Include="Stream\Stream.TimeoutTests.cs" />
+    <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
+      <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->

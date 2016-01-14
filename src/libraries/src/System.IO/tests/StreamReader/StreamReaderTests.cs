@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace StreamReaderTests
+namespace System.IO.Tests
 {
     public class StreamReaderTests
     {
@@ -40,8 +40,8 @@ namespace StreamReaderTests
         protected Tuple<char[], StreamReader> GetCharArrayStream()
         {
             var chArr = new char[]{
-                Char.MinValue
-                ,Char.MaxValue
+                char.MinValue
+                ,char.MaxValue
                 ,'\t'
                 ,' '
                 ,'$'
@@ -201,7 +201,7 @@ namespace StreamReaderTests
         public void ArgumentExceptionOffsetAndCount()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentException>(() => sr.Read(new Char[0], 2, 0));
+            Assert.Throws<ArgumentException>(() => sr.Read(new char[0], 2, 0));
         }
 
         [Fact]
@@ -240,7 +240,7 @@ namespace StreamReaderTests
             var baseInfo = GetCharArrayStream();
             var sr = baseInfo.Item2;
 
-            var chArr = new Char[baseInfo.Item1.Length];
+            var chArr = new char[baseInfo.Item1.Length];
 
             var read = sr.Read(chArr, 0, chArr.Length);
 
@@ -258,7 +258,7 @@ namespace StreamReaderTests
 
             var sr = baseInfo.Item2;
 
-            var chArr = new Char[baseInfo.Item1.Length];
+            var chArr = new char[baseInfo.Item1.Length];
 
             var read = await sr.ReadAsync(chArr, 4, 3);
 
@@ -295,7 +295,7 @@ namespace StreamReaderTests
             var baseInfo = GetCharArrayStream();
             var sr = baseInfo.Item2;
 
-            String valueString = new String(baseInfo.Item1);
+            string valueString = new string(baseInfo.Item1);
 
 
             var data = sr.ReadLine();
@@ -317,7 +317,7 @@ namespace StreamReaderTests
             var baseInfo = GetCharArrayStream();
             var sr = baseInfo.Item2;
 
-            String valueString = new String(baseInfo.Item1);
+            string valueString = new string(baseInfo.Item1);
 
             var temp = new char[10];
             sr.Read(temp, 0, 1);
@@ -340,7 +340,7 @@ namespace StreamReaderTests
             for (int i = 0; i < 4; i++)
             {
                 var data = await sr.ReadLineAsync();
-                Assert.Equal(String.Empty, data);
+                Assert.Equal(string.Empty, data);
             }
 
             var eol = await sr.ReadLineAsync();
