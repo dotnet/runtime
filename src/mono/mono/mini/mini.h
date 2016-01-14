@@ -1158,6 +1158,11 @@ typedef struct {
 	 * The current exception in flight
 	 */
 	guint32 thrown_exc;
+
+	/*
+	 * The calling assembly in llvmonly mode.
+	 */
+	MonoImage *calling_image;
 } MonoJitTlsData;
 
 /*

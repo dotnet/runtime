@@ -4663,6 +4663,8 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 	mono_stack_walk_no_il (get_caller_no_reflection, &dest);
 	if (!dest)
 		dest = m;
+	if (!m)
+		mono_raise_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
 	return mono_assembly_get_object (mono_domain_get (), dest->klass->image->assembly);
 }
 
