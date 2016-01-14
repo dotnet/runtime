@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -764,6 +766,25 @@ namespace System.Collections.Immutable.Tests
 
             object rootNode = DebuggerAttributes.GetFieldValue(ImmutableList.Create<string>("1", "2", "3"), "_root");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+        }
+
+        [Fact]
+        public void UsableWithCollectibleAssemblies()
+        {
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic_assembly"), AssemblyBuilderAccess.RunAndCollect);
+            var module = assembly.DefineDynamicModule("dynamic");
+            var typeBuilder = module.DefineType("Dummy");
+
+            typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+            var dummType = typeBuilder.CreateTypeInfo();
+
+            var createMethod = typeof(ImmutableList).GetMethods().Where(m => m.Name == "Create" && m.GetParameters().Length == 0).Single().MakeGenericMethod(dummType.AsType());
+            var list = (IEnumerable)createMethod.Invoke(null, null);
+
+            var addMethod = list.GetType().GetMethod("Add");
+            list = (IEnumerable)addMethod.Invoke(list, new object[] { Activator.CreateInstance(dummType.AsType()) });
+
+            list.GetEnumerator(); // ensure this doesn't throw
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
