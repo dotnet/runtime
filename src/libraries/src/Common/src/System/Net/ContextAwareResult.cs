@@ -361,9 +361,7 @@ namespace System.Net
         // Returns whether the operation completed sync or not.
         private bool CaptureOrComplete(ref ExecutionContext cachedContext, bool returnContext)
         {
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-
-            if ((_flags & StateFlags.PostBlockStarted) == 0 && globalLogEnabled)
+            if ((_flags & StateFlags.PostBlockStarted) == 0 && GlobalLog.IsEnabled)
             {
                 GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", LoggingHash.HashString(this));
             }
@@ -376,7 +374,7 @@ namespace System.Net
             // capturing the context won't be sufficient.
             if ((_flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
             {
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting identity capture");
                 }
@@ -388,7 +386,7 @@ namespace System.Net
             // Note that Capture() can return null, for example if SuppressFlow() is in effect.
             if (capturingContext && !InternalPeekCompleted)
             {
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() starting capture");
                 }
@@ -411,7 +409,7 @@ namespace System.Net
                     }
                 }
 
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() _Context:" + LoggingHash.HashString(_context));
                 }
@@ -419,13 +417,13 @@ namespace System.Net
             else
             {
                 // Otherwise we have to have completed synchronously, or not needed the context.
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete() skipping capture");
                 }
 
                 cachedContext = null;
-                if (AsyncCallback != null && !CompletedSynchronously && globalLogEnabled)
+                if (AsyncCallback != null && !CompletedSynchronously && GlobalLog.IsEnabled)
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Didn't capture context, but didn't complete synchronously!", LoggingHash.HashString(this));
                 }

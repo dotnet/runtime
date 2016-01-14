@@ -53,8 +53,7 @@ namespace System.Net.NetworkInformation
         // 'Unsafe' because it does not flow ExecutionContext to the callback.
         public static bool UnsafeNotifyStableUnicastIpAddressTable(Action<object> callback, object state)
         {
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled && callback == null)
+            if (GlobalLog.IsEnabled && callback == null)
             {
                 GlobalLog.Assert("UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
             }
@@ -84,7 +83,7 @@ namespace System.Net.NetworkInformation
 
                 if (err == Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
-                    if (globalLogEnabled && helper._cancelHandle.IsInvalid)
+                    if (GlobalLog.IsEnabled && helper._cancelHandle.IsInvalid)
                     {
                         GlobalLog.Assert("CancelHandle invalid despite returning ERROR_IO_PENDING");
                     }
@@ -106,8 +105,7 @@ namespace System.Net.NetworkInformation
 
         private void RunCallback(object o)
         {
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled && !_runCallbackCalled)
+            if (GlobalLog.IsEnabled && !_runCallbackCalled)
             {
                 GlobalLog.Assert("RunCallback called without setting runCallbackCalled!");
             }
@@ -123,7 +121,7 @@ namespace System.Net.NetworkInformation
 
 #if DEBUG
                 bool successfullyRemoved = s_pendingNotifications.Remove(this);
-                if (globalLogEnabled && !successfullyRemoved)
+                if (GlobalLog.IsEnabled && !successfullyRemoved)
                 {
                     GlobalLog.Assert("RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
                 }
@@ -131,7 +129,7 @@ namespace System.Net.NetworkInformation
                 s_pendingNotifications.Remove(this);
 #endif
 
-                if (globalLogEnabled && (_cancelHandle == null || _cancelHandle.IsInvalid))
+                if (GlobalLog.IsEnabled && (_cancelHandle == null || _cancelHandle.IsInvalid))
                 {
                     GlobalLog.Assert("Invalid cancelHandle in RunCallback");
                 }
