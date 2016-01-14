@@ -16,6 +16,9 @@
 #include <sys/wait.h>
 #include <syslog.h>
 #include <unistd.h>
+#if HAVE_PIPE2
+#include <fcntl.h>
+#endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
@@ -122,7 +125,7 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stderrFd)
 {
     int success = true;
-    int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1};
+    int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
     int processId = -1;
 
     // Validate arguments
@@ -151,6 +154,16 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
         success = false;
         goto done;
     }
+
+    // If we have pipe2 and can use O_CLOEXEC, we create a pipe purely for the benefit
+    // of knowing when the child process has called exec.  We can use that to block waiting
+    // on the pipe to be closed, which lets us block the parent from returning until the
+    // child process is actually transitioned to the target program.  This avoids problems
+    // where the parent process uses members of Process, like ProcessName, when the Process
+    // is still the clone of this one. This is a best-effort attempt, so ignore any errors.
+#if HAVE_PIPE2
+    pipe2(waitForChildToExecPipe, O_CLOEXEC);
+#endif
 
     // Fork the child process
     if ((processId = fork()) == -1)
@@ -202,6 +215,25 @@ done:
     CloseIfOpen(stdinFds[READ_END_OF_PIPE]);
     CloseIfOpen(stdoutFds[WRITE_END_OF_PIPE]);
     CloseIfOpen(stderrFds[WRITE_END_OF_PIPE]);
+
+    // Also close the write end of the exec waiting pipe, and wait for the pipe to be closed
+    // by trying to read from it (the read will wake up when the pipe is closed and broken).
+    // Ignore any errors... this is a best-effort attempt.
+    CloseIfOpen(waitForChildToExecPipe[WRITE_END_OF_PIPE]);
+    if (waitForChildToExecPipe[READ_END_OF_PIPE] != -1)
+    {
+        int ignored;
+        ssize_t bytesRead;
+        if (success)
+        {
+            do
+            {
+                bytesRead = read(waitForChildToExecPipe[READ_END_OF_PIPE], &ignored, 1);
+            } 
+            while (bytesRead == -1 && errno == EINTR);
+        }
+        CloseIfOpen(waitForChildToExecPipe[READ_END_OF_PIPE]);
+    }
 
     // If we failed, close everything else and give back error values in all out arguments.
     if (!success)
