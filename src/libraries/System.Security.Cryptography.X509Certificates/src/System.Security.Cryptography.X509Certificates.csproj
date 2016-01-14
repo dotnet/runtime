@@ -18,20 +18,20 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">
-    <ProjectJson>netcore50\project.json</ProjectJson>
-    <ProjectLockJson>netcore50\project.lock.json</ProjectLockJson>
+    <ProjectJson>netcore50/project.json</ProjectJson>
+    <ProjectLockJson>netcore50/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetGroup)' == 'net461' and '$(ProjectJson)' == '' ">
     <ProjectJson>net461\project.json</ProjectJson>
     <ProjectLockJson>net461\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>win\project.json</ProjectJson>
-    <ProjectLockJson>win\project.lock.json</ProjectLockJson>
+    <ProjectJson>win/project.json</ProjectJson>
+    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>unix\project.json</ProjectJson>
-    <ProjectLockJson>unix\project.lock.json</ProjectLockJson>
+    <ProjectJson>unix/project.json</ProjectJson>
+    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />

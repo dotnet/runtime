@@ -22,8 +22,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <ProjectJson>netcore50aot\project.json</ProjectJson>
-    <ProjectLockJson>netcore50aot\project.lock.json</ProjectLockJson>
+    <ProjectJson>netcore50aot/project.json</ProjectJson>
+    <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
     <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
 

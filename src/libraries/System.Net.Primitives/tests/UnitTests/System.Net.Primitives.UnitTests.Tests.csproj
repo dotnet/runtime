@@ -11,7 +11,7 @@
     <ProjectGuid>{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>169,649</NoWarn>
-    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
