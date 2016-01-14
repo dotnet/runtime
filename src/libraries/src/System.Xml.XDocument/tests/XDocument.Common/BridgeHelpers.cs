@@ -78,10 +78,36 @@ namespace CoreXml.Test.XLinq
         public XmlReader GetReader()
         {
             string file = Path.Combine("TestData", "XmlReader", "API", pGenericXml);
-            using (XmlReader r = XmlReader.Create(FilePathUtil.getStream(file), _rsx))
+            Stream s = FilePathUtil.getStream(file);
+
+            if (s == null)
+            {
+                throw new FileNotFoundException("File Not Found: " + pGenericXml);
+            }
+
+            using (XmlReader r = XmlReader.Create(s, _rsx))
             {
                 XDocument doc = XDocument.Load(r, LoadOptions.PreserveWhitespace);
                 return doc.CreateReader();
+            }
+        }
+
+        public XmlReader GetPGenericXmlReader()
+        {
+            string file = Path.Combine("TestData", "XmlReader", "API", pGenericXml);
+            {
+                Stream s = FilePathUtil.getStreamDirect(file);
+
+                if (s == null)
+                {
+                    throw new FileNotFoundException("File Not Found: " + pGenericXml);
+                }
+
+                using (XmlReader r = XmlReader.Create(s, _rsx))
+                {
+                    XDocument doc = XDocument.Load(r, LoadOptions.PreserveWhitespace);
+                    return doc.CreateReader();
+                }
             }
         }
 

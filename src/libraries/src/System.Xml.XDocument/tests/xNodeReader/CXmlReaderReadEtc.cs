@@ -843,26 +843,26 @@ namespace CoreXml.Test.XLinq
                 private const String ST_TEST_EMPTY_ELEM_NS = "EMPTY_NAMESPACE1";
 
                 [Fact]
-                [ActiveIssue(641)]
                 public void TestReadEndElementOnEndElementWithoutNamespace()
                 {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, "NONAMESPACE");
-                    PositionOnNodeType(DataReader, XmlNodeType.EndElement);
-                    DataReader.ReadEndElement();
-                    Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "NONAMESPACE", String.Empty));
+                    using (XmlReader DataReader = GetPGenericXmlReader())
+                    {
+                        PositionOnElement(DataReader, "NONAMESPACE");
+                        PositionOnNodeType(DataReader, XmlNodeType.EndElement);
+                        Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "NONAMESPACE", String.Empty));
+                    }
                 }
 
                 [Fact]
-                [ActiveIssue(641)]
                 public void TestReadEndElementOnEndElementWithNamespace()
                 {
-                    XmlReader DataReader = GetReader();
-                    PositionOnElement(DataReader, ST_TEST_ELEM_NS);
-                    PositionOnElement(DataReader, "bar:check");
-                    PositionOnNodeType(DataReader, XmlNodeType.EndElement);
-                    DataReader.ReadEndElement();
-                    Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "bar:check", String.Empty));
+                    using (XmlReader DataReader = GetPGenericXmlReader())
+                    {
+                        PositionOnElement(DataReader, ST_TEST_ELEM_NS);
+                        PositionOnElement(DataReader, "bar:check");
+                        PositionOnNodeType(DataReader, XmlNodeType.EndElement);
+                        Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "bar:check", String.Empty));
+                    }
                 }
 
                 //[Variation("ReadEndElement on Start Element, no namespace")]

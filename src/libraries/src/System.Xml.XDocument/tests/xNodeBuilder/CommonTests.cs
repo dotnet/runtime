@@ -13,6 +13,7 @@ using System.Xml.Linq;
 using System.Xml.XmlDiff;
 using Microsoft.Test.ModuleCore;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
@@ -3400,7 +3401,9 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 5, Desc = "WriteCData with ]]>", Priority = 1)]
-                public void CData_5()
+                [Fact]
+                //[ActiveIssue(4054)]
+                public void WriteCDataWithTwoClosingBrackets_5()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = doc.CreateWriter();
@@ -3590,7 +3593,9 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 6, Desc = "WriteComment with -- in value", Priority = 1)]
-                public void comment_6()
+                [Fact]
+                //[ActiveIssue(4057)]
+                public void WriteCommentWithDoubleHyphensInValue()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = doc.CreateWriter();
@@ -3603,7 +3608,7 @@ namespace CoreXml.Test.XLinq
                         if (CompareReader(doc, "<Root><!--test - - --></Root>"))
                         {
                             throw new TestException(TestResult.Failed, "");
-                        }; //by design 329815
+                        } //by design
                     }
                     catch (ArgumentException) { return; }
                 }
@@ -4189,7 +4194,9 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Id = 11, Desc = "Include PI end tag ?> as part of the text value", Priority = 1)]
-                public void pi_11()
+                [Fact]
+                //[ActiveIssue(4063)]
+                public void IncludePIEndTagAsPartOfTextValue()
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
