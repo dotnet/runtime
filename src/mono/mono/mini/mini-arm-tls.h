@@ -89,6 +89,9 @@ dump_code (guint32 *ptr)
 static MonoTlsImplementation
 mono_arm_get_tls_implementation (void)
 {
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
 	/* Discard thumb bit */
 #if defined(__linux__) && defined(HAVE_KW_THREAD) && defined(__ARM_EABI__)
 	guint32* check_addr = (guint32*) ((guint32)__aeabi_read_tp & 0xfffffffe);
@@ -111,5 +114,6 @@ mono_arm_get_tls_implementation (void)
 	dump_code (check_addr);
 
 	return (MonoTlsImplementation) { NULL, 0, FALSE, mono_fallback_get_tls_key, NULL, mono_fallback_set_tls_key, NULL };
+#endif
 }
 #endif
