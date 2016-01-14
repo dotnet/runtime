@@ -129,8 +129,8 @@ VOID PALAPI APCFunc(ULONG_PTR dwParam)
 DWORD PALAPI WaiterProc(LPVOID lpParameter)
 {
     HANDLE hWaitThread;
-    DWORD OldTickCount;
-    DWORD NewTickCount;
+    UINT64 OldTimeStamp;
+    UINT64 NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
     DWORD dwThreadId = 0;
@@ -154,15 +154,21 @@ satisfying any threads that were waiting on the object.
             "GetLastError returned %d\n", GetLastError());
     }
 
-   Alertable = (BOOL) lpParameter;
+    Alertable = (BOOL) lpParameter;
 
-    OldTickCount = GetTickCount();
+    LARGE_INTEGER performanceFrequency;
+    if (!QueryPerformanceFrequency(&performanceFrequency))
+    {
+        Fail("Failed to query performance frequency!");
+    }
+
+    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
     ret = WaitForSingleObjectEx(	hWaitThread, 
 								ChildThreadWaitTime, 
         							Alertable);
     
-    NewTickCount = GetTickCount();
+    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -176,16 +182,7 @@ satisfying any threads that were waiting on the object.
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    /* 
-    * Check for DWORD wraparound
-    */
-    if (OldTickCount>NewTickCount)
-    {
-        OldTickCount -= NewTickCount+1;
-        NewTickCount  = 0xFFFFFFFF;
-    }
-
-    ThreadWaitDelta = (int)(NewTickCount - OldTickCount);
+    ThreadWaitDelta = NewTimeStamp - OldTimeStamp;
 
     ret = CloseHandle(hWaitThread);
     if (!ret)
