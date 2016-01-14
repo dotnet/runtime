@@ -39,5 +39,40 @@ namespace System.IO.Tests
             FileInfo info = new FileInfo(path);
             Assert.Throws<FileNotFoundException>(() => info.Length);
         }
+
+        // In some cases (such as when running without elevated privileges,
+        // the symbolic link may fail to create. Only run this test if it creates
+        // links successfully.
+        [ConditionalFact("CanCreateSymbolicLinks")]
+        public void SymLinkLength()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+            using (var tempFile = new TempFile(path, 2000))
+            {
+                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+
+                var info = new FileInfo(path);
+                var linkInfo = new FileInfo(linkPath);
+                Assert.Equal(2000, info.Length);
+                // On Windows, sym links report 0 size; on Linux, their size is the length of the path they point to
+                // Confirm that the size we get is not the size of the target file (and that it's less, since our temporary
+                // sym links should never exceed 500 bytes.
+                Assert.True(2000 > linkInfo.Length);
+            }
+        }
+
+        private static bool CanCreateSymbolicLinks
+        {
+            get
+            {
+                var path = Path.GetTempFileName();
+                var linkPath = path + ".link";
+                var ret = MountHelper.CreateSymbolicLink(linkPath, path);
+                try { File.Delete(path); } catch { }
+                try { File.Delete(linkPath); } catch { }
+                return ret;
+            }
+        }
     }
 }
