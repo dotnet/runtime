@@ -8686,7 +8686,12 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	res = mono_mb_create (mb, mono_signature_no_pinvoke (stoptr), 0, info);
 	mono_mb_free (mb);
 
-	klass->marshal_info->str_to_ptr = res;
+	mono_marshal_lock ();
+	if (!klass->marshal_info->str_to_ptr)
+		klass->marshal_info->str_to_ptr = res;
+	else
+		res = klass->marshal_info->str_to_ptr;
+	mono_marshal_unlock ();
 	return res;
 }
 
@@ -8760,7 +8765,12 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	res = mono_mb_create (mb, ptostr, 0, info);
 	mono_mb_free (mb);
 
-	klass->marshal_info->ptr_to_str = res;
+	mono_marshal_lock ();
+	if (!klass->marshal_info->ptr_to_str)
+		klass->marshal_info->ptr_to_str = res;
+	else
+		res = klass->marshal_info->ptr_to_str;
+	mono_marshal_unlock ();
 	return res;
 }
 
