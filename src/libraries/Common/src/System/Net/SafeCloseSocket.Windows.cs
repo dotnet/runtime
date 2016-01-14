@@ -104,14 +104,13 @@ namespace System.Net.Sockets
             private SocketError InnerReleaseHandle()
             {
                 SocketError errorCode;
-                bool globalLogEnabled = GlobalLog.IsEnabled;
 
                 // If _blockable was set in BlockingRelease, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
                 // case we need to do some recovery.
                 if (_blockable)
                 {
-                    if (globalLogEnabled)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
                     }
@@ -122,7 +121,7 @@ namespace System.Net.Sockets
                     _closeSocketResult = errorCode;
 #endif
                     if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
-                    if (globalLogEnabled)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") closesocket()#1:" + errorCode.ToString());
                     }
@@ -142,7 +141,7 @@ namespace System.Net.Sockets
                         ref nonBlockCmd);
                     if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
 
-                    if (globalLogEnabled)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") ioctlsocket()#1:" + errorCode.ToString());
                     }
@@ -155,7 +154,7 @@ namespace System.Net.Sockets
                             IntPtr.Zero,
                             Interop.Winsock.AsyncEventBits.FdNone);
 
-                        if (globalLogEnabled)
+                        if (GlobalLog.IsEnabled)
                         {
                             GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") WSAEventSelect():" + (errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode).ToString());
                         }
@@ -166,7 +165,7 @@ namespace System.Net.Sockets
                             Interop.Winsock.IoctlSocketConstants.FIONBIO,
                             ref nonBlockCmd);
 
-                        if (globalLogEnabled)
+                        if (GlobalLog.IsEnabled)
                         {
                             GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") ioctlsocket#2():" + (errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode).ToString());
                         }
@@ -181,7 +180,7 @@ namespace System.Net.Sockets
                         _closeSocketResult = errorCode;
 #endif
                         if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
-                        if (globalLogEnabled)
+                        if (GlobalLog.IsEnabled)
                         {
                             GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") closesocket#2():" + errorCode.ToString());
                         }
@@ -211,7 +210,7 @@ namespace System.Net.Sockets
                 _closeSocketLinger = errorCode;
 #endif
                 if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
                 }
@@ -227,7 +226,7 @@ namespace System.Net.Sockets
                 _closeSocketHandle = handle;
                 _closeSocketResult = errorCode;
 #endif
-                if (globalLogEnabled)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") closesocket#3():" + (errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode).ToString());
                 }

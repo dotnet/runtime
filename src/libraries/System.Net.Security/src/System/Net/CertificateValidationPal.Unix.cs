@@ -92,8 +92,7 @@ namespace System.Net
                 return null;
             }
 
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
             }
@@ -151,7 +150,7 @@ namespace System.Net
                 SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
             }
 
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
             }
@@ -218,7 +217,6 @@ namespace System.Net
 
                     if (store == null)
                     {
-                        bool globalLogEnabled = GlobalLog.IsEnabled;
                         try
                         {
                             store = new X509Store(StoreName.My, storeLocation);
@@ -226,7 +224,7 @@ namespace System.Net
 
                             Volatile.Write(ref storeField, store);
 
-                            if (globalLogEnabled)
+                            if (GlobalLog.IsEnabled)
                             {
                                 GlobalLog.Print(
                                     "CertModule::EnsureStoreOpened() storeLocation:" + storeLocation +
@@ -235,7 +233,7 @@ namespace System.Net
                         }
                         catch (CryptographicException e)
                         {
-                            if (globalLogEnabled)
+                            if (GlobalLog.IsEnabled)
                             {
                                 GlobalLog.Assert(
                                     "CertModule::EnsureStoreOpened()",
