@@ -5,13 +5,19 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace StreamReaderTests
+namespace System.IO.Tests
 {
-    public class AsyncStream
+    public class StreamAsync
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
+
         [Fact]
-        public static async Task CopyToTest() {
-            var ms = new MemoryStream();
+        public async Task CopyToTest()
+        {
+            Stream ms = CreateStream();
             for (int i = 0; i < 1000; i++)
             {
                 ms.WriteByte((byte)(i % 256));

@@ -4,14 +4,19 @@
 using System.IO;
 using Xunit;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public class TestLeaveOpen
     {
-        [Fact]
-        public static void StreamReaderTest()
+        protected virtual Stream CreateStream()
         {
-            MemoryStream ms = new MemoryStream();
+            return new MemoryStream();
+        }
+
+        [Fact]
+        public void StreamReaderTest()
+        {
+            Stream ms = CreateStream();
             ms.WriteByte((byte)'a');
             ms.Position = 0;
             Assert.True(ms.CanRead, "ERROR: Before testing, MemoryStream's CanRead property was false!  What?");
@@ -27,16 +32,16 @@ namespace StreamTests
             Assert.False(ms.CanRead, "ERROR: After closing a StreamReader with leaveOpen bool not set, MemoryStream's CanRead property was true!");
 
             // Test default
-            ms = new MemoryStream();
+            ms = CreateStream();
             sr = new StreamReader(ms);
             sr.Dispose();
             Assert.False(ms.CanRead, "ERROR: After closing a StreamReader with the default value for leaveOpen, MemoryStream's CanRead property was true!");
         }
 
         [Fact]
-        public static void BinaryReaderTest()
+        public void BinaryReaderTest()
         {
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             ms.WriteByte((byte)'a');
             ms.Position = 0;
             Assert.True(ms.CanRead, "ERROR: Before testing, MemoryStream's CanRead property was false!  What?");
@@ -52,16 +57,16 @@ namespace StreamTests
             Assert.False(ms.CanRead, "ERROR: After closing a BinaryReader with leaveOpen bool not set, MemoryStream's CanRead property was true!");
 
             // Test default
-            ms = new MemoryStream();
+            ms = CreateStream();
             br = new BinaryReader(ms);
             br.Dispose();
             Assert.False(ms.CanRead, "ERROR: After closing a BinaryReader with the default value for leaveOpen, MemoryStream's CanRead property was true!");
         }
 
         [Fact]
-        public static void StreamWriterTest()
+        public void StreamWriterTest()
         {
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             Assert.True(ms.CanWrite, "ERROR: Before testing, MemoryStream's CanWrite property was false!  What?");
 
             // Test leaveOpen.
@@ -75,17 +80,17 @@ namespace StreamTests
             Assert.False(ms.CanWrite, "ERROR: After closing a StreamWriter with leaveOpen bool not set, MemoryStream's CanWrite property was true!");
 
             // Test default
-            ms = new MemoryStream();
+            ms = CreateStream();
             sw = new StreamWriter(ms);
             sw.Dispose();
             Assert.False( ms.CanWrite, "ERROR: After closing a StreamWriter with the default value for leaveOpen, MemoryStream's CanWrite property was true!");
         }
 
         [Fact]
-        public static void BinaryWriterTest()
+        public void BinaryWriterTest()
         {
 
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             Assert.True(ms.CanWrite, "ERROR: Before testing, MemoryStream's CanWrite property was false!  What?");
 
             // Test leaveOpen.
@@ -99,7 +104,7 @@ namespace StreamTests
             Assert.False(ms.CanWrite, "ERROR: After closing a BinaryWriterwith leaveOpen bool not set, MemoryStream's CanWrite property was true!");
 
             // Test default
-            ms = new MemoryStream();
+            ms = CreateStream();
             bw = new BinaryWriter(ms);
             bw.Dispose();
             Assert.False(ms.CanWrite, "ERROR: After closing a BinaryWriterwith the default value for leaveOpen, MemoryStream's CanWrite property was true!");

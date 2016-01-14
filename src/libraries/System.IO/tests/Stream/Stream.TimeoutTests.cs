@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public sealed class NopStream : Stream
     {
