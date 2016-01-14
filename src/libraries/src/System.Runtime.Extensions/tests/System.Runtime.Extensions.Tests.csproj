@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -21,6 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Environment.MachineName.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\IO\PathTests.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
@@ -59,7 +60,12 @@
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\StringComparer.cs" />
-	
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNodeName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetNodeName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
       <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
     </Compile>
