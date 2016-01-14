@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{29ef8d53-8e84-4e49-b90f-5950a2fe7d54}</ProjectGuid>
+    <ProjectGuid>{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}</ProjectGuid>
     <AssemblyName>System.Data.Common</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,6 +13,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Data\CommandBehavior.cs" />
     <Compile Include="System\Data\CommandType.cs" />
