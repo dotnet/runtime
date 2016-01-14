@@ -51,10 +51,10 @@ void
 mono_handle_arena_stack_pop (MonoHandleArena **arena_stack, MonoHandleArena *arena);
 
 void
-mono_handle_arena_initialize (MonoHandleArena **arena_stack);
+mono_handle_arena_init (MonoHandleArena **arena_stack);
 
 void
-mono_handle_arena_deinitialize (MonoHandleArena **arena_stack);
+mono_handle_arena_cleanup (MonoHandleArena **arena_stack);
 
 MonoHandleArena*
 mono_handle_arena_current (void);

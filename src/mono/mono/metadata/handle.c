@@ -182,14 +182,14 @@ initialize (void)
 }
 
 void
-mono_handle_arena_initialize (MonoHandleArena **arena_stack)
+mono_handle_arena_init (MonoHandleArena **arena_stack)
 {
 	mono_lazy_initialize (&arena_status, initialize);
 	mono_gc_register_root ((char*) arena_stack, sizeof (MonoHandleArena*), arena_desc, MONO_ROOT_SOURCE_HANDLE, "runtime threads handle arena");
 }
 
 void
-mono_handle_arena_deinitialize (MonoHandleArena **arena_stack)
+mono_handle_arena_cleanup (MonoHandleArena **arena_stack)
 {
 	mono_gc_deregister_root ((char*) arena_stack);
 }

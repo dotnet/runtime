@@ -2277,7 +2277,7 @@ thread_in_critical_region (SgenThreadInfo *info)
 static void
 sgen_thread_attach (SgenThreadInfo *info)
 {
-	mono_handle_arena_initialize ((MonoHandleArena**) &info->client_info.info.handle_arena);
+	mono_handle_arena_init ((MonoHandleArena**) &info->client_info.info.handle_arena);
 
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func && !info->client_info.runtime_data)
 		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
@@ -2295,7 +2295,7 @@ sgen_thread_detach (SgenThreadInfo *p)
 	if (mono_domain_get ())
 		mono_thread_detach_internal (mono_thread_internal_current ());
 
-	mono_handle_arena_deinitialize ((MonoHandleArena**) &p->client_info.info.handle_arena);
+	mono_handle_arena_cleanup ((MonoHandleArena**) &p->client_info.info.handle_arena);
 }
 
 gboolean
