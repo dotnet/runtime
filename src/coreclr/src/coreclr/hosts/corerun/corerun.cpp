@@ -14,6 +14,17 @@
 #include <Logger.h>
 #include "palclr.h"
 
+// Utility macro for testing whether or not a flag is set.
+#define HAS_FLAG(value, flag) (((value) & (flag)) == (flag))
+
+// Environment variable for setting whether or not to use Server GC.
+// Off by default.
+static const wchar_t *serverGcVar = W("CORECLR_SERVER_GC");
+
+// Environment variable for setting whether or not to use Concurrent GC.
+// On by default.
+static const wchar_t *concurrentGcVar = W("CORECLR_CONCURRENT_GC");
+
 // The name of the CoreCLR native runtime DLL.
 static const wchar_t *coreCLRDll = W("CoreCLR.dll");
 
@@ -375,6 +386,39 @@ public:
 
 };
 
+// Creates the startup flags for the runtime, starting with the default startup
+// flags and adding or removing from them based on environment variables. Only
+// two environment variables are respected right now: serverGcVar, controlling
+// Server GC, and concurrentGcVar, controlling Concurrent GC.
+STARTUP_FLAGS CreateStartupFlags() {
+    auto initialFlags = 
+        static_cast<STARTUP_FLAGS>(
+            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN | 
+            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
+            STARTUP_FLAGS::STARTUP_CONCURRENT_GC);
+        
+    // server GC is off by default, concurrent GC is on by default.
+    auto checkVariable = [&](STARTUP_FLAGS flag, const wchar_t *var) {
+        wchar_t result[25];
+        size_t outsize;
+        if (_wgetenv_s(&outsize, result, 25, var) == 0 && outsize > 0) {
+            // set the flag if the var is present and set to 1,
+            // clear the flag if the var isp resent and set to 0.
+            // Otherwise, ignore it.
+            if (_wcsicmp(result, W("1")) == 0) {
+                initialFlags = static_cast<STARTUP_FLAGS>(initialFlags | flag);
+            } else if (_wcsicmp(result, W("0")) == 0) {
+                initialFlags = static_cast<STARTUP_FLAGS>(initialFlags & ~flag);
+            }
+        }
+    };
+    
+    checkVariable(STARTUP_FLAGS::STARTUP_SERVER_GC, serverGcVar);
+    checkVariable(STARTUP_FLAGS::STARTUP_CONCURRENT_GC, concurrentGcVar);
+        
+    return initialFlags;
+}
+
 bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbose, const bool waitForDebugger, DWORD &exitCode)
 {
 
@@ -450,14 +494,15 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     }
 
     HRESULT hr;
-
+    
+    
+    STARTUP_FLAGS flags = CreateStartupFlags();
     log << W("Setting ICLRRuntimeHost2 startup flags") << Logger::endl;
+    log << W("Server GC enabled: ") << HAS_FLAG(flags, STARTUP_FLAGS::STARTUP_SERVER_GC) << Logger::endl;
+    log << W("Concurrent GC enabled: ") << HAS_FLAG(flags, STARTUP_FLAGS::STARTUP_CONCURRENT_GC) << Logger::endl;
 
     // Default startup flags
-    hr = host->SetStartupFlags((STARTUP_FLAGS)
-        (STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN | 
-        STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
-        STARTUP_FLAGS::STARTUP_CONCURRENT_GC));
+    hr = host->SetStartupFlags(flags);
     if (FAILED(hr)) {
         log << W("Failed to set startup flags. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
         return false;
