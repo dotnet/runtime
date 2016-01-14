@@ -114,7 +114,6 @@ public partial class CompareInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void IndexOfMinusOneCompatability()
     {
         CompareInfo ci  = CultureInfo.InvariantCulture.CompareInfo;
