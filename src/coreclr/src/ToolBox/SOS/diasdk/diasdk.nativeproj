@@ -15,19 +15,29 @@
         $(VCToolsIncPath)</UserIncludes>
     <MidlTlbDir>$(IntermediateOutputDirectory)</MidlTlbDir>
     <TlbImportFlags>/namespace:Dia /unsafe</TlbImportFlags>
-    <BinplaceSymbols>false</BinplaceSymbols>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Idl Include="$(VCToolsIncPath)\dia2.idl" />
-
     <PublishPartLinked  Include="$(IntermediateOutputDirectory)\dialib.dll">
       <Visibility>Intra</Visibility>
       <FileType>Binary</FileType>      
     </PublishPartLinked>
-
   </ItemGroup>
+
+  <ItemGroup>
+    <RCResourceFile Include="native.rc" />
+  </ItemGroup>
+
   <!--Leaf Project Items-->
   <!--Import the targets-->
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
+
+  <PropertyGroup>
+    <BuildLinkedDependsOn>
+      $(BuildLinkedDependsOn)
+      PlaceSymbols
+    </BuildLinkedDependsOn>
+  </PropertyGroup>
+
 </Project>
