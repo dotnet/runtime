@@ -39,6 +39,7 @@ function print_usage {
     echo '  --sequential                 : Run tests sequentially (default is to run in parallel).'
     echo '  -v, --verbose                : Show output from each test.'
     echo '  -h|--help                    : Show usage information.'
+    echo '  --useServerGC                : Enable server GC for this test run'
     echo ''
 }
 
@@ -578,6 +579,7 @@ mscorlibDir=
 coreFxBinDir=
 coreFxNativeBinDir=
 ((disableEventLogging = 0))
+((serverGC = 0))
 
 # Handle arguments
 verbose=0
@@ -627,6 +629,9 @@ do
         --sequential)
             ((maxProcesses = 1))
             ;;
+        --useServerGC)
+            ((serverGC = 1))
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -638,6 +643,8 @@ done
 if (( disableEventLogging == 0)); then
         export COMPlus_EnableEventLog=1
 fi
+
+export CORECLR_SERVER_GC="$serverGC"
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."
