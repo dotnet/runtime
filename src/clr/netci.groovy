@@ -16,9 +16,12 @@ def static getOSGroup(def os) {
     assert osGroup != null : "Could not find os group for ${os}"
     return osGroupMap[os]
 }
-      
-// Innerloop build OS's
-def osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+
+class Constants {
+    // Innerloop build OS's
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+    def static crossList = ['Ubuntu', 'OSX']
+}
 
 def static setMachineAffinity(def job, def os, def architecture) {
     if (architecture == 'arm64' && os == 'Windows_NT') {
@@ -31,26 +34,34 @@ def static setMachineAffinity(def job, def os, def architecture) {
     }
 }
 
-def static getBuildJobName(def configuration, def architecture, def os) {
+// Calculates the name of the build job based on some typical parameters.
+def static getBuildJobName(def configuration, def architecture, def os, def scenario) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
     
+    def suffix = scenario != 'default' ? "_${scenario}" : '';
+    def baseName = ''
     switch (architecture) {
         case 'x64':
             // For now we leave x64 off of the name for compatibility with other jobs
-            return configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
+            break
         case 'arm64':
         case 'arm':
             // These are cross builds
-            return architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            break
         case 'x86':
-            return architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            break
         default:
             println("Unknown architecture: ${architecture}");
             assert false
             break
     }
+    
+    return baseName + suffix
 }
 
 // **************************
@@ -61,33 +72,133 @@ def static getBuildJobName(def configuration, def architecture, def os) {
 
 // Adds a trigger for the PR build if one is needed.  If isFlowJob is true, then this is the
 // flow job that rolls up the build and test for non-windows OS's
-def static addPRTrigger(def job, def architecture, def os, def configuration, isFlowJob) {
+def static addTriggers(def job, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob) {
+    // Non pull request builds.
+    if (!isPR) {
+        // Check scenario.
+        switch (scenario) {
+            case 'default':
+                switch (architecture)
+                {
+                    case 'x64':
+                    case 'x86':
+                        if (isFlowJob || os == 'Windows_NT') {
+                            // default gets a push trigger for everything
+                            Utilities.addGithubPushTrigger(job)
+                        }
+                        break
+                    case 'arm':
+                    case 'arm64':
+                        Utilities.addGithubPushTrigger(job)
+                        break
+                    default:
+                        println("Unknown architecture: ${architecture}");
+                        assert false
+                        break
+                }
+                break
+            case 'pri1':
+                // Pri one gets a daily build, and only for release
+                if (architecture == 'x64' && configuration == 'Release') {
+                    // We don't expect to see a job generated except in these scenarios
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    if (isFlowJob || os == 'Windows_NT') {
+                        Utilities.addPeriodicTrigger(job, '@daily')
+                    }
+                }
+                break
+            case 'ilrt':
+                // ILASM/ILDASM roundtrip one gets a daily build, and only for release
+                if (architecture == 'x64' && configuration == 'Release') {
+                    // We don't expect to see a job generated except in these scenarios
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    if (isFlowJob || os == 'Windows_NT') {
+                        Utilities.addPeriodicTrigger(job, '@daily')
+                    }
+                }
+                break
+            default:
+                println("Unknown scenario: ${scenario}");
+                assert false
+                break
+        }
+        return
+    }
+    // Pull request builds.  Generally these fall into two categories: default triggers and on-demand triggers
+    // We generally only have a distinct set of default triggers but a bunch of on-demand ones.
     def osGroup = getOSGroup(os)
     switch (architecture) {
         case 'x64':
             switch (os) {
                 case 'OpenSUSE13.2':
+                    assert !isFlowJob
+                    assert scenario == 'default'
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+suse.*')
                     break
                 case 'Debian8.2':
+                    assert !isFlowJob
+                    assert scenario == 'default'
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+debian.*')
                     break
                 case 'Ubuntu':
                 case 'OSX':
-                    // Only add the trigger for the flow job and only for Release, since Debug is too slow
-                    if (isFlowJob && configuration == 'Release') {
-                        Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                    // Triggers on the non-flow jobs aren't necessary here
+                    if (!isFlowJob) {
+                        break
+                    }
+                    switch (scenario) {
+                        case 'default':
+                            if (configuration == 'Release') {
+                                // Default trigger
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                            }
+                            break
+                        case 'pri1':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+pri1.*")
+                            }
+                            break
+                        case 'ilrt':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
+                            }
+                            break
+                        default:
+                            println("Unknown scenario: ${scenario}");
+                            assert false
+                            break
                     }
                     break
                 case 'CentOS7.1':
                 case 'OpenSUSE13.2':
                     assert !isFlowJob
+                    assert scenario == 'default'
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
                     break
                 case 'Windows_NT':
-                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                    switch (scenario) {
+                        case 'default':
+                            // Default trigger
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                            break
+                        case 'pri1':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+pri1.*")
+                            }
+                            break
+                        case 'ilrt':
+                            if (configuration == 'Release') {
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
+                            }
+                            break
+                        default:
+                            println("Unknown scenario: ${scenario}");
+                            assert false
+                            break
+                    }
                     break
                 case 'FreeBSD':
+                    assert scenario == 'default'
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
                     break
                 default:
@@ -98,6 +209,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
             break
         case 'arm64':
         case 'arm':
+            assert scenario == 'default'
             switch (os) {
                 case 'Ubuntu':
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
@@ -110,6 +222,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
             }
             break
         case 'x86':
+            assert scenario == 'default'
             // For windows, x86 runs by default
             if (os == 'Windows_NT') {
                 Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
@@ -126,11 +239,12 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
     }
 }
 
-[true, false].each { buildPri1Tests ->
+// Additional scenario which can alter behavior
+['default', 'pri1', 'ilrt'].each { scenario ->
     [true, false].each { isPR ->
         ['arm', 'arm64', 'x64', 'x86'].each { architecture ->
             ['Debug', 'Release'].each { configuration ->
-                osList.each { os ->
+                Constants.osList.each { os ->
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
@@ -163,22 +277,40 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                             break
                     }
 
-                    //Skip Pri-1 test build unless it's for Windows x64 Release 
-                    if (buildPri1Tests && (architecture != 'x64' || configuration != 'Release' || os != 'Windows_NT'))
-                    {
-                        println("Skipping unneeded Priority 1 tests");
-                        return
+                    // Skip scenarios
+                    switch (scenario) {
+                        case 'pri1':
+                            // The pri1 build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
+                            if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                return
+                            }
+                            // Only x64 for now
+                            if (architecture != 'x64') {
+                                return
+                            }
+                            break
+                        case 'ilrt':
+                            // The ilrt build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
+                            if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                return
+                            }
+                            // Only x64 for now
+                            if (architecture != 'x64') {
+                                return
+                            }
+                            break
+                        case 'default':
+                            // Nothing skipped
+                            break
+                        default:
+                            println("Unknown scenario: ${scenario}")
+                            assert false
+                            break
                     }
                 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
-                    def jobName = ""
-                    if (buildPri1Tests) {
-                        jobName = getBuildJobName(configuration, architecture, os) + "_pri1"
-                    }
-                    else {
-                        jobName = getBuildJobName(configuration, architecture, os)
-                    }
+                    def jobName = getBuildJobName(configuration, architecture, os, scenario)
                     
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {}
@@ -186,15 +318,7 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     setMachineAffinity(newJob, os, architecture)
                     // Add all the standard options
                     Utilities.standardJobSetup(newJob, project, isPR)
-                    if (buildPri1Tests){
-                        Utilities.addPeriodicTrigger(newJob, '@daily')
-                    }
-                    else if (isPR) {
-                        addPRTrigger(newJob, architecture, os, configuration, false)
-                    }
-                    else {
-                        Utilities.addGithubPushTrigger(newJob)
-                    }
+                    addTriggers(newJob, isPR, architecture, os, configuration, scenario, false)
                 
                     def buildCommands = [];
                     def osGroup = getOSGroup(os)
@@ -205,14 +329,24 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
-                                    if (buildPri1Tests)
-                                    {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} Priority 1"
-                                    } 
-                                    else
-                                    {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
+                                    switch (scenario) {
+                                        case 'default':
+                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
+                                            break
+                                        case 'pri1':
+                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture} Priority 1"
+                                            break
+                                        case 'ilrt':
+                                            // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
+                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
+                                            buildCommands += "test\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
+                                            break
+                                        default:
+                                            println("Unknown scenario: ${scenario}")
+                                            assert false
+                                            break
                                     }
+                                    
                                     // TEMPORARY. Don't run tests for PR jobs on x86
                                     if (architecture == 'x64' || !isPR) {
                                         buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
@@ -231,11 +365,12 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                                     // For windows, pull full test results and test drops for x86/x64
                                     Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
                                     // TEMPORARY. Don't run tests for PR jobs on x86
-                                    if (architecture == 'x86' && !isPR) {
+                                    if (architecture == 'x64' || !isPR) {
                                         Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
                                     }
                                     break
                                 case 'arm64':
+                                    assert scenario == 'default'
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
                                     // Add archival.  No xunit results for x64 windows
                                     Utilities.addArchival(newJob, "bin/Product/**")
@@ -255,6 +390,8 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
+                                    // Build commands are the same regardless of scenario on non-Windows other OS's.
+                                    
                                     // On other OS's we skipmscorlib but run the pal tests
                                     buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
                                     buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
@@ -277,7 +414,6 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                                 case 'arm':
                                     // We don't run the cross build except on Ubuntu
                                     assert os == 'Ubuntu'
-                                    
                                     buildCommands += """echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
                                         ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}"""
                                         
@@ -314,36 +450,43 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
             } // configuration
         } // architecture
     } // isPR
-} // buildPri1Tests
+} // scenario
 
-// Create the Linux/OSX coreclr test leg for debug and release.
-[true, false].each { buildPri1Tests ->
+// Create the Linux/OSX coreclr test leg for debug and release and each scenario
+['default', 'pri1', 'ilrt'].each { scenario ->
     [true, false].each { isPR ->
         // Architectures.  x64 only at this point
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
-            ['Ubuntu', 'OSX'].each { os ->
+            Constants.crossList.each { os ->
                 ['Debug', 'Release'].each { configuration ->
-                    // Skip unnecessary Pri1 legs
-                    if (buildPri1Tests && (isPR || configuration != 'Release'))
-                    {
-                        println("Skipping unneeded Pri1 build")
-                        return
+                    
+                    // Skip scenarios
+                    switch (scenario) {
+                        case 'pri1':
+                            // Nothing skipped
+                            break
+                        case 'ilrt':
+                            // Nothing skipped
+                            break
+                        case 'default':
+                            // Nothing skipped
+                            break
+                        default:
+                            println("Unknown scenario: ${scenario}")
+                            assert false
+                            break
                     }
+                    
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
-                    def jobName = getBuildJobName(configuration, architecture, os) + "_tst"
+                    def jobName = getBuildJobName(configuration, architecture, os, scenario) + "_tst"
                     def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os), isPR)
-                    def name_suffix = ""
-                    if (buildPri1Tests)
-                    {
-                        name_suffix = "_pri1";
-                    }
+                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os, scenario), isPR)
                     def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt') + name_suffix, isPR)
-                
-                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR) + name_suffix) {
+                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt', scenario), isPR)
+
+                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                         // Add parameters for the inputs
                     
                         parameters {
@@ -415,9 +558,9 @@ def static addPRTrigger(def job, def architecture, def os, def configuration, is
                     // test.
                     // Windows CoreCLR build and Linux CoreCLR build (in parallel) ->
                     // Linux CoreCLR test
-                    def flowJobName = getBuildJobName(configuration, architecture, os) + "_flow"
+                    def flowJobName = getBuildJobName(configuration, architecture, os, scenario) + "_flow"
                     def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
-                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR) + name_suffix) {
+                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                         buildFlow("""
 // Build the input jobs in parallel
 parallel (
@@ -437,17 +580,9 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
                     }
 
                     Utilities.standardJobSetup(newFlowJob, project, isPR)
-                    if (buildPri1Tests) {
-                        Utilities.addPeriodicTrigger(newFlowJob, '@daily')
-                    }
-                    else if (isPR) {
-                        addPRTrigger(newFlowJob, architecture, os, configuration, true)
-                    }
-                    else {
-                        Utilities.addGithubPushTrigger(newFlowJob)
-                    }
-                }
-            }
-        }
-    }
-}
+                    addTriggers(newFlowJob, isPR, architecture, os, configuration, scenario, true)
+                } // configuration
+            } // os
+        } // architecture
+    } // isPR
+} // scenario
