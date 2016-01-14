@@ -1,7 +1,11 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
 // PrintSymbol.cpp : Defines the printing procedures for the symbols
 //
 // This is a part of the Debug Interface Access SDK 
-// Copyright (c) Microsoft Corporation.  All rights reserved.
 //
 // This source code is only intended as a supplement to the
 // Debug Interface Access SDK and related electronic documentation 
