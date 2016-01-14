@@ -1114,6 +1114,8 @@ union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
         uint64_t pageOccupancy;
 
     } bookkeeping;
+
+    char _alignpad[64];
 };
 
 static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExecutableMemoryChunk is expect to be 64 bytes.");
