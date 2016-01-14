@@ -283,6 +283,21 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 2;
 
+        if (record.ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+        {
+            // Check if the failed access has hit a stack guard page. In such case, it
+            // was a stack probe that detected that there is not enough stack left.
+            void* stackLimit = CPalThread::GetStackLimit();
+            void* stackGuard = (void*)((size_t)stackLimit - getpagesize());
+            if ((siginfo->si_addr >= stackGuard) && (siginfo->si_addr < stackLimit))
+            {
+                // The exception happened in the page right below the stack limit,
+                // so it is a stack overflow
+                write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                abort();
+            }
+        }
+
         // TODO: First parameter says whether a read (0) or write (non-0) caused the
         // fault. We must disassemble the instruction at record.ExceptionAddress
         // to correctly fill in this value.
