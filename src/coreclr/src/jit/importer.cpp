@@ -1660,11 +1660,8 @@ GenTreePtr          Compiler::impLookupToTree(CORINFO_LOOKUP *pLookup, unsigned 
         // Don't import runtime lookups when inlining
         // Inlining has to be aborted in such a case
         JITLOG((LL_INFO1000000, INLINER_FAILED "Cannot inline complicated handle access\n"));
-
-        JitInlineResult result(INLINE_FAIL, impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                               info.compMethodHnd, "Cannot inline generic dictionary lookup");
-        compSetInlineResult(result);  // Only fail for this inline attempt.
-        return NULL;
+        compInlineResult->setFailure("Cannot inline generic dictionary lookup");
+        return nullptr;
     }
     else
     {
@@ -1747,9 +1744,7 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
             JITLOG((LL_INFO1000000, INLINER_FAILED "Cannot inline complicated generic method handle access\n"));
 #endif
             // When called by the new inliner, set the inline result to INLINE_FAIL.
-            JitInlineResult result(INLINE_FAIL, impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                   info.compMethodHnd, "Cannot inline generic dictionary lookup");
-            compSetInlineResult(result);  // Only fail for this inline attempt.
+            compInlineResult->setFailure("Cannot inline generic dictionary lookup");
             return NULL;
         }
 
@@ -6341,10 +6336,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
             // so instead we fallback to JIT.
             if (compIsForInlining())
             {
-                compSetInlineResult(JitInlineResult(INLINE_FAIL,
-                                                    impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                                    info.compMethodHnd,
-                                                    "Cannot embed PInvoke cookie across modules"));
+               compInlineResult->setFailure("Cannot embed PInvoke cookie across modules");
             }
             else
             {
@@ -6395,10 +6387,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         void *          varCookie, *pVarCookie;
         if (!info.compCompHnd->canGetVarArgsHandle(sig))
         {
-            compSetInlineResult(JitInlineResult(INLINE_FAIL,
-                                                impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                                info.compMethodHnd,
-                                                "Cannot embed Var Args handle across modules"));
+            compInlineResult->setFailure("Cannot embed Var Args handle across modules");
             return callRetTyp;    
         }
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
@@ -11748,7 +11737,7 @@ DO_LDFTN:
 
 #ifdef _TARGET_AMD64
             noway_assert(varTypeIsIntegralOrI(lclTyp) || varTypeIsFloating(lclTyp) || lclTyp == TYP_STRUCT);
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64
 
             if (compIsForInlining())
             {
@@ -13447,7 +13436,6 @@ ABORT_THIS_INLINE_ONLY_CONTEXT_DEPENDENT:
     
     // Fallthrough
 
-CorInfoInline failType;
 ABORT_THIS_INLINE_ONLY:
 
 #ifdef  DEBUG
@@ -13457,7 +13445,7 @@ ABORT_THIS_INLINE_ONLY:
                impCurOpcOffs, impCurOpcName, info.compFullName);
     }
 #endif
-    failType = INLINE_FAIL;
+    compInlineResult->setFailure(inlineFailReason);
     goto INLINING_FAILED;
 
 ABORT:
@@ -13469,7 +13457,7 @@ ABORT:
                impCurOpcOffs, impCurOpcName, info.compFullName);
     }
 #endif
-    failType = INLINE_NEVER;
+    compInlineResult->setNever(inlineFailReason);
 
     // Fallthrough
 
@@ -13478,8 +13466,7 @@ INLINING_FAILED:
     //Must be inside the inlinee compiler here
     assert(compIsForInlining());
     assert(impInlineInfo->fncHandle == info.compMethodHnd);
-    compSetInlineResult(JitInlineResult(failType, impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                        info.compMethodHnd, inlineFailReason));
+
     return;
 
 #undef _impResolveToken
@@ -13499,7 +13486,12 @@ void Compiler::impAbortInline(bool abortThisInlineOnly, bool contextDependent,
     if (abortThisInlineOnly)
     {
        JITDUMP("(aborted for this callsite only)\n");
+       compInlineResult->setFailure(reason);
     }
+    else {
+       compInlineResult->setNever(reason);
+    }
+
     if (contextDependent)
     {
         JITDUMP("Context dependent inline rejection for method %s\n", info.compFullName);
@@ -13507,9 +13499,6 @@ void Compiler::impAbortInline(bool abortThisInlineOnly, bool contextDependent,
 
     assert(compIsForInlining());
     assert(impInlineInfo->fncHandle == info.compMethodHnd);
-    compSetInlineResult(JitInlineResult(abortThisInlineOnly ? INLINE_FAIL : INLINE_NEVER, 
-                                        impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                        info.compMethodHnd, reason));
 }
 
 // Push a local/argument treeon the operand stack
@@ -15629,14 +15618,18 @@ int   Compiler::impEstimateCallsiteNativeSize(CORINFO_METHOD_INFO *  methInfo)
 /*****************************************************************************
  */
 
-JitInlineResult  Compiler::impCanInlineNative(int   callsiteNativeEstimate,  
-                                              int   calleeNativeSizeEstimate,                                            
-                                              InlInlineHints inlineHints,
-                                              InlineInfo * pInlineInfo)  // NULL for static inlining hint for ngen.                                                              
+void             Compiler::impCanInlineNative(int              callsiteNativeEstimate,  
+                                              int              calleeNativeSizeEstimate,                                            
+                                              InlInlineHints   inlineHints,
+                                              InlineInfo*      pInlineInfo,     // NULL for static inlining hint for ngen. 
+                                              JitInlineResult* inlineResult)
 {
     assert(pInlineInfo != NULL &&  compIsForInlining() ||  // Perform the actual inlining.
            pInlineInfo == NULL && !compIsForInlining()     // Calculate the static inlining hint for ngen.
-          );  
+          );
+
+    // If we're really inlining, we should just have one result in play.
+    assert((pInlineInfo == nullptr) || (inlineResult == pInlineInfo->inlineResult));
 
     // If this is a "forceinline" method, the JIT probably shouldn't have gone
     // to the trouble of estimating the native code size. Even if it did, it
@@ -15870,178 +15863,184 @@ JitInlineResult  Compiler::impCanInlineNative(int   callsiteNativeEstimate,
         const char * message = "Native estimate for function size exceeds threshold.";
 #endif
         JITLOG((LL_INFO100000, "%s", message));
-        JitInlineResult ret((pInlineInfo)?INLINE_FAIL:INLINE_NEVER,
-                            (pInlineInfo)?pInlineInfo->inlineCandidateInfo->ilCallerHandle:NULL,
-                            (pInlineInfo)?pInlineInfo->fncHandle:NULL,
-                            message);
-        return ret;
+        if (pInlineInfo != nullptr) 
+        {
+            inlineResult->setFailure(message);
+        }
+        else 
+        {
+            // Static hint case....
+            inlineResult->setNever(message);
+        }
     }
-    else
+    else 
     {
-        JITLOG((LL_INFO100000, "Native estimate for function size is within threshold for inlining %g <= %g (multiplier = %g)\n",
-                calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
-                threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
-    }
-#undef NATIVE_CALL_SIZE_MULTIPLIER
+       JITLOG((LL_INFO100000, "Native estimate for function size is within threshold for inlining %g <= %g (multiplier = %g)\n",
+                 calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
+                 threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
 
-    JitInlineResult ret = JitInlineResult(INLINE_PASS,
-                                          (pInlineInfo)?pInlineInfo->inlineCandidateInfo->ilCallerHandle:NULL,
-                                          (pInlineInfo)?pInlineInfo->fncHandle:NULL,
-                                          NULL);
-    ret.setReported();
-    return ret;
+       // Still a viable candidate....update status
+       inlineResult->setCandidate("Native size estimate within threshold");
+    }
+
+#undef NATIVE_CALL_SIZE_MULTIPLIER
 }
-    
 
 
 /*****************************************************************************
  This method makes STATIC inlining decision based on the IL code. 
- It should not make any inlining decision based on the context,
- therefore it should only return either INLINE_PASS or INLINE_NEVER.
-
+ It should not make any inlining decision based on the context.
  If forceInline is true, then the inlining decision should not depend on
  performance heuristics (code size, etc.).
  */
 
-JitInlineResult  Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
-                                          CORINFO_METHOD_INFO *    methInfo,
-                                          bool forceInline
-                                         )
+void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
+                              CORINFO_METHOD_INFO *    methInfo,
+                              bool forceInline,
+                              JitInlineResult* inlineResult)
 {
-    const char *inlineFailReason = NULL;
     unsigned codeSize = methInfo->ILCodeSize;
+
+    // We shouldn't have made up our minds yet...
+    assert(!inlineResult->isDecided());
 
     if (methInfo->EHcount)
     {
-        inlineFailReason = "Inlinee contains EH.";
+        inlineResult->setNever("Inlinee contains EH");
+        return;
     }
 
-    else if ((methInfo->ILCode == 0) || (codeSize == 0))
+    if ((methInfo->ILCode == 0) || (codeSize == 0))
     {
-        inlineFailReason = "Inlinee has no body.";
+        inlineResult->setNever("Inlinee has no body");
+        return;
     }
 
     // For now we don't inline varargs (import code can't handle it)
 
-    else if (methInfo->args.isVarArg())
+    if (methInfo->args.isVarArg())
     {
-        inlineFailReason = "Inlinee is vararg.";
+        inlineResult->setNever("Inlinee is vararg");
+        return;
     }
 
     // Reject if it has too many locals.
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
     
-    else if (methInfo->locals.numArgs > MAX_INL_LCLS)
+    if (methInfo->locals.numArgs > MAX_INL_LCLS)
     {
         JITLOG((LL_EVERYTHING, INLINER_FAILED "Method has %u locals: "
                 "%s called by %s\n",
                 methInfo->locals.numArgs, eeGetMethodFullName(fncHandle),
                 info.compFullName));
-    
-        inlineFailReason = "Inlinee has too many locals.";
+        inlineResult->setNever("Inlinee has too many locals");
+        return;
     }
     
     // Make sure there aren't too many arguments.
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
     
-    else if (methInfo->args.numArgs > MAX_INL_ARGS)
+    if (methInfo->args.numArgs > MAX_INL_ARGS)
     {
         JITLOG((LL_EVERYTHING, INLINER_FAILED "Method has %u arguments: "
                 "%s called by %s\n",
                 methInfo->args.numArgs, eeGetMethodFullName(fncHandle),
                 info.compFullName));
-        inlineFailReason = "Inlinee has too many arguments";
+        inlineResult->setNever("Inlinee has too many arguments");
+        return;
     }
- 
-    else if (!forceInline)
+
+    if (forceInline) 
     {
+       inlineResult->setCandidate("Inline is a force inline");
+       return;
+    }       
+ 
+    // Reject large functions
 
-        // Reject large functions
-
-        if (codeSize > impInlineSize)
-        {
-            JITLOG((LL_EVERYTHING, INLINER_FAILED "Method is too big impInlineSize "
-                    "%d codesize %d: %s called by %s\n",
-                    impInlineSize, codeSize, eeGetMethodFullName(fncHandle),
-                    info.compFullName));
-
-            inlineFailReason = "Method is too big.";
-        }
+    if (codeSize > impInlineSize)
+    {
+       JITLOG((LL_EVERYTHING, INLINER_FAILED "Method is too big impInlineSize "
+                 "%d codesize %d: %s called by %s\n",
+                 impInlineSize, codeSize, eeGetMethodFullName(fncHandle),
+                 info.compFullName));
+       inlineResult->setNever("Inlinee is too big");
+       return;
+    }
 
         // Make sure maxstack is not too big
 
-        else if (methInfo->maxStack >
-                 sizeof(impSmallStack)/sizeof(impSmallStack[0]))
-        {
+    if (methInfo->maxStack >
+       sizeof(impSmallStack)/sizeof(impSmallStack[0]))
+    {
             JITLOG((LL_EVERYTHING, INLINER_FAILED "Method has %u MaxStack "
                     "bigger than threshold: %s called by %s\n",
                     methInfo->maxStack,
                     eeGetMethodFullName(fncHandle), info.compFullName));
-
-            inlineFailReason = "Method's MaxStack is too big.";
-        }
+            inlineResult->setNever("Inlinee's MaxStack is too big");
+            return;
+    }
 
 #ifdef FEATURE_LEGACYNETCF
 
-        // Check for NetCF quirks mode and the NetCF restrictions
-        else if (opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS)
-        {
-            if (codeSize > 16)
-            {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Method is too big.";
-            }
-            else if (methInfo->EHcount)
-            {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains EH.";
-            }
-            else if (methInfo->locals.numArgs > 0)
-            {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee has locals.";
-            }
-            else if (methInfo->args.retType == CORINFO_TYPE_FLOAT)
-            {
-                inlineFailReason = "Windows Phone OS 7 compatibility - float return.";
-            }
-            else
-            {
-                CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
-                for(unsigned i = methInfo->args.numArgs; i > 0; --i, argLst = info.compCompHnd->getArgNext(argLst))
-                {
-                    if (TYP_FLOAT == eeGetArgType(argLst, &methInfo->args))
-                    {
-                        inlineFailReason = "Windows Phone OS 7 compatibility - float argument.";
-                        break;
-                    }
-                }
-            }
+    // Check for NetCF quirks mode and the NetCF restrictions
+    if (opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS)
+    {
+       const char * inlineFailReason = nullptr;
 
-        }
+       if (codeSize > 16)
+       {
+          inlineFailReason = "Windows Phone OS 7 compatibility - Method is too big.";
+       }
+       else if (methInfo->EHcount)
+       {
+          inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains EH.";
+       }
+       else if (methInfo->locals.numArgs > 0)
+       {
+          inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee has locals.";
+       }
+       else if (methInfo->args.retType == CORINFO_TYPE_FLOAT)
+       {
+          inlineFailReason = "Windows Phone OS 7 compatibility - float return.";
+       }
+       else
+       {
+          CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
+          for(unsigned i = methInfo->args.numArgs; i > 0; --i, argLst = info.compCompHnd->getArgNext(argLst))
+          {
+             if (TYP_FLOAT == eeGetArgType(argLst, &methInfo->args))
+             {
+                inlineFailReason = "Windows Phone OS 7 compatibility - float argument.";
+                break;
+             }
+          }
+       }
+
+       if (inlineFailReason != nullptr)
+       {
+          inlineResult->setNever(inlineFailReason);
+          return;
+       }
+    }
 
 #endif // FEATURE_LEGACYNETCF
 
-    }
-
-    // Allow inlining unless a reason was found not to.
-    // This function is invoked from the original compiler instance, so
-    // info.compMethodHnd is the IL caller.
-
-    return JitInlineResult(inlineFailReason ? INLINE_NEVER : INLINE_PASS,
-                           info.compMethodHnd,
-                           fncHandle,
-                           inlineFailReason);
+    // Still a viable candidate...
+    inlineResult->setCandidate("impCanInlineIL");
 }
-
 
 /*****************************************************************************
  */
 
-JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
+void  Compiler::impCheckCanInline(GenTreePtr                call,
                                              CORINFO_METHOD_HANDLE     fncHandle,
                                              unsigned                  methAttr,
                                              CORINFO_CONTEXT_HANDLE    exactContextHnd,
-                                             InlineCandidateInfo    ** ppInlineCandidateInfo)
+                                             InlineCandidateInfo    ** ppInlineCandidateInfo,
+                                             JitInlineResult*          inlineResult)
 {
 #if defined(DEBUG) || MEASURE_INLINING
     ++Compiler::jitCheckCanInlineCallCount;    // This is actually the number of methods that starts the inline attempt.
@@ -16057,8 +16056,7 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
         CORINFO_METHOD_HANDLE fncHandle;
         unsigned methAttr;
         CORINFO_CONTEXT_HANDLE exactContextHnd;
-
-        JitInlineResult result;
+        JitInlineResult* result;
         InlineCandidateInfo ** ppInlineCandidateInfo;
     } param = {0};
 
@@ -16067,7 +16065,7 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
     param.fncHandle = fncHandle;
     param.methAttr = methAttr;
     param.exactContextHnd = (exactContextHnd != NULL) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
-
+    param.result = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
     setErrorTrap(info.compCompHnd, Param *, pParam, &param)
@@ -16083,8 +16081,7 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
         static ConfigDWORD fJitNoInline;
         if (fJitNoInline.val(CLRConfig::INTERNAL_JitNoInline))
         {
-            pParam->result = JitInlineResult(INLINE_FAIL, pParam->pThis->info.compMethodHnd,
-                                             pParam->fncHandle, "COMPlus_JitNoInline");
+            pParam->result->setFailure("COMPlus_JitNoInline");
             goto _exit;
         }
 #endif
@@ -16098,20 +16095,21 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
         CORINFO_METHOD_INFO methInfo;    
         if (!pParam->pThis->info.compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo))
         {
-            pParam->result = JitInlineResult(INLINE_NEVER, pParam->pThis->info.compMethodHnd,
-                                             pParam->fncHandle, "Could not get method info.");
+            pParam->result->setNever("Could not get method info");
             goto _exit;
         }
 
         bool forceInline;
         forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);
 
-        pParam->result = pParam->pThis->impCanInlineIL(pParam->fncHandle,
-                                                       &methInfo,
-                                                       forceInline);
-        if (dontInline(pParam->result))
+        pParam->pThis->impCanInlineIL(pParam->fncHandle,
+                                      &methInfo,
+                                      forceInline,
+                                      pParam->result);
+
+        if (pParam->result->isFailure())
         {
-            assert(pParam->result.result() == INLINE_NEVER);
+            assert(pParam->result->isNever());
             goto _exit;            
         }
 
@@ -16130,8 +16128,7 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
         if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
         {
             JITLOG_THIS(pParam->pThis, (LL_INFO1000000, INLINER_FAILED "due to initClass\n"));
-            pParam->result = JitInlineResult(INLINE_FAIL, pParam->pThis->info.compMethodHnd,
-                                             pParam->fncHandle, "Inlinee's class could not be initialized.");
+            pParam->result->setFailure("Inlinee's class could not be initialized");
             goto _exit;
         }
 
@@ -16143,15 +16140,23 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
 #endif 
     
         /* VM Inline check also ensures that the method is verifiable if needed */
-        CorInfoInline res;
-        res = pParam->pThis->info.compCompHnd->canInline(pParam->pThis->info.compMethodHnd, pParam->fncHandle, &dwRestrictions);
-        pParam->result = JitInlineResult(res, pParam->pThis->info.compMethodHnd, pParam->fncHandle,
-                                         dontInline(res) ? "VM rejected inline" : NULL);
+        CorInfoInline vmResult;
+        vmResult = pParam->pThis->info.compCompHnd->canInline(pParam->pThis->info.compMethodHnd, pParam->fncHandle, &dwRestrictions);
+
+        if (vmResult == INLINE_FAIL) 
+        {
+            pParam->result->setFailure("VM rejected inline");
+        } 
+        else if (vmResult == INLINE_NEVER) 
+        {
+            pParam->result->setNever("VM rejected inline");
+        }
+        
         // printf("canInline(%s -> %s)=%d\n", info.compFullName, eeGetMethodFullName(fncHandle), result);
-        if (dontInline(pParam->result))
+        if (pParam->result->isFailure())
         {
             // Make sure not to report this one.  It was already reported by the VM.
-            pParam->result.setReported();
+            pParam->result->setReported();
             JITLOG_THIS(pParam->pThis, (LL_INFO1000000, INLINER_FAILED "Inline rejected the inline : "
                     "%s called by %s\n",
                     pParam->pThis->eeGetMethodFullName(pParam->fncHandle), pParam->pThis->info.compFullName));
@@ -16173,9 +16178,7 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
                             "codesize %d: %s called by %s\n",
                              methInfo.ILCodeSize, pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                              pParam->pThis->info.compFullName));
-                pParam->result = JitInlineResult(INLINE_FAIL, pParam->pThis->info.compMethodHnd,
-                                                 pParam->fncHandle,
-                                                 "Cannot inline across MarshalByRef objects.");
+                pParam->result->setFailure("Cannot inline across MarshalByRef objects");
                 goto _exit;
             }
         }
@@ -16222,38 +16225,32 @@ JitInlineResult  Compiler::impCheckCanInline(GenTreePtr                call,
 
         *(pParam->ppInlineCandidateInfo) = pInfo;
 
-        pParam->result = JitInlineResult(INLINE_PASS, pParam->pThis->info.compMethodHnd, 
-                                         pParam->fncHandle, NULL);
+        pParam->result->setCandidate("impCheckCanInline");
   
 _exit:
         ;
     }
     impErrorTrap()
     {
-        param.result = JitInlineResult(INLINE_FAIL, info.compMethodHnd, fncHandle,
-                                       "Exception while inspecting inlining candidate.");
+        param.result->setFailure("Exception while inspecting inlining candidate");
     }
     endErrorTrap();
-
-    return param.result;
-    
 }
       
-JitInlineResult Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
-                                                 GenTreePtr    curArgVal,
-                                                 unsigned      argNum)
+void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
+                                      GenTreePtr    curArgVal,
+                                      unsigned      argNum,
+                                      JitInlineResult* inlineResult)
 {
-
     InlArgInfo *  inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
-    const char * inlineFailReason = NULL;
 
     if (curArgVal->gtOper == GT_MKREFANY)
     {
         JITLOG((LL_INFO100000, INLINER_FAILED "argument contains GT_MKREFANY: "
                "%s called by %s\n",
                eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
-        inlineFailReason = "Argument contains mkrefany";
-        goto InlineFailed;
+        inlineResult->setFailure("Argument contains mkrefany");
+        return;
     }
 
     inlCurArgInfo->argNode = curArgVal;
@@ -16278,7 +16275,8 @@ JitInlineResult Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
         JITLOG((LL_INFO100000, INLINER_FAILED "argument has other side effect: "
                     "%s called by %s\n",
                     eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
-        inlineFailReason = "Argument has side effect."; goto InlineFailed;
+        inlineResult->setFailure("Argument has side effect");
+        return;
     }
 
     if (curArgVal->gtFlags & GTF_GLOB_EFFECT)
@@ -16308,7 +16306,8 @@ JitInlineResult Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
                     eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
 
             /* Abort, but do not mark as not inlinable */
-            inlineFailReason = "Method is called with null this pointer."; goto InlineFailed;
+            inlineResult->setFailure("Method is called with null this pointer");
+            return;
         }
     }
 
@@ -16349,31 +16348,25 @@ JitInlineResult Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
     // This doesn't mean that other information or other args
     // will not prevent inlining of this method.
     //
-    return JitInlineResult(INLINE_PASS, pInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                           pInlineInfo->fncHandle, NULL);
-
-InlineFailed:
-    return JitInlineResult(INLINE_FAIL, pInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                           pInlineInfo->fncHandle, inlineFailReason);
+    inlineResult->setCandidate("impInlineRecordArgInfo");
 }
 
 /*****************************************************************************
  *
  */
 
-JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
+void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 {
     assert(!compIsForInlining());    
     
-    GenTreePtr             call       = pInlineInfo->iciCall;
-    CORINFO_METHOD_INFO *  methInfo   = &pInlineInfo->inlineCandidateInfo->methInfo; 
-    unsigned               clsAttr    = pInlineInfo->inlineCandidateInfo->clsAttr;
-    InlArgInfo      *      inlArgInfo = pInlineInfo->inlArgInfo;
-    InlLclVarInfo   *      lclVarInfo = pInlineInfo->lclVarInfo;   
+    GenTreePtr             call         = pInlineInfo->iciCall;
+    CORINFO_METHOD_INFO *  methInfo     = &pInlineInfo->inlineCandidateInfo->methInfo; 
+    unsigned               clsAttr      = pInlineInfo->inlineCandidateInfo->clsAttr;
+    InlArgInfo      *      inlArgInfo   = pInlineInfo->inlArgInfo;
+    InlLclVarInfo   *      lclVarInfo   = pInlineInfo->lclVarInfo;   
+    JitInlineResult *      inlineResult = pInlineInfo->inlineResult;
     
     const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(methInfo);
-
-    const char * inlineFailReason = NULL;
 
     /* init the argument stuct */
 
@@ -16391,11 +16384,11 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
     {
         inlArgInfo[0].argIsThis = true;   
         
-        JitInlineResult currentArgInliningStatus = impInlineRecordArgInfo(pInlineInfo, thisArg, argCnt);
+        impInlineRecordArgInfo(pInlineInfo, thisArg, argCnt, inlineResult);
         
-        if (dontInline(currentArgInliningStatus))
+        if (inlineResult->isFailure())
         {
-            return currentArgInliningStatus;
+           return;
         }
         
         /* Increment the argument count */
@@ -16426,11 +16419,11 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
         assert(argTmp->gtOper == GT_LIST);
         GenTreePtr    argVal = argTmp->gtOp.gtOp1;
 
-        JitInlineResult currentArgInliningStatus = impInlineRecordArgInfo(pInlineInfo, argVal, argCnt);
+        impInlineRecordArgInfo(pInlineInfo, argVal, argCnt,  inlineResult);
 
-        if (dontInline(currentArgInliningStatus))
+        if (inlineResult->isFailure())
         {
-            return currentArgInliningStatus;
+            return;
         }
 
         /* Increment the argument count */
@@ -16487,7 +16480,8 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                 JITLOG((LL_INFO100000, INLINER_FAILED, "Argument cannot be bashed into a 'ref': %s called by %s\n",
                         eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
 
-                inlineFailReason = "Argument is not a ref"; goto InlineFailed;
+                inlineResult->setFailure("Argument is not a ref");
+                return;
             }
 
             /* This can only happen with byrefs <-> ints/shorts */
@@ -16517,7 +16511,8 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                             "cannot be bashed: %s called by %s\n",
                             eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
 
-                    inlineFailReason = "Arguments 'int <- byref."; goto InlineFailed;
+                    inlineResult->setFailure("Arguments int <- byref");
+                    return;
                 }
             }
         }
@@ -16575,7 +16570,8 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                 JITLOG((LL_INFO100000, INLINER_FAILED "Arguments incompatible"
                            " %s called by %s\n",
                            eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
-                inlineFailReason = "Arguments incompatible"; goto InlineFailed;
+                inlineResult->setFailure("Arguments incompatible");
+                return;
             }
 
             /* Is it a narrowing or widening cast?
@@ -16605,7 +16601,8 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                                 "cannot be bashed: %s called by %s\n",
                                 eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
 
-                        inlineFailReason = "Arguments 'int <- byref."; goto InlineFailed;
+                        inlineResult->setFailure("Arguments int <- byref");
+                        return;
                     }
                 }
                 else if (genTypeSize(sigType) < EA_PTRSIZE)
@@ -16681,7 +16678,8 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
             JITLOG((LL_INFO100000, INLINER_FAILED "Method has pinned locals: "
                     "%s called by %s\n",
                     eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
-            inlineFailReason = "Method has pinned locals."; goto InlineFailed;
+            inlineResult->setNever("Method has pinned locals");
+            return;
         }
 
         lclVarInfo[i + argCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
@@ -16712,12 +16710,7 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
 
-    return JitInlineResult(INLINE_PASS, pInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                           pInlineInfo->fncHandle, NULL);
-
-InlineFailed:
-    return JitInlineResult(INLINE_FAIL, pInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                           pInlineInfo->fncHandle, inlineFailReason);
+    inlineResult->setCandidate("impInlineInitVars");
 }
 
 
@@ -16987,14 +16980,12 @@ BOOL                Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects
 // Check the inlining eligibility of this GT_CALL node.
 // Mark GTF_CALL_INLINE_CANDIDATE on the GT_CALL node 
 
+// Todo: find a way to record the failure reasons in the IR (or
+// otherwise build tree context) so when we do the inlining pass we
+// can capture these reasons
+
 void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONTEXT_HANDLE exactContextHnd)
 {
-    GenTreeCall* call = callNode->AsCall();
-
-    const char * inlineFailReason = NULL;
-    JitInlineResult result;
-    InlineCandidateInfo * inlineCandidateInfo = NULL;
-
     if  (!opts.OptEnabled(CLFLG_INLINING))
     {                 
         /* XXX Mon 8/18/2008
@@ -17007,17 +16998,25 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
         return;
     }
 
-    /* Don't inline if not optimized code */
-    if  (opts.compDbgCode)
-    {
-        inlineFailReason = "Compiling debug code."; goto InlineFailed;
-    }
-
-    if  (compIsForImportOnly())
+    if (compIsForImportOnly())
     {
         // Don't bother creating the inline candidate during verification.
         // Otherwise the call to info.compCompHnd->canInline will trigger a recursive verification
         // that leads to the creation of multiple instances of Compiler.
+        return;
+    }
+    
+    GenTreeCall* call = callNode->AsCall();
+    CORINFO_METHOD_HANDLE callerHandle = info.compMethodHnd;
+    CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
+    COMP_HANDLE comp = info.compCompHnd;
+    JitInlineResult inlineResult(comp, callerHandle, calleeHandle);
+    
+    /* Don't inline if not optimized code */
+    if  (opts.compDbgCode)
+    {
+        inlineResult.setFailure("Compiling debug code");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
         return;
     }
 
@@ -17025,7 +17024,9 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
     {
-        inlineFailReason = "Call site marked as tailcall."; goto InlineFailed;
+        inlineResult.setFailure("Call site marked as tailcall");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     // Tail recursion elimination takes precedence over inlining.
@@ -17034,25 +17035,33 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     // as a fast tail call or turned into a loop.
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
-        inlineFailReason = "Recursive tail call"; goto InlineFailed;
+        inlineResult.setFailure("Recursive tail call");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
     {
-        inlineFailReason = "Not a direct call."; goto InlineFailed;
+        inlineResult.setFailure("Not a direct call");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* Ignore helper calls */
 
     if  (call->gtCallType == CT_HELPER)
     {
-        inlineFailReason = "Inlinee is a helper call."; goto InlineFailed;
+        inlineResult.setFailure("Inlinee is a helper call");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* Ignore indirect calls */
     if  (call->gtCallType == CT_INDIRECT)
     {
-        inlineFailReason = "Not a direct managed call."; goto InlineFailed;
+        inlineResult.setFailure("Not a direct managed call");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
@@ -17072,7 +17081,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     }
 #endif
 
-    // Check for COMPLUS_AgressiveInlining
+    // Check for COMPLUS_AggressiveInlining
     if (compDoAggressiveInlining)
     {
         methAttr |= CORINFO_FLG_FORCEINLINE;
@@ -17090,7 +17099,10 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
             }
             
 #endif
-            inlineFailReason = "Will not inline blocks that are in the catch handler region."; goto InlineFailed;
+
+            inlineResult.setFailure("Call site is in a catch handler");
+            JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+            return;
         }
 
         if (bbInFilterILRange(compCurBB))
@@ -17101,7 +17113,10 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
                 printf("\nWill not inline blocks that are in the filter region\n");
             }
 #endif
-            inlineFailReason = "Will not inline blocks that are in the filter region."; goto InlineFailed;
+
+            inlineResult.setFailure("Call site is in a filter region");
+            JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+            return;
         }
     }
 
@@ -17109,47 +17124,56 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if (opts.compNeedSecurityCheck)
     {
-        inlineFailReason = "Caller requires a security check."; goto InlineFailed;
+        inlineResult.setFailure("Caller requires a security check");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* Check if we tried to inline this method before */
 
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
-        inlineFailReason = "Method is marked as no inline or has a cached result."; goto InlineFailed;
+        inlineResult.setFailure("Callee is marked as no inline or has a cached result");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* Cannot inline native or synchronized methods */
 
     if  (methAttr & (CORINFO_FLG_NATIVE | CORINFO_FLG_SYNCH))
     {
-        inlineFailReason = "Inlinee is native or synchronized."; goto InlineFailed;
+        inlineResult.setFailure("Callee is native or synchronized");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
     /* Do not inline if callee needs security checks (since they would then mark the wrong frame) */
 
     if (methAttr & CORINFO_FLG_SECURITYCHECK)
     {
-        inlineFailReason = "Inliner requires a security check."; goto InlineFailed;
+        inlineResult.setFailure("Callee needs a security check");
+        JITDUMP("\nInliningFailed: %s\n", inlineResult.reason());
+        return;
     }
 
-    result = impCheckCanInline(call, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo);
+    InlineCandidateInfo * inlineCandidateInfo = nullptr;
+    impCheckCanInline(call, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, &inlineResult);
 
-    if (dontInline(result))
+    if (inlineResult.isFailure())
     {
 #if defined(DEBUG) || MEASURE_INLINING
         ++Compiler::jitCheckCanInlineFailureCount;    // This is actually the number of methods that starts the inline attempt.
 #endif         
 
-        if (result.result() == INLINE_NEVER)
+        if (inlineResult.isNever())
         {
             info.compCompHnd->setMethodAttribs(fncHandle, CORINFO_FLG_BAD_INLINEE);
         }
-        result.report(info.compCompHnd);
+
 #ifdef DEBUG
-        if (result.reason())
+        if (inlineResult.reason())
         {
-            JITDUMP("\nDontInline: %s\n", result.reason());
+            JITDUMP("\nDontInline: %s\n", inlineResult.reason());
         }
 #endif
         return;
@@ -17167,17 +17191,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     Compiler::jitTotalInlineCandidates++;
 #endif
 
-    return;
-
-InlineFailed:
-    _ASSERTE(inlineFailReason);
-    JITDUMP("\nInliningFailed: %s\n", inlineFailReason);
-    JitInlineResult inlineResult(INLINE_FAIL, info.compMethodHnd,
-                                 //I think that this test is for a virtual call.
-                                 (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd: nullptr,
-                                 inlineFailReason);
-    inlineResult.report(info.compCompHnd);
-    return;
+    inlineResult.setCandidate("impMarkInlineCandidate");
 }
 
 /******************************************************************************/
