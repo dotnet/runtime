@@ -185,6 +185,10 @@ Crst DebuggerFavorLock
     AcquiredAfter DebuggerJitInfo DebuggerMutex
 End
 
+// This is the lock used by the DebuggerHeapExecutableMemoryAllocator for allocating/freeing memory.
+Crst DebuggerHeapExecMemLock
+End
+
 // Debugger Heap lock is the smallest of the debugger locks.
 Crst DebuggerHeapLock
     AcquiredAfter DebuggerFavorLock DebuggerJitInfo DebuggerMutex
