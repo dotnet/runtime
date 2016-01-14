@@ -1072,6 +1072,139 @@ protected:
     bool m_fHasInstrumentedILMap;
 };
 
+// ------------------------------------------------------------------------ *
+// Executable code memory management for the debugger heap.
+//
+//     Rather than allocating memory that needs to be executable on the process heap (which
+//     is forbidden on some flavors of SELinux and is generally a bad idea), we use the
+//     allocator below. It will handle allocating and managing the executable memory in a
+//     different part of the address space (not on the heap).
+// ------------------------------------------------------------------------ */
+
+#define DBG_MAX_EXECUTABLE_ALLOC_SIZE 48
+
+// Forward declaration
+struct DebuggerHeapExecutableMemoryPage;
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryChunk
+//
+// Each DebuggerHeapExecutableMemoryPage is divided into 64 of these chunks.
+// The first chunk is a BookkeepingChunk used for bookkeeping information
+// for the page, and the remaining ones are DataChunks and are handed out
+// by the allocator when it allocates memory.
+// ------------------------------------------------------------------------ */
+union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
+
+    struct DataChunk
+    {
+        char data[DBG_MAX_EXECUTABLE_ALLOC_SIZE];
+
+        DebuggerHeapExecutableMemoryPage *startOfPage;
+
+        // The chunk number within the page.
+        uint8_t chunkNumber;
+
+    } data;
+
+    struct BookkeepingChunk
+    {
+        DebuggerHeapExecutableMemoryPage *nextPage;
+
+        uint64_t pageOccupancy;
+
+    } bookkeeping;
+};
+
+static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExecutableMemoryChunk is expect to be 64 bytes.");
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryPage
+//
+// We allocate the size of DebuggerHeapExecutableMemoryPage each time we need
+// more memory and divide each page into DebuggerHeapExecutableMemoryChunks for
+// use. The pages are self describing; the first chunk contains information
+// about which of the other chunks are used/free as well as a pointer to 
+// the next page.
+// ------------------------------------------------------------------------ */
+struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
+{
+    inline DebuggerHeapExecutableMemoryPage* GetNextPage()
+    {
+        return chunks[0].bookkeeping.nextPage;
+    }
+
+    inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
+    {
+        chunks[0].bookkeeping.nextPage = nextPage;
+    }
+
+    inline uint64_t GetPageOccupancy() const
+    {
+        return chunks[0].bookkeeping.pageOccupancy;
+    }
+
+    inline void SetPageOccupancy(uint64_t newOccupancy)
+    {
+        // Can't unset first bit of occupancy!
+        ASSERT((newOccupancy & 0x8000000000000000) != 0);
+
+        chunks[0].bookkeeping.pageOccupancy = newOccupancy;
+    }
+
+    inline void* GetPointerToChunk(int chunkNum) const
+    {
+        return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
+    }
+
+    DebuggerHeapExecutableMemoryPage()
+    {
+        SetPageOccupancy(0x8000000000000000); // only the first bit is set.
+        for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
+        {
+            ASSERT(i != 0);
+            chunks[i].data.startOfPage = this;
+            chunks[i].data.chunkNumber = i;
+        }
+    }
+
+private:
+    DebuggerHeapExecutableMemoryChunk chunks[64];
+};
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryAllocator class
+// Handles allocation and freeing (and all necessary bookkeeping) for 
+// executable memory that the DebuggerHeap class needs. This is especially
+// useful on systems (like SELinux) where having executable code on the
+// heap is explicity disallowed for security reasons.
+// ------------------------------------------------------------------------ */
+
+class DebuggerHeapExecutableMemoryAllocator
+{
+public:
+    DebuggerHeapExecutableMemoryAllocator()
+    : m_pages(NULL)
+    , m_execMemAllocMutex(CrstDebuggerHeapExecMemLock, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD))
+    { }
+
+    ~DebuggerHeapExecutableMemoryAllocator();
+
+    void* Allocate(DWORD numberOfBytes);
+    int Free(void* addr);
+
+private:
+    enum class ChangePageUsageAction {ALLOCATE, FREE};
+
+    DebuggerHeapExecutableMemoryPage* AddNewPage();
+    bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
+    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
+
+private:
+    // Linked list of pages that have been allocated
+    DebuggerHeapExecutableMemoryPage* m_pages;
+    Crst m_execMemAllocMutex;
+};
 
 // ------------------------------------------------------------------------ *
 // DebuggerHeap class
@@ -1104,6 +1237,9 @@ protected:
     HANDLE m_hHeap;
 #endif
     BOOL m_fExecutable;
+
+private:
+    DebuggerHeapExecutableMemoryAllocator *m_execMemAllocator;
 };
 
 class DebuggerJitInfo;
@@ -3206,6 +3342,26 @@ public:
 #endif
 };
 
+class DebuggerEvalBreakpointInfoSegment
+{
+public:
+    // DebuggerEvalBreakpointInfoSegment contains just the breakpoint 
+    // instruction and a pointer to the associated DebuggerEval. It makes
+    // it easy to go from the instruction to the corresponding DebuggerEval
+    // object. It has been separated from the rest of the DebuggerEval 
+    // because it needs to be in a section of memory that's executable, 
+    // while the rest of DebuggerEval does not. By having it separate, we
+    // don't need to have the DebuggerEval contents in executable memory.
+    BYTE          m_breakpointInstruction[CORDbg_BREAK_INSTRUCTION_SIZE];
+    DebuggerEval *m_associatedDebuggerEval;
+
+    DebuggerEvalBreakpointInfoSegment(DebuggerEval* dbgEval)
+    : m_associatedDebuggerEval(dbgEval)
+    {
+        ASSERT(dbgEval != NULL);
+    }
+};
+
 /* ------------------------------------------------------------------------ *
  * DebuggerEval class
  *
@@ -3242,38 +3398,35 @@ public:
         FE_ABORT_RUDE = 2
     };
 
-    // Note: this first field must be big enough to hold a breakpoint
-    // instruction, and it MUST be the first field. (This
-    // is asserted in debugger.cpp)
-    BYTE                           m_breakpointInstruction[CORDbg_BREAK_INSTRUCTION_SIZE];
-    T_CONTEXT                      m_context;
-    Thread                        *m_thread;
-    DebuggerIPCE_FuncEvalType      m_evalType;
-    mdMethodDef                    m_methodToken;
-    mdTypeDef                      m_classToken;
-    ADID                           m_appDomainId;       // Safe even if AD unloaded
-    PTR_DebuggerModule             m_debuggerModule;     // Only valid if AD is still around
-    RSPTR_CORDBEVAL                m_funcEvalKey;
-    bool                           m_successful;        // Did the eval complete successfully
-    Debugger::AreValueTypesBoxed   m_retValueBoxing;        // Is the return value boxed?
-    unsigned int                   m_argCount;
-    unsigned int                   m_genericArgsCount;
-    unsigned int                   m_genericArgsNodeCount;
-    SIZE_T                         m_stringSize;
-    BYTE                          *m_argData;
-    MethodDesc                    *m_md;
-    PCODE                          m_targetCodeAddr;
-    INT64                          m_result;
-    TypeHandle                     m_resultType;
-    SIZE_T                         m_arrayRank;
-    FUNC_EVAL_ABORT_TYPE           m_aborting;          // Has an abort been requested, and what type.
-    bool                           m_aborted;           // Was this eval aborted
-    bool                           m_completed;          // Is the eval complete - successfully or by aborting
-    bool                           m_evalDuringException;
-    bool                           m_rethrowAbortException;
-    Thread::ThreadAbortRequester   m_requester;         // For aborts, what kind?
-    VMPTR_OBJECTHANDLE             m_vmObjectHandle;
-    TypeHandle                     m_ownerTypeHandle;
+    T_CONTEXT                          m_context;
+    Thread                            *m_thread;
+    DebuggerIPCE_FuncEvalType          m_evalType;
+    mdMethodDef                        m_methodToken;
+    mdTypeDef                          m_classToken;
+    ADID                               m_appDomainId;       // Safe even if AD unloaded
+    PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    RSPTR_CORDBEVAL                    m_funcEvalKey;
+    bool                               m_successful;        // Did the eval complete successfully
+    Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?
+    unsigned int                       m_argCount;
+    unsigned int                       m_genericArgsCount;
+    unsigned int                       m_genericArgsNodeCount;
+    SIZE_T                             m_stringSize;
+    BYTE                              *m_argData;
+    MethodDesc                        *m_md;
+    PCODE                              m_targetCodeAddr;
+    INT64                              m_result;
+    TypeHandle                         m_resultType;
+    SIZE_T                             m_arrayRank;
+    FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
+    bool                               m_aborted;           // Was this eval aborted
+    bool                               m_completed;          // Is the eval complete - successfully or by aborting
+    bool                               m_evalDuringException;
+    bool                               m_rethrowAbortException;
+    Thread::ThreadAbortRequester       m_requester;         // For aborts, what kind?
+    VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
+    TypeHandle                         m_ownerTypeHandle;
+    DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
 
@@ -3282,10 +3435,9 @@ public:
 
     bool Init()
     {
-        _ASSERTE(DbgIsExecutable(&m_breakpointInstruction, sizeof(m_breakpointInstruction)));
+        _ASSERTE(DbgIsExecutable(&m_bpInfoSegment->m_breakpointInstruction, sizeof(m_bpInfoSegment->m_breakpointInstruction)));
         return true;
     }
-
 
     // The m_argData buffer holds both the type arg data (for generics) and the main argument data.
     //
