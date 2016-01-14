@@ -138,6 +138,8 @@
     <Compile Include="Interpreter\InterpreterTests.Generated.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
+    <Compile Include="Label\LabelTargetTests.cs" />
+    <Compile Include="Label\LabelTests.cs" />
     <Compile Include="Lambda\LambdaAddNullableTests.cs" />
     <Compile Include="Lambda\LambdaAddTests.cs" />
     <Compile Include="Lambda\LambdaDivideNullableTests.cs" />
