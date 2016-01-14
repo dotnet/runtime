@@ -10,7 +10,6 @@
     <OutputName>GenClrDebugResource</OutputName>
     <TargetType>PROGRAM</TargetType>
     <LinkSubsystem>console</LinkSubsystem>
-    <BinplaceSymbols>false</BinplaceSymbols>
     <LinkGenerateManifest>true</LinkGenerateManifest>
     <LinkAdditionalOptions>$(LinkAdditionalOptions) /MANIFEST</LinkAdditionalOptions>
     <UseMsvcrt>false</UseMsvcrt>
@@ -18,6 +17,9 @@
   <!--Leaf Project Items-->
   <ItemGroup>
     <CppCompile Include="GenClrDebugResource.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <RCResourceFile Include="native.rc" />
   </ItemGroup>
   <!--Import the targets-->
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />

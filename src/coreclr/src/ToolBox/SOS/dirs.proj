@@ -14,8 +14,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(BuildArchitecture)' == 'i386' and '$(FeatureCoreClr)' != 'true'">
-    <ProjectFile Include="diasdk\diasdk.nativeproj" />
-    <ProjectFile Include="dactablegen\dactablegen.csproj" />
+    <ProjectFile Include="diasdk\diasdk.nativeproj" >
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
+    <ProjectFile Include="dactablegen\dactablegen.csproj" >
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
   </ItemGroup>
   
   <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Traversal.targets" />
