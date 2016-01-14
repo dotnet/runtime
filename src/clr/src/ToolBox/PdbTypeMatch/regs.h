@@ -1,3 +1,8 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
 extern const wchar_t * const rgRegX86[];
 extern const wchar_t * const rgRegAMD64[];
 extern const wchar_t * const rgRegMips[];
