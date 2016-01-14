@@ -183,7 +183,9 @@ namespace System.Net.Sockets
 
             int sockAddrLen = 0;
             if (socketAddress != null)
+            {
                 sockAddrLen = socketAddressLen;
+            }
 
             fixed (byte* sockAddr = socketAddress)
             fixed (byte* b = buffer)
@@ -220,7 +222,9 @@ namespace System.Net.Sockets
 
             int sockAddrLen = 0;
             if (socketAddress != null)
+            {
                 sockAddrLen = socketAddressLen;
+            }
 
             fixed (byte* sockAddr = socketAddress)
             fixed (byte* b = buffer)
@@ -261,7 +265,9 @@ namespace System.Net.Sockets
 
             int sockAddrLen = 0;
             if (socketAddress != null)
+            {
                 sockAddrLen = socketAddressLen;
+            }
 
             int maxBuffers = buffers.Count - startIndex;
             var handles = new GCHandle[maxBuffers];
@@ -345,7 +351,9 @@ namespace System.Net.Sockets
 
             int sockAddrLen = 0;
             if (socketAddress != null)
+            {
                 sockAddrLen = socketAddressLen;
+            }
 
             long received = 0;
             int toReceive = 0, iovCount = maxBuffers;
