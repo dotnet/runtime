@@ -87,9 +87,6 @@
           <Method Name="Return">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
-          <Method Name="ReturnObject&lt;T&gt;">
-            <GenericParameter Name="T" Dynamic="Public"/>
-          </Method>
           <Method Name="Switch">
             <TypeParameter Name="type" Dynamic="Public"/>
           </Method>
