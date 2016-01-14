@@ -20,6 +20,15 @@
 
 #define SUCCEEDED(Status) ((Status) >= 0)
 
+// Name of the environment variable controlling server GC.
+// If set to 1, server GC is enabled on startup. If 0, server GC is
+// disabled. Server GC is off by default.
+static const char* serverGcVar = "CORECLR_SERVER_GC";
+
+// Name of the environment variable controlling concurrent GC,
+// used in the same way as serverGcVar. Concurrent GC is on by default.
+static const char* concurrentGcVar = "CORECLR_CONCURRENT_GC";
+
 // Prototype of the coreclr_initialize function from the libcoreclr.so
 typedef int (*InitializeCoreCLRFunction)(
             const char* exePath,
@@ -288,6 +297,19 @@ int ExecuteManagedAssembly(
         }
         else
         {
+            // check if we are enabling server GC or concurrent GC.
+            // Server GC is off by default, while concurrent GC is on by default.
+            // Actual checking of these string values is done in coreclr_initialize.
+            const char* useServerGc = std::getenv(serverGcVar);
+            if (useServerGc == nullptr) {
+                useServerGc = "0";
+            }
+            
+            const char* useConcurrentGc = std::getenv(concurrentGcVar);
+            if (useConcurrentGc == nullptr) {
+                useConcurrentGc = "1";
+            }
+            
             // Allowed property names:
             // APPBASE
             // - The base path of the application from which the exe and other assemblies will be loaded
@@ -309,7 +331,9 @@ int ExecuteManagedAssembly(
                 "APP_PATHS",
                 "APP_NI_PATHS",
                 "NATIVE_DLL_SEARCH_DIRECTORIES",
-                "AppDomainCompatSwitch"
+                "AppDomainCompatSwitch",
+                "SERVER_GC",
+                "CONCURRENT_GC"
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -321,7 +345,11 @@ int ExecuteManagedAssembly(
                 // NATIVE_DLL_SEARCH_DIRECTORIES
                 nativeDllSearchDirs.c_str(),
                 // AppDomainCompatSwitch
-                "UseLatestBehaviorWhenTFMNotSpecified"
+                "UseLatestBehaviorWhenTFMNotSpecified",
+                // SERVER_GC
+                useServerGc,
+                // CONCURRENT_GC
+                useConcurrentGc
             };
 
             void* hostHandle;
