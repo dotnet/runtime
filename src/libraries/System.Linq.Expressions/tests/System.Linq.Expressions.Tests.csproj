@@ -212,6 +212,10 @@
     <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
     <Compile Include="Unary\UnaryOnesComplementTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
+    <Compile Include="Variables\ParameterExpressionTests.cs" />
+    <Compile Include="Variables\ParameterTests.cs" />
+    <Compile Include="Variables\RuntimeVariablesTests.cs" />
+    <Compile Include="Variables\VariableTests.cs" />
     <Compile Include="Visitor\ExpressionVisitorTests.cs" />
     <Compile Include="Unary\UnboxTests.cs" />
   </ItemGroup>
