@@ -9,7 +9,7 @@ namespace System.Threading
     //
     // Implementation of ThreadPoolBoundHandle that sits on top of the CLR's ThreadPool and Overlapped infrastructure
     //
-    
+
     /// <summary>
     ///     Represents an I/O handle that is bound to the system thread pool and enables low-level
     ///     components to receive notifications for asynchronous I/O operations.
@@ -300,7 +300,7 @@ namespace System.Threading
         }
 
         public void Dispose()
-        {   
+        {
             // .NET Native's version of ThreadPoolBoundHandle that wraps the Win32 ThreadPool holds onto
             // native resources so it needs to be disposable. To match the contract, we are also disposable.
             // We also implement a disposable state to mimic behavior between this implementation and 
