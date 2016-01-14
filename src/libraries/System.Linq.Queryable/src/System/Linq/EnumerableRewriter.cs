@@ -304,7 +304,7 @@ namespace System.Linq
         {
             Type type = c.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
-                return base.Visit(c);
+                return base.VisitConditional(c);
             Expression test = Visit(c.Test);
             Expression ifTrue = Visit(c.IfTrue);
             Expression ifFalse = Visit(c.IfFalse);
@@ -322,7 +322,7 @@ namespace System.Linq
         {
             Type type = node.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
-                return base.Visit(node);
+                return base.VisitBlock(node);
             ReadOnlyCollection<Expression> nodes = Visit(node.Expressions);
             ReadOnlyCollection<ParameterExpression> variables = VisitAndConvert(node.Variables, "EnumerableRewriter.VisitBlock");
             if (type == node.Expressions.Last().Type)
