@@ -66,7 +66,7 @@ def static getBuildJobName(def configuration, def architecture, def os, def scen
 
 // **************************
 // Define the basic inner loop builds for PR and commit.  This is basically just the set
-// of coreclr builds over linux/osx/freebsd/windows and debug/release.  In addition, the windows
+// of coreclr builds over linux/osx/freebsd/windows and debug/release/checked.  In addition, the windows
 // builds will do a couple extra steps.
 // **************************
 
@@ -173,13 +173,17 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'OpenSUSE13.2':
                     assert !isFlowJob
                     assert scenario == 'default'
-                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    if (configuration != 'Checked') {
+                        Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    }
                     break
                 case 'Windows_NT':
                     switch (scenario) {
                         case 'default':
                             // Default trigger
-                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                            if (configuration != 'Checked') {
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
+                            }
                             break
                         case 'pri1':
                             if (configuration == 'Release') {
@@ -199,7 +203,9 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     break
                 case 'FreeBSD':
                     assert scenario == 'default'
-                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    if (configuration != 'Checked') {
+                        Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    }
                     break
                 default:
                     println("Unknown os: ${os}");
@@ -225,7 +231,9 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             assert scenario == 'default'
             // For windows, x86 runs by default
             if (os == 'Windows_NT') {
-                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                if (configuration != 'Checked') {
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                }
             }
             else {
                 // default trigger
@@ -243,7 +251,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
 ['default', 'pri1', 'ilrt'].each { scenario ->
     [true, false].each { isPR ->
         ['arm', 'arm64', 'x64', 'x86'].each { architecture ->
-            ['Debug', 'Release'].each { configuration ->
+            ['Debug', 'Checked', 'Release'].each { configuration ->
                 Constants.osList.each { os ->
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
@@ -459,7 +467,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
             Constants.crossList.each { os ->
-                ['Debug', 'Release'].each { configuration ->
+                ['Debug', 'Checked', 'Release'].each { configuration ->
                     
                     // Skip scenarios
                     switch (scenario) {
