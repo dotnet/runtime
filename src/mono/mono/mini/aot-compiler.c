@@ -5422,6 +5422,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_AOT_MODULE:
 		break;
 	case MONO_PATCH_INFO_SIGNATURE:
+	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
 		break;
 	case MONO_PATCH_INFO_TLS_OFFSET:
@@ -9854,7 +9855,8 @@ static void aot_dump (MonoAotCompile *acfg)
 static const char *preinited_jit_icalls[] = {
 	"mono_aot_init_llvm_method",
 	"mono_aot_init_gshared_method_this",
-	"mono_aot_init_gshared_method_rgctx",
+	"mono_aot_init_gshared_method_mrgctx",
+	"mono_aot_init_gshared_method_vtable",
 	"mono_llvm_throw_corlib_exception",
 	"mono_init_vtable_slot",
 	"mono_helper_ldstr_mscorlib"

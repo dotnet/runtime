@@ -3544,6 +3544,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 		break;
 	case MONO_PATCH_INFO_SIGNATURE:
+	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		ji->data.target = decode_signature (aot_module, p, &p);
 		break;
 	case MONO_PATCH_INFO_TLS_OFFSET:
@@ -4171,7 +4172,7 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 }
 
 void
-mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
+mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
 	gboolean res;
@@ -4185,6 +4186,29 @@ mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, 
 	context.method_inst = rgctx->method_inst;
 
 	res = init_llvm_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);
+	g_assert (res);
+}
+
+void
+mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, MonoVTable *vtable)
+{
+	MonoAotModule *amodule = (MonoAotModule *)aot_module;
+	gboolean res;
+	MonoClass *klass;
+	MonoGenericContext *context;
+	MonoMethod *method;
+
+	klass = vtable->klass;
+
+	amodule_lock (amodule);
+	method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
+	amodule_unlock (amodule);
+
+	g_assert (method);
+	context = mono_method_get_context (method);
+	g_assert (context);
+
+	res = init_llvm_method (amodule, method_index, NULL, klass, context);
 	g_assert (res);
 }
 
@@ -5610,7 +5634,12 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 }
 
 void
-mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
+mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
+{
+}
+
+void
+mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, MonoVTable *vtable)
 {
 }
 

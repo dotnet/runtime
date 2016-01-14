@@ -78,7 +78,7 @@ typedef struct {
 	const char *jit_got_symbol;
 	const char *eh_frame_symbol;
 	LLVMValueRef get_method, get_unbox_tramp;
-	LLVMValueRef init_method, init_method_gshared_rgctx, init_method_gshared_this;
+	LLVMValueRef init_method, init_method_gshared_mrgctx, init_method_gshared_this, init_method_gshared_vtable;
 	LLVMValueRef code_start, code_end;
 	LLVMValueRef inited_var;
 	int max_inited_idx, max_method_idx;
@@ -2408,7 +2408,6 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 	func = LLVMAddFunction (lmodule, module->get_unbox_tramp_symbol, LLVMFunctionType1 (rtype, LLVMInt32Type (), FALSE));
 	LLVMSetLinkage (func, LLVMExternalLinkage);
 	LLVMSetVisibility (func, LLVMHiddenVisibility);
-	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	module->get_unbox_tramp = func;
 
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
@@ -2486,6 +2485,8 @@ emit_init_icall_wrapper (MonoLLVMModule *module, const char *name, const char *i
 		sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), LLVMInt32Type (), FALSE);
 		break;
 	case 1:
+	case 3:
+		/* mrgctx/vtable */
 		func = LLVMAddFunction (lmodule, name, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE));
 		sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), LLVMInt32Type (), IntPtrType (), FALSE);
 		break;
@@ -2550,8 +2551,9 @@ static void
 emit_init_icall_wrappers (MonoLLVMModule *module)
 {
 	module->init_method = emit_init_icall_wrapper (module, "init_method", "mono_aot_init_llvm_method", 0);
-	module->init_method_gshared_rgctx = emit_init_icall_wrapper (module, "init_method_gshared_rgctx", "mono_aot_init_gshared_method_rgctx", 1);
+	module->init_method_gshared_mrgctx = emit_init_icall_wrapper (module, "init_method_gshared_mrgctx", "mono_aot_init_gshared_method_mrgctx", 1);
 	module->init_method_gshared_this = emit_init_icall_wrapper (module, "init_method_gshared_this", "mono_aot_init_gshared_method_this", 2);
+	module->init_method_gshared_vtable = emit_init_icall_wrapper (module, "init_method_gshared_vtable", "mono_aot_init_gshared_method_vtable", 3);
 }
 
 static void
@@ -2666,10 +2668,16 @@ emit_init_method (EmitContext *ctx)
 	LLVMPositionBuilderAtEnd (ctx->builder, notinited_bb);
 
 	// FIXME: Cache
-	if (ctx->rgctx_arg) {
+	if (ctx->rgctx_arg && cfg->method->is_inflated && mono_method_get_context (cfg->method)->method_inst) {
 		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);
 		args [1] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
-		callee = ctx->module->init_method_gshared_rgctx;
+		callee = ctx->module->init_method_gshared_mrgctx;
+		call = LLVMBuildCall (builder, callee, args, 2, "");
+	} else if (ctx->rgctx_arg) {
+		/* A vtable is passed as the rgctx argument */
+		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);
+		args [1] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
+		callee = ctx->module->init_method_gshared_vtable;
 		call = LLVMBuildCall (builder, callee, args, 2, "");
 	} else if (cfg->gshared) {
 		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);

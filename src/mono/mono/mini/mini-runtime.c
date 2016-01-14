@@ -1262,6 +1262,8 @@ mono_patch_info_hash (gconstpointer data)
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 		return (ji->type << 8) | g_str_hash (ji->data.target);
+	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
+		return (ji->type << 8) | mono_signature_hash (ji->data.sig);
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -1326,6 +1328,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		if (ji1->data.target == ji2->data.target)
 			return 1;
 		return strcmp (ji1->data.target, ji2->data.target) == 0 ? 1 : 0;
+	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
+		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 0 : 1;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
@@ -1698,6 +1702,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 		break;
 	}
+	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
+		target = mini_get_gsharedvt_wrapper (TRUE, NULL, patch_info->data.sig, NULL, -1, FALSE);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -3857,7 +3864,8 @@ register_icalls (void)
 
 	register_icall (mono_aot_init_llvm_method, "mono_aot_init_llvm_method", "void ptr int", TRUE);
 	register_icall (mono_aot_init_gshared_method_this, "mono_aot_init_gshared_method_this", "void ptr int object", TRUE);
-	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", TRUE);
+	register_icall (mono_aot_init_gshared_method_mrgctx, "mono_aot_init_gshared_method_mrgctx", "void ptr int ptr", TRUE);
+	register_icall (mono_aot_init_gshared_method_vtable, "mono_aot_init_gshared_method_vtable", "void ptr int ptr", TRUE);
 
 	register_icall_no_wrapper (mono_resolve_iface_call_gsharedvt, "mono_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
