@@ -490,7 +490,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	mono_context_init (data);
 
 	data->setup = copy_app_domain_setup (data, setup);
-	mono_set_private_bin_path_from_config (data);
+	mono_domain_set_options_from_config (data);
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
 
 #ifndef DISABLE_SHADOW_COPY
@@ -710,6 +710,14 @@ ves_icall_System_AppDomain_getRootDomain ()
 	return root->domain;
 }
 
+MonoBoolean
+ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions ()
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	return domain->throw_unobserved_task_exceptions;
+}
+
 static char*
 get_attribute_value (const gchar **attribute_names, 
 		     const gchar **attribute_values, 
@@ -742,8 +750,18 @@ start_element (GMarkupParseContext *context,
 		runtime_config->assemblybinding_count++;
 		return;
 	}
-	
-	if (runtime_config->runtime_count != 1 || runtime_config->assemblybinding_count != 1)
+
+	if (runtime_config->runtime_count != 1)
+		return;
+
+	if (strcmp (element_name, "ThrowUnobservedTaskExceptions") == 0) {
+		const char *value = get_attribute_value (attribute_names, attribute_values, "enabled");
+
+		if (value && g_ascii_strcasecmp (value, "true") == 0)
+			runtime_config->domain->throw_unobserved_task_exceptions = TRUE;
+	}
+
+	if (runtime_config->assemblybinding_count != 1)
 		return;
 
 	if (strcmp (element_name, "probing") != 0)
@@ -793,7 +811,7 @@ mono_parser = {
 };
 
 void
-mono_set_private_bin_path_from_config (MonoDomain *domain)
+mono_domain_set_options_from_config (MonoDomain *domain)
 {
 	MonoError error;
 	gchar *config_file_name = NULL, *text = NULL, *config_file_path = NULL;
