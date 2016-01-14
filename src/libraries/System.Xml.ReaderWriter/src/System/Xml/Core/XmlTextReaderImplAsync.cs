@@ -3056,9 +3056,9 @@ namespace System.Xml
                         task = ParseTextAsync_Surrogate(outOrChars, chars, pos, rcount, rpos, orChars, c);
                         break;
                     case ParseTextFunction.NoValue:
-                        return ParseTextAsync_NoValue(outOrChars, pos);
+                        return ParseText_NoValue(outOrChars, pos);
                     case ParseTextFunction.PartialValue:
-                        return ParseTextAsync_PartialValue(pos, rcount, rpos, orChars, c);
+                        return ParseText_PartialValue(pos, rcount, rpos, orChars, c);
                 }
             }
         }
@@ -3092,9 +3092,9 @@ namespace System.Xml
                         task = ParseTextAsync_Surrogate(outOrChars, chars, pos, rcount, rpos, orChars, c);
                         break;
                     case ParseTextFunction.NoValue:
-                        return await ParseTextAsync_NoValue(outOrChars, pos).ConfigureAwait(false);
+                        return ParseText_NoValue(outOrChars, pos);
                     case ParseTextFunction.PartialValue:
-                        return await ParseTextAsync_PartialValue(pos, rcount, rpos, orChars, c);
+                        return ParseText_PartialValue(pos, rcount, rpos, orChars, c);
                 }
             }
         }
@@ -3341,12 +3341,12 @@ namespace System.Xml
             return _parseText_dummyTask.Result;
         }
 
-        private Task<ValueTuple<int, int, int, bool>> ParseTextAsync_NoValue(int outOrChars, int pos)
+        private ValueTuple<int, int, int, bool> ParseText_NoValue(int outOrChars, int pos)
         {
-            return Task.FromResult(new ValueTuple<int, int, int, bool>(pos, pos, outOrChars, true));
+            return new ValueTuple<int, int, int, bool>(pos, pos, outOrChars, true);
         }
 
-        private ValueTask<ValueTuple<int, int, int, bool>> ParseTextAsync_PartialValue(int pos, int rcount, int rpos, int orChars, char c)
+        private ValueTuple<int, int, int, bool> ParseText_PartialValue(int pos, int rcount, int rpos, int orChars, char c)
         {
             if (_parsingMode == ParsingMode.Full && rcount > 0)
             {
