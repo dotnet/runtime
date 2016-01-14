@@ -801,25 +801,19 @@ catch_exception_raise(
     // pthread easily and (b) the pthread functions lie about the bounds on the main thread.
 
     // Instead we inspect the target thread SP we just retrieved above and compare it with the AV address. If
-    // they both lie in the same page or the SP is at a higher address than the AV but still reasonably close
-    // (we'll define close below) then we'll consider the AV to be an SO. Note that we can't assume that SP
-    // will be in the same page as the AV on an SO, even though we force GCC to generate stack probes on stack
-    // extension (-fstack-check). That's because GCC currently generates the probe *before* altering SP.
-    // Since a given stack extension can involve multiple pages and GCC generates all the required probes
-    // before updating SP in a single operation, the faulting probe can be at an address that is far removed
-    // from the thread's current value of SP.
+    // they both lie in the same page or the SP is at a higher address than the AV but in the same VM region,
+    // then we'll consider the AV to be an SO. Note that we can't assume that SP will be in the same page as
+    // the AV on an SO, even though we force GCC to generate stack probes on stack extension (-fstack-check).
+    // That's because GCC currently generates the probe *before* altering SP. Since a given stack extension can
+    // involve multiple pages and GCC generates all the required probes before updating SP in a single
+    // operation, the faulting probe can be at an address that is far removed from the thread's current value
+    // of SP.
 
-    // To work around this we'll first bound the definition of "close" to 512KB. This is the current size of
-    // pthread stacks by default. While it's true that this value can be altered for a given thread (and the
-    // main thread for that matter usually starts with an 8MB stack) I think it is reasonable to assume that a
-    // single stack frame, alloca etc. should never be extending the stack this much in one go.
-
-    // If we pass this check then we'll confirm it (in the case where the AV and SP aren't in the same or
-    // adjacent pages) by checking that the first page following the faulting address belongs in the same VM
-    // region as the current value of SP. Since all pages in a VM region have the same attributes this check
-    // eliminates the possibility that there's another guard page in the range between the fault and the SP,
-    // effectively establishing that the AV occurred in the guard page associated with the stack associated
-    // with the SP.
+    // In the case where the AV and SP aren't in the same or adjacent pages we check if the first page
+    // following the faulting address belongs in the same VM region as the current value of SP. Since all pages
+    // in a VM region have the same attributes this check eliminates the possibility that there's another guard
+    // page in the range between the fault and the SP, effectively establishing that the AV occurred in the
+    // guard page associated with the stack associated with the SP.
 
     // We are assuming here that thread stacks are always allocated in a single VM region. I've seen no
     // evidence thus far that this is not the case (and the mere fact we rely on Mach apis already puts us on
@@ -857,10 +851,9 @@ catch_exception_raise(
             // The easy case is when the AV occurred in the same or adjacent page as the stack pointer.
             fIsStackOverflow = true;
         }
-        else if (pFaultPage < pStackTopPage && (pStackTopPage - pFaultPage) < (512 * 1024))
+        else if (pFaultPage < pStackTopPage)
         {
-            // If the two addresses look fairly close together (the size of the average pthread stack) we'll
-            // dig deeper. Calculate the address of the page immediately following the fault and check that it
+            // Calculate the address of the page immediately following the fault and check that it
             // lies in the same VM region as the stack pointer.
             vm_address_t vm_address;
             vm_size_t vm_size;
@@ -938,6 +931,7 @@ catch_exception_raise(
             // thread's stack any further. Note that we cannot call most PAL functions from the context of
             // this thread since we're not a PAL thread.
 
+            write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
             abort();
         }
     }
