@@ -406,7 +406,7 @@ mini_create_llvmonly_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg)
 gpointer
 mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg)
 {
-	gpointer addr = compiled_method;
+	gpointer addr;
 	gboolean callee_gsharedvt, callee_array_helper;
 	MonoMethod *jmethod = NULL;
 	MonoJitInfo *ji;
@@ -465,6 +465,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 
 	if (!caller_gsharedvt && callee_gsharedvt) {
 		MonoMethodSignature *sig, *gsig;
+		gpointer wrapper_addr;
 
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
 
@@ -472,12 +473,13 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		sig = mono_method_signature (m);
 		gsig = mono_method_signature (jmethod);
 
-		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
+		wrapper_addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
 
 		/*
 		 * This is a gsharedvt in wrapper, it gets passed a ftndesc for the gsharedvt method as an argument.
 		 */
-		*out_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), compiled_method, mini_method_get_rgctx (m));
+		*out_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, mini_method_get_rgctx (m));
+		addr = wrapper_addr;
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
 
