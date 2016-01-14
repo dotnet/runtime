@@ -12,5 +12,6 @@ namespace System
         public static string BaseDirectory { get { return default(string); } }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { isEnabled = default(bool); return default(bool); }
+        public static string TargetFrameworkName { get { return default(string); } }
     }
 }
