@@ -1718,6 +1718,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+<<<<<<< 9eab472a93bce7169e3b10f33eebf3a3771b210d
     public static void DCJS_XmlElementAsRoot()
     {
         XmlDocument xDoc = new XmlDocument();
@@ -1753,6 +1754,14 @@ public static partial class DataContractJsonSerializerTests
         Assert.Throws<InvalidDataContractException>(() =>
         {
             (new DataContractSerializer(typeof(RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+        });
+    }
+
+    [Fact]
+    public static void DCJS_DifferentCollectionsOfSameTypeAsKnownTypes()
+    {
+        Assert.Throws<InvalidOperationException>(() => {
+            (new DataContractSerializer(typeof(DifferentCollectionsOfSameTypeAsKnownTypes))).WriteObject(new MemoryStream(), new DifferentCollectionsOfSameTypeAsKnownTypes());
         });
     }
 
