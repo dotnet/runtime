@@ -48,6 +48,8 @@ set "__LogsDir=%__RootBinDir%\Logs"
 
 set __CleanBuild=
 set __MscorlibOnly=
+set __ConfigureOnly=
+set __SkipConfigure=
 set __SkipMscorlibBuild=
 set __SkipNativeBuild=
 set __SkipTestBuild=
@@ -105,6 +107,8 @@ if /i "%1" == "windowsmscorlib"     (set __MscorlibOnly=1&set __BuildOS=Windows_
 
 if /i "%1" == "vs2013"              (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"              (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipMscorlibBuild=1&set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
 if /i "%1" == "skipmscorlib"        (set __SkipMscorlibBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
@@ -133,6 +137,11 @@ echo Invalid command-line argument: %1
 goto Usage
 
 :ArgsDone
+
+if defined __ConfigureOnly if defined __SkipConfigure (
+    echo "Error: option 'configureonly' is incompatible with 'skipconfigure'
+    goto Usage
+)
 
 if defined __SkipMscorlibBuild if defined __MscorlibOnly (
     echo Error: option 'skipmscorlib' is incompatible with 'freebsdmscorlib', 'linuxmscorlib', 'osxmscorlib', and 'windowsmscorlib'.
@@ -301,12 +310,16 @@ if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 :GenVSSolution
 
+if defined __SkipConfigure goto SkipConfigure
+
 echo %__MsgPrefix%Regenerating the Visual Studio solution
 
 pushd "%__IntermediatesDir%"
 call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch%
 @if defined __echo @echo on
 popd
+
+:SkipConfigure
 
 if not exist "%__IntermediatesDir%\install.vcxproj" (
     echo %__MsgPrefix%Error: failed to generate native component build project!
@@ -357,6 +370,8 @@ REM ===
 REM === Build the CLR VM
 REM ===
 REM =========================================================================================
+
+if defined __ConfigureOnly goto SkipNativeBuild
 
 echo %__MsgPrefix%Invoking msbuild
 
@@ -637,6 +652,8 @@ echo     respectively^).
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
+echo configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
+echo skipconfigure: skip CMake ^(default: CMake is run^)
 echo skipmscorlib: skip building mscorlib ^(default: mscorlib is built^).
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
