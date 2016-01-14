@@ -8445,9 +8445,9 @@ DebuggerFuncEvalComplete::DebuggerFuncEvalComplete(Thread *thread,
   : DebuggerController(thread, NULL)
 {
 #ifdef _TARGET_ARM_
-    m_pDE = reinterpret_cast<DebuggerEval*>(((DWORD)dest) & ~THUMB_CODE);
+    m_pDE = reinterpret_cast<DebuggerEvalBreakpointInfoSegment*>(((DWORD)dest) & ~THUMB_CODE)->m_associatedDebuggerEval;
 #else
-    m_pDE = reinterpret_cast<DebuggerEval*>(dest);
+    m_pDE = reinterpret_cast<DebuggerEvalBreakpointInfoSegment*>(dest)->m_associatedDebuggerEval;
 #endif
 
     // Add an unmanaged patch at the destination.
