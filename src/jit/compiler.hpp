@@ -1576,10 +1576,7 @@ inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
         {
             // Don't create more LclVar with inlining 
             JITLOG((LL_INFO1000000, INLINER_FAILED "Inlining requires new LclVars and we already have too many locals."));
-
-            JitInlineResult result(INLINE_FAIL, impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                   info.compMethodHnd, "Inlining requires new LclVars and we already have too many locals.");
-            compSetInlineResult(result);  // Only fail for this inline attempt.
+            compInlineResult->setFailure("Inlining requires new LclVars and we already have too many locals.");
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
@@ -4282,31 +4279,17 @@ bool                Compiler::compIsForInlining()
 
 /*****************************************************************************
  *
- *  Set the inline result in the compiler.
- */
-
-inline
-void                Compiler::compSetInlineResult(const JitInlineResult& result)
-{
-    assert(compIsForInlining());
-    assert(dontInline(result.result()));     // Should only set to a failure state.
-   
-    compInlineResult = result;    
-}
-
-/*****************************************************************************
- *
  *  Check the inline result field in the compiler to see if inlining failed or not.
  */
 
 inline
 bool                Compiler::compDonotInline()
 {
-    if (dontInline(compInlineResult.result()))
+    if (compIsForInlining())
     {
-        assert(compIsForInlining());
-        return true;
-    }    
+       assert(compInlineResult != nullptr);
+       return compInlineResult->isFailure();
+    }
     else
     {
         return false;
