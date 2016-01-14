@@ -308,6 +308,13 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
+    add_compile_options(-fstack-protector)
+  else()
+    add_compile_options(-fstack-protector-strong)
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
+
   # set the CLANG sanitizer flags for debug build
   if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # obtain settings from running enablesanitizers.sh
