@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace StreamWriterTests
+namespace System.IO.Tests
 {
     public class WriteTests
     {
@@ -34,32 +34,32 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
         }
 
         private static char[] setupArray()
         {
-            return new Char[]{
-			Char.MinValue
-			,Char.MaxValue
-			,'\t'
-			,' '
-			,'$'
-			,'@'
-			,'#'
-			,'\0'
-			,'\v'
-			,'\''
-			,'\u3190'
-			,'\uC3A0'
-			,'A'
-			,'5'
-			,'\uFE70' 
-			,'-'
-			,';'
-			,'\u00E6'
-		};
+            return new char[]{
+            char.MinValue
+            ,char.MaxValue
+            ,'\t'
+            ,' '
+            ,'$'
+            ,'@'
+            ,'#'
+            ,'\0'
+            ,'\v'
+            ,'\''
+            ,'\u3190'
+            ,'\uC3A0'
+            ,'A'
+            ,'5'
+            ,'\uFE70' 
+            ,'-'
+            ,';'
+            ,'\u00E6'
+        };
         }
 
         [Fact]
@@ -113,11 +113,11 @@ namespace StreamWriterTests
             sw.Flush();
             ms.Position = 0;
             sr = new StreamReader(ms);
-            Int32 tmp = 0;
+            int tmp = 0;
             for (int i = 2; i < 7; i++)
             {
                 tmp = sr.Read();
-                Assert.Equal((Int32)chArr[i], tmp);
+                Assert.Equal((int)chArr[i], tmp);
             }
             ms.Dispose();
         }
@@ -126,8 +126,8 @@ namespace StreamWriterTests
         public void WriteToStreamWriter()
         {
             char[] chArr = setupArray();
-            // [] Just construct a streamwriter and write to it	
-            //------------------------------------------------- 			
+            // [] Just construct a streamwriter and write to it    
+            //-------------------------------------------------             
             Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
@@ -139,7 +139,7 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
             ms.Dispose();
         }
@@ -159,7 +159,7 @@ namespace StreamWriterTests
         public void VerifyWrittenString()
         {
             char[] chArr = setupArray();
-            // [] Write string with wide selection of characters and read it back		
+            // [] Write string with wide selection of characters and read it back        
 
             StringBuilder sb = new StringBuilder(40);
             Stream ms = CreateStream();
@@ -176,7 +176,7 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
         }
 
@@ -187,7 +187,7 @@ namespace StreamWriterTests
 
             Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
-            sw.Write((String)null);
+            sw.Write((string)null);
             sw.Flush();
             Assert.Equal(0, ms.Length);
         }

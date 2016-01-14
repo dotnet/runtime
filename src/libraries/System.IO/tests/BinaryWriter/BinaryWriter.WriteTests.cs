@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace BinaryWriterTests
+namespace System.IO.Tests
 {
     public class BinaryWriter_WriteTests
     {
@@ -39,108 +39,108 @@ namespace BinaryWriterTests
                 Assert.True(dr2.ReadBoolean());  //true
                 Assert.False(dr2.ReadBoolean()); //false
                 Assert.True(dr2.ReadBoolean());  //true
-                Assert.True(dr2.ReadBoolean());  //5
-                Assert.False(dr2.ReadBoolean()); //0
+                Assert.Equal(5, dr2.ReadInt32());  //5
+                Assert.Equal(0, dr2.ReadInt32()); //0
             }
         }
 
         [Fact]
         public void BinaryWriter_WriteSingleTest()
         {
-            Single[] sglArr = new Single[] { 
-                Single.MinValue, Single.MaxValue, Single.Epsilon, Single.PositiveInfinity, Single.NegativeInfinity, new Single(), 
-                0, (Single)(-1E20), (Single)(-3.5E-20), (Single)(1.4E-10), (Single)10000.2, (Single)2.3E30 
+            float[] sglArr = new float[] {
+                float.MinValue, float.MaxValue, float.Epsilon, float.PositiveInfinity, float.NegativeInfinity, new float(), 
+                0, (float)(-1E20), (float)(-3.5E-20), (float)(1.4E-10), (float)10000.2, (float)2.3E30 
             };
 
-            WriteTest<Single>(sglArr, (bw, s) => bw.Write(s), (br) => br.ReadSingle());
+            WriteTest(sglArr, (bw, s) => bw.Write(s), (br) => br.ReadSingle());
         }
 
         [Fact]
         public void BinaryWriter_WriteDecimalTest()
         {
-            Decimal[] decArr = new Decimal[] { 
-                Decimal.One, Decimal.Zero, Decimal.MinusOne, Decimal.MinValue, Decimal.MaxValue, 
-                new Decimal(-1000.5), new Decimal(-10.0E-40), new Decimal(3.4E-40898), new Decimal(3.4E-28), 
-                new Decimal(3.4E+28), new Decimal(0.45), new Decimal(5.55), new Decimal(3.4899E23) 
+            decimal[] decArr = new decimal[] {
+                decimal.One, decimal.Zero, decimal.MinusOne, decimal.MinValue, decimal.MaxValue, 
+                new decimal(-1000.5), new decimal(-10.0E-40), new decimal(3.4E-40898), new decimal(3.4E-28), 
+                new decimal(3.4E+28), new decimal(0.45), new decimal(5.55), new decimal(3.4899E23) 
             };
 
-            WriteTest<Decimal>(decArr, (bw, s) => bw.Write(s), (br) => br.ReadDecimal());
+            WriteTest(decArr, (bw, s) => bw.Write(s), (br) => br.ReadDecimal());
         }
 
         [Fact]
         public void BinaryWriter_WriteDoubleTest()
         {
-            Double[] dblArr = new Double[] { 
-                Double.NegativeInfinity, Double.PositiveInfinity, Double.Epsilon, Double.MinValue, Double.MaxValue, 
+            double[] dblArr = new double[] {
+                double.NegativeInfinity, double.PositiveInfinity, double.Epsilon, double.MinValue, double.MaxValue, 
                 -3E59, -1000.5, -1E-40, 3.4E-37, 0.45, 5.55, 3.4899E233 
             };
 
-            WriteTest<Double>(dblArr, (bw, s) => bw.Write(s), (br) => br.ReadDouble());
+            WriteTest(dblArr, (bw, s) => bw.Write(s), (br) => br.ReadDouble());
         }
 
         [Fact]
         public void BinaryWriter_WriteInt16Test()
         {
-            Int16[] i16Arr = new Int16[] { Int16.MinValue, Int16.MaxValue, 0, -10000, 10000, -50, 50 };
+            short[] i16Arr = new short[] { short.MinValue, short.MaxValue, 0, -10000, 10000, -50, 50 };
 
-            WriteTest<Int16>(i16Arr, (bw, s) => bw.Write(s), (br) => br.ReadInt16());
+            WriteTest(i16Arr, (bw, s) => bw.Write(s), (br) => br.ReadInt16());
         }
 
         [Fact]
         public void BinaryWriter_WriteInt32Test()
         {
-            Int32[] i32arr = new Int32[] { Int32.MinValue, Int32.MaxValue, 0, -10000, 10000, -50, 50 };
+            int[] i32arr = new int[] { int.MinValue, int.MaxValue, 0, -10000, 10000, -50, 50 };
 
-            WriteTest<Int32>(i32arr, (bw, s) => bw.Write(s), (br) => br.ReadInt32());
+            WriteTest(i32arr, (bw, s) => bw.Write(s), (br) => br.ReadInt32());
         }
 
         [Fact]
         public void BinaryWriter_WriteInt64Test()
         {
-            Int64[] i64arr = new Int64[] { Int64.MinValue, Int64.MaxValue, 0, -10000, 10000, -50, 50 };
+            long[] i64arr = new long[] { long.MinValue, long.MaxValue, 0, -10000, 10000, -50, 50 };
 
-            WriteTest<Int64>(i64arr, (bw, s) => bw.Write(s), (br) => br.ReadInt64());
+            WriteTest(i64arr, (bw, s) => bw.Write(s), (br) => br.ReadInt64());
         }
 
         [Fact]
         public void BinaryWriter_WriteUInt16Test()
         {
-            UInt16[] ui16Arr = new UInt16[] { UInt16.MinValue, UInt16.MaxValue, 0, 100, 1000, 10000, UInt16.MaxValue - 100 };
+            ushort[] ui16Arr = new ushort[] { ushort.MinValue, ushort.MaxValue, 0, 100, 1000, 10000, ushort.MaxValue - 100 };
 
-            WriteTest<UInt16>(ui16Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt16());
+            WriteTest(ui16Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt16());
         }
 
         [Fact]
         public void BinaryWriter_WriteUInt32Test()
         {
-            UInt32[] ui32Arr = new UInt32[] { UInt32.MinValue, UInt32.MaxValue, 0, 100, 1000, 10000, UInt32.MaxValue - 100 };
+            uint[] ui32Arr = new uint[] { uint.MinValue, uint.MaxValue, 0, 100, 1000, 10000, uint.MaxValue - 100 };
 
-            WriteTest<UInt32>(ui32Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt32());
+            WriteTest(ui32Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt32());
         }
 
         [Fact]
         public void BinaryWriter_WriteUInt64Test()
         {
-            UInt64[] ui64Arr = new UInt64[] { UInt64.MinValue, UInt64.MaxValue, 0, 100, 1000, 10000, UInt64.MaxValue - 100 };
+            ulong[] ui64Arr = new ulong[] { ulong.MinValue, ulong.MaxValue, 0, 100, 1000, 10000, ulong.MaxValue - 100 };
 
-            WriteTest<UInt64>(ui64Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt64());
+            WriteTest(ui64Arr, (bw, s) => bw.Write(s), (br) => br.ReadUInt64());
         }
 
         [Fact]
         public void BinaryWriter_WriteStringTest()
         {
             StringBuilder sb = new StringBuilder();
-            String str1;
+            string str1;
             for (int ii = 0; ii < 5; ii++)
                 sb.Append("abc");
             str1 = sb.ToString();
 
-            String[] strArr = new String[] { 
+            string[] strArr = new string[] { 
                 "ABC", "\t\t\n\n\n\0\r\r\v\v\t\0\rHello", "This is a normal string", "12345667789!@#$%^&&())_+_)@#", 
                 "ABSDAFJPIRUETROPEWTGRUOGHJDOLJHLDHWEROTYIETYWsdifhsiudyoweurscnkjhdfusiyugjlskdjfoiwueriye", "     ", 
-                "\0\0\0\t\t\tHey\"\"", "\u0022\u0011", str1, String.Empty };
+                "\0\0\0\t\t\tHey\"\"", "\u0022\u0011", str1, string.Empty };
 
-            WriteTest<String>(strArr, (bw, s) => bw.Write(s), (br) => br.ReadString());
+            WriteTest(strArr, (bw, s) => bw.Write(s), (br) => br.ReadString());
         }
 
         private void WriteTest<T>(T[] testElements, Action<BinaryWriter, T> write, Func<BinaryReader, T> read)

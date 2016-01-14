@@ -4,7 +4,7 @@
 using System.IO;
 using Xunit;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public class TestLeaveOpen
     {

@@ -6,10 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
-namespace BufferedStreamTests
+namespace System.IO.Tests
 {
-
-    public class BufferedStream_StreamAsync : StreamTests.StreamAsync
+    public class BufferedStream_StreamAsync : StreamAsync
     {
         protected override Stream CreateStream()
         {
@@ -17,7 +16,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class BufferedStream_StreamMethods : StreamTests.StreamMethods
+    public class BufferedStream_StreamMethods : StreamMethods
     {
         protected override Stream CreateStream()
         {
@@ -30,7 +29,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class BufferedStream_TestLeaveOpen : StreamTests.TestLeaveOpen
+    public class BufferedStream_TestLeaveOpen : TestLeaveOpen
     {
         protected override Stream CreateStream()
         {
@@ -38,7 +37,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class StreamWriterWithBufferedStream_CloseTests : StreamWriterTests.CloseTests
+    public class StreamWriterWithBufferedStream_CloseTests : CloseTests
     {
         protected override Stream CreateStream()
         {
@@ -46,7 +45,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class StreamWriterWithBufferedStream_FlushTests : StreamWriterTests.FlushTests
+    public class StreamWriterWithBufferedStream_FlushTests : FlushTests
     {
         protected override Stream CreateStream()
         {
@@ -54,7 +53,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class StreamWriterWithBufferedStream_WriteTests : StreamWriterTests.WriteTests
+    public class StreamWriterWithBufferedStream_WriteTests : WriteTests
     {
         protected override Stream CreateStream()
         {
@@ -62,7 +61,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class StreamReaderWithBufferedStream_Tests : StreamReaderTests.StreamReaderTests
+    public class StreamReaderWithBufferedStream_Tests : StreamReaderTests
     {
         protected override Stream CreateStream()
         {
@@ -88,7 +87,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class BinaryWriterWithBufferedStream_Tests : BinaryWriterTests.BinaryWriterTests
+    public class BinaryWriterWithBufferedStream_Tests : BinaryWriterTests
     {
         protected override Stream CreateStream()
         {
@@ -120,7 +119,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class BinaryWriterWithBufferedStream_WriteByteCharTests : BinaryWriterTests.BinaryWriter_WriteByteCharTests
+    public class BinaryWriterWithBufferedStream_WriteByteCharTests : BinaryWriter_WriteByteCharTests
     {
         protected override Stream CreateStream()
         {
@@ -128,7 +127,7 @@ namespace BufferedStreamTests
         }
     }
 
-    public class BinaryWriterWithBufferedStream_WriteTests : BinaryWriterTests.BinaryWriter_WriteTests
+    public class BinaryWriterWithBufferedStream_WriteTests : BinaryWriter_WriteTests
     {
         protected override Stream CreateStream()
         {

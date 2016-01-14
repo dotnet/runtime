@@ -1,34 +1,31 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-
-namespace BufferedStreamTests
+namespace System.IO.Tests
 {
     /// <summary>
-    /// Provides a simple method of testing around a Stream with specific read/write/seek privileges.
+    /// Provides a simple method of testing around a MemoryStream with specific read/write/seek privileges.
     /// </summary>
-    public class FakeStream : Stream
+    public class WrappedMemoryStream : Stream
     {
         MemoryStream wrapped;
-        bool canWrite;
-        bool canRead;
-        bool canSeek;
+        private bool _canWrite;
+        private bool _canRead;
+        private bool _canSeek;
 
-        public FakeStream(bool canRead, bool canWrite, bool canSeek)
+        public WrappedMemoryStream(bool canRead, bool canWrite, bool canSeek)
         {
             wrapped = new MemoryStream();
-            this.canWrite = canWrite;
-            this.canRead = canRead;
-            this.canSeek = canSeek;
+            _canWrite = canWrite;
+            _canRead = canRead;
+            _canSeek = canSeek;
         }
 
         public override bool CanRead
         {
             get
             {
-                return canRead;
+                return _canRead;
             }
         }
 
@@ -36,7 +33,7 @@ namespace BufferedStreamTests
         {
             get
             {
-                return canSeek;
+                return _canSeek;
             }
         }
 
@@ -44,7 +41,7 @@ namespace BufferedStreamTests
         {
             get
             {
-                return canWrite;
+                return _canWrite;
             }
         }
 

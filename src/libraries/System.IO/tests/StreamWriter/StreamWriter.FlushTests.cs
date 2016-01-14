@@ -4,7 +4,7 @@
 using System.IO;
 using Xunit;
 
-namespace StreamWriterTests
+namespace System.IO.Tests
 {
     public class FlushTests
     {
