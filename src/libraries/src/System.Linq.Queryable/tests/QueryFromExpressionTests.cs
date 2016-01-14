@@ -610,5 +610,37 @@ namespace System.Linq.Tests
             IQueryable<int> q = _prov.CreateQuery<int>(block);
             Assert.Equal(new[] { 2, 1, 0 }, q);
         }
+
+        [Fact]
+        public void ReturnNonQueryable()
+        {
+            LabelTarget target = Expression.Label(typeof(int));
+            Expression block = Expression.Block(
+                Expression.Condition(
+                    Expression.Constant(true),
+                    Expression.Return(target, Expression.Constant(3)),
+                    Expression.Return(target, Expression.Constant(1))
+                    ),
+                Expression.Return(target, Expression.Constant(2)),
+                Expression.Label(target, Expression.Default(typeof(int)))
+                );
+            Assert.Equal(3, _prov.Execute<int>(block));
+        }
+
+        [Fact]
+        public void ReturnNonQueryableUntyped()
+        {
+            LabelTarget target = Expression.Label(typeof(int));
+            Expression block = Expression.Block(
+                Expression.Condition(
+                    Expression.Constant(true),
+                    Expression.Return(target, Expression.Constant(3)),
+                    Expression.Return(target, Expression.Constant(1))
+                    ),
+                Expression.Return(target, Expression.Constant(2)),
+                Expression.Label(target, Expression.Default(typeof(int)))
+                );
+            Assert.Equal(3, _prov.Execute(block));
+        }
     }
 }
