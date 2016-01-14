@@ -7,7 +7,7 @@ namespace System.Data.Common
 {
     public class DbColumn
     {
-        private Dictionary<string, object> s_customValues = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _customValues = new Dictionary<string, object>();
         public virtual bool AllowDBNull { get; set; }
         public virtual string BaseCatalogName { get; set; }
         public virtual string BaseColumnName { get; set; }
@@ -36,12 +36,12 @@ namespace System.Data.Common
             get
             {
                 object value;
-                s_customValues.TryGetValue(property, out value);
+                _customValues.TryGetValue(property, out value);
                 return value;
             }
             set
             {
-                s_customValues.Add(property, value);
+                _customValues.Add(property, value);
             }
         }
 
