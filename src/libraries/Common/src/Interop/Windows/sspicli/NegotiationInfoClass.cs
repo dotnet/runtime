@@ -19,12 +19,18 @@ namespace System.Net
         {
             if (safeHandle.IsInvalid)
             {
-                GlobalLog.Print("NegotiationInfoClass::.ctor() the handle is invalid:" + (safeHandle.DangerousGetHandle()).ToString("x"));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NegotiationInfoClass::.ctor() the handle is invalid:" + (safeHandle.DangerousGetHandle()).ToString("x"));
+                }
                 return;
             }
 
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
-            GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
+            }
 
             if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE
                 || negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
@@ -36,7 +42,10 @@ namespace System.Net
                     name = Marshal.PtrToStringUni(unmanagedString);
                 }
 
-                GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + LoggingHash.ObjectToString(name));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + LoggingHash.ObjectToString(name));
+                }
 
                 // An optimization for future string comparisons.
                 if (string.Compare(name, Kerberos, StringComparison.OrdinalIgnoreCase) == 0)

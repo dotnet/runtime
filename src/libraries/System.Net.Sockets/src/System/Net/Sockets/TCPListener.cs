@@ -127,7 +127,10 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Start", null);
             }
 
-            GlobalLog.Print("TCPListener::Start()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("TCPListener::Start()");
+            }
 
             if (_serverSocket == null)
             {
@@ -172,7 +175,10 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Stop", null);
             }
 
-            GlobalLog.Print("TCPListener::Stop()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("TCPListener::Stop()");
+            }
 
             if (_serverSocket != null)
             {

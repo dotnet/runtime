@@ -1228,10 +1228,13 @@ namespace System.Net.Sockets
             GlobalLog.SetThreadSource(ThreadKinds.CompletionPort);
             using (GlobalLog.SetThreadKind(ThreadKinds.System))
             {
-                GlobalLog.Enter(
-                    "CompletionPortCallback",
-                    "errorCode: " + errorCode + ", numBytes: " + numBytes +
-                    ", overlapped#" + ((IntPtr)nativeOverlapped).ToString("x"));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Enter(
+                        "CompletionPortCallback",
+                        "errorCode: " + errorCode + ", numBytes: " + numBytes +
+                        ", overlapped#" + ((IntPtr)nativeOverlapped).ToString("x"));
+                }
 #endif
                 SocketFlags socketFlags = SocketFlags.None;
                 SocketError socketError = (SocketError)errorCode;
@@ -1276,7 +1279,10 @@ namespace System.Net.Sockets
                 }
 
 #if DEBUG
-                GlobalLog.Leave("CompletionPortCallback");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Leave("CompletionPortCallback");
+                }
             }
 #endif
         }

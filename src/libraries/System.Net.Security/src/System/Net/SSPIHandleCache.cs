@@ -39,7 +39,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (!ExceptionCheck.IsFatal(e))
+                if (!ExceptionCheck.IsFatal(e) && GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SSPIHandlCache", "Attempted to throw: " + e.ToString());
                 }
