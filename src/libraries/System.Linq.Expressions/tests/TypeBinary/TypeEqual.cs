@@ -99,8 +99,6 @@ namespace System.Linq.Expressions.Tests
         [MemberData("ExpressionAndTypeCombinations")]
         public void ExpressionEvaluationInterpretted(Expression expression, Type type)
         {
-            if (expression.Type == typeof(void))
-                return; // ActiveIssue 5247
             bool expected;
             if (type == typeof(void))
                 expected = expression.Type == typeof(void);
