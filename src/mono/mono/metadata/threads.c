@@ -2346,64 +2346,64 @@ void mono_thread_stop (MonoThread *thread)
 gint8
 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr)
 {
-	gint8 tmp;
-	mono_atomic_load_acquire (tmp, gint8, (volatile gint8 *) ptr);
+	gint8 tmp = *(volatile gint8 *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
 gint16
 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr)
 {
-	gint16 tmp;
-	mono_atomic_load_acquire (tmp, gint16, (volatile gint16 *) ptr);
+	gint16 tmp = *(volatile gint16 *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
 gint32
 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr)
 {
-	gint32 tmp;
-	mono_atomic_load_acquire (tmp, gint32, (volatile gint32 *) ptr);
+	gint32 tmp = *(volatile gint32 *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
 gint64
 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr)
 {
-	gint64 tmp;
-	mono_atomic_load_acquire (tmp, gint64, (volatile gint64 *) ptr);
+	gint64 tmp = *(volatile gint64 *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
 void *
 ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr)
 {
-	volatile void *tmp;
-	mono_atomic_load_acquire (tmp, volatile void *, (volatile void **) ptr);
+	volatile void *tmp = *(volatile void **)ptr;
+	mono_memory_barrier ();
 	return (void *) tmp;
 }
 
 void *
 ves_icall_System_Threading_Thread_VolatileReadObject (void *ptr)
 {
-	volatile MonoObject *tmp;
-	mono_atomic_load_acquire (tmp, volatile MonoObject *, (volatile MonoObject **) ptr);
+	volatile MonoObject *tmp = *(volatile MonoObject **)ptr;
+	mono_memory_barrier ();
 	return (MonoObject *) tmp;
 }
 
 double
 ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr)
 {
-	double tmp;
-	mono_atomic_load_acquire (tmp, double, (volatile double *) ptr);
+	double tmp = *(volatile double *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
 float
 ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr)
 {
-	float tmp;
-	mono_atomic_load_acquire (tmp, float, (volatile float *) ptr);
+	float tmp = *(volatile float *)ptr;
+	mono_memory_barrier ();
 	return tmp;
 }
 
@@ -2485,49 +2485,57 @@ ves_icall_System_Threading_Volatile_Read_T (void *ptr)
 void
 ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8 value)
 {
-	mono_atomic_store_release ((volatile gint8 *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile gint8 *)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16 value)
 {
-	mono_atomic_store_release ((volatile gint16 *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile gint16 *)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32 value)
 {
-	mono_atomic_store_release ((volatile gint32 *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile gint32 *)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64 value)
 {
-	mono_atomic_store_release ((volatile gint64 *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile gint64 *)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 {
-	mono_atomic_store_release ((volatile void **) ptr, value);
+	mono_memory_barrier ();
+	*(volatile void **)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, MonoObject *value)
 {
-	mono_gc_wbarrier_generic_store_atomic (ptr, value);
+	mono_memory_barrier ();
+	mono_gc_wbarrier_generic_store (ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double value)
 {
-	mono_atomic_store_release ((volatile double *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile double *)ptr = value;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float value)
 {
-	mono_atomic_store_release ((volatile float *) ptr, value);
+	mono_memory_barrier ();
+	*(volatile float *)ptr = value;
 }
 
 void
