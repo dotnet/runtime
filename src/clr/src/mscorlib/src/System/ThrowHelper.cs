@@ -128,6 +128,10 @@ namespace System {
             string argumentName = null;
 
             switch (argument) {
+                case ExceptionArgument.action:
+                    argumentName = "action";
+                    break;
+
                 case ExceptionArgument.array:
                     argumentName = "array";
                     break;
@@ -142,6 +146,10 @@ namespace System {
 
                 case ExceptionArgument.collection:
                     argumentName = "collection";
+                    break;
+
+                case ExceptionArgument.comparison:
+                    argumentName = "comparison";
                     break;
 
                 case ExceptionArgument.list:
@@ -463,6 +471,8 @@ namespace System {
         options,
         view,
         sourceBytesToCopy,
+        action,
+        comparison
     }
 
     //
