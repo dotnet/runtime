@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -105,9 +106,13 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            if (!SocketsEventSource.Log.IsEnabled() && GlobalLog.IsEnabled)
+            if (!SocketsEventSource.Log.IsEnabled())
             {
-                GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
+                }
+                Debug.Fail("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::LogBuffer()|Logging is off!");
             }
             IntPtr pinnedBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0);
             if (pinnedBuffer != IntPtr.Zero)

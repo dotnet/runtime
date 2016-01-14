@@ -68,9 +68,13 @@ namespace System.Net.Security
 
             _destination = hostname;
 
-            if (GlobalLog.IsEnabled && hostname == null)
+            if (hostname == null)
             {
-                GlobalLog.AssertFormat("SecureChannel#{0}::.ctor()|hostname == null", LoggingHash.HashString(this));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("SecureChannel#{0}::.ctor()|hostname == null", LoggingHash.HashString(this));
+                }
+                Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::.ctor()|hostname == null");
             }
             _hostName = hostname;
             _serverMode = serverMode;
@@ -613,13 +617,17 @@ namespace System.Net.Security
                 selectedCert = null;
             }
 
-            if (GlobalLog.IsEnabled)
+            if ((object)clientCertificate != (object)selectedCert && !clientCertificate.Equals(selectedCert))
             {
-                if ((object)clientCertificate != (object)selectedCert && !clientCertificate.Equals(selectedCert))
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("AcquireClientCredentials()|'selectedCert' does not match 'clientCertificate'.");
                 }
+                Debug.Fail("AcquireClientCredentials()|'selectedCert' does not match 'clientCertificate'.");
+            }
 
+            if (GlobalLog.IsEnabled)
+            {
                 GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::AcquireClientCredentials() Selected Cert = " + (selectedCert == null ? "null" : selectedCert.Subject));
             }
 
@@ -735,9 +743,13 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
             }
 
-            if (GlobalLog.IsEnabled && !localCertificate.Equals(selectedCert))
+            if (!localCertificate.Equals(selectedCert))
             {
-                GlobalLog.Assert("AcquireServerCredentials()|'selectedCert' does not match 'localCertificate'.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("AcquireServerCredentials()|'selectedCert' does not match 'localCertificate'.");
+                }
+                Debug.Fail("AcquireServerCredentials()|'selectedCert' does not match 'localCertificate'.");
             }
 
             //
@@ -837,6 +849,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'offset' out of range.");
                 }
+                Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException("offset");
             }
 
@@ -846,6 +859,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'count' out of range.");
                 }
+                Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException("count");
             }
 
@@ -981,9 +995,13 @@ namespace System.Net.Security
                 }
                 catch (Exception e)
                 {
-                    if (!ExceptionCheck.IsFatal(e) && GlobalLog.IsEnabled)
+                    if (!ExceptionCheck.IsFatal(e))
                     {
-                        GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::ProcessHandshakeSuccess", "StreamSizes out of range.");
+                        if (GlobalLog.IsEnabled)
+                        {
+                            GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::ProcessHandshakeSuccess", "StreamSizes out of range.");
+                        }
+                        Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::ProcessHandshakeSuccess", "StreamSizes out of range.");
                     }
 
                     throw;
@@ -1049,9 +1067,13 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (!ExceptionCheck.IsFatal(e) && GlobalLog.IsEnabled)
+                if (!ExceptionCheck.IsFatal(e))
                 {
-                    GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
+                    }
+                    Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
                 }
 
                 throw;
@@ -1091,6 +1113,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'offset' out of range.");
                 }
+                Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException("offset");
             }
 
@@ -1100,6 +1123,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'count' out of range.");
                 }
+                Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException("count");
             }
 

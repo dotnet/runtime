@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -353,9 +354,13 @@ namespace System.Net.Security
         {
             int result = 0;
 
-            if (GlobalLog.IsEnabled && InternalBufferCount != 0)
+            if (InternalBufferCount != 0)
             {
-                GlobalLog.AssertFormat("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
+                }
+                Debug.Fail("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:" + InternalBufferCount);
             }
 
             do

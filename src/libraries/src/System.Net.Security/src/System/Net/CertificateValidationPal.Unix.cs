@@ -239,6 +239,9 @@ namespace System.Net
                                     "CertModule::EnsureStoreOpened()",
                                     "Failed to open cert store, location:" + storeLocation + " exception:" + e);
                             }
+                            Debug.Fail(
+                                "CertModule::EnsureStoreOpened()",
+                                "Failed to open cert store, location:" + storeLocation + " exception:" + e);
                             throw;
                         }
                     }

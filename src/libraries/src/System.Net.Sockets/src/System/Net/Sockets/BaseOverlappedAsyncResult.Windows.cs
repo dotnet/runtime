@@ -91,13 +91,16 @@ namespace System.Net.Sockets
 
                 object returnObject = null;
 
-                if (GlobalLog.IsEnabled)
+                if (asyncResult.InternalPeekCompleted)
                 {
-                    if (asyncResult.InternalPeekCompleted)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|asyncResult.IsCompleted", LoggingHash.HashString(asyncResult));
-                    }
-
+                    }                
+                    Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|asyncResult.IsCompleted");
+                }
+                if (GlobalLog.IsEnabled)
+                {
                     GlobalLog.Print(
                         "BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback" +
                         " errorCode:" + errorCode.ToString() +
@@ -141,15 +144,23 @@ namespace System.Net.Sockets
                             if (!success)
                             {
                                 socketError = (SocketError)Marshal.GetLastWin32Error();
-                                if (socketError == 0 && GlobalLog.IsEnabled)
+                                if (socketError == 0)
                                 {
-                                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|socketError:0 numBytes:{1}", LoggingHash.HashString(asyncResult), numBytes);
+                                    if (GlobalLog.IsEnabled)
+                                    {
+                                        GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|socketError:0 numBytes:{1}", LoggingHash.HashString(asyncResult), numBytes);
+                                    }
+                                    Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|socketError:0 numBytes:" + numBytes);
                                 }
                             }
 
-                            if (success && GlobalLog.IsEnabled)
+                            if (success)
                             {
-                                GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|Unexpectedly succeeded. errorCode:{1} numBytes:{2}", LoggingHash.HashString(asyncResult), errorCode, numBytes);
+                                if (GlobalLog.IsEnabled)
+                                {
+                                    GlobalLog.AssertFormat("BaseOverlappedAsyncResult#{0}::CompletionPortCallback()|Unexpectedly succeeded. errorCode:{1} numBytes:{2}", LoggingHash.HashString(asyncResult), errorCode, numBytes);
+                                }
+                                Debug.Fail("BaseOverlappedAsyncResult#" + LoggingHash.HashString(asyncResult) + "::CompletionPortCallback()|Unexpectedly succeeded. errorCode:" + errorCode + " numBytes: " + numBytes);
                             }
                         }
                         catch (ObjectDisposedException)

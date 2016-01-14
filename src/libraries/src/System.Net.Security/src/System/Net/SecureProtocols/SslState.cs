@@ -1043,9 +1043,13 @@ namespace System.Net.Security
             }
             catch (Exception exception)
             {
-                if (!ExceptionCheck.IsFatal(exception) && GlobalLog.IsEnabled)
+                if (!ExceptionCheck.IsFatal(exception))
                 {
-                    GlobalLog.Assert("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
+                    }
+                    Debug.Fail("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
                 }
 
                 throw;
@@ -1564,9 +1568,13 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if (GlobalLog.IsEnabled && (bytes == null || bytes.Length == 0))
+            if ((bytes == null || bytes.Length == 0))
             {
-                GlobalLog.Assert("SslState::DetectFraming()|Header buffer is not allocated will boom shortly.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("SslState::DetectFraming()|Header buffer is not allocated will boom shortly.");
+                }
+                Debug.Fail("SslState::DetectFraming()|Header buffer is not allocated will boom shortly.");
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
@@ -1785,16 +1793,21 @@ namespace System.Net.Security
         private void RehandshakeCompleteCallback(IAsyncResult result)
         {
             LazyAsyncResult lazyAsyncResult = (LazyAsyncResult)result;
-            if (GlobalLog.IsEnabled)
+            if (lazyAsyncResult == null)
             {
-                if (lazyAsyncResult == null)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is null!");
                 }
-                if (!lazyAsyncResult.InternalPeekCompleted)
+                Debug.Fail("SslState::RehandshakeCompleteCallback()|result is null!");
+            }
+            if (!lazyAsyncResult.InternalPeekCompleted)
+            {
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is not completed!");
                 }
+                Debug.Fail("SslState::RehandshakeCompleteCallback()|result is not completed!");
             }
 
             // If the rehandshake succeeded, FinishHandshake has already been called; if there was a SocketException
