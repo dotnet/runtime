@@ -14404,15 +14404,23 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
 
     while (cbCode > 0)
     {
+        PRUNTIME_FUNCTION   pFunctionEntry;
+        ULONGLONG           uImageBase;
+#ifdef FEATURE_PAL
+        EECodeInfo codeInfo;
+        codeInfo.Init((PCODE)pvFuncletStart);
+        pFunctionEntry = codeInfo.GetFunctionEntry();
+        uImageBase = (ULONGLONG)codeInfo.GetModuleBase();
+#else // !FEATURE_PAL
         //
         // This is GCStress debug only - use the slow OS APIs to enumerate funclets
         //
 
-        ULONGLONG           uImageBase;
-        PRUNTIME_FUNCTION pFunctionEntry = (PRUNTIME_FUNCTION) RtlLookupFunctionEntry((ULONGLONG)pvFuncletStart,
-                                                &uImageBase
-                                                AMD64_ARG(NULL)
-                                                );
+        pFunctionEntry = (PRUNTIME_FUNCTION) RtlLookupFunctionEntry((ULONGLONG)pvFuncletStart,
+                              &uImageBase
+                              AMD64_ARG(NULL)
+                              );
+#endif
 
         if (pFunctionEntry != NULL)
         {

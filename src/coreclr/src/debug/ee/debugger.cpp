@@ -1046,7 +1046,13 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForUserSuspend_Stub,
                                RedirectedHandledJITCaseForUserSuspend_StubEnd),
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForYieldTask_Stub,
-                               RedirectedHandledJITCaseForYieldTask_StubEnd)};
+                               RedirectedHandledJITCaseForYieldTask_StubEnd)
+#ifdef HAVE_GCCOVER
+     ,
+     GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
+                               RedirectedHandledJITCaseForGCStress_StubEnd)
+#endif // HAVE_GCCOVER
+    };
 #endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
 // Save the necessary information for the debugger to recognize an IP in one of the thread redirection 

@@ -1614,6 +1614,7 @@ void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 #ifdef HAVE_GCCOVER
 void SetupGcCoverage(MethodDesc* pMD, BYTE* nativeCode);
 void SetupGcCoverageForNativeImage(Module* module);
+bool IsGcCoverageInterrupt(LPVOID ip);
 BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, MethodDesc *pMD);
 #endif //HAVE_GCCOVER
