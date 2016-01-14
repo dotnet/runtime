@@ -10,6 +10,10 @@ add_definitions(-DFEATURE_CORECLR)
 include_directories(.)
 include_directories(../ildasm/unixcoreclrloader)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+  add_compile_options(-fPIE)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 set(ILASM_SOURCES
   assem.cpp
   writer.cpp
