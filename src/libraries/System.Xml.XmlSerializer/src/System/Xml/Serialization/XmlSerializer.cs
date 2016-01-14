@@ -639,13 +639,13 @@ namespace System.Xml.Serialization
                 return Array.Empty<XmlSerializer>();
 
 #if NET_NATIVE
-            var serializers = new List<XmlSerializer>();
-            foreach (var t in types)
+            var serializers = new XmlSerializer[types.Length];
+            for (int i = 0; i < types.Length; i++)
             {
-                serializers.Add(new XmlSerializer(t));
+                serializers[i] = new XmlSerializer(types[i]);
             }
 
-            return serializers.ToArray();
+            return serializers;
 #else
             XmlReflectionImporter importer = new XmlReflectionImporter();
             XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
