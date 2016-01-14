@@ -250,6 +250,9 @@ typedef struct {
 	void *jit_data;
 
 	MonoThreadInfoInterruptToken *interrupt_token;
+
+	/* MonoHandleArena for coop handles */
+	gpointer handle_arena;
 } MonoThreadInfo;
 
 typedef struct {

@@ -119,19 +119,13 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, siz
 {
 	size_t size = count * element_size;
 
-#ifdef DISABLE_CRITICAL_REGION
-	LOCK_GC;
-#else
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
-#endif
+
 	mono_gc_memmove_atomic (dest, src, size);
 	sgen_card_table_mark_range ((mword)dest, size);
-#ifdef DISABLE_CRITICAL_REGION
-	UNLOCK_GC;
-#else
+
 	EXIT_CRITICAL_REGION;
-#endif
 }
 
 static void
@@ -139,20 +133,14 @@ sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 {
 	size_t size = sgen_client_par_object_get_size (SGEN_LOAD_VTABLE_UNCHECKED (obj), obj);
 
-#ifdef DISABLE_CRITICAL_REGION
-	LOCK_GC;
-#else
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
-#endif
+
 	mono_gc_memmove_aligned ((char*)obj + SGEN_CLIENT_OBJECT_HEADER_SIZE, (char*)src + SGEN_CLIENT_OBJECT_HEADER_SIZE,
 			size - SGEN_CLIENT_OBJECT_HEADER_SIZE);
 	sgen_card_table_mark_range ((mword)obj, size);
-#ifdef DISABLE_CRITICAL_REGION
-	UNLOCK_GC;
-#else
+
 	EXIT_CRITICAL_REGION;
-#endif	
 }
 
 static void
