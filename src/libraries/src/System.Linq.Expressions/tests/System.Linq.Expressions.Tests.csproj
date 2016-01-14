@@ -131,6 +131,7 @@
     <Compile Include="Goto\Goto.cs" />
     <Compile Include="Goto\GotoExpressionTests.cs" />
     <Compile Include="Goto\Return.cs" />
+    <Compile Include="ExpressionTests.cs" />
     <Compile Include="HelperTypes.cs" />
     <Compile Include="Interpreter\InterpreterTests.Address.cs" />
     <Compile Include="Interpreter\InterpreterTests.cs" />
@@ -189,6 +190,8 @@
     <Compile Include="TypeBinary\TypeBinaryTests.cs" />
     <Compile Include="TypeBinary\TypeEqual.cs" />
     <Compile Include="TypeBinary\TypeIs.cs" />
+    <Compile Include="TestExtensions\TestOrderer.cs" />
+    <Compile Include="TestExtensions\TestOrderAttribute.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
