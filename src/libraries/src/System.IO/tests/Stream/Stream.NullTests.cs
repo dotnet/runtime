@@ -7,7 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace StreamTests
+namespace System.IO.Tests
 {
     public class NullCtorTests
     {
@@ -59,7 +59,7 @@ namespace StreamTests
             output.Flush();
             output.Dispose();
 
-            output.WriteLine(Decimal.MinValue);
+            output.WriteLine(decimal.MinValue);
             output.WriteLine(Math.PI);
             output.WriteLine();
             output.Flush();

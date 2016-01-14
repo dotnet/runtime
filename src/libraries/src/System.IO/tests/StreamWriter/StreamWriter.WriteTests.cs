@@ -6,18 +6,23 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace StreamWriterTests
+namespace System.IO.Tests
 {
-    public class Co5563Write_ch
+    public class WriteTests
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
+
         [Fact]
-        public static void WriteChars()
+        public void WriteChars()
         {
             char[] chArr = setupArray();
 
             // [] Write a wide variety of characters and read them back
 
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -29,62 +34,65 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
         }
 
         private static char[] setupArray()
         {
-            return new Char[]{
-			Char.MinValue
-			,Char.MaxValue
-			,'\t'
-			,' '
-			,'$'
-			,'@'
-			,'#'
-			,'\0'
-			,'\v'
-			,'\''
-			,'\u3190'
-			,'\uC3A0'
-			,'A'
-			,'5'
-			,'\uFE70' 
-			,'-'
-			,';'
-			,'\u00E6'
-		};
+            return new char[]{
+            char.MinValue
+            ,char.MaxValue
+            ,'\t'
+            ,' '
+            ,'$'
+            ,'@'
+            ,'#'
+            ,'\0'
+            ,'\v'
+            ,'\''
+            ,'\u3190'
+            ,'\uC3A0'
+            ,'A'
+            ,'5'
+            ,'\uFE70' 
+            ,'-'
+            ,';'
+            ,'\u00E6'
+        };
         }
+
         [Fact]
-        public static void NullArray()
+        public void NullArray()
         {
             // [] Exception for null array
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentNullException>(() => sw.Write(null, 0, 0));
             sw.Dispose();
         }
+
         [Fact]
-        public static void NegativeOffset()
+        public void NegativeOffset()
         {
             char[] chArr = setupArray();
 
             // [] Exception if offset is negative
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, -1, 0));
             sw.Dispose();
         }
+
         [Fact]
-        public static void NegativeCount()
+        public void NegativeCount()
         {
             char[] chArr = setupArray();
 
             // [] Exception if count is negative
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, 0, -1));
@@ -92,12 +100,12 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void WriteCustomLenghtStrings()
+        public void WriteCustomLenghtStrings()
         {
             char[] chArr = setupArray();
 
             // [] Write some custom length strings
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -105,22 +113,22 @@ namespace StreamWriterTests
             sw.Flush();
             ms.Position = 0;
             sr = new StreamReader(ms);
-            Int32 tmp = 0;
+            int tmp = 0;
             for (int i = 2; i < 7; i++)
             {
                 tmp = sr.Read();
-                Assert.Equal((Int32)chArr[i], tmp);
+                Assert.Equal((int)chArr[i], tmp);
             }
             ms.Dispose();
         }
 
         [Fact]
-        public static void WriteToStreamWriter()
+        public void WriteToStreamWriter()
         {
             char[] chArr = setupArray();
-            // [] Just construct a streamwriter and write to it	
-            //------------------------------------------------- 			
-            MemoryStream ms = new MemoryStream();
+            // [] Just construct a streamwriter and write to it    
+            //-------------------------------------------------             
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -131,15 +139,16 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
             ms.Dispose();
         }
+
         [Fact]
-        public static void TestWritingPastEndOfArray()
+        public void TestWritingPastEndOfArray()
         {
             char[] chArr = setupArray();
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
             Assert.Throws<ArgumentException>(() => sw.Write(chArr, 1, chArr.Length));
@@ -147,13 +156,13 @@ namespace StreamWriterTests
         }
 
         [Fact]
-        public static void VerifyWrittenString()
+        public void VerifyWrittenString()
         {
             char[] chArr = setupArray();
-            // [] Write string with wide selection of characters and read it back		
+            // [] Write string with wide selection of characters and read it back        
 
             StringBuilder sb = new StringBuilder(40);
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
             StreamReader sr;
 
@@ -167,18 +176,18 @@ namespace StreamWriterTests
 
             for (int i = 0; i < chArr.Length; i++)
             {
-                Assert.Equal((Int32)chArr[i], sr.Read());
+                Assert.Equal((int)chArr[i], sr.Read());
             }
         }
 
         [Fact]
-        public static void NullStreamThrows()
+        public void NullStreamThrows()
         {
             // [] Null string should write nothing
 
-            MemoryStream ms = new MemoryStream();
+            Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
-            sw.Write((String)null);
+            sw.Write((string)null);
             sw.Flush();
             Assert.Equal(0, ms.Length);
         }

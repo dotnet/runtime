@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.IO
+namespace System.IO.Tests
 {
     public static class InvalidDataExceptionTests
     {

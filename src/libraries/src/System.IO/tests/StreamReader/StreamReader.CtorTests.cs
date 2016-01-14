@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace StreamReaderTests
+namespace System.IO.Tests
 {
     public class StreamReader_ctorTests
     {
@@ -27,7 +27,7 @@ namespace StreamReaderTests
         public static void CreationFromMemoryStreamWithEncodingFalse()
         {
             var ms2 = new MemoryStream();
-            ms2.Write(new Byte[] { 65, 66, 67, 68 }, 0, 4);
+            ms2.Write(new byte[] { 65, 66, 67, 68 }, 0, 4);
             ms2.Position = 0;
             var sr2 = new StreamReader(ms2, false);
 
@@ -39,7 +39,7 @@ namespace StreamReaderTests
         public static void CreationFromMemoryStreamWithEncodingTrue()
         {
             var ms2 = new MemoryStream();
-            ms2.Write(new Byte[] { 65, 66, 67, 68 }, 0, 4);
+            ms2.Write(new byte[] { 65, 66, 67, 68 }, 0, 4);
             ms2.Position = 0;
             var sr2 = new StreamReader(ms2, false);
 

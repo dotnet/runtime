@@ -7,15 +7,20 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace Tests
+namespace System.IO.Tests
 {
     public class BinaryWriterTests
     {
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
+        }
+
         [Fact]
-        public static void BinaryWriter_CtorAndWriteTests1()
+        public void BinaryWriter_CtorAndWriteTests1()
         {
             // [] Smoke test to ensure that we can write with the constructed writer
-            using (MemoryStream mstr = new MemoryStream())
+            using (Stream mstr = CreateStream())
             using (BinaryWriter dw2 = new BinaryWriter(mstr))
             using (BinaryReader dr2 = new BinaryReader(mstr))
             {
@@ -28,20 +33,20 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_CtorAndWriteTests1_Negative()
+        public void BinaryWriter_CtorAndWriteTests1_Negative()
         {
             // [] Should throw ArgumentNullException for null argument
             Assert.Throws<ArgumentNullException>(() => new BinaryWriter(null));
 
             // [] Can't construct a BinaryWriter on a readonly stream
-            using (MemoryStream memStream = new MemoryStream(new byte[10], false))
+            using (Stream memStream = new MemoryStream(new byte[10], false))
             {
                 Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
             }
 
             // [] Can't construct a BinaryWriter with a closed stream
             {
-                MemoryStream memStream = new MemoryStream();
+                Stream memStream = CreateStream();
                 memStream.Dispose();
                 Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
             }
@@ -49,9 +54,9 @@ namespace Tests
 
         [Theory]
         [MemberData("EncodingAndEncodingStrings")]
-        public static void BinaryWriter_EncodingCtorAndWriteTests(Encoding encoding, string testString)
+        public void BinaryWriter_EncodingCtorAndWriteTests(Encoding encoding, string testString)
         {
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             using (BinaryWriter writer = new BinaryWriter(memStream, encoding))
             using (BinaryReader reader = new BinaryReader(memStream, encoding))
             {
@@ -74,23 +79,23 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_EncodingCtorAndWriteTests_Negative()
+        public void BinaryWriter_EncodingCtorAndWriteTests_Negative()
         {
             // [] Check for ArgumentNullException on null stream
             Assert.Throws<ArgumentNullException>(() => new BinaryReader((Stream)null, Encoding.UTF8));
 
             // [] Check for ArgumentNullException on null encoding
-            Assert.Throws<ArgumentNullException>(() => new BinaryReader(new MemoryStream(), null));
+            Assert.Throws<ArgumentNullException>(() => new BinaryReader(CreateStream(), null));
         }
 
         [Fact]
-        public static void BinaryWriter_SeekTests()
+        public void BinaryWriter_SeekTests()
         {
-            int[] iArrLargeValues = new Int32[] { 10000, 100000, Int32.MaxValue / 200, Int32.MaxValue / 1000, Int16.MaxValue, Int32.MaxValue, Int32.MaxValue - 1, Int32.MaxValue / 2, Int32.MaxValue / 10, Int32.MaxValue / 100 };
+            int[] iArrLargeValues = new int[] { 10000, 100000, int.MaxValue / 200, int.MaxValue / 1000, short.MaxValue, int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
 
             BinaryWriter dw2 = null;
             MemoryStream mstr = null;
-            Byte[] bArr = null;
+            byte[] bArr = null;
             StringBuilder sb = new StringBuilder();
             Int64 lReturn = 0;
 
@@ -119,7 +124,7 @@ namespace Tests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("lki3456789", sb.ToString());
 
@@ -139,7 +144,7 @@ namespace Tests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("012lk56789", sb.ToString());
 
@@ -159,7 +164,7 @@ namespace Tests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123456ll9", sb.ToString());
 
@@ -180,7 +185,7 @@ namespace Tests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123ll6789", sb.ToString());
 
@@ -222,7 +227,7 @@ namespace Tests
             bArr = mstr.ToArray();
             sb = new StringBuilder();
             for (int i = 0; i < bArr.Length; i++)
-                sb.Append((Char)bArr[i]);
+                sb.Append((char)bArr[i]);
 
             Assert.Equal("0123456789ll", sb.ToString());
 
@@ -234,11 +239,11 @@ namespace Tests
         [InlineData(-1)]
         [InlineData(-2)]
         [InlineData(-10000)]
-        [InlineData(Int32.MinValue)]
-        public static void BinaryWriter_SeekTests_NegativeOffset(int invalidValue)
+        [InlineData(int.MinValue)]
+        public void BinaryWriter_SeekTests_NegativeOffset(int invalidValue)
         {
             // [] IOException if offset is negative
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             using (BinaryWriter writer = new BinaryWriter(memStream))
             {
                 writer.Write("Hello, this is my string".ToCharArray());
@@ -247,10 +252,10 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_SeekTests_InvalidSeekOrigin()
+        public void BinaryWriter_SeekTests_InvalidSeekOrigin()
         {
             // [] ArgumentException for invalid seekOrigin
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             using (BinaryWriter writer = new BinaryWriter(memStream))
             {
                 writer.Write("012345789".ToCharArray());
@@ -263,10 +268,10 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_BaseStreamTests()
+        public void BinaryWriter_BaseStreamTests()
         {
             // [] Get the base stream for MemoryStream
-            using (MemoryStream ms2 = new MemoryStream())
+            using (Stream ms2 = CreateStream())
             using (BinaryWriter sr2 = new BinaryWriter(ms2))
             {
                 Assert.Same(ms2, sr2.BaseStream);
@@ -274,10 +279,10 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_FlushTests()
+        public virtual void BinaryWriter_FlushTests()
         {
             // [] Check that flush updates the underlying stream
-            using (MemoryStream memstr2 = new MemoryStream())
+            using (Stream memstr2 = CreateStream())
             using (BinaryWriter bw2 = new BinaryWriter(memstr2))
             {
                 string str = "HelloWorld";
@@ -288,8 +293,8 @@ namespace Tests
                 Assert.Equal(expectedLength, memstr2.Length);
             }
 
-            // [] Flushing closed writer should not throw an exception.
-            using (MemoryStream memstr2 = new MemoryStream())
+            // [] Flushing a closed writer may throw an exception depending on the underlying stream
+            using (Stream memstr2 = CreateStream())
             {
                 BinaryWriter bw2 = new BinaryWriter(memstr2);
                 bw2.Dispose();
@@ -298,10 +303,10 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_DisposeTests()
+        public void BinaryWriter_DisposeTests()
         {
             // Disposing multiple times should not throw an exception
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             using (BinaryWriter binaryWriter = new BinaryWriter(memStream))
             {
                 binaryWriter.Dispose();
@@ -311,31 +316,31 @@ namespace Tests
         }
 
         [Fact]
-        public static void BinaryWriter_DisposeTests_Negative()
+        public void BinaryWriter_DisposeTests_Negative()
         {
-            using (MemoryStream memStream = new MemoryStream())
+            using (Stream memStream = CreateStream())
             {
                 BinaryWriter binaryWriter = new BinaryWriter(memStream);
                 binaryWriter.Dispose();
 
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Seek(1, SeekOrigin.Begin));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Byte[2], 0, 2));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Char[2], 0, 2));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new byte[2], 0, 2));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new char[2], 0, 2));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(true));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Byte)4));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Byte[] { 1, 2 }));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((byte)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new byte[] { 1, 2 }));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write('a'));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new Char[] { 'a', 'b' }));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new char[] { 'a', 'b' }));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(5.3));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Int16)3));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((short)3));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(33));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Int64)42));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((SByte)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((sbyte)4));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write("Hello There"));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Single)4.3));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((float)4.3));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt16)3));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt32)4));
-                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((UInt64)5));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((uint)4));
+                Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((ulong)5));
                 Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write("Bah"));
             }
         }

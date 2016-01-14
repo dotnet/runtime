@@ -6,28 +6,33 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace BinaryWriterTests
+namespace System.IO.Tests
 {
     public class BinaryWriter_WriteByteCharTests
     {
-        /// <summary>
-        /// Cases Tested:
-        /// 1) Tests that BinaryWriter properly writes chars into a stream.
-        /// 2) Tests that if someone writes surrogate characters, an argument exception is thrown
-        /// 3) Casting an int to char and writing it, works.
-        /// </summary>
-        [Fact]
-        public static void BinaryWriter_WriteCharTest()
+        protected virtual Stream CreateStream()
         {
-            MemoryStream mstr = new MemoryStream();
+            return new MemoryStream();
+        }
+        
+        /// <summary>
+         /// Cases Tested:
+         /// 1) Tests that BinaryWriter properly writes chars into a stream.
+         /// 2) Tests that if someone writes surrogate characters, an argument exception is thrown
+         /// 3) Casting an int to char and writing it, works.
+         /// </summary>
+        [Fact]
+        public void BinaryWriter_WriteCharTest()
+        {
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
             BinaryReader dr2 = new BinaryReader(mstr);
 
-            Char[] chArr = new Char[0];
+            char[] chArr = new char[0];
             int ii = 0;
 
             // [] Write a series of characters to a MemoryStream and read them back
-            chArr = new Char[] { 'A', 'c', '\0', '\u2701', '$', '.', '1', 'l', '\u00FF', '\n', '\t', '\v' };
+            chArr = new char[] { 'A', 'c', '\0', '\u2701', '$', '.', '1', 'l', '\u00FF', '\n', '\t', '\v' };
             for (ii = 0; ii < chArr.Length; ii++)
                 dw2.Write(chArr[ii]);
 
@@ -48,15 +53,15 @@ namespace BinaryWriterTests
             //They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
 
             //A high-surrogate is a Unicode code point in the range U+D800 through U+DBFF and a low-surrogate is a Unicode code point in the range U+DC00 through U+DFFF
-            Char ch;
-            MemoryStream mem = new MemoryStream();
+            char ch;
+            Stream mem = CreateStream();
             BinaryWriter writer = new BinaryWriter(mem, Encoding.Unicode);
 
             //between 1 <= x < 255
             int[] randomNumbers = new int[] { 1, 254, 210, 200, 105, 135, 98, 54 };
             for (int i = 0; i < randomNumbers.Length; i++)
             {
-                ch = (Char)randomNumbers[i];
+                ch = (char)randomNumbers[i];
                 writer.Write(ch);
             }
 
@@ -66,27 +71,27 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteCharTest_Negative()
+        public void BinaryWriter_WriteCharTest_Negative()
         {
             //If someone writes out characters using BinaryWriter's Write(char[]) method, they must use something like BinaryReader's ReadChars(int) method to read it back in.  
             //They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
 
             //A high-surrogate is a Unicode code point in the range U+D800 through U+DBFF and a low-surrogate is a Unicode code point in the range U+DC00 through U+DFFF
-            Char ch;
-            MemoryStream mem = new MemoryStream();
+            char ch;
+            Stream mem = CreateStream();
             BinaryWriter writer = new BinaryWriter(mem, Encoding.Unicode);
             // between 55296 <= x < 56319
             int[] randomNumbers = new int[] { 55296, 56318, 55305, 56019, 55888, 55900, 56251 };
             for (int i = 0; i < randomNumbers.Length; i++)
             {
-                ch = (Char)randomNumbers[i];
+                ch = (char)randomNumbers[i];
                 Assert.Throws<ArgumentException>(() => writer.Write(ch));
             }
             // between 56320 <= x < 57343
             randomNumbers = new int[] { 56320, 57342, 56431, 57001, 56453, 57245, 57111 };
             for (int i = 0; i < randomNumbers.Length; i++)
             {
-                ch = (Char)randomNumbers[i];
+                ch = (char)randomNumbers[i];
                 Assert.Throws<ArgumentException>(() => writer.Write(ch));
             }
 
@@ -99,13 +104,13 @@ namespace BinaryWriterTests
         /// Writing bytes casted to chars and using a different encoding; iso-2022-jp.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteCharTest2()
+        public void BinaryWriter_WriteCharTest2()
         {
             // BinaryReader/BinaryWriter don't do well when mixing char or char[] data and binary data.
             // This behavior remains for compat.
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            Stream stream = new MemoryStream();
+            Stream stream = CreateStream();
             // string name = iso-2022-jp, codepage = 50220 (original test used a code page number).
             // taken from http://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx
             string codepageName = "iso-2022-jp";
@@ -138,13 +143,13 @@ namespace BinaryWriterTests
         /// Testing that bytes can be written to a stream with BinaryWriter.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteByteTest()
+        public void BinaryWriter_WriteByteTest()
         {
             int ii = 0;
-            Byte[] bytArr = new Byte[] { Byte.MinValue, Byte.MaxValue, 100, 1, 10, Byte.MaxValue / 2, Byte.MaxValue - 100 };
+            byte[] bytArr = new byte[] { byte.MinValue, byte.MaxValue, 100, 1, 10, byte.MaxValue / 2, byte.MaxValue - 100 };
 
             // [] read/Write with Memorystream
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
             for (ii = 0; ii < bytArr.Length; ii++)
@@ -171,15 +176,15 @@ namespace BinaryWriterTests
         /// Testing that SBytes can be written to a stream with BinaryWriter.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteSByteTest()
+        public void BinaryWriter_WriteSByteTest()
         {
             int ii = 0;
-            SByte[] sbArr = new SByte[] { 
-                SByte.MinValue, SByte.MaxValue, -100, 100, 0, SByte.MinValue / 2, SByte.MaxValue / 2, 
-                10, 20, 30, -10, -20, -30, SByte.MaxValue - 100 };
+            sbyte[] sbArr = new sbyte[] {
+                sbyte.MinValue, sbyte.MaxValue, -100, 100, 0, sbyte.MinValue / 2, sbyte.MaxValue / 2, 
+                10, 20, 30, -10, -20, -30, sbyte.MaxValue - 100 };
 
             // [] read/Write with Memorystream
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
             for (ii = 0; ii < sbArr.Length; ii++)
@@ -204,14 +209,14 @@ namespace BinaryWriterTests
         /// and read past the end of that stream.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteSByteTest_NegativeCase()
+        public void BinaryWriter_WriteSByteTest_NegativeCase()
         {
             int ii = 0;
-            SByte[] sbArr = new SByte[] { 
-                SByte.MinValue, SByte.MaxValue, -100, 100, 0, SByte.MinValue / 2, SByte.MaxValue / 2, 
-                10, 20, 30, -10, -20, -30, SByte.MaxValue - 100 };
+            sbyte[] sbArr = new sbyte[] {
+                sbyte.MinValue, sbyte.MaxValue, -100, 100, 0, sbyte.MinValue / 2, sbyte.MaxValue / 2, 
+                10, 20, 30, -10, -20, -30, sbyte.MaxValue - 100 };
 
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
             for (ii = 0; ii < sbArr.Length; ii++)
@@ -232,13 +237,13 @@ namespace BinaryWriterTests
         /// Testing that a byte[] can be written to a stream with BinaryWriter.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteBArrayTest()
+        public void BinaryWriter_WriteBArrayTest()
         {
             int ii = 0;
-            Byte[] bytArr = new Byte[] { Byte.MinValue, Byte.MaxValue, 1, 5, 10, 100, 200 };
+            byte[] bytArr = new byte[] { byte.MinValue, byte.MaxValue, 1, 5, 10, 100, 200 };
 
             // [] read/Write with Memorystream
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
             dw2.Write(bytArr);
@@ -261,28 +266,28 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteBArrayTest_Negative()
+        public void BinaryWriter_WriteBArrayTest_Negative()
         {
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue, Int16.MinValue };
-            int[] iArrLargeValues = new Int32[] { Int32.MaxValue, Int32.MaxValue - 1, Int32.MaxValue / 2, Int32.MaxValue / 10, Int32.MaxValue / 100 };
-            Byte[] bArr = new Byte[0];
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
+            int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
+            byte[] bArr = new byte[0];
             // [] ArgumentNullException for null argument
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
-            Assert.Throws<ArgumentNullException>(() => dw2.Write((Byte[])null));
+            Assert.Throws<ArgumentNullException>(() => dw2.Write((byte[])null));
             mstr.Dispose();
             dw2.Dispose();
 
             // [] ArgumentNullException for null argument
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
-            Assert.Throws<ArgumentNullException>(() => dw2.Write((Byte[])null, 0, 0));
+            Assert.Throws<ArgumentNullException>(() => dw2.Write((byte[])null, 0, 0));
 
             dw2.Dispose();
             mstr.Dispose();
 
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
             for (int iLoop = 0; iLoop < iArrInvalidValues.Length; iLoop++)
             {
@@ -294,7 +299,7 @@ namespace BinaryWriterTests
             dw2.Dispose();
             mstr.Dispose();
 
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
             for (int iLoop = 0; iLoop < iArrLargeValues.Length; iLoop++)
             {
@@ -313,25 +318,25 @@ namespace BinaryWriterTests
         /// 2) Tests exceptional scenarios.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteBArrayTest2()
+        public void BinaryWriter_WriteBArrayTest2()
         {
             BinaryWriter dw2 = null;
             BinaryReader dr2 = null;
-            MemoryStream mstr = null;
-            Byte[] bArr = new Byte[0];
+            Stream mstr = null;
+            byte[] bArr = new byte[0];
             int ii = 0;
-            Byte[] bReadArr = new Byte[0];
-            Int32 ReturnValue;
+            byte[] bReadArr = new byte[0];
+            int ReturnValue;
 
-            bArr = new Byte[1000];
-            bArr[0] = Byte.MinValue;
-            bArr[1] = Byte.MaxValue;
+            bArr = new byte[1000];
+            bArr[0] = byte.MinValue;
+            bArr[1] = byte.MaxValue;
 
             for (ii = 2; ii < 1000; ii++)
-                bArr[ii] = (Byte)(ii % 255);
+                bArr[ii] = (byte)(ii % 255);
 
             // []read/ Write character values 0-1000 with  Memorystream
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
 
             dw2.Write(bArr, 0, bArr.Length);
@@ -339,7 +344,7 @@ namespace BinaryWriterTests
             mstr.Position = 0;
 
             dr2 = new BinaryReader(mstr);
-            bReadArr = new Byte[bArr.Length];
+            bReadArr = new byte[bArr.Length];
             ReturnValue = dr2.Read(bReadArr, 0, bArr.Length);
 
             Assert.Equal(bArr.Length, ReturnValue);
@@ -360,12 +365,12 @@ namespace BinaryWriterTests
         /// 2) Tests exceptional scenarios.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteCharArrayTest()
+        public void BinaryWriter_WriteCharArrayTest()
         {
             int ii = 0;
-            Char[] chArr = new Char[1000];
-            chArr[0] = Char.MinValue;
-            chArr[1] = Char.MaxValue;
+            char[] chArr = new char[1000];
+            chArr[0] = char.MinValue;
+            chArr[1] = char.MaxValue;
             chArr[2] = '1';
             chArr[3] = 'A';
             chArr[4] = '\0';
@@ -373,10 +378,10 @@ namespace BinaryWriterTests
             chArr[6] = '\t';
 
             for (ii = 7; ii < 1000; ii++)
-                chArr[ii] = (Char)ii;
+                chArr[ii] = (char)ii;
 
             // [] read/Write with Memorystream
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
 
             dw2.Write(chArr);
@@ -399,29 +404,29 @@ namespace BinaryWriterTests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteCharArrayTest_Negative()
+        public void BinaryWriter_WriteCharArrayTest_Negative()
         {
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue, Int16.MinValue };
-            int[] iArrLargeValues = new Int32[] { Int32.MaxValue, Int32.MaxValue - 1, Int32.MaxValue / 2, Int32.MaxValue / 10, Int32.MaxValue / 100 };
-            Char[] chArr = new Char[1000];
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
+            int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
+            char[] chArr = new char[1000];
 
             // [] ArgumentNullException for null argument
-            MemoryStream mstr = new MemoryStream();
+            Stream mstr = CreateStream();
             BinaryWriter dw2 = new BinaryWriter(mstr);
-            Assert.Throws<ArgumentNullException>(() => dw2.Write((Char[])null));
+            Assert.Throws<ArgumentNullException>(() => dw2.Write((char[])null));
             dw2.Dispose();
             mstr.Dispose();
 
 
             // [] ArgumentNullException for null argument
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
-            Assert.Throws<ArgumentNullException>(() => dw2.Write((Char[])null, 0, 0));
+            Assert.Throws<ArgumentNullException>(() => dw2.Write((char[])null, 0, 0));
 
             mstr.Dispose();
             dw2.Dispose();
 
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
 
             for (int iLoop = 0; iLoop < iArrInvalidValues.Length; iLoop++)
@@ -434,7 +439,7 @@ namespace BinaryWriterTests
             mstr.Dispose();
             dw2.Dispose();
 
-            mstr = new MemoryStream();
+            mstr = CreateStream();
             dw2 = new BinaryWriter(mstr);
             for (int iLoop = 0; iLoop < iArrLargeValues.Length; iLoop++)
             {
@@ -468,19 +473,19 @@ namespace BinaryWriterTests
         /// then it returns 0xfffd, which is why BinaryReader.ReadChar needs to do an explicit check. (It always throws when it encounters a surrogate)
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteCharArrayTest2()
+        public void BinaryWriter_WriteCharArrayTest2()
         {
 
-            MemoryStream mem = new MemoryStream();
+            Stream mem = CreateStream();
             BinaryWriter writer = new BinaryWriter(mem, Encoding.Unicode);
 
             // between 55296 <= x < 56319
 
             // between 56320 <= x < 57343
-            Char[] randomChars = new Char[] { 
-                (Char)55296, (Char)57297, (Char)55513, (Char)56624, (Char)55334, (Char)56957, (Char)55857, 
-                (Char)56355, (Char)56095, (Char)56887, (Char) 56126, (Char) 56735, (Char)55748, (Char)56405,
-                (Char)55787, (Char)56707, (Char) 56300, (Char)56417, (Char)55465, (Char)56944
+            char[] randomChars = new char[] { 
+                (char)55296, (char)57297, (char)55513, (char)56624, (char)55334, (char)56957, (char)55857, 
+                (char)56355, (char)56095, (char)56887, (char) 56126, (char) 56735, (char)55748, (char)56405,
+                (char)55787, (char)56707, (char) 56300, (char)56417, (char)55465, (char)56944
             };
 
             writer.Write(randomChars);
@@ -502,7 +507,7 @@ namespace BinaryWriterTests
                 }
             }
 
-            Char[] chars = reader.ReadChars(randomChars.Length);
+            char[] chars = reader.ReadChars(randomChars.Length);
             for (int i = 0; i < randomChars.Length; i++)
                 Assert.Equal(randomChars[i], chars[i]);
 
@@ -516,43 +521,35 @@ namespace BinaryWriterTests
         /// 2) Tests Exceptional cases.
         /// </summary>
         [Fact]
-        public static void BinaryWriter_WriteCharArrayTest3()
+        public void BinaryWriter_WriteCharArrayTest3()
         {
-            BinaryWriter dw2 = null;
-            BinaryReader dr2 = null;
-            MemoryStream mstr = null;
-            Char[] chArr = new Char[0];
-            int ii = 0;
-            Char[] chReadArr = new Char[0];
-            Int32 ReturnValue;
-
-            chArr = new Char[1000];
-            chArr[0] = Char.MinValue;
-            chArr[1] = Char.MaxValue;
+            char[] chArr = new char[1000];
+            chArr[0] = char.MinValue;
+            chArr[1] = char.MaxValue;
             chArr[2] = '1';
             chArr[3] = 'A';
             chArr[4] = '\0';
             chArr[5] = '#';
             chArr[6] = '\t';
 
-            for (ii = 7; ii < 1000; ii++)
-                chArr[ii] = (Char)ii;
+            for (int ii = 7; ii < 1000; ii++)
+                chArr[ii] = (char)ii;
 
             // []read/ Write character values 0-1000 with  Memorystream
 
-            mstr = new MemoryStream();
-            dw2 = new BinaryWriter(mstr);
+            Stream mstr = CreateStream();
+            BinaryWriter dw2 = new BinaryWriter(mstr);
 
             dw2.Write(chArr, 0, chArr.Length);
             dw2.Flush();
             mstr.Position = 0;
 
-            dr2 = new BinaryReader(mstr);
-            chReadArr = new Char[chArr.Length];
-            ReturnValue = dr2.Read(chReadArr, 0, chArr.Length);
-            Assert.Equal(chArr.Length, ReturnValue);
+            BinaryReader dr2 = new BinaryReader(mstr);
+            char[] chReadArr = new char[chArr.Length];
+            int charsRead = dr2.Read(chReadArr, 0, chArr.Length);
+            Assert.Equal(chArr.Length, charsRead);
 
-            for (ii = 0; ii < chArr.Length; ii++)
+            for (int ii = 0; ii < chArr.Length; ii++)
             {
                 Assert.Equal(chArr[ii], chReadArr[ii]);
             }

@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace StreamWriterTests
+namespace System.IO.Tests
 {
     public class CtorTests
     {
@@ -14,7 +14,7 @@ namespace StreamWriterTests
         {
             StreamWriter sw2;
             StreamReader sr2;
-            String str2;
+            string str2;
             MemoryStream memstr2;
 
             // [] Construct writer with MemoryStream
@@ -29,6 +29,7 @@ namespace StreamWriterTests
             str2 = sr2.ReadToEnd();
             Assert.Equal("HelloWorld", str2);
         }
+
         [Fact]
         public static void NullEncodingThrows()
         {
@@ -56,11 +57,11 @@ namespace StreamWriterTests
             TestEnconding(System.Text.Encoding.Unicode, "This is Unicode\u00FF");
         }
 
-        private static void TestEnconding(System.Text.Encoding encoding, String testString)
+        private static void TestEnconding(System.Text.Encoding encoding, string testString)
         {
             StreamWriter sw2;
             StreamReader sr2;
-            String str2;
+            string str2;
 
             var ms = new MemoryStream();
             sw2 = new StreamWriter(ms, encoding);
