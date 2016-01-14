@@ -11,8 +11,12 @@
     <Project Include="System.Net.Primitives.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Net.Primitives.csproj">
+    <Project Include="System.Net.Primitives.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Net.Primitives.csproj">
+      <TargetGroup>netcore50</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
