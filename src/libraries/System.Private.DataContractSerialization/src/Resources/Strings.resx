@@ -795,6 +795,12 @@
   <data name="XmlMaxNameTableCharCountExceeded" xml:space="preserve">
     <value>The maximum nametable character count quota ({0}) has been exceeded while reading XML data. The nametable is a data structure used to store strings encountered during XML processing - long XML documents with non-repeating element names, attribute names and attribute values may trigger this quota. This quota may be increased by changing the MaxNameTableCharCount property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
   </data>
+  <data name="XmlMaxDepthExceeded" xml:space="preserve">
+    <value>The maximum read depth ({0}) has been exceeded because XML data being read has more levels of nesting than is allowed by the quota. This quota may be increased by changing the MaxDepth property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
+  <data name="XmlMaxStringContentLengthExceeded" xml:space="preserve">
+    <value>The maximum string content length quota ({0}) has been exceeded while reading XML data. This quota may be increased by changing the MaxStringContentLength property on the XmlDictionaryReaderQuotas object used when creating the XML reader.</value>
+  </data>
   <data name="XmlMethodNotSupported" xml:space="preserve">
     <value>This XmlWriter implementation does not support the '{0}' method.</value>
   </data>

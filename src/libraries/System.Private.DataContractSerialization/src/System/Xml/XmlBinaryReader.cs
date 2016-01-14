@@ -98,8 +98,8 @@ namespace System.Xml
                     value = base.ReadElementContentAsString();
                     break;
             }
-
-            DiagnosticUtility.DebugAssert(value.Length < Quotas.MaxStringContentLength, "");
+            if (value.Length > Quotas.MaxStringContentLength)
+                XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, Quotas.MaxStringContentLength);
             return value;
         }
 
