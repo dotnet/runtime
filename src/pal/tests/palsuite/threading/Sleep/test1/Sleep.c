@@ -34,8 +34,8 @@ DWORD AcceptableTimeError = 150;
 
 int __cdecl main( int argc, char **argv ) 
 {
-    DWORD OldTickCount;
-    DWORD NewTickCount;
+    UINT64 OldTimeStamp;
+    UINT64 NewTimeStamp;
     DWORD MaxDelta;
     DWORD TimeDelta;
     DWORD i;
@@ -45,21 +45,19 @@ int __cdecl main( int argc, char **argv )
         return ( FAIL );
     }
 
+    LARGE_INTEGER performanceFrequency;
+    if (!QueryPerformanceFrequency(&performanceFrequency))
+    {
+        return FAIL;
+    }
+
     for( i = 0; i < sizeof(SleepTimes) / sizeof(DWORD); i++)
     {
-        OldTickCount = GetTickCount();
+        OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
         Sleep(SleepTimes[i]);
-        NewTickCount = GetTickCount();
+        NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 
-        /* 
-         * Check for DWORD wraparound
-         */
-        if (OldTickCount>NewTickCount)
-        {
-            OldTickCount -= NewTickCount+1;
-            NewTickCount  = 0xFFFFFFFF;
-        }
-        TimeDelta = NewTickCount-OldTickCount;
+        TimeDelta = NewTimeStamp - OldTimeStamp;
 
         /* For longer intervals use a 10 percent tolerance */
         if ((SleepTimes[i] * 0.1) > AcceptableTimeError)
