@@ -10,7 +10,7 @@ namespace System.Reflection.Tests
 {
     public class CultureNameTests
     {
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void SettingNullCultureNameSucceeds()
         {
             var an = new AssemblyName("Test, Culture=en-US");
@@ -22,7 +22,7 @@ namespace System.Reflection.Tests
             AssertAssemblyNamesAreEqual(new AssemblyName("Test"), an);
         }
 
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void SettingEmptyCultureNameSucceeds()
         {
             var an = new AssemblyName("Test, Culture=en-US");
@@ -34,7 +34,7 @@ namespace System.Reflection.Tests
             AssertAssemblyNamesAreEqual(new AssemblyName("Test, Culture=neutral"), an);
         }
 
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void SettingValidCultureNameSucceeds()
         {
             var an = new AssemblyName("Test");
@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
             AssertAssemblyNamesAreEqual(new AssemblyName("Test, Culture=en-US"), an);
         }
 
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void SettingCultureNameIsCaseInsensitive()
         {
             var an = new AssemblyName("Test");
@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
             AssertAssemblyNamesAreEqual(new AssemblyName("Test, Culture=en-US"), an);
         }
 
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void SettingInvalidCultureNameThrowsCultureNotFound()
         {
             var an = new AssemblyName("Test");

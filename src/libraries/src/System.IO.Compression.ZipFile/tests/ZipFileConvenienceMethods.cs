@@ -14,10 +14,7 @@ namespace System.IO.Compression.Tests
         public async Task CreateFromDirectoryNormal()
         {
             await TestCreateDirectory(zfolder("normal"), true);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
-            {
-                await TestCreateDirectory(zfolder("unicode"), true);
-            }
+            await TestCreateDirectory(zfolder("unicode"), true);
         }
 
         private async Task TestCreateDirectory(string folderName, Boolean testWithBaseDir)
@@ -66,10 +63,7 @@ namespace System.IO.Compression.Tests
         public void ExtractToDirectoryNormal()
         {
             TestExtract(zfile("normal.zip"), zfolder("normal"));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
-            {
-                TestExtract(zfile("unicode.zip"), zfolder("unicode"));
-            }
+            TestExtract(zfile("unicode.zip"), zfolder("unicode"));
             TestExtract(zfile("empty.zip"), zfolder("empty"));
             TestExtract(zfile("explicitdir1.zip"), zfolder("explicitdir"));
             TestExtract(zfile("explicitdir2.zip"), zfolder("explicitdir"));
@@ -162,15 +156,12 @@ namespace System.IO.Compression.Tests
                 DirsEqual(tempFolder, zfolder("normal"));
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
             {
-                using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
-                {
-                    string tempFolder = GetTmpDirPath(false);
-                    archive.ExtractToDirectory(tempFolder);
+                string tempFolder = GetTmpDirPath(false);
+                archive.ExtractToDirectory(tempFolder);
 
-                    DirsEqual(tempFolder, zfolder("unicode"));
-                }
+                DirsEqual(tempFolder, zfolder("unicode"));
             }
         }
 
