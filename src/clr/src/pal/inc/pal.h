@@ -6763,12 +6763,19 @@ public:
 };
 
 typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
+typedef DWORD (PALAPI *PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
 VOID
 PALAPI
 PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetGetGcMarkerExceptionCode(
+    IN PGET_GCMARKER_EXCEPTION_CODE getGcMarkerExceptionCode);
 
 //
 // This holder is used to indicate that a hardware

@@ -2884,6 +2884,9 @@ private:
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
         kRedirectedForYieldTask,
+#ifdef HAVE_GCCOVER
+        kRedirectedForGCStress,
+#endif // HAVE_GCCOVER
         kMaxHijackFunctions,
     };
 
@@ -2972,6 +2975,10 @@ void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
 void RedirectedHandledJITCaseForYieldTask_Stub();
 void RedirectedHandledJITCaseForYieldTask_StubEnd();
+#ifdef HAVE_GCCOVER
+void RedirectedHandledJITCaseForGCStress_Stub();
+void RedirectedHandledJITCaseForGCStress_StubEnd();
+#endif // HAVE_GCCOVER
 };
 
 
