@@ -82,7 +82,9 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define INSTRFMT_K64SMALL
 #define INSTRFMT_K64
 
+#ifndef FEATURE_PAL
 #define USE_REDIRECT_FOR_GCSTRESS
+#endif // FEATURE_PAL
 
 //
 // REX prefix byte

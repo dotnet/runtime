@@ -32,6 +32,8 @@ Abstract:
 
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
 
+extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
+
 // in context2.S
 extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
@@ -603,6 +605,19 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 case SEGV_MAPERR:   // Address not mapped to object
                 case SEGV_ACCERR:   // Invalid permissions for mapped object
                     return EXCEPTION_ACCESS_VIOLATION;
+                case SI_KERNEL:
+                {
+                    // Identify privileged instructions that are not identified as such by the system
+                    if (g_getGcMarkerExceptionCode != nullptr)
+                    {
+                        DWORD exceptionCode = g_getGcMarkerExceptionCode(GetNativeContextPC(context));
+                        if (exceptionCode != 0)
+                        {
+                            return exceptionCode;
+                        }
+                    }
+                    // fall through
+                }
                 default:
                     break;
             }
@@ -639,6 +654,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
         default:
             break;
     }
+
     ASSERT("Got unknown signal number %d with code %d\n",
            siginfo->si_signo, siginfo->si_code);
     return EXCEPTION_ILLEGAL_INSTRUCTION;

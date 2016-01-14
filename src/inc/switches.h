@@ -141,7 +141,7 @@
 #endif
 
 // GCCoverage has a dependency on msvcdisXXX.dll, which is not available for CoreSystem. Hence, it is disabled for CoreSystem builds.
-#if defined(STRESS_HEAP) && defined(_DEBUG) && defined(FEATURE_HIJACK) && !(defined(FEATURE_CORESYSTEM) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)))
+#if defined(STRESS_HEAP) && defined(_DEBUG) && defined(FEATURE_HIJACK) && (!defined(FEATURE_CORECLR) || (defined(WIN32) || defined(__LINUX__)) && defined(_TARGET_AMD64_))
 #define HAVE_GCCOVER
 #endif
 

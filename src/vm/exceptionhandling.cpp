@@ -156,6 +156,9 @@ void InitializeExceptionHandling()
 #ifdef FEATURE_PAL
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException);
+
+    // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
+    PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 #endif // FEATURE_PAL
 }
 
@@ -5039,8 +5042,15 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
         // A hardware exception is handled only if it happened in a jitted code or 
         // in one of the JIT helper functions (JIT_MemSet, ...)
         PCODE controlPc = GetIP(&ex->ContextRecord);
-        if (ExecutionManager::IsManagedCode(controlPc) || IsIPInMarkedJitHelper(controlPc))
+        BOOL isInManagedCode = ExecutionManager::IsManagedCode(controlPc);
+        if (isInManagedCode || IsIPInMarkedJitHelper(controlPc))
         {
+            if (isInManagedCode && IsGcMarker(ex->ExceptionRecord.ExceptionCode, &ex->ContextRecord))
+            {
+                RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
+                UNREACHABLE();
+            }
+
             // Create frame necessary for the exception handling
             FrameWithCookie<FaultingExceptionFrame> fef;
 #if defined(WIN64EXCEPTIONS)

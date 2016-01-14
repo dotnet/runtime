@@ -195,6 +195,7 @@
 #include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include "disassembler.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -982,6 +983,23 @@ void EEStartupHelper(COINITIEE fFlags)
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
         }
 #endif
+
+#if USE_DISASSEMBLER
+        if ((g_pConfig->GetGCStressLevel() & (EEConfig::GCSTRESS_INSTR_JIT | EEConfig::GCSTRESS_INSTR_NGEN)) != 0)
+        {
+            Disassembler::StaticInitialize();
+            if (!Disassembler::IsAvailable())
+            {
+#ifdef HAVE_GCCOVER
+#ifdef _DEBUG
+                printf("External disassembler is not available. Disabling GCStress for GCSTRESS_INSTR_JIT and GCSTRESS_INSTR_NGEN.\n");
+#endif // _DEBUG
+                g_pConfig->SetGCStressLevel(
+                    g_pConfig->GetGCStressLevel() & ~(EEConfig::GCSTRESS_INSTR_JIT | EEConfig::GCSTRESS_INSTR_NGEN));
+#endif // HAVE_GCCOVER
+            }
+        }
+#endif // USE_DISASSEMBLER
 
         // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
@@ -2166,6 +2184,10 @@ part2:
                 //
                 // 2) Only when the runtime is processing DLL_PROCESS_DETACH. 
                 CLRRemoveVectoredHandlers();
+
+#if USE_DISASSEMBLER
+                Disassembler::StaticClose();
+#endif // USE_DISASSEMBLER
 
 #ifdef _DEBUG
                 if (_DbgBreakCount)
