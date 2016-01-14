@@ -93,7 +93,11 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Enter("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
+            }
+
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
@@ -119,7 +123,10 @@ namespace System.Net
                 SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
             }
 
-            GlobalLog.Leave("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Leave("CertificateValidationPal.Windows SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
+            }
 
             return result;
         }
@@ -166,7 +173,10 @@ namespace System.Net
 
                                 X500DistinguishedName x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
-                                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
+                                if (GlobalLog.IsEnabled)
+                                {
+                                    GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
+                                }
                             }
                         }
                     }
@@ -209,7 +219,10 @@ namespace System.Net
                                 WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
                                 {
                                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-                                    GlobalLog.Print("SecureChannel::EnsureStoreOpened() storeLocation:" + storeLocation + " returned store:" + store.GetHashCode().ToString("x"));
+                                    if (GlobalLog.IsEnabled)
+                                    {
+                                        GlobalLog.Print("SecureChannel::EnsureStoreOpened() storeLocation:" + storeLocation + " returned store:" + store.GetHashCode().ToString("x"));
+                                    }
                                 });
                             }
                             catch
@@ -232,7 +245,10 @@ namespace System.Net
                         {
                             if (exception is CryptographicException || exception is SecurityException)
                             {
-                                GlobalLog.Assert("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
+                                if (GlobalLog.IsEnabled)
+                                {
+                                    GlobalLog.Assert("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
+                                }
                                 return null;
                             }
 
@@ -252,7 +268,11 @@ namespace System.Net
 
         private static uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
         {
-            GlobalLog.Enter("SecureChannel::VerifyChainPolicy", "chainContext=" + chainContext + ", options=" + String.Format("0x{0:x}", cpp.dwFlags));
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Enter("SecureChannel::VerifyChainPolicy", "chainContext=" + chainContext + ", options=" + String.Format("0x{0:x}", cpp.dwFlags));
+            }
+
             var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
             status.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_STATUS>();
 
@@ -263,11 +283,15 @@ namespace System.Net
                     ref cpp,
                     ref status);
 
-            GlobalLog.Print("SecureChannel::VerifyChainPolicy() CertVerifyCertificateChainPolicy returned: " + errorCode);
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SecureChannel::VerifyChainPolicy() CertVerifyCertificateChainPolicy returned: " + errorCode);
 #if TRACE_VERBOSE
-            GlobalLog.Print("SecureChannel::VerifyChainPolicy() error code: " + status.dwError + String.Format(" [0x{0:x8}", status.dwError) + " " + Interop.MapSecurityStatus(status.dwError) + "]");
+                GlobalLog.Print("SecureChannel::VerifyChainPolicy() error code: " + status.dwError + String.Format(" [0x{0:x8}", status.dwError) + " " + Interop.MapSecurityStatus(status.dwError) + "]");
 #endif
-            GlobalLog.Leave("SecureChannel::VerifyChainPolicy", status.dwError.ToString());
+                GlobalLog.Leave("SecureChannel::VerifyChainPolicy", status.dwError.ToString());
+            }
+
             return status.dwError;
         }
     }
