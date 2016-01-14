@@ -539,11 +539,9 @@ namespace System.Globalization.Tests
         public void Test164() { Test(CultureInfo.InvariantCulture, "\u0021", "\uFF01", 0, CompareOptions.IgnoreSymbols); }
 
         [Fact]
-        [ActiveIssue(4907, PlatformID.AnyUnix)]
         public void Test165() { Test(CultureInfo.InvariantCulture, "\u00A2", "\uFFE0", 0, CompareOptions.IgnoreSymbols); }
 
         [Fact]
-        [ActiveIssue(4907, PlatformID.AnyUnix)]
         public void Test166() { Test(CultureInfo.InvariantCulture, "$", "&", 0, CompareOptions.IgnoreSymbols); }
 
         [Fact]
