@@ -126,12 +126,12 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
     <Compile Include="Goto\Continue.cs" />
     <Compile Include="Goto\Goto.cs" />
     <Compile Include="Goto\GotoExpressionTests.cs" />
     <Compile Include="Goto\Return.cs" />
-    <Compile Include="ExpressionTests.cs" />
     <Compile Include="HelperTypes.cs" />
     <Compile Include="Interpreter\InterpreterTests.Address.cs" />
     <Compile Include="Interpreter\InterpreterTests.cs" />
@@ -189,11 +189,16 @@
     <Compile Include="Ternary\TernaryArrayTests.cs" />
     <Compile Include="Ternary\TernaryNullableTests.cs" />
     <Compile Include="Ternary\TernaryTests.cs" />
+    <Compile Include="TestExtensions\TestOrderer.cs" />
+    <Compile Include="TestExtensions\TestOrderAttribute.cs" />
     <Compile Include="TypeBinary\TypeBinaryTests.cs" />
     <Compile Include="TypeBinary\TypeEqual.cs" />
     <Compile Include="TypeBinary\TypeIs.cs" />
-    <Compile Include="TestExtensions\TestOrderer.cs" />
-    <Compile Include="TestExtensions\TestOrderAttribute.cs" />
+    <Compile Include="Unary\IncDecAssign\IncDecAssignTests.cs" />
+    <Compile Include="Unary\IncDecAssign\PostDecrementAssignTests.cs" />
+    <Compile Include="Unary\IncDecAssign\PostIncrementAssignTests.cs" />
+    <Compile Include="Unary\IncDecAssign\PreDecrementAssignTests.cs" />
+    <Compile Include="Unary\IncDecAssign\PreIncrementAssignTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
@@ -214,12 +219,12 @@
     <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
     <Compile Include="Unary\UnaryOnesComplementTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
+    <Compile Include="Unary\UnboxTests.cs" />
     <Compile Include="Variables\ParameterExpressionTests.cs" />
     <Compile Include="Variables\ParameterTests.cs" />
     <Compile Include="Variables\RuntimeVariablesTests.cs" />
     <Compile Include="Variables\VariableTests.cs" />
     <Compile Include="Visitor\ExpressionVisitorTests.cs" />
-    <Compile Include="Unary\UnboxTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
