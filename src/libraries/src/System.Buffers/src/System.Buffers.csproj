@@ -6,7 +6,7 @@
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
     <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseOpenKey>true</UseOpenKey>
+    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

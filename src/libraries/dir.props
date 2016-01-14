@@ -6,6 +6,8 @@
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
   <PropertyGroup>
+    <!-- Temp change to make OS X build behave as a Linux build -->
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='OSX'">Unix</OsEnvironment>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
@@ -35,7 +37,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <SourceDir>$(ProjectDir)src/</SourceDir>
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
@@ -120,7 +122,6 @@
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
 
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-coreclr/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
@@ -128,20 +129,20 @@
 
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src" />
     <DnuRestoreDir Include="$(ToolsDir)" />
     <!-- workaround to address issue where DNX won't recurse directories under a project.json
          https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\src\**\project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\ref\*\project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\tests\*\project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\*\netcore50aot\project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\Common\tests\**\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/src/**/project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/ref/*/project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/tests/*/project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/*/netcore50aot/project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/Common/tests/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
@@ -158,7 +159,7 @@
 
   <!-- Create a collection of all project.json files for dependency updates. -->
   <ItemGroup>
-    <ProjectJsonFiles Include="$(SourceDir)**\project.json" />
+    <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -185,6 +186,12 @@
       https://github.com/dotnet/roslyn/issues/2444
     -->
     <UseECMAKey>false</UseECMAKey>
+
+    <!--
+      Full signing with Open key doesn't work with Portable Csc.
+      https://github.com/dotnet/roslyn/issues/8210
+    -->
+    <UseOpenKey>false</UseOpenKey>
 
     <!--
       Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
@@ -414,23 +421,23 @@
 
   <!-- Set up some common paths -->
   <PropertyGroup>
-    <CommonPath>$(SourceDir)Common\src</CommonPath>
-    <CommonTestPath>$(SourceDir)Common\tests</CommonTestPath>
+    <CommonPath>$(SourceDir)Common/src</CommonPath>
+    <CommonTestPath>$(SourceDir)Common/tests</CommonTestPath>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
-    <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)\</TargetOutputRelPath>
+    <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\$(TargetOutputRelPath)</OutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)</OutputPath>
 
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\$(TargetOutputRelPath)</IntermediateOutputPath>
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>
 
-    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
+    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)/$(MSBuildProjectName)/</TestPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>

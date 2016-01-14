@@ -17,7 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <StringResourcesPath>Resources\Strings.netcore50aot.resx</StringResourcesPath>
+    <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Requires.cs" />
