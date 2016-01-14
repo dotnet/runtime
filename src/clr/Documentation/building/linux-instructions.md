@@ -57,13 +57,18 @@ Install Mono
 
 If you don't already have Mono installed on your system, use the [installation instructions](http://www.mono-project.com/docs/getting-started/install/linux/).
 
-At a high level, you do the following:
+For example, for Ubuntu, you do the following:
 
 ```
 ellismg@linux:~$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 ellismg@linux:~$ echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
 ellismg@linux:~$ sudo apt-get update
 ellismg@linux:~$ sudo apt-get install mono-devel
+```
+
+Note that Debian requires a second package repository for libgdiplus (this is not applicable to Ubuntu):
+```
+echo "deb http://download.mono-project.com/repo/debian wheezy-libjpeg62-compat main" | sudo tee -a /etc/apt/sources.list.d/mono-xamarin.list
 ```
 
 Set the maximum number of file-handles
