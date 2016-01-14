@@ -4330,20 +4330,6 @@ static void DoEHLog(
 #ifdef FEATURE_PAL
 //---------------------------------------------------------------------------------------
 //
-// This functions return True if the given stack address is
-// within the specified stack boundaries.
-//
-// Arguments:
-//      sp - a stack pointer that needs to be verified
-//      stackLowAddress, stackHighAddress - these values specify stack boundaries
-//
-bool IsSpInStackLimits(ULONG64 sp, ULONG64 stackLowAddress, ULONG64 stackHighAddress)
-{
-    return ((sp > stackLowAddress) && (sp < stackHighAddress));
-}
-
-//---------------------------------------------------------------------------------------
-//
 // This function initiates unwinding of native frames during the unwinding of a managed 
 // exception. The managed exception can be propagated over several managed / native ranges 
 // until it is finally handled by a managed handler or leaves the stack unhandled and
@@ -4378,8 +4364,6 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     EECodeInfo codeInfo;
     UINT_PTR establisherFrame = NULL;
     PVOID handlerData;
-    ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
-    ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
     // Indicate that we are performing second pass.
     ex.ExceptionRecord.ExceptionFlags = EXCEPTION_UNWINDING;
@@ -4419,8 +4403,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             // Make sure that the establisher frame pointer is within stack boundaries
             // and we did not go below that target frame.
             // TODO: make sure the establisher frame is properly aligned.
-            if (!IsSpInStackLimits(establisherFrame, stackLowAddress, stackHighAddress) ||
-                establisherFrame > ex.TargetFrameSp)
+            if (!Thread::IsAddressInCurrentStack((void*)establisherFrame) || establisherFrame > ex.TargetFrameSp)
             {
                 // TODO: add better error handling
                 UNREACHABLE();
@@ -4490,8 +4473,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             UNREACHABLE();
         }
 
-    } while (IsSpInStackLimits(GetSP(currentFrameContext), stackLowAddress, stackHighAddress) &&
-        (establisherFrame != ex.TargetFrameSp));
+    } while (Thread::IsAddressInCurrentStack((void*)GetSP(currentFrameContext)) && (establisherFrame != ex.TargetFrameSp));
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
@@ -4520,8 +4502,6 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     UINT_PTR controlPc;
     UINT_PTR establisherFrame = NULL;
     PVOID handlerData;
-    ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
-    ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
 #ifdef FEATURE_HIJACK
     GetThread()->UnhijackThread();
@@ -4569,7 +4549,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             // Make sure that the establisher frame pointer is within stack boundaries.
             // TODO: make sure the establisher frame is properly aligned.
-            if (!IsSpInStackLimits(establisherFrame, stackLowAddress, stackHighAddress))
+            if (!Thread::IsAddressInCurrentStack((void*)establisherFrame))
             {
                 // TODO: add better error handling
                 UNREACHABLE();
@@ -4652,7 +4632,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             }
         }
 
-    } while (IsSpInStackLimits(GetSP(&frameContext), stackLowAddress, stackHighAddress));
+    } while (Thread::IsAddressInCurrentStack((void*)GetSP(&frameContext)));
 
     _ASSERTE(!"UnwindManagedExceptionPass1: Failed to find a handler. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
