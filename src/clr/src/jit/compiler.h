@@ -856,50 +856,206 @@ const unsigned int   MAX_INL_ARGS =      10;     // does not include obj pointer
 const unsigned int   MAX_INL_LCLS =      8;
 #endif // LEGACY_BACKEND
 
+// InlineDecision describes the various states the jit goes through when
+// evaluating an inline candidate. It is distinct from CorInfoInline
+// because it must capture interal states that don't get reported back
+// to the runtime.
+
+enum class InlineDecision {
+   UNDECIDED = 1,
+   CANDIDATE = 2,
+   SUCCESS = 3,
+   FAILURE = 4,
+   NEVER = 5
+};
+
+// JitInlineResult encapsulates what is known about a particular
+// inline candiate.
+
 class JitInlineResult
 {
 public:
-    JitInlineResult() : inlInlineResult((CorInfoInline)0), inlInliner(NULL), inlInlinee(NULL)
-#ifdef DEBUG
-    , inlReason("Invalid inline result"),
-#else
-    , inlReason(NULL),
-#endif
-    reported(false)
+
+    // Construct a new JitInlineResult.
+    JitInlineResult(COMP_HANDLE            compiler,
+                    CORINFO_METHOD_HANDLE  inliner,
+                    CORINFO_METHOD_HANDLE  inlinee)
+        : inlComp(compiler)
+        , inlDecision(InlineDecision::UNDECIDED)
+        , inlInliner(inliner)
+        , inlInlinee(inlinee)
+        , inlReason(nullptr)
+        , inlReported(false)
     {
+        // empty
     }
-    explicit JitInlineResult(CorInfoInline          inlineResult,
-                             CORINFO_METHOD_HANDLE  inliner,
-                             CORINFO_METHOD_HANDLE  inlinee,
-                             const char *           reason = NULL)
-        : inlInlineResult(inlineResult), inlInliner(inliner), inlInlinee(inlinee), inlReason(reason),
-        reported(false)
-    {
-        assert(dontInline(inlineResult) == (reason != NULL));
-    }
-    inline CorInfoInline result() const { return inlInlineResult; }
-    inline const char * reason() const { return inlReason; }
-    //only call this if you explicitly do not want to report an inline failure.
-    void setReported() { reported = true; }
-    inline void report(COMP_HANDLE compCompHnd)
-    {
-        if (!reported)
-        {
-            compCompHnd->reportInliningDecision(inlInliner, inlInlinee, inlInlineResult, inlReason);
+
+    // Translate into CorInfoInline for reporting back to the runtime.
+    // 
+    // Before calling this, the Jit must have made a decision.
+    // Interim states are not meaningful to the runtime.
+    CorInfoInline result() const 
+    { 
+        switch (inlDecision) {
+            case InlineDecision::SUCCESS:
+                return INLINE_PASS;
+            case InlineDecision::FAILURE:
+                return INLINE_FAIL;
+            case InlineDecision::NEVER:
+                return INLINE_NEVER;
+            default:
+                assert(!"Unexpected: interim inline result");
+                unreached();
         }
-        reported = true;
     }
+
+    // True if this definitely a failed inline candidate
+    bool isFailure() const 
+    { 
+        switch (inlDecision) {
+            case InlineDecision::SUCCESS:
+            case InlineDecision::UNDECIDED:
+            case InlineDecision::CANDIDATE:
+                return false;
+            case InlineDecision::FAILURE:
+            case InlineDecision::NEVER:
+                return true;
+            default:
+                assert(!"Invalid inline result");
+                unreached();
+        }
+    }
+    
+    // True if this is definitely a successful inline candidate
+    bool isSuccess() const 
+    { 
+        switch (inlDecision) {
+            case InlineDecision::SUCCESS:
+                return true;
+            case InlineDecision::FAILURE:
+            case InlineDecision::NEVER:
+            case InlineDecision::UNDECIDED:
+            case InlineDecision::CANDIDATE:
+                return false;
+            default:
+                assert(!"Invalid inline result");
+                unreached();
+        }
+    }
+
+    // True if this definitely a never inline candidate
+    bool isNever() const 
+    {
+        switch (inlDecision) {
+            case InlineDecision::NEVER:
+                return true;
+            case InlineDecision::FAILURE:
+            case InlineDecision::SUCCESS:
+            case InlineDecision::UNDECIDED:
+            case InlineDecision::CANDIDATE:
+                return false;
+            default:
+                assert(!"Invalid inline result");
+                unreached();
+        }
+   }
+
+    // True if this is still a viable inline candidate
+    // at this stage of the evaluation process. This will
+    // change as more checks are run.
+    bool isCandidate() const 
+    {
+        return !isFailure();
+    }
+    
+    // True if all checks have been made and we know whether
+    // or not this inline happened.
+    bool isDecided() const 
+    {
+        return (isSuccess() || isFailure());
+    }
+    
+    // setCandiate indicates the prospective inline has passed at least
+    // some of the correctness checks and is still a viable inline
+    // candidate, but no decision has been made yet.
+    //
+    // This may be called multiple times as various tests are performed
+    // and the candidate gets closer and closer to actually getting
+    // inlined.
+    void setCandidate(const char* reason) 
+    {
+        assert(!isDecided());
+        setCommon(InlineDecision::CANDIDATE, reason);
+    }
+    
+    // setSuccess means the inline happened.
+    void setSuccess() 
+    {
+        assert(!isFailure());
+        inlDecision = InlineDecision::SUCCESS;
+    }
+    
+    // setFailure means this particular instance can't be inlined.
+    // It can override setCandidate, but not setSuccess
+    void setFailure(const char* reason) 
+    {
+        assert(!isSuccess());
+        setCommon(InlineDecision::FAILURE, reason);
+    }
+    
+    // setNever means this callee can never be inlined anywhere.
+    // It can override setCandidate, but not setSuccess
+    void setNever(const char* reason) 
+    {
+        assert(!isSuccess());
+        setCommon(InlineDecision::NEVER, reason);
+    }
+    
+    // Ensure a decision has been made, and then then report it if
+    // necessary.
+    ~JitInlineResult() 
+    {
+        assert(inlDecision != InlineDecision::UNDECIDED);
+        report();
+    }
+    
+    const char * reason() const { return inlReason; }
+    
+    // setReported indicates that this particular result doesn't need
+    // to be reported back to the runtime, either becaus the runtime
+    // already knows, or we weren't actually inlining yet.
+    void setReported() { inlReported = true; }
+    
 private:
-    CorInfoInline           inlInlineResult;
+
+    // No copying or assignment allowed.
+    JitInlineResult(const JitInlineResult&) = delete;
+    JitInlineResult operator=(const JitInlineResult&) = delete;
+
+    void setCommon(InlineDecision decision, const char* reason) 
+    {
+        assert(reason != nullptr);
+        assert(decision != InlineDecision::UNDECIDED);
+        inlDecision = decision;
+        inlReason = reason;
+    }
+    
+    void report() 
+    {
+        if (!inlReported && isDecided()) 
+        {
+            inlComp->reportInliningDecision(inlInliner, inlInlinee, result(), inlReason);
+        }
+        inlReported = true;
+    }
+    
+    COMP_HANDLE             inlComp;
+    InlineDecision          inlDecision;
     CORINFO_METHOD_HANDLE   inlInliner;
     CORINFO_METHOD_HANDLE   inlInlinee;
-    const char * inlReason;
-    bool reported;
+    const char*             inlReason;
+    bool                    inlReported;
 };
-inline bool dontInline(const JitInlineResult& val) {
-    return(dontInline(val.result()));
-}
-
 
 struct InlineInfo
 {        
@@ -909,7 +1065,7 @@ struct InlineInfo
     CORINFO_METHOD_HANDLE fncHandle;
     InlineCandidateInfo * inlineCandidateInfo;
 
-    JitInlineResult   inlineResult; 
+    JitInlineResult*  inlineResult; 
 
     GenTreePtr retExpr;      // The return expression of the inlined candidate.
    
@@ -3246,28 +3402,32 @@ private:
 
     int                 impEstimateCallsiteNativeSize (CORINFO_METHOD_INFO *  methInfo);
 
-    JitInlineResult     impCanInlineNative (int   callsiteNativeEstimate, 
-                                            int   calleeNativeSizeEstimate,
-                                            InlInlineHints inlineHints,
-                                            InlineInfo * pInlineInfo);
+    void                impCanInlineNative(int              callsiteNativeEstimate, 
+                                           int              calleeNativeSizeEstimate,
+                                           InlInlineHints   inlineHints,
+                                           InlineInfo*      pInlineInfo,
+                                           JitInlineResult* inlineResult);
 
     // STATIC inlining decision based on the IL code. 
-    JitInlineResult     impCanInlineIL (CORINFO_METHOD_HANDLE  fncHandle,
-                                        CORINFO_METHOD_INFO *  methInfo,
-                                        bool forceInline);
+    void                impCanInlineIL(CORINFO_METHOD_HANDLE  fncHandle,
+                                       CORINFO_METHOD_INFO*   methInfo,
+                                       bool                   forceInline,
+                                       JitInlineResult*       inlineResult);
 
-    JitInlineResult     impCheckCanInline(GenTreePtr                call,
-                                          CORINFO_METHOD_HANDLE     fncHandle,
-                                          unsigned                  methAttr,
-                                          CORINFO_CONTEXT_HANDLE    exactContextHnd,
-                                          InlineCandidateInfo    ** ppInlineCandidateInfo);
+    void                impCheckCanInline(GenTreePtr              call,
+                                          CORINFO_METHOD_HANDLE   fncHandle,
+                                          unsigned                methAttr,
+                                          CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                          InlineCandidateInfo**   ppInlineCandidateInfo,
+                                          JitInlineResult*        inlineResult);
 
-    JitInlineResult     impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
-                                               GenTreePtr    curArgVal,
-                                               unsigned      argNum);
+    void                impInlineRecordArgInfo(InlineInfo*       pInlineInfo,
+                                               GenTreePtr        curArgVal,
+                                               unsigned          argNum,
+                                               JitInlineResult*  inlineResult);
 
-    JitInlineResult     impInlineInitVars     (InlineInfo *  pInlineInfo);
-
+    void                impInlineInitVars(InlineInfo*  pInlineInfo);
+   
     unsigned            impInlineFetchLocal(unsigned  lclNum                           
                                             DEBUGARG(const char * reason) );
 
@@ -4677,7 +4837,8 @@ private:
                                                               GenTreePtr tmpAssignmentInsertionPoint, GenTreePtr paramAssignmentInsertionPoint);
     static int          fgEstimateCallStackSize(GenTreeCall* call);
     GenTreePtr          fgMorphCall         (GenTreeCall*   call);
-    GenTreePtr          fgMorphCallInline   (GenTreePtr     call);
+    bool                fgMorphCallInline   (GenTreePtr     call);
+    void                fgMorphCallInlineHelper(GenTreeCall* call, JitInlineResult* result);
     GenTreePtr          fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_CONTEXT_HANDLE * ExactContextHnd);
     GenTreePtr          fgMorphLeaf         (GenTreePtr     tree);
     void                fgAssignSetVarDef   (GenTreePtr     tree);
@@ -4783,9 +4944,9 @@ private:
 
     static bool         fgIsUnboundedInlineRecursion(inlExpPtr expLst,
                                                      BYTE *    ilCode,
-                                                     DWORD&    depth);
+                                                     DWORD*    depth);
 
-    JitInlineResult     fgInvokeInlineeCompiler(GenTreeCall*   call);
+    void                fgInvokeInlineeCompiler(GenTreeCall*   call, JitInlineResult* result);
     void                fgInsertInlineeBlocks (InlineInfo * pInlineInfo);
     GenTreePtr          fgInlinePrependStatements(InlineInfo * inlineInfo);
 
@@ -7417,7 +7578,7 @@ public :
 
     Compiler          * InlineeCompiler;        // The Compiler instance for the inlinee
 
-    JitInlineResult     compInlineResult;       // The result of importing the inlinee method.
+    JitInlineResult*    compInlineResult;       // The result of importing the inlinee method.
                                                                                               
     bool                compDoAggressiveInlining;  // If true, mark every method as CORINFO_FLG_FORCEINLINE
     bool                compJmpOpUsed;          // Does the method do a JMP
@@ -8118,7 +8279,6 @@ public :
 
     bool                compIsForImportOnly();
     bool                compIsForInlining();
-    void                compSetInlineResult(const JitInlineResult& result);
     bool                compDonotInline();
 
 #ifdef DEBUG
