@@ -41,7 +41,7 @@ namespace System.Data.Common
             }
             set
             {
-                _customValues.Add(property, value);
+                _customValues[property] = value;
             }
         }
 
