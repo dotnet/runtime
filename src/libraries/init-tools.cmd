@@ -14,7 +14,7 @@ set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%B
 set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools.completed
 
 IF EXIST "%BUILD_TOOLS_SEMAPHORE%" goto :EOF
-IF EXIST %TOOLRUNTIME_DIR% RMDIR /S /Q %TOOLRUNTIME_DIR%
+IF EXIST %TOOLRUNTIME_DIR% RMDIR /S /Q "%TOOLRUNTIME_DIR%"
 
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
