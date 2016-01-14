@@ -133,13 +133,6 @@ namespace System.Data.SqlClient
             // embedded within the message of error 40197 are 40020, 40143, 40166, and 40540.
             40197,
 
-            40020,
-            40143,
-            40166,
-
-            // The service has encountered an error processing your request. Please try again.
-            40540,
-
             // The service is currently busy. Retry the request after 10 seconds. Incident ID: %ls. Code: %d.
             40501,
 
