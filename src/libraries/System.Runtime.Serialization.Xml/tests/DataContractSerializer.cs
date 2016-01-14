@@ -945,7 +945,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_XElementAsRoot()
     {
         var original = new XElement("ElementName1");
@@ -957,7 +956,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_WithXElement()
     {
         var original = new WithXElement(true);
@@ -978,7 +976,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_WithXElementWithNestedXElement()
     {
         var original = new WithXElementWithNestedXElement(true);
@@ -989,7 +986,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_WithArrayOfXElement()
     {
         var original = new WithArrayOfXElement(true);
@@ -1002,7 +998,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);

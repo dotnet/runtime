@@ -13,7 +13,6 @@ namespace EncodingTests
         private static readonly string s_asciiInputStringWinNoFallback = "abc";
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestEncoderReplacementFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback("(unknown)"), new DecoderReplacementFallback(""));
@@ -37,7 +36,6 @@ namespace EncodingTests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDecoderReplacementFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback("(unknown)"), new DecoderReplacementFallback("Error"));
@@ -45,7 +43,6 @@ namespace EncodingTests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestEncoderExceptionFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderExceptionFallback(), new DecoderExceptionFallback());
@@ -53,7 +50,6 @@ namespace EncodingTests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDecoderExceptionFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderExceptionFallback(), new DecoderExceptionFallback());
@@ -61,7 +57,6 @@ namespace EncodingTests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestCustomFallback()
         {
             Encoding asciiEncoding = Encoding.GetEncoding("us-ascii", new EncoderCustomFallback(), new DecoderReplacementFallback(""));
