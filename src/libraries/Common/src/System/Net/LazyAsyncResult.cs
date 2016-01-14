@@ -73,9 +73,13 @@ namespace System.Net
         // If a derived class ever uses this and overloads Cleanup, this may need to change.
         internal LazyAsyncResult(object myObject, object myState, AsyncCallback myCallBack, object result)
         {
-            if (result == DBNull.Value && GlobalLog.IsEnabled)
+            if (result == DBNull.Value)
             {
-                GlobalLog.AssertFormat("LazyAsyncResult#{0}::.ctor()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("LazyAsyncResult#{0}::.ctor()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
+                }
+                Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::.ctor()|Result can't be set to DBNull - it's a special internal value.");
             }
 
             _asyncObject = myObject;
@@ -325,16 +329,21 @@ namespace System.Net
                 // then the "result" parameter passed to InvokeCallback() will be ignored.
 
                 // It's an error to call after the result has been completed or with DBNull.
-                if (GlobalLog.IsEnabled)
+                if (value == DBNull.Value)
                 {
-                    if (value == DBNull.Value)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
                     }
-                    if (InternalPeekCompleted)
+                    Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Result can't be set to DBNull - it's a special internal value.");
+                }
+                if (InternalPeekCompleted)
+                {
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Called on completed result.", LoggingHash.HashString(this));
                     }
+                    Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Called on completed result.");
                 }
                 _result = value;
             }

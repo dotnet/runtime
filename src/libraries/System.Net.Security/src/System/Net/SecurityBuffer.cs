@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -16,16 +17,21 @@ namespace System.Net.Security
 
         public SecurityBuffer(byte[] data, int offset, int size, SecurityBufferType tokentype)
         {
-            if (GlobalLog.IsEnabled)
+            if (offset < 0 || offset > (data == null ? 0 : data.Length))
             {
-                if (offset == 0 || offset > (data == null ? 0 : data.Length))
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SecurityBuffer::.ctor", "'offset' out of range.  [" + offset + "]");
                 }
-                if (size == 0 || size > (data == null ? 0 : data.Length - offset))
+                Debug.Fail("SecurityBuffer::.ctor", "'offset' out of range.  [" + offset + "]");
+            }
+            if (size < 0 || size > (data == null ? 0 : data.Length - offset))
+            {
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
                 }
+                Debug.Fail("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
             }
 
             this.offset = data == null || offset < 0 ? 0 : Math.Min(offset, data.Length);
@@ -43,9 +49,13 @@ namespace System.Net.Security
 
         public SecurityBuffer(int size, SecurityBufferType tokentype)
         {
-            if (size < 0 && GlobalLog.IsEnabled)
+            if (size < 0)
             {
-                GlobalLog.Assert("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
+                }
+                Debug.Fail("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
             }
 
             this.size = size;

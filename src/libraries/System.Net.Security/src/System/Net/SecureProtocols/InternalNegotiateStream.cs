@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -300,9 +301,13 @@ namespace System.Net.Security
                 return 0;
             }
 
-            if ((readBytes == _ReadHeader.Length) && GlobalLog.IsEnabled)
+            if ((readBytes == _ReadHeader.Length))
             {
-                GlobalLog.AssertFormat("NegoStream::ProcessHeader()|Frame size must be 4 but received {0} bytes.", readBytes);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("NegoStream::ProcessHeader()|Frame size must be 4 but received {0} bytes.", readBytes);
+                }
+                Debug.Fail("NegoStream::ProcessHeader()|Frame size must be 4 but received " + readBytes + " bytes.");
             }
 
             // Replace readBytes with the body size recovered from the header content.
@@ -393,9 +398,13 @@ namespace System.Net.Security
                 return;
             }
 
-            if ((transportResult.AsyncState is AsyncProtocolRequest) && GlobalLog.IsEnabled)
+            if ((transportResult.AsyncState is AsyncProtocolRequest))
             {
-                GlobalLog.Assert("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
+                }
+                Debug.Fail("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
             }
 
             AsyncProtocolRequest asyncRequest = (AsyncProtocolRequest)transportResult.AsyncState;

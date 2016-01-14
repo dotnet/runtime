@@ -488,9 +488,13 @@ namespace System.Net.Sockets
                 {
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
                     // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
-                    if (_currentSocket == null && GlobalLog.IsEnabled)
+                    if (_currentSocket == null)
                     {
-                        GlobalLog.Assert("SocketAsyncEventArgs::CancelConnectAsync - CurrentSocket and MultipleConnect both null!");
+                        if (GlobalLog.IsEnabled)
+                        {
+                            GlobalLog.Assert("SocketAsyncEventArgs::CancelConnectAsync - CurrentSocket and MultipleConnect both null!");
+                        }
+                        Debug.Fail("SocketAsyncEventArgs::CancelConnectAsync - CurrentSocket and MultipleConnect both null!");
                     }
                     _currentSocket.Dispose();
                 }

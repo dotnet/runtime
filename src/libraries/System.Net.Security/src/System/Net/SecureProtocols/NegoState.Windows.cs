@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.Security.Principal;
@@ -754,9 +755,13 @@ namespace System.Net.Security
 
         private static void WriteCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult) && GlobalLog.IsEnabled)
+            if ((transportResult.AsyncState is LazyAsyncResult))
             {
-                GlobalLog.Assert("WriteCallback|State type is wrong, expected LazyAsyncResult.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("WriteCallback|State type is wrong, expected LazyAsyncResult.");
+                }
+                Debug.Fail("WriteCallback|State type is wrong, expected LazyAsyncResult.");
             }
 
             if (transportResult.CompletedSynchronously)
@@ -795,9 +800,13 @@ namespace System.Net.Security
 
         private static void ReadCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult) && GlobalLog.IsEnabled)
+            if ((transportResult.AsyncState is LazyAsyncResult))
             {
-                GlobalLog.Assert("ReadCallback|State type is wrong, expected LazyAsyncResult.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("ReadCallback|State type is wrong, expected LazyAsyncResult.");
+                }
+                Debug.Fail("ReadCallback|State type is wrong, expected LazyAsyncResult.");
             }
 
             if (transportResult.CompletedSynchronously)

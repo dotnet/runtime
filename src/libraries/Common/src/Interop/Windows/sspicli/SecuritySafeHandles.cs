@@ -543,16 +543,21 @@ namespace System.Net.Security
                 }
             }
 #endif
-            if (GlobalLog.IsEnabled)
+            if (outSecBuffer == null)
             {
-                if (outSecBuffer == null)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
                 }
-                if (inSecBuffer != null && inSecBuffers != null)
+                Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
+            }
+            if (inSecBuffer != null && inSecBuffers != null)
+            {
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
                 }
+                Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
             }
 
             if (inCredentials == null)
@@ -848,16 +853,21 @@ namespace System.Net.Security
                 }
             }
 #endif
-            if (GlobalLog.IsEnabled)
+            if (outSecBuffer == null)
             {
-                if (outSecBuffer == null)
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
                 }
-                if (inSecBuffer != null && inSecBuffers != null)
+                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
+            }
+            if (inSecBuffer != null && inSecBuffers != null)
+            {
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
                 }
+                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
             }
 
             if (inCredentials == null)
@@ -1125,10 +1135,14 @@ namespace System.Net.Security
 #if TRACE_VERBOSE
                 GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
 #endif
-                if (inSecBuffers == null)
+            }
+            if (inSecBuffers == null)
+            {
+                if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
                 }
+                Debug.Fail("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
             }
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecurityBufferDescriptor(inSecBuffers.Length);

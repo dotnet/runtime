@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
+using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
-using System.Net.Security;
-using System.Security.Principal;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Threading;
 
 namespace System.Net
@@ -156,9 +157,13 @@ namespace System.Net
                         for (int i = 0; i < count; ++i)
                         {
                             Interop.SspiCli._CERT_CHAIN_ELEMENT* pIL2 = pIL + i;
-                            if (GlobalLog.IsEnabled && pIL2->cbSize <= 0)
+                            if (pIL2->cbSize <= 0)
                             {
-                                GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
+                                if (GlobalLog.IsEnabled)
+                                {
+                                    GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
+                                }
+                                Debug.Fail("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
                             }
 
                             if (pIL2->cbSize > 0)
@@ -249,6 +254,7 @@ namespace System.Net
                                 {
                                     GlobalLog.Assert("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
                                 }
+                                Debug.Fail("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
                                 return null;
                             }
 

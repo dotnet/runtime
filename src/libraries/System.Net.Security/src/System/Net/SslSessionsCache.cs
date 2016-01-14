@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Security.Authentication;
 
 namespace System.Net.Security
@@ -162,9 +163,13 @@ namespace System.Net.Security
         //
         internal static void CacheCredential(SafeFreeCredentials creds, byte[] thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            if (creds == null && GlobalLog.IsEnabled)
+            if (creds == null)
             {
-                GlobalLog.Assert("CacheCredential|creds == null");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("CacheCredential|creds == null");
+                }
+                Debug.Fail("CacheCredential|creds == null");
             }
 
             if (creds.IsInvalid)
