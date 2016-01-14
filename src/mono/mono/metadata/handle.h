@@ -68,7 +68,7 @@ mono_handle_arena_current_addr (void);
 		MonoHandleArena *__arena = (MonoHandleArena*) g_alloca (mono_handle_arena_size ());	\
 		mono_handle_arena_stack_push (__arena_stack, __arena)
 
-#define MONO_HANDLE_ARENA_POP	\
+#define MONO_HANDLE_ARENA_POP()	\
 		mono_handle_arena_stack_pop (__arena_stack, __arena);	\
 	} while (0)
 
