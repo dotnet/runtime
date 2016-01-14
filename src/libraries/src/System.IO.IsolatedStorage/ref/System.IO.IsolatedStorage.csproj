@@ -4,8 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <PackageTargetFramework>dotnet5.6</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.6</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.IsolatedStorage.cs" />

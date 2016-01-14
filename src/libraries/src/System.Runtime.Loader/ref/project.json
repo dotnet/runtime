@@ -6,6 +6,6 @@
     "System.IO": "4.0.0"
   },
   "frameworks": {
-    "dotnet5.5": {}
+    "dotnet5.6": {}
   }
 }
