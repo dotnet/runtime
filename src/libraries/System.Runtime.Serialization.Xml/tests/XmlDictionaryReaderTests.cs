@@ -63,6 +63,32 @@ namespace System.Runtime.Serialization.Xml.Tests
             }
         }
 
+        [Fact]
+        public static void ReadElementContentAsStringDataExceedsMaxBytesPerReadQuota()
+        {
+            XmlDictionaryReaderQuotas quotas = new XmlDictionaryReaderQuotas();
+            quotas.MaxBytesPerRead = 4096;
+            int contentLength = 8176;
+
+            string testString = new string('a', contentLength);
+            string returnedString;
+            XmlDictionary dict = new XmlDictionary();
+            XmlDictionaryString dictEntry = dict.Add("Value");
+
+            using (var ms = new MemoryStream())
+            {
+                XmlDictionaryWriter xmlWriter = XmlDictionaryWriter.CreateBinaryWriter(ms, dict);
+                xmlWriter.WriteElementString(dictEntry, XmlDictionaryString.Empty, testString);
+                xmlWriter.Flush();
+                ms.Position = 0;
+                XmlDictionaryReader xmlReader = XmlDictionaryReader.CreateBinaryReader(ms, dict, quotas);
+                xmlReader.Read();
+                returnedString = xmlReader.ReadElementContentAsString();
+            }
+
+            Assert.StrictEqual(testString, returnedString);
+        }
+
         private static Stream GenerateStreamFromString(string s)
         {
             var stream = new MemoryStream();
