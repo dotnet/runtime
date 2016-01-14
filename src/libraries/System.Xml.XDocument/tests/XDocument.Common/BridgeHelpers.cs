@@ -82,7 +82,7 @@ namespace CoreXml.Test.XLinq
 
             if (s == null)
             {
-                TestLog.WriteLine("Could not find stream");
+                throw new FileNotFoundException("File Not Found: " + pGenericXml);
             }
 
             using (XmlReader r = XmlReader.Create(s, _rsx))
@@ -100,7 +100,7 @@ namespace CoreXml.Test.XLinq
 
                 if (s == null)
                 {
-                    TestLog.WriteLine("getStream returned null");
+                    throw new FileNotFoundException("File Not Found: " + pGenericXml);
                 }
 
                 using (XmlReader r = XmlReader.Create(s, _rsx))
