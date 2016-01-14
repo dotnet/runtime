@@ -5,9 +5,12 @@ cmake_minimum_required (VERSION 2.6)
 project (corehost)
 
 if(WIN32)
-set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
-set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+    add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
+    add_compile_options($<$<CONFIG:Release>:/MT>)
+    add_compile_options($<$<CONFIG:Debug>:/MTd>)
 endif()
+
+include(setup.cmake)
 
 set (CMAKE_CXX_STANDARD 11)
 
