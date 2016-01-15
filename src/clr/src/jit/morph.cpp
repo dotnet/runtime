@@ -1178,7 +1178,7 @@ fgArgTabEntryPtr fgArgInfo::AddRegArg(unsigned          argNum,
     // PlaceHolder node (in case of needed late argument, for example.)
     // This requires using of an extra flag. At creation time the state is right, so
     // and this assert enforces that.
-    assert((node->gtType == TYP_STRUCT && isStruct) || (node->gtType != TYP_STRUCT && !isStruct));
+    assert((varTypeIsStruct(node) && isStruct) || (!varTypeIsStruct(node) && !isStruct));
     curArgTabEntry->otherRegNum = otherRegNum;                       // Second reg for the struct
     curArgTabEntry->isStruct = isStruct;                             // is this a struct arg
 
@@ -1207,7 +1207,7 @@ fgArgTabEntryPtr fgArgInfo::AddStkArg(unsigned    argNum,
     // PlaceHolder node (in case of needed late argument, for example.)
     // This reqires using of an extra flag. At creation time the state is right, so
     // and this assert enforces that.
-    assert((node->gtType == TYP_STRUCT && isStruct) || (node->gtType != TYP_STRUCT && !isStruct));
+    assert((varTypeIsStruct(node) && isStruct) || (!varTypeIsStruct(node) && !isStruct));
     curArgTabEntry->isStruct = isStruct;                             // is this a struct arg
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
@@ -1454,7 +1454,7 @@ void fgArgInfo::ArgsComplete()
         // In case of copyblk and store operation, the NewPutArg method will 
         // not be invoked and the struct will not be loaded to be passed in
         // registers or by value on the stack.
-        if (argx->TypeGet() == TYP_STRUCT FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || curArgTabEntry->isStruct))
+        if (varTypeIsStruct(argx) FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || curArgTabEntry->isStruct))
         {
             curArgTabEntry->needTmp = true;
         }
@@ -1471,7 +1471,7 @@ void fgArgInfo::ArgsComplete()
             continue;
 #endif
         }
-        else // we have a register argument, next we look for a TYP_STRUCT
+        else // we have a register argument, next we look for a struct type.
         {
             if (varTypeIsStruct(argx)
                 FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || curArgTabEntry->isStruct))
@@ -2017,7 +2017,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         }
         else
         {
-            arg = gtNewOperNode(GT_ADDR, TYP_STRUCT, arg);
+            arg = gtNewOperNode(GT_ADDR, type, arg);
             addrNode = arg;
         }
 
@@ -2891,7 +2891,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (!hasStructArgument)
         {
-            hasStructArgument = (args->gtOp.gtOp1->TypeGet() == TYP_STRUCT);
+            hasStructArgument = varTypeIsStruct(args->gtOp.gtOp1);
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
         argx = fgMorphTree(*parentArgx);
@@ -3193,7 +3193,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
 #ifndef _TARGET_X86_
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                    // Check for TYP_STRUCT argument with size 1, 2, 4 or 8 bytes
+                    // Check for struct argument with size 1, 2, 4 or 8 bytes
                     // As we can optimize these by turning them into a GT_IND of the correct type
                     if ((originalSize > TARGET_POINTER_SIZE) || ((originalSize & (originalSize - 1)) != 0))
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -3346,7 +3346,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #endif // not _TARGET_X86_
-                    // We still have a TYP_STRUCT unless we converted the GT_LDOBJ into a GT_IND above...
+                    // We still have a struct unless we converted the GT_LDOBJ into a GT_IND above...
                     if ((structBaseType == TYP_STRUCT) &&
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                         !passStructInRegisters
@@ -4006,10 +4006,11 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
 
             var_types  type = arg->TypeGet();
 
-            if (type == TYP_STRUCT)
+            if (varTypeIsStruct(type))
             {
+                var_types originalType = type;
                 // If we have already processed the arg...
-                if (arg->OperGet() == GT_LIST && arg->TypeGet() == TYP_STRUCT)
+                if (arg->OperGet() == GT_LIST && varTypeIsStruct(arg))
                 {
                     continue;
                 }
@@ -4050,7 +4051,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                             lclCommon->gtLclNum,
                             fgEntryPtr->structDesc.eightByteOffsets[1]);
                         GenTreeArgList* secondNode = gtNewListNode(newLclField, nullptr);
-                        secondNode->gtType = TYP_STRUCT; // Preserve the TYP_STRUCT. It is a special case.
+                        secondNode->gtType = originalType; // Preserve the type. It is a special case.
                         newLclField->gtFieldSeq = FieldSeqStore::NotAField();
 
                         // First field
@@ -4059,7 +4060,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                             fgEntryPtr->structDesc.eightByteClassifications[0],
                             fgEntryPtr->structDesc.eightByteSizes[0]);
                         arg = gtNewListNode(arg, secondNode);
-                        arg->gtType = TYP_STRUCT; // Preserve the TYP_STRUCT. It is a special case.
+                        arg->gtType = type; // Preserve the type. It is a special case.
                     }
                     else
                     {
@@ -4079,8 +4080,6 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                     }
                     else
                     {
-                        arg->gtType = TYP_I_IMPL;
-
                         // Make sure this is an addr node.
                         if (arg->OperGet() != GT_ADDR && arg->OperGet() != GT_LCL_VAR_ADDR)
                         {
@@ -4090,7 +4089,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                         assert(arg->OperGet() == GT_ADDR || arg->OperGet() == GT_LCL_VAR_ADDR);
 
                         // Ldobj the temp to use it as a call argument
-                        arg = new (this, GT_LDOBJ) GenTreeLdObj(TYP_STRUCT, arg, lvaGetStruct(lclCommon->gtLclNum));
+                        arg = new (this, GT_LDOBJ) GenTreeLdObj(originalType, arg, lvaGetStruct(lclCommon->gtLclNum));
                         arg->gtFlags |= GTF_EXCEPT;
                         flagsSummary |= GTF_EXCEPT;
                     }
@@ -4326,13 +4325,13 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    if (!callHasRetBuffArg && call->TypeGet() == TYP_STRUCT && call->gtCall.gtRetClsHnd != NO_CLASS_HANDLE)
+    if (!callHasRetBuffArg && varTypeIsStruct(call) && call->gtCall.gtRetClsHnd != NO_CLASS_HANDLE)
     {
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(GetStructClassHandle(call), &structDesc);
+        eeGetSystemVAmd64PassStructInRegisterDescriptor(gtGetStructHandleIfPresent(call), &structDesc);
     }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-    if (!callHasRetBuffArg && call->TypeGet() == TYP_STRUCT)
+    if (!callHasRetBuffArg && (varTypeIsStruct(call)))
     {
 #if defined(_TARGET_ARM_)
         if (call->gtCall.IsVarargs() || !IsHfa(call))
@@ -4356,11 +4355,11 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
     }
 #ifdef _TARGET_ARM_
     // Either we don't have a struct now or if struct, then it is HFA returned in regs.
-    assert(call->TypeGet() != TYP_STRUCT || (IsHfa(call) && !callHasRetBuffArg));
+    assert(varTypeIsStruct(call) || (IsHfa(call) && !callHasRetBuffArg));
 #else
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // Either we don't have a struct now or if struct, then it is a struct returned in regs or in return buffer.
-    assert((call->TypeGet() != TYP_STRUCT) ||
+    assert(!varTypeIsStruct(call) ||
            (structDesc.passedInRegisters) ||
            (callHasRetBuffArg));
 #else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -4371,7 +4370,7 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // If there is a struct that is returned in registers there might be a retbuf (homing space for the return) and type struct.
-    assert(!callHasRetBuffArg || (call->TypeGet() == TYP_VOID) || (call->TypeGet() == TYP_STRUCT));
+    assert(!callHasRetBuffArg || (call->TypeGet() == TYP_VOID) || varTypeIsStruct(call));
 #else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // If it was a struct return, it has been transformed into a call
     // with a return buffer (that returns TYP_VOID) or into a return
@@ -4623,7 +4622,7 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
 #ifdef FEATURE_SIMD
-    if (featureSIMD && elemTyp == TYP_STRUCT && elemSize <= getSIMDVectorRegisterByteLength())
+    if (featureSIMD && varTypeIsStruct(elemTyp) && elemSize <= getSIMDVectorRegisterByteLength())
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
@@ -5803,7 +5802,7 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
 #ifdef _TARGET_AMD64_
 
                 unsigned typeSize = 0;
-                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(TYP_STRUCT, argx->gtLdObj.gtClass, &typeSize, false);
+                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(argx->TypeGet(), argx->gtLdObj.gtClass, &typeSize, false);
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 // On System V the args could be a 2 eightbyte struct that is passed in two registers.
@@ -6825,9 +6824,10 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
             }
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             // Return a dummy node, as the return is already removed.
-            if (callType == TYP_STRUCT)
+            if (varTypeIsStruct(callType))
             {
-                // This is an register-returned struct. Return a 0.
+                // This is a register-returned struct. Return a 0.
+                // The actual return registers are hacked in lower and the register allocator.
                 callType = TYP_INT;
             }
 #endif
@@ -7672,7 +7672,7 @@ GenTreePtr          Compiler::fgMorphInitBlock(GenTreePtr tree)
         noway_assert(initVal->OperGet() == GT_CNS_INT);
         noway_assert(genActualType(initVal->gtType) == TYP_INT);
 
-        // The dest must be of TYP_STRUCT
+        // The dest must be of a struct type.
         noway_assert(varTypeIsStruct(destLclVar));
 
         //
