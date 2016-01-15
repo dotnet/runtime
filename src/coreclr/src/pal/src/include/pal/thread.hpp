@@ -159,7 +159,7 @@ namespace CorUnix
         // Returns a pointer to the handler node that should be initialized next. The first time this is
         // called for a thread the bottom node will be returned. Thereafter the top node will be returned.
         // Also returns the Mach exception port that should be registered.
-        CThreadMachExceptionHandlerNode *GetNodeForInitialization(mach_port_t *pExceptionPort);
+        CThreadMachExceptionHandlerNode *GetNodeForInitialization();
 
         // Returns a pointer to the handler node for cleanup. This will always be the bottom node. This isn't
         // really the right algorithm (because there isn't one). There are lots of reasonable scenarios where
@@ -167,22 +167,18 @@ namespace CorUnix
         // can support a lot more chaining scenarios but we can't pull the same sort of trick when
         // unregistering, in particular we have two sets of chain back handlers and no way to reach into other
         // components and alter what their chain-back information is).
-        CThreadMachExceptionHandlerNode *GetNodeForCleanup() { return &m_bottom; }
+        CThreadMachExceptionHandlerNode *GetNodeForCleanup() { return &m_node; }
 
         // Get handler details for a given type of exception. If successful the structure pointed at by
-        // pHandler is filled in and true is returned. Otherwise false is returned. The fTopException argument
-        // indicates whether the handlers found at the time of a call to ICLRRuntimeHost2::RegisterMacEHPort()
-        // should be searched (if not, or a handler is not found there, we'll fallback to looking at the
-        // handlers discovered at the point when the CLR first saw this thread).
-        bool GetHandler(exception_type_t eException, bool fTopException, MachExceptionHandler *pHandler);
+        // pHandler is filled in and true is returned. Otherwise false is returned.
+        bool GetHandler(exception_type_t eException, MachExceptionHandler *pHandler);
 
     private:
         // Look for a handler for the given exception within the given handler node. Return its index if
         // successful or -1 otherwise.
         int GetIndexOfHandler(exception_mask_t bmExceptionMask, CThreadMachExceptionHandlerNode *pNode);
 
-        CThreadMachExceptionHandlerNode m_top;
-        CThreadMachExceptionHandlerNode m_bottom;
+        CThreadMachExceptionHandlerNode m_node;
     };
 #endif // HAVE_MACH_EXCEPTIONS
 #endif // FEATURE_PAL_SXS

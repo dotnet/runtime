@@ -31,7 +31,7 @@ int DllTest2()
 
     PAL_TRY(VOID*, unused, NULL)
     {
-        volatile int* p = 0x00000000;   /* NULL pointer */
+        volatile int* p = (volatile int *)0x22; /* invalid pointer */
 
         bTry = TRUE;    /* indicate we hit the PAL_TRY block */
         *p = 13;        /* causes an access violation exception */
