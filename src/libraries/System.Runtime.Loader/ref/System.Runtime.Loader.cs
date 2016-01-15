@@ -32,5 +32,6 @@ namespace System.Runtime.Loader
         protected virtual System.IntPtr LoadUnmanagedDll(string unmanagedDllName) { return default(System.IntPtr); }
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
+        public event Func<AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> Resolving;
     }
 }
