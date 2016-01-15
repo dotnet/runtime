@@ -367,7 +367,9 @@ mono_rand_try_get_uint32 (gpointer *handle, guint32 *val, guint32 min, guint32 m
 	if (!mono_rand_try_get_bytes (handle, (guchar*) val, sizeof (guint32)))
 		return FALSE;
 
-	*val = (guint32) (((gdouble) *val) / G_MAXUINT32 * (max - min) + min);
+	double randomDouble = ((gdouble) *val) / ( ((double)G_MAXUINT32) + 1 ); // Range is [0,1)
+	*val = (guint32) (randomDouble * (max - min + 1) + min);
+
 	g_assert (*val >= min);
 	g_assert (*val <= max);
 
