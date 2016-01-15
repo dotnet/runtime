@@ -9,6 +9,12 @@
     <BuildSysBinaries>true</BuildSysBinaries>
   </PropertyGroup>
 
+  <ItemDefinitionGroup>
+    <ProjectFile>
+      <ProductGroups>FX</ProductGroups>
+    </ProjectFile>
+  </ItemDefinitionGroup>
+
   <!--The following projects will build during PHASE 1-->
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(FeatureCoreClr)' != 'true'">
     <ProjectFile Include="allocationsprofiler\allocationsprofiler.nativeproj" />
