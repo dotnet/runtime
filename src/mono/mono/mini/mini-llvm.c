@@ -3932,14 +3932,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		emit_dbg_loc (ctx, builder, ins->cil_code);
 
 		nins ++;
-		if (nins > 3000 && builder == starting_builder) {
+		if (nins > 1000) {
 			/*
 			 * Some steps in llc are non-linear in the size of basic blocks, see #5714.
 			 * Start a new bblock. If the llvm optimization passes merge these, we
 			 * can work around that by doing a volatile load + cond branch from
 			 * localloc-ed memory.
 			 */
-			LLVM_FAILURE (ctx, "basic block too long");
+			//LLVM_FAILURE (ctx, "basic block too long");
+			cbb = gen_bb (ctx, "CONT_LONG_BB");
+			LLVMBuildBr (ctx->builder, cbb);
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, cbb);
+			ctx->bblocks [bb->block_num].end_bblock = cbb;
+			nins = 0;
 		}
 
 		if (has_terminator)
