@@ -424,7 +424,7 @@ namespace System.Runtime.Serialization.Json
                     InvokeOnSerializing(value, classContract.BaseContract, context);
                 if (classContract.OnSerializing != null)
                 {
-                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null, JsonGlobals.JsonSerializationPatterns);
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
                     {
                         classContract.OnSerializing.Invoke(value, new object[] { context.GetStreamingContext() });
@@ -433,7 +433,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (memberAccessFlag)
                         {
-                            classContract.RequiresMemberAccessForWrite(securityException, JsonGlobals.JsonSerializationPatterns);
+                            classContract.RequiresMemberAccessForWrite(securityException);
                         }
                         else
                         {
@@ -462,7 +462,7 @@ namespace System.Runtime.Serialization.Json
                     InvokeOnSerialized(value, classContract.BaseContract, context);
                 if (classContract.OnSerialized != null)
                 {
-                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null, JsonGlobals.JsonSerializationPatterns);
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
                     {
                         classContract.OnSerialized.Invoke(value, new object[] { context.GetStreamingContext() });
@@ -471,7 +471,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (memberAccessFlag)
                         {
-                            classContract.RequiresMemberAccessForWrite(securityException, JsonGlobals.JsonSerializationPatterns);
+                            classContract.RequiresMemberAccessForWrite(securityException);
                         }
                         else
                         {
@@ -500,7 +500,7 @@ namespace System.Runtime.Serialization.Json
                     InvokeOnDeserializing(value, classContract.BaseContract, context);
                 if (classContract.OnDeserializing != null)
                 {
-                    bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
                     {
                         classContract.OnDeserializing.Invoke(value, new object[] { context.GetStreamingContext() });
@@ -509,7 +509,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (memberAccessFlag)
                         {
-                            classContract.RequiresMemberAccessForRead(securityException, JsonGlobals.JsonSerializationPatterns);
+                            classContract.RequiresMemberAccessForRead(securityException);
                         }
                         else
                         {
@@ -538,7 +538,7 @@ namespace System.Runtime.Serialization.Json
                     InvokeOnDeserialized(value, classContract.BaseContract, context);
                 if (classContract.OnDeserialized != null)
                 {
-                    bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
+                    bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
                     {
                         classContract.OnDeserialized.Invoke(value, new object[] { context.GetStreamingContext() });
@@ -547,7 +547,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (memberAccessFlag)
                         {
-                            classContract.RequiresMemberAccessForRead(securityException, JsonGlobals.JsonSerializationPatterns);
+                            classContract.RequiresMemberAccessForRead(securityException);
                         }
                         else
                         {

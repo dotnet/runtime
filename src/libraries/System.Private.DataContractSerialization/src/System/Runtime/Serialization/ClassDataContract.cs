@@ -540,10 +540,10 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForRead(SecurityException securityException, string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForRead(SecurityException securityException)
         {
             EnsureMethodsImported();
-            if (!IsTypeVisible(UnderlyingType, serializationAssemblyPatterns))
+            if (!IsTypeVisible(UnderlyingType))
             {
                 if (securityException != null)
                 {
@@ -555,10 +555,10 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (this.BaseContract != null && this.BaseContract.RequiresMemberAccessForRead(securityException, serializationAssemblyPatterns))
+            if (this.BaseContract != null && this.BaseContract.RequiresMemberAccessForRead(securityException))
                 return true;
 
-            if (ConstructorRequiresMemberAccess(GetNonAttributedTypeConstructor(), serializationAssemblyPatterns))
+            if (ConstructorRequiresMemberAccess(GetNonAttributedTypeConstructor()))
             {
                 if (Globals.TypeOfScriptObject_IsAssignableFrom(UnderlyingType))
                 {
@@ -575,7 +575,7 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (MethodRequiresMemberAccess(this.OnDeserializing, serializationAssemblyPatterns))
+            if (MethodRequiresMemberAccess(this.OnDeserializing))
             {
                 if (securityException != null)
                 {
@@ -589,7 +589,7 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (MethodRequiresMemberAccess(this.OnDeserialized, serializationAssemblyPatterns))
+            if (MethodRequiresMemberAccess(this.OnDeserialized))
             {
                 if (securityException != null)
                 {
@@ -607,7 +607,7 @@ namespace System.Runtime.Serialization
             {
                 for (int i = 0; i < this.Members.Count; i++)
                 {
-                    if (this.Members[i].RequiresMemberAccessForSet(serializationAssemblyPatterns))
+                    if (this.Members[i].RequiresMemberAccessForSet())
                     {
                         if (securityException != null)
                         {
@@ -643,11 +643,11 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForWrite(SecurityException securityException, string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForWrite(SecurityException securityException)
         {
             EnsureMethodsImported();
 
-            if (!IsTypeVisible(UnderlyingType, serializationAssemblyPatterns))
+            if (!IsTypeVisible(UnderlyingType))
             {
                 if (securityException != null)
                 {
@@ -660,10 +660,10 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (this.BaseContract != null && this.BaseContract.RequiresMemberAccessForWrite(securityException, serializationAssemblyPatterns))
+            if (this.BaseContract != null && this.BaseContract.RequiresMemberAccessForWrite(securityException))
                 return true;
 
-            if (MethodRequiresMemberAccess(this.OnSerializing, serializationAssemblyPatterns))
+            if (MethodRequiresMemberAccess(this.OnSerializing))
             {
                 if (securityException != null)
                 {
@@ -677,7 +677,7 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (MethodRequiresMemberAccess(this.OnSerialized, serializationAssemblyPatterns))
+            if (MethodRequiresMemberAccess(this.OnSerialized))
             {
                 if (securityException != null)
                 {
@@ -695,7 +695,7 @@ namespace System.Runtime.Serialization
             {
                 for (int i = 0; i < this.Members.Count; i++)
                 {
-                    if (this.Members[i].RequiresMemberAccessForGet(serializationAssemblyPatterns))
+                    if (this.Members[i].RequiresMemberAccessForGet())
                     {
                         if (securityException != null)
                         {
