@@ -19,7 +19,7 @@ namespace System.IO
 
             OriginalPath = PathHelpers.ShouldReviseDirectoryPathToCurrent(path) ? "." : path;
             FullPath = Path.GetFullPath(path);
-            DisplayPath = GetDisplayName(OriginalPath, FullPath);
+            DisplayPath = GetDisplayName(OriginalPath);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -30,17 +30,14 @@ namespace System.IO
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = originalPath ?? Path.GetFileName(fullPath);
             FullPath = fullPath;
-            DisplayPath = GetDisplayName(OriginalPath, FullPath);
+            DisplayPath = GetDisplayName(OriginalPath);
         }
 
         public override String Name
         {
             get
             {
-                // DisplayPath is dir name for coreclr
-                Debug.Assert(GetDirName(FullPath) == DisplayPath || DisplayPath == ".");
-
-                return DisplayPath;
+                return GetDirName(FullPath);
             }
         }
 
@@ -412,7 +409,7 @@ namespace System.IO
 
             FullPath = fullDestDirName;
             OriginalPath = destDirName;
-            DisplayPath = GetDisplayName(OriginalPath, FullPath);
+            DisplayPath = GetDisplayName(OriginalPath);
 
             // Flush any cached information about the directory.
             Invalidate();
@@ -430,20 +427,23 @@ namespace System.IO
             FileSystem.Current.RemoveDirectory(FullPath, recursive);
         }
 
-        // Returns the fully qualified path
+        /// <summary>
+        /// Returns the original path. Use FullPath or Name properties for the path / directory name.
+        /// </summary>
         public override String ToString()
         {
             return DisplayPath;
         }
 
-        private static String GetDisplayName(String originalPath, String fullPath)
+        private static String GetDisplayName(String originalPath)
         {
             Debug.Assert(originalPath != null);
-            Debug.Assert(fullPath != null);
 
+            // Desktop documents that the path returned by ToString() should be the original path.
+            // For SL/Phone we only gave the directory name regardless of what was passed in.
             return PathHelpers.ShouldReviseDirectoryPathToCurrent(originalPath) ?
                 "." :
-                GetDirName(fullPath);
+                originalPath;
         }
 
         private static String GetDirName(String fullPath)
