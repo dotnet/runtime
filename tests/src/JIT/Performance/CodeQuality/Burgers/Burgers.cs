@@ -139,7 +139,7 @@ public class Burgers
 
         for (int tStep = 0; tStep < nt; tStep++)
         {
-            for (int i = 1; i < nx2 - 1; i += Vector<double>.Count)
+            for (int i = 1; i < nx2 - Vector<double>.Count + 1; i += Vector<double>.Count)
             {
                 var vectorIn0 = new Vector<double>(un, i);
                 var vectorInPrev = new Vector<double>(un, i - 1);
