@@ -411,7 +411,7 @@ namespace System.Net.Sockets
         private OperationQueue<AcceptOrConnectOperation> _acceptOrConnectQueue;
         private SocketAsyncEngine _engine;
         private Interop.Sys.SocketEvents _registeredEvents;
-        private volatile bool _nonBlockingSet;
+        private bool _nonBlockingSet;
 
         // These locks are hierarchical: _closeLock must be acquired before _queueLock in order
         // to prevent deadlock.
