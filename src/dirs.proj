@@ -46,9 +46,7 @@
         <ProjectFile Include="jit32\dirs.proj" Condition="'$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64'" />
         <ProjectFile Include="jit64\dirs.proj" Condition="'$(BuildProjectName)' != 'CoreSys'" />
 
-        <ProjectFile Include="tools\dirs.proj" >
-            <ProductGroups>FX;PK</ProductGroups>
-        </ProjectFile>
+        <ProjectFile Include="tools\dirs.proj" />
         <ProjectFile Include="toolbox\dirs.proj" >
             <ProductGroups>FX;PK</ProductGroups>
         </ProjectFile>
