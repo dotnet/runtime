@@ -2989,7 +2989,7 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ReflectionInvocation::IsAddressInStack, void * ptr)
 {
     FCALL_CONTRACT;
-    FC_RETURN_BOOL(GetThread()->IsAddressInStack(ptr));
+    FC_RETURN_BOOL(Thread::IsAddressInCurrentStack(ptr));
 }
 FCIMPLEND
 #endif
