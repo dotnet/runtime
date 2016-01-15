@@ -43,7 +43,7 @@ internal static class IOInputs
     {
         yield return Path.GetRandomFileName();
         yield return "!@#$%^&";
-        // yield return "\x65e5\x672c\x8a9e"; // TODO: Issue #846
+        yield return "\x65e5\x672c\x8a9e";
         yield return "A";
         yield return " A";
         yield return "  A";

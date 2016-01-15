@@ -14,7 +14,10 @@ namespace System.IO.Compression.Tests
         public async Task CreateFromDirectoryNormal()
         {
             await TestCreateDirectory(zfolder("normal"), true);
-            await TestCreateDirectory(zfolder("unicode"), true);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(5459, PlatformID.AnyUnix)]
+            {
+                await TestCreateDirectory(zfolder("unicode"), true);
+            }
         }
 
         private async Task TestCreateDirectory(string folderName, Boolean testWithBaseDir)
@@ -63,7 +66,10 @@ namespace System.IO.Compression.Tests
         public void ExtractToDirectoryNormal()
         {
             TestExtract(zfile("normal.zip"), zfolder("normal"));
-            TestExtract(zfile("unicode.zip"), zfolder("unicode"));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(5459, PlatformID.AnyUnix)]
+            {
+                TestExtract(zfile("unicode.zip"), zfolder("unicode"));
+            }
             TestExtract(zfile("empty.zip"), zfolder("empty"));
             TestExtract(zfile("explicitdir1.zip"), zfolder("explicitdir"));
             TestExtract(zfile("explicitdir2.zip"), zfolder("explicitdir"));
@@ -156,12 +162,15 @@ namespace System.IO.Compression.Tests
                 DirsEqual(tempFolder, zfolder("normal"));
             }
 
-            using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(5459, PlatformID.AnyUnix)]
             {
-                string tempFolder = GetTmpDirPath(false);
-                archive.ExtractToDirectory(tempFolder);
+                using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
+                {
+                    string tempFolder = GetTmpDirPath(false);
+                    archive.ExtractToDirectory(tempFolder);
 
-                DirsEqual(tempFolder, zfolder("unicode"));
+                    DirsEqual(tempFolder, zfolder("unicode"));
+                }
             }
         }
 

@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void TestEsESTraditional()
         {
             CultureInfo myCItrad = new CultureInfo("es-ES_tradnl");
