@@ -188,8 +188,7 @@ namespace System.Net
                 throw new ArgumentNullException("authenticationType");
             }
 
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authenticationType + "\")");
             }
@@ -218,7 +217,7 @@ namespace System.Net
                 }
             }
 
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::GetCredential returning " + ((mostSpecificMatch == null) ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")"));
             }
@@ -245,8 +244,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException("port");
             }
 
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::GetCredential(host=\"" + host + ":" + port.ToString() + "\", authenticationType=\"" + authenticationType + "\")");
             }
@@ -267,7 +265,7 @@ namespace System.Net
                 }
             }
 
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::GetCredential returning " + ((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")"));
             }

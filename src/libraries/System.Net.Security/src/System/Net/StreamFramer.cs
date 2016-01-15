@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Globalization;
 
@@ -152,9 +153,13 @@ namespace System.Net
 
         private void ReadFrameCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is WorkerAsyncResult) && GlobalLog.IsEnabled)
+            if ((transportResult.AsyncState is WorkerAsyncResult))
             {
-                GlobalLog.Assert("StreamFramer::ReadFrameCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("StreamFramer::ReadFrameCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
+                }
+                Debug.Fail("StreamFramer::ReadFrameCallback|The state expected to be WorkerAsyncResult, received:" + transportResult.GetType().FullName + ".");
             }
 
             if (transportResult.CompletedSynchronously)
@@ -195,9 +200,13 @@ namespace System.Net
         {
             do
             {
-                if ((transportResult.AsyncState is WorkerAsyncResult) && GlobalLog.IsEnabled)
+                if ((transportResult.AsyncState is WorkerAsyncResult))
                 {
-                    GlobalLog.AssertFormat("StreamFramer::ReadFrameComplete|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.AssertFormat("StreamFramer::ReadFrameComplete|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
+                    }
+                    Debug.Fail("StreamFramer::ReadFrameComplete|The state expected to be WorkerAsyncResult, received:" + transportResult.GetType().FullName + ".");
                 }
 
                 WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
@@ -205,9 +214,13 @@ namespace System.Net
                 int bytesRead = _transportAPM.EndRead(transportResult);
                 workerResult.Offset += bytesRead;
 
-                if ((workerResult.Offset <= workerResult.End) && GlobalLog.IsEnabled)
+                if ((workerResult.Offset <= workerResult.End))
                 {
-                    GlobalLog.AssertFormat("StreamFramer::ReadFrameCallback|WRONG: offset - end = {0}", workerResult.Offset - workerResult.End);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.AssertFormat("StreamFramer::ReadFrameCallback|WRONG: offset - end = {0}", workerResult.Offset - workerResult.End);
+                    }
+                    Debug.Fail("StreamFramer::ReadFrameCallback|WRONG: offset - end = " + (workerResult.Offset - workerResult.End));
                 }
 
                 if (bytesRead <= 0)
@@ -377,9 +390,13 @@ namespace System.Net
 
         private void BeginWriteCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is WorkerAsyncResult) && GlobalLog.IsEnabled)
+            if ((transportResult.AsyncState is WorkerAsyncResult))
             {
-                GlobalLog.AssertFormat("StreamFramer::BeginWriteCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.AsyncState.GetType().FullName);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("StreamFramer::BeginWriteCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.AsyncState.GetType().FullName);
+                }
+                Debug.Fail("StreamFramer::BeginWriteCallback|The state expected to be WorkerAsyncResult, received:" + transportResult.AsyncState.GetType().FullName + ".");
             }
 
             if (transportResult.CompletedSynchronously)

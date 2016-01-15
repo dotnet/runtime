@@ -658,8 +658,7 @@ namespace System.Net
 
         internal CookieCollection CookieCutter(Uri uri, string headerName, string setCookieHeader, bool isThrow)
         {
-            bool globalLogEnabled = GlobalLog.IsEnabled;
-            if (globalLogEnabled)
+            if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() uri:" + uri + " headerName:" + headerName + " setCookieHeader:" + setCookieHeader + " isThrow:" + isThrow);
             }
@@ -688,7 +687,7 @@ namespace System.Net
                 do
                 {
                     Cookie cookie = parser.Get();
-                    if (globalLogEnabled)
+                    if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() CookieParser returned cookie:" + LoggingHash.ObjectToString(cookie));
                     }
