@@ -5229,7 +5229,7 @@ GenTreePtr          Compiler::gtNewInlineCandidateReturnExpr(GenTreePtr   inline
     
     node->gtRetExpr.gtInlineCandidate = inlineCandidate;
 
-    if (inlineCandidate->gtType == TYP_STRUCT)
+    if (varTypeIsStruct(inlineCandidate))
     {
         node->gtRetExpr.gtRetClsHnd = gtGetStructHandle(inlineCandidate);
     }
@@ -12895,6 +12895,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             structHnd = gtGetStructHandle(tree->gtGetOp1());
             break;
         case GT_LCL_VAR:
+        case GT_LCL_FLD:
             structHnd = lvaTable[tree->AsLclVarCommon()->gtLclNum].lvVerTypeInfo.GetClassHandle();
             assert(structHnd != NO_CLASS_HANDLE);
             break;
@@ -12906,6 +12907,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 assert(b);
                 structHnd = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType); 
             }
+#ifdef FEATURE_SIMD
+            else if (varTypeIsSIMD(tree))
+            {
+                structHnd = getStructHandleForSIMDType(tree->gtType);
+            }
+            break;
+        case GT_SIMD:
+            structHnd = getStructHandleForSIMDType(tree->gtType);
+#endif // FEATURE_SIMD
+            break;
         }
     }
     return structHnd;

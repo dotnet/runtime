@@ -8162,8 +8162,8 @@ void                Compiler::fgAddInternal()
     // native return type is not a struct or the native return type is a struct that is returned
     // in registers (no RetBuffArg argument.)
     // If we fold all returns into a single return statement, create a temp for struct type variables as well.
-    if (genReturnBB && ((info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT) ||
-        (info.compRetNativeType == TYP_STRUCT && info.compRetBuffArg == BAD_VAR_NUM)))
+    if (genReturnBB && ((info.compRetType != TYP_VOID && !varTypeIsStruct(info.compRetNativeType)) ||
+        (varTypeIsStruct(info.compRetNativeType) && info.compRetBuffArg == BAD_VAR_NUM)))
 #else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     if (genReturnBB && (info.compRetType != TYP_VOID) && !varTypeIsStruct(info.compRetNativeType))
 #endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -8200,10 +8200,10 @@ void                Compiler::fgAddInternal()
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         // Handle a struct return type for System V Amd64 systems.
-        if (info.compRetNativeType == TYP_STRUCT)
+        if (varTypeIsStruct(info.compRetNativeType))
         {
             // Handle the normalized return type.
-            if (retLocalType == TYP_STRUCT)
+            if (varTypeIsStruct(retLocalType))
             {
                 lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
             }
@@ -21648,14 +21648,17 @@ void                Compiler::fgInline()
  */
 GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
 {
-    noway_assert(tree->gtOper == GT_LCL_VAR ||
-                 tree->gtOper == GT_FIELD   ||
-                 tree->gtOper == GT_IND     ||
-                 tree->gtOper == GT_LDOBJ   ||
+    noway_assert((tree->gtOper == GT_LCL_VAR) ||
+                 (tree->gtOper == GT_FIELD)   ||
+                 (tree->gtOper == GT_IND)     ||
+                 (tree->gtOper == GT_LDOBJ)   ||
+#ifdef FEATURE_SIMD
+                 (tree->gtOper == GT_SIMD)    ||
                  // tree->gtOper == GT_CALL     || cannot get address of call.
                  // tree->gtOper == GT_MKREFANY || inlining should've been aborted due to mkrefany opcode.
                  // tree->gtOper == GT_RET_EXPR || cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
-                 tree->gtOper == GT_COMMA);
+                 (tree->gtOper == GT_COMMA));
+#endif // FEATURE_SIMD
 
     switch (tree->OperGet())
     {
@@ -21686,8 +21689,9 @@ GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_
 
     unsigned tmpNum = lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
     lvaSetStruct(tmpNum, retClsHnd, false);
+    var_types structType = lvaTable[tmpNum].lvType;
 
-    GenTreePtr dst = gtNewLclvNode(tmpNum, TYP_STRUCT);
+    GenTreePtr dst = gtNewLclvNode(tmpNum, structType);
 
     // If we have a call, we'd like it to be: V00 = call(), but first check if
     // we have a ", , , call()" -- this is very defensive as we may never get
@@ -21723,8 +21727,8 @@ GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_
         newInlinee = gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false);
     }
 
-    GenTreePtr production = gtNewLclvNode(tmpNum, TYP_STRUCT);
-    return gtNewOperNode(GT_COMMA, TYP_STRUCT, newInlinee, production);
+    GenTreePtr production = gtNewLclvNode(tmpNum, structType);
+    return gtNewOperNode(GT_COMMA, structType, newInlinee, production);
 }
 
 /***************************************************************************************************
@@ -21776,7 +21780,7 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
     {
 #if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         // We are going to copy the tree from the inlinee, so save the handle now.
-        CORINFO_CLASS_HANDLE retClsHnd = (tree->TypeGet() == TYP_STRUCT)
+        CORINFO_CLASS_HANDLE retClsHnd = varTypeIsStruct(tree)
                                        ? tree->gtRetExpr.gtRetClsHnd
                                        : NO_CLASS_HANDLE;
 #endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -21859,11 +21863,11 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
         }
 
 #if defined(_TARGET_ARM_)
-        noway_assert(comma->gtType != TYP_STRUCT ||
+        noway_assert(!varTypeIsStruct(comma) ||
                      comma->gtOper != GT_RET_EXPR ||
                      (!comp->IsHfa(comma->gtRetExpr.gtRetClsHnd)));
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        noway_assert(comma->gtType != TYP_STRUCT ||
+        noway_assert(!varTypeIsStruct(comma) ||
                      comma->gtOper != GT_RET_EXPR ||
                      (!comp->IsRegisterPassable(comma->gtRetExpr.gtRetClsHnd)));
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)

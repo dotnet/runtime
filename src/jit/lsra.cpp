@@ -3316,7 +3316,7 @@ LinearScan::insertZeroInitRefPositions()
 void
 LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
 {
-    assert(argDsc->lvType == TYP_STRUCT);
+    assert(varTypeIsStruct(argDsc));
     RegState              * intRegState = &compiler->codeGen->intRegState;
     RegState              * floatRegState = &compiler->codeGen->floatRegState;
 
@@ -3377,7 +3377,7 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // For System V AMD64 calls the argDsc can have 2 registers (for structs.)
     // Handle them here.
-    if (argDsc->lvType == TYP_STRUCT)
+    if (varTypeIsStruct(argDsc))
     {
         unixAmd64UpdateRegStateForArg(argDsc);
     }
