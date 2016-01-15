@@ -187,7 +187,7 @@ public:
             CONTRACTL_END;
 
             // The space for the return value has to be on the stack
-            _ASSERTE(GetThread()->IsAddressInStack(m_ppStringObject));
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_ppStringObject));
 
             *m_ppStringObject = STRINGREFToObject(s);
         }
@@ -214,7 +214,7 @@ public:
             LIMITED_METHOD_CONTRACT;
 
             // The space for the return value has to be on the stack
-            _ASSERTE(GetThread()->IsAddressInStack(m_ppObject));
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_ppObject));
 
             *m_ppObject = OBJECTREFToObject(o);
         }
