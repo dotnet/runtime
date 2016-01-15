@@ -2729,3 +2729,55 @@ public class TypeWithTypeWithIntAndStringPropertyProperty
     [DataMember]
     public TypeWithIntAndStringProperty ObjectProperty { get; set; }
 }
+
+[DataContract]
+public class TypeWithCollectionInterfaceGetOnlyCollection
+{
+    List<string> items;
+
+    [DataMember]
+    public ICollection<string> Items
+    {
+        get
+        {
+            if (items == null)
+            {
+                items = new List<string>();
+            }
+            return this.items;
+        }
+    }
+
+    public TypeWithCollectionInterfaceGetOnlyCollection() { }
+
+    public TypeWithCollectionInterfaceGetOnlyCollection(List<string> items)
+    {
+        this.items = items;
+    }
+}
+
+[DataContract]
+public class TypeWithEnumerableInterfaceGetOnlyCollection
+{
+    List<string> items;
+
+    [DataMember]
+    public IEnumerable<string> Items
+    {
+        get
+        {
+            if (items == null)
+            {
+                items = new List<string>();
+            }
+            return this.items;
+        }
+    }
+
+    public TypeWithEnumerableInterfaceGetOnlyCollection() { }
+
+    public TypeWithEnumerableInterfaceGetOnlyCollection(List<string> items)
+    {
+        this.items = items;
+    }
+}
