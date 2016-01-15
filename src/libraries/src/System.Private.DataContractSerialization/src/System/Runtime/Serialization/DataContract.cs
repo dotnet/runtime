@@ -468,6 +468,12 @@ namespace System.Runtime.Serialization
             get { return false; }
         }
 
+#if NET_NATIVE
+        public bool TypeIsInterface;
+        public bool TypeIsCollectionInterface;
+        public Type GenericTypeDefinition;
+#endif
+
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
         {
             if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace) && !IsPrimitive)
