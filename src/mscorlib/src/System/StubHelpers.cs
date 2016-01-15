@@ -173,6 +173,11 @@ namespace  System.StubHelpers {
                     // If not provided, allocate the buffer using SysAllocStringByteLen so
                     // that odd-sized strings will be handled as well.
                     ptrToFirstChar = (byte *)Win32Native.SysAllocStringByteLen(null, lengthInBytes).ToPointer();
+
+                    if (ptrToFirstChar == null) 
+                    {
+                        throw new OutOfMemoryException();
+                    }
                 }
 
                 // copy characters from the managed string
