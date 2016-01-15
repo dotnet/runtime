@@ -195,7 +195,7 @@ namespace System.IO.Compression
                 else
                     _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileName;
 
-                if (ZipHelper.EndsWithDirChar(value))
+                if (ParseFileName(value, _versionMadeByPlatform) == "")
                     VersionToExtractAtLeast(ZipVersionNeededValues.ExplicitDirectory);
             }
         }
@@ -1090,6 +1090,33 @@ namespace System.IO.Compression
             if (_archive == null)
                 throw new InvalidOperationException(SR.DeletedEntry);
             _archive.ThrowIfDisposed();
+        }
+
+        /// <summary>
+        /// Gets the file name of the path based on Windows path separator characters
+        /// </summary>
+        private static string GetFileName_Windows(string path)
+        {
+            int length = path.Length;
+            for (int i = length; --i >= 0;)
+            {
+                char ch = path[i];
+                if (ch == '\\' || ch == '/' || ch == ':')
+                    return path.Substring(i + 1);
+            }
+            return path;
+        }
+
+        /// <summary>
+        /// Gets the file name of the path based on Unix path separator characters
+        /// </summary>
+        private static string GetFileName_Unix(string path)
+        {
+            int length = path.Length;
+            for (int i = length; --i >= 0;)
+                if (path[i] == '/')
+                    return path.Substring(i + 1);
+            return path;
         }
 
         #endregion Privates

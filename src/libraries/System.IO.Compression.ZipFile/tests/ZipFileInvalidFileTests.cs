@@ -197,5 +197,60 @@ namespace System.IO.Compression.Tests
             Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTmpDirPath()));
         }
 
+        /// <summary>
+        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
+        /// when an attempt is made to extract them.
+        /// </summary>
+        [Theory]
+        [InlineData("NullCharFileName_FromWindows")]
+        [InlineData("NullCharFileName_FromUnix")]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        {
+            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTmpDirPath()));
+        }
+
+        [Theory]
+        [InlineData("backslashes_FromUnix", "aa\\bb\\cc\\dd")]
+        [InlineData("backslashes_FromWindows", "aa\\bb\\cc\\dd")]
+        [InlineData("WindowsInvalid_FromUnix", "aa<b>d")]
+        [InlineData("WindowsInvalid_FromWindows", "aa<b>d")]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Unix_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        {
+            string tempDir = GetTmpDirPath();
+            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
+            string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
+            Assert.Equal(1, results.Length);
+            Assert.Equal(fileName, Path.GetFileName(results[0]));
+        }
+
+        /// <summary>
+        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
+        /// when an attempt is made to extract them.
+        /// </summary>
+        [Theory]
+        [InlineData("WindowsInvalid_FromUnix")]
+        [InlineData("WindowsInvalid_FromWindows")]
+        [InlineData("NullCharFileName_FromWindows")]
+        [InlineData("NullCharFileName_FromUnix")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        {
+            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTmpDirPath()));
+        }
+
+        [Theory]
+        [InlineData("backslashes_FromUnix", "dd")]
+        [InlineData("backslashes_FromWindows", "dd")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Windows_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        {
+            string tempDir = GetTmpDirPath();
+            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
+            string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
+            Assert.Equal(1, results.Length);
+            Assert.Equal(fileName, Path.GetFileName(results[0]));
+        }
     }
 }
