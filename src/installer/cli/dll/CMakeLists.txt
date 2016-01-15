@@ -5,9 +5,9 @@ cmake_minimum_required (VERSION 2.6)
 project(hostpolicy)
 
 if(WIN32)
-    add_compile_options($<$<CONFIG:RelWithDebInfo>:/MD>)
-    add_compile_options($<$<CONFIG:Release>:/MD>)
-    add_compile_options($<$<CONFIG:Debug>:/MDd>)
+    add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
+    add_compile_options($<$<CONFIG:Release>:/MT>)
+    add_compile_options($<$<CONFIG:Debug>:/MTd>)
 endif()
 
 include(../setup.cmake)
