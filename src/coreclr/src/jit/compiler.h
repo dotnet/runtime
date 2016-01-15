@@ -1497,9 +1497,6 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-#if FEATURE_MULTIREG_STRUCTS
-    CORINFO_CLASS_HANDLE     GetStructClassHandle(GenTreePtr tree);
-#endif
 #if FEATURE_MULTIREG_STRUCT_RET
     GenTreePtr               impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
 #endif
@@ -6980,6 +6977,26 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     CORINFO_CLASS_HANDLE    SIMDVector4Handle;
     CORINFO_CLASS_HANDLE    SIMDVectorHandle;
 
+    // Get the handle for a SIMD type.
+    // For the purposes of type handles, we treat all Vector<T> as Vector<float> in the JIT,
+    // as the actual instantiation type doesn't impact this code (that is always captured,
+    // where semantically meaningful, in the "baseType" of SIMD nodes or lclVars.
+    CORINFO_CLASS_HANDLE    getStructHandleForSIMDType(var_types type)
+    {
+        noway_assert(varTypeIsSIMD(type));
+        CORINFO_CLASS_HANDLE structHnd;
+        switch (type)
+        {
+            case TYP_SIMD8:     structHnd = SIMDVector2Handle;                 break;
+            case TYP_SIMD12:    structHnd = SIMDVector3Handle;                 break;
+            case TYP_SIMD16:    structHnd = SIMDVector4Handle;                 break;
+#ifdef FEATURE_AVX_SUPPORT
+            case TYP_SIMD32:    structHnd = SIMDFloatHandle;                   break;
+#endif // FEATURE_AVX_SUPPORT
+            default:            unreached();
+        }
+        return structHnd;    
+    }
     // SIMD Methods
     CORINFO_METHOD_HANDLE   SIMDVectorFloat_set_Item;
     CORINFO_METHOD_HANDLE   SIMDVectorFloat_get_Length;
@@ -7200,8 +7217,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     // Get the the number of elements of basetype of SIMD vector given by its type handle
     int                     getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
-    // Get preferred alignment of SIMD type given by its type handle
-    int                     getSIMDTypeAlignment(CORINFO_CLASS_HANDLE typeHnd);
+    // Get preferred alignment of SIMD type.
+    int                     getSIMDTypeAlignment(var_types simdType);
 
     // Get the number of bytes in a SIMD Vector for the current compilation.
     unsigned                getSIMDVectorRegisterByteLength()
@@ -7330,7 +7347,7 @@ private:
             bool ebpBased;
             int off = lvaFrameAddress(varNum, &ebpBased);
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
-            int alignment = getSIMDTypeAlignment(lvaTable[varNum].lvVerTypeInfo.GetClassHandle());
+            int alignment = getSIMDTypeAlignment(lvaTable[varNum].lvType);
             bool isAligned = ((off % alignment) == 0);
             noway_assert (isAligned || lvaTable[varNum].lvIsParam);
             return isAligned;

@@ -1797,7 +1797,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             else
             {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                if (treeNode->TypeGet() == TYP_STRUCT &&
+                if (varTypeIsStruct(treeNode) &&
                     treeNode->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
                 {
                     GenTreeLclVarCommon* lclVarPtr = treeNode->gtOp.gtOp1->AsLclVarCommon();
@@ -2645,11 +2645,27 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 bool
 CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
 {
-    if (treeNode->TypeGet() == TYP_STRUCT)
-    {
-        noway_assert(!treeNode->InReg());
 
+
+    if (varTypeIsStruct(treeNode))
+    {
         GenTreeLclVarCommon* lclVarPtr = treeNode->AsLclVarCommon();
+
+        // TODO-Cleanup: It is not reasonable to assume that a local store of TYP_STRUCT is always a register return.
+        // There can be local SIMD references that are NOT args or returns.
+        // Furthermore, this means that there are contextual semantics for these nodes,
+        // which is very undesirable.
+
+        if (varTypeIsSIMD(treeNode))
+        {
+            noway_assert(treeNode->OperIsLocalStore());
+            if (treeNode->gtGetOp1()->OperGet() != GT_CALL)
+            {
+                return false;
+            }
+        }
+
+        noway_assert(!treeNode->InReg());
 
         LclVarDsc * varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
 
@@ -3560,10 +3576,13 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeCpBlk* cpBlkNode)
 //
 void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseVarNum)
 {
+    // We will never call this method for SIMD types, which are stored directly
+    // in genPutStructArgStk().
     noway_assert(putArgNode->TypeGet() == TYP_STRUCT);
+
     // Make sure we got the arguments of the cpblk operation in the right registers
     GenTreePtr   dstAddr = putArgNode;
-    GenTreePtr   srcAddr = putArgNode->gtOp.gtOp1;
+    GenTreePtr   src = putArgNode->gtOp.gtOp1;
 
     size_t size = putArgNode->getArgSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
@@ -3571,12 +3590,13 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
     emitter *emit = getEmitter();
     unsigned putArgOffset = putArgNode->getArgOffset();
 
-    assert(srcAddr->isContained());
-    assert(srcAddr->gtOper == GT_LDOBJ);
+    assert(src->isContained());
 
-    if (!srcAddr->gtOp.gtOp1->isContained())
+    assert(src->gtOper == GT_LDOBJ);
+
+    if (!src->gtOp.gtOp1->isContained())
     {
-        genConsumeReg(srcAddr->gtOp.gtOp1);
+        genConsumeReg(src->gtOp.gtOp1);
     }
 
     unsigned offset = 0;
@@ -3600,7 +3620,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, srcAddr->gtGetOp1(), offset); // Load the address of the child of the LdObj node.
+            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, src->gtGetOp1(), offset); // Load the address of the child of the LdObj node.
             
             // Store
             emit->emitIns_S_R(INS_movdqu,
@@ -3622,7 +3642,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         
         if ((size & 8) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_8BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
+            genCodeForLoadOffset(INS_mov, EA_8BYTE, tmpReg, src->gtOp.gtOp1, offset);
 
             emit->emitIns_S_R(INS_mov,
                               EA_8BYTE,
@@ -3635,7 +3655,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 
         if ((size & 4) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
+            genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, src->gtOp.gtOp1, offset);
 
             emit->emitIns_S_R(INS_mov,
                               EA_4BYTE,
@@ -3648,7 +3668,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 
         if ((size & 2) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_2BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
+            genCodeForLoadOffset(INS_mov, EA_2BYTE, tmpReg, src->gtOp.gtOp1, offset);
 
             emit->emitIns_S_R(INS_mov,
                               EA_2BYTE,
@@ -3661,7 +3681,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 
         if ((size & 1) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_1BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
+            genCodeForLoadOffset(INS_mov, EA_1BYTE, tmpReg, src->gtOp.gtOp1, offset);
             emit->emitIns_S_R(INS_mov,
                               EA_1BYTE,
                               tmpReg,
@@ -4966,7 +4986,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 
 void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg, unsigned baseVarNum)
 {
-    assert(putArgNode->TypeGet() == TYP_STRUCT);
+    assert(varTypeIsStruct(putArgNode));
     assert(baseVarNum != BAD_VAR_NUM);
 
     // The putArgNode children are always contained. We should not consume any registers.
@@ -4976,7 +4996,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
 
     // Get the GT_ADDR node, which is GT_LCL_VAR_ADDR (asserted below.)
     GenTree* src = putArgNode->gtGetOp1();
-    assert(src->OperGet() == GT_LDOBJ);
+    assert((src->gtOper == GT_LDOBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     src = src->gtGetOp1();
     
     size_t size = putArgNode->getArgSize();
@@ -5868,7 +5888,22 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         else
 #endif // _TARGET_X86_
         {
-            regNumber returnReg = (varTypeIsFloating(returnType) ? REG_FLOATRET : REG_INTRET);
+            regNumber returnReg;
+            // TODO-Cleanup: For UNIX AMD64, we should not be allocating a return register for struct
+            // returns that are on stack.
+            // For the SIMD case, however, we do want a "return register", as the consumer of the call
+            // will want the value in a register. In future we should flexibly allocate this return
+            // register, but that should be done with a general cleanup of the allocation of return
+            // registers for structs.
+            if (varTypeIsFloating(returnType)
+                FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || varTypeIsSIMD(returnType)))
+            {
+                returnReg = REG_FLOATRET;
+            }
+            else
+            {
+                returnReg = REG_INTRET;
+            }
             if (call->gtRegNum != returnReg)
             {
                 inst_RV_RV(ins_Copy(returnType), call->gtRegNum, returnReg, returnType);
@@ -6159,7 +6194,7 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             continue;
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        if (varDsc->lvType == TYP_STRUCT)
+        if (varTypeIsStruct(varDsc))
         {
             CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
             assert(typeHnd != nullptr);
@@ -7965,7 +8000,7 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
         
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-        if (targetType == TYP_STRUCT)
+        if (varTypeIsStruct(targetType))
         {
             genPutStructArgStk(treeNode, baseVarNum);
             return;
@@ -8027,6 +8062,19 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
     assert(baseVarNum != BAD_VAR_NUM);
     
     var_types targetType = treeNode->TypeGet();
+
+    if (varTypeIsSIMD(targetType))
+    {
+        regNumber srcReg = genConsumeReg(treeNode->gtGetOp1());
+        assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
+        getEmitter()->emitIns_S_R(ins_Store(targetType),
+                                  emitTypeSize(targetType), 
+                                  srcReg,
+                                  baseVarNum,
+                                  treeNode->AsPutArgStk()->getArgOffset());
+        return;
+    }
+
     assert(targetType == TYP_STRUCT);
    
     GenTreePutArgStk* putArgStk = treeNode->AsPutArgStk();

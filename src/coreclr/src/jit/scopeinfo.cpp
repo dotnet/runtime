@@ -949,7 +949,7 @@ void                CodeGen::psiBegProlog()
             bool isStructHandled = false;
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            if (lclVarDsc1->TypeGet() == TYP_STRUCT)
+            if (varTypeIsStruct(lclVarDsc1))
             {
                 CORINFO_CLASS_HANDLE typeHnd = lclVarDsc1->lvVerTypeInfo.GetClassHandle();
                 assert(typeHnd != nullptr);
