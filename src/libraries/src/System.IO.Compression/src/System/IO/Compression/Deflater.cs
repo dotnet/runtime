@@ -42,7 +42,7 @@ namespace System.IO.Compression
                 // See the note in ZLibNative.CompressionLevel for the recommended combinations.
 
                 case CompressionLevel.Optimal:
-                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestCompression;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
                     memLevel = ZLibNative.Deflate_DefaultMemLevel;
                     break;
 

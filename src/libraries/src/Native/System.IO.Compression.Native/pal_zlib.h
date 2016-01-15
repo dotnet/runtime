@@ -50,7 +50,7 @@ enum PAL_CompressionLevel : int32_t
 {
     PAL_Z_NOCOMPRESSION = 0,
     PAL_Z_BESTSPEED = 1,
-    PAL_Z_BESTCOMPRESSION = 9,
+    PAL_Z_DEFAULTCOMPRESSION = -1,
 };
 
 /*
