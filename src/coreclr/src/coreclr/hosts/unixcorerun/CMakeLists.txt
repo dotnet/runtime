@@ -2,6 +2,8 @@ project(unixcorerun)
 
 include_directories(../unixcoreruncommon)
 
+add_compile_options(-fPIE)
+
 set(CORERUN_SOURCES 
     corerun.cpp 
 )
