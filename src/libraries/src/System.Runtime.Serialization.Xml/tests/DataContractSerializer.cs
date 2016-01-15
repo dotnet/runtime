@@ -1466,13 +1466,7 @@ public static partial class DataContractSerializerTests
         Queue<int> value = new Queue<int>();
         value.Enqueue(1);
         object syncRoot = ((ICollection)value).SyncRoot;
-        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value,
-#if DESKTOP
-@"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>2</_version></QueueOfint>"
-#else
- @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_syncRoot/><_tail>1</_tail><_version>2</_version></QueueOfint>"
-#endif
-);
+        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value, @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>2</_version></QueueOfint>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
         Assert.StrictEqual(a1.Length, a2.Length);
@@ -1486,7 +1480,7 @@ public static partial class DataContractSerializerTests
         value.Push(123);
         value.Push(456);
         object syncRoot = ((ICollection)value).SyncRoot;
-        var deserializedValue = SerializeAndDeserialize<Stack<int>>(value, @"<StackOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>123</a:int><a:int>456</a:int><a:int>0</a:int><a:int>0</a:int></_array><_size>2</_size><_syncRoot/><_version>2</_version></StackOfint>");
+        var deserializedValue = SerializeAndDeserialize<Stack<int>>(value, @"<StackOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>123</a:int><a:int>456</a:int><a:int>0</a:int><a:int>0</a:int></_array><_size>2</_size><_version>2</_version></StackOfint>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
         Assert.StrictEqual(a1.Length, a2.Length);
@@ -1501,7 +1495,7 @@ public static partial class DataContractSerializerTests
         value.Enqueue(123);
         value.Enqueue("Foo");
         object syncRoot = ((ICollection)value).SyncRoot;
-        var deserializedValue = SerializeAndDeserialize<Queue>(value, @"<Queue xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_growFactor>200</_growFactor><_head>0</_head><_size>2</_size><_syncRoot/><_tail>2</_tail><_version>2</_version></Queue>");
+        var deserializedValue = SerializeAndDeserialize<Queue>(value, @"<Queue xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_growFactor>200</_growFactor><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>2</_version></Queue>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
         Assert.StrictEqual(a1.Length, a2.Length);
@@ -1515,7 +1509,7 @@ public static partial class DataContractSerializerTests
         value.Push(123);
         value.Push("Foo");
         object syncRoot = ((ICollection)value).SyncRoot;
-        var deserializedValue = SerializeAndDeserialize<Stack>(value, @"<Stack xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_size>2</_size><_syncRoot/><_version>2</_version></Stack>");
+        var deserializedValue = SerializeAndDeserialize<Stack>(value, @"<Stack xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_size>2</_size><_version>2</_version></Stack>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
         Assert.StrictEqual(a1.Length, a2.Length);
@@ -1745,7 +1739,7 @@ public static partial class DataContractSerializerTests
     {
         List<string> list = new List<string>() { "Foo", "Bar" };
         ReadOnlyCollection<string> value = new ReadOnlyCollection<string>(list);
-        var deserializedValue = SerializeAndDeserialize<ReadOnlyCollection<string>>(value, @"<ReadOnlyCollectionOfstring xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_syncRoot i:nil=""true""/><list xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>Foo</a:string><a:string>Bar</a:string></list></ReadOnlyCollectionOfstring>");
+        var deserializedValue = SerializeAndDeserialize<ReadOnlyCollection<string>>(value, @"<ReadOnlyCollectionOfstring xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><list xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>Foo</a:string><a:string>Bar</a:string></list></ReadOnlyCollectionOfstring>");
         Assert.StrictEqual(value.Count, deserializedValue.Count);
         Assert.StrictEqual(value[0], deserializedValue[0]);
         Assert.StrictEqual(value[1], deserializedValue[1]);

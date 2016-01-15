@@ -1073,7 +1073,8 @@ namespace System.Runtime.Serialization
 
             private static bool CanSerializeMember(FieldInfo field)
             {
-                return field != null;
+                return field != null && 
+                    field.FieldType != Globals.TypeOfObject; // Don't really know how to serialize plain System.Object instance;
             }
 
             private bool SetIfGetOnlyCollection(DataMember memberContract)
