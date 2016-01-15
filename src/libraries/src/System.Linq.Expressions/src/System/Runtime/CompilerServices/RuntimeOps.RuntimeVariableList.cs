@@ -47,11 +47,11 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new IndexOutOfRangeException();
                 }
                 set
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new IndexOutOfRangeException();
                 }
             }
         }
