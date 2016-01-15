@@ -21,6 +21,13 @@
 
 typedef struct _MonoHandleArenaChunk MonoHandleArenaChunk;
 struct _MonoHandleArenaChunk {
+	/* if next is NULL, this is the first chunk.
+	 *
+	 * The first chunk is special - it was allocated together with
+	 * its owning arena and must not be deallocated unless the
+	 * arena is being deallocated.  N.B: Arenas are
+	 * stack-allocated.
+	 */
 	MonoHandleArenaChunk *next;
 	gsize handles_size;
 	MonoHandleStorage handles [HANDLES_PER_CHUNK];
@@ -28,7 +35,6 @@ struct _MonoHandleArenaChunk {
 
 struct _MonoHandleArena {
 	MonoHandleArenaChunk *chunk;
-	MonoHandleArenaChunk *chunk_last;
 	MonoHandleArena *prev;
 };
 
@@ -64,9 +70,16 @@ chunk_alloc (void)
 static inline void
 chunk_free (MonoHandleArenaChunk *chunk)
 {
-	do {
-		chunk->next = chunk_free_list;
-	} while (InterlockedCompareExchangePointer ((gpointer*) &chunk_free_list, chunk, chunk->next) != chunk->next);
+	if (chunk == NULL)
+		return;
+	while (chunk->next != NULL) {
+		MonoHandleArenaChunk *next = chunk->next;
+		chunk->next = NULL;
+		do {
+			chunk->next = chunk_free_list;
+		} while (InterlockedCompareExchangePointer ((gpointer*) &chunk_free_list, chunk, chunk->next) != chunk->next);
+		chunk = next;
+	}
 }
 
 static MonoHandle
@@ -75,25 +88,25 @@ handle_new (MonoHandleArena *arena, MonoObject *obj)
 	MonoHandleArenaChunk *chunk;
 
 	g_assert (arena->chunk);
-	g_assert (arena->chunk_last);
 
-	chunk = arena->chunk_last;
+	chunk = arena->chunk;
 
 	if (chunk->handles_size < HANDLES_PER_CHUNK) {
 		chunk->handles [chunk->handles_size].__private_obj = obj;
 		chunk->handles_size += 1;
 
 		return &chunk->handles [chunk->handles_size - 1];
+	} else {
+
+		MonoHandleArenaChunk *new_chunk = chunk_alloc ();
+		new_chunk->next = chunk;
+		arena->chunk = chunk = new_chunk;
+
+		chunk->handles [0].__private_obj = obj;
+		chunk->handles_size = 1;
+
+		return &chunk->handles [0];
 	}
-
-	chunk = chunk->next = chunk_alloc ();
-
-	chunk->handles [0].__private_obj = obj;
-	chunk->handles_size = 1;
-
-	arena->chunk_last = chunk;
-
-	return &chunk->handles [0];
 }
 
 MonoHandle
@@ -129,7 +142,7 @@ mono_handle_arena_stack_push(MonoHandleArena **arena_stack, MonoHandleArena *are
 	g_assert (arena);
 
 	arena->prev = *arena_stack;
-	arena->chunk = arena->chunk_last = (MonoHandleArenaChunk*) (((char*) arena) + sizeof (MonoHandleArena));
+	arena->chunk = (MonoHandleArenaChunk*) (((char*) arena) + sizeof (MonoHandleArena));
 
 	arena->chunk->next = NULL;
 	arena->chunk->handles_size = 0;
@@ -145,7 +158,6 @@ mono_handle_arena_stack_pop(MonoHandleArena **arena_stack, MonoHandleArena *aren
 
 	g_assert (arena);
 	g_assert (arena->chunk);
-	g_assert (arena->chunk_last);
 	g_assert (arena_stack);
 
 	*arena_stack = arena->prev;
@@ -153,7 +165,7 @@ mono_handle_arena_stack_pop(MonoHandleArena **arena_stack, MonoHandleArena *aren
 	for (chunk = arena->chunk; chunk; chunk = next) {
 		next = chunk->next;
 		memset (&chunk->handles [0], 0, sizeof (MonoHandleStorage) * HANDLES_PER_CHUNK);
-		if (chunk != arena->chunk)
+		if (next != NULL)
 			chunk_free (chunk);
 	}
 }
