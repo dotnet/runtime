@@ -9,7 +9,7 @@ namespace System.IO
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
-        // Therre is only one invalid path character in Unix
+        // There is only one invalid path character in Unix
         private const char InvalidPathChar = '\0';
         internal static readonly char[] InvalidPathChars = { InvalidPathChar };
 
