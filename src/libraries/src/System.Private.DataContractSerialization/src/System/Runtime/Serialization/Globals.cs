@@ -900,19 +900,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [SecurityCritical]
-        private static string[] s_dataContractSerializationPatterns;
-        internal static string[] DataContractSerializationPatterns
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_dataContractSerializationPatterns == null)
-                    s_dataContractSerializationPatterns = new string[] { SimpleSRSInternalsVisiblePattern, FullSRSInternalsVisiblePattern };
-                return s_dataContractSerializationPatterns;
-            }
-        }
-
         #region Contract compliance for System.Type
 
         private static bool TypeSequenceEqual(Type[] seq1, Type[] seq2)

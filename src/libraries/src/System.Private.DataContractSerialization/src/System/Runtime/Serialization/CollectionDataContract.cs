@@ -1298,9 +1298,9 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForRead(SecurityException securityException, string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForRead(SecurityException securityException)
         {
-            if (!IsTypeVisible(UnderlyingType, serializationAssemblyPatterns))
+            if (!IsTypeVisible(UnderlyingType))
             {
                 if (securityException != null)
                 {
@@ -1312,7 +1312,7 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (ItemType != null && !IsTypeVisible(ItemType, serializationAssemblyPatterns))
+            if (ItemType != null && !IsTypeVisible(ItemType))
             {
                 if (securityException != null)
                 {
@@ -1324,7 +1324,7 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (ConstructorRequiresMemberAccess(Constructor, serializationAssemblyPatterns))
+            if (ConstructorRequiresMemberAccess(Constructor))
             {
                 if (securityException != null)
                 {
@@ -1336,7 +1336,7 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (MethodRequiresMemberAccess(this.AddMethod, serializationAssemblyPatterns))
+            if (MethodRequiresMemberAccess(this.AddMethod))
             {
                 if (securityException != null)
                 {
@@ -1358,9 +1358,9 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForWrite(SecurityException securityException, string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForWrite(SecurityException securityException)
         {
-            if (!IsTypeVisible(UnderlyingType, serializationAssemblyPatterns))
+            if (!IsTypeVisible(UnderlyingType))
             {
                 if (securityException != null)
                 {
@@ -1372,7 +1372,7 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (ItemType != null && !IsTypeVisible(ItemType, serializationAssemblyPatterns))
+            if (ItemType != null && !IsTypeVisible(ItemType))
             {
                 if (securityException != null)
                 {
