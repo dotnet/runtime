@@ -4290,38 +4290,6 @@ getPath(
     return FALSE;
 }
 
-#if HAVE_MACH_EXCEPTIONS
-/*++
-Function:
-  PROCThreadFromMachPort
-  
-  Given a Mach thread port, return the CPalThread associated with it.
-
-Return
-    CPalThread*
---*/
-CorUnix::CPalThread *PROCThreadFromMachPort(mach_port_t hTargetThread)
-{
-    CorUnix::CPalThread *pThread;
-
-    PROCProcessLock();
-
-    pThread = pGThreadList;
-    while (pThread)
-    {
-        mach_port_t hThread = pThread->GetMachPortSelf();
-        if (hThread == hTargetThread)
-            break;
-
-        pThread = pThread->GetNext();
-    }
-    
-    PROCProcessUnlock();
-
-    return pThread;
-}
-#endif // HAVE_MACH_EXCEPTIONS
-
 /*++
 Function:
     ~CProcProcessLocalData

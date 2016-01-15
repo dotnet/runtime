@@ -425,8 +425,8 @@ Function:
 --*/
 kern_return_t
 CONTEXT_GetThreadContextFromPort(
-        mach_port_t Port,
-        LPCONTEXT lpContext);
+    mach_port_t Port,
+    LPCONTEXT lpContext);
 
 /*++
 Function:
@@ -436,9 +436,20 @@ Function:
 --*/
 kern_return_t
 CONTEXT_SetThreadContextOnPort(
-           mach_port_t Port,
-           IN CONST CONTEXT *lpContext);
+   mach_port_t Port,
+   IN CONST CONTEXT *lpContext);
 
+/*++
+Function:
+  GetThreadContextFromThreadState
+
+  Helper for mach exception support
+--*/
+void
+CONTEXT_GetThreadContextFromThreadState(
+    thread_state_flavor_t stateFlavor,
+    thread_state_t threadState,
+    LPCONTEXT lpContext);
 
 #else // HAVE_MACH_EXCEPTIONS
 /*++

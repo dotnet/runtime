@@ -18,9 +18,9 @@
 #include "unixasmmacros.inc"
 
 #if defined(__x86_64__)
-#define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionmmmmmmP8_CONTEXTP17_EXCEPTION_RECORD
+#define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionmmmmmmP8_CONTEXTP17_EXCEPTION_RECORDP11MachMessage
 #else //!defined(_AMD64_)
-#define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionP8_CONTEXTP17_EXCEPTION_RECORD
+#define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionP8_CONTEXTP17_EXCEPTION_RECORDP11MachMessage
 #endif // defined(_AMD64_)
 
 // Offset of the return address from the PAL_DISPATCHEXCEPTION in the PAL_DispatchExceptionWrapper
@@ -34,13 +34,14 @@ C_FUNC(PAL_DispatchExceptionReturnOffset):
 // unwinding behavior is equivalent to any standard function having
 // an ebp frame. It is analogous to the following source file.
 // 
-// void PAL_DispatchException(CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
+// void PAL_DispatchException(CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord, MachMessage *pMessage);
 // 
 // extern "C" void PAL_DispatchExceptionWrapper()
 // {
 //     CONTEXT Context;
 //     EXCEPTION_RECORD ExceptionRecord;
-//     PAL_DispatchException(&Context, &ExceptionRecord);
+//     MachMessage Message;
+//     PAL_DispatchException(&Context, &ExceptionRecord, &Message);
 // }
 //
 

@@ -63,8 +63,15 @@ Abstract:
 MachMessage::MachMessage()
 {
     m_fPortsOwned = false;
-    
     ResetMessage();
+}
+
+void MachMessage::InitializeFrom(const MachMessage& source)
+{
+    m_fPortsOwned = false;
+    ResetMessage();
+
+    memcpy(&m_rgMessageBuffer, &source.m_rgMessageBuffer, sizeof(m_rgMessageBuffer));
 }
 
 // Listen for the next message on the given port and initialize this class with the contents. The message type
@@ -102,7 +109,6 @@ void MachMessage::Receive(mach_port_t hPort)
     case EXCEPTION_RAISE_REPLY_64_MESSAGE_ID:
     case EXCEPTION_RAISE_STATE_REPLY_64_MESSAGE_ID:
     case EXCEPTION_RAISE_STATE_IDENTITY_REPLY_64_MESSAGE_ID:
-    case NOTIFY_SEND_ONCE_MESSAGE_ID:
         break;
     default:
         FATAL_ERROR("Unsupported message type: %u", m_pMessage->header.msgh_id);
@@ -149,12 +155,6 @@ bool MachMessage::IsExceptionReply()
     default:
         return false;
     }
-}
-
-// Indicates whether the message is a notification that a send-once message was destroyed by the receiver.
-bool MachMessage::IsSendOnceDestroyedNotify()
-{
-    return m_pMessage->header.msgh_id == NOTIFY_SEND_ONCE_MESSAGE_ID;
 }
 
 // Returns the type code for a received message.
@@ -473,7 +473,7 @@ size_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor, thread_state_t
     {
         // There's a state in the message, but we need to check that the flavor matches what the caller's
         // after (if not we'll fall through and get the correct flavor below).
-        if (m_pMessage->data.raise_state.flavor == eFlavor)
+        if (m_pMessage->data.raise_state_identity.flavor == eFlavor)
         {
             cbState = m_pMessage->data.raise_state_identity.old_state_count * sizeof(natural_t);
             memcpy(pState,
@@ -488,7 +488,7 @@ size_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor, thread_state_t
     {
         // There's a state in the message, but we need to check that the flavor matches what the caller's
         // after (if not we'll fall through and get the correct flavor below).
-        if (m_pMessage->data.raise_state_64.flavor == eFlavor)
+        if (m_pMessage->data.raise_state_identity_64.flavor == eFlavor)
         {
             cbState = m_pMessage->data.raise_state_identity_64.old_state_count * sizeof(natural_t);
             memcpy(pState,
@@ -533,7 +533,7 @@ size_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor, thread_state_t
     {
         // There's a state in the message, but we need to check that the flavor matches what the caller's
         // after (if not we'll fall through and get the correct flavor below).
-        if (m_pMessage->data.raise_state_reply.flavor == eFlavor)
+        if (m_pMessage->data.raise_state_identity_reply.flavor == eFlavor)
         {
             cbState = m_pMessage->data.raise_state_identity_reply.new_state_count * sizeof(natural_t);
             memcpy(pState,
@@ -548,7 +548,7 @@ size_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor, thread_state_t
     {
         // There's a state in the message, but we need to check that the flavor matches what the caller's
         // after (if not we'll fall through and get the correct flavor below).
-        if (m_pMessage->data.raise_state_reply_64.flavor == eFlavor)
+        if (m_pMessage->data.raise_state_identity_reply_64.flavor == eFlavor)
         {
             cbState = m_pMessage->data.raise_state_identity_reply_64.new_state_count * sizeof(natural_t);
             memcpy(pState,
@@ -566,10 +566,7 @@ size_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor, thread_state_t
     // No state in the message or the flavor didn't match. Get the requested flavor of state directly from the
     // thread instead.
     mach_msg_type_number_t iStateCount = THREAD_STATE_MAX;
-    machret = thread_get_state(hThread ? hThread : GetThread(),
-                               eFlavor,
-                               (thread_state_t)pState,
-                               &iStateCount);
+    machret = thread_get_state(hThread ? hThread : GetThread(), eFlavor, (thread_state_t)pState, &iStateCount);
     MACH_CHECK("thread_get_state()");
 
     return iStateCount * sizeof(natural_t);
@@ -619,18 +616,9 @@ void MachMessage::SendSetThread(mach_port_t hServerPort, thread_act_t hThread, C
 // the exception type being notified. The new message takes account of the fact that the target handler may
 // not have requested the same notification behavior or flavor as our handler. A new Mach port is created to
 // receive the reply, and this port is returned to the caller. Clean up the message afterwards.
-mach_port_t MachMessage::ForwardNotification(CorUnix::MachExceptionHandler *pHandler,
-                                             MachMessage *pNotification)
+void MachMessage::ForwardNotification(CorUnix::MachExceptionHandler *pHandler, MachMessage *pNotification)
 {
     kern_return_t machret;
-    mach_port_t hReplyPort;
-    
-    // Allocate a new port dedicated to receiving the reply for this forward. This will allow us to match the
-    // reply to the original request later on.
-    machret = mach_port_allocate(mach_task_self(),
-                                 MACH_PORT_RIGHT_RECEIVE,
-                                 &hReplyPort);
-    MACH_CHECK("mach_port_allocate()");
 
     // Set the message type.
     m_pMessage->header.msgh_id = MapBehaviorToNotificationType(pHandler->m_behavior);
@@ -643,15 +631,15 @@ mach_port_t MachMessage::ForwardNotification(CorUnix::MachExceptionHandler *pHan
     // the two messages may be in different formats (e.g. RAISE vs RAISE_STATE). We silently drop data that is
     // not needed in the outgoing message and synthesize any required data that is not present in the incoming
     // message.
-
     SetThread(pNotification->GetThread());
-
     SetException(pNotification->GetException());
 
     int cCodes = pNotification->GetExceptionCodeCount();
     SetExceptionCodeCount(cCodes);
     for (int i = 0; i < cCodes; i++)
         SetExceptionCode(i, pNotification->GetExceptionCode(i));
+
+    NONPAL_TRACE("ForwardNotification: handler thread flavor %04x\n", pHandler->m_flavor);
 
     // Don't bother fetching thread state unless the destination actually requires it.
     if (pHandler->m_flavor != THREAD_STATE_NONE)
@@ -663,8 +651,8 @@ mach_port_t MachMessage::ForwardNotification(CorUnix::MachExceptionHandler *pHan
 
     // Initialize header fields.
     m_pMessage->header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, MACH_MSG_TYPE_MAKE_SEND_ONCE);
-    m_pMessage->header.msgh_remote_port = pHandler->m_handler;  // Forward to here
-    m_pMessage->header.msgh_local_port = hReplyPort;            // The reply will come here
+    m_pMessage->header.msgh_remote_port = pHandler->m_handler;              // Forward to here
+    m_pMessage->header.msgh_local_port = pNotification->GetLocalPort();     // The reply will come here
 
     // Set the message header size field based on the contents of the message (call this function after all
     // other fields have been initialized).
@@ -682,17 +670,13 @@ mach_port_t MachMessage::ForwardNotification(CorUnix::MachExceptionHandler *pHan
 
     // Erase any stale data.
     ResetMessage();
-
-    // Return the port the reply is expected on.
-    return hReplyPort;
 }
 
 // Initialize the message to represent a reply to the given exception
 // notification and send that reply back to the original sender of the notification. This is used when our
 // handler handles the exception rather than forwarding it to a chain-back handler.
 // Clean up the message afterwards.
-void MachMessage::ReplyToNotification(MachMessage *pNotification,
-                                      kern_return_t eResult)
+void MachMessage::ReplyToNotification(MachMessage *pNotification, kern_return_t eResult)
 {
     kern_return_t machret;
 
@@ -742,74 +726,6 @@ void MachMessage::ReplyToNotification(MachMessage *pNotification,
 
     // Erase any stale data.
     ResetMessage();
-}
-
-// Initialize the message to represent a reply to a notification message of
-// the given format given a reply from another handler that might be in another format and send it to the
-// given port. This is used to reply to an exception notification we didn't handle ourselves but instead
-// forwarded to a chain-back handler. Clean up the message afterwards.
-void MachMessage::ForwardReply(mach_port_t hForwardPort,
-                               MessageType eNotificationType,
-                               thread_act_t hThread,
-                               thread_state_flavor_t eNotificationFlavor,
-                               MachMessage *pReply)
-{
-    kern_return_t machret;
-
-    // Set the message type.
-    m_pMessage->header.msgh_id = MapNotificationToReplyType(eNotificationType);
-
-    // Initialize the fields that don't need any further input (this depends on the message type having been
-    // set above).
-    InitFixedFields();
-
-    SetReturnCode(pReply->GetReturnCode());
-
-    thread_state_data_t sThreadState;
-    size_t cbState;
-
-    // If the reply contains a thread state then we're expected to apply this state to the target thread.
-    if (pReply->GetMessageType() != EXCEPTION_RAISE_REPLY_MESSAGE_ID &&
-        pReply->GetMessageType() != EXCEPTION_RAISE_REPLY_64_MESSAGE_ID)
-    {
-        thread_state_flavor_t eReplyFlavor = pReply->GetThreadStateFlavor();
-        cbState = pReply->GetThreadState(eReplyFlavor, (thread_state_t)&sThreadState, hThread);
-
-        machret = thread_set_state(hThread,
-                                   eReplyFlavor,
-                                   (thread_state_t)&sThreadState,
-                                   cbState / sizeof(natural_t));
-        MACH_CHECK("thread_set_state()");
-    }
-
-    if (eNotificationFlavor != THREAD_STATE_NONE)
-    {
-        cbState = pReply->GetThreadState(eNotificationFlavor, (thread_state_t)&sThreadState, hThread);
-        SetThreadState(eNotificationFlavor, (thread_state_t)&sThreadState, cbState);
-    }
-
-    // Initialize header fields.
-    m_pMessage->header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_MOVE_SEND_ONCE, 0);
-    m_pMessage->header.msgh_remote_port = hForwardPort;     // Reply goes back to the original sender
-    m_pMessage->header.msgh_local_port = 0;                 // No reply to this expected
-
-    // Set the message header size field based on the contents of the message (call this function after all
-    // other fields have been initialized).
-    InitMessageSize();
-
-    // Send the formatted message.
-    machret = mach_msg((mach_msg_header_t*)m_pMessage,
-                       MACH_SEND_MSG | MACH_MSG_OPTION_NONE,
-                       m_pMessage->header.msgh_size,
-                       0,
-                       MACH_PORT_NULL,
-                       MACH_MSG_TIMEOUT_NONE,
-                       MACH_PORT_NULL);
-    MACH_CHECK("mach_msg()");
-
-    // Erase any stale data.
-    ResetMessage();
-
 }
 
 // Re-initializes this data structure (to the same state as default construction, containing no message).
