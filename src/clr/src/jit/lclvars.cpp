@@ -77,6 +77,9 @@ void                Compiler::lvaInit()
     lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 #endif // FEATURE_SIMD
     lvaCurEpoch = 0;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    lvaFirstStackIncomingArgNum = BAD_VAR_NUM;
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
 
 /*****************************************************************************/
