@@ -898,6 +898,11 @@ namespace System.Linq.Expressions
                 {
                     var lastExpression = expressionList[expressionCount - 1];
 
+                    if (lastExpression == null)
+                    {
+                        throw Error.ArgumentNull("expressions");
+                    }
+
                     if (lastExpression.Type == type)
                     {
                         return GetOptimizedBlockExpression(expressionList);
@@ -972,15 +977,15 @@ namespace System.Linq.Expressions
 
         private static BlockExpression GetOptimizedBlockExpression(IReadOnlyList<Expression> expressions)
         {
+            RequiresCanRead(expressions, "expressions");
             switch (expressions.Count)
             {
-                case 2: return Block(expressions[0], expressions[1]);
-                case 3: return Block(expressions[0], expressions[1], expressions[2]);
-                case 4: return Block(expressions[0], expressions[1], expressions[2], expressions[3]);
-                case 5: return Block(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
+                case 2: return new Block2(expressions[0], expressions[1]);
+                case 3: return new Block3(expressions[0], expressions[1], expressions[2]);
+                case 4: return new Block4(expressions[0], expressions[1], expressions[2], expressions[3]);
+                case 5: return new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
                 default:
                     ContractUtils.RequiresNotEmptyList(expressions, "expressions");
-                    RequiresCanRead(expressions, "expressions");
                     return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
             }
         }
