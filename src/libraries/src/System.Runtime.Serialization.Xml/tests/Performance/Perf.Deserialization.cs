@@ -22,12 +22,16 @@ namespace System.Runtime.Tests
                 serializer.WriteObject(stream, obj);
 
                 foreach (var iteration in Benchmark.Iterations)
+                {
                     using (iteration.StartMeasurement())
+                    {
                         for (int i = 0; i < 3; i++)
                         {
                             stream.Position = 0;
                             SimpleType obj2 = (SimpleType)serializer.ReadObject(stream);
                         }
+                    }
+                }
             }
         }
 
