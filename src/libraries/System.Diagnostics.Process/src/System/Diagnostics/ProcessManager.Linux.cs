@@ -124,26 +124,34 @@ namespace System.Diagnostics
 
             // Then read through /proc/pid/task/ to find each thread in the process...
             string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
-            foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
+            try
             {
-                // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
-                string dirName = Path.GetFileName(taskDir);
-                int tid;
-                Interop.procfs.ParsedStat stat;
-                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
-                    Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
+                foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
                 {
-                    pi._threadInfoList.Add(new ThreadInfo()
+                    // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
+                    string dirName = Path.GetFileName(taskDir);
+                    int tid;
+                    Interop.procfs.ParsedStat stat;
+                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
+                        Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
                     {
-                        _processId = pid,
-                        _threadId = (ulong)tid,
-                        _basePriority = pi.BasePriority,
-                        _currentPriority = (int)stat.nice,
-                        _startAddress = (IntPtr)stat.startstack,
-                        _threadState = ProcFsStateToThreadState(stat.state),
-                        _threadWaitReason = ThreadWaitReason.Unknown
-                    });
+                        pi._threadInfoList.Add(new ThreadInfo()
+                        {
+                            _processId = pid,
+                            _threadId = (ulong)tid,
+                            _basePriority = pi.BasePriority,
+                            _currentPriority = (int)stat.nice,
+                            _startAddress = (IntPtr)stat.startstack,
+                            _threadState = ProcFsStateToThreadState(stat.state),
+                            _threadWaitReason = ThreadWaitReason.Unknown
+                        });
+                    }
                 }
+            }
+            catch (IOException)
+            {
+                // Between the time that we get an ID and the time that we try to read the associated 
+                // directoies and files in procfs, the process could be gone.
             }
 
             // Finally return what we've built up
