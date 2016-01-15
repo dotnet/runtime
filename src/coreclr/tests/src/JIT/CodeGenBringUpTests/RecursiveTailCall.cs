@@ -25,6 +25,11 @@ public struct Struct8
     }
 }
 
+class GenericClass<T> { }
+class GenericException<T> : Exception
+{
+}
+
 public class Test
 {
     // Test a recursive tail call with a 1-byte struct parameter.
@@ -92,6 +97,24 @@ public class Test
         }
     }
 
+    // Test a recursive tail call to a method with hidden generic context param.
+    // This test will make sure that when a recursive call is converte to a loop
+    // there is no mismatch of generic context reported to VM and the one used
+    // within the method.
+    public static int TestGenericContext<T>(int x)
+    {
+        try
+        {
+            if (x == 1) throw new GenericException<T>();
+        }
+        catch (GenericException<T>)
+        {            
+            return 1;
+        }
+
+        return x * TestGenericContext<GenericClass<T>>(x - 1);
+    }
+
     // Test a recursive tail call to a method that has a 'this' parameter
     // and a parameter passed on the stack.
     bool TestStackParam(int i1, int i2, int i3, int i4)
@@ -136,6 +159,11 @@ public class Test
         if (!test.TestStackParam(1, 0, 5, 7))
         {
             return Fail;
+        }
+
+        if (TestGenericContext<GenericClass<int>>(5) != 120)
+        {
+           return Fail;
         }
 
         return Pass;
