@@ -531,9 +531,7 @@
         "Description": "Provides base input and output (I/O) types, including System.IO.Stream, System.IO.StreamReader and System.IO.StreamWriter, that allow reading and writing to data streams",
         "CommonTypes": [
             "System.IO.Stream",
-            "System.IO.IOException",
             "System.IO.EndOfStreamException",
-            "System.IO.FileNotFoundException",
             "System.IO.MemoryStream",
             "System.IO.StreamReader",
             "System.IO.StreamWriter",
