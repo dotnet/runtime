@@ -463,12 +463,14 @@ namespace System.Net.Sockets.Tests
             SendToRecvFromAsync_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
+        [ActiveIssue(5411, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_UdpClient_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAsync_UdpClient_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
+        [ActiveIssue(5411, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_UdpClient_Single_Datagram_UDP_IPv4()
         {
@@ -506,6 +508,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue(5234, PlatformID.Windows)]
         public void SendRecvAsync_TcpListener_TcpClient_IPv4()
         {
             SendRecvAsync_TcpListener_TcpClient(IPAddress.Loopback);
