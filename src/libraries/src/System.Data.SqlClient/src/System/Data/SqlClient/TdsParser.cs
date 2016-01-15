@@ -3941,6 +3941,8 @@ namespace System.Data.SqlClient
                     return false;
                 }
 
+                col.isDifferentName = (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName));
+                col.isExpression = (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression));
                 col.isKey = (TdsEnums.SQLKey == (status & TdsEnums.SQLKey));
                 col.isHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
 
