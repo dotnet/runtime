@@ -10772,7 +10772,15 @@ _CONV:
                 // it to its address.  This is more efficient.
 
                 if (varTypeIsStruct(op1))
-                {
+                {                    
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                    // Non-calls, such as ldobj or ret_expr, have to go through this.
+                    // Calls with large struct return value have to go through this.
+                    // Helper calls with small struct return value also have to go 
+                    // through this since they do not follow Unix calling convention.
+                    if (op1->gtOper != GT_CALL || !IsRegisterPassable(clsHnd) 
+                       || op1->AsCall()->gtCallType == CT_HELPER)
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
                     op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
                 }
 
