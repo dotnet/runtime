@@ -64,9 +64,7 @@
     <ProjectFile Include="resview\resview.csproj" />
     <ProjectFile Include="runsxs\runsxs.nativeproj" />
     <ProjectFile Include="soapsuds\dirs.proj" />
-    <ProjectFile Include="sos\dirs.proj" >
-        <ProductGroups>FX;PK</ProductGroups>
-    </ProjectFile>
+    <ProjectFile Include="sos\dirs.proj" />
     <ProjectFile Include="storeadm\storeadm.csproj" />
     <ProjectFile Include="tlbexp\tlbexp_msbuild.csproj" />
     <ProjectFile Include="tlbguid\tlbguid.csproj" />
