@@ -82,7 +82,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 {
                     case 'x64':
                     case 'x86':
-                        if (isFlowJob || os == 'Windows_NT') {
+                        if (isFlowJob || os == 'Windows_NT' || !(os in Constants.crossList)) {
                             // default gets a push trigger for everything
                             Utilities.addGithubPushTrigger(job)
                         }
