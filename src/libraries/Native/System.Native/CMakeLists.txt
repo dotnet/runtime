@@ -31,8 +31,17 @@ add_library(System.Native
     ${NATIVE_SOURCES}
 )
 
+
+add_library(System.Native-Static
+    STATIC
+    ${NATIVE_SOURCES}
+)
+SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
+
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     target_link_libraries(System.Native rt)
 endif ()
 
 install (TARGETS System.Native DESTINATION .)
+install (TARGETS System.Native-Static DESTINATION .)
