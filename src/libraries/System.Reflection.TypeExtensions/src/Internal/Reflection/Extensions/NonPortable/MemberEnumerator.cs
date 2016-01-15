@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.IO;
-using global::System.Linq;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
@@ -20,14 +17,24 @@ namespace Internal.Reflection.Extensions.NonPortable
         {
             // Do all the up-front argument validation here so that the exception occurs on call rather than on the first move.
             if (type == null)
+            {
                 throw new ArgumentNullException();
+            }
             if (nameFilterOrAnyName == null)
+            {
                 throw new ArgumentNullException();
+            }
+
             String optionalNameFilter;
             if (nameFilterOrAnyName == AnyName)
+            {
                 optionalNameFilter = null;
+            }
             else
+            {
                 optionalNameFilter = (String)nameFilterOrAnyName;
+            }
+
             return GetMembersWorker<M>(type, optionalNameFilter, bindingFlags);
         }
 
@@ -66,7 +73,9 @@ namespace Internal.Reflection.Extensions.NonPortable
                         if (nameFilterIsPrefix)
                         {
                             if (!member.Name.StartsWith(optionalNameFilter, comparisonType))
+                            {
                                 continue;
+                            }
                         }
                         else if (!member.Name.Equals(optionalNameFilter, comparisonType))
                         {
@@ -84,23 +93,33 @@ namespace Internal.Reflection.Extensions.NonPortable
                     memberBindingFlags |= (isStatic ? BindingFlags.Static : BindingFlags.Instance);
                     memberBindingFlags |= ((visibility == MethodAttributes.Public) ? BindingFlags.Public : BindingFlags.NonPublic);
                     if ((bindingFlags & memberBindingFlags) != memberBindingFlags)
+                    {
                         continue;
+                    }
 
                     bool passesVisibilityScreen = true;
                     if (inBaseClass && visibility == MethodAttributes.Private)
+                    {
                         passesVisibilityScreen = false;
+                    }
 
                     bool passesStaticScreen = true;
                     if (inBaseClass && isStatic && (0 == (bindingFlags & BindingFlags.FlattenHierarchy)))
+                    {
                         passesStaticScreen = false;
+                    }
 
                     //
                     // Desktop compat: The order in which we do checks is important.
                     //
                     if (!passesVisibilityScreen)
+                    {
                         continue;
+                    }
                     if ((!passesStaticScreen) && !(typeOfM.Equals(typeOfEventInfo)))
+                    {
                         continue;
+                    }
 
                     bool isImplicitlyOverridden = false;
                     if (isVirtual)
@@ -140,19 +159,29 @@ namespace Internal.Reflection.Extensions.NonPortable
                     }
 
                     if (isImplicitlyOverridden)
+                    {
                         continue;
+                    }
 
                     if (!passesStaticScreen)
+                    {
                         continue;
+                    }
 
                     if (inBaseClass)
+                    {
                         yield return policies.GetInheritedMemberInfo(member, reflectedType);
+                    }
                     else
+                    {
                         yield return member;
+                    }
                 }
 
                 if (0 != (bindingFlags & BindingFlags.DeclaredOnly))
+                {
                     break;
+                }
 
                 inBaseClass = true;
                 type = typeInfo.BaseType;
@@ -175,28 +204,38 @@ namespace Internal.Reflection.Extensions.NonPortable
             bool isNewSlot;
             policies.GetMemberAttributes(member, out visibility, out isStatic, out isVirtual, out isNewSlot);
             if (isNewSlot || !isVirtual)
+            {
                 return null;
+            }
             String name = member.Name;
             TypeInfo typeInfo = member.DeclaringType.GetTypeInfo();
             for (; ;)
             {
                 Type baseType = typeInfo.BaseType;
                 if (baseType == null)
+                {
                     return null;
+                }
                 typeInfo = baseType.GetTypeInfo();
                 foreach (M candidate in policies.GetDeclaredMembers(typeInfo))
                 {
                     if (candidate.Name != name)
+                    {
                         continue;
+                    }
                     MethodAttributes candidateVisibility;
                     bool isCandidateStatic;
                     bool isCandidateVirtual;
                     bool isCandidateNewSlot;
                     policies.GetMemberAttributes(member, out candidateVisibility, out isCandidateStatic, out isCandidateVirtual, out isCandidateNewSlot);
                     if (!isCandidateVirtual)
+                    {
                         continue;
+                    }
                     if (!policies.AreNamesAndSignatureEqual(member, candidate))
+                    {
                         continue;
+                    }
                     return candidate;
                 }
             }
@@ -209,4 +248,3 @@ namespace Internal.Reflection.Extensions.NonPortable
         public static readonly Object AnyName = new Object();
     }
 }
-

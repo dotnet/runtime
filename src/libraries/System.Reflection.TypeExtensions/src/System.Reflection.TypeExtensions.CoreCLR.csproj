@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -33,12 +33,16 @@
     <Compile Include="System\Reflection\ModuleExtensions.cs" />
     <Compile Include="System\Reflection\MethodInfoExtensions.cs" />
     <Compile Include="System\Reflection\PropertyInfoExtensions.cs" />
-    <Compile Include="System\Reflection\TypeExtensions.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.netcore50aot.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\InheritedPropertyInfo.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberEnumerator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberPolicies.cs" />
-    <Compile Include="$(CommonPath)\Internal\Reflection\Execution\Binder\DefaultBinder.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs" />
+    <Compile Include="$(CommonPath)\Internal\Reflection\Execution\Binder\DefaultBinder.cs">
+      <Link>Common\Internal\Reflection\Execution\Binder\DefaultBinder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
+      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
+    </Compile>
     <TargetingPackReference Include="System.Private.Reflection.Extensibility" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">

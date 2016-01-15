@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.IO;
-using global::System.Linq;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
@@ -64,19 +62,25 @@ namespace Internal.Reflection.Extensions.NonPortable
         protected static bool AreNamesAndSignaturesEqual(MethodInfo method1, MethodInfo method2)
         {
             if (method1.Name != method2.Name)
+            {
                 return false;
+            }
 
             ParameterInfo[] p1 = method1.GetParameters();
             ParameterInfo[] p2 = method2.GetParameters();
             if (p1.Length != p2.Length)
+            {
                 return false;
+            }
 
             for (int i = 0; i < p1.Length; i++)
             {
                 Type parameterType1 = p1[i].ParameterType;
                 Type parameterType2 = p2[i].ParameterType;
                 if (!(parameterType1.Equals(parameterType2)))
+                {
                     return false;
+                }
             }
             return true;
         }
@@ -92,19 +96,33 @@ namespace Internal.Reflection.Extensions.NonPortable
                 {
                     Type t = typeof(M);
                     if (t.Equals(typeof(FieldInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new FieldPolicies());
+                    }
                     else if (t.Equals(typeof(MethodInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new MethodPolicies());
+                    }
                     else if (t.Equals(typeof(ConstructorInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new ConstructorPolicies());
+                    }
                     else if (t.Equals(typeof(PropertyInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new PropertyPolicies());
+                    }
                     else if (t.Equals(typeof(EventInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new EventPolicies());
+                    }
                     else if (t.Equals(typeof(TypeInfo)))
+                    {
                         _default = (MemberPolicies<M>)(Object)(new NestedTypePolicies());
+                    }
                     else
+                    {
                         Debug.Assert(false, "Unknown MemberInfo type.");
+                    }
                 }
                 return _default;
             }
@@ -232,7 +250,10 @@ namespace Internal.Reflection.Extensions.NonPortable
         {
             MethodInfo accessor = property.GetMethod;
             if (accessor == null)
+            {
                 accessor = property.SetMethod;
+            }
+
             return accessor;
         }
     }
