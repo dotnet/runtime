@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -35,7 +32,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(4014)]
         public void IRuntimeVariablesListChecksBounds()
         {
             ParameterExpression x = Expression.Variable(typeof(int));
@@ -47,29 +43,10 @@ namespace System.Linq.Expressions.Tests
                     )
                 ).Compile()();
             Assert.Equal(2, vars.Count);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[-1] = null);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[2]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[2] = null);
-        }
-
-        // Delete if above issue is fixed
-        [Fact]
-        public void IRuntimeVariablesListChecksBoundsTemp()
-        {
-            ParameterExpression x = Expression.Variable(typeof(int));
-            ParameterExpression y = Expression.Variable(typeof(int));
-            IRuntimeVariables vars = Expression.Lambda<Func<IRuntimeVariables>>(
-                Expression.Block(
-                    new[] { x, y },
-                    Expression.RuntimeVariables(x, y)
-                    )
-                ).Compile()();
-            Assert.Equal(2, vars.Count);
-            Assert.ThrowsAny<Exception>(() => vars[-1]);
-            Assert.ThrowsAny<Exception>(() => vars[-1] = null);
-            Assert.ThrowsAny<Exception>(() => vars[2]);
-            Assert.ThrowsAny<Exception>(() => vars[2] = null);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[-1]);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[-1] = null);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[2]);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[2] = null);
         }
 
         [Fact]
@@ -163,8 +140,8 @@ namespace System.Linq.Expressions.Tests
         {
             IRuntimeVariables vars = Expression.Lambda<Func<IRuntimeVariables>>(Expression.RuntimeVariables()).Compile()();
             Assert.Equal(0, vars.Count);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[0]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => vars[0] = null);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[0]);
+            Assert.Throws<IndexOutOfRangeException>(() => vars[0] = null);
         }
 
         [Fact]
