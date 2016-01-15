@@ -531,9 +531,19 @@ namespace System {
         public static String MachineName {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
+
+                // UWP Debug scenarios
+                if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
+                {
+                    // Getting Computer Name is not a supported scenario on Store apps.
+                    throw new PlatformNotSupportedException();
+                }
+
                 // In future release of operating systems, you might be able to rename a machine without
                 // rebooting.  Therefore, don't cache this machine name.
+#if !FEATURE_CORECLR
                 new EnvironmentPermission(EnvironmentPermissionAccess.Read, "COMPUTERNAME").Demand();
+#endif
                 StringBuilder buf = new StringBuilder(MaxMachineNameLength);
                 int len = MaxMachineNameLength;
                 if (Win32Native.GetComputerName(buf, ref len) == 0)
@@ -1239,9 +1249,9 @@ namespace System {
             }
         }
 
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         internal static String GetStackTrace(Exception e, bool needFileInfo)
         {
             // Note: Setting needFileInfo to true will start up COM and set our
@@ -1287,16 +1297,16 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static String GetResourceFromDefault(String key);           
-#endif	
+#endif
 
         // Looks up the resource string value for key.
         // 
         // if you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         internal static String GetResourceStringLocal(String key) {
             if (m_resHelper == null)
                 InitResourceHelper();
@@ -1345,26 +1355,26 @@ namespace System {
 
         public static bool Is64BitProcess {
             get {
-                #if WIN32
+#if WIN32
                     return false;
-                #else
+#else
                     return true;
-                #endif
+#endif
             }
         }
 
         public static bool Is64BitOperatingSystem {
             [System.Security.SecuritySafeCritical]
             get {
-                #if WIN32                    
+#if WIN32
                     bool isWow64; // WinXP SP2+ and Win2k3 SP1+
                     return Win32Native.DoesWin32MethodExist(Win32Native.KERNEL32, "IsWow64Process")
                         && Win32Native.IsWow64Process(Win32Native.GetCurrentProcess(), out isWow64)
                         && isWow64;
-                #else
+#else
                     // 64-bit programs run only on 64-bit
                     return true;
-                #endif
+#endif
             }
         }
 
