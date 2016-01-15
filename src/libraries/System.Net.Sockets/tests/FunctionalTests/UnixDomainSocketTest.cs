@@ -3,8 +3,7 @@
 
 using System.IO;
 using System.Net.Test.Common;
-using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -20,12 +19,6 @@ namespace System.Net.Sockets.Tests
             _log = TestLogging.GetInstance();
         }
 
-        private void OnConnectAsyncCompleted(object sender, SocketAsyncEventArgs args)
-        {
-            ManualResetEvent complete = (ManualResetEvent)args.UserToken;
-            complete.Set();
-        }
-
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
@@ -35,8 +28,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
-        public void Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
             string path = null;
             SocketTestServer server = null;
@@ -53,8 +46,8 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (SocketException)
                 {
-                    // Path selection is contingent on a successful Bind(). 
-                    // If it fails, the next iteration will try another path.
+                    //Path selection is contingent on a successful Bind().
+                    //If it fails, the next iteration will try another path.
                 }
             }
 
@@ -64,55 +57,99 @@ namespace System.Net.Sockets.Tests
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += OnConnectAsyncCompleted;
+                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
 
-                ManualResetEvent complete = new ManualResetEvent(false);
+                var complete = new TaskCompletionSource<bool>();
                 args.UserToken = complete;
 
-                Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                Assert.True(sock.ConnectAsync(args));
+                using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    Assert.True(sock.ConnectAsync(args));
 
-                complete.WaitOne();
+                    await complete.Task;
 
-                Assert.Equal(SocketError.Success, args.SocketError);
-                Assert.Null(args.ConnectByNameError);
-
-                complete.Dispose();
-                sock.Dispose();
-                server.Dispose();
+                    Assert.Equal(SocketError.Success, args.SocketError);
+                    Assert.Null(args.ConnectByNameError);
+                }
             }
             finally
             {
-                File.Delete(path);
+                server.Dispose();
+
+                try { File.Delete(path); }
+                catch { }
             }
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
-        public void Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = endPoint;
-            args.Completed += OnConnectAsyncCompleted;
-
-            ManualResetEvent complete = new ManualResetEvent(false);
-            args.UserToken = complete;
-
-            Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-
-            bool willRaiseEvent = sock.ConnectAsync(args);
-            if (willRaiseEvent)
+            try
             {
-                complete.WaitOne();
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = endPoint;
+                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+
+                var complete = new TaskCompletionSource<bool>();
+                args.UserToken = complete;
+
+                using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    bool willRaiseEvent = sock.ConnectAsync(args);
+                    if (willRaiseEvent)
+                    {
+                        await complete.Task;
+                    }
+
+                    Assert.Equal(SocketError.SocketError, args.SocketError);
+                }
             }
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
+        }
 
-            Assert.Equal(SocketError.SocketError, args.SocketError);
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_SendReceive_Success()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+            try
+            {
+                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    server.Bind(endPoint);
+                    server.Listen(1);
 
-            complete.Dispose();
-            sock.Dispose();
+                    client.Connect(endPoint);
+                    using (Socket accepted = server.Accept())
+                    {
+                        var data = new byte[1];
+                        for (int i = 0; i < 10; i++)
+                        {
+                            data[0] = (byte)i;
+
+                            accepted.Send(data);
+                            data[0] = 0;
+
+                            Assert.Equal(1, client.Receive(data));
+                            Assert.Equal(i, data[0]);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
         }
 
         private static string GetRandomNonExistingFilePath()
@@ -125,99 +162,6 @@ namespace System.Net.Sockets.Tests
             while (File.Exists(result));
 
             return result;
-        }
-
-        private class UnixDomainSocketEndPoint : EndPoint
-        {
-            private static readonly Encoding PathEncoding = Encoding.UTF8;
-
-            private const int MaxPathLength = 92;   // sockaddr_un.sun_path at http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_un.h.html
-            private const int PathOffset = 2;       // = offsetof(struct sockaddr_un, sun_path). It's the same on Linux and OSX
-            private const int MaxSocketAddressSize = PathOffset + MaxPathLength;
-            private const int MinSocketAddressSize = PathOffset + 2; // +1 for one character and +1 for \0 ending
-            private const AddressFamily EndPointAddressFamily = AddressFamily.Unix;
-
-            private readonly string _path;
-            private readonly byte[] _encodedPath;
-
-            public UnixDomainSocketEndPoint(string path)
-            {
-                if (path == null)
-                {
-                    throw new ArgumentNullException("path");
-                }
-
-                if (path.Length == 0 || PathEncoding.GetByteCount(path) >= MaxPathLength)
-                {
-                    throw new ArgumentOutOfRangeException("path");
-                }
-                
-                _path = path;
-                _encodedPath = PathEncoding.GetBytes(_path);
-            }
-
-            internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
-            {
-                if (socketAddress == null)
-                {
-                    throw new ArgumentNullException("socketAddress");
-                }
-
-                if (socketAddress.Family != EndPointAddressFamily || socketAddress.Size < MinSocketAddressSize || socketAddress.Size > MaxSocketAddressSize)
-                {
-                    throw new ArgumentException("socketAddress");
-                }
-
-                _encodedPath = new byte[socketAddress.Size - PathOffset];
-                for (int index = 0; index < socketAddress.Size - PathOffset; index++)
-                {
-                    _encodedPath[index] = socketAddress[PathOffset + index];
-                }
-
-                _path = PathEncoding.GetString(_encodedPath);
-            }
-
-            public string Path
-            {
-                get
-                {
-                    return _path;
-                }
-            }
-
-            public override AddressFamily AddressFamily
-            {
-                get
-                {
-                    return EndPointAddressFamily;
-                }
-            }
-
-            public override SocketAddress Serialize()
-            {
-                SocketAddress result = new SocketAddress(AddressFamily.Unix, MaxSocketAddressSize);
-
-                // Ctor has already checked that PathOffset + _encodedPath.Length < MaxSocketAddressSize
-                for (int index = 0; index < _encodedPath.Length; index++)
-                {
-                    result[PathOffset + index] = _encodedPath[index];
-                }
-
-                // The path must be ending with \0
-                result[PathOffset + _encodedPath.Length] = 0;
-
-                return result;
-            }
-
-            public override EndPoint Create(SocketAddress socketAddress)
-            {
-                return new UnixDomainSocketEndPoint(socketAddress);
-            }
-
-            public override string ToString()
-            {
-                return Path;
-            }
         }
     }
 }
