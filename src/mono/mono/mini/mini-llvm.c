@@ -3221,6 +3221,14 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		break;
 	}
 
+	/*
+	 * Sometimes the same method is called with two different signatures (i.e. with and without 'this'), so
+	 * use the real callee for argument type conversion.
+	 */
+	LLVMTypeRef callee_type = LLVMGetElementType (LLVMTypeOf (callee));
+	LLVMTypeRef *param_types = (LLVMTypeRef*)g_alloca (sizeof (LLVMTypeRef) * LLVMCountParamTypes (callee_type));
+	LLVMGetParamTypes (callee_type, param_types);
+
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		guint32 regpair;
 		int reg, pindex;
@@ -3278,7 +3286,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		default:
 			g_assert (args [pindex]);
 			if (i == 0 && sig->hasthis)
-				args [pindex] = convert (ctx, args [pindex], ThisType ());
+				args [pindex] = convert (ctx, args [pindex], param_types [pindex]);
 			else
 				args [pindex] = convert (ctx, args [pindex], type_to_llvm_arg_type (ctx, ainfo->type));
 			break;
@@ -3925,7 +3933,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 		nins ++;
 		if (nins > 3000 && builder == starting_builder) {
-			/* some steps in llc are non-linear in the size of basic blocks, see #5714 */
+			/*
+			 * Some steps in llc are non-linear in the size of basic blocks, see #5714.
+			 * Start a new bblock. If the llvm optimization passes merge these, we
+			 * can work around that by doing a volatile load + cond branch from
+			 * localloc-ed memory.
+			 */
 			LLVM_FAILURE (ctx, "basic block too long");
 		}
 
