@@ -1329,7 +1329,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			return 1;
 		return strcmp (ji1->data.target, ji2->data.target) == 0 ? 1 : 0;
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
-		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 0 : 1;
+		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 1 : 0;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
