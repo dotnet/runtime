@@ -46,7 +46,7 @@ namespace System.Globalization.Tests
         public void Test11() { Test(CultureInfo.InvariantCulture, new string('a', 5555), new string('a', 5000) + "b", false, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
+        [ActiveIssue(5463, PlatformID.AnyUnix)] 
         public void Test12() { Test(s_hungarian, "foobardzsdzs", "rddzs", true, CompareOptions.None); }
 
         [Fact]
@@ -101,7 +101,7 @@ namespace System.Globalization.Tests
         public void Test29() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "a\u0300", false, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
+        [ActiveIssue(5463, PlatformID.AnyUnix)] 
         public void Test30()
         {
             char unassignedUnicode = GetNextUnassignedUnicode();
@@ -112,7 +112,7 @@ namespace System.Globalization.Tests
         public void Test31() { Test(CultureInfo.InvariantCulture, "FooBar", "Foo\u0400Bar", false, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
+        [ActiveIssue(5463, PlatformID.AnyUnix)] 
         public void Test32()
         {
             char unassignedUnicode = GetNextUnassignedUnicode();

@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void CompareInfoIndexTest1()
         {
             // Creates CompareInfo for the InvariantCulture.
@@ -126,7 +126,7 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData("de-DE", "Ü", "UE", -1)]
         [InlineData("de-DE_phoneb", "Ü", "UE", 0)]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void TestLocaleAlternateSortOrder(string locale, string string1, string string2, int expected)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);

@@ -175,7 +175,7 @@ namespace SortedListCtorIKeyComp
     public class Constructor_IKeyComparer
     {
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5460, PlatformID.AnyUnix)]
         public static void RunTests()
         {
             //This mostly follows the format established by the original author of these tests
