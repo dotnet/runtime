@@ -225,4 +225,7 @@
   <data name="InvalidOperation_ConsoleKeyAvailableOnFile" xml:space="preserve">
     <value>Cannot see if a key has been pressed when either application does not have a console or when console input has been redirected from a file. Try Console.In.Peek.</value>
   </data>
+  <data name="ArgumentOutOfRange_ConsoleBufferLessThanWindowSize" xml:space="preserve">
+    <value>The console buffer size must not be less than the current size and position of the console window, nor greater than or equal to short.MaxValue.</value>
+  </data>
 </root>

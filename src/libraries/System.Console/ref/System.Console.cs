@@ -11,34 +11,39 @@ namespace System
     {
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
         public static void Beep() { }
+        public static int BufferHeight { get { return default(int); } set { } }
+        public static int BufferWidth { get { return default(int); } set { } }
+        public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
         public static void Clear() { }
-        public static bool CursorVisible { get { return default(bool); } set { } }
-        public static int CursorTop { get { return default(int); } set { } }
         public static int CursorLeft { get { return default(int); } set { } }
+        public static int CursorTop { get { return default(int); } set { } }
+        public static bool CursorVisible { get { return default(bool); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
         public static System.ConsoleColor ForegroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static bool IsErrorRedirected { get { return false; } }
         public static bool IsInputRedirected { get { return false; } }
         public static bool IsOutputRedirected { get { return false; } }
-        public static bool IsErrorRedirected { get { return false; } }
         public static System.IO.TextReader In { get { return default(System.IO.TextReader); } }
-        public static bool KeyAvailable { get { return default(bool); } }
-        public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
-        public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
+        public static bool KeyAvailable { get { return default(bool); }}
+        public static int LargestWindowWidth { get { return default(int); } }
+        public static int LargestWindowHeight { get { return default(int); }}
         public static System.IO.Stream OpenStandardError() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardInput() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardOutput() { return default(System.IO.Stream); }
+        public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
         public static int Read() { return default(int); }
         public static ConsoleKeyInfo ReadKey() { return default(ConsoleKeyInfo); }
         public static ConsoleKeyInfo ReadKey(bool intercept) { return default(ConsoleKeyInfo); }
         public static string ReadLine() { return default(string); }
         public static void ResetColor() { }
+        public static void SetBufferSize(int width, int height) { }
         public static void SetCursorPosition(int left, int top) { }
         public static void SetError(System.IO.TextWriter newError) { }
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
         public static string Title { get { return default(string); } set { } }
-        public static int WindowWidth { get { return default(int); } set { } }
         public static int WindowHeight { get { return default(int); } set { } }
+        public static int WindowWidth { get { return default(int); } set { } }
         public static int WindowLeft { get { return default(int); } set { } }
         public static int WindowTop { get { return default(int); } set { } }
         public static void Write(bool value) { }

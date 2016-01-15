@@ -590,17 +590,76 @@ namespace System
 
         public static int BufferWidth
         {
-            // TODO #4636: Implement this
-            get { return ConsolePal.BufferWidth; }
-            set { ConsolePal.BufferWidth = value; }
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.dwSize.X;
+            }
+            set
+            {
+                SetBufferSize(value, BufferHeight);
+            }
         }
 
         public static int BufferHeight
         {
-            // TODO #4636: Implement this
-            get { return ConsolePal.BufferHeight; }
-            set { ConsolePal.BufferHeight = value; }
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.dwSize.Y;
+            }
+            set
+            {
+                SetBufferSize(BufferWidth, value);
+            }
         }
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        public static void SetBufferSize(int width, int height)
+        {
+            // Ensure the new size is not smaller than the console window
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+            Interop.mincore.SMALL_RECT srWindow = csbi.srWindow;
+            if (width < srWindow.Right + 1 || width >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("width", width, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
+            if (height < srWindow.Bottom + 1 || height >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("height", height, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
+
+            Interop.mincore.COORD size = new Interop.mincore.COORD();
+            size.X = (short)width;
+            size.Y = (short)height;
+            if (!Interop.mincore.SetConsoleScreenBufferSize(OutputHandle, size))
+            {
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
+
+        public static int LargestWindowWidth
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                // Note this varies based on current screen resolution and 
+                // current console font.  Do not cache this value.
+                Interop.mincore.COORD bounds = Interop.mincore.GetLargestConsoleWindowSize(OutputHandle);
+                return bounds.X;
+            }
+        }
+
+        public static int LargestWindowHeight
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                // Note this varies based on current screen resolution and 
+                // current console font.  Do not cache this value.
+                Interop.mincore.COORD bounds = Interop.mincore.GetLargestConsoleWindowSize(OutputHandle);
+                return bounds.Y;
+            }
+        }
+
 
         public static int WindowLeft
         {
