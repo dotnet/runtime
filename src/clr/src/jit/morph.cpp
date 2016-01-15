@@ -4461,7 +4461,7 @@ void                Compiler::fgMoveOpsLeft(GenTreePtr tree)
 
         new_op1->gtOp.gtOp1     = op1;
         new_op1->gtOp.gtOp2     = ad1;
-
+        
         /* Change the flags. */
 
         // Make sure we arent throwing away any flags
@@ -4489,6 +4489,20 @@ void                Compiler::fgMoveOpsLeft(GenTreePtr tree)
             // Neither ad1 nor op1 are GC. So new_op1 isnt either
             noway_assert(op1->gtType == TYP_I_IMPL && ad1->gtType == TYP_I_IMPL);
             new_op1->gtType = TYP_I_IMPL;
+        }
+
+        // If new_op1 is a new expression. Assign it a new unique value number.
+        // vnStore is null before the ValueNumber phase has run
+        if (vnStore != nullptr)
+        {
+            assert(op1->gtVNPair.GetLiberal() != ValueNumStore::NoVN);
+            assert(ad2->gtVNPair.GetLiberal() != ValueNumStore::NoVN);
+
+            // Since op is commutative, comparing only ad2 and op1 is enough.
+            if (ad2->gtVNPair.GetLiberal() != op1->gtVNPair.GetLiberal())
+            {
+                new_op1->gtVNPair.SetBoth(vnStore->VNForExpr(new_op1->TypeGet()));
+            }
         }
 
         tree->gtOp.gtOp1 = new_op1;
