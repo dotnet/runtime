@@ -21804,7 +21804,7 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
             else
             {
                 // Just assign the inlinee to a variable to keep it simple.
-                tree = comp->fgAssignStructInlineeToVar(tree, retClsHnd);
+                tree->CopyFrom(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
             }
         }
 #endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
