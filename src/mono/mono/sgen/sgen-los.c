@@ -380,7 +380,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	sgen_ensure_free_space (size);
+	sgen_ensure_free_space (size, GENERATION_OLD);
 
 #ifdef USE_MALLOC
 	obj = malloc (size + sizeof (LOSObject));
