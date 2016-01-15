@@ -48,10 +48,10 @@ namespace System.IO.Compression
         /// 
         /// <p><strong>How to choose a compression level:</strong></p>
         /// 
-        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>BestCompression</code> are taken over from the corresponding
+        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code> are taken over from the corresponding
         /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.
         /// <p><em>Optimal Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
+        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
         ///    <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>Int32 memLevel = 8;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
@@ -72,7 +72,7 @@ namespace System.IO.Compression
         {
             NoCompression = 0,
             BestSpeed = 1,
-            BestCompression = 9,    // Refer to "How to choose a compression level" above.
+            DefaultCompression = -1
         }
 
         /// <summary>
