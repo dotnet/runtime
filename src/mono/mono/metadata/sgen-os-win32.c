@@ -1,6 +1,6 @@
 #include "config.h"
 
-#if defined(HAVE_SGEN_GC) && defined(HOST_WIN32)
+#if defined(HAVE_SGEN_GC) && !defined(USE_COOP_GC) && defined(HOST_WIN32)
 
 #include "io-layer/io-layer.h"
 
