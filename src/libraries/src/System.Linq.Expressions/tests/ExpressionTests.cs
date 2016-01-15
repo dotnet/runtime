@@ -308,7 +308,6 @@ namespace System.Linq.Expressions.Tests
             get
             {
                 yield return Expression.Property(null, typeof(ExpressionTests), "Unreadable");
-                yield return Expression.Property(Expression.Constant(new UnreadableIndexableClass()), "Item");
                 yield return Expression.Property(Expression.Constant(new UnreadableIndexableClass()), "Item", Expression.Constant(0));
             }
         }
@@ -326,7 +325,6 @@ namespace System.Linq.Expressions.Tests
             get
             {
                 yield return Expression.Property(null, typeof(ExpressionTests), "Unreadable");
-                yield return Expression.Property(Expression.Constant(new UnreadableIndexableClass()), "Item");
                 yield return Expression.Property(Expression.Constant(new UnreadableIndexableClass()), "Item", Expression.Constant(0));
                 yield return Expression.Field(null, typeof(ExpressionTests), "TestField");
                 yield return Expression.Parameter(typeof(int));
@@ -338,7 +336,6 @@ namespace System.Linq.Expressions.Tests
             get
             {
                 yield return Expression.Property(null, typeof(ExpressionTests), "Unwritable");
-                yield return Expression.Property(Expression.Constant(new UnwritableIndexableClass()), "Item");
                 yield return Expression.Property(Expression.Constant(new UnwritableIndexableClass()), "Item", Expression.Constant(0));
                 yield return Expression.Field(null, typeof(ExpressionTests), "TestConstant");
                 yield return Expression.Field(null, typeof(ExpressionTests), "TestInitOnlyField");
