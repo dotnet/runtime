@@ -1023,6 +1023,7 @@
     <Member Name="get_Default" />
     <Member Name="SetProfileOptimizationRoot(System.String)" />
     <Member Name="StartProfileOptimization(System.String)" />
+    <Member MemberType="Event" Name="Resolving" />
     </Type>
     <Type Name="System.Reflection.Metadata.AssemblyExtensions">
       <Member Name="TryGetRawMetadata(System.Reflection.Assembly,System.Byte*@,System.Int32@)"/>
