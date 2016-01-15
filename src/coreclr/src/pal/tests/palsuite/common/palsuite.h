@@ -165,6 +165,17 @@ char* convertC(WCHAR * wString)
     return MultiBuffer;
 }
 
+UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency)
+{
+    LARGE_INTEGER ts;
+    if (!QueryPerformanceCounter(&ts))
+    {
+        Fail("ERROR: Unable to query performance counter!\n");      
+    }
+    
+    return ts.QuadPart / (performanceFrequency.QuadPart / 1000);    
+}
+
 #endif
 
 
