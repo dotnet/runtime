@@ -1586,6 +1586,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
+			if (mono_op_imm_to_op (ins->opcode) == -1)
+				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
 			ins->opcode = mono_op_imm_to_op (ins->opcode);
 
 			if (ins->inst_imm == 0)

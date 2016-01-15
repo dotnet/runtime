@@ -2353,13 +2353,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 1;
+				ins->sreg1 = MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 2;
+				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + 1, FALSE);
 			} else if (!t->byref && ((t->type == MONO_TYPE_R8) || (t->type == MONO_TYPE_R4))) {
@@ -2456,10 +2456,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		case RegTypeBaseGen:
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, (G_BYTE_ORDER == G_BIG_ENDIAN) ? in->dreg + 1 : in->dreg + 2);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, (G_BYTE_ORDER == G_BIG_ENDIAN) ? MONO_LVREG_LS (in->dreg) : MONO_LVREG_MS (in->dreg));
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN ? in->dreg + 2 : in->dreg + 1;
+				ins->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN ? MONO_LVREG_MS (in->dreg) : MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ARMREG_R3, FALSE);
 			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
@@ -2657,8 +2657,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_SETLRET);
-				ins->sreg1 = val->dreg + 1;
-				ins->sreg2 = val->dreg + 2;
+				ins->sreg1 = MONO_LVREG_LS (val->dreg);
+				ins->sreg2 = MONO_LVREG_MS (val->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			return;
@@ -3463,11 +3463,14 @@ loop_start:
 		case OP_IOR_IMM:
 		case OP_IXOR_IMM:
 			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_imm, &rot_amount)) < 0) {
+				int opcode2 = mono_op_imm_to_op (ins->opcode);
 				ADD_NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
-				ins->opcode = mono_op_imm_to_op (ins->opcode);
+				if (opcode2 == -1)
+					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+				ins->opcode = opcode2;
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;
@@ -3507,13 +3510,17 @@ loop_start:
 		case OP_IDIV_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_IMM:
-		case OP_IREM_UN_IMM:
+		case OP_IREM_UN_IMM: {
+			int opcode2 = mono_op_imm_to_op (ins->opcode);
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			if (opcode2 == -1)
+				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+			ins->opcode = opcode2;
 			break;
+		}
 		case OP_LOCALLOC_IMM:
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
@@ -3690,8 +3697,8 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, ins->dreg + 1, ins->sreg1 + 1, 0);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 0);
 		NULLIFY_INS (ins);
 	}
 }

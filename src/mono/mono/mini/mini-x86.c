@@ -1537,8 +1537,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg);
 						argsize = 8;
 					} else if (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8) {
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset + 4, in->dreg + 2);
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg + 1);
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset + 4, MONO_LVREG_MS (in->dreg));
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, MONO_LVREG_LS (in->dreg));
 						argsize = 4;
 					} else {
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg);
@@ -1674,8 +1674,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
 			else {
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, MONO_LVREG_LS (val->dreg));
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, MONO_LVREG_MS (val->dreg));
 			}
 			return;
 		}
@@ -6486,9 +6486,9 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
-		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 1, ins->sreg1 + 1);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
-		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 2, ins->dreg + 2);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 0);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->dreg));
 		NULLIFY_INS (ins);
 		return;
 	}
@@ -6517,7 +6517,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		ins->klass = mono_defaults.int32_class;
 		ins->sreg1 = vreg;
 		ins->type = STACK_I4;
-		ins->dreg = long_ins->dreg + 1;
+		ins->dreg = MONO_LVREG_LS (long_ins->dreg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
@@ -6532,7 +6532,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		ins->klass = mono_defaults.int32_class;
 		ins->sreg1 = vreg;
 		ins->type = STACK_I4;
-		ins->dreg = long_ins->dreg + 2;
+		ins->dreg = MONO_LVREG_MS (long_ins->dreg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	
 		long_ins->opcode = OP_NOP;
@@ -6541,14 +6541,14 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg2 + 1;
+		ins->sreg2 = MONO_LVREG_LS (long_ins->sreg2);
 		ins->inst_c0 = long_ins->inst_c0 * 2;
 		MONO_ADD_INS (cfg->cbb, ins);
 
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg2 + 2;
+		ins->sreg2 = MONO_LVREG_MS (long_ins->sreg2);
 		ins->inst_c0 = long_ins->inst_c0 * 2 + 1;
 		MONO_ADD_INS (cfg->cbb, ins);
 
@@ -6557,7 +6557,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 	case OP_EXPAND_I8:
 		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_X);
 		ins->dreg = long_ins->dreg;
-		ins->sreg1 = long_ins->sreg1 + 1;
+		ins->sreg1 = MONO_LVREG_LS (long_ins->sreg1);
 		ins->klass = long_ins->klass;
 		ins->type = STACK_VTYPE;
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -6565,7 +6565,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg1 + 2;
+		ins->sreg2 = MONO_LVREG_MS (long_ins->sreg1);
 		ins->inst_c0 = 1;
 		ins->klass = long_ins->klass;
 		ins->type = STACK_VTYPE;

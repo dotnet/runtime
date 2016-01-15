@@ -1742,13 +1742,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 1;
+				ins->sreg1 = MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ls_word_idx, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 2;
+				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ms_word_idx, FALSE);
 			} else
@@ -1967,8 +1967,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			MonoInst *ins;
 
 			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
+			ins->sreg1 = MONO_LVREG_LS (val->dreg);
+			ins->sreg2 = MONO_LVREG_MS (val->dreg);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return;
 		}
@@ -2616,6 +2616,8 @@ map_to_reg_reg_op (int op)
 	case OP_STOREI8_MEMBASE_IMM:
 		return OP_STOREI8_MEMBASE_REG;
 	}
+	if (mono_op_imm_to_op (op) == -1)
+		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (op));
 	return mono_op_imm_to_op (op);
 }
 

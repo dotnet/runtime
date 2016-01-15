@@ -666,6 +666,8 @@ mono_op_imm_to_op (int opcode)
 		return OP_LSUB;
 	case OP_IMUL_IMM:
 		return OP_IMUL;
+	case OP_LMUL_IMM:
+		return OP_LMUL;
 	case OP_AND_IMM:
 #if SIZEOF_REGISTER == 4
 		return OP_IAND;
@@ -710,10 +712,16 @@ mono_op_imm_to_op (int opcode)
 		return OP_LSHR_UN;
 	case OP_IDIV_IMM:
 		return OP_IDIV;
+	case OP_LDIV_IMM:
+		return OP_LDIV;
 	case OP_IDIV_UN_IMM:
 		return OP_IDIV_UN;
+	case OP_LDIV_UN_IMM:
+		return OP_LDIV_UN;
 	case OP_IREM_UN_IMM:
 		return OP_IREM_UN;
+	case OP_LREM_UN_IMM:
+		return OP_LREM_UN;
 	case OP_IREM_IMM:
 		return OP_IREM;
 	case OP_LREM_IMM:
@@ -748,11 +756,9 @@ mono_op_imm_to_op (int opcode)
 		return OP_ICOMPARE;
 	case OP_LOCALLOC_IMM:
 		return OP_LOCALLOC;
-	default:
-		printf ("%s\n", mono_inst_name (opcode));
-		g_assert_not_reached ();
-		return -1;
 	}
+
+	return -1;
 }
 
 /*
@@ -763,17 +769,41 @@ mono_op_imm_to_op (int opcode)
 void
 mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
+	int opcode2 = mono_op_imm_to_op (ins->opcode);
 	MonoInst *temp;
+	guint32 dreg;
+	const char *spec = INS_INFO (ins->opcode);
 
-	MONO_INST_NEW (cfg, temp, OP_ICONST);
-	temp->inst_c0 = ins->inst_imm;
-	temp->dreg = mono_alloc_ireg (cfg);
+	if (spec [MONO_INST_SRC2] == 'l') {
+		dreg = mono_alloc_lreg (cfg);
+
+		/* Load the 64bit constant using decomposed ops */
+		MONO_INST_NEW (cfg, temp, OP_ICONST);
+		temp->inst_c0 = ins->inst_ls_word;
+		temp->dreg = MONO_LVREG_LS (dreg);
+		mono_bblock_insert_before_ins (bb, ins, temp);
+
+		MONO_INST_NEW (cfg, temp, OP_ICONST);
+		temp->inst_c0 = ins->inst_ms_word;
+		temp->dreg = MONO_LVREG_MS (dreg);
+	} else {
+		dreg = mono_alloc_ireg (cfg);
+
+		MONO_INST_NEW (cfg, temp, OP_ICONST);
+		temp->inst_c0 = ins->inst_imm;
+		temp->dreg = dreg;
+	}
+
 	mono_bblock_insert_before_ins (bb, ins, temp);
-	ins->opcode = mono_op_imm_to_op (ins->opcode);
+
+	if (opcode2 == -1)
+                g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+	ins->opcode = opcode2;
+
 	if (ins->opcode == OP_LOCALLOC)
-		ins->sreg1 = temp->dreg;
+		ins->sreg1 = dreg;
 	else
-		ins->sreg2 = temp->dreg;
+		ins->sreg2 = dreg;
 
 	bb->max_vreg = MAX (bb->max_vreg, cfg->next_vreg);
 }
@@ -870,7 +900,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		 */
 
 		if (cfg->verbose_level >= 4) {
-			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
+			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, MONO_LVREG_LS (inst->dreg), MONO_LVREG_MS (inst->dreg));
 		}
 
 		if (mono_arch_is_soft_float () && cfg->opt & MONO_OPT_SSA) {
@@ -880,7 +910,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 
 		/* Allocate a dummy MonoInst for the first vreg */
 		MONO_INST_NEW (cfg, tree, OP_LOCAL);
-		tree->dreg = inst->dreg + 1;
+		tree->dreg = MONO_LVREG_LS (inst->dreg);
 		if (cfg->opt & MONO_OPT_SSA)
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
@@ -888,11 +918,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
-		set_vreg_to_inst (cfg, inst->dreg + 1, tree);
+		set_vreg_to_inst (cfg, MONO_LVREG_LS (inst->dreg), tree);
 
 		/* Allocate a dummy MonoInst for the second vreg */
 		MONO_INST_NEW (cfg, tree, OP_LOCAL);
-		tree->dreg = inst->dreg + 2;
+		tree->dreg = MONO_LVREG_MS (inst->dreg);
 		if (cfg->opt & MONO_OPT_SSA)
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
@@ -900,7 +930,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
-		set_vreg_to_inst (cfg, inst->dreg + 2, tree);
+		set_vreg_to_inst (cfg, MONO_LVREG_MS (inst->dreg), tree);
 	}
 
 	cfg->num_varinfo++;
@@ -3678,7 +3708,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* Should be done before branch opts */
 	if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
 		mono_local_cprop (cfg);
-
+	/*
+	 * Should be done after cprop which can do strength reduction on
+	 * some of these ops, after propagating immediates.
+	 */
+	if (cfg->has_emulated_ops)
+		mono_local_emulate_ops (cfg);
 	if (cfg->opt & MONO_OPT_BRANCH)
 		mono_optimize_branches (cfg);
 
