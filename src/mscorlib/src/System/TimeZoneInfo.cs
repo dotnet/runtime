@@ -1900,10 +1900,12 @@ namespace System {
         }
 
 
-        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime,bool ignoreYearAdjustment, AdjustmentRule rule) {
+        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment, AdjustmentRule rule) {
             Boolean isDst;
 
-            if (!ignoreYearAdjustment) {
+            // NoDaylightTransitions AdjustmentRules should never get their year adjusted since they adjust the offset for the
+            // entire time period - which may be for multiple years
+            if (!ignoreYearAdjustment && !rule.NoDaylightTransitions) {
                 int startTimeYear = startTime.Year;
                 int endTimeYear = endTime.Year;
 
