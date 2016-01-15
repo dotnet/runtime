@@ -34,13 +34,28 @@
 #define CRYPT_VERIFY_CONTEXT	0xF0000000
 #endif
 
+/**
+ * mono_rand_open:
+ *
+ * Returns: True if random source is global, false if mono_rand_init can be called repeatedly to get randomness instances.
+ *
+ * Initializes entire RNG system. Must be called once per process before calling mono_rand_init.
+ */
 gboolean
 mono_rand_open (void)
 {
-	/* FALSE == Local (instance) handle for randomness */
 	return FALSE;
 }
 
+/**
+ * mono_rand_init:
+ * @seed: A string containing seed data
+ * @seed_size: Length of seed string
+ *
+ * Returns: On success, a non-NULL handle which can be used to fetch random data from mono_rand_try_get_bytes. On failure, NULL.
+ *
+ * Initializes an RNG client.
+ */
 gpointer
 mono_rand_init (guchar *seed, gint seed_size)
 {
@@ -77,6 +92,16 @@ mono_rand_init (guchar *seed, gint seed_size)
 	return (gpointer) provider;
 }
 
+/**
+ * mono_rand_try_get_bytes:
+ * @handle: A pointer to an RNG handle. Handle is set to NULL on failure.
+ * @buffer: A buffer into which to write random data.
+ * @buffer_size: Number of bytes to write into buffer.
+ *
+ * Returns: FALSE on failure, TRUE on success.
+ *
+ * Extracts bytes from an RNG handle.
+ */
 gboolean
 mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size)
 {
@@ -99,6 +124,14 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size)
 	return TRUE;
 }
 
+/**
+ * mono_rand_close:
+ * @handle: An RNG handle.
+ * @buffer: A buffer into which to write random data.
+ * @buffer_size: Number of bytes to write into buffer.
+ *
+ * Releases an RNG handle.
+ */
 void
 mono_rand_close (gpointer handle)
 {
@@ -215,7 +248,7 @@ mono_rand_open (void)
 gpointer
 mono_rand_init (guchar *seed, gint seed_size)
 {
-	/* if required exception will be thrown in managed code */
+	// file < 0 is expected in the egd case
 	return (!use_egd && file < 0) ? NULL : GINT_TO_POINTER (file);
 }
 
@@ -282,7 +315,7 @@ mono_rand_open (void)
 gpointer
 mono_rand_init (guchar *seed, gint seed_size)
 {
-	return NULL;	
+	return "srand"; // NULL will be interpreted as failure; return arbitrary nonzero pointer
 }
 
 gboolean
@@ -316,6 +349,17 @@ mono_rand_close (gpointer provider)
 
 #endif
 
+/**
+ * mono_rand_try_get_uint32:
+ * @handle: A pointer to an RNG handle. Handle is set to NULL on failure.
+ * @val: A pointer to a 32-bit unsigned int, to which the result will be written.
+ * @min: Result will be greater than or equal to this value.
+ * @max: Result will be less than or equal to this value.
+ *
+ * Returns: FALSE on failure, TRUE on success.
+ *
+ * Extracts one 32-bit unsigned int from an RNG handle.
+ */
 gboolean
 mono_rand_try_get_uint32 (gpointer *handle, guint32 *val, guint32 min, guint32 max)
 {
@@ -323,7 +367,9 @@ mono_rand_try_get_uint32 (gpointer *handle, guint32 *val, guint32 min, guint32 m
 	if (!mono_rand_try_get_bytes (handle, (guchar*) val, sizeof (guint32)))
 		return FALSE;
 
-	*val = (guint32) (((gdouble) *val) / G_MAXUINT32 * (max - min) + min);
+	double randomDouble = ((gdouble) *val) / ( ((double)G_MAXUINT32) + 1 ); // Range is [0,1)
+	*val = (guint32) (randomDouble * (max - min + 1) + min);
+
 	g_assert (*val >= min);
 	g_assert (*val <= max);
 
