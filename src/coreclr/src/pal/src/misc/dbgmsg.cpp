@@ -84,6 +84,7 @@ static const char *dbg_channel_names[]=
     "LOADER",
     "HANDLE",
     "SHMEM",
+    "PROCESS",
     "THREAD",
     "EXCEPT",
     "CRT",
