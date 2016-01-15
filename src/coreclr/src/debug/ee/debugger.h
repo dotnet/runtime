@@ -111,7 +111,9 @@ typedef DPTR(struct DebuggerIPCControlBlock) PTR_DebuggerIPCControlBlock;
 
 GPTR_DECL(Debugger,         g_pDebugger);
 GPTR_DECL(EEDebugInterface, g_pEEInterface);
+#ifndef FEATURE_PAL
 GVAL_DECL(HANDLE,           g_hContinueStartupEvent);
+#endif
 extern DebuggerRCThread     *g_pRCThread;
 
 //---------------------------------------------------------------------------------------

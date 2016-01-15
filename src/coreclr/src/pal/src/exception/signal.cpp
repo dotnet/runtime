@@ -65,6 +65,8 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context);
 static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
+static void sigint_handler(int code, siginfo_t *siginfo, void *context);
+static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext);
@@ -81,6 +83,8 @@ struct sigaction g_previous_sigtrap;
 struct sigaction g_previous_sigfpe;
 struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
+struct sigaction g_previous_sigint;
+struct sigaction g_previous_sigquit;
 
 
 /* public function definitions ************************************************/
@@ -119,6 +123,8 @@ BOOL SEHInitializeSignals()
     handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
     handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
     handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
+    handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
+    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
 
     handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, NULL);
 
@@ -162,6 +168,8 @@ void SEHCleanupSignals()
     restore_signal(SIGFPE, &g_previous_sigfpe);
     restore_signal(SIGBUS, &g_previous_sigbus);
     restore_signal(SIGSEGV, &g_previous_sigsegv);
+    restore_signal(SIGINT, &g_previous_sigint);
+    restore_signal(SIGQUIT, &g_previous_sigquit);
 }
 
 /* internal function definitions **********************************************/
@@ -209,6 +217,8 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         restore_signal(code, &g_previous_sigill);
     }
+
+    PROCShutdownProcess();
 }
 
 /*++
@@ -254,6 +264,8 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         restore_signal(code, &g_previous_sigfpe);
     }
+
+    PROCShutdownProcess();
 }
 
 /*++
@@ -322,6 +334,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         restore_signal(code, &g_previous_sigsegv);
     }
+
+    PROCShutdownProcess();
 }
 
 /*++
@@ -366,8 +380,10 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
     {
         // We abort instead of restore the original or default handler and returning
         // because returning from a SIGTRAP handler continues execution past the trap.
-        abort();
+        PROCAbort();
     }
+
+    PROCShutdownProcess();
 }
 
 /*++
@@ -421,6 +437,52 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         restore_signal(code, &g_previous_sigbus);
     }
+
+    PROCShutdownProcess();
+}
+
+/*++
+Function :
+    sigint_handler
+
+    handle SIGINT signal
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+    (no return value)
+--*/
+static void sigint_handler(int code, siginfo_t *siginfo, void *context)
+{
+    TRACE("SIGINT signal; chaining to previous sigaction\n");
+
+    PROCShutdownProcess();
+
+    // Restore the original or default handler and resend signal
+    restore_signal(code, &g_previous_sigint);
+    kill(gPID, code);
+}
+
+/*++
+Function :
+    sigquit_handler
+
+    handle SIGQUIT signal
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+    (no return value)
+--*/
+static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
+{
+    TRACE("SIGQUIT signal; chaining to previous sigaction\n");
+
+    PROCShutdownProcess();
+
+    // Restore the original or default handler and resend signal
+    restore_signal(code, &g_previous_sigquit);
+    kill(gPID, code);
 }
 
 /*++
@@ -480,10 +542,12 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
     if (status != 0)
     {
+        PROCShutdownProcess();
+
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second, 
         // if the thread doesn't exist anymore.
-        abort();
+        PROCAbort();
     }
 
     return NO_ERROR;

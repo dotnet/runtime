@@ -73,7 +73,8 @@ namespace CorUnix
             ps(PS_IDLE),
             dwExitCode(0), 
             lAttachCount(0),
-            pProcessModules(NULL)
+            pProcessModules(NULL),
+            cProcessModules(0)
         {
         };
 
@@ -84,12 +85,7 @@ namespace CorUnix
         DWORD dwExitCode;
         LONG lAttachCount;
         ProcessModules *pProcessModules;
-    };
-
-    class CProcSharedData
-    {
-    public:
-        DWORD dwProcessId;
+        DWORD cProcessModules;
     };
 
     PAL_ERROR
