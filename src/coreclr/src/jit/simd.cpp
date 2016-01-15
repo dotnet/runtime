@@ -79,15 +79,13 @@ int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 // Arguments:
 //    typeHnd  - type handle of the SIMD vector
 //
-int Compiler::getSIMDTypeAlignment(CORINFO_CLASS_HANDLE typeHnd)
+int Compiler::getSIMDTypeAlignment(var_types simdType)
 {
 #ifdef _TARGET_AMD64_
     // Fixed length vectors have the following alignment preference
     // Vector2/3 = 8 byte alignment
     // Vector4 = 16-byte alignment
-    unsigned size = 0;
-    var_types baseType = getBaseTypeAndSizeOfSIMDType(typeHnd, &size);
-    noway_assert(baseType != TYP_UNKNOWN);
+    unsigned size = genTypeSize(simdType);
 
     // preferred alignment for SSE2 128-bit vectors is 16-bytes
     if (size == 8) 
@@ -225,7 +223,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd,
         // Obtain base type by parsing fully qualified class name.
         //
         // TODO-Throughput: implement product shipping solution to query base type.
-        WCHAR className[256] = {'\\0'};
+        WCHAR className[256] = {0};
         WCHAR *pbuf = &className[0];
         int len = sizeof(className)/sizeof(className[0]);
         info.compCompHnd->appendClassName(&pbuf, &len, typeHnd, TRUE, FALSE, FALSE);   
@@ -1103,6 +1101,9 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID relOpIntrinsicId,
                 constVal = 0x8000000000000000LL;
                 *inOutBaseType = TYP_LONG;
                 break;
+            default:
+                unreached();
+                break;
             }
             assert(constVal != 0);
 
@@ -1174,8 +1175,8 @@ GenTreePtr  Compiler::impSIMDSelect(CORINFO_CLASS_HANDLE typeHnd,
     if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         unsigned lclNum = lvaGrabTemp(true DEBUGARG("SIMD Select"));
-        tmp = gtNewLclvNode(lclNum, op1->TypeGet());
         lvaSetStruct(lclNum, typeHnd, false);
+        tmp = gtNewLclvNode(lclNum, op1->TypeGet());
         asg = gtNewTempAssign(lclNum, op1);
     }
 
@@ -1756,15 +1757,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
 
     if (!isSIMDClass(clsHnd))
     {
-        return nullptr;
-    }
-
-    // For now SIMD Intrinsics are disabled in debuggable code.
-    // TODO-Cleanup: add support for SIMD intrinsics regardless of debuggable code.
-    // Note that we can't disable SIMD intrinsics if we are set to use AVX, because the
-    // reference implementation won't match the vector size.
-    if (!canUseAVX() && opts.compDbgCode)
-    {        
         return nullptr;
     }
 

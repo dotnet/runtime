@@ -300,7 +300,7 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
     CORINFO_CLASS_HANDLE        argClass;
     CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
     var_types argType = JITtype2varType(argTypeJit);
-    if (argType == TYP_STRUCT)
+    if (varTypeIsStruct(argType))
     {
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
         return structSize;  // TODO: roundUp() needed here?
@@ -314,7 +314,7 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
     CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
     var_types argType = JITtype2varType(argTypeJit);
 
-    if (argType == TYP_STRUCT)
+    if (varTypeIsStruct(argType))
     {
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
 

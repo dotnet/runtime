@@ -1109,7 +1109,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
     bool  isOnStack = true;
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (type == TYP_STRUCT)
+    if (varTypeIsStruct(type))
     {
         isOnStack = !fp->structDesc.passedInRegisters;
     }
@@ -1249,7 +1249,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // This provides the info to put this argument in in-coming arg area slot 
         // instead of in out-going arg area slot.
 
-        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(assert(fp->isStruct == (type == TYP_STRUCT))); // Make sure state is correct
+        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(assert(fp->isStruct == varTypeIsStruct(type))); // Make sure state is correct
 
 #if FEATURE_FASTTAILCALL
         putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK,
@@ -1280,11 +1280,19 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // pair copying using XMM registers or rep mov instructions.
         if (fp->isStruct)
         {
-            assert(arg->OperGet() == GT_LDOBJ);
-            
+            unsigned numRefs = 0;
             BYTE* gcLayout = new (comp, CMK_Codegen) BYTE[fp->numSlots];
-
-            unsigned numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+            // We use GT_LDOBJ for non-SIMD struct arguments. However, for
+            // SIMD arguments the GT_LDOBJ has already been transformed.
+            if (arg->gtOper != GT_LDOBJ)
+            {
+                assert(varTypeIsSIMD(arg));
+            }
+            else
+            {
+                assert(!varTypeIsSIMD(arg));
+                numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+            }
 
             putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
         }
