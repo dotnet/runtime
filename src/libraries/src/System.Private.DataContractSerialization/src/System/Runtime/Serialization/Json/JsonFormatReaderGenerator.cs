@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization.Json
             public JsonFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
                 _ilg = new CodeGenerator();
-                bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
+                bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                 try
                 {
                     BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(classContract.StableName.Name) + "FromJson", typeof(JsonFormatClassReaderDelegate), memberAccessFlag);
@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     if (memberAccessFlag)
                     {
-                        classContract.RequiresMemberAccessForRead(securityException, JsonGlobals.JsonSerializationPatterns);
+                        classContract.RequiresMemberAccessForRead(securityException);
                     }
                     else
                     {
@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization.Json
             private CodeGenerator GenerateCollectionReaderHelper(CollectionDataContract collectionContract, bool isGetOnlyCollection)
             {
                 _ilg = new CodeGenerator();
-                bool memberAccessFlag = collectionContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
+                bool memberAccessFlag = collectionContract.RequiresMemberAccessForRead(null);
                 try
                 {
                     if (isGetOnlyCollection)
@@ -156,7 +156,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     if (memberAccessFlag)
                     {
-                        collectionContract.RequiresMemberAccessForRead(securityException, JsonGlobals.JsonSerializationPatterns);
+                        collectionContract.RequiresMemberAccessForRead(securityException);
                     }
                     else
                     {

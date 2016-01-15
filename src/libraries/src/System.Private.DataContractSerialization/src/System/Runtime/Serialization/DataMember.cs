@@ -291,13 +291,13 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForGet(string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForGet()
         {
             MemberInfo memberInfo = MemberInfo;
             FieldInfo field = memberInfo as FieldInfo;
             if (field != null)
             {
-                return DataContract.FieldRequiresMemberAccess(field, serializationAssemblyPatterns);
+                return DataContract.FieldRequiresMemberAccess(field);
             }
             else
             {
@@ -305,7 +305,7 @@ namespace System.Runtime.Serialization
                 MethodInfo getMethod = property.GetMethod;
                 if (getMethod != null)
                 {
-                    return DataContract.MethodRequiresMemberAccess(getMethod, serializationAssemblyPatterns) || !DataContract.IsTypeVisible(property.PropertyType, serializationAssemblyPatterns);
+                    return DataContract.MethodRequiresMemberAccess(getMethod) || !DataContract.IsTypeVisible(property.PropertyType);
                 }
             }
             return false;
@@ -316,13 +316,13 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        internal bool RequiresMemberAccessForSet(string[] serializationAssemblyPatterns)
+        internal bool RequiresMemberAccessForSet()
         {
             MemberInfo memberInfo = MemberInfo;
             FieldInfo field = memberInfo as FieldInfo;
             if (field != null)
             {
-                return DataContract.FieldRequiresMemberAccess(field, serializationAssemblyPatterns);
+                return DataContract.FieldRequiresMemberAccess(field);
             }
             else
             {
@@ -330,7 +330,7 @@ namespace System.Runtime.Serialization
                 MethodInfo setMethod = property.SetMethod;
                 if (setMethod != null)
                 {
-                    return DataContract.MethodRequiresMemberAccess(setMethod, serializationAssemblyPatterns) || !DataContract.IsTypeVisible(property.PropertyType, serializationAssemblyPatterns);
+                    return DataContract.MethodRequiresMemberAccess(setMethod) || !DataContract.IsTypeVisible(property.PropertyType);
                 }
             }
             return false;

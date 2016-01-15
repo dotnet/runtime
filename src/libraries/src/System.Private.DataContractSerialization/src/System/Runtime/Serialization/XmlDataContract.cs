@@ -321,7 +321,7 @@ namespace System.Runtime.Serialization
         {
             Type type = this.UnderlyingType;
             CodeGenerator ilg = new CodeGenerator();
-            bool memberAccessFlag = RequiresMemberAccessForCreate(null, Globals.DataContractSerializationPatterns) && !(type.FullName == "System.Xml.Linq.XElement");
+            bool memberAccessFlag = RequiresMemberAccessForCreate(null) && !(type.FullName == "System.Xml.Linq.XElement");
             try
             {
                 ilg.BeginMethod("Create" + DataContract.GetClrTypeFullName(type), typeof(CreateXmlSerializableDelegate), memberAccessFlag);
@@ -330,7 +330,7 @@ namespace System.Runtime.Serialization
             {
                 if (memberAccessFlag)
                 {
-                    RequiresMemberAccessForCreate(securityException, Globals.DataContractSerializationPatterns);
+                    RequiresMemberAccessForCreate(securityException);
                 }
                 else
                 {
@@ -383,9 +383,9 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        private bool RequiresMemberAccessForCreate(SecurityException securityException, string[] serializationAssemblyPatterns)
+        private bool RequiresMemberAccessForCreate(SecurityException securityException)
         {
-            if (!IsTypeVisible(UnderlyingType, serializationAssemblyPatterns))
+            if (!IsTypeVisible(UnderlyingType))
             {
                 if (securityException != null)
                 {
@@ -396,7 +396,7 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (ConstructorRequiresMemberAccess(GetConstructor(), serializationAssemblyPatterns))
+            if (ConstructorRequiresMemberAccess(GetConstructor()))
             {
                 if (securityException != null)
                 {
