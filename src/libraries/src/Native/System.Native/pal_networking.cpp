@@ -1635,7 +1635,8 @@ extern "C" Error SystemNative_ReceiveMessage(int32_t socket, MessageHeader* mess
     msghdr header;
     ConvertMessageHeaderToMsghdr(&header, *messageHeader);
 
-    ssize_t res = recvmsg(socket, &header, socketFlags);
+    ssize_t res;
+    while (CheckInterrupted(res = recvmsg(socket, &header, socketFlags)));
 
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
@@ -1682,7 +1683,8 @@ extern "C" Error SystemNative_SendMessage(int32_t socket, MessageHeader* message
     msghdr header;
     ConvertMessageHeaderToMsghdr(&header, *messageHeader);
 
-    ssize_t res = sendmsg(socket, &header, flags);
+    ssize_t res;
+    while (CheckInterrupted(res = sendmsg(socket, &header, flags)));
     if (res != -1)
     {
         *sent = res;
@@ -1709,7 +1711,8 @@ extern "C" Error SystemNative_Accept(int32_t socket, uint8_t* socketAddress, int
     }
 
     socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
-    int accepted = accept(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    int accepted;
+    while (CheckInterrupted(accepted = accept(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen)));
     if (accepted == -1)
     {
         *acceptedSocket = -1;
@@ -1756,7 +1759,8 @@ extern "C" Error SystemNative_Connect(int32_t socket, uint8_t* socketAddress, in
         return PAL_EFAULT;
     }
 
-    int err = connect(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    int err;
+    while (CheckInterrupted(err = connect(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen))));
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -2406,7 +2410,8 @@ SystemNative_Select(int32_t fdCount, uint32_t* readFdSet, uint32_t* writeFdSet, 
         timeout = &tv;
     }
 
-    int rv = select(fdCount, readFds, writeFds, errorFds, timeout);
+    int rv;
+    while (CheckInterrupted(rv = select(fdCount, readFds, writeFds, errorFds, timeout)));
     if (rv == -1)
     {
         return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -2447,7 +2452,8 @@ extern "C" Error SystemNative_GetBytesAvailable(int32_t socket, int32_t* availab
     }
 
     int avail;
-    int err = ioctl(socket, FIONREAD, &avail);
+    int err;
+    while (CheckInterrupted(err = ioctl(socket, FIONREAD, &avail)));
     if (err == -1)
     {
         return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -2495,7 +2501,7 @@ static Error CreateSocketEventPortInner(int32_t* port)
 static Error CloseSocketEventPortInner(int32_t port)
 {
     int err = close(port);
-    return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return err == 0 || CheckInterrupted(err) ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
 static Error TryChangeSocketEventRegistrationInner(
@@ -2543,7 +2549,8 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     assert(*count >= 0);
 
     auto* events = reinterpret_cast<epoll_event*>(buffer);
-    int numEvents = epoll_wait(port, events, *count, -1);
+    int numEvents;
+    while (CheckInterrupted(numEvents = epoll_wait(port, events, *count, -1)));
     if (numEvents == -1)
     {
         *count = 0;
@@ -2644,7 +2651,7 @@ static Error CreateSocketEventPortInner(int32_t* port)
 static Error CloseSocketEventPortInner(int32_t port)
 {
     int err = close(port);
-    return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return err == 0 || CheckInterrupted(err) ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
 static Error TryChangeSocketEventRegistrationInner(
@@ -2684,7 +2691,8 @@ static Error TryChangeSocketEventRegistrationInner(
                reinterpret_cast<void*>(data));
     }
 
-    int err = kevent(port, events, i, nullptr, 0, nullptr);
+    int err;
+    while (CheckInterrupted(err = kevent(port, events, i, nullptr, 0, nullptr)));
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -2695,7 +2703,8 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     assert(*count >= 0);
 
     auto* events = reinterpret_cast<struct kevent*>(buffer);
-    int numEvents = kevent(port, nullptr, 0, events, *count, nullptr);
+    int numEvents;
+    while (CheckInterrupted(numEvents = kevent(port, nullptr, 0, events, *count, nullptr)));
     if (numEvents == -1)
     {
         *count = -1;
