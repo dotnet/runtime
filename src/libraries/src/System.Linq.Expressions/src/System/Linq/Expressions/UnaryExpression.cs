@@ -144,6 +144,7 @@ namespace System.Linq.Expressions
                     case ExpressionType.MemberAccess:
                         return ReduceMember();
                     default:
+                        Debug.Assert(_operand.NodeType == ExpressionType.Parameter);
                         return ReduceVariable();
                 }
             }
@@ -164,6 +165,7 @@ namespace System.Linq.Expressions
             }
             else
             {
+                Debug.Assert(_nodeType == ExpressionType.PreDecrementAssign || _nodeType == ExpressionType.PostDecrementAssign);
                 functional = ExpressionType.Decrement;
             }
             return new UnaryExpression(functional, operand, operand.Type, _method);
@@ -1094,6 +1096,7 @@ namespace System.Linq.Expressions
                 }
                 else
                 {
+                    Debug.Assert(kind == ExpressionType.PreDecrementAssign || kind == ExpressionType.PostDecrementAssign);
                     name = "op_Decrement";
                 }
                 result = GetUserDefinedUnaryOperatorOrThrow(kind, name, expression);
