@@ -1958,6 +1958,7 @@
     </Type>
     <Type Name="System.Environment">
       <Member Name="get_CurrentManagedThreadId"  />
+      <Member Name="get_MachineName"  />
       <Member Name="get_OSVersion" />
       <Member Name="get_ProcessorCount" />      
       <Member Name="get_StackTrace" />
