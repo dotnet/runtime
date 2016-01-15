@@ -43,7 +43,7 @@ extern "C" Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSock
 extern "C" Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
 {
     int err = close(socket);
-    return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return err == 0 || CheckInterrupted(err) ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
 extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int32_t sock)
@@ -52,7 +52,8 @@ extern "C" NetworkChangeKind SystemNative_ReadSingleEvent(int32_t sock)
     iovec iov = {buffer, sizeof(buffer)};
     sockaddr_nl sanl;
     msghdr msg = {reinterpret_cast<void*>(&sanl), sizeof(sockaddr_nl), &iov, 1, NULL, 0, 0};
-    ssize_t len = recvmsg(sock, &msg, 0);
+    ssize_t len;
+    while (CheckInterrupted(len = recvmsg(sock, &msg, 0)));
     if (len == -1)
     {
         // Probably means the socket has been closed.
