@@ -3837,7 +3837,7 @@ class FrameWithCookieHolder
 #endif // #ifndef DACCESS_COMPILE
 
 
-#define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (GetThread () && GetThread ()->IsAddressInStack (address));
+#define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 #define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)                                      \

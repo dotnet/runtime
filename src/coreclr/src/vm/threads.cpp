@@ -7924,7 +7924,6 @@ BOOL Thread::CanResetStackTo(LPCVOID stackPointer)
         return FALSE;
     }
 }
-#endif // FEATURE_STACK_PROBE
 
 /*
  * IsStackSpaceAvailable
@@ -7974,6 +7973,8 @@ BOOL Thread::IsStackSpaceAvailable(float numPages)
 
     return TRUE;
 }
+
+#endif // FEATURE_STACK_PROBE
 
 /*
  * GetStackGuarantee
