@@ -269,13 +269,38 @@ namespace System.Data.SqlClient
         internal MultiPartTableName multiPartTableName;
         internal readonly int ordinal;
         internal byte updatability;     // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
+        internal bool isDifferentName;
         internal bool isKey;
         internal bool isHidden;
+        internal bool isExpression;
         internal bool isIdentity;
         internal _SqlMetaData(int ordinal) : base()
         {
             this.ordinal = ordinal;
         }
+
+        internal string serverName
+        {
+            get
+            {
+                return multiPartTableName.ServerName;
+            }
+        }
+        internal string catalogName
+        {
+            get
+            {
+                return multiPartTableName.CatalogName;
+            }
+        }
+        internal string schemaName
+        {
+            get
+            {
+                return multiPartTableName.SchemaName;
+            }
+        }
+
         internal string tableName
         {
             get
