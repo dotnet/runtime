@@ -419,7 +419,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
-    if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT && native->uc_mcontext.fpregs != nullptr)
     {
 #ifdef _AMD64_
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
@@ -478,7 +478,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
     
-    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT && native->uc_mcontext.fpregs != nullptr)
     {
 #ifdef _AMD64_
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
