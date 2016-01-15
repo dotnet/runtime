@@ -79,12 +79,12 @@ public:
             BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
             bool excludeAppPaths);
 
-    INT_PTR GetManagedTPABinderInstance()
+    INT_PTR GetManagedAssemblyLoadContext()
     {
         return m_ptrManagedAssemblyLoadContext;
     }
 
-    void SetManagedTPABinderInstance(INT_PTR ptrManagedTPABinderInstance)
+    void SetManagedAssemblyLoadContext(INT_PTR ptrManagedTPABinderInstance)
     {
         _ASSERTE(m_ptrManagedAssemblyLoadContext == NULL);
 
