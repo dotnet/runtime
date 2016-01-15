@@ -20,10 +20,14 @@ JIT/Generics/pinvoke/instance02/instance02.sh
 JIT/Generics/pinvoke/instance03/instance03.sh
 JIT/Generics/pinvoke/static01/static01.sh
 JIT/Generics/pinvoke/static02/static02.sh
+JIT/Methodical/Arrays/misc/_il_dbgarrres/_il_dbgarrres.sh
+JIT/Methodical/Arrays/misc/_il_relarrres/_il_relarrres.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_d/xprecise3_cs_d.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_do/xprecise3_cs_do.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_r/xprecise3_cs_r.sh
 JIT/Methodical/cctor/xassem/xprecise3_cs_ro/xprecise3_cs_ro.sh
+JIT/Methodical/delegate/_simpleoddpower_il_d/_simpleoddpower_il_d.sh
+JIT/Methodical/delegate/_simpleoddpower_il_r/_simpleoddpower_il_r.sh
 JIT/Methodical/delegate/_XModuledeleg1_d/_XModuledeleg1_d.sh
 JIT/Methodical/delegate/_XModuledeleg1_do/_XModuledeleg1_do.sh
 JIT/Methodical/delegate/_XModuledeleg1_r/_XModuledeleg1_r.sh

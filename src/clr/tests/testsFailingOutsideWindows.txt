@@ -110,8 +110,11 @@ JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 JIT/jit64/gc/regress/vswhidbey/143837/143837.sh
 JIT/Methodical/Invoke/25params/25param1c_il_d/25param1c_il_d.sh
+JIT/Methodical/Invoke/25params/25param1c_il_r/25param1c_il_r.sh
 JIT/Methodical/Invoke/25params/25param3c_il_d/25param3c_il_d.sh
+JIT/Methodical/Invoke/25params/25param3c_il_r/25param3c_il_r.sh
 JIT/Methodical/Invoke/25params/25paramMixed_il_d/25paramMixed_il_d.sh
+JIT/Methodical/Invoke/25params/25paramMixed_il_r/25paramMixed_il_r.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b79250/b79250/b79250.sh
 JIT/Directed/coverage/importer/Desktop/badldsfld_il_d/badldsfld_il_d.sh
 JIT/Directed/coverage/importer/Desktop/badldsfld_il_r/badldsfld_il_r.sh
