@@ -2,7 +2,15 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 cmake_minimum_required (VERSION 2.6)
-project(clihost)
+project(hostpolicy)
+
+if(WIN32)
+    add_compile_options($<$<CONFIG:RelWithDebInfo>:/MD>)
+    add_compile_options($<$<CONFIG:Release>:/MD>)
+    add_compile_options($<$<CONFIG:Debug>:/MDd>)
+endif()
+
+include(../setup.cmake)
 
 include_directories(../../common)
 
@@ -12,7 +20,7 @@ set(SOURCES
     ../../common/utils.cpp
 
     ../args.cpp
-    ../clihost.cpp
+    ../hostpolicy.cpp
     ../coreclr.cpp
     ../deps_resolver.cpp
     ../servicing_index.cpp)
@@ -26,5 +34,5 @@ endif()
 
 add_definitions(-DCOREHOST_MAKE_DLL=1)
 
-add_library(clihost SHARED ${SOURCES})
+add_library(hostpolicy SHARED ${SOURCES})
 
