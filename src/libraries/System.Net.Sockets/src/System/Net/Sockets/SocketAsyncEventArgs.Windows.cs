@@ -161,7 +161,7 @@ namespace System.Net.Sockets
 
         private void CompleteIOCPOperation()
         {
-            // TODO: Optimization to remove callbacks if the operations are completed synchronously:
+            // TODO #4900: Optimization to remove callbacks if the operations are completed synchronously:
             //       Use SetFileCompletionNotificationModes(FILE_SKIP_COMPLETION_PORT_ON_SUCCESS).
 
             // If SetFileCompletionNotificationModes(FILE_SKIP_COMPLETION_PORT_ON_SUCCESS) is not set on this handle
