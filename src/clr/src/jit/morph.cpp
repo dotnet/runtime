@@ -6669,10 +6669,17 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         }
         else if ((stmtExpr->gtOper == GT_ASG) && (fgMorphStmt->gtNext != nullptr))
         {
-            noway_assert(fgMorphStmt->gtNext->gtStmt.gtStmtExpr->gtOper == GT_RETURN);
+            GenTreePtr nextStmtExpr = fgMorphStmt->gtNext->gtStmt.gtStmtExpr;
+            noway_assert(nextStmtExpr->gtOper == GT_RETURN);
+            // In this case we have an assignment of the result of the call, and then a return of the  result of the assignment.
+            // This can occur if impSpillStackEnsure() has introduced an assignment to a temp.
+            noway_assert(stmtExpr->gtGetOp1()->OperIsLocal() &&
+                         nextStmtExpr->OperGet() == GT_RETURN &&
+                         nextStmtExpr->gtGetOp1() != nullptr &&
+                         nextStmtExpr->gtGetOp1()->OperIsLocal() &&
+                         stmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum == nextStmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum);
             deleteReturn = true;
         }
-
         if (deleteReturn)
         {
             fgRemoveStmt(compCurBB, fgMorphStmt->gtNext);

@@ -10779,15 +10779,19 @@ _CONV:
 
             if  ((op1->gtFlags & GTF_SIDE_EFFECT) || opts.compDbgCode)
             {
-#if FEATURE_MULTIREG_STRUCT_RET
-                bool isStructTailCall = varTypeIsStruct(op1) && (op1->gtOper == GT_CALL) 
-                                        && op1->gtCall.CanTailCall();                
-#endif
                 // Since we are throwing away the value, just normalize
                 // it to its address.  This is more efficient.
 
                 if (varTypeIsStruct(op1))
-                {
+                {                    
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                    // Non-calls, such as ldobj or ret_expr, have to go through this.
+                    // Calls with large struct return value have to go through this.
+                    // Helper calls with small struct return value also have to go 
+                    // through this since they do not follow Unix calling convention.
+                    if (op1->gtOper != GT_CALL || !IsRegisterPassable(clsHnd) 
+                       || op1->AsCall()->gtCallType == CT_HELPER)
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
                     op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
                 }
 
@@ -10809,15 +10813,7 @@ _CONV:
                     op1 = gtUnusedValNode(op1);
                 }
 
-                // Append the value to the tree list
-#if FEATURE_MULTIREG_STRUCT_RET
-                // On Unix, a call with a structral return value will have either an assignment
-                // copying the return registers to stack or an address taken expression of the 
-                // hidden parameter inserted, depends on the size of the return value. We don't
-                // want to insert any more instructions after the call, since it will screw up
-                // the tail call morphing logic.
-                if (!isStructTailCall)
-#endif
+                /* Append the value to the tree list */
                 goto SPILL_APPEND;
             }
             
