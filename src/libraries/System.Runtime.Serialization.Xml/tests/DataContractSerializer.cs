@@ -1963,8 +1963,9 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_CollectionInterfaceGetOnlyCollection()
     {
-        var obj = new CollectionInterfaceGetOnlyCollectionTester(new List<string>() { "item1", "item2", "item3" });
-        SerializeAndDeserialize(obj, @"<CollectionInterfaceGetOnlyCollectionTester xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></CollectionInterfaceGetOnlyCollectionTester>");
+        var obj = new TypeWithCollectionInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+        var deserializedObj = SerializeAndDeserialize(obj, @"<TypeWithCollectionInterfaceGetOnlyCollection xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></TypeWithCollectionInterfaceGetOnlyCollection>");
+        Assert.Equal(obj.Items, deserializedObj.Items);
     }
 
     [Fact]
@@ -1972,8 +1973,8 @@ public static partial class DataContractSerializerTests
     {
         // Expect exception in deserialization process
         Assert.Throws<InvalidDataContractException>(() => {
-            var obj = new EnumerableInterfaceGetOnlyCollectionTester(new List<string>() { "item1", "item2", "item3" });
-            SerializeAndDeserialize(obj, @"<EnumerableInterfaceGetOnlyCollectionTester xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></EnumerableInterfaceGetOnlyCollectionTester>");
+            var obj = new TypeWithEnumerableInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+            SerializeAndDeserialize(obj, @"<TypeWithEnumerableInterfaceGetOnlyCollection xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></TypeWithEnumerableInterfaceGetOnlyCollection>");
         });
     }
 

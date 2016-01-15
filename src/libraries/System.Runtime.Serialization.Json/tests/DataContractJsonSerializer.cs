@@ -1711,8 +1711,9 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_CollectionInterfaceGetOnlyCollection()
     {
-        var obj = new CollectionInterfaceGetOnlyCollectionTester(new List<string>() { "item1", "item2", "item3" });
-        SerializeAndDeserialize(obj, @"{""Items"":[""item1"",""item2"",""item3""]}");
+        var obj = new TypeWithCollectionInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+        var deserializedObj = SerializeAndDeserialize(obj, @"{""Items"":[""item1"",""item2"",""item3""]}");
+        Assert.Equal(obj.Items, deserializedObj.Items);
     }
 
     [Fact]
@@ -1720,7 +1721,7 @@ public static partial class DataContractJsonSerializerTests
     {
         // Expect exception in deserialization process
         Assert.Throws<InvalidDataContractException>(() => {
-            var obj = new EnumerableInterfaceGetOnlyCollectionTester(new List<string>() { "item1", "item2", "item3" });
+            var obj = new TypeWithEnumerableInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
             SerializeAndDeserialize(obj, @"{""Items"":[""item1"",""item2"",""item3""]}");
         });
     }
