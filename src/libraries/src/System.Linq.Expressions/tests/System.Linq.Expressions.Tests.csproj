@@ -126,6 +126,7 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
     <Compile Include="Goto\Continue.cs" />
