@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
             internal XmlFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
                 _ilg = new CodeGenerator();
-                bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null, Globals.DataContractSerializationPatterns);
+                bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                 try
                 {
                     _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
                 {
                     if (memberAccessFlag)
                     {
-                        classContract.RequiresMemberAccessForWrite(securityException, Globals.DataContractSerializationPatterns);
+                        classContract.RequiresMemberAccessForWrite(securityException);
                     }
                     else
                     {
@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization
             internal XmlFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
                 _ilg = new CodeGenerator();
-                bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null, Globals.DataContractSerializationPatterns);
+                bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
                 try
                 {
                     _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization
                 {
                     if (memberAccessFlag)
                     {
-                        collectionContract.RequiresMemberAccessForWrite(securityException, Globals.DataContractSerializationPatterns);
+                        collectionContract.RequiresMemberAccessForWrite(securityException);
                     }
                     else
                     {
