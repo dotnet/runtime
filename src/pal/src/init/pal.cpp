@@ -506,11 +506,14 @@ Initialize(
             goto CLEANUP10;
         }
 
-        /* create file objects for standard handles */
-        if(!FILEInitStdHandles())
+        if (flags & PAL_INITIALIZE_STD_HANDLES)
         {
-            ERROR("Unable to initialize standard file handles\n");
-            goto CLEANUP13;
+            /* create file objects for standard handles */
+            if (!FILEInitStdHandles())
+            {
+                ERROR("Unable to initialize standard file handles\n");
+                goto CLEANUP13;
+            }
         }
 
         if (FALSE == CRTInitStdStreams())
@@ -794,6 +797,7 @@ PAL_TerminateEx(
         LOGEXIT("PAL_Terminate returns.\n");
     }
 
+    // Declare the beginning of shutdown 
     PALSetShutdownIntent();
 
     LOGEXIT("PAL_TerminateEx is exiting the current process.\n");
@@ -836,7 +840,7 @@ BOOL PALIsThreadDataInitialized()
 Function:
   PALCommonCleanup
 
-Utility function to prepare for shutdown.
+  Utility function to prepare for shutdown.
 
 --*/
 void 
@@ -844,36 +848,24 @@ PALCommonCleanup()
 {
     static bool cleanupDone = false;
 
+    // Declare the beginning of shutdown
+    PALSetShutdownIntent();
+
     if (!cleanupDone)
     {
         cleanupDone = true;
 
-        PALSetShutdownIntent();
-
         //
         // Let the synchronization manager know we're about to shutdown
         //
-
         CPalSynchMgrController::PrepareForShutdown();
 
 #ifdef _DEBUG
         PROCDumpThreadList();
 #endif
     }
-}
 
-/*++
-Function:
-  PALShutdown
-
-  sets the PAL's initialization count to zero, so that PALIsInitialized will 
-  return FALSE. called by PROCCleanupProcess to tell some functions that the
-  PAL isn't fully functional, and that they should use an alternate code path
-  
-(no parameters, no retun vale)
---*/
-void PALShutdown()
-{
+    // Mark that the PAL is uninitialized
     init_count = 0;
 }
 

@@ -26,9 +26,7 @@
 #include <getproductversionnumber.h>
 #include <dbgenginemetrics.h>
 
-#if defined(FEATURE_PAL)
-#include "debug-pal.h"
-#else
+#ifndef FEATURE_PAL
 #define PSAPI_VERSION 2
 #include <psapi.h>
 #endif
@@ -40,26 +38,22 @@
 // Here's a High-level overview of the API usage
 
 From the debugger:
-A debugger calls GetStartupNotificationEvent(pid of debuggee) to get an event, which is signalled when that 
-process loads a Telesto.  The debugger thus waits on that event, and when it's signalled, it can call
+A debugger calls GetStartupNotificationEvent(pid of debuggee) to get an event, which is signalled when
+that process loads a Telesto.  The debugger thus waits on that event, and when it's signalled, it can call
 EnumerateCLRs / CloseCLREnumeration to get an array of Telestos in the target process (including the one
-that was just loaded). 
-It can then call CreateVersionStringFromModule, CreateDebuggingInterfaceFromVersion to attach to 
-any or all Telestos of interest.
-
+that was just loaded). It can then call CreateVersionStringFromModule, CreateDebuggingInterfaceFromVersion 
+to attach to any or all Telestos of interest.
 
 From the debuggee:
-When a new Telesto spins up, it checks for the startup event (created via GetStartupNotificationEvent), and if it
-exists, it will:
+When a new Telesto spins up, it checks for the startup event (created via GetStartupNotificationEvent), and 
+if it exists, it will:
 - signal it
 - wait on the "Continue" event, thus giving a debugger a chance to attach to the telesto
-
 
 Notes:
 - There is no CreateProcess (Launch) case. All Launching is really an "Early-attach case".
 
 */
-
 
 // Contract for public APIs. These must be NOTHROW.
 #define PUBLIC_CONTRACT \
@@ -68,6 +62,504 @@ Notes:
         NOTHROW; \
     } \
     CONTRACTL_END; \
+
+#ifdef FEATURE_PAL
+
+static
+void
+RuntimeStartupHandler(
+    char *pszModulePath,
+    HMODULE hModule,
+    PVOID parameter);
+
+#else // FEATURE_PAL
+
+static
+DWORD
+StartupHelperThread(
+    LPVOID p);
+
+static
+HRESULT 
+GetContinueStartupEvent(
+    DWORD debuggeePID, 
+    LPCWSTR szTelestoFullPath,
+    __out HANDLE *phContinueStartupEvent);
+
+#endif // FEATURE_PAL
+
+// Functions that we'll look for in the loaded Mscordbi module.
+typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
+    int iDebuggerVersion, 
+    DWORD pid, 
+    HMODULE hmodTargetCLR, 
+    IUnknown **ppCordb);
+
+//
+// Helper class for RegisterForRuntimeStartup
+//
+class RuntimeStartupHelper
+{
+    LONG m_ref;
+    DWORD m_processId;
+    PSTARTUP_CALLBACK m_callback;
+    PVOID m_parameter;
+#ifdef FEATURE_PAL
+    PVOID m_unregisterToken;
+#else
+    bool m_canceled;
+    HANDLE m_startupEvent;
+    DWORD m_threadId;
+    HANDLE m_threadHandle;
+#endif // FEATURE_PAL
+
+public:
+    RuntimeStartupHelper(DWORD dwProcessId, PSTARTUP_CALLBACK pfnCallback, PVOID parameter) :
+        m_ref(1),
+        m_processId(dwProcessId),
+        m_callback(pfnCallback),
+        m_parameter(parameter),
+#ifdef FEATURE_PAL
+        m_unregisterToken(NULL)
+#else
+        m_canceled(false),
+        m_startupEvent(NULL),
+        m_threadId(0),
+        m_threadHandle(NULL)
+#endif // FEATURE_PAL
+    {
+    }
+
+    ~RuntimeStartupHelper()
+    {
+#ifndef FEATURE_PAL
+        if (m_startupEvent != NULL)
+        {
+            CloseHandle(m_startupEvent);
+        }
+        if (m_threadHandle != NULL)
+        {
+            CloseHandle(m_threadHandle);
+        }
+#endif // FEATURE_PAL
+    }
+
+    LONG AddRef()
+    {
+        LONG ref = InterlockedIncrement(&m_ref);
+        return ref;
+    }
+
+    LONG Release()
+    {
+        LONG ref = InterlockedDecrement(&m_ref);
+        if (ref == 0)
+        {
+            delete this;
+        }
+        return ref;
+    }
+
+#ifdef FEATURE_PAL
+
+    HRESULT Register()
+    {
+        if (PAL_RegisterForRuntimeStartup(m_processId, RuntimeStartupHandler, this, &m_unregisterToken) != NO_ERROR)
+        {
+            return E_INVALIDARG;
+        }
+        return S_OK;
+    }
+
+    void Unregister()
+    {
+        PAL_UnregisterForRuntimeStartup(m_unregisterToken);
+    }
+
+    void InvokeStartupCallback(char *pszModulePath, HMODULE hModule)
+    {
+        IUnknown *pCordb = NULL;
+        HMODULE hMod = NULL;
+        HRESULT hr = S_OK;
+
+        // If either of these are NULL, there was an error from the PAL
+        // callback. GetLastError returns the error code from the PAL.
+        if (pszModulePath == NULL || hModule == NULL)
+        {
+            hr = HRESULT_FROM_WIN32(GetLastError());
+            goto exit;
+        }
+
+        PAL_CPP_TRY
+        {
+            FPCoreCLRCreateCordbObject fpCreate = NULL;
+            char dbiPath[MAX_LONGPATH];
+
+            char *pszLast = strrchr(pszModulePath, DIRECTORY_SEPARATOR_CHAR_A);
+            if (pszLast == NULL)
+            {
+                _ASSERT(!"InvokeStartupCallback: can find separator in coreclr path\n");
+                hr = E_INVALIDARG;
+                goto exit;
+            }
+
+            strncpy_s(dbiPath, _countof(dbiPath), pszModulePath, pszLast - pszModulePath);
+            strcat_s(dbiPath, _countof(dbiPath), DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("mscordbi"));
+
+            hMod = LoadLibraryA(dbiPath);
+            if (hMod == NULL)
+            {
+                hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
+                goto exit;
+            }
+
+            fpCreate = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
+            if (fpCreate == NULL)
+            {
+                hr = CORDBG_E_INCOMPATIBLE_PROTOCOL;
+                goto exit;
+            }
+
+            HRESULT hr = fpCreate(CorDebugVersion_2_0, m_processId, hModule, &pCordb);
+            _ASSERTE((pCordb == NULL) == FAILED(hr));
+            if (FAILED(hr))
+            {
+                goto exit;
+            }
+
+            m_callback(pCordb, m_parameter, S_OK);
+        }
+        PAL_CPP_CATCH_ALL
+        {
+            hr = E_FAIL;
+            goto exit;
+        }
+        PAL_CPP_ENDTRY
+
+    exit:
+        if (FAILED(hr))
+        {
+            _ASSERTE(pCordb == NULL);
+
+            if (hMod != NULL)
+            {
+                FreeLibrary(hMod);
+            }
+
+            // Invoke the callback on error
+            m_callback(NULL, m_parameter, hr);
+        }
+    }
+
+#else // FEATURE_PAL
+
+    HRESULT Register()
+    {
+        HRESULT hr = GetStartupNotificationEvent(m_processId, &m_startupEvent);
+        if (FAILED(hr))
+        {
+            goto exit;
+        }
+
+        // Add a reference for the thread handler
+        AddRef();
+
+        m_threadHandle = CreateThread(
+            NULL,
+            0,
+            ::StartupHelperThread,
+            this,
+            0,
+            &m_threadId);
+
+        if (m_threadHandle == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+            Release();
+            goto exit;
+        }
+
+    exit:
+        return hr;
+    }
+
+    HRESULT InternalEnumerateCLRs(HANDLE** ppHandleArray, LPWSTR** ppStringArray, DWORD* pdwArrayLength)
+    {
+        int numTries = 0;
+        HRESULT hr;
+
+        while (numTries < 10)
+        {
+            // EnumerateCLRs uses the OS API CreateToolhelp32Snapshot which can return ERROR_BAD_LENGTH or 
+            // ERROR_PARTIAL_COPY. If we get either of those, we try wait 1/10th of a second try again (that
+            // is the recommendation of the OS API owners)
+            hr = EnumerateCLRs(m_processId, ppHandleArray, ppStringArray, pdwArrayLength);
+            if ((hr != HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY)) && (hr != HRESULT_FROM_WIN32(ERROR_BAD_LENGTH)))
+            {
+                break;
+            }
+            Sleep(100);
+            numTries++;
+        }
+
+        return hr;
+    }
+
+    void WakeRuntimes(HANDLE *handleArray, DWORD arrayLength)
+    {
+        if (handleArray != NULL)
+        {
+            for (int i = 0; i < (int)arrayLength; i++)
+            {
+                HANDLE h = handleArray[i];
+                if (h != NULL && h != INVALID_HANDLE_VALUE)
+                {
+                    SetEvent(h);
+                }
+            }
+        }
+    }
+
+    void Unregister()
+    {
+        m_canceled = true;
+
+        HANDLE *handleArray = NULL;
+        LPWSTR *stringArray = NULL;
+        DWORD arrayLength = 0;
+
+        // Wake up runtime(s)
+        HRESULT hr = InternalEnumerateCLRs(&handleArray, &stringArray, &arrayLength);
+        if (SUCCEEDED(hr))
+        {
+            WakeRuntimes(handleArray, arrayLength);
+            CloseCLREnumeration(handleArray, stringArray, arrayLength);
+        }
+
+        // Wake up worker thread
+        SetEvent(m_startupEvent);
+
+        // Don't need to wake up and wait for the worker thread if called on it
+        if (m_threadId != GetCurrentThreadId())
+        {
+            // Wait for work thread to exit
+            WaitForSingleObject(m_threadHandle, INFINITE);
+        }
+    }
+
+    HRESULT InvokeStartupCallback(bool *pCoreClrExists)
+    {
+        HANDLE *handleArray = NULL;
+        LPWSTR *stringArray = NULL;
+        DWORD arrayLength = 0;
+        HRESULT hr = S_OK;
+
+        PAL_CPP_TRY
+        {
+            IUnknown *pCordb = NULL;
+            WCHAR verStr[MAX_LONGPATH];
+            DWORD verLen;
+
+            *pCoreClrExists = FALSE;
+
+            hr = InternalEnumerateCLRs(&handleArray, &stringArray, &arrayLength);
+            if (FAILED(hr))
+            {
+                goto exit;
+            }
+
+            for (int i = 0; i < (int)arrayLength; i++)
+            {
+                *pCoreClrExists = TRUE;
+
+                hr = CreateVersionStringFromModule(m_processId, stringArray[i], verStr, _countof(verStr), &verLen);
+                if (FAILED(hr))
+                {
+                    goto exit;
+                }
+
+                hr = CreateDebuggingInterfaceFromVersion(verStr, &pCordb);
+                if (FAILED(hr))
+                {
+                    goto exit;
+                }
+
+                m_callback(pCordb, m_parameter, S_OK);
+
+                // Currently only the first coreclr module in a process is supported
+                break;
+            }
+        }
+        PAL_CPP_CATCH_ALL
+        {
+            hr = E_FAIL;
+            goto exit;
+        }
+        PAL_CPP_ENDTRY
+
+    exit:
+        if (*pCoreClrExists)
+        {
+            // Wake up all the runtimes
+            WakeRuntimes(handleArray, arrayLength);
+        }
+        CloseCLREnumeration(handleArray, stringArray, arrayLength);
+
+        return hr;
+    }
+
+    void StartupHelperThread()
+    {
+        bool coreclrExists = false;
+
+        HRESULT hr = InvokeStartupCallback(&coreclrExists);
+        if (SUCCEEDED(hr))
+        {
+            if (!coreclrExists && !m_canceled)
+            {
+                // Wait until the coreclr runtime (debuggee) starts up
+                if (WaitForSingleObject(m_startupEvent, INFINITE) == WAIT_OBJECT_0)
+                {
+                    if (!m_canceled)
+                    {
+                        hr = InvokeStartupCallback(&coreclrExists);
+                        if (SUCCEEDED(hr))
+                        {
+                            // We should always find a coreclr module
+                            _ASSERTE(coreclrExists);
+                        }
+                    }
+                }
+                else
+                {
+                    hr = HRESULT_FROM_WIN32(GetLastError());
+                }
+            }
+        }
+
+        if (FAILED(hr))
+        {
+            m_callback(NULL, m_parameter, hr);
+        }
+    }
+
+#endif // FEATURE_PAL
+};
+
+#ifdef FEATURE_PAL
+
+static
+void
+RuntimeStartupHandler(char *pszModulePath, HMODULE hModule, PVOID parameter)
+{
+    RuntimeStartupHelper *helper = (RuntimeStartupHelper *)parameter;
+    helper->InvokeStartupCallback(pszModulePath, hModule);
+}
+
+#else // FEATURE_PAL
+
+static
+DWORD 
+StartupHelperThread(LPVOID p)
+{
+    RuntimeStartupHelper *helper = (RuntimeStartupHelper *)p;
+    helper->StartupHelperThread();
+    helper->Release();
+    return 0;
+}
+
+#endif // FEATURE_PAL
+
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// RegisterForRuntimeStartup -- executes the callback when the coreclr runtime 
+//      starts in the specified process. The callback is passed the proper ICorDebug
+//      instance for the version of the runtime or an error if something fails. This
+//      API works for launch and attach (and even the attach scenario if the runtime
+//      hasn't been loaded yet) equally on both xplat and Windows. The callback is 
+//      always called on a separate thread. This API returns immediately.
+//
+//      The callback is invoked when the coreclr runtime module is loaded during early 
+//      initialization. The runtime is blocked during initialization until the callback 
+//      returns.
+//
+//      If the runtime is already loaded in the process (as in the normal attach case),
+//      the callback is executed and the runtime is not blocked.
+//
+//      The callback is always invoked on a separate thread and this API returns immediately.
+//
+//      Only the first coreclr module instance found in the target process is currently 
+//      supported.
+//
+// dwProcessId -- process id of the target process
+// pfnCallback -- invoked when coreclr runtime starts
+// parameter -- data to pass to callback
+// ppUnregisterToken -- pointer to put the UnregisterForRuntimeStartup token.
+//
+//-----------------------------------------------------------------------------
+HRESULT
+RegisterForRuntimeStartup(
+    __in DWORD dwProcessId,
+    __in PSTARTUP_CALLBACK pfnCallback,
+    __in PVOID parameter,
+    __out PVOID *ppUnregisterToken)
+{
+    PUBLIC_CONTRACT;
+
+    if (pfnCallback == NULL || ppUnregisterToken == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+
+    RuntimeStartupHelper *helper = new (nothrow) RuntimeStartupHelper(dwProcessId, pfnCallback, parameter);
+    if (helper == NULL)
+    {
+        hr = E_OUTOFMEMORY;
+    }
+    else
+    {
+        hr = helper->Register();
+        if (FAILED(hr))
+        {
+            helper->Release();
+            helper = NULL;
+        }
+    }
+
+    *ppUnregisterToken = helper;
+    return hr;
+}
+
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// UnregisterForRuntimeStartup -- stops/cancels runtime startup notification. Needs
+//      to be called during the debugger's shutdown to cleanup the internal data.
+//
+//    This API can be called in the startup callback. Otherwise, it will block until
+//    the callback thread finishes and no more callbacks will be initiated after this
+//    API returns.
+//
+// pUnregisterToken -- unregister token from RegisterForRuntimeStartup or NULL.
+//-----------------------------------------------------------------------------
+HRESULT
+UnregisterForRuntimeStartup(
+    __in PVOID pUnregisterToken)
+{
+    PUBLIC_CONTRACT;
+
+    if (pUnregisterToken != NULL)
+    {
+        RuntimeStartupHelper *helper = (RuntimeStartupHelper *)pUnregisterToken;
+        helper->Unregister();
+        helper->Release();
+    }
+
+    return S_OK;
+}
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -89,9 +581,10 @@ const int cchEventNameBufferSize = (sizeof(StartupNotifyEventNamePrefix) + sizeo
                                     + 10 // + decimal session id DWORD 
                                     + 1;  // '\' after session id
                                         
-
-HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
-                                    __out HANDLE* phStartupEvent)
+HRESULT 
+GetStartupNotificationEvent(
+    __in DWORD debuggeePID,
+    __out HANDLE* phStartupEvent)
 {
     PUBLIC_CONTRACT;
 
@@ -162,17 +655,12 @@ HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
     }
 
     *phStartupEvent = startupEvent;
+    return S_OK;
 #else
     *phStartupEvent = NULL;
+    return E_NOTIMPL;
 #endif // FEATURE_PAL
-
-    return S_OK;
 }
-
-HRESULT GetContinueStartupEvent(DWORD debuggeePID, 
-                                LPCWSTR szTelestoFullPath,
-                                __out HANDLE* phContinueStartupEvent);
-
 // Refer to clr\src\mscoree\mscorwks_ntdef.src.
 const WORD kOrdinalForMetrics = 2;
 
@@ -196,9 +684,12 @@ const WORD kOrdinalForMetrics = 2;
 //     coreclr.dll is ours.  A malicious user can be running a process with a bogus coreclr.dll loaded.
 //     That's why we need to be extra careful reading coreclr.dll in this function.
 //-----------------------------------------------------------------------------
-void GetTargetCLRMetrics(LPCWSTR szTelestoFullPath, 
-                         CLR_ENGINE_METRICS * pEngineMetricsOut, 
-                         DWORD * pdwRVAContinueStartupEvent = NULL)
+static
+void 
+GetTargetCLRMetrics(
+    LPCWSTR szTelestoFullPath, 
+    CLR_ENGINE_METRICS *pEngineMetricsOut, 
+    DWORD *pdwRVAContinueStartupEvent = NULL)
 {
     CONTRACTL
     {
@@ -343,13 +834,22 @@ void GetTargetCLRMetrics(LPCWSTR szTelestoFullPath,
 #else 
     //TODO: So far on POSIX systems we only support one version of debugging interface
     // in future we might want to detect it the same way we do it on Windows.
+    pEngineMetricsOut->cbSize = sizeof(*pEngineMetricsOut);
     pEngineMetricsOut->dwDbiVersion = CorDebugLatestVersion; 
+    pEngineMetricsOut->phContinueStartupEvent = NULL;
+
+    if (pdwRVAContinueStartupEvent != NULL)
+    {
+        *pdwRVAContinueStartupEvent = NULL;
+    }
 #endif // FEATURE_PAL
 }
 
-
 // Returns true iff the module represents CoreClr.
-bool IsCoreClr(const WCHAR* pModulePath)
+static
+bool 
+IsCoreClr(
+    const WCHAR* pModulePath)
 {
     _ASSERTE(pModulePath != NULL); 
 
@@ -366,7 +866,11 @@ bool IsCoreClr(const WCHAR* pModulePath)
 }
 
 // Returns true iff the module sent is named CoreClr.dll and has the metrics expected in it's PE header.
-bool IsCoreClrWithGoodHeader(HANDLE hProcess, HMODULE hModule)
+static
+bool 
+IsCoreClrWithGoodHeader(
+    HANDLE hProcess,
+    HMODULE hModule)
 {
     HRESULT hr = S_OK;
 
@@ -419,10 +923,12 @@ bool IsCoreClrWithGoodHeader(HANDLE hProcess, HMODULE hModule)
 // Notes:
 //   Callers use  code:CloseCLREnumeration to free the returned arrays.
 //-----------------------------------------------------------------------------
-HRESULT EnumerateCLRs(DWORD debuggeePID, 
-                      __out HANDLE** ppHandleArrayOut,
-                      __out LPWSTR** ppStringArrayOut,
-                      __out DWORD* pdwArrayLengthOut)
+HRESULT 
+EnumerateCLRs(
+    DWORD debuggeePID, 
+    __out HANDLE** ppHandleArrayOut,
+    __out LPWSTR** ppStringArrayOut,
+    __out DWORD* pdwArrayLengthOut)
 {
     PUBLIC_CONTRACT;
 
@@ -432,7 +938,7 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
 
     HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, debuggeePID);
     if (NULL == hProcess)
-        ThrowHR(E_FAIL);
+        return E_FAIL;
 
     // These shouldn't be freed
     HMODULE modules[1000];
@@ -556,7 +1062,11 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
 // dwArrayLength -- array length originally returned by EnumerateCLRs
 //
 //-----------------------------------------------------------------------------
-HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dwArrayLength)
+HRESULT 
+CloseCLREnumeration(
+    __in HANDLE* pHandleArray,
+    __in LPWSTR* pStringArray,
+    __in DWORD dwArrayLength)
 {
     PUBLIC_CONTRACT;
 
@@ -593,7 +1103,11 @@ HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dw
 //  - NULL  if the module is not loaded.
 //  - else Throws. *ppBaseAddress = NULL
 //-----------------------------------------------------------------------------
-BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
+static
+BYTE* 
+GetRemoteModuleBaseAddress(
+    DWORD dwPID,
+    LPCWSTR szFullModulePath)
 {
     CONTRACTL
     {
@@ -674,11 +1188,13 @@ const WCHAR *c_versionStrFormat = W("%08x;%08x;%p");
 //   The version string is an opaque string that can only be passed back to other 
 //   DbgShim APIs.
 //-----------------------------------------------------------------------------
-HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
-                                      LPCWSTR szModuleName,
-                                      __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
-                                      DWORD cchBuffer,
-                                      __out DWORD* pdwLength)
+HRESULT 
+CreateVersionStringFromModule(
+    __in DWORD pidDebuggee,
+    __in LPCWSTR szModuleName,
+    __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
+    __in DWORD cchBuffer,
+    __out DWORD* pdwLength)
 {
     PUBLIC_CONTRACT;
 
@@ -735,13 +1251,6 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
     return S_OK;
 }
 
-// Functions that we'll look for in the loaded Mscordbi module.
-typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
-    int iDebuggerVersion, 
-    DWORD pid, 
-    HMODULE hmodTargetCLR, 
-    IUnknown ** ppCordb);
-
 //-----------------------------------------------------------------------------
 // Parse a version string into useful data.
 // 
@@ -758,8 +1267,13 @@ typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
 //    The version string is coming from the target CoreClr and in the case of a corrupted target, could be
 //    an arbitrary string. It should be treated as untrusted public input.
 //-----------------------------------------------------------------------------
-HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion * piDebuggerVersion, DWORD * pdwPidDebuggee, 
-                           HMODULE * phmodTargetCLR)
+static
+HRESULT 
+ParseVersionString(
+    LPCWSTR szDebuggeeVersion, 
+    CorDebugInterfaceVersion *piDebuggerVersion,
+    DWORD *pdwPidDebuggee, 
+    HMODULE *phmodTargetCLR)
 {
     if ((piDebuggerVersion == NULL) ||
         (pdwPidDebuggee == NULL) ||
@@ -772,7 +1286,6 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
     }
 
     int numFieldsAssigned = swscanf_s(szDebuggeeVersion, c_versionStrFormat, piDebuggerVersion, pdwPidDebuggee, phmodTargetCLR);
-
     if (numFieldsAssigned != 3)
     {
         return E_FAIL;
@@ -787,12 +1300,13 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
 // Arguments:
 //    szFullDbiPath - (in/out): on input, the directory containing dbi. On output, the full path to dbi.dll.
 //-----------------------------------------------------------------------------
-void AppendDbiDllName(SString & szFullDbiPath)
+static
+void 
+AppendDbiDllName(SString & szFullDbiPath)
 {
     const WCHAR * pDbiDllName = DIRECTORY_SEPARATOR_STR_W MAKEDLLNAME_W(W("mscordbi"));
     szFullDbiPath.Append(pDbiDllName);
 }
-
 
 //-----------------------------------------------------------------------------
 // Return a path to the dbi next to the runtime, if present.
@@ -805,8 +1319,13 @@ void AppendDbiDllName(SString & szFullDbiPath)
 // Notes:
 //    This just calculates a filename and does not determine if the file actually exists. 
 //-----------------------------------------------------------------------------
-void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SString & szFullDbiPath, 
-                                 SString & szFullCoreClrPath)
+static
+void 
+GetDbiFilenameNextToRuntime(
+    DWORD pidDebuggee, 
+    HMODULE hmodTargetCLR, 
+    SString & szFullDbiPath, 
+    SString & szFullCoreClrPath)
 {
     szFullDbiPath.Clear();
 
@@ -830,8 +1349,6 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
         ThrowHR(E_FAIL);
     }
 
-
-    // Change:
     //   c:\abc\coreclr.dll
     //   01234567890
     //   c:\abc\mscordbi.dll
@@ -859,8 +1376,11 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
 // Return Value:
 //    true if the versions match
 //
-
-bool CheckDbiAndRuntimeVersion(SString & szFullDbiPath, SString & szFullCoreClrPath)
+static
+bool 
+CheckDbiAndRuntimeVersion(
+    SString & szFullDbiPath,
+    SString & szFullCoreClrPath)
 {
 #ifndef FEATURE_PAL
     DWORD dwDbiVersionMS = 0;
@@ -886,7 +1406,6 @@ bool CheckDbiAndRuntimeVersion(SString & szFullDbiPath, SString & szFullCoreClrP
 #endif // FEATURE_PAL
 }
 
-
 //-----------------------------------------------------------------------------
 // Public API.
 // Given a version string, create the matching mscordbi.dll for it.
@@ -903,11 +1422,11 @@ bool CheckDbiAndRuntimeVersion(SString & szFullDbiPath, SString & szFullCoreClrP
 //    the right debug pack is not installed.
 //  else Error. (*ppCordb will be null)
 //-----------------------------------------------------------------------------
-HRESULT CreateDebuggingInterfaceFromVersionEx(
-    int iDebuggerVersion,
-    LPCWSTR szDebuggeeVersion,
-    IUnknown ** ppCordb
-    )
+HRESULT 
+CreateDebuggingInterfaceFromVersionEx(
+    __in int iDebuggerVersion,
+    __in LPCWSTR szDebuggeeVersion,
+    __out IUnknown ** ppCordb)
 {
     PUBLIC_CONTRACT;
 
@@ -925,8 +1444,6 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
         goto Exit;
     }
 
-    *ppCordb = NULL;
-
     //
     // Step 1: Parse version information into internal data structures
     // 
@@ -940,7 +1457,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
         goto Exit;
 
     //
-    // Step 2:  Find the proper Dbi module (mscordbi.dll) and load it.
+    // Step 2:  Find the proper dbi module (mscordbi) and load it.
     // 
 
     // Check for dbi next to target CLR.
@@ -1020,10 +1537,7 @@ Exit:
     }
 
     // Set our outparam.
-    if (ppCordb != NULL)
-    {
-        *ppCordb = pCordb;
-    }
+    *ppCordb = pCordb;
 
     // On success case, mscordbi.dll is leaked. 
     // - We never give the caller back the module handle, so our caller can't do FreeLibrary(). 
@@ -1031,7 +1545,6 @@ Exit:
 
     return hr;
 }
-
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -1049,16 +1562,15 @@ Exit:
 //    the right debug pack is not installed.
 //  else Error. (*ppCordb will be null)
 //-----------------------------------------------------------------------------
-HRESULT CreateDebuggingInterfaceFromVersion(
-    LPCWSTR szDebuggeeVersion, 
-    IUnknown ** ppCordb
+HRESULT 
+CreateDebuggingInterfaceFromVersion(
+    __in LPCWSTR szDebuggeeVersion, 
+    __out IUnknown ** ppCordb
 )
 {
     PUBLIC_CONTRACT;
 
-    return CreateDebuggingInterfaceFromVersionEx(CorDebugVersion_2_0,
-                                                 szDebuggeeVersion,
-                                                 ppCordb);
+    return CreateDebuggingInterfaceFromVersionEx(CorDebugVersion_2_0, szDebuggeeVersion, ppCordb);
 }
 
 #ifndef FEATURE_PAL
@@ -1075,9 +1587,11 @@ HRESULT CreateDebuggingInterfaceFromVersion(
 // Returns:
 //   S_OK on success. 
 //------------------------------------------------------------------------------
-HRESULT GetContinueStartupEvent(DWORD debuggeePID, 
-                                LPCWSTR szTelestoFullPath,
-                                __out HANDLE* phContinueStartupEvent)
+HRESULT 
+GetContinueStartupEvent(
+    DWORD debuggeePID, 
+    LPCWSTR szTelestoFullPath,
+    __out HANDLE* phContinueStartupEvent)
 {
     if ((phContinueStartupEvent == NULL) || (szTelestoFullPath == NULL))
         return E_INVALIDARG;
@@ -1130,7 +1644,22 @@ HRESULT GetContinueStartupEvent(DWORD debuggeePID,
 #include "debugshim.h"
 #endif
 
-HRESULT CLRCreateInstance(REFCLSID clsid, REFIID riid, LPVOID *ppInterface)
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// Parameters:
+//  clsid
+//  riid
+//  ppInterface
+//
+// Return:
+//  S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT 
+CLRCreateInstance(
+    REFCLSID clsid,
+    REFIID riid, 
+    LPVOID *ppInterface)
 {
 #if defined(FEATURE_CORESYSTEM)
 

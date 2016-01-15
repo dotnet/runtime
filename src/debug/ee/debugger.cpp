@@ -904,7 +904,6 @@ HRESULT ValidateObject(Object *objPtr)
 
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
-__attribute__((destructor)) 
 void
 ShutdownTransport()
 {
@@ -912,6 +911,15 @@ ShutdownTransport()
     {
         g_pDbgTransport->Shutdown();
         g_pDbgTransport = NULL;
+    }
+}
+
+void
+AbortTransport()
+{
+    if (g_pDbgTransport != NULL)
+    {
+        g_pDbgTransport->AbortConnection();
     }
 }
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -1742,21 +1750,16 @@ void Debugger::RaiseStartupNotification()
     // that it's flushed from any CPU cache into memory. 
     InterlockedIncrement(&m_fLeftSideInitialized);
 
+#ifndef FEATURE_DBGIPC_TRANSPORT_VM
     // If we are remote debugging, don't send the event now if a debugger is not attached.  No one will be
     // listening, and we will fail.  However, we still want to initialize the variable above.
-    BOOL fRaiseStartupNotification = TRUE;
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    fRaiseStartupNotification = (CORDebuggerAttached() ? TRUE : FALSE);
-#endif
-    if (fRaiseStartupNotification)
-    {
-        DebuggerIPCEvent startupEvent;
-        InitIPCEvent(&startupEvent, DB_IPCE_LEFTSIDE_STARTUP, NULL, VMPTR_AppDomain::NullPtr());
-             
-        SendRawEvent(&startupEvent);
+    DebuggerIPCEvent startupEvent;
+    InitIPCEvent(&startupEvent, DB_IPCE_LEFTSIDE_STARTUP, NULL, VMPTR_AppDomain::NullPtr());
+         
+    SendRawEvent(&startupEvent);
 
-        // RS will set flags from OOP while we're stopped at the event if it wants to attach.
-    }
+    // RS will set flags from OOP while we're stopped at the event if it wants to attach.
+#endif // FEATURE_DBGIPC_TRANSPORT_VM
 }
 
 
@@ -1884,7 +1887,8 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     pDbgLockHolder->Acquire();
 }
 
-#ifdef FEATURE_CORECLR
+#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+
 HANDLE g_hContinueStartupEvent = NULL;
 
 CLR_ENGINE_METRICS g_CLREngineMetrics = {
@@ -1895,9 +1899,6 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
 
 bool IsTelestoDebugPackInstalled()
 {
-#ifdef FEATURE_PAL
-    return false;
-#else
     RegKeyHolder hKey;
     if (ERROR_SUCCESS != WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, FRAMEWORK_REGISTRY_KEY_W, 0, KEY_READ, &hKey))
         return false;
@@ -1916,9 +1917,7 @@ bool IsTelestoDebugPackInstalled()
 
     // RegCloseKey called by holder
     return debugPackInstalled;
-#endif // FEATURE_PAL
 }
-
 
 #define StartupNotifyEventNamePrefix W("TelestoStartupEvent_")
 const int cchEventNameBufferSize = sizeof(StartupNotifyEventNamePrefix)/sizeof(WCHAR) + 8; // + hex DWORD (8).  NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)
@@ -1957,7 +1956,8 @@ void NotifyDebuggerOfTelestoStartup()
     CloseHandle(g_hContinueStartupEvent);
     g_hContinueStartupEvent = NULL;
 }
-#endif // FEATURE_CORECLR
+
+#endif // FEATURE_CORECLR && !FEATURE_PAL
 
 //---------------------------------------------------------------------------------------
 //
@@ -1996,10 +1996,8 @@ HRESULT Debugger::Startup(void)
         // Iff the debug pack is installed, then go through the telesto debugging pipeline.
         LOG((LF_CORDB, LL_INFO10, "Debugging service is enabled because debug pack is installed or Watson support is enabled)\n"));
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
         // This may block while an attach occurs.
         NotifyDebuggerOfTelestoStartup();
-#endif
     }
     else
     {
@@ -2013,164 +2011,162 @@ HRESULT Debugger::Startup(void)
     }
 #endif // FEATURE_CORECLR && !FEATURE_PAL
 
-    DebuggerLockHolder dbgLockHolder(this);
-
-    // Stubs in Stacktraces are always enabled.
-    g_EnableSIS = true;
-
-    // We can get extra Interop-debugging test coverage by having some auxillary unmanaged
-    // threads running and throwing debug events. Keep these stress procs separate so that
-    // we can focus on certain problem areas.
-#ifdef _DEBUG
-
-    g_DbgShouldntUseDebugger = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgNoDebugger) != 0;
-
-
-    // Creates random thread procs.
-    DWORD dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreads);
-    DWORD dwId;
-    DWORD i;
-
-    if (dwRegVal > 0)
     {
-        for(i = 0; i < dwRegVal; i++)
+        DebuggerLockHolder dbgLockHolder(this);
+
+        // Stubs in Stacktraces are always enabled.
+        g_EnableSIS = true;
+
+        // We can get extra Interop-debugging test coverage by having some auxillary unmanaged
+        // threads running and throwing debug events. Keep these stress procs separate so that
+        // we can focus on certain problem areas.
+    #ifdef _DEBUG
+
+        g_DbgShouldntUseDebugger = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgNoDebugger) != 0;
+
+
+        // Creates random thread procs.
+        DWORD dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreads);
+        DWORD dwId;
+        DWORD i;
+
+        if (dwRegVal > 0)
         {
-            int iProc = GetRandomInt(NumItems(g_pStressProcs));
-            LPTHREAD_START_ROUTINE pStartRoutine = g_pStressProcs[iProc];
-            ::CreateThread(NULL, 0, pStartRoutine, NULL, 0, &dwId);
-            LOG((LF_CORDB, LL_INFO1000, "Created random thread (%d) with tid=0x%x\n", i, dwId));
+            for (i = 0; i < dwRegVal; i++)
+            {
+                int iProc = GetRandomInt(NumItems(g_pStressProcs));
+                LPTHREAD_START_ROUTINE pStartRoutine = g_pStressProcs[iProc];
+                ::CreateThread(NULL, 0, pStartRoutine, NULL, 0, &dwId);
+                LOG((LF_CORDB, LL_INFO1000, "Created random thread (%d) with tid=0x%x\n", i, dwId));
+            }
         }
-    }
 
-    dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsIB);
-    if (dwRegVal > 0)
-    {
-        for(i = 0; i < dwRegVal; i++)
+        dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsIB);
+        if (dwRegVal > 0)
         {
-            ::CreateThread(NULL, 0, DbgInteropStressProc, NULL, 0, &dwId);
-            LOG((LF_CORDB, LL_INFO1000, "Created extra thread (%d) with tid=0x%x\n", i, dwId));
+            for (i = 0; i < dwRegVal; i++)
+            {
+                ::CreateThread(NULL, 0, DbgInteropStressProc, NULL, 0, &dwId);
+                LOG((LF_CORDB, LL_INFO1000, "Created extra thread (%d) with tid=0x%x\n", i, dwId));
+            }
         }
-    }
 
-    dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsCantStop);
-    if (dwRegVal > 0)
-    {
-        for(i = 0; i < dwRegVal; i++)
+        dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsCantStop);
+        if (dwRegVal > 0)
         {
-            ::CreateThread(NULL, 0, DbgInteropCantStopStressProc, NULL, 0, &dwId);
-            LOG((LF_CORDB, LL_INFO1000, "Created extra thread 'can't-stop' (%d) with tid=0x%x\n", i, dwId));
+            for (i = 0; i < dwRegVal; i++)
+            {
+                ::CreateThread(NULL, 0, DbgInteropCantStopStressProc, NULL, 0, &dwId);
+                LOG((LF_CORDB, LL_INFO1000, "Created extra thread 'can't-stop' (%d) with tid=0x%x\n", i, dwId));
+            }
         }
-    }
 
-    dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsOOB);
-    if (dwRegVal > 0)
-    {
-        for(i = 0; i < dwRegVal; i++)
+        dwRegVal = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgExtraThreadsOOB);
+        if (dwRegVal > 0)
         {
-            ::CreateThread(NULL, 0, DbgInteropOOBStressProc, NULL, 0, &dwId);
-            LOG((LF_CORDB, LL_INFO1000, "Created extra thread OOB (%d) with tid=0x%x\n", i, dwId));
+            for (i = 0; i < dwRegVal; i++)
+            {
+                ::CreateThread(NULL, 0, DbgInteropOOBStressProc, NULL, 0, &dwId);
+                LOG((LF_CORDB, LL_INFO1000, "Created extra thread OOB (%d) with tid=0x%x\n", i, dwId));
+            }
         }
-    }
-#endif
+    #endif
 
-#ifdef FEATURE_PAL
-    PAL_InitializeDebug();
-#endif // FEATURE_PAL
+    #ifdef FEATURE_PAL
+        PAL_InitializeDebug();
+    #endif // FEATURE_PAL
 
-    // Lazily initialize the interop-safe heap
+        // Lazily initialize the interop-safe heap
 
-    // Must be done before the RC thread is initialized.
-    // @dbgtodo  - In V2, LS was lazily initialized; but was eagerly pre-initialized if launched by debugger.
-    // (This was for perf reasons). But we don't want Launch vs. Attach checks in the LS, so we now always
-    // init. As we move more to OOP, this init will become cheaper.    
-    {
-        LazyInit();
-        DebuggerController::Initialize();
-    }
+        // Must be done before the RC thread is initialized.
+        // @dbgtodo  - In V2, LS was lazily initialized; but was eagerly pre-initialized if launched by debugger.
+        // (This was for perf reasons). But we don't want Launch vs. Attach checks in the LS, so we now always
+        // init. As we move more to OOP, this init will become cheaper.    
+        {
+            LazyInit();
+            DebuggerController::Initialize();
+        }
 
-    InitializeHijackFunctionAddress();
+        InitializeHijackFunctionAddress();
 
-    // Create the runtime controller thread, a.k.a, the debug helper thread.
-    // Don't use the interop-safe heap b/c we don't want to lazily create it.
-    m_pRCThread = new DebuggerRCThread(this);
-    
-    _ASSERTE(m_pRCThread != NULL); // throws on oom
-    TRACE_ALLOC(m_pRCThread);
+        // Create the runtime controller thread, a.k.a, the debug helper thread.
+        // Don't use the interop-safe heap b/c we don't want to lazily create it.
+        m_pRCThread = new DebuggerRCThread(this);
+        _ASSERTE(m_pRCThread != NULL); // throws on oom
+        TRACE_ALLOC(m_pRCThread);
 
-    hr = m_pRCThread->Init();
-    
-    _ASSERTE(SUCCEEDED(hr)); // throws on error
+        hr = m_pRCThread->Init();
+        _ASSERTE(SUCCEEDED(hr)); // throws on error
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-     // Create transport session and initialize it.
-     g_pDbgTransport = new DbgTransportSession();
-     hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB);
-     if (FAILED(hr))
-         ThrowHR(hr);
-
-#ifdef FEATURE_PAL
-     PAL_SetShutdownCallback(ShutdownTransport);
-#endif // FEATURE_PAL
-
-     bool waitForAttach = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWaitForDebuggerAttach) != 0;
-     if (waitForAttach)
-     {
-         // Mark this process as launched by the debugger and the debugger as attached.
-         g_CORDebuggerControlFlags |= DBCF_GENERATE_DEBUG_CODE;
-         MarkDebuggerAttachedInternal();
-
-         LazyInit();
-         DebuggerController::Initialize();
-     }
-#endif // FEATURE_DBGIPC_TRANSPORT_VM
-
-    RaiseStartupNotification();
-    
-    // Also initialize the AppDomainEnumerationIPCBlock
-#if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-#else
-    m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-#endif 
-
-    if (m_pAppDomainCB == NULL)
-    {
-       LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
-       ThrowHR(E_FAIL);
-    }
-
-    hr = InitAppDomainIPC();
-    _ASSERTE(SUCCEEDED(hr)); // throws on error.
-
-    // See if we need to spin up the helper thread now, rather than later.
-    DebuggerIPCControlBlock* pIPCControlBlock = m_pRCThread->GetDCB();
-    (void)pIPCControlBlock; //prevent "unused variable" error from GCC
-
-    _ASSERTE(pIPCControlBlock != NULL);
-
-    _ASSERTE(!pIPCControlBlock->m_rightSideShouldCreateHelperThread);
-    {
-        // Create the win32 thread for the helper and let it run free.
-        hr = m_pRCThread->Start();
-
-        // convert failure to exception as with old contract
+    #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
+         // Create transport session and initialize it.
+        g_pDbgTransport = new DbgTransportSession();
+        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB);
         if (FAILED(hr))
         {
+            ShutdownTransport();
             ThrowHR(hr);
         }
 
-        LOG((LF_CORDB, LL_EVERYTHING, "Start was successful\n"));
+    #ifdef FEATURE_PAL
+        PAL_SetShutdownCallback(AbortTransport);
+    #endif // FEATURE_PAL
+    #endif // FEATURE_DBGIPC_TRANSPORT_VM
+
+        RaiseStartupNotification();
+
+        // Also initialize the AppDomainEnumerationIPCBlock
+    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
+        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
+    #else
+        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
+    #endif 
+
+        if (m_pAppDomainCB == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
+            ThrowHR(E_FAIL);
+        }
+
+        hr = InitAppDomainIPC();
+        _ASSERTE(SUCCEEDED(hr)); // throws on error.
+
+        // See if we need to spin up the helper thread now, rather than later.
+        DebuggerIPCControlBlock* pIPCControlBlock = m_pRCThread->GetDCB();
+        (void)pIPCControlBlock; //prevent "unused variable" error from GCC
+
+        _ASSERTE(pIPCControlBlock != NULL);
+        _ASSERTE(!pIPCControlBlock->m_rightSideShouldCreateHelperThread);
+        {
+            // Create the win32 thread for the helper and let it run free.
+            hr = m_pRCThread->Start();
+
+            // convert failure to exception as with old contract
+            if (FAILED(hr))
+            {
+                ThrowHR(hr);
+            }
+
+            LOG((LF_CORDB, LL_EVERYTHING, "Start was successful\n"));
+        }
+
+    #ifdef TEST_DATA_CONSISTENCY
+        // if we have set the environment variable TestDataConsistency, run the data consistency test. 
+        // See code:DataTest::TestDataSafety for more information
+        if ((g_pConfig != NULL) && (g_pConfig->TestDataConsistency() == true))
+        {
+            DataTest dt;
+            dt.TestDataSafety();
+        }
+    #endif
     }
 
-#ifdef TEST_DATA_CONSISTENCY
-    // if we have set the environment variable TestDataConsistency, run the data consistency test. 
-    // See code:DataTest::TestDataSafety for more information
-    if((g_pConfig != NULL) && (g_pConfig->TestDataConsistency() == true))
-    {
-        DataTest dt;
-        dt.TestDataSafety();
-    }
-#endif
+#ifdef FEATURE_PAL
+    // Signal the debugger (via dbgshim) and wait until it is ready for us to 
+    // continue. This needs to be outside the lock and after the transport is
+    // initialized.
+    PAL_NotifyRuntimeStarted();
+#endif // FEATURE_PAL
 
     // We don't bother changing this process's permission.
     // A managed debugger will have the SE_DEBUG permission which will allow it to open our process handle,
@@ -2584,10 +2580,8 @@ void Debugger::StopDebugger(void)
         m_pRCThread->AsyncStop();
     }
 
-
     // Also clean up the AppDomain stuff since this is cross-process.
     TerminateAppDomainIPC ();
-
 
     //
     // Tell the VM to clear out all references to the debugger before we start cleaning up, 

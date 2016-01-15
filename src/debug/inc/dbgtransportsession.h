@@ -306,9 +306,11 @@ enum IPCEventType
 class DbgTransportSession
 {
 public:
-
     // No real work done in the constructor. Use Init() instead.
     DbgTransportSession();
+
+    // Cleanup what is allocated/created in Init()
+    ~DbgTransportSession();
 
     // Allocates initial resources (including starting the transport thread). The session will start in the
     // SS_Opening state. That is, the RS will immediately start trying to Connect() a connection while the
@@ -329,6 +331,28 @@ public:
     // SS_Resync). On either side the session will no longer be functional after this call returns (though
     // Init() may be called again to start over from the beginning).
     void Shutdown();
+
+    // Cleans up the named pipe connection so no tmp files are left behind. Does only
+    // the minimum and must be safe to call at any time. Called during PAL ExitProcess,
+    // TerminateProcess and for unhandled native exceptions and asserts.
+    void AbortConnection();
+
+    LONG AddRef()
+    {
+        LONG ref = InterlockedIncrement(&m_ref);
+        return ref;
+    }
+
+    LONG Release()
+    {
+        _ASSERTE(m_ref > 0);
+        LONG ref = InterlockedDecrement(&m_ref);
+        if (ref == 0)
+        {
+            delete this;
+        }
+        return ref;
+    }
 
 #ifndef RIGHT_SIDE_COMPILE
     // API used only by the LS to drive the transport into a state where it won't accept connections. This is
@@ -613,6 +637,9 @@ private:
 #define DBG_TRANSPORT_ADD_STAT(_name, _amount)
 
 #endif // _DEBUG
+
+    // Reference count
+    LONG m_ref;
 
     // Some flags used to record how far we got in Init() (used for cleanup in Shutdown()).
     bool m_fInitStateLock;
