@@ -4706,34 +4706,17 @@ namespace System.Linq
         {
             get
             {
-                List<T> tempList = new List<T>();
-                IEnumerator<T> currentEnumerator = _enumerable.GetEnumerator();
-
-                if (currentEnumerator != null)
-                {
-                    for (_count = 0; currentEnumerator.MoveNext(); _count++)
-                    {
-                        tempList.Add(currentEnumerator.Current);
-                    }
-                }
-                if (_count == 0)
+                T[] array = _enumerable.ToArray();
+                if (array.Length == 0)
                 {
                     throw new SystemCore_EnumerableDebugViewEmptyException();
                 }
-
-                _cachedCollection = tempList.ToArray();
-                return _cachedCollection;
+                return array;
             }
         }
 
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
         private IEnumerable<T> _enumerable;
-
-        [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-        private T[] _cachedCollection;
-
-        [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-        private int _count;
     }
 
     internal sealed class SystemCore_EnumerableDebugViewEmptyException : Exception
@@ -4757,8 +4740,6 @@ namespace System.Linq
             }
 
             _enumerable = enumerable;
-            _count = 0;
-            _cachedCollection = null;
         }
 
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
@@ -4767,32 +4748,18 @@ namespace System.Linq
             get
             {
                 List<object> tempList = new List<object>();
-                IEnumerator currentEnumerator = _enumerable.GetEnumerator();
+                foreach (object item in _enumerable)
+                    tempList.Add(item);
 
-                if (currentEnumerator != null)
-                {
-                    for (_count = 0; currentEnumerator.MoveNext(); _count++)
-                    {
-                        tempList.Add(currentEnumerator.Current);
-                    }
-                }
-                if (_count == 0)
+                if (tempList.Count == 0)
                 {
                     throw new SystemCore_EnumerableDebugViewEmptyException();
                 }
-                _cachedCollection = new object[_count];
-                tempList.CopyTo(_cachedCollection, 0);
-                return _cachedCollection;
+                return tempList.ToArray();
             }
         }
 
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
         private IEnumerable _enumerable;
-
-        [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-        private object[] _cachedCollection;
-
-        [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
-        private int _count;
     }
 }
