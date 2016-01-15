@@ -45,9 +45,11 @@ peverify gives the following error:
 [MD]: Error: Signature has token following ELEMENT_TYPE_CLASS
 (_VALUETYPE) that is not a TypeDef or TypeRef
 ```
-
 An insightful comment in CLR source code notes that this rule prevents
 cycles in signatures, but see #2 below.
+
+Related issue:
+* https://github.com/dotnet/roslyn/issues/7970
 
 
 ### 2.  `(CMOD_OPT | CMOD_REQ) <TypeSpec>)` is permitted in practice
@@ -67,6 +69,10 @@ tools, so if the spec is amended to permit TypeSpecs as modifiers,
 then there should be a clarification that cycles are nonetheless not
 permitted, and ideally readers would detect such cycles and handle the
 error with a suitable message rather than a stack overflow.
+
+Related issues:
+* https://github.com/dotnet/roslyn/issues/7971
+* https://github.com/dotnet/coreclr/issues/2674
 
 
 ### 3. Custom modifiers can go in more places than specified
