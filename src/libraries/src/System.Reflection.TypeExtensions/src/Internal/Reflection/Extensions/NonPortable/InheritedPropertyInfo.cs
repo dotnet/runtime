@@ -17,6 +17,9 @@ namespace Internal.Reflection.Extensions.NonPortable
     //
     internal sealed class InheritedPropertyInfo : ExtensiblePropertyInfo
     {
+        private readonly PropertyInfo _underlyingPropertyInfo;
+        private readonly Type _reflectedType;
+
         internal InheritedPropertyInfo(PropertyInfo underlyingPropertyInfo, Type reflectedType)
         {
             // If the reflectedType is the declaring type, the caller should have used the original PropertyInfo.
@@ -72,13 +75,19 @@ namespace Internal.Reflection.Extensions.NonPortable
         {
             InheritedPropertyInfo other = obj as InheritedPropertyInfo;
             if (other == null)
+            {
                 return false;
+            }
 
             if (!(_underlyingPropertyInfo.Equals(other._underlyingPropertyInfo)))
+            {
                 return false;
+            }
 
             if (!(_reflectedType.Equals(other._reflectedType)))
+            {
                 return false;
+            }
 
             return true;
         }
@@ -107,7 +116,10 @@ namespace Internal.Reflection.Extensions.NonPortable
         public sealed override Object GetValue(Object obj, Object[] index)
         {
             if (GetMethod == null)
+            {
                 throw new ArgumentException(SR.Arg_GetMethNotFnd);
+            }
+
             return _underlyingPropertyInfo.GetValue(obj, index);
         }
 
@@ -133,7 +145,10 @@ namespace Internal.Reflection.Extensions.NonPortable
         public sealed override void SetValue(Object obj, Object value, Object[] index)
         {
             if (SetMethod == null)
+            {
                 throw new ArgumentException(SR.Arg_SetMethNotFnd);
+            }
+
             _underlyingPropertyInfo.SetValue(obj, value, index);
         }
 
@@ -146,13 +161,12 @@ namespace Internal.Reflection.Extensions.NonPortable
             //   A: That inconsistency is also desktop-compatible.
             //
             if (accessor == null || accessor.IsPrivate)
+            {
                 return null;
+            }
 
             return accessor;
         }
-
-        private PropertyInfo _underlyingPropertyInfo;
-        private Type _reflectedType;
     }
 }
  

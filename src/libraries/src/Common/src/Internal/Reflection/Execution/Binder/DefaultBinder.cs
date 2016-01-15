@@ -1,20 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
 // Ported from desktop (BCL\System\DefaultBinder.cs)
-//
-//
 
-using global::System;
-using global::System.Reflection;
-using global::System.Runtime.CompilerServices;
-using global::System.Runtime.Versioning;
-using global::System.Diagnostics.Contracts;
-
-using global::Internal.Reflection.Core.Execution;
+using System;
+using System.Reflection;
+using System.Diagnostics.Contracts;
 
 namespace Internal.Reflection.Core.Execution.Binder
 {
@@ -33,11 +24,12 @@ namespace Internal.Reflection.Core.Execution.Binder
         // 
         // The most specific match will be selected.  
         // 
-        public static MethodBase BindToMethod(MethodBase[] match, ref Object[] args)
+        public static MethodBase BindToMethod(MethodBase[] match, ref object[] args)
         {
             if (match == null || match.Length == 0)
+            {
                 throw new ArgumentException(SR.Arg_EmptyArray, "match");
-            Contract.EndContractBlock();
+            }
 
             MethodBase[] candidates = (MethodBase[])match.Clone();
 
@@ -61,7 +53,9 @@ namespace Internal.Reflection.Core.Execution.Binder
 
                 // Default mapping
                 for (j = 0; j < args.Length; j++)
+                {
                     paramOrder[i][j] = j;
+                }
             }
             #endregion
 
@@ -94,7 +88,9 @@ namespace Internal.Reflection.Core.Execution.Binder
 
                 // If we have named parameters then we may have a hole in the candidates array.
                 if (candidates[i] == null)
+                {
                     continue;
+                }
 
                 // Validate the parameters.
                 ParameterInfo[] par = candidates[i].GetParameters();
@@ -106,7 +102,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                     if (args.Length != 0)
                     {
                         if ((candidates[i].CallingConvention & CallingConventions.VarArgs) == 0)
+                        {
                             continue;
+                        }
                     }
 
                     // This is a valid routine so we move it up the candidates list.
@@ -124,19 +122,27 @@ namespace Internal.Reflection.Core.Execution.Binder
                     for (j = args.Length; j < par.Length - 1; j++)
                     {
                         if (!par[j].HasDefaultValue)
+                        {
                             break;
+                        }
                     }
 
                     if (j != par.Length - 1)
+                    {
                         continue;
+                    }
 
                     if (!par[j].HasDefaultValue)
                     {
                         if (!par[j].ParameterType.IsArray)
+                        {
                             continue;
+                        }
 
                         if (!HasParamArrayAttribute(par[j]))
+                        {
                             continue;
+                        }
 
                         paramArrayType = par[j].ParameterType.GetElementType();
                     }
@@ -149,13 +155,19 @@ namespace Internal.Reflection.Core.Execution.Binder
                     int lastArgPos = par.Length - 1;
 
                     if (!par[lastArgPos].ParameterType.IsArray)
+                    {
                         continue;
+                    }
 
                     if (!HasParamArrayAttribute(par[lastArgPos]))
+                    {
                         continue;
+                    }
 
                     if (paramOrder[i][lastArgPos] != lastArgPos)
+                    {
                         continue;
+                    }
 
                     paramArrayType = par[lastArgPos].ParameterType.GetElementType();
                     #endregion
@@ -170,7 +182,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                         && paramOrder[i][lastArgPos] == lastArgPos)
                     {
                         if (!par[lastArgPos].ParameterType.GetTypeInfo().IsAssignableFrom(argTypes[lastArgPos].GetTypeInfo()))
+                        {
                             paramArrayType = par[lastArgPos].ParameterType.GetElementType();
+                        }
                     }
                     #endregion
                 }
@@ -187,19 +201,27 @@ namespace Internal.Reflection.Core.Execution.Binder
                     pCls = par[j].ParameterType;
 
                     if (pCls.IsByRef)
+                    {
                         pCls = pCls.GetElementType();
+                    }
 
                     // the type is the same
                     if (pCls == argTypes[paramOrder[i][j]])
+                    {
                         continue;
+                    }
 
                     // the argument was null, so it matches with everything
                     if (args[paramOrder[i][j]] == null)
+                    {
                         continue;
+                    }
 
                     // the type is Object, so it will match everything
                     if (pCls == typeof(Object))
+                    {
                         continue;
+                    }
 
                     // now do a "classic" type check
                     if (pCls.GetTypeInfo().IsPrimitive)
@@ -212,7 +234,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                     else
                     {
                         if (argTypes[paramOrder[i][j]] == null)
+                        {
                             continue;
+                        }
 
                         if (!pCls.GetTypeInfo().IsAssignableFrom(argTypes[paramOrder[i][j]].GetTypeInfo()))
                         {
@@ -234,12 +258,16 @@ namespace Internal.Reflection.Core.Execution.Binder
                         if (paramArrayType.GetTypeInfo().IsPrimitive)
                         {
                             if (argTypes[j] == null || !CanConvertPrimitiveObjectToType(args[j], paramArrayType))
+                            {
                                 break;
+                            }
                         }
                         else
                         {
                             if (argTypes[j] == null)
+                            {
                                 continue;
+                            }
 
                             if (!paramArrayType.GetTypeInfo().IsAssignableFrom(argTypes[j].GetTypeInfo()))
                             {
@@ -264,7 +292,9 @@ namespace Internal.Reflection.Core.Execution.Binder
 
             // If we didn't find a method 
             if (CurIdx == 0)
+            {
                 throw new MissingMethodException(SR.MissingMember);
+            }
 
             if (CurIdx == 1)
             {
@@ -290,16 +320,24 @@ namespace Internal.Reflection.Core.Execution.Binder
                     Object[] objs = new Object[parms.Length];
 
                     for (i = 0; i < args.Length; i++)
+                    {
                         objs[i] = args[i];
+                    }
 
                     for (; i < parms.Length - 1; i++)
+                    {
                         objs[i] = parms[i].DefaultValue;
+                    }
 
                     if (paramArrayTypes[0] != null)
+                    {
                         objs[i] = Array.CreateInstance(paramArrayTypes[0], 0); // create an empty array for the 
+                    }
 
                     else
+                    {
                         objs[i] = parms[i].DefaultValue;
+                    }
 
                     args = objs;
                 }
@@ -341,7 +379,9 @@ namespace Internal.Reflection.Core.Execution.Binder
             }
 
             if (ambig)
+            {
                 throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+            }
 
             // If the parameters and the args are not the same length or there is a paramArray
             //  then we need to create a argument array.
@@ -363,10 +403,14 @@ namespace Internal.Reflection.Core.Execution.Binder
                 Object[] objs = new Object[parameters.Length];
 
                 for (i = 0; i < args.Length; i++)
+                {
                     objs[i] = args[i];
+                }
 
                 for (; i < parameters.Length - 1; i++)
+                {
                     objs[i] = parameters[i].DefaultValue;
+                }
 
                 if (paramArrayTypes[currentMin] != null)
                 {
@@ -418,39 +462,57 @@ namespace Internal.Reflection.Core.Execution.Binder
                 {
                     Type pCls = par[j].ParameterType;
                     if (pCls == types[j])
+                    {
                         continue;
+                    }
                     if (pCls == typeof(Object))
+                    {
                         continue;
+                    }
                     if (pCls.GetTypeInfo().IsPrimitive)
                     {
                         if (!CanConvertPrimitive(types[j], pCls))
+                        {
                             break;
+                        }
                     }
                     else
                     {
                         if (!pCls.GetTypeInfo().IsAssignableFrom(types[j].GetTypeInfo()))
+                        {
                             break;
+                        }
                     }
                 }
                 if (j == types.Length)
+                {
                     candidates[CurIdx++] = candidates[i];
+                }
             }
             if (CurIdx == 0)
+            {
                 return null;
+            }
             if (CurIdx == 1)
+            {
                 return candidates[0];
+            }
 
             // Walk all of the methods looking the most specific method to invoke
             int currentMin = 0;
             bool ambig = false;
             int[] paramOrder = new int[types.Length];
             for (i = 0; i < types.Length; i++)
+            {
                 paramOrder[i] = i;
+            }
             for (i = 1; i < CurIdx; i++)
             {
                 int newMin = FindMostSpecificMethod(candidates[currentMin], paramOrder, null, candidates[i], paramOrder, null, types, null);
                 if (newMin == 0)
+                {
                     ambig = true;
+                }
                 else
                 {
                     if (newMin == 2)
@@ -462,7 +524,10 @@ namespace Internal.Reflection.Core.Execution.Binder
                 }
             }
             if (ambig)
+            {
                 throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+            }
+
             return candidates[currentMin];
         }
 
@@ -471,8 +536,11 @@ namespace Internal.Reflection.Core.Execution.Binder
             foreach (CustomAttributeData cad in parameterInfo.CustomAttributes)
             {
                 if (cad.AttributeType.Equals(typeof(ParamArrayAttribute)))
+                {
                     return true;
+                }
             }
+
             return false;
         }
 
@@ -481,8 +549,14 @@ namespace Internal.Reflection.Core.Execution.Binder
                                             Type[] types, Object[] args)
         {
             // A method using params is always less specific than one not using params
-            if (paramArrayType1 != null && paramArrayType2 == null) return 2;
-            if (paramArrayType2 != null && paramArrayType1 == null) return 1;
+            if (paramArrayType1 != null && paramArrayType2 == null)
+            {
+                return 2;
+            }
+            if (paramArrayType2 != null && paramArrayType1 == null)
+            {
+                return 1;
+            }
 
             // now either p1 and p2 both use params or neither does.
 
@@ -492,7 +566,9 @@ namespace Internal.Reflection.Core.Execution.Binder
             for (int i = 0; i < types.Length; i++)
             {
                 if (args != null && args[i] == Type.Missing)
+                {
                     continue;
+                }
 
                 Type c1, c2;
 
@@ -507,16 +583,27 @@ namespace Internal.Reflection.Core.Execution.Binder
                 //          so any index >= p.Length - 1 is being put in the param array
 
                 if (paramArrayType1 != null && paramOrder1[i] >= p1.Length - 1)
+                {
                     c1 = paramArrayType1;
+                }
                 else
+                {
                     c1 = p1[paramOrder1[i]].ParameterType;
+                }
 
                 if (paramArrayType2 != null && paramOrder2[i] >= p2.Length - 1)
+                {
                     c2 = paramArrayType2;
+                }
                 else
+                {
                     c2 = p2[paramOrder2[i]].ParameterType;
+                }
 
-                if (c1 == c2) continue;
+                if (c1 == c2)
+                {
+                    continue;
+                }
 
                 switch (FindMostSpecificType(c1, c2, types[i]))
                 {
@@ -557,13 +644,19 @@ namespace Internal.Reflection.Core.Execution.Binder
         {
             // If the two types are exact move on...
             if (c1 == c2)
+            {
                 return 0;
+            }
 
             if (c1 == t)
+            {
                 return 1;
+            }
 
             if (c2 == t)
+            {
                 return 2;
+            }
 
             bool c1FromC2;
             bool c2FromC1;
@@ -578,14 +671,18 @@ namespace Internal.Reflection.Core.Execution.Binder
                 else if (c1.IsByRef)
                 {
                     if (c1.GetElementType() == c2)
+                    {
                         return 2;
+                    }
 
                     c1 = c1.GetElementType();
                 }
                 else
                 {
                     if (c2.GetElementType() == c1)
+                    {
                         return 1;
+                    }
 
                     c2 = c2.GetElementType();
                 }
@@ -616,8 +713,7 @@ namespace Internal.Reflection.Core.Execution.Binder
             }
         }
 
-        public static PropertyInfo SelectProperty(PropertyInfo[] match, Type returnType,
-                    Type[] indexes)
+        public static PropertyInfo SelectProperty(PropertyInfo[] match, Type returnType, Type[] indexes)
         {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
             if (indexes != null && !Contract.ForAll(indexes, delegate (Type t) { return t != null; }))
@@ -627,8 +723,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                 throw e;
             }
             if (match == null || match.Length == 0)
+            {
                 throw new ArgumentException(SR.Arg_EmptyArray, "match");
-            Contract.EndContractBlock();
+            }
 
             PropertyInfo[] candidates = (PropertyInfo[])match.Clone();
 
@@ -643,7 +740,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                 {
                     ParameterInfo[] par = candidates[i].GetIndexParameters();
                     if (par.Length != indexesLength)
+                    {
                         continue;
+                    }
 
                     for (j = 0; j < indexesLength; j++)
                     {
@@ -651,19 +750,27 @@ namespace Internal.Reflection.Core.Execution.Binder
 
                         // If the classes  exactly match continue
                         if (pCls == indexes[j])
+                        {
                             continue;
+                        }
                         if (pCls == typeof(Object))
+                        {
                             continue;
+                        }
 
                         if (pCls.GetTypeInfo().IsPrimitive)
                         {
                             if (!CanConvertPrimitive(indexes[j], pCls))
+                            {
                                 break;
+                            }
                         }
                         else
                         {
                             if (!pCls.GetTypeInfo().IsAssignableFrom(indexes[j].GetTypeInfo()))
+                            {
                                 break;
+                            }
                         }
                     }
                 }
@@ -675,28 +782,38 @@ namespace Internal.Reflection.Core.Execution.Binder
                         if (candidates[i].PropertyType.GetTypeInfo().IsPrimitive)
                         {
                             if (!CanConvertPrimitive(returnType, candidates[i].PropertyType))
+                            {
                                 continue;
+                            }
                         }
                         else
                         {
                             if (!candidates[i].PropertyType.GetTypeInfo().IsAssignableFrom(returnType.GetTypeInfo()))
+                            {
                                 continue;
+                            }
                         }
                     }
                     candidates[CurIdx++] = candidates[i];
                 }
             }
             if (CurIdx == 0)
+            {
                 return null;
+            }
             if (CurIdx == 1)
+            {
                 return candidates[0];
+            }
 
             // Walk all of the properties looking the most specific method to invoke
             int currentMin = 0;
             bool ambig = false;
             int[] paramOrder = new int[indexesLength];
             for (i = 0; i < indexesLength; i++)
+            {
                 paramOrder[i] = i;
+            }
             for (i = 1; i < CurIdx; i++)
             {
                 int newMin = FindMostSpecificType(candidates[currentMin].PropertyType, candidates[i].PropertyType, returnType);
@@ -713,7 +830,9 @@ namespace Internal.Reflection.Core.Execution.Binder
                 {
                     newMin = FindMostSpecificProperty(candidates[currentMin], candidates[i]);
                     if (newMin == 0)
+                    {
                         ambig = true;
+                    }
                 }
                 if (newMin == 2)
                 {
@@ -723,7 +842,10 @@ namespace Internal.Reflection.Core.Execution.Binder
             }
 
             if (ambig)
+            {
                 throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+            }
+
             return candidates[currentMin];
         }
 
@@ -737,7 +859,9 @@ namespace Internal.Reflection.Core.Execution.Binder
 
             // If the match was not ambigous then return the result.
             if (res != 0)
+            {
                 return res;
+            }
 
             // Check to see if the methods have the exact same name and signature.
             if (CompareMethodSigAndName(m1, m2))
@@ -778,9 +902,13 @@ namespace Internal.Reflection.Core.Execution.Binder
                     return 0;
                 }
                 else if (hierarchyDepth1 < hierarchyDepth2)
+                {
                     return 2;
+                }
                 else
+                {
                     return 1;
+                }
             }
 
             // The match is ambigous.
@@ -793,13 +921,17 @@ namespace Internal.Reflection.Core.Execution.Binder
             ParameterInfo[] params2 = m2.GetParameters();
 
             if (params1.Length != params2.Length)
+            {
                 return false;
+            }
 
             int numParams = params1.Length;
             for (int i = 0; i < numParams; i++)
             {
                 if (params1[i].ParameterType != params2[i].ParameterType)
+                {
                     return false;
+                }
             }
 
             return true;
@@ -888,49 +1020,79 @@ namespace Internal.Reflection.Core.Execution.Binder
         private static TypeCode GetTypeCode(Type type)
         {
             if (type == typeof(Boolean))
+            {
                 return TypeCode.Boolean;
+            }
 
             if (type == typeof(Char))
+            {
                 return TypeCode.Char;
+            }
 
             if (type == typeof(SByte))
+            {
                 return TypeCode.SByte;
+            }
 
             if (type == typeof(Byte))
+            {
                 return TypeCode.Byte;
+            }
 
             if (type == typeof(Int16))
+            {
                 return TypeCode.Int16;
+            }
 
             if (type == typeof(UInt16))
+            {
                 return TypeCode.UInt16;
+            }
 
             if (type == typeof(Int32))
+            {
                 return TypeCode.Int32;
+            }
 
             if (type == typeof(UInt32))
+            {
                 return TypeCode.UInt32;
+            }
 
             if (type == typeof(Int64))
+            {
                 return TypeCode.Int64;
+            }
 
             if (type == typeof(UInt64))
+            {
                 return TypeCode.UInt64;
+            }
 
             if (type == typeof(Single))
+            {
                 return TypeCode.Single;
+            }
 
             if (type == typeof(Double))
+            {
                 return TypeCode.Double;
+            }
 
             if (type == typeof(Decimal))
+            {
                 return TypeCode.Decimal;
+            }
 
             if (type == typeof(DateTime))
+            {
                 return TypeCode.DateTime;
+            }
 
             if (type.GetTypeInfo().IsEnum)
+            {
                 return GetTypeCode(Enum.GetUnderlyingType(type));
+            }
 
             return TypeCode.Object;
         }

@@ -1,8 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
 
 using Internal.Reflection.Core.Execution.Binder;
 using Internal.Reflection.Extensions.NonPortable;
@@ -552,7 +549,9 @@ namespace System.Reflection
 
                 Type baseType = t.BaseType;
                 if (baseType == null)
+                {
                     break;
+                }
 
                 t = baseType.GetTypeInfo();
             }
