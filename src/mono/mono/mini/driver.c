@@ -2240,8 +2240,9 @@ mono_jit_init (const char *file)
  * (since Mono does not support having more than one mscorlib runtime
  * loaded at once).
  *
- * The @runtime_version can be one of these strings: "v1.1.4322" for
- * the 1.1 runtime or "v2.0.50727"  for the 2.0 runtime. 
+ * The @runtime_version can be one of these strings: "v4.0.30319" for
+ * desktop, "mobile" for mobile or "moonlight" for Silverlight compat.
+ * If an unrecognized string is input, the vm will default to desktop.
  *
  * Returns: the MonoDomain representing the domain where the assembly
  * was loaded.
