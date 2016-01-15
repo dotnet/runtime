@@ -4561,6 +4561,9 @@ ves_icall_GetCurrentMethod (void)
 {
 	MonoMethod *m = mono_method_get_last_managed ();
 
+	if (!m)
+		mono_raise_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
+
 	while (m->is_inflated)
 		m = ((MonoMethodInflated*)m)->declaring;
 
