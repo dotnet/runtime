@@ -31,15 +31,6 @@ extern "C"
 
 /*++
 Function:
-  PALShutdown
-
-Utility function to force PAL to shutdown state
-
---*/
-void PALShutdown( void );
-
-/*++
-Function:
   PALCommonCleanup
 
 Utility function to prepare for shutdown.

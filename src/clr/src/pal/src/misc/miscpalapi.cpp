@@ -24,6 +24,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
+#include "pal/process.h"
 #include "pal/module.h"
 #include "pal/malloc.hpp"
 
@@ -367,7 +368,7 @@ CoCreateGuid(OUT GUID * pguid)
     if (status != uuid_s_ok)
     {
         ASSERT("Unexpected uuid_create failure (status=%u)\n", status);
-        abort();
+        PROCAbort();
     }
 
     // Encode the uuid with little endian.
