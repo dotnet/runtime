@@ -56,6 +56,7 @@
     <ClCompile Include="..\mono\metadata\filewatcher.c" />
     <ClCompile Include="..\mono\metadata\gc-stats.c" />
     <ClCompile Include="..\mono\metadata\gc.c" />
+    <ClCompile Include="..\mono\metadata\handle.c" />
     <ClCompile Include="..\mono\metadata\icall.c" />
     <ClCompile Include="..\mono\metadata\image.c" />
     <ClCompile Include="..\mono\metadata\jit-info.c" />
@@ -155,6 +156,7 @@
     <ClInclude Include="..\mono\metadata\file-io.h" />
     <ClInclude Include="..\mono\metadata\filewatcher.h" />
     <ClInclude Include="..\mono\metadata\gc-internals.h" />
+    <ClInclude Include="..\mono\metadata\handle.h" />
     <ClInclude Include="..\mono\metadata\number-ms.h" />
     <ClInclude Include="..\mono\metadata\seq-points-data.h" />
     <ClInclude Include="..\mono\metadata\threadpool-ms-io.h" />
