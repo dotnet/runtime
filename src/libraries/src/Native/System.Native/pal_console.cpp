@@ -165,10 +165,35 @@ void* CtrlHandleLoop(void* arg)
         int rv = callback != nullptr ? callback(signalCode == SIGQUIT ? Break : Interrupt) : 0;
         if (rv == 0) // callback removed or was invoked and didn't handle the signal
         {
-            // restore original handlers, then reissue the signal
-            sigaction(SIGINT, &g_origSigIntHandler, NULL);
-            sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
-            kill(getpid(), signalCode);
+            // In general, we now want to remove our handler and reissue the signal to
+            // be picked up by the previously registered handler.  In the most common case,
+            // this will be the default handler, causing the process to be torn down.
+            // It could also be a custom handle registered by other code before us.
+            // In the rare case where the signal is set to be ignored, though, we don't
+            // want to do that, as we know our process will simply remain running yet our
+            // handlers will never end up being invoked again. (It's possible that can
+            // happen as well in the custom case, but we can't detect that or handle it well,
+            // at which point we'll just stop responding to the relevant signal here if the
+            // process does remain alive. We only unregister from the relevant handler, though,
+            // so the handler(s) for the other signal(s) will still remain registered.)
+
+            if (signalCode == SIGINT)
+            {
+                if (g_origSigIntHandler.sa_handler != SIG_IGN)
+                {
+                    sigaction(SIGINT, &g_origSigIntHandler, NULL);
+                    kill(getpid(), SIGINT);
+                }
+            } 
+            else if (signalCode == SIGQUIT)
+            {
+                if (g_origSigQuitHandler.sa_handler != SIG_IGN)
+                {
+                    sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
+                    kill(getpid(), SIGQUIT);
+                }
+            }
+
         }
     }
 }
