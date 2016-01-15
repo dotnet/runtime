@@ -1691,6 +1691,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.CollectionProperty, deserializedValue.CollectionProperty));
     }
 
+    [Fact]
     public static void DCJS_DataMemberNames()
     {
         var obj = new AppEnvironment()
@@ -1701,6 +1702,24 @@ public static partial class DataContractJsonSerializerTests
         var actual = SerializeAndDeserialize(obj, @"{""screen_dpi(x:y)"":440,""screen:orientation"":""horizontal""}");
         Assert.StrictEqual(obj.ScreenDpi, actual.ScreenDpi);
         Assert.StrictEqual(obj.ScreenOrientation, actual.ScreenOrientation);
+    }
+
+    [Fact]
+    public static void DCJS_CollectionInterfaceGetOnlyCollection()
+    {
+        var obj = new TypeWithCollectionInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+        var deserializedObj = SerializeAndDeserialize(obj, @"{""Items"":[""item1"",""item2"",""item3""]}");
+        Assert.Equal(obj.Items, deserializedObj.Items);
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableInterfaceGetOnlyCollection()
+    {
+        // Expect exception in deserialization process
+        Assert.Throws<InvalidDataContractException>(() => {
+            var obj = new TypeWithEnumerableInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+            SerializeAndDeserialize(obj, @"{""Items"":[""item1"",""item2"",""item3""]}");
+        });
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)

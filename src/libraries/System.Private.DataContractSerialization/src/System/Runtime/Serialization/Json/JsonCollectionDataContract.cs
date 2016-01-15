@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reflection;
 using System.Threading;
 using System.Xml;
 using System.Security;
@@ -56,7 +57,7 @@ namespace System.Runtime.Serialization.Json
                         if (_helper.JsonFormatGetOnlyReaderDelegate == null)
                         {
                             CollectionKind kind = this.TraditionalCollectionDataContract.Kind;
-                            if (this.TraditionalDataContract.TypeIsInterface && (kind == CollectionKind.Enumerable || kind == CollectionKind.Collection || kind == CollectionKind.GenericEnumerable))
+                            if (this.TraditionalDataContract.UnderlyingType.GetTypeInfo().IsInterface && (kind == CollectionKind.Enumerable || kind == CollectionKind.Collection || kind == CollectionKind.GenericEnumerable))
                             {
                                 throw new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(this.TraditionalDataContract.UnderlyingType)));
                             }

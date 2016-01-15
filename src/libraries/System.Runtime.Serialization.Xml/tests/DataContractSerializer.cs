@@ -1954,6 +1954,24 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Fact]
+    public static void DCS_CollectionInterfaceGetOnlyCollection()
+    {
+        var obj = new TypeWithCollectionInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+        var deserializedObj = SerializeAndDeserialize(obj, @"<TypeWithCollectionInterfaceGetOnlyCollection xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></TypeWithCollectionInterfaceGetOnlyCollection>");
+        Assert.Equal(obj.Items, deserializedObj.Items);
+    }
+
+    [Fact]
+    public static void DCS_EnumerableInterfaceGetOnlyCollection()
+    {
+        // Expect exception in deserialization process
+        Assert.Throws<InvalidDataContractException>(() => {
+            var obj = new TypeWithEnumerableInterfaceGetOnlyCollection(new List<string>() { "item1", "item2", "item3" });
+            SerializeAndDeserialize(obj, @"<TypeWithEnumerableInterfaceGetOnlyCollection xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Items xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>item1</a:string><a:string>item2</a:string><a:string>item3</a:string></Items></TypeWithEnumerableInterfaceGetOnlyCollection>");
+        });
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
