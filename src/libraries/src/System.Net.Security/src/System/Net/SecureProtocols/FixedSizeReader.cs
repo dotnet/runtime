@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Net
@@ -104,9 +105,13 @@ namespace System.Net
                 throw new IOException(SR.net_io_eof);
             }
 
-            if (GlobalLog.IsEnabled && _totalRead + bytes > _request.Count)
+            if (_totalRead + bytes > _request.Count)
             {
-                GlobalLog.AssertFormat("FixedSizeReader::CheckCompletion()|State got out of range. Total:{0} Count:{1}", _totalRead + bytes, _request.Count);
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("FixedSizeReader::CheckCompletion()|State got out of range. Total:{0} Count:{1}", _totalRead + bytes, _request.Count);
+                }
+                Debug.Fail("FixedSizeReader::CheckCompletion()|State got out of range. Total:" + (_totalRead + bytes) + " Count:" + _request.Count);
             }
 
             if ((_totalRead += bytes) == _request.Count)
@@ -120,9 +125,13 @@ namespace System.Net
 
         private static void ReadCallback(IAsyncResult transportResult)
         {
-            if (GlobalLog.IsEnabled && !(transportResult.AsyncState is FixedSizeReader))
+            if (!(transportResult.AsyncState is FixedSizeReader))
             {
-                GlobalLog.Assert("ReadCallback|State type is wrong, expected FixedSizeReader.");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("ReadCallback|State type is wrong, expected FixedSizeReader.");
+                }
+                Debug.Fail("ReadCallback|State type is wrong, expected FixedSizeReader.");
             }
 
             if (transportResult.CompletedSynchronously)

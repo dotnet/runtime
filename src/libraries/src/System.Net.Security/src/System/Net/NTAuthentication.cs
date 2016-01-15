@@ -200,9 +200,13 @@ namespace System.Net
         {
             get
             {
-                if ((IsCompleted && IsValidContext) && GlobalLog.IsEnabled)
+                if ((IsCompleted && IsValidContext))
                 {
-                    GlobalLog.Assert("NTAuthentication#{0}::MaxDataSize|The context is not completed or invalid.", LoggingHash.HashString(this));
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("NTAuthentication#{0}::MaxDataSize|The context is not completed or invalid.", LoggingHash.HashString(this));
+                    }
+                    Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::MaxDataSize |The context is not completed or invalid.");
                 }
 
                 if (_sizes == null)
@@ -335,14 +339,22 @@ namespace System.Net
         // This token can be used for impersonation. We use it to create a WindowsIdentity and hand it out to the server app.
         internal SecurityContextTokenHandle GetContextToken(out Interop.SecurityStatus status)
         {
-            if ((IsCompleted && IsValidContext) && GlobalLog.IsEnabled)
+            if ((IsCompleted && IsValidContext))
             {
-                GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|Should be called only when completed with success, currently is not!", LoggingHash.HashString(this));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|Should be called only when completed with success, currently is not!", LoggingHash.HashString(this));
+                }
+                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::GetContextToken |Should be called only when completed with success, currently is not!");
             }
 
-            if (IsServer && GlobalLog.IsEnabled)
+            if (IsServer)
             {
-                GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|The method must not be called by the client side!", LoggingHash.HashString(this));
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|The method must not be called by the client side!", LoggingHash.HashString(this));
+                }
+                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::GetContextToken |The method must not be called by the client side!");
             }
 
             if (!IsValidContext)
@@ -513,9 +525,13 @@ namespace System.Net
             if (statusCode == Interop.SecurityStatus.OK)
             {
                 // Success.
-                if ((statusCode == Interop.SecurityStatus.OK) && GlobalLog.IsEnabled)
+                if ((statusCode == Interop.SecurityStatus.OK))
                 {
-                    GlobalLog.AssertFormat("NTAuthentication#{0}::GetOutgoingBlob()|statusCode:[0x{1:x8}] ({2}) m_SecurityContext#{3}::Handle:[{4}] [STATUS != OK]", LoggingHash.HashString(this), (int)statusCode, statusCode, LoggingHash.HashString(_securityContext), LoggingHash.ObjectToString(_securityContext));
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.AssertFormat("NTAuthentication#{0}::GetOutgoingBlob()|statusCode:[0x{1:x8}] ({2}) m_SecurityContext#{3}::Handle:[{4}] [STATUS != OK]", LoggingHash.HashString(this), (int)statusCode, statusCode, LoggingHash.HashString(_securityContext), LoggingHash.ObjectToString(_securityContext));
+                    }
+                    Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob()|statusCode:[0x" + ((int)statusCode).ToString("x8") + "] (" + statusCode + ") m_SecurityContext#" + LoggingHash.HashString(_securityContext) + "::Handle:[" + LoggingHash.ObjectToString(_securityContext) + "] [STATUS != OK]");
                 }
 
                 _isCompleted = true;
@@ -549,11 +565,15 @@ namespace System.Net
             }
             catch (Exception e)
             {
-                if (!ExceptionCheck.IsFatal(e) && GlobalLog.IsEnabled)
+                if (!ExceptionCheck.IsFatal(e))
                 {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
+                    }
+                    Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
                 }
-                
+
                 throw;
             }
 
@@ -632,6 +652,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'offset' out of range.");
                 }
+                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'offset' out of range.");
 
                 throw new ArgumentOutOfRangeException("offset");
             }
@@ -642,6 +663,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'count' out of range.");
                 }
+                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'count' out of range.");
 
                 throw new ArgumentOutOfRangeException("count");
             }
@@ -688,9 +710,13 @@ namespace System.Net
 
         private string GetClientSpecifiedSpn()
         {
-            if (GlobalLog.IsEnabled && (IsValidContext && IsCompleted))
+            if ((IsValidContext && IsCompleted))
             {
-                GlobalLog.Assert("NTAuthentication: Trying to get the client SPN before handshaking is done!");
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Assert("NTAuthentication: Trying to get the client SPN before handshaking is done!");
+                }
+                Debug.Fail("NTAuthentication: Trying to get the client SPN before handshaking is done!");
             }
 
             string spn = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, _securityContext,
@@ -712,6 +738,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(this) + "::DecryptNtlm", "Argument 'count' out of range.");
                 }
+                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::DecryptNtlm", "Argument 'count' out of range.");
 
                 throw new ArgumentOutOfRangeException("count");
             }

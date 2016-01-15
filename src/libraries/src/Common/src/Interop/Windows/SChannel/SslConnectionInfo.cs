@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Net
@@ -41,6 +42,7 @@ namespace System.Net
                     {
                         GlobalLog.Assert("SslConnectionInfo::.ctor", "Negative size.");
                     }
+                    Debug.Fail("SslConnectionInfo::.ctor", "Negative size.");
                     throw;
                 }
             }
