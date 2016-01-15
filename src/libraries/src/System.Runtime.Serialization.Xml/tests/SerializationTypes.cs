@@ -2731,7 +2731,7 @@ public class TypeWithTypeWithIntAndStringPropertyProperty
 }
 
 [DataContract]
-public class CollectionInterfaceGetOnlyCollectionTester
+public class TypeWithCollectionInterfaceGetOnlyCollection
 {
     List<string> items;
 
@@ -2748,16 +2748,16 @@ public class CollectionInterfaceGetOnlyCollectionTester
         }
     }
 
-    public CollectionInterfaceGetOnlyCollectionTester() { }
+    public TypeWithCollectionInterfaceGetOnlyCollection() { }
 
-    public CollectionInterfaceGetOnlyCollectionTester(List<string> items)
+    public TypeWithCollectionInterfaceGetOnlyCollection(List<string> items)
     {
         this.items = items;
     }
 }
 
 [DataContract]
-public class EnumerableInterfaceGetOnlyCollectionTester
+public class TypeWithEnumerableInterfaceGetOnlyCollection
 {
     List<string> items;
 
@@ -2774,9 +2774,9 @@ public class EnumerableInterfaceGetOnlyCollectionTester
         }
     }
 
-    public EnumerableInterfaceGetOnlyCollectionTester() { }
+    public TypeWithEnumerableInterfaceGetOnlyCollection() { }
 
-    public EnumerableInterfaceGetOnlyCollectionTester(List<string> items)
+    public TypeWithEnumerableInterfaceGetOnlyCollection(List<string> items)
     {
         this.items = items;
     }
