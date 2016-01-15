@@ -3,6 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj" />
+    <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

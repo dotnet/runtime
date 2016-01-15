@@ -4,16 +4,45 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
     <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <StringResourcesPath>Resources\Strings.netcore50aot.resx</StringResourcesPath>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Requires.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
     <Compile Include="System\Reflection\TypeExtensions.CoreCLR.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <Compile Include="System\Reflection\AssemblyExtensions.cs" />
+    <Compile Include="System\Reflection\BindingFlags.cs" />
+    <Compile Include="System\Reflection\EventInfoExtensions.cs" />
+    <Compile Include="System\Reflection\Helpers.cs" />
+    <Compile Include="System\Reflection\MemberInfoExtensions.cs" />
+    <Compile Include="System\Reflection\ModuleExtensions.cs" />
+    <Compile Include="System\Reflection\MethodInfoExtensions.cs" />
+    <Compile Include="System\Reflection\PropertyInfoExtensions.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\InheritedPropertyInfo.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberEnumerator.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberPolicies.cs" />
+    <Compile Include="$(CommonPath)\Internal\Reflection\Execution\Binder\DefaultBinder.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs" />
+    <TargetingPackReference Include="System.Private.Reflection.Extensibility" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
