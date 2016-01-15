@@ -1044,6 +1044,19 @@ get_wrapper_shared_type (MonoType *t)
 	t = mini_get_underlying_type (t);
 
 	switch (t->type) {
+	case MONO_TYPE_I1:
+		/* This removes any attributes etc. */
+		return &mono_defaults.sbyte_class->byval_arg;
+	case MONO_TYPE_U1:
+		return &mono_defaults.byte_class->byval_arg;
+	case MONO_TYPE_I2:
+		return &mono_defaults.int16_class->byval_arg;
+	case MONO_TYPE_U2:
+		return &mono_defaults.uint16_class->byval_arg;
+	case MONO_TYPE_I4:
+		return &mono_defaults.int32_class->byval_arg;
+	case MONO_TYPE_U4:
+		return &mono_defaults.uint32_class->byval_arg;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -1788,10 +1801,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 					gpointer in_wrapper_arg = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 
-					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
-					MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (domain, in_wrapper, in_wrapper_arg);
-
-					addr = mini_create_llvmonly_ftndesc (domain, out_wrapper, out_wrapper_arg);
+					addr = mini_create_llvmonly_ftndesc (domain, in_wrapper, in_wrapper_arg);
 				} else {
 					addr = mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (method));
 				}

@@ -2741,7 +2741,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	call = LLVMBuildCall (builder, method, args, nargs, "");
 	if (!ctx->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
-	mono_llvm_set_must_tail (call);
+	//mono_llvm_set_must_tail (call);
 	if (LLVMGetReturnType (method_type) == LLVMVoidType ())
 		LLVMBuildRetVoid (builder);
 	else
@@ -5492,6 +5492,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						g_assert (addresses [ins->sreg1]);
 						addresses [ins->dreg] = addresses [ins->sreg1];
 					}
+			} else if (ainfo->storage == LLVMArgGsharedvtFixed) {
+				if (!addresses [ins->sreg1]) {
+					addresses [ins->sreg1] = build_alloca (ctx, t);
+					g_assert (values [ins->sreg1]);
+				}
+				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, t)), addresses [ins->sreg1]);
+				addresses [ins->dreg] = addresses [ins->sreg1];
 			} else {
 				if (!addresses [ins->sreg1]) {
 					addresses [ins->sreg1] = build_alloca (ctx, t);
