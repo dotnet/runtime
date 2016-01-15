@@ -24,6 +24,8 @@ public static class TimeZoneInfoTests
     private static string s_strAmsterdam = s_isWindows ? "W. Europe Standard Time" : "Europe/Berlin";
     private static string s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static string s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
+    private static string s_strJohannesburg = s_isWindows ? "South Africa Standard Time" : "Africa/Johannesburg";
+    private static string s_strCasablanca = s_isWindows ? "Morocco Standard Time" : "Africa/Casablanca";
     private static string s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Argentina/Catamarca";
     private static string s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
     private static string s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
@@ -34,6 +36,8 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_GMTLondon = TimeZoneInfo.FindSystemTimeZoneById(s_strGMT);
     private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
+    private static TimeZoneInfo s_johannesburgTz = TimeZoneInfo.FindSystemTimeZoneById(s_strJohannesburg);
+    private static TimeZoneInfo s_casablancaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCasablanca);
     private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
     private static TimeZoneInfo s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
     private static TimeZoneInfo s_NewfoundlandTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNewfoundland);
@@ -1676,6 +1680,30 @@ public static class TimeZoneInfoTests
 
     [Theory]
     [PlatformSpecific(PlatformID.AnyUnix)]
+    [InlineData("1940-02-24T23:59:59.0000000Z", false, "0:00:00")]
+    [InlineData("1940-02-25T00:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1940-11-20T00:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1940-12-31T23:59:59.0000000Z", true, "1:00:00")]
+    [InlineData("1941-01-01T00:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1945-02-24T12:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1945-11-17T01:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1945-11-17T22:59:59.0000000Z", true, "1:00:00")]
+    [InlineData("1945-11-17T23:00:00.0000000Z", false, "0:00:00")]
+    public static void TestCasablancaMultiYearDaylightSavings(string dateTimeString, bool expectedDST, string expectedOffsetString)
+    {
+        // Africa/Casablanca had DST from
+        //     1940-02-25T00:00:00.0000000Z {+01:00:00 DST=True}
+        //     1945-11-17T23:00:00.0000000Z { 00:00:00 DST=False}
+
+        DateTime dt = DateTime.ParseExact(dateTimeString, "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+        VerifyDST(s_casablancaTz, dt, expectedDST);
+
+        TimeSpan offset = TimeSpan.Parse(expectedOffsetString, CultureInfo.InvariantCulture);
+        Assert.Equal(offset, s_casablancaTz.GetUtcOffset(dt));
+    }
+
+    [Theory]
+    [PlatformSpecific(PlatformID.AnyUnix)]
     // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
     [InlineData("1995-09-30T17:00:00.0000000Z", false, "1:00:00")]
     [InlineData("1996-03-31T00:59:59.0000000Z", false, "1:00:00")]
@@ -1784,6 +1812,22 @@ public static class TimeZoneInfoTests
         Assert.Equal(TimeSpan.FromHours(-7), zone.GetUtcOffset(before));
         Assert.Equal(TimeSpan.FromHours(-7), zone.GetUtcOffset(mid));
         Assert.Equal(TimeSpan.FromHours(-8), zone.GetUtcOffset(after));
+    }
+
+    /// <summary>
+    /// Ensure Africa/Johannesburg transitions from +3 to +2 at 
+    /// 1943-02-20T23:00:00Z, and not a tick before that.
+    /// See https://github.com/dotnet/coreclr/issues/2185
+    /// </summary>
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void TestDaylightTransitionsExactTime_Johannesburg()
+    {
+        DateTimeOffset transition = new DateTimeOffset(1943, 3, 20, 23, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(TimeSpan.FromHours(3), s_johannesburgTz.GetUtcOffset(transition.AddTicks(-2)));
+        Assert.Equal(TimeSpan.FromHours(3), s_johannesburgTz.GetUtcOffset(transition.AddTicks(-1)));
+        Assert.Equal(TimeSpan.FromHours(2), s_johannesburgTz.GetUtcOffset(transition));
     }
 
     //
