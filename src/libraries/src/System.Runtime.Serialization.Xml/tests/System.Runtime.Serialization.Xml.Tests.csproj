@@ -20,6 +20,7 @@
     <Compile Include="DataContractSerializer.cs" />
     <Compile Include="DataContractSerializerTestData.cs" />
     <Compile Include="MyResolver.cs" />
+    <Compile Include="XmlDictionaryReaderTests.cs" />
     <Compile Include="XmlDictionaryWriterTest.cs" />
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Deserialization.cs" />
