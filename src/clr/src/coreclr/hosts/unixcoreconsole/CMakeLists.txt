@@ -2,6 +2,8 @@ project(unixcoreconsole)
 
 include_directories(../unixcoreruncommon)
 
+add_compile_options(-fPIE)
+
 set(CORECONSOLE_SOURCES 
     coreconsole.cpp 
 )

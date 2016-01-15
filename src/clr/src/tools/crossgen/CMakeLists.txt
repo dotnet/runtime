@@ -12,6 +12,10 @@ if(WIN32)
     add_definitions(-D_CRT_NON_CONFORMING_WCSTOK)
 endif()
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+  add_compile_options(-fPIE)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 add_definitions(-DFX_VER_INTERNALNAME_STR=crossgen.exe)
 add_definitions(-DNO_NGENPDB)
 
