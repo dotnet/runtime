@@ -149,7 +149,7 @@ namespace SortedListCtorIntComp
     public class Constructor_int_StringComparer
     {
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5460, PlatformID.AnyUnix)]
         public static void RunTests()
         {
             //This mostly follows the format established by the original author of these tests

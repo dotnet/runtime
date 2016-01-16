@@ -24,7 +24,6 @@ namespace System.Xml.Tests
         private const string ExampleSurrogateEntity = "&#x10000;";
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void XmlWriterConvertsInvalidCharacterToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -52,7 +51,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void EncodingFallbackFailsWhenInvalidCharacterInTagName()
         {
             MemoryStream ms = new MemoryStream();
@@ -75,7 +73,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void XmlWriterConvertsSurrogatePairToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -103,7 +100,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncXmlWriterConvertsInvalidCharacterToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -132,7 +128,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncEncodingFallbackFailsWhenInvalidCharacterInTagName()
         {
             MemoryStream ms = new MemoryStream();
@@ -158,7 +153,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncXmlWriterConvertsSurrogatePairToEntity()
         {
             MemoryStream ms = new MemoryStream();

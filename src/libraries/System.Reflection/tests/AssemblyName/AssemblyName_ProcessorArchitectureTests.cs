@@ -152,7 +152,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact, ActiveIssue(846, PlatformID.AnyUnix)]
+        [Fact]
         public void GetFullNameAndToString_AreEquivalentAndDoNotPreserveArchitecture()
         {
             foreach (KeyValuePair<string, ProcessorArchitecture> pair in GetValidNameValuePairs())

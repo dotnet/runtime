@@ -8,7 +8,6 @@ using Xunit;
 
 public class CaseInsensitiveComparer_CultureInfo
 {
-
     public bool runTest()
     {
         //////////// Global Variables used for all tests
@@ -137,10 +136,7 @@ public class CaseInsensitiveComparer_CultureInfo
         }
     }
 
-
-
     [Fact]
-    [ActiveIssue(2769, PlatformID.AnyUnix)]
     public static void ExecuteCaseInsensitiveComparer_CultureInfo()
     {
         bool bResult = false;
@@ -157,6 +153,5 @@ public class CaseInsensitiveComparer_CultureInfo
         }
 
         Assert.True(bResult);
-    }}
-
-
+    }
+}

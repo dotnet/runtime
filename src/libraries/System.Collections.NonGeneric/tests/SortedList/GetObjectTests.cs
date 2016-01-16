@@ -16,7 +16,6 @@ namespace System.Collections.Tests
 
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test01()
         {
             StringBuilder sblMsg = new StringBuilder(99);

@@ -16,7 +16,7 @@ namespace System.Globalization.Tests
     public class CultureInfoAll
     {
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void TestAllCultures()
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");
