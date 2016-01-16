@@ -892,6 +892,24 @@ namespace System.Xml
             ProcessAttributes();
         }
 
+        // NOTE: Call only if 0xEF has been seen in the stream AND there are three valid bytes to check (buffer[offset], buffer[offset + 1], buffer[offset + 2]). 
+        // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF. 
+        private bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
+        {
+            Fx.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
+
+            if (buffer[offset + 1] == 0xBF && (buffer[offset + 2] == 0xBE || buffer[offset + 2] == 0xBF))
+            {
+                // 0xFFFE : 0xEF 0xBF 0xBE
+                // 0xFFFF : 0xEF 0xBF 0xBF
+                // we know that buffer[offset] is already 0xEF, don't bother checking it.
+                return false;
+            }
+
+            // no bad characters
+            return true;
+        }
+
         private void ReadNonFFFE()
         {
             int off;
@@ -1142,6 +1160,54 @@ namespace System.Xml
             return offset - textOffset;
         }
 
+        // Read Unicode codepoints 0xFvvv
+        private int ReadTextAndWatchForInvalidCharacters(byte[] buffer, int offset, int offsetMax)
+        {
+            byte[] charType = XmlUTF8TextReader.s_charType;
+            int textOffset = offset;
+
+            while (offset < offsetMax && ((charType[buffer[offset]] & CharType.Text) != 0 || buffer[offset] == 0xEF))
+            {
+                if (buffer[offset] != 0xEF)
+                {
+                    offset++;
+                }
+                else
+                {
+                    // Ensure that we have three bytes (buffer[offset], buffer[offset + 1], buffer[offset + 2])  
+                    // available for IsNextCharacterNonFFFE to check. 
+                    if (offset + 2 < offsetMax)
+                    {
+                        if (IsNextCharacterNonFFFE(buffer, offset))
+                        {
+                            // if first byte is 0xEF, UTF8 mandates a 3-byte character representation of this Unicode code point
+                            offset += 3;
+                        }
+                        else
+                        {
+                            XmlExceptionHelper.ThrowXmlException(this, new XmlException(SR.Format(SR.XmlInvalidFFFE)));
+                        }
+                    }
+                    else
+                    {
+                        if (BufferReader.Offset < offset)
+                        {
+                            // We have read some characters already
+                            // Let the outer ReadText advance the bufferReader and return text node to caller
+                            break;
+                        }
+                        else
+                        {
+                            // Get enough bytes for us to process next character, then go back to top of while loop
+                            int dummy;
+                            BufferReader.GetBuffer(3, out dummy);
+                        }
+                    }
+                }
+            }
+            return offset - textOffset;
+        }
+
         // bytes   bits    UTF-8 representation
         // -----   ----    -----------------------------------
         // 1        7      0vvvvvvv
@@ -1184,7 +1250,7 @@ namespace System.Xml
             return length;
         }
 
-        private void ReadText()
+        private void ReadText(bool hasLeadingByteOf0xEF)
         {
             byte[] buffer;
             int offset;
@@ -1194,12 +1260,26 @@ namespace System.Xml
             if (_buffered)
             {
                 buffer = BufferReader.GetBuffer(out offset, out offsetMax);
-                length = ReadText(buffer, offset, offsetMax);
+                if (hasLeadingByteOf0xEF)
+                {
+                    length = ReadTextAndWatchForInvalidCharacters(buffer, offset, offsetMax); 
+                }
+                else
+                {
+                    length = ReadText(buffer, offset, offsetMax); 
+                }
             }
             else
             {
                 buffer = BufferReader.GetBuffer(MaxTextChunk, out offset, out offsetMax);
-                length = ReadText(buffer, offset, offsetMax);
+                if (hasLeadingByteOf0xEF)
+                {
+                    length = ReadTextAndWatchForInvalidCharacters(buffer, offset, offsetMax); 
+                }
+                else
+                {
+                    length = ReadText(buffer, offset, offsetMax);
+                }
                 length = BreakText(buffer, offset, length);
             }
             BufferReader.Advance(length);
@@ -1285,7 +1365,7 @@ namespace System.Xml
             }
             else if ((s_charType[ch] & CharType.Text) != 0)
             {
-                ReadText();
+                ReadText(false);
             }
             else if (ch == '&')
             {
@@ -1316,9 +1396,7 @@ namespace System.Xml
             }
             else if (ch == 0xEF)  // Watch for invalid characters 0xfffe and 0xffff
             {
-                int offset = BufferReader.Offset;
-                ReadNonFFFE();
-                MoveToComplexText().Value.SetValue(ValueHandleType.UTF8, offset, 3);
+                ReadText(true);
             }
             else
             {
