@@ -1753,7 +1753,7 @@ namespace System {
             if (array==null)
                 throw new ArgumentNullException("array");
             Contract.EndContractBlock();
-            Sort<T>(array, array.GetLowerBound(0), array.Length, null);
+            Sort<T>(array, 0, array.Length, null);
         }
 
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
