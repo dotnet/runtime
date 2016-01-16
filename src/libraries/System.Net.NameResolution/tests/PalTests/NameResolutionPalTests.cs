@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Sockets;
-
+using System.Net.Tests;
 using Xunit;
 
 namespace System.Net.NameResolution.PalTests
@@ -66,24 +66,27 @@ namespace System.Net.NameResolution.PalTests
             }
         }
 
-        [ActiveIssue(2894)]
         [Fact]
         public void GetHostByName_HostName_GetHostByAddr()
         {
-            string hostName = NameResolutionPal.GetHostName();
-            Assert.NotNull(hostName);
-
-            IPHostEntry hostEntry1 = NameResolutionPal.GetHostByName(hostName);
+            IPHostEntry hostEntry1 = NameResolutionPal.GetHostByName(HttpTestServers.Http2Host);
             Assert.NotNull(hostEntry1);
-            IPHostEntry hostEntry2 = NameResolutionPal.GetHostByAddr(hostEntry1.AddressList[0]);
-            Assert.NotNull(hostEntry2);
 
             IPAddress[] list1 = hostEntry1.AddressList;
-            IPAddress[] list2 = hostEntry2.AddressList;
+            Assert.InRange(list1.Length, 1, Int32.MaxValue);
 
-            for (int i = 0; i < list1.Length; i++)
+            foreach (IPAddress addr1 in list1)
             {
-                Assert.NotEqual(-1, Array.IndexOf(list2, list1[i]));
+                IPHostEntry hostEntry2 = NameResolutionPal.GetHostByAddr(addr1);
+                Assert.NotNull(hostEntry2);
+
+                IPAddress[] list2 = hostEntry2.AddressList;
+                Assert.InRange(list2.Length, 1, list1.Length);
+
+                foreach (IPAddress addr2 in list2)
+                {
+                    Assert.NotEqual(-1, Array.IndexOf(list1, addr2));
+                }
             }
         }
 
