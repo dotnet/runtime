@@ -464,7 +464,10 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     void setBBProfileWeight(unsigned weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
-        this->bbWeight = min(weight * BB_UNITY_WEIGHT, BB_MAX_WEIGHT);
+        // Check if the multiplication by BB_UNITY_WEIGHT will overflow.
+        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT)
+                         ? weight * BB_UNITY_WEIGHT
+                         : BB_MAX_WEIGHT;
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc
