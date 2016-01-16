@@ -76,6 +76,7 @@
     <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="!$(NetNative)" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerExtensions.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlSerializableServices.cs" />
     <Compile Include="$(XmlSources)\ArrayHelper.cs" />
     <Compile Include="$(XmlSources)\BytesWithOffset.cs" />
     <Compile Include="$(XmlSources)\XmlDictionaryAsyncCheckWriter.cs" />

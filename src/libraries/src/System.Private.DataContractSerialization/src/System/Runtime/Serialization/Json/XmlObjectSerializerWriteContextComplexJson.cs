@@ -125,7 +125,7 @@ namespace System.Runtime.Serialization.Json
                    object.ReferenceEquals(contract.Namespace, declaredContract.Namespace)) ||
                  (contract.Name.Value == declaredContract.Name.Value &&
                  contract.Namespace.Value == declaredContract.Namespace.Value)) &&
-                 (contract.UnderlyingType != Globals.TypeOfObjectArray) && 
+                 (contract.UnderlyingType != Globals.TypeOfObjectArray) &&
                  (_emitXsiType != EmitTypeInformation.Never))
             {
                 // We always deserialize collections assigned to System.Object as object[]
