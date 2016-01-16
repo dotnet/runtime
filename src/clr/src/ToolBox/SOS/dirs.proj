@@ -9,6 +9,12 @@
     <BuildSysBinaries>true</BuildSysBinaries>
   </PropertyGroup>
 
+  <ItemDefinitionGroup>
+    <ProjectFile>
+      <ProductGroups>FX</ProductGroups>
+    </ProjectFile>
+  </ItemDefinitionGroup>
+
   <ItemGroup Condition="'$(BuildExePhase)' == '1'">
     <ProjectFile Include="strike\dirs.proj" />
   </ItemGroup>
