@@ -637,7 +637,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void Xml_WithXElementWithNestedXElement()
     {
         var original = new WithXElementWithNestedXElement(true);
@@ -656,7 +655,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void Xml_WithArrayOfXElement()
     {
         var original = new WithArrayOfXElement(true);
@@ -683,7 +681,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void Xml_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);

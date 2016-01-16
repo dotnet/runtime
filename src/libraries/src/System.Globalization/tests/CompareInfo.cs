@@ -26,7 +26,7 @@ public partial class CompareInfoTests
 
     [Theory]
     [MemberData("CompareToData")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void Compare(string localeName, string left, string right, int expected, CompareOptions options)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);        
@@ -90,7 +90,7 @@ public partial class CompareInfoTests
 
     [Theory]
     [MemberData("IndexOfData")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
@@ -195,7 +195,7 @@ public partial class CompareInfoTests
 
     [Theory]
     [MemberData("LastIndexOfData")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void LastIndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
@@ -288,7 +288,7 @@ public partial class CompareInfoTests
 
     [Theory]
     [MemberData("IsPrefixData")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IsPrefix(string localeName, string source, string prefix, bool expectedResult, CompareOptions options)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
@@ -324,7 +324,7 @@ public partial class CompareInfoTests
 
     [Theory]
     [MemberData("IsSuffixData")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IsSuffix(string localeName, string source, string suffix, bool expectedResult, CompareOptions options)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
@@ -373,7 +373,7 @@ public partial class CompareInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void GetHashCodeOfString()
     {
         CompareInfo ci = CultureInfo.InvariantCulture.CompareInfo;

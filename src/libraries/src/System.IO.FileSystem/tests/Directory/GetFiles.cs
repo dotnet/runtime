@@ -93,7 +93,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void CharacterTests()
         {
             //bug #417100 - not sure if this hard coded approach is safe in all 9x platforms!!!

@@ -79,7 +79,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void ConvertTo_WithContext()
         {
             Assert.Throws<ArgumentNullException>(

@@ -52,7 +52,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(5462, PlatformID.AnyUnix)]
         [ActiveIssue(1303, PlatformID.Windows)]
         public static void ToTypeTests()
         {
