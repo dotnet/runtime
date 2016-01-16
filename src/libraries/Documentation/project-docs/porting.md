@@ -1,10 +1,6 @@
 # Porting to .NET Core
 
----8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<
-
-The purpose of this document is to share the plans on how we're going to port more APIs to .NET Core. As the scissors indicate, this section is meant as the context for reviewers and contributors. We're aren't going to publish this part.
-
---->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8--->8
+The purpose of this document is to share the plans on how we're going to port more APIs to .NET Core.
 
 ## Summary
 
