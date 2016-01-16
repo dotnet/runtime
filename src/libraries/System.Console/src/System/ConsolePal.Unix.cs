@@ -189,6 +189,23 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
+        public static void SetBufferSize(int width, int height)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static int LargestWindowWidth
+        {
+            get { return WindowWidth; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int LargestWindowHeight
+        {
+            get { return WindowHeight; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public static int WindowLeft
         {
             get { return 0; }

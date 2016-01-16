@@ -151,6 +151,11 @@ namespace System
             set { ConsolePal.BufferHeight = value; }
         }
 
+        public static void SetBufferSize(int width, int height)
+        {
+            ConsolePal.SetBufferSize(width, height);
+        }
+
         public static int WindowLeft
         {
             get { return ConsolePal.WindowLeft; }
@@ -193,6 +198,16 @@ namespace System
                 }
                 ConsolePal.WindowHeight = value;
             }
+        }
+
+        public static int LargestWindowWidth
+        {
+            get { return ConsolePal.LargestWindowWidth; }
+        }
+
+        public static int LargestWindowHeight
+        {
+            get { return ConsolePal.LargestWindowHeight; }
         }
 
         public static bool CursorVisible
