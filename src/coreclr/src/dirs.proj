@@ -23,7 +23,9 @@
     
     <!--The following projects will build during PHASE 1-->
     <ItemGroup Condition="'$(BuildExePhase)' == '1'">
-        <ProjectFile Include="inc\corguids.nativeproj" />
+        <ProjectFile Include="inc\corguids.nativeproj" >
+            <ProductGroups>FX;PK</ProductGroups>
+        </ProjectFile>
         <ProjectFile Include="format\format.nativeproj" />
         <ProjectFile Include="shimload\shimload.nativeproj" Condition="'$(BuildProjectName)' != 'CoreSys'"/>
         <ProjectFile Include="utilcode\dirs.proj" />
@@ -46,7 +48,9 @@
         <ProjectFile Include="jit32\dirs.proj" Condition="'$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64'" />
         <ProjectFile Include="jit64\dirs.proj" Condition="'$(BuildProjectName)' != 'CoreSys'" />
 
-        <ProjectFile Include="tools\dirs.proj" />
+        <ProjectFile Include="tools\dirs.proj" >
+            <ProductGroups>FX;PK</ProductGroups>
+        </ProjectFile>
         <ProjectFile Include="toolbox\dirs.proj" >
             <ProductGroups>FX;PK</ProductGroups>
         </ProjectFile>

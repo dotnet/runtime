@@ -1,9 +1,8 @@
-// diacreate.h - creation helper functions for DIA initialization
-//-----------------------------------------------------------------
-// 
-// Copyright Microsoft Corporation.  All Rights Reserved.
 //
-//---------------------------------------------------------------
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+// diacreate.h - creation helper functions for DIA initialization
 #ifndef _DIACREATE_H_
 #define _DIACREATE_H_
 
