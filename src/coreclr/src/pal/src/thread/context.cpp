@@ -419,7 +419,17 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
-    if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT && native->uc_mcontext.fpregs != nullptr)
+#if HAVE_GREGSET_T
+    if (native->uc_mcontext.fpregs == nullptr)
+    {
+        // If the pointer to the floating point state in the native context
+        // is not valid, we can't copy floating point registers regardless of
+        // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
+        return;
+    }
+#endif
+
+    if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef _AMD64_
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
@@ -444,6 +454,17 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #endif
     }
 }
+
+// The upper bits of context flags contain information that should be preserved
+// when converting from native_context_t to CONTEXT. We use this mask in the
+// CONTEXTFromNativeContext function to modify the flags without losing those bits.
+const ULONG CONTEXT_FLAGS_HIGH_BITS_MASK = 0xFFFF0000;
+
+// Ensure that the mask doesn't block any values we care about here.
+static_assert(((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
+                   && ((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
+                   && ((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
+                   , "The mask used in CONTEXTFromNativeContext is not valid.");
 
 /*++
 Function :
@@ -477,8 +498,24 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         ASSIGN_INTEGER_REGS
     }
 #undef ASSIGN_REG
-    
-    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT && native->uc_mcontext.fpregs != nullptr)
+
+#if HAVE_GREGSET_T
+    if (native->uc_mcontext.fpregs == nullptr)
+    {
+        ULONG preservedUpperBits = lpContext->ContextFlags & CONTEXT_FLAGS_HIGH_BITS_MASK;
+
+        // Reset the CONTEXT_FLOATING_POINT bit, but preserve any of the original high 16
+        // bits that may have changed (depending on what CONTEXT_FLOATING_POINT is defined 
+        // as on this architecture).
+        lpContext->ContextFlags &= ~CONTEXT_FLOATING_POINT;
+        lpContext->ContextFlags |= preservedUpperBits;
+
+        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT 
+        return;
+    }
+#endif
+
+    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef _AMD64_
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
