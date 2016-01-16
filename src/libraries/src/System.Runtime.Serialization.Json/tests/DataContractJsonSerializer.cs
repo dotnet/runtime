@@ -1761,7 +1761,7 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_DifferentCollectionsOfSameTypeAsKnownTypes()
     {
         Assert.Throws<InvalidOperationException>(() => {
-            (new DataContractSerializer(typeof(DifferentCollectionsOfSameTypeAsKnownTypes))).WriteObject(new MemoryStream(), new DifferentCollectionsOfSameTypeAsKnownTypes());
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
         });
     }
 

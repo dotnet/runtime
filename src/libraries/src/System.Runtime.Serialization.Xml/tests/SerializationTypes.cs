@@ -2372,7 +2372,7 @@ namespace SerializationTypes
     [KnownType(typeof(List<SimpleType>))]
     [KnownType(typeof(SimpleType[]))]
     [DataContract]
-    public class DifferentCollectionsOfSameTypeAsKnownTypes
+    public class TypeWithKnownTypesOfCollectionsWithConflictingXmlName
     {
         [DataMember]
         public object Value1 = new List<SimpleType>();

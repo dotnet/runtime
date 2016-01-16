@@ -2012,7 +2012,7 @@ public static partial class DataContractSerializerTests
     public static void DCS_DifferentCollectionsOfSameTypeAsKnownTypes()
     {
         Assert.Throws<InvalidOperationException>(() => { 
-            (new DataContractSerializer(typeof(DifferentCollectionsOfSameTypeAsKnownTypes))).WriteObject(new MemoryStream(), new DifferentCollectionsOfSameTypeAsKnownTypes());
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
         });
     }
 
