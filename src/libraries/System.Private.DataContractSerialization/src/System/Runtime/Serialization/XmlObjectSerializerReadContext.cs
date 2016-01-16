@@ -539,6 +539,18 @@ namespace System.Runtime.Serialization
                 xmlReader.Read();
                 xmlReader.MoveToContent();
             }
+            if (xmlDataContract.UnderlyingType == Globals.TypeOfXmlElement)
+            {
+                if (!xmlReader.IsStartElement())
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                XmlDocument xmlDoc = new XmlDocument();
+                obj = (XmlElement)xmlDoc.ReadNode(xmlSerializableReader);
+            }
+            else if (xmlDataContract.UnderlyingType == Globals.TypeOfXmlNodeArray)
+            {
+                obj = XmlSerializableServices.ReadNodes(xmlSerializableReader);
+            }
+            else
             {
                 IXmlSerializable xmlSerializable = xmlDataContract.CreateXmlSerializableDelegate();
                 xmlSerializable.ReadXml(xmlSerializableReader);

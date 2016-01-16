@@ -5,7 +5,7 @@ namespace System.Runtime.Serialization
 {
     public static class DataContractSerializerExtensions
     {
-        public static ISerializationSurrogateProvider GetSerializationSurrogateProvider(this DataContractSerializer serializer) 
+        public static ISerializationSurrogateProvider GetSerializationSurrogateProvider(this DataContractSerializer serializer)
         {
             return serializer.SerializationSurrogateProvider;
         }
