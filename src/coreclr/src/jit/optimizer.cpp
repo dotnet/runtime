@@ -3170,60 +3170,82 @@ void                Compiler::optUnrollLoops()
 
 /*****************************************************************************
  *
- *  Return non-zero if there is a code path from 'srcBB' to 'dstBB' that will
+ *  Return non-zero if there is a code path from 'topBB' to 'botBB' that will
  *  not execute a method call.
  */
 
-bool                Compiler::optReachWithoutCall(BasicBlock *srcBB,
-                                                  BasicBlock *dstBB)
+bool                Compiler::optReachWithoutCall(BasicBlock *topBB,
+                                                  BasicBlock *botBB)
 {
-    noway_assert(srcBB->bbNum <= dstBB->bbNum);
+    // TODO-Cleanup: Currently BBF_GC_SAFE_POINT is not set for helper calls, 
+    // as some helper calls are neither interruptible nor hijackable.
+    // When we can determine this, then we can set BBF_GC_SAFE_POINT for
+    // those helpers too.
+    
+    noway_assert(topBB->bbNum <= botBB->bbNum);
 
-    /* Are dominator sets available? */
+    // We can always check topBB and botBB for any gc safe points and early out
 
-    if  (!fgDomsComputed)
+    if ((topBB->bbFlags | botBB->bbFlags) & BBF_GC_SAFE_POINT)
+        return false;
+
+    // Otherwise we will need to rely upon the dominator sets
+
+    if (!fgDomsComputed)
     {
-        /* All we can check is the src/dst blocks */
-
-        if ((srcBB->bbFlags|dstBB->bbFlags) & BBF_GC_SAFE_POINT)
-            return false;
-        else
-            return true;
+        // return a conservative answer of true when we don't have the dominator sets
+        return true;
     }
 
+    BasicBlock *curBB = topBB;
     for (;;)
     {
-        noway_assert(srcBB);
+        noway_assert(curBB);
 
-        /*  If we added a loop pre-header block then we will
-            have a bbNum greater than fgLastBB, and we won't have
-            any dominator information about this block, so skip it.
-         */
-        if  (srcBB->bbNum <= fgLastBB->bbNum)
+        // If we added a loop pre-header block then we will
+        //  have a bbNum greater than fgLastBB, and we won't have
+        //  any dominator information about this block, so skip it.
+        //
+        if (curBB->bbNum <= fgLastBB->bbNum)
         {
-            noway_assert(srcBB->bbNum <= dstBB->bbNum);
+            noway_assert(curBB->bbNum <= botBB->bbNum);
 
-            /* Does this block contain a call? */
+            // Does this block contain a gc safe point?
 
-            if  (srcBB->bbFlags & BBF_GC_SAFE_POINT)
+            if (curBB->bbFlags & BBF_GC_SAFE_POINT)
             {
-                /* Will this block always execute on the way to dstBB ? */
-
-                if  (srcBB == dstBB || fgDominate(srcBB, dstBB))
+                // Will this block always execute on the way to botBB ?
+                //
+                // Since we are checking every block in [topBB .. botBB] and we are using 
+                // a lexical definition of a loop.
+                //  (all that we know is that is that botBB is a back-edge to topBB) 
+                // Thus while walking blocks in this range we may encounter some blocks
+                // that are not really part of the loop, and so we need to perform
+                // some additional checks:
+                //
+                // We will check that the current 'curBB' is reachable from 'topBB'
+                // and that it dominates the block containing the back-edge 'botBB'
+                // When both of these are true then we know that the gcsafe point in 'curBB'
+                // will be encountered in the loop and we can return false
+                //
+                if (fgDominate(curBB, botBB) && fgReachable(topBB, curBB))
                     return  false;
             }
             else
             {
-                /* If we've reached the destination block, we're done */
+                // If we've reached the destination block, then we're done
 
-                if  (srcBB == dstBB)
+                if (curBB == botBB)
                     break;
             }
         }
 
-        srcBB = srcBB->bbNext;
+        curBB = curBB->bbNext;
     }
 
+    // If we didn't find any blocks that contained a gc safe point and
+    // also met the fgDominate and fgReachable criteria then we must return true
+    //
     return  true;
 }
 
@@ -3479,7 +3501,7 @@ void                Compiler::fgOptWhileLoop(BasicBlock * block)
         //
         // Some additional sanity checks before adjusting the weight of bTest
         //
-        if ((weightNext > 0) && (weightTest >= weightBlock))
+        if ((weightNext > 0) && (weightTest >= weightBlock) && (weightTest != BB_MAX_WEIGHT))
         {
             // Get the two edge that flow out of bTest
             flowList * edgeToNext = fgGetPredForBlock(bTest->bbNext, bTest);
@@ -3487,7 +3509,9 @@ void                Compiler::fgOptWhileLoop(BasicBlock * block)
 
             // Calculate the new weight for block bTest
 
-            BasicBlock::weight_t newWeightTest = (weightTest - weightBlock);
+            BasicBlock::weight_t newWeightTest = (weightTest > weightBlock)
+                                                 ? (weightTest - weightBlock)
+                                                 : BB_ZERO_WEIGHT;
             bTest->bbWeight = newWeightTest;
 
             if (newWeightTest == BB_ZERO_WEIGHT)
