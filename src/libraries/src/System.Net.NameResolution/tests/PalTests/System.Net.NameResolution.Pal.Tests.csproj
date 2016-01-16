@@ -49,6 +49,10 @@
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
+
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
+      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
