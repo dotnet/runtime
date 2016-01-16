@@ -434,12 +434,12 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
         for (int i = 0; i < 8; i++)
         {
-            FPREG_St(native, i) = ((M128U*)lpContext->FltSave.FloatRegisters)[i];
+            FPREG_St(native, i) = lpContext->FltSave.FloatRegisters[i];
         }
 
         for (int i = 0; i < 16; i++)
         {
-            FPREG_Xmm(native, i) = ((M128U*)lpContext->FltSave.XmmRegisters)[i];
+            FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
 #endif
     }
@@ -493,12 +493,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
         for (int i = 0; i < 8; i++)
         {
-            ((M128U*)lpContext->FltSave.FloatRegisters)[i] = FPREG_St(native, i);
+            lpContext->FltSave.FloatRegisters[i] = FPREG_St(native, i);
         }
 
         for (int i = 0; i < 16; i++)
         {
-            ((M128U*)lpContext->FltSave.XmmRegisters)[i] = FPREG_Xmm(native, i);
+            lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
 #endif
     }
