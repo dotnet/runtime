@@ -5,6 +5,26 @@
 
 static bool g_enabled = false;
 
+//
+// Turn on tracing for the corehost based on "COREHOST_TRACE" env.
+//
+void trace::setup()
+{
+    // Read trace environment variable
+    pal::string_t trace_str;
+    if (!pal::getenv(_X("COREHOST_TRACE"), &trace_str))
+    {
+        return;
+    }
+
+    auto trace_val = pal::xtoi(trace_str.c_str());
+    if (trace_val > 0)
+    {
+        trace::enable();
+        trace::info(_X("Tracing enabled"));
+    }
+}
+
 void trace::enable()
 {
     g_enabled = true;

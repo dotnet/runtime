@@ -78,7 +78,7 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         args.app_argc = argc - 1;
     }
 
-    if(args.app_argc > 0)
+    if (args.app_argc > 0)
     {
         auto depsfile_candidate = pal::string_t(args.app_argv[0]);
         
