@@ -1234,19 +1234,47 @@ namespace System.Runtime.Serialization
 
         static internal bool IsTypeSerializable(Type type)
         {
+            return IsTypeSerializable(type, new HashSet<Type>());
+        }
+
+        private static bool IsTypeSerializable(Type type, HashSet<Type> previousCollectionTypes)
+        {
             Type itemType;
 
-            return (type.GetTypeInfo().IsEnum ||
-                    type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) ||
-                    type.GetTypeInfo().IsInterface ||
-                    type.IsPointer ||
-                    Globals.TypeOfIXmlSerializable.IsAssignableFrom(type) ||
-                    (CollectionDataContract.IsCollection(type, out itemType) && IsTypeSerializable(itemType)) ||
-                    DataContract.GetBuiltInDataContract(type) != null ||
-                    ClassDataContract.IsNonAttributedTypeValidForSerialization(type) ||
-                    //Special casing DateTimeOffset and DBNull as its considered a Primitive but is no longer Serializable
-                    type == Globals.TypeOfDateTimeOffset ||
-                    type == Globals.TypeOfDBNull);
+            if (type.GetTypeInfo().IsEnum ||
+                type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) ||
+                type.GetTypeInfo().IsInterface ||
+                type.IsPointer ||
+                //Special casing DateTimeOffset and DBNull as its considered a Primitive but is no longer Serializable
+                type == Globals.TypeOfDateTimeOffset ||
+                type == Globals.TypeOfDBNull ||
+                Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+            {
+                return true;
+            }
+            if (CollectionDataContract.IsCollection(type, out itemType))
+            {
+                ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
+                if (IsTypeSerializable(itemType, previousCollectionTypes))
+                {
+                    return true;
+                }
+            }
+            return DataContract.GetBuiltInDataContract(type) != null ||
+                   ClassDataContract.IsNonAttributedTypeValidForSerialization(type);
+        }
+
+        private static void ValidatePreviousCollectionTypes(Type collectionType, Type itemType, HashSet<Type> previousCollectionTypes)
+        {
+            previousCollectionTypes.Add(collectionType);
+            while (itemType.IsArray)
+            {
+                itemType = itemType.GetElementType();
+            }
+            if (previousCollectionTypes.Contains(itemType))
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.RecursiveCollectionType, GetClrTypeFullName(itemType))));
+            }
         }
 
         internal static Type UnwrapRedundantNullableType(Type type)

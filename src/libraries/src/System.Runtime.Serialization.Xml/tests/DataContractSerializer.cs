@@ -1968,6 +1968,15 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_RecursiveCollection()
+    {
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            (new DataContractSerializer(typeof (RecursiveCollection))).WriteObject(new MemoryStream(), new RecursiveCollection());
+        });
+    }
+
+    [Fact]
     public static void DCS_XmlElementAsRoot()
     {
         XmlDocument xDoc = new XmlDocument();

@@ -2781,3 +2781,21 @@ public class TypeWithEnumerableInterfaceGetOnlyCollection
         this.items = items;
     }
 }
+
+[CollectionDataContract]
+public class RecursiveCollection : List<RecursiveCollection2>
+{
+
+}
+
+[CollectionDataContract]
+public class RecursiveCollection2 : List<RecursiveCollection3>
+{
+
+}
+
+[CollectionDataContract]
+public class RecursiveCollection3 : List<RecursiveCollection>
+{
+
+}
