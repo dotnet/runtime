@@ -96,7 +96,12 @@ void add_tpa_asset(
     }
 
     trace::verbose(_X("Adding tpa entry: %s"), asset_path.c_str());
-    output->append(asset_path);
+
+    // Workaround for CoreFX not being able to resolve sym links.
+    pal::string_t real_asset_path = asset_path;
+    pal::realpath(&real_asset_path);
+    output->append(real_asset_path);
+
     output->push_back(PATH_SEPARATOR);
     items->insert(asset_name);
 }
@@ -111,14 +116,14 @@ void add_mscorlib_to_tpa(const pal::string_t& clr_dir, std::set<pal::string_t>* 
     pal::string_t mscorlib_ni_path = clr_dir + DIR_SEPARATOR + _X("mscorlib.ni.dll");
     if (pal::file_exists(mscorlib_ni_path))
     {
-        add_tpa_asset(_X("mscorlib"),  mscorlib_ni_path, items, output);
+        add_tpa_asset(_X("mscorlib"), mscorlib_ni_path, items, output);
         return;
     }
 
     pal::string_t mscorlib_path = clr_dir + DIR_SEPARATOR + _X("mscorlib.dll");
     if (pal::file_exists(mscorlib_path))
     {
-        add_tpa_asset(_X("mscorlib"),  mscorlib_ni_path, items, output);
+        add_tpa_asset(_X("mscorlib"), mscorlib_ni_path, items, output);
         return;
     }
 }
@@ -133,15 +138,21 @@ void add_unique_path(
     std::set<pal::string_t>* existing,
     pal::string_t* output)
 {
-    if (existing->count(path))
+    // Resolve sym links.
+    pal::string_t real = path;
+    pal::realpath(&real);
+
+    if (existing->count(real))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), type.c_str(), path.c_str());
-    output->append(path);
+    trace::verbose(_X("Adding to %s path: %s"), type.c_str(), real.c_str());
+
+    output->append(real);
+
     output->push_back(PATH_SEPARATOR);
-    existing->insert(path);
+    existing->insert(real);
 }
 
 } // end of anonymous namespace
