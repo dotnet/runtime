@@ -561,7 +561,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 
 #ifdef _TARGET_ARM_
 
-        var_types hfaType = (varTypeIsStruct(argType) ? GetHfaType(typeHnd) : TYP_UNDEF;
+        var_types hfaType = (varTypeIsStruct(argType)) ? GetHfaType(typeHnd) : TYP_UNDEF;
         bool isHfaArg = !info.compIsVarArgs && varTypeIsFloating(hfaType);
 
         // On ARM we pass the first 4 words of integer arguments and non-HFA structs in registers.
