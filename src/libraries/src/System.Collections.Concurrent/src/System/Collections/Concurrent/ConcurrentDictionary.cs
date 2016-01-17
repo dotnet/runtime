@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -221,7 +222,7 @@ namespace System.Collections.Concurrent
             TValue dummy;
             foreach (KeyValuePair<TKey, TValue> pair in collection)
             {
-                if (pair.Key == null) throw new ArgumentNullException("key");
+                if (pair.Key == null) ThrowKeyNullException();
 
                 if (!TryAddInternal(pair.Key, _comparer.GetHashCode(pair.Key), pair.Value, false, false, out dummy))
                 {
@@ -309,7 +310,7 @@ namespace System.Collections.Concurrent
         /// contains too many elements.</exception>
         public bool TryAdd(TKey key, TValue value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             TValue dummy;
             return TryAddInternal(key, _comparer.GetHashCode(key), value, false, true, out dummy);
         }
@@ -326,7 +327,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         public bool ContainsKey(TKey key)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
 
             TValue throwAwayValue;
             return TryGetValue(key, out throwAwayValue);
@@ -346,7 +347,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         public bool TryRemove(TKey key, out TValue value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
 
             return TryRemoveInternal(key, out value, false, default(TValue));
         }
@@ -434,7 +435,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         public bool TryGetValue(TKey key, out TValue value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             return TryGetValueInternal(key, _comparer.GetHashCode(key), out value);
         }
 
@@ -482,7 +483,7 @@ namespace System.Collections.Concurrent
         /// reference.</exception>
         public bool TryUpdate(TKey key, TValue newValue, TValue comparisonValue)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             return TryUpdateInternal(key, _comparer.GetHashCode(key), newValue, comparisonValue);
         }
 
@@ -880,16 +881,28 @@ namespace System.Collections.Concurrent
                 TValue value;
                 if (!TryGetValue(key, out value))
                 {
-                    throw new KeyNotFoundException();
+                    ThrowKeyNotFoundException();
                 }
                 return value;
             }
             set
             {
-                if (key == null) throw new ArgumentNullException("key");
+                if (key == null) ThrowKeyNullException();
                 TValue dummy;
                 TryAddInternal(key, _comparer.GetHashCode(key), value, true, true, out dummy);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowKeyNotFoundException()
+        {
+            throw new KeyNotFoundException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowKeyNullException()
+        {
+            throw new ArgumentNullException("key");
         }
 
         /// <summary>
@@ -948,7 +961,7 @@ namespace System.Collections.Concurrent
         /// if the key was not in the dictionary.</returns>
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             if (valueFactory == null) throw new ArgumentNullException("valueFactory");
 
             int hashcode = _comparer.GetHashCode(key);
@@ -975,7 +988,7 @@ namespace System.Collections.Concurrent
         /// key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
         public TValue GetOrAdd(TKey key, TValue value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
 
             int hashcode = _comparer.GetHashCode(key);
 
@@ -1008,7 +1021,7 @@ namespace System.Collections.Concurrent
         /// absent) or the result of updateValueFactory (if the key was present).</returns>
         public TValue AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             if (addValueFactory == null) throw new ArgumentNullException("addValueFactory");
             if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
 
@@ -1056,7 +1069,7 @@ namespace System.Collections.Concurrent
         /// absent) or the result of updateValueFactory (if the key was present).</returns>
         public TValue AddOrUpdate(TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
 
             int hashcode = _comparer.GetHashCode(key);
@@ -1316,7 +1329,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         void IDictionary.Add(object key, object value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
             if (!(key is TKey)) throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
 
             TValue typedValue;
@@ -1344,7 +1357,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         bool IDictionary.Contains(object key)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
 
             return (key is TKey) && this.ContainsKey((TKey)key);
         }
@@ -1404,7 +1417,7 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         void IDictionary.Remove(object key)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) ThrowKeyNullException();
 
             TValue throwAwayValue;
             if (key is TKey)
@@ -1446,7 +1459,7 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                if (key == null) throw new ArgumentNullException("key");
+                if (key == null) ThrowKeyNullException();
 
                 TValue value;
                 if (key is TKey && TryGetValue((TKey)key, out value))
@@ -1458,7 +1471,7 @@ namespace System.Collections.Concurrent
             }
             set
             {
-                if (key == null) throw new ArgumentNullException("key");
+                if (key == null) ThrowKeyNullException();
 
                 if (!(key is TKey)) throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
                 if (!(value is TValue)) throw new ArgumentException(SR.ConcurrentDictionary_TypeOfValueIncorrect);
