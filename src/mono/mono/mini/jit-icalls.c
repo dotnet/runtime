@@ -1679,6 +1679,12 @@ mono_get_assembly_object (MonoImage *image)
 	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), image->assembly);
 }
 
+MonoObject*
+mono_get_method_object (MonoMethod *method)
+{
+	return (MonoObject*)mono_method_get_object (mono_domain_get (), method, method->klass);
+}
+
 double
 mono_ckfinite (double d)
 {

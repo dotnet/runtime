@@ -211,6 +211,8 @@ void mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMeth
 
 MonoObject* mono_get_assembly_object (MonoImage *image);
 
+MonoObject* mono_get_method_object (MonoMethod *method);
+
 double mono_ckfinite (double d);
 
 void mono_llvmonly_set_calling_assembly (MonoImage *image);

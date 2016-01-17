@@ -6731,6 +6731,17 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins = mono_emit_jit_icall (cfg, mono_llvmonly_get_calling_assembly, NULL);
 			return ins;
 		}
+	} else if (cmethod->klass->image == mono_defaults.corlib &&
+			   (strcmp (cmethod->klass->name_space, "System.Reflection") == 0) &&
+			   (strcmp (cmethod->klass->name, "MethodBase") == 0)) {
+		if (cfg->llvm_only && !cfg->gshared && !strcmp (cmethod->name, "GetCurrentMethod")) {
+			/* No stack walks are currently available, so implement this as an intrinsic */
+			MonoInst *method_ins;
+
+			EMIT_NEW_AOTCONST (cfg, method_ins, MONO_PATCH_INFO_METHODCONST, cfg->method);
+			ins = mono_emit_jit_icall (cfg, mono_get_method_object, &method_ins);
+			return ins;
+		}
 	} else if (cmethod->klass == mono_defaults.math_class) {
 		/* 
 		 * There is general branchless code for Min/Max, but it does not work for 

@@ -443,4 +443,14 @@ class Tests
 		var s1 = new FpStruct () { a = 1, b = 1, c = 10 };
 		return pass_hfa_on_stack (s1, s1, s1);
 	}
+
+	public static int test_0_get_current_method () {
+		var m = MethodBase.GetCurrentMethod ();
+#if __MOBILE__
+		var m2 = typeof (AotTests).GetMethod ("test_0_get_current_method");
+#else
+		var m2 = typeof (Tests).GetMethod ("test_0_get_current_method");
+#endif
+		return m == m2 ? 0 : 1;
+	}
 }
