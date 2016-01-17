@@ -57,13 +57,6 @@ namespace System.Collections.Concurrent
         private readonly bool _growLockArray; // Whether to dynamically increase the size of the striped lock
         private int _budget; // The maximum number of elements per lock before a resize operation is triggered
 
-        // The default concurrency level is DEFAULT_CONCURRENCY_MULTIPLIER * #CPUs. The higher the
-        // DEFAULT_CONCURRENCY_MULTIPLIER, the more concurrent writes can take place without interference
-        // and blocking, but also the more expensive operations that require all locks become (e.g. table
-        // resizing, ToArray, Count, etc). According to brief benchmarks that we ran, 4 seems like a good
-        // compromise.
-        private const int DEFAULT_CONCURRENCY_MULTIPLIER = 4;
-
         // The default capacity, i.e. the initial # of buckets. When choosing this value, we are making
         // a trade-off between the size of a very small dictionary, and the number of resizes when
         // constructing a large dictionary. Also, the capacity should not be divisible by a small prime.
@@ -1757,7 +1750,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private static int DefaultConcurrencyLevel
         {
-            get { return DEFAULT_CONCURRENCY_MULTIPLIER * PlatformHelper.ProcessorCount; }
+            get { return PlatformHelper.ProcessorCount; }
         }
 
         /// <summary>
