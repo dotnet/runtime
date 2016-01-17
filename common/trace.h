@@ -8,6 +8,7 @@
 
 namespace trace
 {
+    void setup();
     void enable();
     bool is_enabled();
     void verbose(const pal::char_t* format, ...);

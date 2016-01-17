@@ -59,26 +59,6 @@ StatusCode load_host_lib(const pal::string_t& lib_dir, pal::dll_t* h_host, coreh
                 : StatusCode::CoreHostEntryPointFailure;
 }
 
-//
-// Turn on tracing for the corehost based on "COREHOST_TRACE" env.
-//
-void setup_tracing()
-{
-    // Read trace environment variable
-    pal::string_t trace_str;
-    if (!pal::getenv(_X("COREHOST_TRACE"), &trace_str))
-    {
-        return;
-    }
-
-    auto trace_val = pal::xtoi(trace_str.c_str());
-    if (trace_val > 0)
-    {
-        trace::enable();
-        trace::info(_X("Tracing enabled"));
-    }
-}
-
 }; // end of anonymous namespace
 
 #if defined(_WIN32)
@@ -87,7 +67,7 @@ int __cdecl wmain(const int argc, const pal::char_t* argv[])
 int main(const int argc, const pal::char_t* argv[])
 #endif
 {
-    setup_tracing();
+    trace::setup();
 
     pal::dll_t corehost;
 

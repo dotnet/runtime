@@ -196,6 +196,8 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         argv[i] = argv_strs[i].c_str();
     }
 
+    std::string managed_app = pal::to_stdstring(args.managed_application);
+
     // Execute the application
     unsigned int exit_code = 1;
     hr = coreclr::execute_assembly(
@@ -203,7 +205,7 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         domain_id,
         argv.size(),
         argv.data(),
-        pal::to_stdstring(args.managed_application).c_str(),
+        managed_app.c_str(),
         &exit_code);
     if (!SUCCEEDED(hr))
     {
@@ -225,6 +227,8 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
 
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
+    trace::setup();
+
     // Take care of arguments
     arguments_t args;
     if (!parse_arguments(argc, argv, args))
@@ -239,5 +243,6 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
         trace::error(_X("Could not resolve coreclr path"));
         return StatusCode::CoreClrResolveFailure;
     }
+    pal::realpath(&clr_path);
     return run(args, clr_path);
 }
