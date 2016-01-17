@@ -21652,13 +21652,11 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
                  (tree->gtOper == GT_FIELD)   ||
                  (tree->gtOper == GT_IND)     ||
                  (tree->gtOper == GT_LDOBJ)   ||
-#ifdef FEATURE_SIMD
-                 (tree->gtOper == GT_SIMD)    ||
+                 tree->OperIsSIMD()           ||
                  // tree->gtOper == GT_CALL     || cannot get address of call.
                  // tree->gtOper == GT_MKREFANY || inlining should've been aborted due to mkrefany opcode.
                  // tree->gtOper == GT_RET_EXPR || cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
                  (tree->gtOper == GT_COMMA));
-#endif // FEATURE_SIMD
 
     switch (tree->OperGet())
     {
