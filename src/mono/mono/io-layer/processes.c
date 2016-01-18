@@ -54,7 +54,19 @@
 #endif
 #endif
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(PLATFORM_MACOSX)
+#define USE_OSX_LOADER
+#endif
+
+#if ( defined(__OpenBSD__) || defined(__FreeBSD__) ) && defined(HAVE_LINK_H)
+#define USE_BSD_LOADER
+#endif
+
+#if defined(__HAIKU__)
+#define USE_HAIKU_LOADER
+#endif
+
+#if defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER)
 #include <sys/proc.h>
 #include <sys/sysctl.h>
 #  if !defined(__OpenBSD__)
@@ -123,7 +135,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 static void process_close (gpointer handle, gpointer data);
 static gboolean is_pid_valid (pid_t pid);
 
-#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__))
+#if !(defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER))
 static FILE *
 open_process_map (int pid, const char *mode);
 #endif
@@ -1409,7 +1421,7 @@ static gint find_procmodule (gconstpointer a, gconstpointer b)
 	}
 }
 
-#ifdef PLATFORM_MACOSX
+#if defined(USE_OSX_LOADER)
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 
@@ -1464,7 +1476,7 @@ static GSList *load_modules (void)
 	
 	return(ret);
 }
-#elif defined(__OpenBSD__) || defined(__FreeBSD__)
+#elif defined(USE_BSD_LOADER)
 #include <link.h>
 static int load_modules_callback (struct dl_phdr_info *info, size_t size, void *ptr)
 {
@@ -1523,7 +1535,7 @@ static GSList *load_modules (void)
 
 	return(ret);
 }
-#elif defined(__HAIKU__)
+#elif defined(USE_HAIKU_LOADER)
 
 static GSList *load_modules (void)
 {
@@ -1719,7 +1731,7 @@ static gboolean match_procname_to_modulename (char *procname, char *modulename)
 	return result;
 }
 
-#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__))
+#if !(defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER))
 static FILE *
 open_process_map (int pid, const char *mode)
 {
@@ -1748,7 +1760,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
 {
 	WapiHandle_process *process_handle;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
+#if !defined(USE_OSX_LOADER) && !defined(USE_BSD_LOADER)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -1784,7 +1796,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 	
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__)
+#if defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER)
 	mods = load_modules ();
 	if (!proc_name) {
 		modules[0] = NULL;
@@ -1841,11 +1853,11 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 static char *
 get_process_name_from_proc (pid_t pid)
 {
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(USE_BSD_LOADER)
 	int mib [6];
 	size_t size;
 	struct kinfo_proc *pi;
-#elif defined(PLATFORM_MACOSX)
+#elif defined(USE_OSX_LOADER)
 #if !(!defined (__mono_ppc__) && defined (TARGET_OSX))
 	size_t size;
 	struct kinfo_proc *pi;
@@ -1872,7 +1884,7 @@ get_process_name_from_proc (pid_t pid)
 		fclose (fp);
 	}
 	g_free (filename);
-#elif defined(PLATFORM_MACOSX)
+#elif defined(USE_OSX_LOADER)
 #if !defined (__mono_ppc__) && defined (TARGET_OSX)
 	/* No proc name on OSX < 10.5 nor ppc nor iOS */
 	memset (buf, '\0', sizeof(buf));
@@ -1923,7 +1935,8 @@ get_process_name_from_proc (pid_t pid)
 
 	free(pi);
 #endif
-#elif defined(__FreeBSD__)
+#elif defined(USE_BSD_LOADER)
+#if defined(__FreeBSD__)
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_PID;
@@ -1975,16 +1988,12 @@ retry:
 		return(ret);
 	}
 
-#if defined(__OpenBSD__)
 	if (strlen (pi->p_comm) > 0)
 		ret = g_strdup (pi->p_comm);
-#elif defined(__FreeBSD__)
-	if (strlen (pi->ki_comm) > 0)
-		ret = g_strdup (pi->ki_comm);
-#endif
 
 	free(pi);
-#elif defined(__HAIKU__)
+#endif
+#elif defined(USE_HAIKU_LOADER)
 	image_info imageInfo;
 	int32 cookie = 0;
 
@@ -2088,7 +2097,7 @@ get_module_name (gpointer process, gpointer module,
 	char *procname_ext = NULL;
 	glong len;
 	gsize bytes;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
+#if !defined(USE_OSX_LOADER) && !defined(USE_BSD_LOADER)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2122,7 +2131,7 @@ get_module_name (gpointer process, gpointer module,
 	}
 
 	/* Look up the address in /proc/<pid>/maps */
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__)
+#if defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER)
 	mods = load_modules ();
 #else
 	fp = open_process_map (pid, "r");
@@ -2275,7 +2284,7 @@ GetModuleInformation (gpointer process, gpointer module,
 {
 	WapiHandle_process *process_handle;
 	pid_t pid;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
+#if !defined(USE_OSX_LOADER) && !defined(USE_BSD_LOADER)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2306,7 +2315,7 @@ GetModuleInformation (gpointer process, gpointer module,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 
-#if defined(PLATFORM_MACOSX) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER)
 	mods = load_modules ();
 #else
 	/* Look up the address in /proc/<pid>/maps */
