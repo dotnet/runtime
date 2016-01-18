@@ -21,13 +21,9 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/semaphore-private.h>
+#include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-once.h>
-
-#if 0
-#define DEBUG(...) g_message(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
+#include <mono/utils/mono-logger-internals.h>
 
 static void sema_signal(gpointer handle);
 static gboolean sema_own (gpointer handle);
@@ -110,11 +106,11 @@ static gboolean sema_own (gpointer handle)
 		return(FALSE);
 	}
 	
-	DEBUG("%s: owning sem handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning sem handle %p", __func__, handle);
 
 	sem_handle->val--;
 	
-	DEBUG ("%s: sem %p val now %d", __func__, handle, sem_handle->val);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val now %d", __func__, handle, sem_handle->val);
 
 	if(sem_handle->val==0) {
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
@@ -134,7 +130,7 @@ static gboolean namedsema_own (gpointer handle)
 	struct _WapiHandle_namedsem *namedsem_handle;
 	gboolean ok;
 	
-	DEBUG ("%s: owning named sem handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning named sem handle %p", __func__, handle);
 
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDSEM,
 				  (gpointer *)&namedsem_handle);
@@ -146,7 +142,7 @@ static gboolean namedsema_own (gpointer handle)
 	
 	namedsem_handle->val--;
 	
-	DEBUG ("%s: named sem %p val now %d", __func__, handle,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
 		   namedsem_handle->val);
 
 	if (namedsem_handle->val == 0) {
@@ -185,7 +181,7 @@ static gpointer sem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
-	DEBUG ("%s: Created semaphore handle %p initial %d max %d",
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Created semaphore handle %p initial %d max %d",
 		   __func__, handle, initial, max);
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
@@ -218,7 +214,7 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 	
-	DEBUG ("%s: Creating named sem [%s]", __func__, utf8_name);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem [%s]", __func__, utf8_name);
 
 	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
 						utf8_name);
@@ -282,7 +278,7 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		_wapi_handle_unlock_shared_handles ();
 	}
 	
-	DEBUG ("%s: returning named sem handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
 
 cleanup:
 	g_free (utf8_name);
@@ -316,14 +312,14 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 	mono_once (&sem_ops_once, sem_ops_init);
 	
 	if (max <= 0) {
-		DEBUG ("%s: max <= 0", __func__);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: max <= 0", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(NULL);
 	}
 	
 	if (initial > max || initial < 0) {
-		DEBUG ("%s: initial>max or < 0", __func__);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: initial>max or < 0", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(NULL);
@@ -354,7 +350,7 @@ static gboolean sem_release (gpointer handle, gint32 count, gint32 *prevcount)
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
-	DEBUG ("%s: sem %p val %d count %d", __func__, handle,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val %d count %d", __func__, handle,
 		   sem_handle->val, count);
 	
 	/* Do this before checking for count overflow, because overflowing max
@@ -366,7 +362,7 @@ static gboolean sem_release (gpointer handle, gint32 count, gint32 *prevcount)
 	
 	/* No idea why max is signed, but thats the spec :-( */
 	if (sem_handle->val + count > (guint32)sem_handle->max) {
-		DEBUG ("%s: sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
 
 		goto end;
 	}
@@ -376,7 +372,7 @@ static gboolean sem_release (gpointer handle, gint32 count, gint32 *prevcount)
 	
 	ret = TRUE;
 
-	DEBUG ("%s: sem %p val now %d", __func__, handle, sem_handle->val);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val now %d", __func__, handle, sem_handle->val);
 	
 end:
 	thr_ret = _wapi_handle_unlock_handle (handle);
@@ -404,7 +400,7 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 
-	DEBUG("%s: named sem %p val %d count %d", __func__, handle,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val %d count %d", __func__, handle,
 		  sem_handle->val, count);
 	
 	/* Do this before checking for count overflow, because overflowing max
@@ -416,7 +412,7 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 	
 	/* No idea why max is signed, but thats the spec :-( */
 	if (sem_handle->val + count > (guint32)sem_handle->max) {
-		DEBUG ("%s: named sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
 
 		goto end;
 	}
@@ -426,7 +422,7 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 	
 	ret = TRUE;
 
-	DEBUG("%s: named sem %p val now %d", __func__, handle,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
 		  sem_handle->val);
 	
 end:
@@ -485,7 +481,7 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 	
-	DEBUG ("%s: Opening named sem [%s]", __func__, utf8_name);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named sem [%s]", __func__, utf8_name);
 
 	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
 						utf8_name);
@@ -514,7 +510,7 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	}
 	ret = handle;
 	
-	DEBUG ("%s: returning named sem handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
 
 cleanup:
 	g_free (utf8_name);
