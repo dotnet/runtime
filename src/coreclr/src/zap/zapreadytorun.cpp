@@ -343,71 +343,71 @@ void ZapImage::OutputDebugInfoForReadyToRun()
 //
 static_assert_no_msg(sizeof(READYTORUN_IMPORT_SECTION)          == sizeof(CORCOMPILE_IMPORT_SECTION));
 
-static_assert_no_msg(READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN     == CORCOMPILE_IMPORT_TYPE_UNKNOWN);
+static_assert_no_msg((int)READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN     == (int)CORCOMPILE_IMPORT_TYPE_UNKNOWN);
 
-static_assert_no_msg(READYTORUN_IMPORT_SECTION_FLAGS_EAGER      == CORCOMPILE_IMPORT_FLAGS_EAGER);
+static_assert_no_msg((int)READYTORUN_IMPORT_SECTION_FLAGS_EAGER      == (int)CORCOMPILE_IMPORT_FLAGS_EAGER);
 
 //
 // READYTORUN_METHOD_SIG
 //
-static_assert_no_msg(READYTORUN_METHOD_SIG_UnboxingStub         == ENCODE_METHOD_SIG_UnboxingStub);
-static_assert_no_msg(READYTORUN_METHOD_SIG_InstantiatingStub    == ENCODE_METHOD_SIG_InstantiatingStub);
-static_assert_no_msg(READYTORUN_METHOD_SIG_MethodInstantiation  == ENCODE_METHOD_SIG_MethodInstantiation);
-static_assert_no_msg(READYTORUN_METHOD_SIG_SlotInsteadOfToken   == ENCODE_METHOD_SIG_SlotInsteadOfToken);
-static_assert_no_msg(READYTORUN_METHOD_SIG_MemberRefToken       == ENCODE_METHOD_SIG_MemberRefToken);
-static_assert_no_msg(READYTORUN_METHOD_SIG_Constrained          == ENCODE_METHOD_SIG_Constrained);
-static_assert_no_msg(READYTORUN_METHOD_SIG_OwnerType            == ENCODE_METHOD_SIG_OwnerType);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_UnboxingStub         == (int)ENCODE_METHOD_SIG_UnboxingStub);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_InstantiatingStub    == (int)ENCODE_METHOD_SIG_InstantiatingStub);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_MethodInstantiation  == (int)ENCODE_METHOD_SIG_MethodInstantiation);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_SlotInsteadOfToken   == (int)ENCODE_METHOD_SIG_SlotInsteadOfToken);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_MemberRefToken       == (int)ENCODE_METHOD_SIG_MemberRefToken);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_Constrained          == (int)ENCODE_METHOD_SIG_Constrained);
+static_assert_no_msg((int)READYTORUN_METHOD_SIG_OwnerType            == (int)ENCODE_METHOD_SIG_OwnerType);
 
 //
 // READYTORUN_FIELD_SIG
 //
-static_assert_no_msg(READYTORUN_FIELD_SIG_IndexInsteadOfToken   == ENCODE_FIELD_SIG_IndexInsteadOfToken);
-static_assert_no_msg(READYTORUN_FIELD_SIG_MemberRefToken        == ENCODE_FIELD_SIG_MemberRefToken);
-static_assert_no_msg(READYTORUN_FIELD_SIG_OwnerType             == ENCODE_FIELD_SIG_OwnerType);
+static_assert_no_msg((int)READYTORUN_FIELD_SIG_IndexInsteadOfToken   == (int)ENCODE_FIELD_SIG_IndexInsteadOfToken);
+static_assert_no_msg((int)READYTORUN_FIELD_SIG_MemberRefToken        == (int)ENCODE_FIELD_SIG_MemberRefToken);
+static_assert_no_msg((int)READYTORUN_FIELD_SIG_OwnerType             == (int)ENCODE_FIELD_SIG_OwnerType);
 
 //
 // READYTORUN_FIXUP
 //
-static_assert_no_msg(READYTORUN_FIXUP_TypeHandle                == ENCODE_TYPE_HANDLE);
-static_assert_no_msg(READYTORUN_FIXUP_MethodHandle              == ENCODE_METHOD_HANDLE);
-static_assert_no_msg(READYTORUN_FIXUP_FieldHandle               == ENCODE_FIELD_HANDLE);
+static_assert_no_msg((int)READYTORUN_FIXUP_TypeHandle                == (int)ENCODE_TYPE_HANDLE);
+static_assert_no_msg((int)READYTORUN_FIXUP_MethodHandle              == (int)ENCODE_METHOD_HANDLE);
+static_assert_no_msg((int)READYTORUN_FIXUP_FieldHandle               == (int)ENCODE_FIELD_HANDLE);
 
-static_assert_no_msg(READYTORUN_FIXUP_MethodEntry               == ENCODE_METHOD_ENTRY);
-static_assert_no_msg(READYTORUN_FIXUP_MethodEntry_DefToken      == ENCODE_METHOD_ENTRY_DEF_TOKEN);
-static_assert_no_msg(READYTORUN_FIXUP_MethodEntry_RefToken      == ENCODE_METHOD_ENTRY_REF_TOKEN);
+static_assert_no_msg((int)READYTORUN_FIXUP_MethodEntry               == (int)ENCODE_METHOD_ENTRY);
+static_assert_no_msg((int)READYTORUN_FIXUP_MethodEntry_DefToken      == (int)ENCODE_METHOD_ENTRY_DEF_TOKEN);
+static_assert_no_msg((int)READYTORUN_FIXUP_MethodEntry_RefToken      == (int)ENCODE_METHOD_ENTRY_REF_TOKEN);
 
-static_assert_no_msg(READYTORUN_FIXUP_VirtualEntry              == ENCODE_VIRTUAL_ENTRY);
-static_assert_no_msg(READYTORUN_FIXUP_VirtualEntry_DefToken     == ENCODE_VIRTUAL_ENTRY_DEF_TOKEN);
-static_assert_no_msg(READYTORUN_FIXUP_VirtualEntry_RefToken     == ENCODE_VIRTUAL_ENTRY_REF_TOKEN);
-static_assert_no_msg(READYTORUN_FIXUP_VirtualEntry_Slot         == ENCODE_VIRTUAL_ENTRY_SLOT);
+static_assert_no_msg((int)READYTORUN_FIXUP_VirtualEntry              == (int)ENCODE_VIRTUAL_ENTRY);
+static_assert_no_msg((int)READYTORUN_FIXUP_VirtualEntry_DefToken     == (int)ENCODE_VIRTUAL_ENTRY_DEF_TOKEN);
+static_assert_no_msg((int)READYTORUN_FIXUP_VirtualEntry_RefToken     == (int)ENCODE_VIRTUAL_ENTRY_REF_TOKEN);
+static_assert_no_msg((int)READYTORUN_FIXUP_VirtualEntry_Slot         == (int)ENCODE_VIRTUAL_ENTRY_SLOT);
 
-static_assert_no_msg(READYTORUN_FIXUP_Helper                    == ENCODE_READYTORUN_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_StringHandle              == ENCODE_STRING_HANDLE);
+static_assert_no_msg((int)READYTORUN_FIXUP_Helper                    == (int)ENCODE_READYTORUN_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_StringHandle              == (int)ENCODE_STRING_HANDLE);
 
-static_assert_no_msg(READYTORUN_FIXUP_NewObject                  == ENCODE_NEW_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_NewArray                   == ENCODE_NEW_ARRAY_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_NewObject                  == (int)ENCODE_NEW_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_NewArray                   == (int)ENCODE_NEW_ARRAY_HELPER);
 
-static_assert_no_msg(READYTORUN_FIXUP_IsInstanceOf               == ENCODE_ISINSTANCEOF_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_ChkCast                    == ENCODE_CHKCAST_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_IsInstanceOf               == (int)ENCODE_ISINSTANCEOF_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_ChkCast                    == (int)ENCODE_CHKCAST_HELPER);
 
-static_assert_no_msg(READYTORUN_FIXUP_FieldAddress               == ENCODE_FIELD_ADDRESS);
-static_assert_no_msg(READYTORUN_FIXUP_CctorTrigger               == ENCODE_CCTOR_TRIGGER);
+static_assert_no_msg((int)READYTORUN_FIXUP_FieldAddress               == (int)ENCODE_FIELD_ADDRESS);
+static_assert_no_msg((int)READYTORUN_FIXUP_CctorTrigger               == (int)ENCODE_CCTOR_TRIGGER);
 
-static_assert_no_msg(READYTORUN_FIXUP_StaticBaseNonGC            == ENCODE_STATIC_BASE_NONGC_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_StaticBaseGC               == ENCODE_STATIC_BASE_GC_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_ThreadStaticBaseNonGC      == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER);
-static_assert_no_msg(READYTORUN_FIXUP_ThreadStaticBaseGC         == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_StaticBaseNonGC            == (int)ENCODE_STATIC_BASE_NONGC_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_StaticBaseGC               == (int)ENCODE_STATIC_BASE_GC_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_ThreadStaticBaseNonGC      == (int)ENCODE_THREAD_STATIC_BASE_NONGC_HELPER);
+static_assert_no_msg((int)READYTORUN_FIXUP_ThreadStaticBaseGC         == (int)ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
-static_assert_no_msg(READYTORUN_FIXUP_FieldBaseOffset            == ENCODE_FIELD_BASE_OFFSET);
-static_assert_no_msg(READYTORUN_FIXUP_FieldOffset                == ENCODE_FIELD_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_FieldBaseOffset            == (int)ENCODE_FIELD_BASE_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_FieldOffset                == (int)ENCODE_FIELD_OFFSET);
 
-static_assert_no_msg(READYTORUN_FIXUP_TypeDictionary             == ENCODE_TYPE_DICTIONARY);
-static_assert_no_msg(READYTORUN_FIXUP_MethodDictionary           == ENCODE_METHOD_DICTIONARY);
+static_assert_no_msg((int)READYTORUN_FIXUP_TypeDictionary             == (int)ENCODE_TYPE_DICTIONARY);
+static_assert_no_msg((int)READYTORUN_FIXUP_MethodDictionary           == (int)ENCODE_METHOD_DICTIONARY);
 
-static_assert_no_msg(READYTORUN_FIXUP_Check_TypeLayout           == ENCODE_CHECK_TYPE_LAYOUT);
-static_assert_no_msg(READYTORUN_FIXUP_Check_FieldOffset          == ENCODE_CHECK_FIELD_OFFSET);
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_TypeLayout           == (int)ENCODE_CHECK_TYPE_LAYOUT);
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_FieldOffset          == (int)ENCODE_CHECK_FIELD_OFFSET);
 
-static_assert_no_msg(READYTORUN_FIXUP_DelegateCtor               == ENCODE_DELEGATE_CTOR);
+static_assert_no_msg((int)READYTORUN_FIXUP_DelegateCtor               == (int)ENCODE_DELEGATE_CTOR);
 
 //
 // READYTORUN_EXCEPTION
