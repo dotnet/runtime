@@ -90,7 +90,7 @@ namespace System.Linq.Expressions
                 PropertyInfo pi = member as PropertyInfo;
                 if (pi == null)
                 {
-                    throw Error.ArgumentMustBeFieldInfoOrPropertInfo();
+                    throw Error.ArgumentMustBeFieldInfoOrPropertyInfo();
                 }
                 if (!pi.CanWrite)
                 {
