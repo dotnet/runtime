@@ -996,7 +996,7 @@ namespace System.Collections.Generic {
             Contract.EndContractBlock();
 
             if( _size > 0) {
-                IComparer<T> comparer = new Array.FunctorComparer<T>(comparison);
+                IComparer<T> comparer = Comparer<T>.Create(comparison);
                 Array.Sort(_items, 0, _size, comparer);
             }
         }

@@ -1864,7 +1864,7 @@ namespace System {
             }
             Contract.EndContractBlock();
 
-            IComparer<T> comparer = new FunctorComparer<T>(comparison);
+            IComparer<T> comparer = Comparer<T>.Create(comparison);
             Array.Sort(array, comparer);
         }
 
@@ -1884,18 +1884,6 @@ namespace System {
                 }
             }
             return true;
-        }
-
-        internal sealed class FunctorComparer<T> : IComparer<T> {
-            Comparison<T> comparison;
-
-            public FunctorComparer(Comparison<T> comparison) {
-                this.comparison = comparison;
-            }
-
-            public int Compare(T x, T y) {
-                return comparison(x, y);
-            }
         }
 
 
