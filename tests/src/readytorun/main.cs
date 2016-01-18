@@ -101,7 +101,15 @@ class Program
     static void TestInterop()
     {
         // Verify both intra-module and inter-module PInvoke interop
-        MyClass.GetTickCount();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            MyClass.GetTickCount();
+        }
+        else
+        {
+            MyClass.GetCurrentThreadId();
+        }
+
         MyClass.TestInterop();
     }
 
@@ -250,7 +258,7 @@ class Program
 
         public void TestMultipleLoads()
         {
-            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "NI", "test.ni.dll"));
+            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "test.ni.dll"));
             Assert.AreEqual(AssemblyLoadContext.GetLoadContext(a), this);
         }
 

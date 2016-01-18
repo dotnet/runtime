@@ -150,9 +150,19 @@ public class MyClass : IMyInterface
    [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
    public extern static int GetTickCount();
 
+   [DllImport("libcoreclr")]
+   public extern static int GetCurrentThreadId();
+
    static public void TestInterop()
    {
-       GetTickCount();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            GetTickCount();
+        }
+        else
+        {
+            GetCurrentThreadId();
+        }
    }
 
 #if V2

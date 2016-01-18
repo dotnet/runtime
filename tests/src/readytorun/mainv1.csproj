@@ -50,11 +50,18 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-IF not exist NI mkdir NI
-COPY /Y testv1\test.dll test.dll
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\test.ni.dll test.dll 
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\mainv1.ni.exe mainv1.exe
+DEL test.dll
+COPY /Y ..\testv1\test\test.dll test.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out test.ni.dll test.dll 
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out mainv1.ni.exe mainv1.exe
 ]]></CLRTestBatchPreCommands>
+  <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+rm test.dll
+cp ../testv1/test/test.dll test.dll
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
+$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv1.ni.exe mainv1.exe
+]]></BashCLRTestPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
