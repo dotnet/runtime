@@ -519,17 +519,22 @@ get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 
 	method = jinfo_get_method (ji);
 	if (mono_method_get_context (method)->method_inst) {
+		/* A MonoMethodRuntimeGenericContext* */
 		return info;
 	} else if ((method->flags & METHOD_ATTRIBUTE_STATIC) || method->klass->valuetype) {
+		/* A MonoVTable* */
 		return info;
 	} else {
 		/* Avoid returning a managed object */
 		MonoObject *this_obj = (MonoObject *)info;
 
-		return this_obj->vtable->klass;
+		return this_obj->vtable;
 	}
 }
 
+/*
+ * generic_info is either a MonoMethodRuntimeGenericContext or a MonoVTable.
+ */
 static MonoGenericContext
 get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 {
@@ -547,12 +552,10 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		klass = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
 		g_assert (context.method_inst);
-	} else if ((method->flags & METHOD_ATTRIBUTE_STATIC) || method->klass->valuetype) {
+	} else {
 		MonoVTable *vtable = (MonoVTable *)generic_info;
 
 		klass = vtable->klass;
-	} else {
-		klass = (MonoClass *)generic_info;
 	}
 
 	//g_assert (!method->klass->generic_container);
@@ -2884,7 +2887,7 @@ mono_llvm_clear_exception (void)
  * the current exception.
  */
 gint32
-mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
+mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj)
 {
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoObject *exc;
@@ -2894,12 +2897,25 @@ mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 reg
 	exc = mono_gchandle_get_target (jit_tls->thrown_exc);
 	for (int i = 0; i < jinfo->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+		MonoClass *catch_class;
 
 		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
 			continue;
 
+		catch_class = ei->data.catch_class;
+		if (catch_class->byval_arg.type == MONO_TYPE_VAR || catch_class->byval_arg.type == MONO_TYPE_MVAR || catch_class->byval_arg.type == MONO_TYPE_GENERICINST) {
+			MonoGenericContext context;
+			MonoType *inflated_type;
+
+			g_assert (rgctx || this_obj);
+			context = get_generic_context_from_stack_frame (jinfo, rgctx ? rgctx : this_obj->vtable);
+			inflated_type = mono_class_inflate_generic_type (&catch_class->byval_arg, &context);
+			catch_class = mono_class_from_mono_type (inflated_type);
+			mono_metadata_free_type (inflated_type);
+		}
+
 		// FIXME: Handle edge cases handled in get_exception_catch_class
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (exc, ei->data.catch_class)) {
+		if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (exc, catch_class)) {
 			index = ei->clause_index;
 			break;
 		} else if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {

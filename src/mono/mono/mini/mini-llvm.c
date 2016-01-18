@@ -1499,6 +1499,26 @@ LLVMFunctionType3 (LLVMTypeRef ReturnType,
 	return LLVMFunctionType (ReturnType, param_types, 3, IsVarArg);
 }
 
+static G_GNUC_UNUSED LLVMTypeRef
+LLVMFunctionType5 (LLVMTypeRef ReturnType,
+				   LLVMTypeRef ParamType1,
+				   LLVMTypeRef ParamType2,
+				   LLVMTypeRef ParamType3,
+				   LLVMTypeRef ParamType4,
+				   LLVMTypeRef ParamType5,
+				   int IsVarArg)
+{
+	LLVMTypeRef param_types [5];
+
+	param_types [0] = ParamType1;
+	param_types [1] = ParamType2;
+	param_types [2] = ParamType3;
+	param_types [3] = ParamType4;
+	param_types [4] = ParamType5;
+
+	return LLVMFunctionType (ReturnType, param_types, 5, IsVarArg);
+}
+
 /*
  * create_builder:
  *
@@ -3548,13 +3568,24 @@ mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, g
 
 	ctx->builder = builder;
 
-	const int num_args = 3;
+	const int num_args = 5;
 	LLVMValueRef args [num_args];
 	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index)), IntPtrType ());
 	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
 	args [2] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
+	if (ctx->cfg->rgctx_var) {
+		LLVMValueRef rgctx_alloc = ctx->addresses [ctx->cfg->rgctx_var->dreg];
+		g_assert (rgctx_alloc);
+		args [3] = LLVMBuildLoad (builder, convert (ctx, rgctx_alloc, LLVMPointerType (IntPtrType (), 0)), "");
+	} else {
+		args [3] = LLVMConstInt (IntPtrType (), 0, 0);
+	}
+	if (ctx->this_arg)
+		args [4] = convert (ctx, ctx->this_arg, IntPtrType ());
+	else
+		args [4] = LLVMConstInt (IntPtrType (), 0, 0);
 
-	LLVMTypeRef match_sig = LLVMFunctionType3 (LLVMInt32Type (), IntPtrType (), LLVMInt32Type (), LLVMInt32Type (), FALSE);
+	LLVMTypeRef match_sig = LLVMFunctionType5 (LLVMInt32Type (), IntPtrType (), LLVMInt32Type (), LLVMInt32Type (), IntPtrType (), IntPtrType (), FALSE);
 	LLVMValueRef callee = ctx->module->match_exc;
 
 	if (!callee) {

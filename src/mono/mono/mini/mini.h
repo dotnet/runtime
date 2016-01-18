@@ -2800,6 +2800,15 @@ MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptio
 void mono_restore_context                       (MonoContext *ctx);
 guint8* mono_jinfo_get_unwind_info              (MonoJitInfo *ji, guint32 *unwind_info_len);
 int  mono_jinfo_get_epilog_size                 (MonoJitInfo *ji);
+void     mono_llvm_rethrow_exception            (MonoObject *ex);
+void     mono_llvm_throw_exception              (MonoObject *ex);
+void     mono_llvm_throw_corlib_exception       (guint32 ex_token_index);
+void     mono_llvm_resume_exception             (void);
+void     mono_llvm_clear_exception              (void);
+MonoObject *mono_llvm_load_exception            (void);
+void     mono_llvm_reset_exception              (void);
+void     mono_llvm_raise_exception              (MonoException *e);
+gint32 mono_llvm_match_exception                (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj);
 
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
