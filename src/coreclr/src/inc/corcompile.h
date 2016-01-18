@@ -685,6 +685,8 @@ enum CORCOMPILE_GCREFMAP_TOKENS
 // Tags for fixup blobs
 enum CORCOMPILE_FIXUP_BLOB_KIND
 {
+    ENCODE_NONE                 = 0,
+    
     ENCODE_MODULE_OVERRIDE      = 0x80,             /* When the high bit is set, override of the module immediately follows */
 
     ENCODE_TYPE_HANDLE          = 0x10,             /* Type handle */
