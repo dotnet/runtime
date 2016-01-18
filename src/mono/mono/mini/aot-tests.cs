@@ -453,4 +453,18 @@ class Tests
 #endif
 		return m == m2 ? 0 : 1;
 	}
+
+	class GetCurrentMethodClass<T> {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public MethodBase get_current () {
+			return MethodBase.GetCurrentMethod ();
+		}
+	}
+
+	public static int test_0_get_current_method_generic () {
+		var c = new GetCurrentMethodClass<string> ();
+		var m = c.get_current ();
+		var m2 = typeof (GetCurrentMethodClass<>).GetMethod ("get_current");
+		return m == m2 ? 0 : 1;
+	}
 }
