@@ -143,7 +143,7 @@ namespace System.Threading.Tasks
         internal const int DEFAULT_LOOP_STRIDE = 16;
 
         // Static variable to hold default parallel options
-        internal static ParallelOptions s_defaultParallelOptions = new ParallelOptions();
+        internal static readonly ParallelOptions s_defaultParallelOptions = new ParallelOptions();
 
         /// <summary>
         /// Executes each of the provided actions, possibly in parallel.
@@ -342,12 +342,14 @@ namespace System.Threading.Tasks
                     // One more check before we begin...
                     parallelOptions.CancellationToken.ThrowIfCancellationRequested();
 
-                    // Launch all actions as tasks
-                    for (int i = 0; i < tasks.Length; i++)
+                    // Invoke all actions as tasks.  Queue N-1 of them, and run 1 synchronously.
+                    for (int i = 1; i < tasks.Length; i++)
                     {
                         tasks[i] = Task.Factory.StartNew(actionsCopy[i], parallelOptions.CancellationToken, TaskCreationOptions.None,
                                                          parallelOptions.EffectiveTaskScheduler);
                     }
+                    tasks[0] = new Task(actionsCopy[0], parallelOptions.CancellationToken, TaskCreationOptions.None);
+                    tasks[0].RunSynchronously(parallelOptions.EffectiveTaskScheduler);
 
                     // Now wait for the tasks to complete.  This will not unblock until all of
                     // them complete, and it will throw an exception if one or more of them also
