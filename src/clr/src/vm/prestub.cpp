@@ -2615,7 +2615,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     TypeHandle th;
     MethodDesc * pMD = NULL;
     FieldDesc * pFD = NULL;
-    CORCOMPILE_FIXUP_BLOB_KIND kind = (CORCOMPILE_FIXUP_BLOB_KIND)0;
+    CORCOMPILE_FIXUP_BLOB_KIND kind = ENCODE_NONE;
 
     {
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
