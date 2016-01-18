@@ -527,22 +527,22 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Argument must be either a FieldInfo or PropertyInfo"
         /// </summary>
-        internal static string ArgumentMustBeFieldInfoOrPropertInfo
+        internal static string ArgumentMustBeFieldInfoOrPropertyInfo
         {
             get
             {
-                return SR.ArgumentMustBeFieldInfoOrPropertInfo;
+                return SR.ArgumentMustBeFieldInfoOrPropertyInfo;
             }
         }
 
         /// <summary>
         /// A string like "Argument must be either a FieldInfo, PropertyInfo or MethodInfo"
         /// </summary>
-        internal static string ArgumentMustBeFieldInfoOrPropertInfoOrMethod
+        internal static string ArgumentMustBeFieldInfoOrPropertyInfoOrMethod
         {
             get
             {
-                return SR.ArgumentMustBeFieldInfoOrPropertInfoOrMethod;
+                return SR.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod;
             }
         }
 
