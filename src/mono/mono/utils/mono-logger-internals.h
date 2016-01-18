@@ -16,6 +16,7 @@ typedef enum {
 	MONO_TRACE_SECURITY		= (1<<6),
 	MONO_TRACE_THREADPOOL		= (1<<7),
 	MONO_TRACE_IO_THREADPOOL	= (1<<8),
+	MONO_TRACE_IO_LAYER		= (1<<9),
 	MONO_TRACE_ALL			= MONO_TRACE_ASSEMBLY |
 					  MONO_TRACE_TYPE |
 					  MONO_TRACE_DLLIMPORT |
@@ -24,17 +25,21 @@ typedef enum {
 					  MONO_TRACE_AOT |
 					  MONO_TRACE_SECURITY |
 					  MONO_TRACE_THREADPOOL |
-					  MONO_TRACE_IO_THREADPOOL
+					  MONO_TRACE_IO_THREADPOOL |
+					  MONO_TRACE_IO_LAYER
 } MonoTraceMask;
+
+extern GLogLevelFlags mono_internal_current_level;
+extern MonoTraceMask mono_internal_current_mask;
+
+void 
+mono_trace_init (void);
 
 void 
 mono_trace_cleanup (void);
 
 void 
-mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...);
-
-void 
-mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
+mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
 
 void 
 mono_trace_set_level (GLogLevelFlags level);
@@ -50,6 +55,33 @@ mono_trace_pop (void);
 
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
+
+G_GNUC_UNUSED static void
+mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
+{
+	if(G_UNLIKELY (level <= mono_internal_current_level && mask & mono_internal_current_mask))
+		mono_tracev_inner (level, mask, format, args);
+}
+
+/**
+ * mono_trace:
+ *
+ *	@level: Verbose level of the specified message
+ *	@mask: Type of the specified message
+ *
+ * Traces a new message, depending on the current logging level
+ * and trace mask.
+ */
+G_GNUC_UNUSED static void
+mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...) 
+{
+	if(G_UNLIKELY (level <= mono_internal_current_level && mask & mono_internal_current_mask)) {
+		va_list args;
+		va_start (args, format);
+		mono_tracev_inner (level, mask, format, args);
+		va_end (args);
+	}
+}
 
 #ifdef G_HAVE_ISO_VARARGS
 #define mono_trace_error(...)	mono_trace(G_LOG_LEVEL_ERROR, \
