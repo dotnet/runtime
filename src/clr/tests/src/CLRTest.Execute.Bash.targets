@@ -174,6 +174,14 @@ fi
         fi]]></Command>
         <Description>Run testcases under debugger.</Description>
       </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="coreroot">
+        <HasParam>true</HasParam>
+        <ParamText>=*</ParamText> <!-- Bash specific -->
+        <ParamName>coreRootFullPath</ParamName>
+        <Command><![CDATA[        CORE_ROOT="${i#*=}"]]></Command>
+        <Description>Set CORE_ROOT to the specified value before running the test.</Description>
+      </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
 
@@ -238,7 +246,7 @@ usage()
     echo "Usage: $0  $(_CLRTestParamList)"
     echo 
     echo "Arguments:"
-@(BatchCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
+@(BashCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
     echo      "%(Description)"', '
 ')
     echo "-?,-h,--help    show this message"
@@ -267,6 +275,8 @@ $(BashCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
         <![CDATA[
+cd "$%28dirname "$0")"
+
 # The __TestEnv variable may be used to specify something to run before the test.
 $__TestEnv
 
@@ -277,11 +287,11 @@ $(CrossgenBashScript)
 # IlasmRoundTrip Script
 $(IlasmRoundTripBashScript)
 # PreCommands
-$(_BashCLRTestPreCommands)
+$(BashCLRTestPreCommands)
 # Launch
 $(BashCLRTestLaunchCmds)
 # PostCommands
-$(_BashCLRTestPostCommands)
+$(BashCLRTestPostCommands)
 $(BashCLRTestExitCodeCheck)
       ]]>
       </_CLRTestExecutionScriptText>
