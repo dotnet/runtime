@@ -2543,12 +2543,12 @@ CORCOMPILE_FIXUP_BLOB_KIND CEECompileInfo::GetFieldBaseOffset(
 
     if (pMT->IsValueType())
     {
-        return (CORCOMPILE_FIXUP_BLOB_KIND)0;
+        return ENCODE_NONE;
     }
 
     if (pMT->GetParentMethodTable()->IsInheritanceChainLayoutFixedInCurrentVersionBubble())
     {
-        return (CORCOMPILE_FIXUP_BLOB_KIND)0;
+        return ENCODE_NONE;
     }
 
     if (pMT->HasLayout())
