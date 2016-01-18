@@ -10,7 +10,6 @@
       <TargetGroup>net462</TargetGroup>
     </Project>
     <Project Include="System.AppContext.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>

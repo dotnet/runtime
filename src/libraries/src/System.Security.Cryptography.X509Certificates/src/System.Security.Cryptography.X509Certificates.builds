@@ -12,7 +12,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>

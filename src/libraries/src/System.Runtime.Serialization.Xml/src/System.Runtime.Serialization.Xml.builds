@@ -4,11 +4,9 @@
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Xml.csproj" />
     <Project Include="System.Runtime.Serialization.Xml.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Serialization.Xml.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>

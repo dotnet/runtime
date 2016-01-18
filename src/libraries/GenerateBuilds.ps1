@@ -163,7 +163,7 @@ function GetConfigurations($projs, $srcDir, $projName)
       $target = $matches["tg"];
       $relPath = $proj.FullName.Replace($srcDir.FullName+"\", "");
 
-      if ($target -match "netcore.+") { $os = "Windows" }
+      #if ($target -match "netcore.+") { $os = "Windows" }
 
       if ($os -eq "Windows") { $os = "Windows_NT" }
 

@@ -18,7 +18,6 @@
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
