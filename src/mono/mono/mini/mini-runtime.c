@@ -2372,7 +2372,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			params [i] = nullable_buf;
 		}
 
-		if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
+		if (!t->byref && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
