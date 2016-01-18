@@ -3680,7 +3680,7 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     }
                     break;
 
-                case (CORCOMPILE_FIXUP_BLOB_KIND)0:
+                case ENCODE_NONE:
                     break;
 
                 default:
