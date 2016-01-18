@@ -328,16 +328,16 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Argument must be either a FieldInfo or PropertyInfo"
         /// </summary>
-        internal static Exception ArgumentMustBeFieldInfoOrPropertInfo()
+        internal static Exception ArgumentMustBeFieldInfoOrPropertyInfo()
         {
-            return new ArgumentException(Strings.ArgumentMustBeFieldInfoOrPropertInfo);
+            return new ArgumentException(Strings.ArgumentMustBeFieldInfoOrPropertyInfo);
         }
         /// <summary>
         /// ArgumentException with message like "Argument must be either a FieldInfo, PropertyInfo or MethodInfo"
         /// </summary>
-        internal static Exception ArgumentMustBeFieldInfoOrPropertInfoOrMethod()
+        internal static Exception ArgumentMustBeFieldInfoOrPropertyInfoOrMethod()
         {
-            return new ArgumentException(Strings.ArgumentMustBeFieldInfoOrPropertInfoOrMethod);
+            return new ArgumentException(Strings.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod);
         }
         /// <summary>
         /// ArgumentException with message like "Argument must be an instance member"
