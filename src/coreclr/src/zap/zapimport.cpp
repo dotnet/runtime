@@ -677,7 +677,7 @@ void ZapImportSectionSignatures::PlaceStubDispatchCell(ZapImport * pImport)
     {
         // Create the delay load helper
         ReadyToRunHelper helper = (ReadyToRunHelper)(READYTORUN_HELPER_DelayLoad_MethodCall | READYTORUN_HELPER_FLAG_VSD);
-        ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helper, (PVOID)m_dwIndex);
+        ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helper, (PVOID)(SIZE_T)m_dwIndex);
         pCell->SetDelayLoadHelper(pDelayLoadHelper);
     }
     else
@@ -778,7 +778,7 @@ void ZapImportSectionSignatures::PlaceExternalMethodCell(ZapImport * pImport)
     if (IsReadyToRunCompilation())
     {
         // Create the delay load helper
-        ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(READYTORUN_HELPER_DelayLoad_MethodCall, (PVOID)m_dwIndex);
+        ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(READYTORUN_HELPER_DelayLoad_MethodCall, (PVOID)(SIZE_T)m_dwIndex);
         pCell->SetDelayLoadHelper(pDelayLoadHelper);
     }
     else
@@ -1777,7 +1777,7 @@ void ZapImportSectionSignatures::PlaceDynamicHelperCell(ZapImport * pImport)
     ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(
         (CORCOMPILE_FIXUP_BLOB_KIND)(pCell->GetKind() & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE));
 
-    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)m_dwIndex, 
+    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)(SIZE_T)m_dwIndex, 
         (pCell->GetKind() & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) ? pCell : NULL);
 
     pCell->SetDelayLoadHelper(pDelayLoadHelper);
@@ -1901,6 +1901,7 @@ public:
     }
 };
 
+#ifdef _TARGET_ARM_
 static void MovRegImm(BYTE* p, int reg)
 {
     *(WORD *)(p + 0) = 0xF240;
@@ -1908,6 +1909,7 @@ static void MovRegImm(BYTE* p, int reg)
     *(WORD *)(p + 4) = 0xF2C0;
     *(WORD *)(p + 6) = (UINT16)(reg << 8);
 }
+#endif // _TARGET_ARM_
 
 DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 {
