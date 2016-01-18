@@ -4,11 +4,10 @@
   <ItemGroup>
     <Project Include="System.Runtime.Handles.csproj" />
     <Project Include="System.Runtime.Handles.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50aot</TargetGroup>      
+      <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Handles.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

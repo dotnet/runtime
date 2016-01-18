@@ -7,7 +7,6 @@
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Diagnostics.StackTrace.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
