@@ -8,7 +8,7 @@
     </Project>
     <Project Include="System.Xml.XmlSerializer.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>      
+      <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

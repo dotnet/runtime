@@ -41,7 +41,7 @@ function WriteBuilds($allConfigs, $srcDir, $projName)
 
     $configs += $config;
   }
-  
+
   #Write-Host $($srcDir.FullName +"\"+ $projName + ".builds")
   sc $($srcDir.FullName +"\"+ $projName + ".builds") $($header+$configs+$footer)
   #Write-Host $($header+$configs+$footer)
@@ -70,19 +70,19 @@ function GetDefaultConfiguration($projectConfigs, $projName)
 }
 
 function WriteDefaultConfiguration($defaultConfig, $proj, $pf)
-{  
+{
     if ($defaultConfig.os -ne $null -or $defaultConfig.target -ne $null)
     {
       $dc = "";
-      
-      if ($defaultConfig.os -ne $null) 
+
+      if ($defaultConfig.os -ne $null)
       {
         if ($defaultConfig.os -eq "Windows_NT")
         {
           $dc += "Windows_";
         }
-        else 
-        {  
+        else
+        {
           $dc += $defaultConfig.os + "_";
         }
       }
@@ -156,7 +156,7 @@ function GetConfigurations($projs, $srcDir, $projName)
     $pfcs = @();
 
     #CleanupProjects $proj $pf
-    
+
     $pf | ? { $_ -match "'(?<osg>Windows|Linux|OSX|FreeBSD)?_?(?<tg>net\d\d\d?|netcore\d\d|netcore\d\daot|dnxcore\d\d|dotnet\d\d)?_?Debug\|AnyCPU'" } | % {
 
       $os = $matches["osg"];
@@ -183,12 +183,12 @@ function GetConfigurations($projs, $srcDir, $projName)
   return $allConfigs | sort target, os;
 }
 
-$srcDirs = dir d:\git\corefx2\src\*\src
+$srcDirs = dir .\src\*\src
 
 foreach($srcDir in $srcDirs)
 {
 	#$srcDir.FullName
-	$projs = dir $srcDir -r -i *.csproj
+	$projs = dir $srcDir -r -i *.*proj
 
   if($projs.Count -eq 0) { Write-Host "Skipping $srcDir because it has no csproj files."; continue; }
 
