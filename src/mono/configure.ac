@@ -2098,6 +2098,16 @@ if test x$host_win32 = xno; then
 		[#include <sys/socket.h>])
 	AC_CHECK_TYPES([struct pollfd], [AC_DEFINE(HAVE_STRUCT_POLLFD)], ,
 		[#include <sys/poll.h>])
+	AC_CHECK_TYPES([struct sockaddr], [AC_DEFINE(HAVE_STRUCT_SOCKADDR)], ,
+		[#include <sys/socket.h>])
+	AC_CHECK_TYPES([struct sockaddr_storage], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE)], ,
+		[#include <sys/socket.h>])
+	AC_CHECK_TYPES([struct sockaddr_in], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN)], ,
+		[#include <netinet/in.h>])
+	AC_CHECK_TYPES([struct sockaddr_in6], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)], ,
+		[#include <netinet/in.h>])
+	AC_CHECK_TYPES([struct sockaddr_un], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_UN)], ,
+		[#include <sys/un.h>])
 	AC_CHECK_TYPES([struct stat], [AC_DEFINE(HAVE_STRUCT_STAT)], ,
 		[#include <sys/types.h>
 		 #include <sys/stat.h>
