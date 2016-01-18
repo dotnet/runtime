@@ -34,15 +34,12 @@
   </PropertyGroup>
 
   <Target Name="BatchRestorePackages">
-    <Message Importance="High" Text="Restoring all packages..." />
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
     <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
     <!-- include ToolsDir to restore test-runtime\project.json as well -->
     <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" />
 
-    <ItemGroup>
-      <_allPackagesConfigs Include="$(MSBuildProjectDirectory)\src\**\packages.config"/>
-    </ItemGroup>
-    <Exec Condition="'@(_allPackagesConfigs)' != ''" Command="$(NugetRestoreCommand) &quot;%(_allPackagesConfigs.FullPath)&quot;" StandardOutputImportance="Low" />
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
 
   <!-- Task from buildtools that validates dependencies contained in project.json files. -->

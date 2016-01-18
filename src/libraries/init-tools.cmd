@@ -1,11 +1,12 @@
 @echo off
 setlocal
 
-IF [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages\
-IF [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
+set INIT_TOOLS_LOG=%~dp0\init-tools.log
+if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages\
+if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
 set DOTNET_PATH=%TOOLRUNTIME_DIR%\dotnetcli\
-IF [%DOTNET_CMD%]==[] set DOTNET_CMD=%DOTNET_PATH%bin\dotnet.exe
-IF [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/
+if [%DOTNET_CMD%]==[] set DOTNET_CMD=%DOTNET_PATH%bin\dotnet.exe
+if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/
 set /P BUILDTOOLS_VERSION=< %~dp0BuildToolsVersion.txt
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set PROJECT_JSON_PATH=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
@@ -13,39 +14,49 @@ set PROJECT_JSON_FILE=%PROJECT_JSON_PATH%\project.json
 set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%BUILDTOOLS_VERSION%" }, "frameworks": { "dnxcore50": { } } }
 set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools.completed
 
-IF EXIST "%BUILD_TOOLS_SEMAPHORE%" goto :EOF
-IF EXIST %TOOLRUNTIME_DIR% RMDIR /S /Q "%TOOLRUNTIME_DIR%"
+:: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
+if [%1]==[force] (
+  if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
+  if exist "%PACKAGES_DIR%Microsoft.DotNet.BuildTools" rmdir /S /Q "%PACKAGES_DIR%Microsoft.DotNet.BuildTools"
+)
+
+:: If sempahore exists do nothing
+if exist "%BUILD_TOOLS_SEMAPHORE%" (
+  echo Tools are already initialized.
+  goto :EOF
+)
+
+mkdir "%PROJECT_JSON_PATH%"
+echo %PROJECT_JSON_CONTENTS% > %PROJECT_JSON_FILE%
+echo Running %0 > %INIT_TOOLS_LOG%
 
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
-echo **Installing dotnet cli at %DOTNET_PATH%
+echo Installing dotnet cli...
 mkdir "%DOTNET_PATH%"
-powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-win-x64.latest.zip', '%DOTNET_PATH%' + '\dotnet-win-x64.latest.zip')"
-powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_PATH%' + 'dotnet-win-x64.latest.zip').Items(),16)"
+set DOTNET_ZIP_NAME=dotnet-win-x64.latest.zip
+set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/%DOTNET_ZIP_NAME%
+set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
+echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> %INIT_TOOLS_LOG%
+powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); Add-Type -assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%')"
 
 :afterdotnetrestore
 
-echo **Creating semaphore file: %PROJECT_JSON_FILE%
-mkdir "%PROJECT_JSON_PATH%"
-echo %PROJECT_JSON_CONTENTS% > %PROJECT_JSON_FILE%
-echo **Finished creating semaphore file.
-
-IF EXIST "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
-echo **Installing build tools at %BUILD_TOOLS_PATH%
-echo Running: %DOTNET_CMD% restore %PROJECT_JSON_FILE% --packages %PACKAGES_DIR% --source %BUILDTOOLS_SOURCE%
-call %DOTNET_CMD% restore %PROJECT_JSON_FILE% --packages %PACKAGES_DIR% --source %BUILDTOOLS_SOURCE%
-IF NOT EXIST "%BUILD_TOOLS_PATH%init-tools.cmd" goto :errordownloadingbuildtools
-echo **Finished Installing build tools
+if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
+echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
+echo Running: "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> %INIT_TOOLS_LOG%
+call "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> %INIT_TOOLS_LOG%
+if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
+  echo ERROR: Could not restore build tools correctly. See '%INIT_TOOLS_LOG%' for more details.
+  goto :EOF
+)
 
 :afterbuildtoolsrestore
-echo **Calling %BUILD_TOOLS_PATH%init-tools.cmd
-echo Running: %BUILD_TOOLS_PATH%init-tools.cmd %~dp0 %DOTNET_CMD% %TOOLRUNTIME_DIR%
-call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%"
-echo **Finished calling %BUILD_TOOLS_PATH%init-tools.cmd
 
-echo Init-Tools.cmd completed> "%BUILD_TOOLS_SEMAPHORE%"
-goto :EOF
+echo Initializing BuildTools ...
+echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> %INIT_TOOLS_LOG%
+call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> %INIT_TOOLS_LOG%
 
-:errordownloadingbuildtools
-echo ERROR: Could not restore build tools correctly
-goto :EOF
+:: Create sempahore file
+echo Done initializing tools.
+echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
