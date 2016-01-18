@@ -493,7 +493,7 @@ void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
 
 char *
-mono_make_shadow_copy (const char *filename);
+mono_make_shadow_copy (const char *filename, MonoError *error);
 
 gboolean
 mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);

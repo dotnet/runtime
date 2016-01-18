@@ -1577,8 +1577,11 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 			"Assembly Loader probing location: '%s'.", fname);
 
 	new_fname = NULL;
-	if (!mono_assembly_is_in_gac (fname))
-		new_fname = mono_make_shadow_copy (fname);
+	if (!mono_assembly_is_in_gac (fname)) {
+		MonoError error;
+		new_fname = mono_make_shadow_copy (fname, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
 	if (new_fname && new_fname != fname) {
 		g_free (fname);
 		fname = new_fname;
