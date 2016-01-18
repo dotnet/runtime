@@ -9743,9 +9743,6 @@
       <Member Name="ReleaseAllData" />
       <Member Name="GetEventProvider(System.RuntimeType)" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Array+FunctorComparer&lt;T&gt;">
-      <Member Name="Compare(T,T)" />
-    </Type>
     <Type Status="ImplRoot" Name="System.BCLDebug">
       <Member Name="GetRegistryLoggingValues(System.Boolean@,System.Boolean@,System.Int32@,System.Boolean@,System.Boolean@,System.Boolean@)" /> <!-- EE -->
     </Type>
