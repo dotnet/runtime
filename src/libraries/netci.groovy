@@ -275,7 +275,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.
             if (isPR) {
                 // Set PR trigger.
                 // Set of OS's that work currently. 
-                if (os in ['Ubuntu', 'CentOS7.1']) {
+                if (os in ['Ubuntu', 'OpenSUSE13.2', 'CentOS7.1']) {
                     Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
                 }
                 else {
