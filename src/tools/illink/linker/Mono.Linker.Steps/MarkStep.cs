@@ -141,8 +141,11 @@ namespace Mono.Linker.Steps {
 
 		void ProcessVirtualMethods ()
 		{
-			foreach (MethodDefinition method in _virtual_methods)
+			foreach (MethodDefinition method in _virtual_methods) {
+				Annotations.Push (method);
 				ProcessVirtualMethod (method);
+				Annotations.Pop ();
+			}
 		}
 
 		void ProcessVirtualMethod (MethodDefinition method)
@@ -193,17 +196,21 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
+			Annotations.Push (ca);
 			MarkMethod (ca.Constructor);
 
 			MarkCustomAttributeArguments (ca);
 
 			TypeReference constructor_type = ca.Constructor.DeclaringType;
 			TypeDefinition type = constructor_type.Resolve ();
-			if (type == null)
+			if (type == null) {
+				Annotations.Pop ();
 				throw new ResolutionException (constructor_type);
+			}
 
 			MarkCustomAttributeProperties (ca, type);
 			MarkCustomAttributeFields (ca, type);
+			Annotations.Pop ();
 		}
 
 		protected void MarkSecurityDeclarations (ISecurityDeclarationProvider provider)
@@ -268,10 +275,12 @@ namespace Mono.Linker.Steps {
 		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute)
 		{
 			PropertyDefinition property = GetProperty (attribute, namedArgument.Name);
+			Annotations.Push (property);
 			if (property != null)
 				MarkMethod (property.SetMethod);
 
 			MarkIfType (namedArgument.Argument);
+			Annotations.Pop ();
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -634,8 +643,10 @@ namespace Mono.Linker.Steps {
 				if (property.Name != property_name)
 					continue;
 
+				Annotations.Push (property);
 				MarkMethod (property.GetMethod);
 				MarkMethod (property.SetMethod);
+				Annotations.Pop ();
 			}
 		}
 
@@ -695,8 +706,11 @@ namespace Mono.Linker.Steps {
 		void MarkMethodsIf (ICollection methods, MethodPredicate predicate)
 		{
 			foreach (MethodDefinition method in methods)
-				if (predicate (method))
+				if (predicate (method)) {
+					Annotations.Push (predicate);
 					MarkMethod (method);
+					Annotations.Pop ();
+				}
 		}
 
 		static MethodPredicate IsDefaultConstructorPredicate = new MethodPredicate (IsDefaultConstructor);
@@ -906,6 +920,7 @@ namespace Mono.Linker.Steps {
 			EnqueueMethod (method);
 
 			Annotations.Pop ();
+			Annotations.AddDependency (method);
 
 			return method;
 		}
@@ -944,6 +959,7 @@ namespace Mono.Linker.Steps {
 			if (CheckProcessed (method))
 				return;
 
+			Annotations.Push (method);
 			MarkType (method.DeclaringType);
 			MarkCustomAttributes (method);
 			MarkSecurityDeclarations (method);
@@ -987,6 +1003,7 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (method);
 
 			ApplyPreserveMethods (method);
+			Annotations.Pop ();
 		}
 
 		// Allow subclassers to mark additional things when marking a method
