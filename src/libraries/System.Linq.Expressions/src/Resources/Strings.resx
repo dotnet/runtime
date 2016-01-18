@@ -267,10 +267,10 @@
   <data name="EqualityMustReturnBoolean" xml:space="preserve">
     <value>The user-defined equality method '{0}' must return a boolean value.</value>
   </data>
-  <data name="ArgumentMustBeFieldInfoOrPropertInfo" xml:space="preserve">
+  <data name="ArgumentMustBeFieldInfoOrPropertyInfo" xml:space="preserve">
     <value>Argument must be either a FieldInfo or PropertyInfo</value>
   </data>
-  <data name="ArgumentMustBeFieldInfoOrPropertInfoOrMethod" xml:space="preserve">
+  <data name="ArgumentMustBeFieldInfoOrPropertyInfoOrMethod" xml:space="preserve">
     <value>Argument must be either a FieldInfo, PropertyInfo or MethodInfo</value>
   </data>
   <data name="ArgumentMustBeInstanceMember" xml:space="preserve">

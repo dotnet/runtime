@@ -365,7 +365,7 @@ namespace System.Linq.Expressions
                 memberType = prop.PropertyType;
                 return;
             }
-            throw Error.ArgumentMustBeFieldInfoOrPropertInfoOrMethod();
+            throw Error.ArgumentMustBeFieldInfoOrPropertyInfoOrMethod();
         }
 
         private static void ValidateConstructor(ConstructorInfo constructor)
