@@ -290,6 +290,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	g_assert (klass->delegate);
 
 	method = delegate->method;
+	if (delegate->method_is_virtual)
+		method = mono_object_get_virtual_method (delegate->target, method);
 
 	if (mono_method_signature (method)->pinvoke) {
 		const char *exc_class, *exc_arg;

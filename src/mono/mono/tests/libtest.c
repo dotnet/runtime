@@ -1109,6 +1109,14 @@ mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
 	return (d ()) (55);
 }
 
+typedef int (STDCALL *VirtualDelegate) (int);
+
+LIBTEST_API int STDCALL
+mono_test_marshal_virtual_delegate (VirtualDelegate del)
+{
+	return del (42);
+}
+
 LIBTEST_API int STDCALL  
 mono_test_marshal_stringbuilder (char *s, int n)
 {
