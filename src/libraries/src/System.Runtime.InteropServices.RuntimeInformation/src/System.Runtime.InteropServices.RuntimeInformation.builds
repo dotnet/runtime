@@ -18,11 +18,9 @@
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>

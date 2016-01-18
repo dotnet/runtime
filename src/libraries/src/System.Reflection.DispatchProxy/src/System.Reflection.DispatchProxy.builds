@@ -4,7 +4,6 @@
   <ItemGroup>
     <Project Include="System.Reflection.DispatchProxy.csproj" />
     <Project Include="facade\System.Reflection.DispatchProxy.csproj">
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
