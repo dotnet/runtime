@@ -16,8 +16,7 @@ namespace System
             HasLookedForOverride = 0x4,
             UnknownValue = 0x8 // Has no default and could not find an override
         }
-        private static Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
-        private static readonly object s_syncLock = new object();
+        private static readonly Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
 
         public static string BaseDirectory
         {
@@ -157,11 +156,13 @@ namespace System
             if (switchName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "switchName");
 
-            lock (s_syncLock)
+            SwitchValueState switchValue = (isEnabled ? SwitchValueState.HasTrueValue : SwitchValueState.HasFalseValue)
+                                            | SwitchValueState.HasLookedForOverride;
+
+            lock (s_switchMap)
             {
                 // Store the new value and the fact that we checked in the dictionary
-                s_switchMap[switchName] = (isEnabled ? SwitchValueState.HasTrueValue : SwitchValueState.HasFalseValue)
-                                            | SwitchValueState.HasLookedForOverride;
+                s_switchMap[switchName] = switchValue;
             }
         }
 
