@@ -289,7 +289,7 @@ namespace System {
         // stream.MethodThatSpansGCs, thus closing a stream still in use."
         //
         // If we insert a call to GC.KeepAlive(this) at the end of Problem(), then
-        // Foo doesn't get finalized and the stream says open.
+        // Foo doesn't get finalized and the stream stays open.
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // disable optimizations
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void KeepAlive(Object obj)
