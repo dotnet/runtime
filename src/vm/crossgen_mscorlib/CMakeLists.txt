@@ -12,4 +12,4 @@ add_definitions(
 
 add_definitions(-DCROSSGEN_MSCORLIB)
 
-add_library(mscorlib_crossgen ../mscorlib.cpp)
+add_library_clr(mscorlib_crossgen ../mscorlib.cpp)

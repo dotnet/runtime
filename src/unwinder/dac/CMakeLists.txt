@@ -30,4 +30,4 @@ else()
   clr_unknown_arch()
 endif()
 
-add_library(unwinder_dac ${UNWINDER_SOURCES})
+add_library_clr(unwinder_dac ${UNWINDER_SOURCES})
