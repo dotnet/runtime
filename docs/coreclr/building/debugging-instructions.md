@@ -7,14 +7,15 @@ Debugging CoreCLR on Windows
 ============================
 
 1. Perform a build of the repo.
-2. Open <repo_root>\binaries\Cmake\CoreCLR.sln in VS.
+2. Open \<repo_root\>\bin\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in VS. \<platform\> and \<configurtion\> are based
+    on type of build you did. By default they are 'x64' and 'Debug'.
 3. Right click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
 5. Select Configuration Properties->Debugging from the left side tree control
-6. Set Command=`$(SolutionDir)..\product\$(Platform)\$(Configuration)\corerun.exe`
+6. Set Command=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)\corerun.exe`
 	1. This points to the folder where the built runtime binaries are present.
 7. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.exe)
-8. Set Working Directory=`$(SolutionDir)..\product\$(Platform)\$(Configuration)`
+8. Set Working Directory=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)`
 	1. This points to the folder containing CoreCLR binaries.
 9. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
 	1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
