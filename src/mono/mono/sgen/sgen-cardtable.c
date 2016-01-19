@@ -342,6 +342,29 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_
 		*out_num_cards = num_cards;
 }
 
+/* Preclean cards and saves the cards that need to be scanned afterwards in cards_preclean */
+void
+sgen_card_table_preclean_mod_union (guint8 *cards, guint8 *cards_preclean, size_t num_cards)
+{
+	size_t i;
+
+	memcpy (cards_preclean, cards, num_cards);
+	for (i = 0; i < num_cards; i++) {
+		if (cards_preclean [i]) {
+			cards [i] = 0;
+		}
+	}
+	/*
+	 * When precleaning we need to make sure the card cleaning
+	 * takes place before the object is scanned. If we don't
+	 * do this we could finish scanning the object and, before
+	 * the cleaning of the card takes place, another thread
+	 * could dirty the object, mark the mod_union card only for
+	 * us to clean it back, without scanning the object again.
+	 */
+	mono_memory_barrier ();
+}
+
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 static void
@@ -426,11 +449,11 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 	sgen_card_table_clear_cards ();
 #endif
 	SGEN_TV_GETTIME (atv);
-	sgen_get_major_collector ()->scan_card_table (FALSE, ctx);
+	sgen_get_major_collector ()->scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx);
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
-	sgen_los_scan_card_table (FALSE, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx);
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
@@ -477,11 +500,11 @@ sgen_card_table_dump_obj_card (GCObject *object, size_t size, void *dummy)
 #endif
 
 void
-sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
+sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx)
 {
 	HEAVY_STAT (++large_objects);
 
-	if (sgen_client_cardtable_scan_object (obj, block_obj_size, cards, mod_union, ctx))
+	if (sgen_client_cardtable_scan_object (obj, block_obj_size, cards, ctx))
 		return;
 
 	HEAVY_STAT (++bloby_objects);
