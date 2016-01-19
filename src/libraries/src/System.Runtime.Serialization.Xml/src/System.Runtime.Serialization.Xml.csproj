@@ -14,20 +14,34 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <ProjectJson>netcore50aot\project.json</ProjectJson>
     <ProjectLockJson>netcore50aot\project.lock.json</ProjectLockJson>
   </PropertyGroup>
-
+  
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'" >
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.DataContractSerialization" />
+  </ItemGroup>
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <TargetingPackReference Include="System.Private.DataContractSerialization" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
     <ProjectReference Include="$(SourceDir)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
   </ItemGroup>
-
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50' OR '$(TargetGroup)' == ''" >  
+    <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup> 
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'" >
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Runtime.Serialization" />
+    <Compile Include="$(SourceDir)System.Private.DataContractSerialization\src\System\Runtime\Serialization\DataContractSerializerExtensions.Desktop.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
