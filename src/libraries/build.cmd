@@ -23,16 +23,17 @@ if not defined VisualStudioVersion (
 )
 
 :CheckNative
+
+call init-tools.cmd
+
 :: Run the Native Windows build
-echo Building Native Libraries...
+echo [%time%] Building Native Libraries...
 call %~dp0src\native\Windows\build-native.cmd %* >nativebuild.log
 IF ERRORLEVEL 1 (
     echo Native component build failed see nativebuild.log for more details.
 )
 
 :EnvSet
-
-call init-tools.cmd
 
 :: Clear the 'Platform' env variable for this session,
 :: as it's a per-project setting within the build, and
@@ -50,12 +51,13 @@ call :build %*
 :: Build
 set _buildprefix=
 set _buildpostfix=
+echo [%time%] Building Managed Libraries...
 call :build %*
 
 goto :AfterBuild
 
 :build
-%_buildprefix% msbuild "%_buildproj%" /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%_buildlog%";Append %* %_buildpostfix%
+%_buildprefix% msbuild "%_buildproj%" /nologo /maxcpucount /v:minimal /clp:Summary /nodeReuse:false /flp:v=normal;LogFile="%_buildlog%";Append %* %_buildpostfix%
 set BUILDERRORLEVEL=%ERRORLEVEL%
 goto :eof
 
@@ -64,6 +66,6 @@ goto :eof
 echo.
 :: Pull the build summary from the log file
 findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%_buildlog%"
-echo Build Exit Code = %BUILDERRORLEVEL%
+echo [%time%] Build Exit Code = %BUILDERRORLEVEL%
 
 exit /b %BUILDERRORLEVEL%
