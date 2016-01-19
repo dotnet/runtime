@@ -17,10 +17,21 @@ def static getOSGroup(def os) {
     return osGroupMap[os]
 }
 
+// We use this class (vs variables) so that the static functions can access data here.
 class Constants {
     // Innerloop build OS's
     def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
     def static crossList = ['Ubuntu', 'OSX']
+    // This is a set of JIT stress modes combined with the set of variables that
+    // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
+    // the values are the environment variables
+    def static jitStressModeScenarios = ['minopts' : ['COMPLUS_JitMinOpts' : '1']]
+    // This is the basic set of scenarios
+    def static basicScenarios = ['default', 'pri1', 'ilrt']
+    // This is the set of configurations
+    def static configurationList = ['Debug', 'Checked', 'Release']
+    // This is the set of architectures
+    def static architectureList = ['arm', 'arm64', 'x64', 'x86']
 }
 
 def static setMachineAffinity(def job, def os, def architecture) {
@@ -34,6 +45,28 @@ def static setMachineAffinity(def job, def os, def architecture) {
     }
 }
 
+// Generates the string for creating a file that sets environment variables
+// that makes it possible to run stress modes.  Writes the script to a file called
+// SetStressModes.[sh/cmd]
+def static genStressModeScriptStep(def os, def stressModeName, def stressModeVars, def stepScriptLocation) {
+    def stepScript = ''
+    if (os == 'Windows_NT') {
+        stepScript += "echo Creating TestEnv Script for ${stressModeName}\r\n"
+        stepScript += "del ${stepScriptLocation}\r\n"
+        stressModeVars.each{ k, v -> 
+            // Write out what we are writing to the script file
+            stepScript += "echo Setting ${k}=${v}\r\n"
+            // Write out the set itself to the script file`
+            stepScript += "echo set ${k}=${v} >> ${stepScriptLocation}\r\n"
+        }
+    }
+    else {
+        println("Unknown OS while creating testenv script step: ${os}")
+        assert false
+    }
+    return stepScript
+}
+
 // Calculates the name of the build job based on some typical parameters.
 def static getBuildJobName(def configuration, def architecture, def os, def scenario) {
     // If the architecture is x64, do not add that info into the build name.
@@ -44,8 +77,13 @@ def static getBuildJobName(def configuration, def architecture, def os, def scen
     def baseName = ''
     switch (architecture) {
         case 'x64':
-            // For now we leave x64 off of the name for compatibility with other jobs
-            baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
+            if (scenario == 'default') {
+                // For now we leave x64 off of the name for compatibility with other jobs
+                baseName = configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
+            else {
+                baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
             break
         case 'arm64':
         case 'arm':
@@ -116,6 +154,10 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         Utilities.addPeriodicTrigger(job, '@daily')
                     }
                 }
+                break
+            case 'minopts':
+                assert (os == 'Windows_NT') || (os in Constants.crossList)
+                Utilities.addPeriodicTrigger(job, '@daily')
                 break
             default:
                 println("Unknown scenario: ${scenario}");
@@ -195,6 +237,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                                 Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
                             }
                             break
+                        case 'minopts':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
+                               "(?i).*test\\W+${os}\\W+minopts.*")
+                            break
                         default:
                             println("Unknown scenario: ${scenario}");
                             assert false
@@ -248,31 +295,30 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
 }
 
 // Additional scenario which can alter behavior
-['default', 'pri1', 'ilrt'].each { scenario ->
+
+def combinedScenarios = Constants.basicScenarios + Constants.jitStressModeScenarios.keySet()
+combinedScenarios.each { scenario ->
     [true, false].each { isPR ->
-        ['arm', 'arm64', 'x64', 'x86'].each { architecture ->
-            ['Debug', 'Checked', 'Release'].each { configuration ->
+        Constants.architectureList.each { architecture ->
+            Constants.configurationList.each { configuration ->
                 Constants.osList.each { os ->
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
                             // Windows or cross compiled Ubuntu
                             if (os != 'Windows_NT' && os != 'Ubuntu') {
-                                println("Skipping ${os} ${architecture}")
                                 return
                             }
                             break
                         case 'arm':
                             // Only Ubuntu cross implemented
                             if (os != 'Ubuntu') {
-                                println("Skipping ${os} ${architecture}")
                                 return
                             }
                             break
                         case 'x86':
                             // Skip non-windows
                             if (os != 'Windows_NT') {
-                                println("Skipping ${os} ${architecture}")
                                 return
                             }
                             break
@@ -285,35 +331,55 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             break
                     }
 
-                    // Skip scenarios
-                    switch (scenario) {
-                        case 'pri1':
-                            // The pri1 build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
-                            if (os != 'Windows_NT' && !(os in Constants.crossList)) {
-                                return
-                            }
-                            // Only x64 for now
-                            if (architecture != 'x64') {
-                                return
-                            }
-                            break
-                        case 'ilrt':
-                            // The ilrt build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
-                            if (os != 'Windows_NT' && !(os in Constants.crossList)) {
-                                return
-                            }
-                            // Only x64 for now
-                            if (architecture != 'x64') {
-                                return
-                            }
-                            break
-                        case 'default':
-                            // Nothing skipped
-                            break
-                        default:
-                            println("Unknown scenario: ${scenario}")
-                            assert false
-                            break
+                    // Skip scenarios (blanket skipping for jit stress modes, which are good most everywhere
+                    // with checked builds
+                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                        if (configuration != 'Checked') {
+                            return
+                        }
+                        
+                        // Since these are just execution time differences,
+                        // skip platforms that don't execute the tests here (Windows_NT only)
+                        if (os != 'Windows_NT') {
+                            return
+                        }
+                        
+                        // No stress modes except on x64 right now (mainly because of bad test state on x86)
+                        if (architecture != 'x64') {
+                            return
+                        }
+                    }
+                    else {
+                        // Skip scenarios
+                        switch (scenario) {
+                            case 'pri1':
+                                // The pri1 build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
+                                if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                    return
+                                }
+                                // Only x64 for now
+                                if (architecture != 'x64') {
+                                    return
+                                }
+                                break
+                            case 'ilrt':
+                                // The ilrt build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
+                                if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                    return
+                                }
+                                // Only x64 for now
+                                if (architecture != 'x64') {
+                                    return
+                                }
+                                break
+                            case 'default':
+                                // Nothing skipped
+                                break
+                            default:
+                                println("Unknown scenario: ${scenario}")
+                                assert false
+                                break
+                        }
                     }
                 
                     // Calculate names
@@ -337,26 +403,34 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
-                                    switch (scenario) {
-                                        case 'default':
-                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
-                                            break
-                                        case 'pri1':
-                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture} Priority 1"
-                                            break
-                                        case 'ilrt':
-                                            // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
-                                            buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
-                                            buildCommands += "test\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
-                                            break
-                                        default:
-                                            println("Unknown scenario: ${scenario}")
-                                            assert false
-                                            break
+                                    if (scenario == 'default' || Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
+                                    }
+                                    else if (scenario == 'pri1') {
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} Priority 1"
+                                    }
+                                    else if (scenario == 'ilrt') {
+                                        // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
+                                        buildCommands += "test\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
+                                    }
+                                    else {
+                                        println("Unknown scenario: ${scenario}")
+                                        assert false
                                     }
                                     
-                                    // TEMPORARY. Don't run tests for PR jobs on x86
-                                    if (architecture == 'x64' || !isPR) {
+                                    // If we are running a stress mode, we should write out the set of key
+                                    // value env pairs to a file at this point and then we'll pass that to runtest.cmd
+                                    
+                                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                        def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
+                                        buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
+                                        
+                                        // Run tests with the 
+                                        
+                                        buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
+                                    }
+                                    else if (architecture == 'x64' || !isPR) {
                                         buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
                                     }
                                 
@@ -461,13 +535,13 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
 } // scenario
 
 // Create the Linux/OSX coreclr test leg for debug and release and each scenario
-['default', 'pri1', 'ilrt'].each { scenario ->
+Constants.basicScenarios.each { scenario ->
     [true, false].each { isPR ->
         // Architectures.  x64 only at this point
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
             Constants.crossList.each { os ->
-                ['Debug', 'Checked', 'Release'].each { configuration ->
+                Constants.configurationList.each { configuration ->
                     
                     // Skip scenarios
                     switch (scenario) {
