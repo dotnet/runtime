@@ -29,14 +29,14 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
   goto :EOF
 )
 
-mkdir "%PROJECT_JSON_PATH%"
+if NOT exist "%PROJECT_JSON_PATH%" mkdir "%PROJECT_JSON_PATH%"
 echo %PROJECT_JSON_CONTENTS% > %PROJECT_JSON_FILE%
 echo Running %0 > %INIT_TOOLS_LOG%
 
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
 echo Installing dotnet cli...
-mkdir "%DOTNET_PATH%"
+if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
 set /p DOTNET_VERSION=< %~dp0DotnetCLIVersion.txt
 set DOTNET_ZIP_NAME=dotnet-win-x64.%DOTNET_VERSION%.zip
 set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
