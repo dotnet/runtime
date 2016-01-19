@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -104,15 +105,32 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(4605, PlatformID.OSX)]
+        /// <summary>
+        /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
+        /// If the test is being run under the superuser, however, modification of a ReadOnly
+        /// file is allowed.
+        /// </summary>
         [Fact]
-        public void WriteToReadOnlyFile_UnauthException()
+        public void WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
             File.SetAttributes(path, FileAttributes.ReadOnly);
-            Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text")));
-            File.SetAttributes(path, FileAttributes.Normal);
+            try
+            {
+                // Operation succeeds when being run by the Unix superuser
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                {
+                    File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
+                    Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));
+                }
+                else
+                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text")));
+            }
+            finally
+            {
+                File.SetAttributes(path, FileAttributes.Normal);
+            }
         }
     }
 }
