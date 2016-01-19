@@ -212,6 +212,12 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
 * [Developer Guide](Documentation/project-docs/developer-guide.md)
 * [Issue Guide](Documentation/project-docs/issue-guide.md)
 
+We've also started to share some of our direction via more higher-level documentation, specifically:
+
+* [Road to RTM](Documentation/project-docs/rtm.md)
+* [How we triage](Documentation/project-docs/triage.md)
+* [Porting to .NET Core](Documentation/project-docs/porting.md)
+
 You are also encouraged to start a discussion by filing an issue or creating a
 gist.
 
