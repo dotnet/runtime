@@ -495,7 +495,8 @@ typedef enum {
 typedef struct {
 	gint16 offset;
 	gint8  reg;
-	ArgStorage storage;
+	ArgStorage storage : 8;
+	gboolean is_gsharedvt_return_value : 1;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
@@ -503,6 +504,8 @@ typedef struct {
 	/* The size of each pair */
 	int pair_size [2];
 	int nregs;
+	/* Only if storage == ArgOnStack */
+	int arg_size;
 } ArgInfo;
 
 typedef struct {
@@ -537,6 +540,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 
     if (*gr >= PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
+		ainfo->arg_size = sizeof (mgreg_t);
 		/* Since the same stack slot size is used for all arg */
 		/*  types, it needs to be big enough to hold them all */
 		(*stack_size) += sizeof(mgreg_t);
@@ -561,6 +565,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 
     if (*gr >= FLOAT_PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
+		ainfo->arg_size = sizeof (mgreg_t);
 		/* Since the same stack slot size is used for both float */
 		/*  types, it needs to be big enough to hold them both */
 		(*stack_size) += sizeof(mgreg_t);
@@ -771,6 +776,8 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+		if (!is_return)
+			ainfo->arg_size = ALIGN_TO (size, 8);
 
 		g_free (fields);
 		return;
@@ -815,6 +822,7 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				else {
 					ainfo->pair_storage [0] = ArgOnStack;
 					ainfo->offset = *stack_size;
+					ainfo->arg_size = sizeof (mgreg_t);
 					*stack_size += 8;
 				}
 			}
@@ -899,6 +907,8 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			ainfo->offset = *stack_size;
 			*stack_size += sizeof (mgreg_t);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = sizeof (mgreg_t);
 		}
 	}
 }
@@ -969,6 +979,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+		if (!is_return)
+			ainfo->arg_size = ALIGN_TO (size, 8);
 
 		g_free (fields);
 		return;
@@ -1011,6 +1023,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			ainfo->offset = *stack_size;
 			*stack_size += ALIGN_TO (info->native_size, 8);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = ALIGN_TO (info->native_size, 8);
 
 			g_free (fields);
 			return;
@@ -1109,16 +1123,20 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		}
 
 		if ((args [0] == ARG_CLASS_MEMORY) || (args [1] == ARG_CLASS_MEMORY)) {
+			int arg_size;
 			/* Revert possible register assignments */
 			*gr = orig_gr;
 			*fr = orig_fr;
 
 			ainfo->offset = *stack_size;
 			if (sig->pinvoke)
-				*stack_size += ALIGN_TO (info->native_size, 8);
+				arg_size = ALIGN_TO (info->native_size, 8);
 			else
-				*stack_size += nquads * sizeof(mgreg_t);
+				arg_size = nquads * sizeof(mgreg_t);
+			*stack_size += arg_size;
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
+			if (!is_return)
+				ainfo->arg_size = arg_size;
 		}
 	}
 #endif /* !TARGET_WIN32 */
@@ -1198,6 +1216,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 		if (mini_is_gsharedvt_type (ret_type)) {
 			cinfo->ret.storage = ArgValuetypeAddrInIReg;
+			cinfo->ret.is_gsharedvt_return_value = 1;
 			break;
 		}
 		/* fall through */
@@ -1213,6 +1232,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	case MONO_TYPE_MVAR:
 		g_assert (mini_is_gsharedvt_type (ret_type));
 		cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		cinfo->ret.is_gsharedvt_return_value = 1;
 		break;
 	case MONO_TYPE_VOID:
 		break;
@@ -1461,6 +1481,9 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
 	mono_aot_register_jit_icall ("mono_amd64_resume_unwind", mono_amd64_resume_unwind);
 	mono_aot_register_jit_icall ("mono_amd64_get_original_ip", mono_amd64_get_original_ip);
+#if defined(ENABLE_GSHAREDVT)
+	mono_aot_register_jit_icall ("mono_amd64_start_gsharedvt_call", mono_amd64_start_gsharedvt_call);
+#endif
 
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
@@ -1896,6 +1919,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInDoubleSSEReg:
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cinfo->ret.reg;
+			cfg->ret->dreg = cinfo->ret.reg;
 			break;
 		case ArgValuetypeAddrInIReg:
 			/* The register is volatile */
@@ -1928,7 +1952,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		default:
 			g_assert_not_reached ();
 		}
-		cfg->ret->dreg = cfg->ret->inst_c0;
 	}
 
 	/* Allocate locals */
@@ -2038,7 +2061,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgGSharedVtOnStack)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
@@ -2365,6 +2388,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 
 		t = mini_get_underlying_type (t);
+		//XXX what about ArgGSharedVtOnStack here?
 		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call) {
 			if (!t->byref) {
 				if (t->type == MONO_TYPE_R4)
@@ -2426,6 +2450,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call)
 				/* Already emitted above */
 				break;
+			//FIXME what about ArgGSharedVtOnStack ?
 			if (ainfo->storage == ArgOnStack && call->tail_call) {
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
@@ -2604,7 +2629,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		mono_call_inst_add_outarg_reg (cfg, call, src->dreg, ainfo->reg, FALSE);
 		break;
 	case ArgGSharedVtOnStack:
-		g_assert_not_reached ();
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, src->dreg);
 		break;
 	default:
 		if (size == 8) {
@@ -7239,6 +7264,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (ainfo->pair_storage [0] == ArgInIReg)
 					amd64_mov_membase_reg (code, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, ainfo->pair_regs [0],  sizeof (gpointer));
 				break;
+			case ArgGSharedVtInReg:
+				amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg, 8);
+				break;
 			default:
 				break;
 			}
@@ -8816,4 +8844,4 @@ mono_arch_opcode_supported (int opcode)
 
 #include "../../../mono-extensions/mono/mini/mini-amd64-gsharedvt.c"
 
-#endif /* !MONOTOUCH */
+#endif /* !ENABLE_GSHAREDVT */

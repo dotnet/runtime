@@ -2141,6 +2141,22 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 #endif
 }
 
+
+#if defined (TARGET_AMD64)
+
+static void
+amd64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
+{
+
+	g_assert (acfg->fp);
+	emit_unset_mode (acfg);
+
+	fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
+}
+
+#endif
+
+
 /*
  * arch_emit_gsharedvt_arg_trampoline:
  *
@@ -2206,6 +2222,14 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + 4);
 #elif defined(TARGET_ARM64)
 	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
+#elif defined (TARGET_AMD64)
+
+	amd64_emit_load_got_slot (acfg, AMD64_RAX, offset);
+	amd64_emit_load_got_slot (acfg, MONO_ARCH_IMT_SCRATCH_REG, offset + 1);
+	g_assert (AMD64_R11 == MONO_ARCH_IMT_SCRATCH_REG);
+	fprintf (acfg->fp, "jmp *%%r11\n");
+
+	*tramp_size = 0x11;
 #else
 	g_assert_not_reached ();
 #endif

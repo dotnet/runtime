@@ -966,6 +966,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	amd64_ret (code);
 
 	mono_arch_flush_icache (code, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 	g_assert (code - buf <= tramp_size);
 
 	const char *tramp_name = single_step ? "sdb_single_step_trampoline" : "sdb_breakpoint_trampoline";
@@ -977,5 +978,28 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 #if defined(ENABLE_GSHAREDVT) && defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 
 #include "../../../mono-extensions/mono/mini/tramp-amd64-gsharedvt.c"
+
+#else
+
+gpointer
+mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	*info = NULL;
+	return NULL;
+}
 
 #endif /* !ENABLE_GSHAREDVT */
