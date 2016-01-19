@@ -4409,9 +4409,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		}
 
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
+			MonoMethod *shared;
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
-			method_index = find_aot_method (mini_get_shared_method_full (method, TRUE, TRUE), &amodule);
+			shared = mini_get_shared_method_full (method, TRUE, TRUE);
+			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff)
 				method = mini_get_shared_method_full (method, TRUE, FALSE);
 		}
