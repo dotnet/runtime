@@ -285,19 +285,7 @@ namespace System.IO {
             return new ManualResetEvent(false);
         }
 
-        internal virtual bool OverridesBeginEnd 
-        { 
-            get 
-            {
-#if FEATURE_CORECLR
-                return false; // methods aren't exposed outside of mscorlib
-#else
-                return true; // have to assume they are overridden as they're exposed
-#endif
-            }
-        }
-
-            [HostProtection(ExternalThreading=true)]
+        [HostProtection(ExternalThreading=true)]
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
             Contract.Ensures(Contract.Result<IAsyncResult>() != null);
@@ -438,9 +426,13 @@ namespace System.IO {
                         : BeginEndReadAsync(buffer, offset, count);
         }
 
+        [System.Security.SecuritySafeCritical]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private extern bool HasOverridenBeginEndRead();
+
         private Task<Int32> BeginEndReadAsync(Byte[] buffer, Int32 offset, Int32 count)
         {
-            if (!OverridesBeginEnd)
+            if (!HasOverridenBeginEndRead())
             {
                 return (Task<Int32>)BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
@@ -751,6 +743,8 @@ namespace System.IO {
             return WriteAsync(buffer, offset, count, CancellationToken.None);
         }
 
+
+
         [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -762,10 +756,13 @@ namespace System.IO {
                         : BeginEndWriteAsync(buffer, offset, count);
         }
 
+        [System.Security.SecuritySafeCritical]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private extern bool HasOverridenBeginEndWrite();
 
         private Task BeginEndWriteAsync(Byte[] buffer, Int32 offset, Int32 count)
         {
-            if (!OverridesBeginEnd)
+            if (!HasOverridenBeginEndWrite())
             {
                 return (Task)BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
