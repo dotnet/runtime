@@ -125,18 +125,15 @@ mono_jit_info_table_free (MonoJitInfoTable *table)
 
 	for (i = 0; i < num_chunks; ++i) {
 		MonoJitInfoTableChunk *chunk = table->chunks [i];
-		int num_elements;
-		int j;
+		MonoJitInfo *tombstone;
 
 		if (--chunk->refcount > 0)
 			continue;
 
-		num_elements = chunk->num_elements;
-		for (j = 0; j < num_elements; ++j) {
-			MonoJitInfo *ji = chunk->data [j];
-
-			if (IS_JIT_INFO_TOMBSTONE (ji))
-				g_free (ji);
+		for (tombstone = chunk->next_tombstone; tombstone; ) {
+			MonoJitInfo *next = tombstone->n.next_tombstone;
+			g_free (tombstone);
+			tombstone = next;
 		}
 
 		g_free (chunk);
@@ -657,13 +654,15 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 }
 
 static MonoJitInfo*
-mono_jit_info_make_tombstone (MonoJitInfo *ji)
+mono_jit_info_make_tombstone (MonoJitInfoTableChunk *chunk, MonoJitInfo *ji)
 {
 	MonoJitInfo *tombstone = g_new0 (MonoJitInfo, 1);
 
 	tombstone->code_start = ji->code_start;
 	tombstone->code_size = ji->code_size;
 	tombstone->d.method = JIT_INFO_TOMBSTONE_MARKER;
+	tombstone->n.next_tombstone = chunk->next_tombstone;
+	chunk->next_tombstone = tombstone;
 
 	return tombstone;
 }
@@ -716,7 +715,7 @@ jit_info_table_remove (MonoJitInfoTable *table, MonoJitInfo *ji)
  found:
 	g_assert (chunk->data [pos] == ji);
 
-	chunk->data [pos] = mono_jit_info_make_tombstone (ji);
+	chunk->data [pos] = mono_jit_info_make_tombstone (chunk, ji);
 
 	/* Debugging code, should be removed. */
 	//jit_info_table_check (table);
@@ -840,7 +839,7 @@ jit_info_next_value (gpointer value)
 {
 	MonoJitInfo *info = (MonoJitInfo*)value;
 
-	return (gpointer*)&info->next_jit_code_hash;
+	return (gpointer*)&info->n.next_jit_code_hash;
 }
 
 void
