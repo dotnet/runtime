@@ -316,4 +316,10 @@ public:
 };
 #endif // FEATURE_COREFX_GLOBALIZATION
 
+class StreamNative {
+public:
+    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndRead, Object *stream);
+    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndWrite, Object *stream);
+};
+
 #endif // _COMUTILNATIVE_H_
