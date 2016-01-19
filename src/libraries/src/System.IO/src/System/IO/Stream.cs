@@ -270,29 +270,23 @@ namespace System.IO
                 return new Task<int>(() => 0, cancellationToken);
             }
 
-            return ReadAsyncTask(buffer, offset, count, cancellationToken);
-        }
-
-        private async Task<int> ReadAsyncTask(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
             // To avoid a race with a stream's position pointer & generating race 
             // conditions with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
-            // async requests outstanding, we will block the application's main
-            // thread if it does a second IO request until the first one completes.
-            EnsureAsyncActiveSemaphoreInitialized().Wait();
-
-            try
+            // async requests outstanding, we will serialize the requests.
+            return EnsureAsyncActiveSemaphoreInitialized().WaitAsync().ContinueWith((completedWait, s) =>
             {
-                return await Task.Factory.StartNew(() => Read(buffer, offset, count),
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            finally
-            {
-                _asyncActiveSemaphore.Release();
-            }
+                Debug.Assert(completedWait.Status == TaskStatus.RanToCompletion);
+                var state = (Tuple<Stream, byte[], int, int>)s;
+                try
+                {
+                    return state.Item1.Read(state.Item2, state.Item3, state.Item4); // this.Read(buffer, offset, count);
+                }
+                finally
+                {
+                    state.Item1._asyncActiveSemaphore.Release();
+                }
+            }, Tuple.Create(this, buffer, offset, count), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public Task WriteAsync(Byte[] buffer, int offset, int count)
@@ -312,29 +306,23 @@ namespace System.IO
                 return new Task(() => { }, cancellationToken);
             }
 
-            return WriteAsyncTask(buffer, offset, count, cancellationToken);
-        }
-
-        private async Task WriteAsyncTask(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
             // To avoid a race with a stream's position pointer & generating race 
             // conditions with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
-            // async requests outstanding, we will block the application's main
-            // thread if it does a second IO request until the first one completes.
-            EnsureAsyncActiveSemaphoreInitialized().Wait();
-
-            try
+            // async requests outstanding, we will serialize the requests.
+            return EnsureAsyncActiveSemaphoreInitialized().WaitAsync().ContinueWith((completedWait, s) =>
             {
-                await Task.Factory.StartNew(() => Write(buffer, offset, count),
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            finally
-            {
-                _asyncActiveSemaphore.Release();
-            }
+                Debug.Assert(completedWait.Status == TaskStatus.RanToCompletion);
+                var state = (Tuple<Stream, byte[], int, int>)s;
+                try
+                {
+                    state.Item1.Write(state.Item2, state.Item3, state.Item4); // this.Write(buffer, offset, count);
+                }
+                finally
+                {
+                    state.Item1._asyncActiveSemaphore.Release();
+                }
+            }, Tuple.Create(this, buffer, offset, count), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public abstract long Seek(long offset, SeekOrigin origin);
