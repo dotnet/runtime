@@ -303,7 +303,6 @@
     <Compile Include="netcore50\System\Net\CookieHelper.cs" />
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
-    <Compile Include="netcore50\System\Net\RtcRequestFactory.cs" />
   </ItemGroup>
 
   <ItemGroup>
