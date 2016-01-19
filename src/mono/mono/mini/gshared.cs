@@ -464,6 +464,21 @@ public class Tests
 		return 0;
 	}
 
+	class DelClass {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static T return_t<T> (T t) {
+			return t;
+		}
+	}
+
+	public static int test_0_gsharedvt_in_delegates_reflection () {
+		var m = typeof(DelClass).GetMethod ("return_t").MakeGenericMethod (new Type [] { typeof (int) });
+		Func<int, int> f = (Func<int, int>)Delegate.CreateDelegate (typeof (Func<int,int>), null, m, false);
+		if (f (42) != 42)
+			return 1;
+		return 0;
+	}
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static T return2_t<T> (T t) {
 		return return_t (t);

@@ -611,6 +611,7 @@ typedef struct {
 	void     (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
 	gboolean (*tls_key_supported) (MonoTlsKey key);
+	void     (*init_delegate) (MonoDelegate *del);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);

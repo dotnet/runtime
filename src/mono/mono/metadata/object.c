@@ -6430,6 +6430,8 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 	}
 
 	delegate->invoke_impl = arch_create_delegate_trampoline (delegate->object.vtable->domain, delegate->object.vtable->klass);
+	if (callbacks.init_delegate)
+		callbacks.init_delegate (delegate);
 }
 
 /**

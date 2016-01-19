@@ -1611,50 +1611,24 @@ mono_init_vtable_slot (MonoVTable *vtable, int slot)
 	return ftnptr;
 }
 
-static gboolean
-is_callee_gsharedvt_variable (gpointer addr)
-{
-	MonoJitInfo *ji;
-	gboolean callee_gsharedvt;
-
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
-	g_assert (ji);
-	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
-	if (callee_gsharedvt)
-		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
-	return callee_gsharedvt;
-}
-
 /*
- * mono_init_delegate:
+ * mono_llvmonly_init_delegate:
  *
  *   Initialize a MonoDelegate object.
  * Similar to mono_delegate_ctor ().
  */
 void
-mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
+mono_llvmonly_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
 	MONO_OBJECT_SETREF (del, target, target);
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-		del->rgctx = mini_method_get_rgctx (method);
-
-	/*
-	 * Avoid adding gsharedvt in wrappers since they might not exist if
-	 * this delegate is called through a gsharedvt delegate invoke wrapper.
-	 * Instead, encode that the method is gsharedvt in del->rgctx,
-	 * the CEE_MONO_CALLI_EXTRA_ARG implementation in the JIT depends on this.
-	 */
-	if (is_callee_gsharedvt_variable (del->method_ptr)) {
-		g_assert ((((mgreg_t)del->rgctx) & 1) == 0);
-		del->rgctx = (gpointer)(((mgreg_t)del->rgctx) | 1);
-	}
+	mini_init_delegate (del);
 }
 
 void
-mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
+mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
 	g_assert (target);
 
@@ -1664,13 +1638,7 @@ mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *m
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-		del->rgctx = mini_method_get_rgctx (method);
-
-	if (is_callee_gsharedvt_variable (del->method_ptr)) {
-		g_assert ((((mgreg_t)del->rgctx) & 1) == 0);
-		del->rgctx = (gpointer)(((mgreg_t)del->rgctx) | 1);
-	}
+	mini_init_delegate (del);
 }
 
 MonoObject*

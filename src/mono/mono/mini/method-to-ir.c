@@ -5043,7 +5043,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		args [0] = obj;
 		args [1] = target;
 		args [2] = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD);
-		mono_emit_jit_icall (cfg, virtual_ ? mono_init_delegate_virtual : mono_init_delegate, args);
+		mono_emit_jit_icall (cfg, virtual_ ? mono_llvmonly_init_delegate_virtual : mono_llvmonly_init_delegate, args);
 
 		return obj;
 	}
