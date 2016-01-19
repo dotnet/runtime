@@ -1718,7 +1718,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-<<<<<<< 9eab472a93bce7169e3b10f33eebf3a3771b210d
     public static void DCJS_XmlElementAsRoot()
     {
         XmlDocument xDoc = new XmlDocument();
