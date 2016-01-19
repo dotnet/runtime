@@ -2070,8 +2070,8 @@ FCFuncStart(gVersioningHelperFuncs)
 FCFuncEnd()
 
 FCFuncStart(gStreamFuncs)
-    FCFuncElement("HasOverridenBeginEndRead", StreamNative::HasOverridenBeginEndRead)
-    FCFuncElement("HasOverridenBeginEndWrite", StreamNative::HasOverridenBeginEndWrite)
+    FCFuncElement("HasOverriddenBeginEndRead", StreamNative::HasOverriddenBeginEndRead)
+    FCFuncElement("HasOverriddenBeginEndWrite", StreamNative::HasOverriddenBeginEndWrite)
 FCFuncEnd()
 
 #ifndef FEATURE_CORECLR
