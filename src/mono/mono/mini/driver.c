@@ -50,6 +50,7 @@
 #include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
+#include "mono/utils/mono-logger-internals.h"
 
 #include "mini.h"
 #include "jit.h"
@@ -1574,7 +1575,7 @@ mono_main (int argc, char* argv[])
 #if TARGET_OSX
 	darwin_change_default_file_handles ();
 #endif
-	
+
 	if (g_getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
 	

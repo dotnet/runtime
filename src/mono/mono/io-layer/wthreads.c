@@ -25,26 +25,16 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
+#include <mono/io-layer/io-trace.h>
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-once.h>
+#include <mono/utils/mono-logger-internals.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
-#endif
-
-#if 0
-#define DEBUG(...) g_message(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
-
-#if 0
-#define WAIT_DEBUG(code) do { code } while (0)
-#else
-#define WAIT_DEBUG(code) do { } while (0)
 #endif
 
 struct _WapiHandleOps _wapi_thread_ops = {
@@ -126,11 +116,11 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 		return;
 	}
 
-	DEBUG ("%s: Thread %p terminating", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p terminating", __func__, handle);
 
 	thread_handle = lookup_thread (handle);
 
-	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p abandoning held mutexes", __func__, handle);
 
 	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
 		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
@@ -148,7 +138,7 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	DEBUG("%s: Recording thread handle %p id %ld status as %d",
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
 	
 	/* The thread is no longer active, so unref it */
@@ -188,7 +178,7 @@ wapi_create_thread_handle (void)
 	 */
 	_wapi_handle_ref (handle);
 
-	DEBUG ("%s: started thread id %ld", __func__, thread->id);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: started thread id %ld", __func__, thread->id);
 	
 	return handle;
 }

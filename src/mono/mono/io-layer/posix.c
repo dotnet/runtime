@@ -23,12 +23,8 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
-
-#if 0
-#define DEBUG(...) g_message(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
+#include <mono/io-layer/io-trace.h>
+#include <mono/utils/mono-logger-internals.h>
 
 static guint32
 convert_from_flags(int flags)
@@ -46,7 +42,7 @@ convert_from_flags(int flags)
 	} else if ((flags & O_ACCMODE) == O_RDWR) {
 		fileaccess=GENERIC_READ|GENERIC_WRITE;
 	} else {
-		DEBUG("%s: Can't figure out flags 0x%x", __func__, flags);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't figure out flags 0x%x", __func__, flags);
 	}
 
 	/* Maybe sort out create mode too */
@@ -61,7 +57,7 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 	gpointer handle;
 	int flags;
 	
-	DEBUG("%s: creating standard handle type %s, fd %d", __func__,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating standard handle type %s, fd %d", __func__,
 		  name, fd);
 
 #if !defined(__native_client__)	
@@ -74,7 +70,7 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 		/* Invalid fd.  Not really much point checking for EBADF
 		 * specifically
 		 */
-		DEBUG("%s: fcntl error on fd %d: %s", __func__, fd,
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fcntl error on fd %d: %s", __func__, fd,
 			  strerror(errno));
 
 		SetLastError (_wapi_get_win32_file_error (errno));
@@ -111,7 +107,7 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-	DEBUG("%s: returning handle %p", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning handle %p", __func__, handle);
 
 	return(handle);
 }

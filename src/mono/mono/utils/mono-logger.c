@@ -11,11 +11,11 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-static GLogLevelFlags current_level		= G_LOG_LEVEL_ERROR;
-static MonoTraceMask current_mask		= MONO_TRACE_ALL;
+GLogLevelFlags mono_internal_current_level		= INT_MAX;
+MonoTraceMask  mono_internal_current_mask		= MONO_TRACE_ALL;
 
-static const char	*mono_log_domain	= "Mono";
 static GQueue		*level_stack		= NULL;
+static const char	*mono_log_domain	= "Mono";
 static MonoPrintCallback print_callback, printerr_callback;
 
 /**
@@ -23,10 +23,11 @@ static MonoPrintCallback print_callback, printerr_callback;
  *
  * Initializes the mono tracer.
  */
-static void 
+void 
 mono_trace_init (void)
 {
 	if(level_stack == NULL) {
+		mono_internal_current_level = G_LOG_LEVEL_ERROR;
 		level_stack = g_queue_new();
 
 		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
@@ -53,29 +54,6 @@ mono_trace_cleanup (void)
 }
 
 /**
- * mono_trace:
- *
- *	@level: Verbose level of the specified message
- *	@mask: Type of the specified message
- *
- * Traces a new message, depending on the current logging level
- * and trace mask.
- */
-void
-mono_trace(GLogLevelFlags level, MonoTraceMask mask, const char *format, ...) 
-{
-	if(level_stack == NULL)
-		mono_trace_init();
-
-	if(level <= current_level && mask & current_mask) {
-		va_list args;
-		va_start (args, format);
-		g_logv (mono_log_domain, level, format, args);
-		va_end (args);
-	}
-}
-
-/**
  * mono_tracev:
  *
  *	@level: Verbose level of the specified message
@@ -85,13 +63,15 @@ mono_trace(GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
  * and trace mask.
  */
 void 
-mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
+mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
-	if (level_stack == NULL)
+	if (level_stack == NULL) {
 		mono_trace_init ();
+		if(level > mono_internal_current_level || !(mask & mono_internal_current_mask))
+			return;
+	}
 
-	if(level <= current_level && mask & current_mask)
-		g_logv (mono_log_domain, level, format, args);
+	g_logv (mono_log_domain, level, format, args);
 }
 
 /**
@@ -109,7 +89,7 @@ mono_trace_set_level (GLogLevelFlags level)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	current_level = level;
+	mono_internal_current_level = level;
 }
 
 /**
@@ -127,7 +107,7 @@ mono_trace_set_mask (MonoTraceMask mask)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	current_mask	= mask;
+	mono_internal_current_mask	= mask;
 }
 
 /**
@@ -146,15 +126,15 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask)
 		g_error("%s: cannot use mono_trace_push without calling mono_trace_init first.", __func__);
 	else {
 		MonoLogLevelEntry *entry = (MonoLogLevelEntry *) g_malloc(sizeof(MonoLogLevelEntry));
-		entry->level	= current_level;
-		entry->mask		= current_mask;
+		entry->level	= mono_internal_current_level;
+		entry->mask		= mono_internal_current_mask;
 
 		g_queue_push_head (level_stack, (gpointer)entry);
 
 		/* Set the new level and mask
 		 */
-		current_level = level;
-		current_mask  = mask;
+		mono_internal_current_level = level;
+		mono_internal_current_mask  = mask;
 	}
 }
 
@@ -174,8 +154,8 @@ mono_trace_pop (void)
 
 			/*	Restore previous level and mask
 			 */
-			current_level = entry->level;
-			current_mask  = entry->mask;
+			mono_internal_current_level = entry->level;
+			mono_internal_current_mask  = entry->mask;
 
 			g_free (entry);
 		}
@@ -213,10 +193,10 @@ mono_trace_set_mask_string (const char *value)
 	const char *tok;
 	guint32 flags = 0;
 
-	const char *valid_flags[] = {"asm", "type", "dll", "gc", "cfg", "aot", "security", "threadpool", "io-threadpool", "all", NULL};
+	const char *valid_flags[] = {"asm", "type", "dll", "gc", "cfg", "aot", "security", "threadpool", "io-threadpool", "io-layer", "all", NULL};
 	const MonoTraceMask	valid_masks[] = {MONO_TRACE_ASSEMBLY, MONO_TRACE_TYPE, MONO_TRACE_DLLIMPORT,
 						 MONO_TRACE_GC, MONO_TRACE_CONFIG, MONO_TRACE_AOT, MONO_TRACE_SECURITY,
-						 MONO_TRACE_THREADPOOL, MONO_TRACE_IO_THREADPOOL, MONO_TRACE_ALL };
+						 MONO_TRACE_THREADPOOL, MONO_TRACE_IO_THREADPOOL, MONO_TRACE_IO_LAYER, MONO_TRACE_ALL };
 
 	if(!value)
 		return;
@@ -253,7 +233,7 @@ mono_trace_set_mask_string (const char *value)
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 {
-	return (level <= current_level && mask & current_mask);
+	return (level <= mono_internal_current_level && mask & mono_internal_current_mask);
 }
 
 static MonoLogCallback log_callback;
