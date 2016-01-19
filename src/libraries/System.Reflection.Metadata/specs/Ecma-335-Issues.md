@@ -126,10 +126,16 @@ TypeSpecBlob ::=
 
 ### 2.  `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
 
-In II.23.2.7, it is noted that "The CMOD_OPT or CMOD_REQD is followed
-by a metadata token that indexes a row in the TypeDef table or the
-TypeRef table.", but TypeSpec tokens are also allowed by ilasm, csc,
-peverify, and the CLR.
+In II.23.2.7, it is noted that CMOD_OPT or CMOD_REQD is followed
+by a TypeRef or TypeDef metadata token, but TypeSpec tokens are 
+also allowed by ilasm, csc, peverify, and the CLR.
+
+Note, in particular, that TypeSpecs are used there by C++/CLI to
+represent strongly-typed  boxing in C++/CLI. e.g. `Nullable<int>^`
+in C++/CLI becomes `[mscorlib]System.ValueType 
+modopt([mscorlib]System.Nulllable`1<int>) 
+modopt([mscorlib]System.Runtime.CompilerServices.IsBoxed)`
+in IL.
 
 This tolerance adds a loophole to the rule above whereby cyclical
 signatures are in fact possible, e.g.:
@@ -146,6 +152,20 @@ Related issues:
 * https://github.com/dotnet/roslyn/issues/7971
 * https://github.com/dotnet/coreclr/issues/2674
 
+#### Proposed specification change:
+
+In section II.23.2.7, replace
+
+> The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
+ table or the TypeRef table.  However, these tokens are encoded and compressed – see §II.23.2.8
+for details
+
+with
+
+> The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
+table, TypeRef table, or TypeSpec table.  However, these tokens are encoded and compressed – 
+see §II.23.2.8 for details. Furthermore, if a row in the TypeSpec table is indicated, 
+it must not create cycle.
 
 ### 3. Custom modifiers can go in more places than specified
 
