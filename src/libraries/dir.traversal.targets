@@ -31,6 +31,13 @@
       </Project>
     </ItemGroup>
 
+    <!-- If we have enabled code coverage and set the projects to be serialized we need to pass that property down to the childe projects -->
+    <ItemGroup Condition="'$(CodeCoverageEnabled)'=='true' and '$(SerializeProjects)'=='true'">
+      <Project>
+        <AdditionalProperties>SerializeProjects=true;%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(FilterToOSGroup)'!=''">
       <ProjectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)'=='$(FilterToOSGroup)' or '%(Project.OSGroup)'=='AnyOS' or '%(Project.OSGroup)'==''" />
 
