@@ -1778,9 +1778,6 @@ namespace System.IO {
             return;
         }
 
-#if FEATURE_CORECLR
-        internal override bool OverridesBeginEnd { get { return true; } }
-#endif
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(ExternalThreading = true)]
