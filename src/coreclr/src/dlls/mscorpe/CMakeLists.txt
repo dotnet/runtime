@@ -18,6 +18,6 @@ else()
   add_compile_options(-Wno-delete-non-virtual-dtor)
 endif(WIN32)
 
-add_library(mscorpe STATIC
+add_library_clr(mscorpe STATIC
   ${MSCORPE_SOURCES}
 )

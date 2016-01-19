@@ -1,4 +1,3 @@
-include_directories($ENV{__GeneratedIntermediatesDir}/inc)
 include_directories("inc")
 include_directories("strongname/inc")
 include_directories("inc/winrt")
@@ -9,6 +8,42 @@ include_directories("md/inc")
 include_directories("classlibnative/bcltype")
 include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
+include_directories("${GENERATED_INCLUDE_DIR}")
+
+if(WIN32)
+    add_custom_command(
+      COMMENT "Generating Eventing Files"
+      OUTPUT ${GENERATED_INCLUDE_DIR}/ClrEtwAll.h
+      OUTPUT ${GENERATED_INCLUDE_DIR}/clretwallmain.h
+      OUTPUT ${GENERATED_INCLUDE_DIR}/etmdummy.h
+      COMMAND ${MC} -h ${GENERATED_INCLUDE_DIR} -r ${GENERATED_INCLUDE_DIR} -b -co -um -p FireEtw "${VM_DIR}/ClrEtwAll.man"
+      COMMAND ${PYTHON} -B -Wall -Werror "${CLR_DIR}/src/scripts/genWinEtw.py" --man "${VM_DIR}/ClrEtwAll.man" --exc "${VM_DIR}/ClrEtwAllMeta.lst" --eventheader "${GENERATED_INCLUDE_DIR}/ClrEtwAll.h" --macroheader "${GENERATED_INCLUDE_DIR}/clretwallmain.h" --dummy "${GENERATED_INCLUDE_DIR}/etmdummy.h"
+      DEPENDS "${CLR_DIR}/src/scripts/genWinEtw.py" "${VM_DIR}/ClrEtwAll.man" "${VM_DIR}/ClrEtwAllMeta.lst"
+    )
+elseif(CLR_CMAKE_PLATFORM_LINUX)
+    add_custom_command(
+      COMMENT "Generating Eventing Files"
+      OUTPUT ${GENERATED_INCLUDE_DIR}/ClrEtwAll.h
+      OUTPUT ${GENERATED_INCLUDE_DIR}/clretwallmain.h
+      OUTPUT ${GENERATED_INCLUDE_DIR}/etmdummy.h
+      COMMAND ${PYTHON} -B -Wall -Werror "${CLR_DIR}/src/scripts/genXplatEventing.py" --man "${VM_DIR}/ClrEtwAll.man" --exc "${VM_DIR}/ClrEtwAllMeta.lst" --eventheader "${GENERATED_INCLUDE_DIR}/ClrEtwAll.h" --macroheader "${GENERATED_INCLUDE_DIR}/clretwallmain.h" --dummy "${GENERATED_INCLUDE_DIR}/etmdummy.h"
+      DEPENDS "${CLR_DIR}/src/scripts/genWinEtw.py" "${VM_DIR}/ClrEtwAll.man" "${VM_DIR}/ClrEtwAllMeta.lst"
+    )
+endif()
+
+add_custom_target(
+  GeneratedEventingFiles
+  DEPENDS ${GENERATED_INCLUDE_DIR}/clretwallmain.h ${GENERATED_INCLUDE_DIR}/etmdummy.h ${GENERATED_INCLUDE_DIR}/ClrEtwAll.h)
+
+function(add_library_clr)
+    add_library(${ARGV})
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+endfunction()
+
+function(add_executable_clr)
+    add_executable(${ARGV})
+    add_dependencies(${ARGV0} GeneratedEventingFiles)
+endfunction()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(ToolBox/SOS/Strike)

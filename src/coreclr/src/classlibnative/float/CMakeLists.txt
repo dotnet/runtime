@@ -10,7 +10,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-add_library(comfloat_wks
+add_library_clr(comfloat_wks
     STATIC
     ${FLOAT_SOURCES}
 )

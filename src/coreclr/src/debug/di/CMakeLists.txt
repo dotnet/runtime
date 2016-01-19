@@ -78,4 +78,4 @@ endif(WIN32)
 
 add_precompiled_header(stdafx.h stdafx.cpp CORDBDI_SOURCES)
 
-add_library(cordbdi STATIC ${CORDBDI_SOURCES})
+add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})

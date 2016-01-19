@@ -25,4 +25,4 @@ if (FEATURE_READYTORUN)
 endif (FEATURE_READYTORUN)
 
 add_precompiled_header(common.h ../common.cpp ZAP_SOURCES)
-add_library(corzap_crossgen STATIC ${ZAP_SOURCES})
+add_library_clr(corzap_crossgen STATIC ${ZAP_SOURCES})
