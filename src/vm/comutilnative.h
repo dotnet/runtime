@@ -318,8 +318,8 @@ public:
 
 class StreamNative {
 public:
-    static FCDECL1(FC_BOOL_RET, HasOverridenBeginEndRead, Object *stream);
-    static FCDECL1(FC_BOOL_RET, HasOverridenBeginEndWrite, Object *stream);
+    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndRead, Object *stream);
+    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndWrite, Object *stream);
 };
 
 #endif // _COMUTILNATIVE_H_

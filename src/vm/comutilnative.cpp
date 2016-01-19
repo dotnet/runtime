@@ -3164,7 +3164,7 @@ static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverridenBeginEndRead, Object *stream)
+FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
 {
     FCALL_CONTRACT;
 
@@ -3189,7 +3189,7 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverridenBeginEndRead, Object *stream)
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverridenBeginEndWrite, Object *stream)
+FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
 {
     FCALL_CONTRACT;
 

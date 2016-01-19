@@ -428,15 +428,18 @@ namespace System.IO {
 
         [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern bool HasOverridenBeginEndRead();
+        private extern bool HasOverriddenBeginEndRead();
 
         private Task<Int32> BeginEndReadAsync(Byte[] buffer, Int32 offset, Int32 count)
         {
-            if (!HasOverridenBeginEndRead())
+            if (!HasOverriddenBeginEndRead())
             {
+                // If the Stream does not override Begin/EndRead, then we can take an optimized path
+                // that skips an extra layer of tasks / IAsyncResults.
                 return (Task<Int32>)BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
+            // Otherwise, we need to wrap calls to Begin/EndWrite to ensure we use the derived type's functionality.
             return TaskFactory<Int32>.FromAsyncTrim(
                         this, new ReadWriteParameters { Buffer = buffer, Offset = offset, Count = count },
                         (stream, args, callback, state) => stream.BeginRead(args.Buffer, args.Offset, args.Count, callback, state), // cached by compiler
@@ -539,7 +542,7 @@ namespace System.IO {
                                                      // preconditions in async methods that await.  
             Contract.Assert(asyncWaiter != null);    // Ditto
 
-            // If the wait has already complete, run the task.
+            // If the wait has already completed, run the task.
             if (asyncWaiter.IsCompleted)
             {
                 Contract.Assert(asyncWaiter.IsRanToCompletion, "The semaphore wait should always complete successfully.");
@@ -547,15 +550,11 @@ namespace System.IO {
             }                
             else  // Otherwise, wait for our turn, and then run the task.
             {
-                asyncWaiter.ContinueWith((t, state) =>
-                    {
-                        Contract.Assert(t.IsRanToCompletion, "The semaphore wait should always complete successfully.");
-                        var tuple = (Tuple<Stream,ReadWriteTask>)state;
-                        tuple.Item1.RunReadWriteTask(tuple.Item2); // RunReadWriteTask(readWriteTask);
-                    }, Tuple.Create<Stream,ReadWriteTask>(this, readWriteTask),
-                default(CancellationToken),
-                TaskContinuationOptions.ExecuteSynchronously, 
-                TaskScheduler.Default);
+                asyncWaiter.ContinueWith((t, state) => {
+                    Contract.Assert(t.IsRanToCompletion, "The semaphore wait should always complete successfully.");
+                    var rwt = (ReadWriteTask)state;
+                    rwt._stream.RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
+                }, readWriteTask, default(CancellationToken), TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -647,8 +646,8 @@ namespace System.IO {
             internal readonly bool _apm; // true if this is from Begin/EndXx; false if it's from XxAsync
             internal Stream _stream;
             internal byte [] _buffer;
-            internal int _offset;
-            internal int _count;
+            internal readonly int _offset;
+            internal readonly int _count;
             private AsyncCallback _callback;
             private ExecutionContext _context;
 
@@ -758,15 +757,18 @@ namespace System.IO {
 
         [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern bool HasOverridenBeginEndWrite();
+        private extern bool HasOverriddenBeginEndWrite();
 
         private Task BeginEndWriteAsync(Byte[] buffer, Int32 offset, Int32 count)
         {
-            if (!HasOverridenBeginEndWrite())
+            if (!HasOverriddenBeginEndWrite())
             {
+                // If the Stream does not override Begin/EndWrite, then we can take an optimized path
+                // that skips an extra layer of tasks / IAsyncResults.
                 return (Task)BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
+            // Otherwise, we need to wrap calls to Begin/EndWrite to ensure we use the derived type's functionality.
             return TaskFactory<VoidTaskResult>.FromAsyncTrim(
                         this, new ReadWriteParameters { Buffer=buffer, Offset=offset, Count=count },
                         (stream, args, callback, state) => stream.BeginWrite(args.Buffer, args.Offset, args.Count, callback, state), // cached by compiler
@@ -1113,10 +1115,6 @@ namespace System.IO {
         internal sealed class SyncStream : Stream, IDisposable
         {
             private Stream _stream;
-            [NonSerialized]
-            private bool? _overridesBeginRead;
-            [NonSerialized]
-            private bool? _overridesBeginWrite;
 
             internal SyncStream(Stream stream)
             {
@@ -1235,38 +1233,11 @@ namespace System.IO {
                 lock(_stream)
                     return _stream.ReadByte();
             }
-
-            private static bool OverridesBeginMethod(Stream stream, string methodName)
-            {
-                Contract.Requires(stream != null, "Expected a non-null stream.");
-                Contract.Requires(methodName == "BeginRead" || methodName == "BeginWrite",
-                    "Expected BeginRead or BeginWrite as the method name to check.");
-
-                // Get all of the methods on the underlying stream
-                var methods = stream.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance);
-
-                // If any of the methods have the desired name and are defined on the base Stream
-                // Type, then the method was not overridden.  If none of them were defined on the
-                // base Stream, then it must have been overridden.
-                foreach (var method in methods)
-                {
-                    if (method.DeclaringType == typeof(Stream) &&
-                        method.Name == methodName)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
         
             [HostProtection(ExternalThreading=true)]
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                // Lazily-initialize whether the wrapped stream overrides BeginRead
-                if (_overridesBeginRead == null)
-                {
-                    _overridesBeginRead = OverridesBeginMethod(_stream, "BeginRead");
-                }
+                bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
 
                 lock (_stream)
                 {
@@ -1276,7 +1247,7 @@ namespace System.IO {
                     // than a synchronous wait.  A synchronous wait will result in a deadlock condition, because
                     // the EndXx method for the outstanding async operation won't be able to acquire the lock on
                     // _stream due to this call blocked while holding the lock.
-                    return _overridesBeginRead.Value ?
+                    return overridesBeginRead ?
                         _stream.BeginRead(buffer, offset, count, callback, state) :
                         _stream.BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
@@ -1320,11 +1291,7 @@ namespace System.IO {
             [HostProtection(ExternalThreading=true)]
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                // Lazily-initialize whether the wrapped stream overrides BeginWrite
-                if (_overridesBeginWrite == null)
-                {
-                    _overridesBeginWrite = OverridesBeginMethod(_stream, "BeginWrite");
-                }
+                bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();
 
                 lock (_stream)
                 {
@@ -1334,7 +1301,7 @@ namespace System.IO {
                     // than a synchronous wait.  A synchronous wait will result in a deadlock condition, because
                     // the EndXx method for the outstanding async operation won't be able to acquire the lock on
                     // _stream due to this call blocked while holding the lock.
-                    return _overridesBeginWrite.Value ?
+                    return overridesBeginWrite ?
                         _stream.BeginWrite(buffer, offset, count, callback, state) :
                         _stream.BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
