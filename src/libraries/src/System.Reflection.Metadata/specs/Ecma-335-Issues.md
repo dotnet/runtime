@@ -57,19 +57,19 @@ a) Rename section II.23.2.8 from "TypeDefOrRefOrSpecEncoded" to "TypeDefOrRefEnc
 
 b) Replace
 
-*These items are compact ways to store a TypeDef, TypeRef, or TypeSpec token in a Signature (§II.23.2.12).*
+> These items are compact ways to store a TypeDef, TypeRef, or TypeSpec token in a Signature (§II.23.2.12).
 
 with 
 
-*TypeDefOrRefEncoded is a compact representation of either TypeDef or TypeRef token in a Signature (§II.23.2.12). TypeDefOrRefOrSpecEncoded is a compact representation of either TypeDef, TypeRef or TypeSpec token in a Signature.*
+> TypeDefOrRefEncoded is a compact representation of either TypeDef or TypeRef token in a Signature (§II.23.2.12). TypeDefOrRefOrSpecEncoded is a compact representation of either TypeDef, TypeRef or TypeSpec token in a Signature.
 
 Also correct 
 
-*The encoded version of this TypeRef token is made up as follows:*
+> The encoded version of this TypeRef token is made up as follows:
 
 to
 
-*The compact representation of a TypeDef, TypeRef or TypeSpec token is made up as follows:*
+> The compact representation of a TypeDef, TypeRef or TypeSpec token is made up as follows:
 
 c) In section II.23.2.12 replace
 
@@ -96,7 +96,7 @@ Type ::=
 
 Note also the correction of ```Type*``` to ```Type+```. A generic type instantiation shall have at least one type argument.
 
-d) In section replace
+d) In section II.23.2.14 replace
 
 ```
 TypeSpecBlob ::=
@@ -114,15 +114,15 @@ TypeSpecBlob ::=
       ...
 ```
 
-(```Type Type*``` is simplified to ```Type+```).
+```Type Type*``` is simplified to ```Type+```.
 
 #### Rationale of the proposal
 
-1) The proposal removes the possibility of representing the same type via two different encodings. This approach is consistent with II.23.2.16: "Short form signatures" where a short form of a primitive type is preferred over the corresponding long form.
+1. The proposal removes the possibility of representing the same type via two different encodings. This approach is consistent with II.23.2.16: "Short form signatures" where a short form of a primitive type is preferred over the corresponding long form.
 
-2) Potential TypeSpec recursion is prevented.
+2. Potential TypeSpec recursion is prevented.
 
-3) PEVerify, the CLR runtime and C# compiler prior to VS 2015 report an error when encountering an encoded TypeSpec in the positions decribed above. 
+3. PEVerify, the CLR runtime and C# compiler prior to VS 2015 report an error when encountering an encoded TypeSpec in the positions decribed above.
 
 ### 2.  `(CMOD_OPT | CMOD_REQ) <TypeSpec>` is permitted in practice
 
