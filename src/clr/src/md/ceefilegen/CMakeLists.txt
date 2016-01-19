@@ -17,7 +17,7 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_precompiled_header(stdafx.h stdafx.cpp CEEFILEGEN_SOURCES)
 
-add_library(ceefgen
+add_library_clr(ceefgen
     STATIC
     ${CEEFILEGEN_SOURCES}
 )

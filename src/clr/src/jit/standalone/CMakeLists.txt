@@ -5,7 +5,7 @@ add_definitions(-DFEATURE_READYTORUN_COMPILER)
 add_definitions(-DFEATURE_REF_ZERO_OFFSET_ALLOWED)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
-add_library(ryujit
+add_library_clr(ryujit
    SHARED
    ${SHARED_LIB_SOURCES}
 )

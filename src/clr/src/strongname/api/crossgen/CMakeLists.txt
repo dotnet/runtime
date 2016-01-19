@@ -1,3 +1,3 @@
 include(${CLR_DIR}/crossgen.cmake)
 
-add_library(strongname_crossgen ${STRONGNAME_SOURCES})
+add_library_clr(strongname_crossgen ${STRONGNAME_SOURCES})
