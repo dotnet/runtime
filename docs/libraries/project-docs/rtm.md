@@ -24,7 +24,7 @@ Unfortunately, when we introduced `TypeInfo` we also tried to clean up the surfa
 Based on extensive customer feedback we decided that we need to improve reflection so that porting code to .NET Core becomes easier. The current proposal is to:
 
 1. Keep the split, i.e. don't add those APIs to `System.Type`
-2. Add all the APIs that used to live on `System.Type` and add them to `System.Reflection.TypeInfo`
+2. Add all the APIs that used to live on `System.Type` to `System.Reflection.TypeInfo`
 
 While having any delta is unfortunate, we believe it is vital to be able to deliver a .NET stack that doesn't require reflection, especially for ahead-of-time (AOT) compilation scenarios, in order to reduce footprint.
 
