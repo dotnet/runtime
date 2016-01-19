@@ -7,6 +7,8 @@ project(CoreCLR)
 # Enable @rpath support for shared libraries.
 set(MACOSX_RPATH ON)
 
+#SET_PROPERTY(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
+
 if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
     cmake_policy(SET CMP0042 NEW)
 endif()
@@ -128,8 +130,20 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+# Ensure that python is present
+find_program(PYTHON python)
+if (PYTHON STREQUAL "PYTHON-NOTFOUND")
+    message(FATAL_ERROR "PYTHON not found: Please install Python 2.7.9 or later from https://www.python.org/downloads/")
+endif()
+
 if(WIN32)
     enable_language(ASM_MASM)
+
+    # Ensure that MC is present
+    find_program(MC mc)
+    if (MC STREQUAL "MC-NOTFOUND")
+        message(FATAL_ERROR "MC not found")
+    endif()
 else()
     enable_language(ASM)
 

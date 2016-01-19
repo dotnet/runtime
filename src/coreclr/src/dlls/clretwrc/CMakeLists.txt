@@ -12,8 +12,7 @@ endif(WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)
 
-add_library(clretwrc SHARED
-  clretwrc.rc
+add_library_clr(clretwrc SHARED
 )
 
 # add the install targets

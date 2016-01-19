@@ -69,7 +69,7 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
 add_precompiled_header(stdafx.h stdafx.cpp DACCESS_SOURCES)
 
-add_library(daccess ${DACCESS_SOURCES})
+add_library_clr(daccess ${DACCESS_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_dependencies(daccess coreclr)

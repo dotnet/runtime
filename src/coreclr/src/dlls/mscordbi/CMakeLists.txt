@@ -30,7 +30,7 @@ if(WIN32)
     list(APPEND MSCORDBI_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
 endif(WIN32)
 
-add_library(mscordbi SHARED
+add_library_clr(mscordbi SHARED
   ${MSCORDBI_SOURCES}
 )
 

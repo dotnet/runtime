@@ -479,6 +479,6 @@ list(APPEND VM_SOURCES_DAC
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
-    
+
 add_subdirectory(dac)
 add_subdirectory(wks)
