@@ -10634,8 +10634,10 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD, PTR_AppDomain pDomain)
     if (pFD->IsByValue())
     {
         _ASSERTE(result != NULL);
-        result = dac_cast<TADDR>
-            ((* PTR_UNCHECKED_OBJECTREF(result))->GetData());
+        PTR_Object obj = *PTR_UNCHECKED_OBJECTREF(result);
+        if (obj == NULL)
+            return NULL;
+        result = dac_cast<TADDR>(obj->GetData());
     }
 
     return result;
