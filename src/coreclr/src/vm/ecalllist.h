@@ -2069,6 +2069,11 @@ FCFuncStart(gVersioningHelperFuncs)
     FCFuncElement("GetRuntimeId", GetRuntimeId_Wrapper)
 FCFuncEnd()
 
+FCFuncStart(gStreamFuncs)
+    FCFuncElement("HasOverriddenBeginEndRead", StreamNative::HasOverriddenBeginEndRead)
+    FCFuncElement("HasOverriddenBeginEndWrite", StreamNative::HasOverriddenBeginEndWrite)
+FCFuncEnd()
+
 #ifndef FEATURE_CORECLR
 FCFuncStart(gConsoleStreamFuncs)
     FCFuncElement("WaitForAvailableConsoleInput", ConsoleStreamHelper::WaitForAvailableConsoleInput)
@@ -2420,6 +2425,7 @@ FCClassElement("SizedReference", "System", gSizedRefHandleFuncs)
 FCClassElement("StackBuilderSink", "System.Runtime.Remoting.Messaging", gStackBuilderSinkFuncs)
 #endif    
 FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
+FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StringBuilder", "System.Text", gStringBufferFuncs)
 FCClassElement("StringExpressionSet", "System.Security.Util", gCOMStringExpressionSetFuncs)
