@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -39,7 +38,7 @@ namespace System.Collections.Concurrent
         /// Wrapping the three tables in a single object allows us to atomically
         /// replace all tables at once.
         /// </summary>
-        private class Tables
+        private sealed class Tables
         {
             internal readonly Node[] _buckets; // A singly-linked list for each bucket.
             internal readonly object[] _locks; // A set of locks, each guarding a section of the table.
@@ -1883,12 +1882,12 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// A node in a singly-linked list representing a particular hash table bucket.
         /// </summary>
-        private class Node
+        private sealed class Node
         {
-            internal TKey _key;
+            internal readonly TKey _key;
             internal TValue _value;
             internal volatile Node _next;
-            internal int _hashcode;
+            internal readonly int _hashcode;
 
             internal Node(TKey key, TValue value, int hashcode, Node next)
             {
@@ -1903,7 +1902,7 @@ namespace System.Collections.Concurrent
         /// A private class to represent enumeration over the dictionary that implements the 
         /// IDictionaryEnumerator interface.
         /// </summary>
-        private class DictionaryEnumerator : IDictionaryEnumerator
+        private sealed class DictionaryEnumerator : IDictionaryEnumerator
         {
             IEnumerator<KeyValuePair<TKey, TValue>> _enumerator; // Enumerator over the dictionary.
 
