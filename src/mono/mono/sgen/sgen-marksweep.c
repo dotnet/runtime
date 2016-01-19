@@ -2326,10 +2326,12 @@ major_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 		int prefetch_index = __index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (allocated_blocks.data [prefetch_index]);
-			guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
 			PREFETCH_READ (prefetch_block);
-			PREFETCH_WRITE (prefetch_cards);
-			PREFETCH_WRITE (prefetch_cards + 32);
+			if (!mod_union) {
+				guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
+				PREFETCH_WRITE (prefetch_cards);
+				PREFETCH_WRITE (prefetch_cards + 32);
+			}
                 }
 #endif
 
