@@ -6744,6 +6744,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				declaring = ((MonoMethodInflated*)cfg->method)->declaring;
 			EMIT_NEW_AOTCONST (cfg, method_ins, MONO_PATCH_INFO_METHODCONST, declaring);
 			ins = mono_emit_jit_icall (cfg, mono_get_method_object, &method_ins);
+			cfg->no_inline = TRUE;
+			if (cfg->method != cfg->current_method)
+				inline_failure (cfg, "MethodBase:GetCurrentMethod ()");
 			return ins;
 		}
 	} else if (cmethod->klass == mono_defaults.math_class) {

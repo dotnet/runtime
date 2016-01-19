@@ -1694,6 +1694,8 @@ typedef struct {
 	guint            check_pinvoke_callconv : 1;
 	guint            has_unwind_info_for_epilog : 1;
 	guint            disable_inline : 1;
+	/* Disable inlining into caller */
+	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
 	guint            r4fp : 1;
