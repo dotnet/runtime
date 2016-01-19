@@ -10006,11 +10006,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifndef ENABLE_GSHAREDVT
 		aot_printerrf (acfg, "--aot=llvmonly requires a runtime compiled with --enable-gsharedvt.\n");
 		return 1;
-#else
-		acfg->opts |= MONO_OPT_GSHAREDVT;
-		opts |= MONO_OPT_GSHAREDVT;
 #endif
 	}
+
+#if defined(ENABLE_GSHAREDVT) && defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
+	acfg->opts |= MONO_OPT_GSHAREDVT;
+	opts |= MONO_OPT_GSHAREDVT;
+#endif
 
 	if (opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
