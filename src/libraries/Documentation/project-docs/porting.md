@@ -6,7 +6,7 @@ The purpose of this document is to share the plans on how we're going to port mo
 
 Compared to other .NET stacks, specifically the .NET Framework, Mono, Unity, and Xamarin the .NET Core platform doesn't expose enough APIs. This makes porting assets to .NET Core quite challenging, especially for areas which don't have replacements.
 
-So we want to bring more API to .NET Core. In order to keep our promise of being open and transparent, we want to:
+So we want to bring more APIs to .NET Core. In order to keep our promise of being open and transparent, we want to:
 
 * Clearly communicate what we plan on porting, how we prioritize, what we don't want to port, and how we're thinking of cross-platform and compatibility.
 * Avoid being the bottleneck by allowing community members to help with porting.
@@ -64,8 +64,8 @@ Here are the high level guidelines:
 	- **Do not** expose Windows-only technologies in otherwise fully portable assemblies.
 	- **Do** factor large chunks of functionality that cannot be supported everywhere into their own assemblies.
 	- **Do** consider using tester-doer patterns if only a very small number of APIs cannot be supported in all environments.
-* **Avoid** making changes that result in loss of binary and/or source compatibility between the .NET Framework and .NET Core.
 * **Consider** using extension methods and partial facades to accelerate bringing revised APIs to the .NET Framework.
+* **Avoid** making changes that result in loss of binary and/or source compatibility between the .NET Framework and .NET Core.
 * **Avoid** "franken-designs" with extension methods and partial facades purely for the sake of .NET Framework compatibility.
 
 ## Unsupported Technologies
