@@ -455,17 +455,6 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 }
 
-// The upper bits of context flags contain information that should be preserved
-// when converting from native_context_t to CONTEXT. We use this mask in the
-// CONTEXTFromNativeContext function to modify the flags without losing those bits.
-const ULONG CONTEXT_FLAGS_HIGH_BITS_MASK = 0xFFFF0000;
-
-// Ensure that the mask doesn't block any values we care about here.
-static_assert(((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
-                   && ((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
-                   && ((~CONTEXT_FLAGS_HIGH_BITS_MASK & CONTEXT_CONTROL) != 0)
-                   , "The mask used in CONTEXTFromNativeContext is not valid.");
-
 /*++
 Function :
     CONTEXTFromNativeContext
@@ -502,13 +491,14 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
     {
-        ULONG preservedUpperBits = lpContext->ContextFlags & CONTEXT_FLAGS_HIGH_BITS_MASK;
-
-        // Reset the CONTEXT_FLOATING_POINT bit, but preserve any of the original high 16
-        // bits that may have changed (depending on what CONTEXT_FLOATING_POINT is defined 
-        // as on this architecture).
-        lpContext->ContextFlags &= ~CONTEXT_FLOATING_POINT;
-        lpContext->ContextFlags |= preservedUpperBits;
+        // Reset the CONTEXT_FLOATING_POINT bit(s) so it's clear that the floating point
+        // data in the CONTEXT is not valid. Since CONTEXT_FLOATING_POINT is defined as 
+        // the architecture bit(s) OR'd with one or more other bits, we first get the bits
+        // that are unique to CONTEXT_FLOATING_POINT by resetting the architecture bits.
+        // We determine what those are by inverting the union of CONTEXT_CONTROL and
+        // CONTEXT_INTEGER, both of which should also have the architecture bit(s) set.
+        const ULONG floatingPointFlags = CONTEXT_FLOATING_POINT & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
+        lpContext->ContextFlags &= ~floatingPointFlags;
 
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT 
         return;
