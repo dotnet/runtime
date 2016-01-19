@@ -3164,6 +3164,31 @@ static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;
 
+static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+    PCODE actual = pMT->GetRestoredSlot(slot);
+    PCODE base = g_pStreamMT->GetRestoredSlot(slot);
+    if (actual == base)
+        return false;
+
+    if (!g_pStreamMT->IsZapped())
+    {
+        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs 
+        // to detect match reliably
+        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+            return false;
+    }
+
+    return true;
+}
+
 FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
 {
     FCALL_CONTRACT;
@@ -3182,10 +3207,7 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
 
     MethodTable * pMT = stream->GetMethodTable();
 
-    FC_RETURN_BOOL(
-        pMT->GetRestoredSlot(g_slotBeginRead) != g_pStreamMT->GetRestoredSlot(g_slotBeginRead) ||
-        pMT->GetRestoredSlot(g_slotEndRead) != g_pStreamMT->GetRestoredSlot(g_slotEndRead)
-    );
+    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead));
 }
 FCIMPLEND
 
@@ -3207,9 +3229,6 @@ FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
 
     MethodTable * pMT = stream->GetMethodTable();
 
-    FC_RETURN_BOOL(
-        pMT->GetRestoredSlot(g_slotBeginWrite) != g_pStreamMT->GetRestoredSlot(g_slotBeginWrite) ||
-        pMT->GetRestoredSlot(g_slotEndWrite) != g_pStreamMT->GetRestoredSlot(g_slotEndWrite)
-    );
+    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite));
 }
 FCIMPLEND
