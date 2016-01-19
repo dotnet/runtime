@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization
         public static ISerializationSurrogateProvider GetSerializationSurrogateProvider(this DataContractSerializer serializer) 
         {
             SurrogateProviderAdapter adapter = serializer.DataContractSurrogate as SurrogateProviderAdapter;
-            return adapter?.Provider;
+            return (adapter == null) ? null : adapter.Provider;
         }
 
         public static void SetSerializationSurrogateProvider(this DataContractSerializer serializer, ISerializationSurrogateProvider provider)
