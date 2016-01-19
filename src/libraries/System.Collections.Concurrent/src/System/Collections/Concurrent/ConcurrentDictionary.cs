@@ -14,6 +14,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -75,13 +76,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private static bool IsValueWriteAtomic()
         {
-            // We don't have Type.IsClass, so we'll check if it's a reference type by seeing if it gets boxed;
-            bool isClass = (object)default(TValue) == null;
-            if (isClass)
-            {
-                return true;
-            }
-
             //
             // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
             // the risk of tearing.
@@ -90,19 +84,23 @@ namespace System.Collections.Concurrent
             //
             Type valueType = typeof(TValue);
             bool isAtomic =
-                   valueType == typeof(bool)
-                || valueType == typeof(char)
-                || valueType == typeof(byte)
-                || valueType == typeof(sbyte)
-                || valueType == typeof(short)
-                || valueType == typeof(ushort)
-                || valueType == typeof(int)
-                || valueType == typeof(uint)
-                || valueType == typeof(float);
+                !valueType.GetTypeInfo().IsValueType ||
+                valueType == typeof(bool) ||
+                valueType == typeof(char) ||
+                valueType == typeof(byte) ||
+                valueType == typeof(sbyte) ||
+                valueType == typeof(short) ||
+                valueType == typeof(ushort) ||
+                valueType == typeof(int) ||
+                valueType == typeof(uint) ||
+                valueType == typeof(float);
 
             if (!isAtomic && IntPtr.Size == 8)
             {
-                isAtomic = valueType == typeof(double) || valueType == typeof(long);
+                isAtomic =
+                    valueType == typeof(double) ||
+                    valueType == typeof(long) ||
+                    valueType == typeof(ulong);
             }
 
             return isAtomic;
@@ -891,6 +889,10 @@ namespace System.Collections.Concurrent
                 TryAddInternal(key, _comparer.GetHashCode(key), value, true, true, out dummy);
             }
         }
+
+        // These exception throwing sites have been extracted into their own NoInlining methods
+        // as these are uncommonly needed and when inlined are observed to prevent the inlining
+        // of important methods like TryGetValue and ContainsKey.
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowKeyNotFoundException()
