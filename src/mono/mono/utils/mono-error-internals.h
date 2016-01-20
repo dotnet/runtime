@@ -23,6 +23,12 @@ typedef struct {
 	void *padding [3];
 } MonoErrorInternal;
 
+#define error_init(error) do {	\
+	(error)->error_code = MONO_ERROR_NONE;	\
+} while (0);
+
+#define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)
+
 void
 mono_error_assert_ok (MonoError *error);
 
