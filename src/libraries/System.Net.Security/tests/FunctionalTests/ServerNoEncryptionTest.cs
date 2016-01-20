@@ -48,6 +48,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5557, PlatformID.Linux)]
         [Fact]
         public async Task ServerNoEncryption_ClientAllowNoEncryption_ConnectWithNoEncryption()
         {
@@ -72,6 +73,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5557, PlatformID.Linux)]
         [Fact]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
