@@ -124,17 +124,18 @@ enum CorJitFlag
 
 #ifdef MDIL
     CORJIT_FLG_MDIL                = 0x00004000, // Generate MDIL code instead of machine code
-#else // MDIL
-    CORJIT_FLG_UNUSED7             = 0x00004000,
-#endif // MDIL
 
-#ifdef MDIL
     // Safe to overlap with CORJIT_FLG_MAKEFINALCODE below. Not used by the JIT, used internally by NGen only.
     CORJIT_FLG_MINIMAL_MDIL        = 0x00008000, // Generate MDIL code suitable for use to bind other assemblies.
 
     // Safe to overlap with CORJIT_FLG_READYTORUN below. Not used by the JIT, used internally by NGen only.
     CORJIT_FLG_NO_MDIL             = 0x00010000, // Generate an MDIL section but no code or CTL. Not used by the JIT, used internally by NGen only.
-#endif // MDIL
+#else // MDIL
+    CORJIT_FLG_PINVOKE_USE_HELPERS = 0x00004000, // Use JIT_PINVOKE_{BEGIN,END} helpers instead of generating transitions inline.
+
+    // TODO: this should probably not overlap with CORJIT_FLG_MAKEFINALCODE, but we've run out of bits.
+    CORJIT_FLG_PINVOKE_DIRECT_CALLS= 0x00008000, // Direct calls to native methods do not require indirections
+#endif
 
 #if defined(FEATURE_INTERPRETER)
     CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
