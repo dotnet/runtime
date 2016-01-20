@@ -1610,7 +1610,7 @@ void
 mono_class_free_ref_info (MonoClass *klass);
 
 MonoObject *
-mono_object_new_pinned (MonoDomain *domain, MonoClass *klass);
+mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);

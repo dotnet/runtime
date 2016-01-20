@@ -6685,6 +6685,7 @@ mono_type_normalize (MonoType *type)
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
+	MonoError error;
 	MonoType *norm_type;
 	MonoReflectionType *res;
 	MonoClass *klass = mono_class_from_mono_type (type);
@@ -6779,7 +6780,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		}
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
-	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.monotype_class);
+	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.monotype_class, &error);
+	mono_error_raise_exception (&error);
 	res->type = type;
 	mono_g_hash_table_insert (domain->type_hash, type, res);
 
