@@ -4196,7 +4196,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 			alloc_ftn = mono_object_new;
 		} else {
 			iargs [0] = data;
-			alloc_ftn = mono_object_new_specific;
+			alloc_ftn = ves_icall_object_new_specific;
 		}
 
 		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED)) {

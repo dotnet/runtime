@@ -7073,7 +7073,8 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	res = mono_array_new_specific (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), sig->param_count);
 	pinfo_vtable = mono_class_vtable (domain, System_Reflection_ParameterInfo);
 	for (i = 0; i < sig->param_count; ++i) {
-		param = (MonoReflectionParameter *)mono_object_new_specific (pinfo_vtable);
+		param = (MonoReflectionParameter *) mono_object_new_specific_checked (pinfo_vtable, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		MONO_OBJECT_SETREF (param, ClassImpl, mono_type_get_object (domain, sig->params [i]));
 		MONO_OBJECT_SETREF (param, MemberImpl, (MonoObject*)member);
 		MONO_OBJECT_SETREF (param, NameImpl, mono_string_new (domain, names [i]));

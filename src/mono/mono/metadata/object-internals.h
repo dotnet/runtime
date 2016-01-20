@@ -1612,6 +1612,12 @@ mono_class_free_ref_info (MonoClass *klass);
 MonoObject *
 mono_object_new_pinned (MonoDomain *domain, MonoClass *klass);
 
+MonoObject *
+mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
+
+MonoObject *
+ves_icall_object_new_specific (MonoVTable *vtable);
+
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value);
 
