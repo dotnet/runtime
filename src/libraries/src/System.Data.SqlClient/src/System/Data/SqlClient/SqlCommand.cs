@@ -2243,7 +2243,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private void RegisterForConnectionCloseNotification<T>(ref Task<T> outterTask)
+        private void RegisterForConnectionCloseNotification<T>(ref Task<T> outerTask)
         {
             SqlConnection connection = _activeConnection;
             if (connection == null)
@@ -2252,7 +2252,7 @@ namespace System.Data.SqlClient
                 throw ADP.ClosedConnectionError();
             }
 
-            connection.RegisterForConnectionCloseNotification<T>(ref outterTask, this, SqlReferenceCollection.CommandTag);
+            connection.RegisterForConnectionCloseNotification<T>(ref outerTask, this, SqlReferenceCollection.CommandTag);
         }
 
         // validates that a command has commandText and a non-busy open connection
