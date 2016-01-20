@@ -43,7 +43,6 @@
     unsigned            getBaseVarForPutArgStk(GenTreePtr treeNode);
 
 #ifdef _TARGET_XARCH_
-    // Defined for AMD64 System V targets only. 
     unsigned            getFirstArgWithStackSlot();
 #endif // !_TARGET_XARCH_
 
