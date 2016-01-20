@@ -3530,6 +3530,29 @@ AC_ARG_WITH(checked_build, [  --with-checked-build=yes|no      Enable checked bu
 	fi
 ], [with_checked_build=no])
 
+if test x$with_checked_build != xno ; then
+	DISABLED_CHECKED_BUILD_TEST=none
+
+	AC_ARG_ENABLE(checked_build_test, [  --enable-checked-build-test=LIST      drop support for LIST checked build tests. LIST is a comma-separated list from: gc, metadata, thread.],
+	[
+		for feature in `echo "$enable_checked_build_test" | sed -e "s/,/ /g"`; do
+			eval "mono_checked_build_test_disable_$feature='yes'"
+		done
+		DISABLED_CHECKED_BUILD_TEST=$enable_checked_build_test
+	],[])
+
+	if test "x$mono_checked_build_test_disable_gc" = "xyes"; then
+		AC_DEFINE(DISABLE_CHECKED_BUILD_GC, 1, [Disable GC checked build])
+	fi
+
+	if test "x$mono_checked_build_test_disable_metadata" = "xyes"; then
+		AC_DEFINE(DISABLE_CHECKED_BUILD_METADATA, 1, [Disable metadata checked build])
+	fi
+
+	if test "x$mono_checked_build_test_disable_thread" = "xyes"; then
+		AC_DEFINE(DISABLE_CHECKED_BUILD_THREAD, 1, [Disable thread checked build])
+	fi
+fi
 
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
