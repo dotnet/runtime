@@ -936,8 +936,10 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj = sgen_alloc_obj (vtable, size);
 
-	if (G_UNLIKELY (alloc_events))
-		mono_profiler_allocation (obj);
+	if (G_UNLIKELY (alloc_events)) {
+		if (obj)
+			mono_profiler_allocation (obj);
+	}
 
 	return obj;
 }
@@ -947,8 +949,10 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj = sgen_alloc_obj_pinned (vtable, size);
 
-	if (G_UNLIKELY (alloc_events))
-		mono_profiler_allocation (obj);
+	if (G_UNLIKELY (alloc_events)) {
+		if (obj)
+			mono_profiler_allocation (obj);
+	}
 
 	return obj;
 }
@@ -958,11 +962,13 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 {
 	MonoObject *obj = sgen_alloc_obj_mature (vtable, vtable->klass->instance_size);
 
-	if (obj && G_UNLIKELY (obj->vtable->klass->has_finalize))
-		mono_object_register_finalizer (obj);
+	if (obj) {
+		if (G_UNLIKELY (vtable->klass->has_finalize))
+			mono_object_register_finalizer (obj);
 
-	if (G_UNLIKELY (alloc_events))
-		mono_profiler_allocation (obj);
+		if (G_UNLIKELY (alloc_events))
+			mono_profiler_allocation (obj);
+	}
 
 	return obj;
 }
@@ -1736,7 +1742,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	arr = (MonoArray*)sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!arr)) {
 		UNLOCK_GC;
-		return mono_gc_out_of_memory (size);
+		return NULL;
 	}
 
 	arr->max_length = (mono_array_size_t)max_length;
@@ -1781,7 +1787,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	arr = (MonoArray*)sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!arr)) {
 		UNLOCK_GC;
-		return mono_gc_out_of_memory (size);
+		return NULL;
 	}
 
 	arr->max_length = (mono_array_size_t)max_length;
@@ -1825,7 +1831,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	str = (MonoString*)sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!str)) {
 		UNLOCK_GC;
-		return mono_gc_out_of_memory (size);
+		return NULL;
 	}
 
 	str->length = len;
@@ -2707,12 +2713,6 @@ void
 mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
 {
 	// FIXME:
-}
-
-void
-sgen_client_out_of_memory (size_t size)
-{
-	mono_gc_out_of_memory (size);
 }
 
 guint8*
