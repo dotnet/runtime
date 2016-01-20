@@ -7947,7 +7947,7 @@ CodeGen::getFirstArgWithStackSlot()
 #else
     // Not implemented for x86.
     unreached();
-    return 0;
+    return BAD_VAR_NUM;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
 
@@ -7961,11 +7961,11 @@ CodeGen::getFirstArgWithStackSlot()
 //    The number of the base variable.
 //
 // Note:
-//    If tail call the outgoing args are placed in the callers outgoing stack space.
-//    Otherwise, they go in the outgoing area on the current frame.
+//    If tail call the outgoing args are placed in the caller's incoming arg stack space.
+//    Otherwise, they go in the outgoing arg area on the current frame.
 //    
 //    On Windows the caller always creates slots (homing space) in its frame for the 
-//    first 4 arguments of a calee (register passed args). So, the baseVarNum is always 0.
+//    first 4 arguments of a callee (register passed args). So, the baseVarNum is always 0.
 //    For System V systems there is no such calling convention requirement, and the code needs to find
 //    the first stack passed argument from the caller. This is done by iterating over 
 //    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
@@ -8001,12 +8001,11 @@ CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
         // arg area required for tail call.
         LclVarDsc* varDsc = &(compiler->lvaTable[baseVarNum]);
         assert(varDsc != nullptr);
-        // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
-        // On System V systems the first arg will always be in the REG_ARG_0, REG_FLTARG_0 or on the stack (if it is a struct that
-        // is passed on the stack).
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         assert(!varDsc->lvIsRegArg && varDsc->lvArgReg == REG_STK);
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
         assert(varDsc->lvIsRegArg && (varDsc->lvArgReg == REG_ARG_0 || varDsc->lvArgReg == REG_FLTARG_0));
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif // !DEBUG
