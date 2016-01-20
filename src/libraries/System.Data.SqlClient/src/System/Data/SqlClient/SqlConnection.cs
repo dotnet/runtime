@@ -1135,10 +1135,10 @@ namespace System.Data.SqlClient
         // this only happens once per connection
         // SxS: using named file mapping APIs
 
-        internal void RegisterForConnectionCloseNotification<T>(ref Task<T> outterTask, object value, int tag)
+        internal void RegisterForConnectionCloseNotification<T>(ref Task<T> outerTask, object value, int tag)
         {
             // Connection exists,  schedule removal, will be added to ref collection after calling ValidateAndReconnect
-            outterTask = outterTask.ContinueWith(task =>
+            outerTask = outerTask.ContinueWith(task =>
             {
                 RemoveWeakReference(value);
                 return task;
