@@ -7946,7 +7946,7 @@ CodeGen::getFirstArgWithStackSlot()
     return 0;
 #else
     // Not implemented for x86.
-    unreached();
+     NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
     return BAD_VAR_NUM;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
