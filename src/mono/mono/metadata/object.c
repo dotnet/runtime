@@ -4520,14 +4520,12 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
 	if (!vtable)
 		return NULL;
 
-#ifdef HAVE_SGEN_GC
 	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
-#else
-	MonoObject *o = mono_object_new_specific (vtable);
-#endif
 
 	if (G_UNLIKELY (!o))
 		mono_gc_out_of_memory (mono_class_instance_size (klass));
+	else if (G_UNLIKELY (vtable->klass->has_finalize))
+		mono_object_register_finalizer (o);
 
 	return o;
 }
@@ -5478,13 +5476,14 @@ str_lookup (MonoDomain *domain, gpointer user_data)
 	info->res = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
 }
 
-#ifdef HAVE_SGEN_GC
-
 static MonoString*
 mono_string_get_pinned (MonoString *str)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	/* We only need to make a pinned version of a string if this is a moving GC */
+	if (!mono_gc_is_moving ())
+		return str;
 	int size;
 	MonoString *news;
 	size = sizeof (MonoString) + 2 * (mono_string_length (str) + 1);
@@ -5497,10 +5496,6 @@ mono_string_get_pinned (MonoString *str)
 	}
 	return news;
 }
-
-#else
-#define mono_string_get_pinned(str) (str)
-#endif
 
 static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)

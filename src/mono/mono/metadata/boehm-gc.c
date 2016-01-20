@@ -749,6 +749,12 @@ mono_gc_alloc_mature (MonoVTable *vtable, size_t size)
 	return mono_gc_alloc_obj (vtable, size);
 }
 
+void*
+mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
+{
+	return mono_gc_alloc_obj (vtable, size);
+}
+
 int
 mono_gc_invoke_finalizers (void)
 {
