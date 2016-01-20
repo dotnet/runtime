@@ -7898,6 +7898,59 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
     genProduceReg(treeNode);
 }
 
+//------------------------------------------------------------------------------------------------ //
+// getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
+//
+// Return value:
+//    The number of the first argument with stack slot on the caller's frame.
+//
+// Note:
+//    On Windows the caller always creates slots (homing space) in its frame for the 
+//    first 4 arguments of a calee (register passed args). So, the baseVarNum is always 0.
+//    For System V systems there is no such calling convention requirement, and the code needs to find
+//    the first stack passed argument from the caller. This is done by iterating over 
+//    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
+//    
+unsigned
+CodeGen::getFirstArgWithStackSlot()
+{
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    unsigned baseVarNum = compiler->lvaFirstStackIncomingArgNum;
+
+    if (compiler->lvaFirstStackIncomingArgNum != BAD_VAR_NUM)
+    {
+        baseVarNum = compiler->lvaFirstStackIncomingArgNum;
+    }
+    else
+    {
+        // Iterate over all the local variables in the lclvartable. 
+        // They contain all the implicit argumets - thisPtr, retBuf, 
+        // generic context, PInvoke cookie, var arg cookie,no-standard args, etc.
+        for (unsigned i = 0; i < compiler->lvaCount; i++)
+        {
+            LclVarDsc* varDsc = &(compiler->lvaTable[i]);
+
+            // We are iterating over the arguments only.
+            assert(varDsc->lvIsParam);
+
+            if (varDsc->lvArgReg == REG_STK)
+            {
+                baseVarNum = compiler->lvaFirstStackIncomingArgNum = i;
+                break;
+            }
+        }
+    }
+
+    return baseVarNum;
+#elif _TARGET_AMD64_
+    return 0;
+#else
+    // Not implemented for x86.
+    unreached();
+    return 0;
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+}
+
 //-------------------------------------------------------------------------- //
 // getBaseVarForPutArgStk - returns the baseVarNum for passing a stack arg.
 //
@@ -7907,25 +7960,38 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 // Return value:
 //    The number of the base variable.
 //
+// Note:
+//    If tail call the outgoing args are placed in the callers outgoing stack space.
+//    Otherwise, they go in the outgoing area on the current frame.
+//    
+//    On Windows the caller always creates slots (homing space) in its frame for the 
+//    first 4 arguments of a calee (register passed args). So, the baseVarNum is always 0.
+//    For System V systems there is no such calling convention requirement, and the code needs to find
+//    the first stack passed argument from the caller. This is done by iterating over 
+//    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
+//    
 unsigned
 CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 {
     assert(treeNode->OperGet() == GT_PUTARG_STK);
 
     unsigned baseVarNum;
+
 #if FEATURE_FASTTAILCALL
     bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
 #else
     const bool putInIncomingArgArea = false;
 #endif
+
     // Whether to setup stk arg in incoming or out-going arg area?
     // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
     // All other calls - stk arg is setup in out-going arg area.
     if (putInIncomingArgArea)
     {
-        // The first baseVarNum is guaranteed to be the first incoming arg of the method being compiled.
-        // See lvaInitTypeRef() for the order in which lvaTable entries are initialized.
-        baseVarNum = 0;
+        // See the note in the function header re: finding the first stack passed argument.
+        baseVarNum = getFirstArgWithStackSlot();
+        assert(baseVarNum != BAD_VAR_NUM);
+
 #ifdef DEBUG
         // This must be a fast tail call.
         assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
@@ -7933,10 +7999,17 @@ CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = compiler->lvaTable;
+        LclVarDsc* varDsc = &(compiler->lvaTable[baseVarNum]);
         assert(varDsc != nullptr);
-        assert(varDsc->lvIsRegArg && ((varDsc->lvArgReg == REG_ARG_0) || (varDsc->lvArgReg == REG_FLTARG_0)));
-#endif
+        // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
+        // On System V systems the first arg will always be in the REG_ARG_0, REG_FLTARG_0 or on the stack (if it is a struct that
+        // is passed on the stack).
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        assert(!varDsc->lvIsRegArg && varDsc->lvArgReg == REG_STK);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+        assert(varDsc->lvIsRegArg && (varDsc->lvArgReg == REG_ARG_0 || varDsc->lvArgReg == REG_FLTARG_0));
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !DEBUG
     }
     else
     {
