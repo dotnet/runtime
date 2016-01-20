@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -106,29 +107,36 @@ namespace System.IO.Compression
         {
             Int32 bufferPointer = 0;
             UInt32 currentSignature = 0;
-            Byte[] buffer = new Byte[BackwardsSeekingBufferSize];
+            Byte[] buffer = ArrayPool<byte>.Shared.Rent(BackwardsSeekingBufferSize);
 
             Boolean outOfBytes = false;
             Boolean signatureFound = false;
 
-            while (!signatureFound && !outOfBytes)
+            try
             {
-                outOfBytes = SeekBackwardsAndRead(stream, buffer, out bufferPointer);
-
-                Debug.Assert(bufferPointer < buffer.Length);
-
-                while (bufferPointer >= 0 && !signatureFound)
+                while (!signatureFound && !outOfBytes)
                 {
-                    currentSignature = (currentSignature << 8) | ((UInt32)buffer[bufferPointer]);
-                    if (currentSignature == signatureToFind)
+                    outOfBytes = SeekBackwardsAndRead(stream, buffer, out bufferPointer);
+
+                    Debug.Assert(bufferPointer < buffer.Length);
+
+                    while (bufferPointer >= 0 && !signatureFound)
                     {
-                        signatureFound = true;
-                    }
-                    else
-                    {
-                        bufferPointer--;
+                        currentSignature = (currentSignature << 8) | ((UInt32)buffer[bufferPointer]);
+                        if (currentSignature == signatureToFind)
+                        {
+                            signatureFound = true;
+                        }
+                        else
+                        {
+                            bufferPointer--;
+                        }
                     }
                 }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
 
             if (!signatureFound)

@@ -85,6 +85,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
