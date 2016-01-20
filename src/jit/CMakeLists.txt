@@ -8,9 +8,7 @@ include_directories("../inc")
 
 if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-DFEATURE_SIMD) 
-if (WIN32) 
   add_definitions(-DFEATURE_AVX_SUPPORT) 
-endif (WIN32)
 endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
 set( JIT_SOURCES
