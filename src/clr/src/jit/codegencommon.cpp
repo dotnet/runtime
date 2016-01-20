@@ -7557,6 +7557,7 @@ void CodeGen::genPrologPadForReJit()
 regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
 {
     assert(compiler->compGeneratingProlog);
+    noway_assert((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS) == 0);
     noway_assert(compiler->info.compCallUnmanaged);
 
     CORINFO_EE_INFO * pInfo = compiler->eeGetEEInfo();
@@ -7776,6 +7777,7 @@ regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
 void                CodeGen::genPInvokeMethodEpilog()
 {
     noway_assert(compiler->info.compCallUnmanaged);
+    noway_assert((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS) == 0);
     noway_assert(compiler->compCurBB == compiler->genReturnBB ||
                  (compiler->compTailCallUsed && (compiler->compCurBB->bbJumpKind == BBJ_THROW)) ||
                  (compiler->compJmpOpUsed && (compiler->compCurBB->bbFlags & BBF_HAS_JMP)));
@@ -8517,13 +8519,23 @@ void                CodeGen::genFnProlog()
     // since they are trashed by the jithelper call to setup the PINVOKE frame
     if (compiler->info.compCallUnmanaged)
     {
-        excludeMask |= (RBM_PINVOKE_FRAME | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
+        excludeMask |= RBM_PINVOKE_FRAME;
+        if (compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+        {
+            noway_assert(compiler->info.compLvFrameListRoot == BAD_VAR_NUM);
+        }
+        else
+        {
+            noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);
 
-        // We also must exclude the register used by compLvFrameListRoot when it is enregistered
-        //
-        LclVarDsc *  varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
-        if (varDsc->lvRegister)
-            excludeMask |= genRegMask(varDsc->lvRegNum);
+            excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
+
+            // We also must exclude the register used by compLvFrameListRoot when it is enregistered
+            //
+            LclVarDsc *  varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+            if (varDsc->lvRegister)
+                excludeMask |= genRegMask(varDsc->lvRegNum);
+        }
     }
 #endif // INLINE_NDIRECT
 
