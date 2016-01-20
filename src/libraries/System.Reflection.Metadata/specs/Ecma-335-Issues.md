@@ -195,7 +195,6 @@ That this change also allows properties to have BYREF type.
 
 c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 
-
 ```
 LocalVarSig ::= 
   LOCAL_SIG Count LocalVarType* 
@@ -210,19 +209,23 @@ LocalVarType ::=
 
 d) In section II.23.2.10 Param, replace the diagram with production rules:
 
+```
 Param ::= 
   Type
   CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
-  
+```
+
 e) In section II.23.2.11 RetType, replace the diagram with production rules:
 
+```
 RetType ::=
   Type
   CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
   CustomMod* VOID
-  
+```
+
 f) In section II.23.2.12 Type, add a production rule to the definition of ```Type```:
 
 ```
@@ -234,9 +237,8 @@ g) In sections II.23.2.12 Type and II.23.2.14 TypeSpec replace production rule
 
 ```
 PTR CustomMod* Type
-  
 ```
-   
+
 with 
 
 ```
@@ -247,9 +249,8 @@ and replace production rule
 
 ```
 SZARRAY CustomMod* Type
-  
 ```
-   
+
 with 
 
 ```
