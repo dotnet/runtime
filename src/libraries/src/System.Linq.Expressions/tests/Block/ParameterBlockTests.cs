@@ -146,22 +146,11 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[blockSize]);
         }
 
-        // See https://github.com/dotnet/corefx/issues/3043
-        [Fact]
-        public void EmptyBlockWithParametersNotAllowed()
-        {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(SingleParameter));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(SingleParameter, Enumerable.Empty<Expression>()));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), SingleParameter));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), SingleParameter, Enumerable.Empty<Expression>()));
-        }
-
-        // If https://github.com/dotnet/corefx/issues/3043 is ever actioned, this case would still be prohibited.
         [Fact]
         public void EmptyBlockWithParametersAndNonVoidTypeNotAllowed()
         {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), SingleParameter));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
+            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), SingleParameter));
+            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
         }
 
         [Theory]
