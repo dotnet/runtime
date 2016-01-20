@@ -8153,6 +8153,12 @@
       <Member MemberType="Property" Name="Local" />
       <Member MemberType="Property" Name="Utc" />
     </Type>
+    <Type Status="ApiFxInternal" Name="System.TimeZoneInfo+AdjustmentRule">
+      <!-- CreateAdjustmentRule doesn't have a public contract, but tests and other callers can use Reflection to invoke it, so ensure it is left in mscorlib. -->
+      <Member Status="ApiRoot" Name="CreateAdjustmentRule(System.DateTime,System.DateTime,System.TimeSpan,System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
+    </Type>
+    <Type Status="ApiFxInternal" Name="System.TimeZoneInfo+TransitionTime">
+    </Type>
     <Type Name="System.Tuple">
       <Member Name="Create&lt;T1&gt;(T1)" />
       <Member Name="Create&lt;T1,T2&gt;(T1,T2)" />
