@@ -12824,6 +12824,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = *sp;
 				fsig = mini_get_signature (method, token, generic_context);
 
+				if (cfg->llvm_only)
+					cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, fsig);
+
 				n = fsig->param_count + fsig->hasthis + 1;
 
 				CHECK_STACK (n);

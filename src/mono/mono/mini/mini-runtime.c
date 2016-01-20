@@ -2475,6 +2475,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			if (mono_llvm_only) {
 				ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
 				callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
+				if (callee_gsharedvt)
+					callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
 			}
 
 			if (!callee_gsharedvt)
@@ -2687,9 +2689,6 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 			virtual_generic = TRUE;
 	}
 
-	if (virtual_generic)
-		g_assert (fail_tramp);
-
 	/*
 	 * Initialize all vtable entries reachable from this imt slot, so the compiled
 	 * code doesn't have to check it.
@@ -2743,7 +2742,7 @@ mono_llvmonly_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		res [0] = mono_llvmonly_imt_thunk;
 		break;
 	}
-	if (fail_tramp)
+	if (virtual_generic || fail_tramp)
 		res [0] = mono_llvmonly_fallback_imt_thunk;
 	res [1] = buf;
 
