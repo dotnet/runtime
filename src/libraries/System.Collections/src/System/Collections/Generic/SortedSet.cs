@@ -1080,7 +1080,13 @@ namespace System.Collections.Generic
         /// <returns></returns>
         internal T[] ToArray()
         {
-            T[] newArray = new T[Count];
+            int count = Count;
+            if (count == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            T[] newArray = new T[count];
             CopyTo(newArray);
             return newArray;
         }

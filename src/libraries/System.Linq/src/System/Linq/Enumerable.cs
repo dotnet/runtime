@@ -567,6 +567,11 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
+                if (_source.Length == 0)
+                {
+                    return Array.Empty<TResult>();
+                }
+
                 var results = new TResult[_source.Length];
                 for (int i = 0; i < results.Length; i++)
                 {
@@ -633,7 +638,13 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var results = new TResult[_source.Count];
+                int count = _source.Count;
+                if (count == 0)
+                {
+                    return Array.Empty<TResult>();
+                }
+
+                var results = new TResult[count];
                 for (int i = 0; i < results.Length; i++)
                 {
                     results[i] = _selector(_source[i]);
@@ -709,7 +720,13 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var results = new TResult[_source.Count];
+                int count = _source.Count;
+                if (count == 0)
+                {
+                    return Array.Empty<TResult>();
+                }
+
+                var results = new TResult[count];
                 for (int i = 0; i < results.Length; i++)
                 {
                     results[i] = _selector(_source[i]);
@@ -1794,6 +1811,7 @@ namespace System.Linq
 
             public RangeIterator(int start, int count)
             {
+                Debug.Assert(count > 0);
                 _start = start;
                 _end = start + count;
             }
@@ -1897,7 +1915,7 @@ namespace System.Linq
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
         {
             if (count < 0) throw Error.ArgumentOutOfRange("count");
-            if (count == 0) new EmptyPartition<TResult>();
+            if (count == 0) return new EmptyPartition<TResult>();
             return new RepeatIterator<TResult>(element, count);
         }
 
@@ -1908,6 +1926,7 @@ namespace System.Linq
 
             public RepeatIterator(TResult element, int count)
             {
+                Debug.Assert(count > 0);
                 current = element;
                 _count = count;
             }
@@ -3931,12 +3950,12 @@ namespace System.Linq
 
         public TElement[] ToArray()
         {
-            return new TElement[0]; // consider replacing with Array.Empty<TElement>()
+            return Array.Empty<TElement>();
         }
 
         public List<TElement> ToList()
         {
-            return new List<TElement>(0);
+            return new List<TElement>();
         }
     }
 
@@ -4044,13 +4063,16 @@ namespace System.Linq
         public TElement[] ToArray()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(source);
+
             int count = buffer.count;
-            TElement[] array = new TElement[count];
-            if (count > 0)
+            if (count == 0)
             {
-                int[] map = SortedMap(buffer);
-                for (int i = 0; i != array.Length; i++) array[i] = buffer.items[map[i]];
+                return buffer.items;
             }
+
+            TElement[] array = new TElement[count];
+            int[] map = SortedMap(buffer);
+            for (int i = 0; i != array.Length; i++) array[i] = buffer.items[map[i]];
 
             return array;
         }
@@ -4093,7 +4115,7 @@ namespace System.Linq
         {
             Buffer<TElement> buffer = new Buffer<TElement>(source);
             int count = buffer.count;
-            if (count <= minIdx) return new TElement[0];
+            if (count <= minIdx) return Array.Empty<TElement>();
             if (count <= maxIdx) maxIdx = count - 1;
             if (minIdx == maxIdx) return new TElement[] { GetEnumerableSorter().ElementAt(buffer.items, count, minIdx) };
             int[] map = SortedMap(buffer, minIdx, maxIdx);
@@ -4671,7 +4693,6 @@ namespace System.Linq
 
         internal TElement[] ToArray()
         {
-            if (count == 0) return new TElement[0]; // consider replacing with Array.Empty<TElement>()
             if (items.Length == count) return items;
 
             var arr = new TElement[count];

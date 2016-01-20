@@ -252,6 +252,11 @@ namespace System.Collections.Generic
         // Copies the Stack to an array, in the same order Pop would return the items.
         public T[] ToArray()
         {
+            if (_size == 0)
+            {
+                return Array.Empty<T>();
+            }
+
             T[] objArray = new T[_size];
             int i = 0;
             while (i < _size)
