@@ -123,16 +123,14 @@ enum CorJitFlag
 
 #ifdef MDIL
     CORJIT_FLG_MDIL                = 0x00004000, // Generate MDIL code instead of machine code
-#else // MDIL
-    CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
-#endif // MDIL
 
-#ifdef MDIL
     // Safe to overlap with CORJIT_FLG_MAKEFINALCODE below. Not used by the JIT, used internally by NGen only.
     CORJIT_FLG_MINIMAL_MDIL        = 0x00008000, // Generate MDIL code suitable for use to bind other assemblies.
 
     // Safe to overlap with CORJIT_FLG_READYTORUN below. Not used by the JIT, used internally by NGen only.
     CORJIT_FLG_NO_MDIL             = 0x00010000, // Generate an MDIL section but no code or CTL. Not used by the JIT, used internally by NGen only.
+#else // MDIL
+    CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
 #endif // MDIL
 
 #if defined(FEATURE_INTERPRETER)
