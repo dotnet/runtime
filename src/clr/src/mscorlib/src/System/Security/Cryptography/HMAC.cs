@@ -62,7 +62,7 @@ namespace System.Security.Cryptography {
         }
 
         internal void InitializeKey (byte[] key) {
-            // When we change the key value, we'll need to update the initial values of the inner and outter
+            // When we change the key value, we'll need to update the initial values of the inner and outer
             // computation buffers.  In the case of correct HMAC vs Whidbey HMAC, these buffers could get
             // generated to a different size than when we started.
             m_inner = null;
