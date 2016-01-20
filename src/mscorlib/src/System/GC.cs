@@ -86,7 +86,7 @@ namespace System {
 
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetLOHCompactionMode(int newLOHCompactionyMode);
+        internal static extern void SetLOHCompactionMode(int newLOHCompactionMode);
 
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
