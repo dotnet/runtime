@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Net.WebSockets": "4.0.0-rc2-23712",
-    "System.Net.WebSockets.Client": "4.0.0-rc2-23712",
+    "System.Net.WebSockets": "4.0.0-rc2-23713",
+    "System.Net.WebSockets.Client": "4.0.0-rc2-23713",
     "System.Reflection.Extensions": "4.0.0",
     "System.Runtime": "4.0.20",
     "xunit": "2.1.0",

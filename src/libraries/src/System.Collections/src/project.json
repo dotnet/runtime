@@ -12,13 +12,13 @@
     },
     "netcore50": {
       "dependencies": {
-        "System.Diagnostics.Contracts": "4.0.1-rc2-23712",
-        "System.Diagnostics.Debug": "4.0.11-rc2-23712",
-        "System.Diagnostics.Tools": "4.0.1-rc2-23712",
-        "System.Threading": "4.0.11-rc2-23712",
-        "System.Resources.ResourceManager": "4.0.1-rc2-23712",
-        "System.Runtime": "4.0.21-rc2-23712",
-        "System.Runtime.Extensions": "4.0.11-rc2-23712"
+        "System.Diagnostics.Contracts": "4.0.1-rc2-23713",
+        "System.Diagnostics.Debug": "4.0.11-rc2-23713",
+        "System.Diagnostics.Tools": "4.0.1-rc2-23713",
+        "System.Threading": "4.0.11-rc2-23713",
+        "System.Resources.ResourceManager": "4.0.1-rc2-23713",
+        "System.Runtime": "4.0.21-rc2-23713",
+        "System.Runtime.Extensions": "4.0.11-rc2-23713"
       }
     }
   }
