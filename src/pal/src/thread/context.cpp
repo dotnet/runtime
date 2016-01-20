@@ -419,6 +419,16 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
+#if HAVE_GREGSET_T
+    if (native->uc_mcontext.fpregs == nullptr)
+    {
+        // If the pointer to the floating point state in the native context
+        // is not valid, we can't copy floating point registers regardless of
+        // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
+        return;
+    }
+#endif
+
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef _AMD64_
@@ -477,7 +487,24 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         ASSIGN_INTEGER_REGS
     }
 #undef ASSIGN_REG
-    
+
+#if HAVE_GREGSET_T
+    if (native->uc_mcontext.fpregs == nullptr)
+    {
+        // Reset the CONTEXT_FLOATING_POINT bit(s) so it's clear that the floating point
+        // data in the CONTEXT is not valid. Since CONTEXT_FLOATING_POINT is defined as 
+        // the architecture bit(s) OR'd with one or more other bits, we first get the bits
+        // that are unique to CONTEXT_FLOATING_POINT by resetting the architecture bits.
+        // We determine what those are by inverting the union of CONTEXT_CONTROL and
+        // CONTEXT_INTEGER, both of which should also have the architecture bit(s) set.
+        const ULONG floatingPointFlags = CONTEXT_FLOATING_POINT & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
+        lpContext->ContextFlags &= ~floatingPointFlags;
+
+        // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT 
+        return;
+    }
+#endif
+
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef _AMD64_
