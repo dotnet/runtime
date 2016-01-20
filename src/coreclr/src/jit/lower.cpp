@@ -2475,6 +2475,21 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compCallUnmanaged);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
+    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    {
+        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME
+
+        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
+            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        GenTreeStmt* stmt = LowerMorphAndSeqTree(helperCall);
+        comp->fgInsertStmtAtBeg(comp->fgFirstBB, stmt);
+
+        return;
+    }
+
     CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
@@ -2555,6 +2570,11 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     assert(returnBB != nullptr);
     assert(comp->info.compCallUnmanaged);
 
+    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    {
+        return;
+    }
+
     // Method doing Pinvoke calls has exactly one return block unless it has "jmp" or tail calls.
 #ifdef DEBUG
     bool endsWithTailCallOrJmp = false;
@@ -2612,14 +2632,6 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
 // field of the frame (methodHandle may be indirected & have a reloc)
 void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 {
-    // emit the following sequence
-    //
-    // frame.callTarget := methodHandle
-    // (x86) frame.callSiteTracker = SP
-    //       frame.callSiteReturnAddress = return address
-    // thread->gcState = 0
-    // (non-stub) - update top Frame on TCB
-    //
     GenTree* insertBefore = call;
     if (call->gtCallType == CT_INDIRECT)
     {
@@ -2632,6 +2644,29 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
 
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    {
+        // First argument is the address of the frame variable.
+        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
+            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+
+        // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        comp->fgMorphTree(helperCall);
+        comp->fgInsertTreeBeforeAsEmbedded(helperCall, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+        return;
+    }
+
+    // emit the following sequence
+    //
+    // frame.callTarget := methodHandle
+    // (x86) frame.callSiteTracker = SP
+    //       frame.callSiteReturnAddress = return address
+    // thread->gcState = 0
+    // (non-stub) - update top Frame on TCB
+    //
 
     // ----------------------------------------------------------------------------------
     // Setup frame.callSiteTarget (what it referred to in the JIT)
@@ -2751,10 +2786,26 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     comp->fgInsertTreeBeforeAsEmbedded(storeGCState, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
 }
 
-
 // insert the code that goes after every inlined pinvoke call
 void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
+    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    {
+        noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+        // First argument is the address of the frame variable.
+        GenTree* frameAddr = new(comp, GT_LCL_VAR)
+            GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+        frameAddr->gtOper = GT_LCL_VAR_ADDR;
+
+        // Insert call to CORINFO_HELP_JIT_PINVOKE_END
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        comp->fgMorphTree(helperCall);
+        comp->fgInsertTreeAfterAsEmbedded(helperCall, call, comp->compCurStmt->AsStmt(), currBlock);
+        return;
+    }
+
     CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     GenTreeStmt* newStmt;
     GenTreeStmt* topStmt = comp->compCurStmt->AsStmt();
@@ -2809,7 +2860,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
     InsertPInvokeCallProlog(call);
 
-    if (call->gtCallType != CT_INDIRECT)
+    if ((comp->opts.eeFlags & CORJIT_FLG_PINVOKE_DIRECT_CALLS) == 0 && call->gtCallType != CT_INDIRECT)
     {
         GenTree* indir = nullptr;
 
@@ -2830,6 +2881,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         }
         result = indir;
     }
+
     InsertPInvokeCallEpilog(call);
 
     return result;
