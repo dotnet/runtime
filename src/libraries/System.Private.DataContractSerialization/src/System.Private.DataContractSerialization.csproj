@@ -11,11 +11,13 @@
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
@@ -147,6 +149,10 @@
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib.Augments" />
+    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
