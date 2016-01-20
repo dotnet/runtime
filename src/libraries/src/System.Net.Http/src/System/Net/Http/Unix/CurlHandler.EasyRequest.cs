@@ -330,7 +330,8 @@ namespace System.Net.Http
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
                 NetworkCredential credentials = credentialScheme.Key;
-                if (credentials != null)
+                if (credentials != null && // no credentials to set
+                    credentials != CredentialCache.DefaultCredentials) // no "default credentials" on Unix; nop just like UseDefaultCredentials
                 {
                     if (string.IsNullOrEmpty(credentials.UserName))
                     {
