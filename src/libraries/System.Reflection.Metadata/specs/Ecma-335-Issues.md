@@ -51,7 +51,7 @@ cycles in signatures, but see #2 below.
 Related issue:
 * https://github.com/dotnet/roslyn/issues/7970
 
-#### Proposed specification change:
+#### Proposed specification change
 
 a) Rename section II.23.2.8 from "TypeDefOrRefOrSpecEncoded" to "TypeDefOrRefEncoded and TypeDefOrRefOrSpecEncoded"
 
@@ -152,7 +152,7 @@ Related issues:
 * https://github.com/dotnet/roslyn/issues/7971
 * https://github.com/dotnet/coreclr/issues/2674
 
-#### Proposed specification change:
+#### Proposed specification change
 
 In section II.23.2.7, replace
 
@@ -176,6 +176,85 @@ type arguments of `GENERICINST`.
 Also, `LocalVarSig` as specified does not allow modifiers on
 `TYPEDBYREF`, and that seems arbitrary since it is allowed on parameter
 and return types.
+
+#### Proposed specification change
+
+a) In section II.23.2.4 FieldSig, replace the diagram with a production rule:
+
+```
+FieldSig ::= FIELD Type
+```
+
+b) In section II.23.2.5 PropertySig, replace the diagram with a production rule:
+
+```
+PropertySig ::= PROPERTY HASTHIS? ParamCount RetType Param*
+```
+
+That this change also allows properties to have BYREF type.
+
+c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
+
+
+```
+LocalVarSig ::= 
+  LOCAL_SIG Count LocalVarType* 
+  
+LocalVarType ::=
+  Type
+  CustomMod* BYREF Type
+  CustomMod* TYPEDBYREF
+  CustomMod* Constraint Type
+  
+```
+
+d) In section II.23.2.10 Param, replace the diagram with production rules:
+
+Param ::= 
+  Type
+  CustomMod* BYREF Type
+  CustomMod* TYPEDBYREF
+  
+e) In section II.23.2.11 RetType, replace the diagram with production rules:
+
+RetType ::=
+  Type
+  CustomMod* BYREF Type
+  CustomMod* TYPEDBYREF
+  CustomMod* VOID
+  
+f) In section II.23.2.12 Type, add a production rule to the definition of ```Type```:
+
+```
+Type ::= CustomMod* Type
+  
+```
+
+g) In sections II.23.2.12 Type and II.23.2.14 TypeSpec replace production rule
+
+```
+PTR CustomMod* Type
+  
+```
+   
+with 
+
+```
+PTR Type
+```
+
+and replace production rule
+
+```
+SZARRAY CustomMod* Type
+  
+```
+   
+with 
+
+```
+SZARRAY Type
+```
 
 ### 4. TypeSpecs can encode more than specified
 
