@@ -7,6 +7,7 @@ __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
 __DOTNET_CMD=$__DOTNET_PATH/bin/dotnet
 if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/; fi
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat BuildToolsVersion.txt)
+__DOTNET_TOOLS_VERSION=$(cat DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
@@ -36,7 +37,7 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
 
  if [ ! -e $__DOTNET_PATH ]; then
     mkdir -p "$__DOTNET_PATH"
-    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__DOTNET_PKG}.latest.tar.gz
+    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
     cd $__DOTNET_PATH
     tar -xvf $__DOTNET_PATH/dotnet.tar
     cd $__scriptpath

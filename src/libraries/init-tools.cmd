@@ -34,8 +34,9 @@ if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
 echo Installing dotnet cli...
 mkdir "%DOTNET_PATH%"
-set DOTNET_ZIP_NAME=dotnet-win-x64.latest.zip
-set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/%DOTNET_ZIP_NAME%
+set /p DOTNET_VERSION=< %~dp0DotnetCLIVersion.txt
+set DOTNET_ZIP_NAME=dotnet-win-x64.%DOTNET_VERSION%.zip
+set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
 echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> %INIT_TOOLS_LOG%
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); Add-Type -assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%')"
