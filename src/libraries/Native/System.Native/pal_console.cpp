@@ -35,14 +35,6 @@ extern "C" int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 #endif
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" int32_t IsATty(intptr_t fd)
-{
-    return SystemNative_IsATty(fd);
-}
-
 extern "C" int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
@@ -259,14 +251,6 @@ static bool InitializeSignalHandling()
     return true;
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" int32_t RegisterForCtrl(CtrlCallback callback)
-{
-    return SystemNative_RegisterForCtrl(callback);
-}
-
 extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback)
 {
     assert(callback != nullptr);
@@ -281,14 +265,6 @@ extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback)
     }
 
     return 1;
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" void UnregisterForCtrl()
-{
-    SystemNative_UnregisterForCtrl();
 }
 
 extern "C" void SystemNative_UnregisterForCtrl()
