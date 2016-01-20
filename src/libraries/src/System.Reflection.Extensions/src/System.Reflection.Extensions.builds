@@ -7,7 +7,7 @@
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Reflection.Extensions.csproj">
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
