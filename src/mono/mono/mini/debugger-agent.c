@@ -9250,7 +9250,11 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				void *field_storage = NULL;
 
 				if (remote_obj) {
+#ifndef DISABLE_REMOTING
 					field_value = mono_load_remote_field(obj, obj_type, f, &field_storage);
+#else
+					g_assert_not_reached ();
+#endif
 				} else
 					field_value = (guint8*)obj + f->offset;
 
