@@ -40,7 +40,7 @@ public class Finally
 		bool retVal = true;
 		int  stage  = 0;
 
-		TestLibrary.TestFramework.LogInformation("PosTest1: Outter finally");
+		TestLibrary.TestFramework.LogInformation("PosTest1: Outer finally");
 
 		try
 		{

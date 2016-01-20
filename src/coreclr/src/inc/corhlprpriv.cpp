@@ -275,7 +275,7 @@ HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
     {
         _ASSERTE(cbCur < cbSigBlob);
 
-        // peak the outter most ELEMENT_TYPE_*
+        // peak the outer most ELEMENT_TYPE_*
         CorSigUncompressElementType (&pvSigBlob[cbCur], &ulElementType);
         if (ulElementType == ELEMENT_TYPE_SENTINEL)
             break;
