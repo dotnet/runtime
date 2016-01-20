@@ -13,6 +13,9 @@
     <File Include="$(CentOSNativePath)\System.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
+    <File Include="$(CentOSNativePath)\System.Native.a">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
