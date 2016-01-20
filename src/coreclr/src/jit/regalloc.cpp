@@ -6439,15 +6439,24 @@ void               Compiler::rpPredictRegUse()
         // it must not be in a register trashed by the callee
         if (info.compCallUnmanaged != 0)
         {
-            LclVarDsc *     pinvokeVarDsc = &lvaTable[info.compLvFrameListRoot];
-
-            if (pinvokeVarDsc->lvTracked)
+            if (opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
             {
-                rpRecordRegIntf(RBM_CALLEE_TRASH, VarSetOps::MakeSingleton(this, pinvokeVarDsc->lvVarIndex)
-                                DEBUGARG("compLvFrameListRoot"));
+                noway_assert(info.compLvFrameListRoot == BAD_VAR_NUM);
+            }
+            else
+            {
+                noway_assert(info.compLvFrameListRoot < lvaCount);
 
-                // We would prefer to have this be enregister in the PINVOKE_TCB register
-                pinvokeVarDsc->addPrefReg(RBM_PINVOKE_TCB, this);
+                LclVarDsc *     pinvokeVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+                if (pinvokeVarDsc->lvTracked)
+                {
+                    rpRecordRegIntf(RBM_CALLEE_TRASH, VarSetOps::MakeSingleton(this, pinvokeVarDsc->lvVarIndex)
+                                    DEBUGARG("compLvFrameListRoot"));
+
+                    // We would prefer to have this be enregister in the PINVOKE_TCB register
+                    pinvokeVarDsc->addPrefReg(RBM_PINVOKE_TCB, this);
+                }
             }
 
             //If we're using a single return block, the p/invoke epilog code trashes ESI and EDI (in the
