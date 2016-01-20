@@ -191,7 +191,7 @@ b) In section II.23.2.5 PropertySig, replace the diagram with a production rule:
 PropertySig ::= PROPERTY HASTHIS? ParamCount RetType Param*
 ```
 
-That this change also allows properties to have BYREF type.
+Note that this change also allows properties to have BYREF type.
 
 c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 
