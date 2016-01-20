@@ -680,7 +680,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			char *s;
 
 			sf->method = NULL;
-			s = mono_method_get_name_full (method, TRUE, MONO_TYPE_NAME_FORMAT_REFLECTION);
+			s = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
 			MONO_OBJECT_SETREF (sf, internal_method_name, mono_string_new (domain, s));
 			g_free (s);
 		}

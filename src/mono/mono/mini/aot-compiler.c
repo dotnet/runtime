@@ -3319,7 +3319,7 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		method = mini_get_shared_method_full (method, TRUE, TRUE);
 
 	if (acfg->aot_opts.log_generics)
-		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
 	add_method_full (acfg, method, TRUE, depth);
 }
@@ -4216,7 +4216,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		method = mono_marshal_get_delegate_invoke (method, NULL);
 
 		if (acfg->aot_opts.log_generics)
-			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
 		add_method (acfg, method);
 	}
@@ -5271,7 +5271,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	if (cfg->verbose_level > 0)
-		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), cfg->asm_symbol);
+		g_print ("Method %s emitted as %s\n", mono_method_get_full_name (method), cfg->asm_symbol);
 
 	acfg->stats.code_size += cfg->code_len;
 
@@ -7128,20 +7128,20 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (gshared failure): %s (%s)\n", mono_method_full_name (method, TRUE), cfg->exception_message);
+			printf ("Skip (gshared failure): %s (%s)\n", mono_method_get_full_name (method), cfg->exception_message);
 		InterlockedIncrement (&acfg->stats.genericcount);
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (JIT failure): %s\n", mono_method_full_name (method, TRUE));
+			printf ("Skip (JIT failure): %s\n", mono_method_get_full_name (method));
 		/* Let the exception happen at runtime */
 		return;
 	}
 
 	if (cfg->disable_aot) {
 		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (disabled): %s\n", mono_method_full_name (method, TRUE));
+			printf ("Skip (disabled): %s\n", mono_method_get_full_name (method));
 		InterlockedIncrement (&acfg->stats.ocount);
 		mono_destroy_compile (cfg);
 		return;
@@ -7184,7 +7184,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (skip) {
 		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (abs call): %s\n", mono_method_full_name (method, TRUE));
+			printf ("Skip (abs call): %s\n", mono_method_get_full_name (method));
 		InterlockedIncrement (&acfg->stats.abscount);
 		mono_destroy_compile (cfg);
 		return;
@@ -7213,7 +7213,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (skip) {
 		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (patches): %s\n", mono_method_full_name (method, TRUE));
+			printf ("Skip (patches): %s\n", mono_method_get_full_name (method));
 		acfg->stats.ocount++;
 		mono_destroy_compile (cfg);
 		mono_acfg_unlock (acfg);
@@ -7225,9 +7225,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (method->is_inflated && acfg->aot_opts.log_instances) {
 		if (acfg->instances_logfile)
-			fprintf (acfg->instances_logfile, "%s ### %d\n", mono_method_full_name (method, TRUE), cfg->code_size);
+			fprintf (acfg->instances_logfile, "%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
 		else
-			printf ("%s ### %d\n", mono_method_full_name (method, TRUE), cfg->code_size);
+			printf ("%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
 	}
 
 	/* Adds generic instances referenced by this method */
@@ -8464,7 +8464,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		value = get_method_index (acfg, method);
 
 		hash = mono_aot_method_hash (method) % table_size;
-		//printf ("X: %s %x\n", mono_method_full_name (method, 1), mono_aot_method_hash (method));
+		//printf ("X: %s %x\n", mono_method_get_full_name (method), mono_aot_method_hash (method));
 
 		chain_lengths [hash] ++;
 		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
@@ -9330,7 +9330,7 @@ collect_methods (MonoAotCompile *acfg)
 				  (method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 				  (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))) {
 				if (!mono_debug_lookup_method (method)) {
-					fprintf (stderr, "Method %s has no debug info, probably the .mdb file for the assembly is missing.\n", mono_method_full_name (method, TRUE));
+					fprintf (stderr, "Method %s has no debug info, probably the .mdb file for the assembly is missing.\n", mono_method_get_full_name (method));
 					exit (1);
 				}
 			}
@@ -9775,8 +9775,7 @@ static void aot_dump (MonoAotCompile *acfg)
 
 		mono_json_writer_indent (&writer);
 		mono_json_writer_object_key(&writer, "signature");
-		mono_json_writer_printf (&writer, "\"%s\",\n", mono_method_full_name (method,
-			/*signature=*/TRUE));
+		mono_json_writer_printf (&writer, "\"%s\",\n", mono_method_get_full_name (method));
 
 		mono_json_writer_indent (&writer);
 		mono_json_writer_object_key(&writer, "code_size");

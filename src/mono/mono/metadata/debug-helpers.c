@@ -775,7 +775,7 @@ mono_field_full_name (MonoClassField *field)
 }
 
 char *
-mono_method_get_name_full (MonoMethod *method, gboolean signature, MonoTypeNameFormat format)
+mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format)
 {
 	char *res;
 	char wrapper [64];
@@ -831,8 +831,15 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, MonoTypeNameF
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
-		res = g_strdup_printf ("%s%s:%s%s (%s)", wrapper, klass_desc, 
-							   method->name, inst_desc ? inst_desc : "", tmpsig);
+		if (ret) {
+			char *ret_str = mono_type_full_name (mono_method_signature (method)->ret);
+			res = g_strdup_printf ("%s%s %s:%s%s (%s)", wrapper, ret_str, klass_desc,
+								   method->name, inst_desc ? inst_desc : "", tmpsig);
+			g_free (ret_str);
+		} else {
+			res = g_strdup_printf ("%s%s:%s%s (%s)", wrapper, klass_desc,
+								   method->name, inst_desc ? inst_desc : "", tmpsig);
+		}
 		g_free (tmpsig);
 	} else {
 		res = g_strdup_printf ("%s%s:%s%s", wrapper, klass_desc,
@@ -848,7 +855,13 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, MonoTypeNameF
 char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {
-	return mono_method_get_name_full (method, signature, MONO_TYPE_NAME_FORMAT_IL);
+	return mono_method_get_name_full (method, signature, FALSE, MONO_TYPE_NAME_FORMAT_IL);
+}
+
+char *
+mono_method_get_full_name (MonoMethod *method)
+{
+	return mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
 }
 
 static const char*
