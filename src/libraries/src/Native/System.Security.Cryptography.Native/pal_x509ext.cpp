@@ -5,27 +5,10 @@
 
 #include <assert.h>
 
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
-extern "C" X509_EXTENSION*
-X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
-{
-    return CryptoNative_X509ExtensionCreateByObj(obj, isCritical, data);
-}
-
 extern "C" X509_EXTENSION*
 CryptoNative_X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
 {
     return X509_EXTENSION_create_by_OBJ(nullptr, obj, isCritical, data);
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
-extern "C" void X509ExtensionDestroy(X509_EXTENSION* a)
-{
-    return CryptoNative_X509ExtensionDestroy(a);
 }
 
 extern "C" void CryptoNative_X509ExtensionDestroy(X509_EXTENSION* a)
@@ -36,35 +19,11 @@ extern "C" void CryptoNative_X509ExtensionDestroy(X509_EXTENSION* a)
     }
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
-extern "C" int32_t X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
-{
-    return CryptoNative_X509V3ExtPrint(out, ext);
-}
-
 extern "C" int32_t CryptoNative_X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
 {
     return X509V3_EXT_print(out, ext, X509V3_EXT_DEFAULT, /*indent*/ 0);
 }
 
-extern "C" int32_t DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
-                                                        int32_t encodedLength,
-                                                        int32_t* certificateAuthority,
-                                                        int32_t* hasPathLengthConstraint,
-                                                        int32_t* pathLengthConstraint)
-{
-    return CryptoNative_DecodeX509BasicConstraints2Extension(encoded,
-        encodedLength,
-        certificateAuthority,
-        hasPathLengthConstraint,
-        pathLengthConstraint);
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
 extern "C" int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
                                                                      int32_t encodedLength,
                                                                      int32_t* certificateAuthority,
@@ -108,14 +67,6 @@ extern "C" int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8
     return result;
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
-extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
-{
-    return CryptoNative_DecodeExtendedKeyUsage(buf, len);
-}
-
 extern "C" EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
@@ -124,14 +75,6 @@ extern "C" EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t
     }
 
     return d2i_EXTENDED_KEY_USAGE(nullptr, &buf, len);
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method  
-// to keep tests running in CI. This will be removed once the managed assemblies  
-// are synced up with the native assemblies.
-extern "C" void ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a)
-{
-    return CryptoNative_ExtendedKeyUsageDestory(a);
 }
 
 extern "C" void CryptoNative_ExtendedKeyUsageDestory(EXTENDED_KEY_USAGE* a)
