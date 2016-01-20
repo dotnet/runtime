@@ -78,6 +78,11 @@ endif ()
 
 if (APPLE)
     add_definitions(-D__APPLE_USE_RFC_3542)
+   
+   # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)  
+   add_compile_options(-fstack-protector)  
+else ()  
+   add_compile_options(-fstack-protector-strong)  
 endif ()
 
 include(configure.cmake)
