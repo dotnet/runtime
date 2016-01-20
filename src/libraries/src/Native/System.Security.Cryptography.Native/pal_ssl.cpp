@@ -480,7 +480,7 @@ extern "C" X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 
 extern "C" void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
 {
-    int mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    int mode = SSL_VERIFY_PEER;
 
     SSL_CTX_set_verify(ctx, mode, callback);
 }
