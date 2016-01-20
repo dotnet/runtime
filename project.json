@@ -15,6 +15,7 @@
   "frameworks": {
     "net451": { },
     "dotnet5.4": {
+      "imports": "portable-net451+win8",
       "dependencies": {
         "System.IO.FileSystem": "4.0.1-rc2-23616",
         "System.Linq": "4.0.1-rc2-23616",
