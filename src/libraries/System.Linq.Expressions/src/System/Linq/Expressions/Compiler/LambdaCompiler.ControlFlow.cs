@@ -267,6 +267,10 @@ namespace System.Linq.Expressions.Compiler
                         var body = (BlockExpression)expression;
                         // omit empty and debuginfo at the end of the block since they
                         // are not going to emit any IL
+                        if (body.ExpressionCount == 0)
+                        {
+                            return;
+                        }
                         for (int i = body.ExpressionCount - 1; i >= 0; i--)
                         {
                             expression = body.GetExpression(i);

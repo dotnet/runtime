@@ -20,11 +20,17 @@ namespace System.Linq.Expressions.Compiler
 
         private void Emit(BlockExpression node, CompilationFlags flags)
         {
+            int count = node.ExpressionCount;
+
+            if (count == 0)
+            {
+                return;
+            }
+
             EnterScope(node);
 
             CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
-            int count = node.ExpressionCount;
             CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
             for (int index = 0; index < count - 1; index++)
             {
