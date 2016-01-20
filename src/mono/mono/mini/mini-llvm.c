@@ -6934,7 +6934,7 @@ mono_llvm_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 	if (cfg->gsharedvt && cfg->llvm_only) {
 		if (mini_is_gsharedvt_variable_signature (sig) && sig->ret->type != MONO_TYPE_VOID) {
-			cfg->vret_addr = mono_compile_create_var (cfg, &mono_get_int32_class ()->byval_arg, OP_ARG);
+			cfg->vret_addr = mono_compile_create_var (cfg, &mono_get_intptr_class ()->byval_arg, OP_ARG);
 			if (G_UNLIKELY (cfg->verbose_level > 1)) {
 				printf ("vret_addr = ");
 				mono_print_ins (cfg->vret_addr);
