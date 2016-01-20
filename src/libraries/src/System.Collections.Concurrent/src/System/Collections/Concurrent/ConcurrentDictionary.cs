@@ -669,8 +669,12 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[count];
+                if (count == 0)
+                {
+                    return Array.Empty<KeyValuePair<TKey, TValue>>();
+                }
 
+                KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[count];
                 CopyToPairs(array, 0);
                 return array;
             }

@@ -1510,7 +1510,12 @@ namespace System.Collections.Generic
         /// <returns></returns>
         internal T[] ToArray()
         {
-            T[] newArray = new T[Count];
+            if (_count == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            T[] newArray = new T[_count];
             CopyTo(newArray);
             return newArray;
         }
