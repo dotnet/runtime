@@ -1001,11 +1001,18 @@ namespace System.Collections.Generic {
             }
         }
 
-        // ToArray returns a new Object array containing the contents of the List.
+        // ToArray returns an array containing the contents of the List.
         // This requires copying the List, which is an O(n) operation.
         public T[] ToArray() {
             Contract.Ensures(Contract.Result<T[]>() != null);
             Contract.Ensures(Contract.Result<T[]>().Length == Count);
+
+#if FEATURE_CORECLR
+            if (_size == 0)
+            {
+                return _emptyArray;
+            }
+#endif
 
             T[] array = new T[_size];
             Array.Copy(_items, 0, array, 0, _size);
