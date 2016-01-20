@@ -2273,6 +2273,11 @@ public :
     unsigned short      lvaTrackedCount;    // actual # of locals being tracked
     unsigned            lvaTrackedCountInSizeTUnits;  // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // Only for AMD64 System V cache the first caller stack homed argument.
+    unsigned            lvaFirstStackIncomingArgNum;  // First argument with stack slot in the caller.
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 #ifdef DEBUG
     VARSET_TP           lvaTrackedVars;     // set of tracked variables
 #endif
@@ -8838,6 +8843,13 @@ void * CompAllocator::ArrayAlloc(size_t elems, size_t elemSize)
 inline
 LclVarDsc::LclVarDsc(Compiler* comp)
     :
+    // Initialize the ArgRegs to REG_STK.
+    // The morph will do the right thing to change 
+    // to the right register if passed in register.
+    _lvArgReg(REG_STK),
+#if FEATURE_MULTIREG_STRUCT_ARGS
+    _lvOtherArgReg(REG_STK),
+#endif // FEATURE_MULTIREG_STRUCT_ARGS
 #if ASSERTION_PROP
     lvRefBlks(BlockSetOps::UninitVal()),
 #endif // ASSERTION_PROP
