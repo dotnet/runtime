@@ -257,7 +257,26 @@ with
 SZARRAY Type
 ```
 
-### 4. TypeSpecs can encode more than specified
+### 4. BYREF can come before custom modifiers
+
+Everywhere `BYREF` appears in the spec's box and pointer diagrams, it
+comes after any custom modifiers, but the C++/CLI declaration `const
+int&` is emitted as `BYREF CMOD_OPT IsConst I4`, and a call-site using
+`CMOD_OPT IsConst BYREF I4` will not match.
+
+Under the interpretation that `BYREF` is just a managed pointer type, it
+makes sense that there should be parity between `PTR` and `BYREF` with
+respect to modifiers. Consider, `const int*` vs. `int* const` in
+C++. The former (pointer to constant int) is `PTR CMOD_OPT IsConst I4`
+and the latter (constant pointer to int) is `CMOD_OPT IsConst PTR
+I4`. The analogy from `const int*` to `const int&` justifies C++'s
+encoding of `BYREF` before `CMOD_OPT` in defiance of the spec.
+
+#### Proposed specification change
+
+Already addressed by changes in proposal #3 above.
+
+### 5. TypeSpecs can encode more than specified
 
 In II.23.2.14, the grammar for a `TypeSpec` blob is a subset of the
 `Type` grammar defined in II.23.21.12. However, in practice, it is
@@ -295,17 +314,3 @@ practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be otained by putting
 a modifier on the type used with `constrained.`.
 
 
-### 5. BYREF can come before custom modifiers
-
-Everywhere `BYREF` appears in the spec's box and pointer diagrams, it
-comes after any custom modifiers, but the C++/CLI declaration `const
-int&` is emitted as `BYREF CMOD_OPT IsConst I4`, and a call-site using
-`CMOD_OPT IsConst BYREF I4` will not match.
-
-Under the interpretation that `BYREF` is just a managed pointer type, it
-makes sense that there should be parity between `PTR` and `BYREF` with
-respect to modifiers. Consider, `const int*` vs. `int* const` in
-C++. The former (pointer to constant int) is `PTR CMOD_OPT IsConst I4`
-and the latter (constant pointer to int) is `CMOD_OPT IsConst PTR
-I4`. The analogy from `const int*` to `const int&` justifies C++'s
-encoding of `BYREF` before `CMOD_OPT` in defiance of the spec.
