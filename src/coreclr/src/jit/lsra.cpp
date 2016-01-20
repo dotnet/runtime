@@ -1744,9 +1744,10 @@ void LinearScan::identifyCandidates()
     // fp callee save registers will be needed, such as loops or many fp vars.
     // We keep two sets of vars, since we collect some of the information to determine which set to
     // use as we iterate over the vars.
-    // When we are generating AVX code, we maintain an additional set of LargeVectorType vars, and
-    // there is a separate threshold defined for those.  It is assumed that if we encounter these
-    // that we should consider this a "high use" scenario, so we don't maintain two sets of these vars.
+    // When we are generating AVX code on non-Unix (FEATURE_PARTIAL_SIMD_CALLEE_SAVE), we maintain an
+    // additional set of LargeVectorType vars, and there is a separate threshold defined for those.
+    // It is assumed that if we encounter these, that we should consider this a "high use" scenario,
+    // so we don't maintain two sets of these vars.
     // This is defined as thresholdLargeVectorRefCntWtd, as we are likely to use the same mechanism
     // for vectors on Arm64, though the actual value may differ.
 
@@ -1755,12 +1756,12 @@ void LinearScan::identifyCandidates()
     unsigned int floatVarCount = 0;
     unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
     unsigned int maybeFPRefCntWtd = 2 * BB_UNITY_WEIGHT;
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     VarSetOps::AssignNoCopy(compiler, largeVectorVars, VarSetOps::MakeEmpty(compiler));
     VarSetOps::AssignNoCopy(compiler, largeVectorCalleeSaveCandidateVars, VarSetOps::MakeEmpty(compiler));
     unsigned int largeVectorVarCount = 0;
     unsigned int thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     for (lclNum = 0, varDsc = compiler->lvaTable;
          lclNum < compiler->lvaCount;
@@ -1913,8 +1914,8 @@ void LinearScan::identifyCandidates()
         // We maintain two sets of FP vars - those that meet the first threshold of weighted ref Count,
         // and those that meet the second (see the definitions of thresholdFPRefCntWtd and maybeFPRefCntWtd
         // above).
-        // Additionally, when we are generating AVX code, we keep a separate set of the LargeVectorType vars.
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        // Additionally, when we are generating AVX on non-UNIX amd64, we keep a separate set of the LargeVectorType vars.
         if (varDsc->lvType == LargeVectorType)
         {
             largeVectorVarCount++;
@@ -1926,7 +1927,7 @@ void LinearScan::identifyCandidates()
             }
         }
         else
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         if (regType(newInt->registerType) == FloatRegisterType)
         {
             floatVarCount++;
@@ -2597,7 +2598,7 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
             {
                 unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
                 LclVarDsc *varDsc = compiler->lvaTable + varNum;
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 if (varDsc->lvType == LargeVectorType)
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
@@ -2606,7 +2607,7 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
                     }
                 }
                 else
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 if (varTypeIsFloating(varDsc) && !VarSetOps::IsMember(compiler, fpCalleeSaveCandidateVars, varIndex))
                 {
                     continue;
@@ -2747,7 +2748,7 @@ fixedCandidateMask(var_types type, regMaskTP candidates)
     return RBM_NONE;
 }
 
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 VARSET_VALRET_TP
 LinearScan::buildUpperVectorSaveRefPositions(GenTree *tree,
                                              LsraLocation currentLoc)
@@ -2805,7 +2806,7 @@ LinearScan::buildUpperVectorRestoreRefPositions(GenTree *tree,
         }
     }
 }
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 void 
 LinearScan::buildRefPositionsForNode(GenTree *tree,
@@ -3160,20 +3161,23 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
     assert(!varTypeIsMultiReg(tree->TypeGet()));
 #endif // _TARGET_xxx_
 
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     VARSET_TP       VARSET_INIT_NOCOPY(liveLargeVectors, VarSetOps::UninitVal());
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     // push defs
     if (produce == 0)
     {
         buildKillPositionsForNode(tree, currentLoc + 1);
 
-#ifdef FEATURE_SIMD
-        // Build RefPositions for saving any live large vectors.
-        // This must be done after the kills, so that we know which large vectors are still live.
-        VarSetOps::AssignNoCopy(compiler, liveLargeVectors, buildUpperVectorSaveRefPositions(tree, currentLoc));
-#endif // FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (RBM_FLT_CALLEE_SAVED != RBM_NONE)
+        {
+            // Build RefPositions for saving any live large vectors.
+            // This must be done after the kills, so that we know which large vectors are still live.
+            VarSetOps::AssignNoCopy(compiler, liveLargeVectors, buildUpperVectorSaveRefPositions(tree, currentLoc));
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 
     for (int i=0; i < produce; i++)
@@ -3186,11 +3190,11 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         {
             generatedKills = buildKillPositionsForNode(tree, lastDefLocation);
 
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             // Build RefPositions for saving any live large vectors.
             // This must be done after the kills, so that we know which large vectors are still live.
             VarSetOps::AssignNoCopy(compiler, liveLargeVectors, buildUpperVectorSaveRefPositions(tree, currentLoc));
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         }
         regMaskTP currCandidates = candidates;
 
@@ -3245,9 +3249,9 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         interval->updateRegisterPreferences(currCandidates);
         interval->updateRegisterPreferences(useCandidates);
     }
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     buildUpperVectorRestoreRefPositions(tree, currentLoc, liveLargeVectors);
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 }
 
 // make an interval for each physical register
@@ -6842,7 +6846,7 @@ LinearScan::insertCopyOrReload(GenTreePtr tree, RefPosition* refPosition)
     tree->InsertAfterSelf(newNode);
 }
 
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 //------------------------------------------------------------------------ 
 // insertUpperVectorSaveAndReload: Insert code to save and restore the upper half of a vector that lives
 //                                 in a callee-save register at the point of a kill (the upper half is
@@ -6923,7 +6927,7 @@ LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* refPosi
     compiler->fgInsertTreeAfterAsEmbedded(simdNode, tree, stmt->AsStmt(), block);
 
 }
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 //------------------------------------------------------------------------
 // initMaxSpill: Initializes the LinearScan members used to track the max number
@@ -7036,13 +7040,13 @@ LinearScan::updateMaxSpill(RefPosition* refPosition)
             // to know what they are here.
             RefType refType = refPosition->refType;
             var_types typ;
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             if ((refType == RefTypeUpperVectorSaveDef) || (refType == RefTypeUpperVectorSaveUse))
             {
                 typ = LargeVectorSaveType;
             }
             else
-#endif // !FEATURE_SIMD
+#endif // !FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             {
                 GenTreePtr treeNode = refPosition->treeNode;
                 if (treeNode == nullptr)
@@ -7268,7 +7272,7 @@ LinearScan::resolveRegisters()
             updateMaxSpill(currentRefPosition);
             GenTree *treeNode = currentRefPosition->treeNode;
 
-#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             if (currentRefPosition->refType == RefTypeUpperVectorSaveDef)
             {
                 // The treeNode must be a call, and this must be a RefPosition for a LargeVectorType LocalVar.
@@ -7283,7 +7287,7 @@ LinearScan::resolveRegisters()
             {
                 continue;
             }
-#endif // FEATURE_SIMD
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
             // Most uses won't actually need to be recorded (they're on the def).
             // In those cases, treeNode will be nullptr.
