@@ -2733,14 +2733,24 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	LLVMValueRef tramp, call, *args;
 	LLVMBuilderRef builder;
 	LLVMBasicBlockRef lbb;
+	LLVMCallInfo *linfo;
 	char *tramp_name;
 	int i, nargs;
 
 	tramp_name = g_strdup_printf ("ut_%s", method_name);
 	tramp = LLVMAddFunction (ctx->module->lmodule, tramp_name, method_type);
 	LLVMSetLinkage (tramp, LLVMInternalLinkage);
+	linfo = ctx->linfo;
+	// FIXME: Reduce code duplication with mono_llvm_compile_method () etc.
 	if (!ctx->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddAttribute (LLVMGetParam (tramp, ctx->rgctx_arg_pindex), LLVMInRegAttribute);
+	if (ctx->cfg->vret_addr) {
+		LLVMSetValueName (LLVMGetParam (tramp, linfo->vret_arg_pindex), "vret");
+		if (linfo->ret.storage == LLVMArgVtypeByRef) {
+			LLVMAddAttribute (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVMStructRetAttribute);
+			LLVMAddAttribute (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVMNoAliasAttribute);
+		}
+	}
 
 	lbb = LLVMAppendBasicBlock (tramp, "");
 	builder = LLVMCreateBuilder ();
@@ -2761,6 +2771,9 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	call = LLVMBuildCall (builder, method, args, nargs, "");
 	if (!ctx->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
+	if (linfo->ret.storage == LLVMArgVtypeByRef)
+		LLVMAddInstrAttribute (call, 1 + linfo->vret_arg_pindex, LLVMStructRetAttribute);
+
 	//mono_llvm_set_must_tail (call);
 	if (LLVMGetReturnType (method_type) == LLVMVoidType ())
 		LLVMBuildRetVoid (builder);
