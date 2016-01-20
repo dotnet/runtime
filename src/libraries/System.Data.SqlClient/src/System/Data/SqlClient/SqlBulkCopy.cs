@@ -1704,7 +1704,7 @@ namespace System.Data.SqlClient
             return writeTask;
         }
 
-        private void RegisterForConnectionCloseNotification<T>(ref Task<T> outterTask)
+        private void RegisterForConnectionCloseNotification<T>(ref Task<T> outerTask)
         {
             SqlConnection connection = _connection;
             if (connection == null)
@@ -1713,7 +1713,7 @@ namespace System.Data.SqlClient
                 throw ADP.ClosedConnectionError();
             }
 
-            connection.RegisterForConnectionCloseNotification<T>(ref outterTask, this, SqlReferenceCollection.BulkCopyTag);
+            connection.RegisterForConnectionCloseNotification<T>(ref outerTask, this, SqlReferenceCollection.BulkCopyTag);
         }
 
         // Runs a loop to copy all columns of a single row.
