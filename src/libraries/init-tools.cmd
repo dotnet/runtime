@@ -1,6 +1,9 @@
 @echo off
 setlocal
 
+REM Workaround https://github.com/dotnet/coreclr/issues/2153
+set ComPlus_ReadyToRun=0
+
 set INIT_TOOLS_LOG=%~dp0\init-tools.log
 if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages\
 if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
@@ -39,7 +42,7 @@ set DOTNET_ZIP_NAME=dotnet-win-x64.%DOTNET_VERSION%.zip
 set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
 echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> %INIT_TOOLS_LOG%
-powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); Add-Type -assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%')"
+powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%') } else { (New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_LOCAL_PATH%').Items(),16) }" 2> NUL
 
 :afterdotnetrestore
 
