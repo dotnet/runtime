@@ -4601,6 +4601,21 @@ mono_object_new_fast (MonoVTable *vtable)
 	return o;
 }
 
+MonoObject*
+mono_object_new_mature (MonoVTable *vtable)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoObject *o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (vtable->klass->instance_size);
+	else if (G_UNLIKELY (vtable->klass->has_finalize))
+		mono_object_register_finalizer (o);
+
+	return o;
+}
+
 /**
  * mono_class_get_allocation_ftn:
  * @vtable: vtable

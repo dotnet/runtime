@@ -914,15 +914,6 @@ mono_gc_get_mach_exception_thread (void)
 }
 #endif
 
-#ifndef HAVE_SGEN_GC
-void*
-mono_gc_alloc_mature (MonoVTable *vtable)
-{
-	return mono_object_new_specific (vtable);
-}
-#endif
-
-
 static MonoReferenceQueue *ref_queues;
 
 static void

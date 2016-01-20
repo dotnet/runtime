@@ -571,9 +571,7 @@ static MonoThread*
 create_thread_object (MonoDomain *domain)
 {
 	MonoVTable *vt = mono_class_vtable (domain, mono_defaults.thread_class);
-	MonoThread *t = (MonoThread*)mono_gc_alloc_mature (vt);
-	if (!t)
-		mono_gc_out_of_memory (mono_class_instance_size (mono_defaults.thread_class));
+	MonoThread *t = (MonoThread*)mono_object_new_mature (vt);
 	return t;
 }
 
@@ -592,9 +590,7 @@ create_internal_thread (void)
 	MonoVTable *vt;
 
 	vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
-	thread = (MonoInternalThread*)mono_gc_alloc_mature (vt);
-	if (!thread)
-		mono_gc_out_of_memory (mono_class_instance_size (mono_defaults.internal_thread_class));
+	thread = (MonoInternalThread*)mono_object_new_mature (vt);
 
 	thread->synch_cs = g_new0 (MonoCoopMutex, 1);
 	mono_coop_mutex_init_recursive (thread->synch_cs);
