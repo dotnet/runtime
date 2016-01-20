@@ -20,7 +20,10 @@ def static getOSGroup(def os) {
 // We use this class (vs variables) so that the static functions can access data here.
 class Constants {
     // Innerloop build OS's
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+    // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
+    // test execution in the build flow runs.  It generates the exact same build
+    // as Windows_NT but without the tests.
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
     def static crossList = ['Ubuntu', 'OSX']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -68,12 +71,16 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
 }
 
 // Calculates the name of the build job based on some typical parameters.
-def static getBuildJobName(def configuration, def architecture, def os, def scenario) {
+//
+def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
     
     def suffix = scenario != 'default' ? "_${scenario}" : '';
+    if (isBuildOnly) {
+        suffix += '_bld'
+    }
     def baseName = ''
     switch (architecture) {
         case 'x64':
@@ -302,6 +309,14 @@ combinedScenarios.each { scenario ->
         Constants.architectureList.each { architecture ->
             Constants.configurationList.each { configuration ->
                 Constants.osList.each { os ->
+                    // If the OS is Windows_NT_BuildOnly, set the isBuildOnly flag to true
+                    // and reset the os to Windows_NT
+                    def isBuildOnly = false
+                    if (os == 'Windows_NT_BuildOnly') {
+                        isBuildOnly = true
+                        os = 'Windows_NT'
+                    }
+                    
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
                         case 'arm64':
@@ -340,7 +355,7 @@ combinedScenarios.each { scenario ->
                         
                         // Since these are just execution time differences,
                         // skip platforms that don't execute the tests here (Windows_NT only)
-                        if (os != 'Windows_NT') {
+                        if (os != 'Windows_NT' || isBuildOnly) {
                             return
                         }
                         
@@ -384,7 +399,7 @@ combinedScenarios.each { scenario ->
                 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
-                    def jobName = getBuildJobName(configuration, architecture, os, scenario)
+                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly)
                     
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {}
@@ -422,16 +437,18 @@ combinedScenarios.each { scenario ->
                                     // If we are running a stress mode, we should write out the set of key
                                     // value env pairs to a file at this point and then we'll pass that to runtest.cmd
                                     
-                                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
-                                        def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
-                                        buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
-                                        
-                                        // Run tests with the 
-                                        
-                                        buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
-                                    }
-                                    else if (architecture == 'x64' || !isPR) {
-                                        buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                    if (!isBuildOnly) {
+                                        if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                            def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
+                                            buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
+                                            
+                                            // Run tests with the 
+                                            
+                                            buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
+                                        }
+                                        else if (architecture == 'x64' || !isPR) {
+                                            buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                        }
                                     }
                                 
                                     // Run the rest of the build    
@@ -446,10 +463,13 @@ combinedScenarios.each { scenario ->
                                     
                                     // For windows, pull full test results and test drops for x86/x64
                                     Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
-                                    // TEMPORARY. Don't run tests for PR jobs on x86
-                                    if (architecture == 'x64' || !isPR) {
-                                        Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
+                                    
+                                    if (!isBuildOnly) {
+                                        if (architecture == 'x64' || !isPR) {
+                                            Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
+                                        }
                                     }
+                                    
                                     break
                                 case 'arm64':
                                     assert scenario == 'default'
@@ -562,11 +582,21 @@ Constants.basicScenarios.each { scenario ->
                     
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
-                    def jobName = getBuildJobName(configuration, architecture, os, scenario) + "_tst"
+                    def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
                     def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, os, scenario), isPR)
-                    def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getBuildJobName(configuration, architecture, 'windows_nt', scenario), isPR)
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, scenario, false), isPR)
+                    // If this is a stress scenario, there isn't any difference in the build job
+                    // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
+                    // from the default scenario
+                    def inputWindowTestsBuildName = ''
+                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                        inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
+                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', 'default', true), isPR)
+                    }
+                    else {
+                        inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
+                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', scenario, true), isPR)
+                    }
                     // Enable Server GC for Ubuntu PR builds
                     def serverGCString = ""
                     if (os == 'Ubuntu' && isPR){
@@ -646,7 +676,7 @@ Constants.basicScenarios.each { scenario ->
                     // test.
                     // Windows CoreCLR build and Linux CoreCLR build (in parallel) ->
                     // Linux CoreCLR test
-                    def flowJobName = getBuildJobName(configuration, architecture, os, scenario) + "_flow"
+                    def flowJobName = getJobName(configuration, architecture, os, scenario, false) + "_flow"
                     def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
                     def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                         buildFlow("""
