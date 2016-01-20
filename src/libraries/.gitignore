@@ -76,6 +76,7 @@ _Chutzpah*
 ipch/
 *.aps
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
 *.cachefile
@@ -140,6 +141,7 @@ publish/
 
 # NuGet Packages
 *.nuget.props
+*.nuget.targets
 *.nupkg
 **/packages/*
 
