@@ -6567,34 +6567,38 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 		if (!cfg->llvm_only && !strcmp (cmethod->name, "Read") && fsig->param_count == 1) {
 			guint32 opcode = 0;
-			gboolean is_ref = mini_type_is_reference (fsig->params [0]);
-			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
+			MonoType *t = fsig->params [0];
+			gboolean is_ref;
+			gboolean is_float = t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8;
 
-			if (fsig->params [0]->type == MONO_TYPE_I1)
+			g_assert (t->byref);
+			/* t is a byref type, so the reference check is more complicated */
+			is_ref = mini_type_is_reference (&mono_class_from_mono_type (t)->byval_arg);
+			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_LOAD_I1;
-			else if (fsig->params [0]->type == MONO_TYPE_U1 || fsig->params [0]->type == MONO_TYPE_BOOLEAN)
+			else if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_BOOLEAN)
 				opcode = OP_ATOMIC_LOAD_U1;
-			else if (fsig->params [0]->type == MONO_TYPE_I2)
+			else if (t->type == MONO_TYPE_I2)
 				opcode = OP_ATOMIC_LOAD_I2;
-			else if (fsig->params [0]->type == MONO_TYPE_U2)
+			else if (t->type == MONO_TYPE_U2)
 				opcode = OP_ATOMIC_LOAD_U2;
-			else if (fsig->params [0]->type == MONO_TYPE_I4)
+			else if (t->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_LOAD_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_U4)
+			else if (t->type == MONO_TYPE_U4)
 				opcode = OP_ATOMIC_LOAD_U4;
-			else if (fsig->params [0]->type == MONO_TYPE_R4)
+			else if (t->type == MONO_TYPE_R4)
 				opcode = OP_ATOMIC_LOAD_R4;
-			else if (fsig->params [0]->type == MONO_TYPE_R8)
+			else if (t->type == MONO_TYPE_R8)
 				opcode = OP_ATOMIC_LOAD_R8;
 #if SIZEOF_REGISTER == 8
-			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
+			else if (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_LOAD_I8;
-			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U8 || fsig->params [0]->type == MONO_TYPE_U)
+			else if (is_ref || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U)
 				opcode = OP_ATOMIC_LOAD_U8;
 #else
-			else if (fsig->params [0]->type == MONO_TYPE_I)
+			else if (t->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_LOAD_I4;
-			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U)
+			else if (is_ref || t->type == MONO_TYPE_U)
 				opcode = OP_ATOMIC_LOAD_U4;
 #endif
 
@@ -6608,7 +6612,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_ACQ;
 				MONO_ADD_INS (cfg->cbb, ins);
 
-				switch (fsig->params [0]->type) {
+				switch (t->type) {
 				case MONO_TYPE_BOOLEAN:
 				case MONO_TYPE_I1:
 				case MONO_TYPE_U1:
@@ -6637,7 +6641,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					ins->type = STACK_R8;
 					break;
 				default:
-					g_assert (mini_type_is_reference (fsig->params [0]));
+					g_assert (is_ref);
 					ins->type = STACK_OBJ;
 					break;
 				}
@@ -6646,33 +6650,36 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 		if (!cfg->llvm_only && !strcmp (cmethod->name, "Write") && fsig->param_count == 2) {
 			guint32 opcode = 0;
-			gboolean is_ref = mini_type_is_reference (fsig->params [0]);
+			MonoType *t = fsig->params [0];
+			gboolean is_ref;
 
-			if (fsig->params [0]->type == MONO_TYPE_I1)
+			g_assert (t->byref);
+			is_ref = mini_type_is_reference (&mono_class_from_mono_type (t)->byval_arg);
+			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_STORE_I1;
-			else if (fsig->params [0]->type == MONO_TYPE_U1 || fsig->params [0]->type == MONO_TYPE_BOOLEAN)
+			else if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_BOOLEAN)
 				opcode = OP_ATOMIC_STORE_U1;
-			else if (fsig->params [0]->type == MONO_TYPE_I2)
+			else if (t->type == MONO_TYPE_I2)
 				opcode = OP_ATOMIC_STORE_I2;
-			else if (fsig->params [0]->type == MONO_TYPE_U2)
+			else if (t->type == MONO_TYPE_U2)
 				opcode = OP_ATOMIC_STORE_U2;
-			else if (fsig->params [0]->type == MONO_TYPE_I4)
+			else if (t->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_STORE_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_U4)
+			else if (t->type == MONO_TYPE_U4)
 				opcode = OP_ATOMIC_STORE_U4;
-			else if (fsig->params [0]->type == MONO_TYPE_R4)
+			else if (t->type == MONO_TYPE_R4)
 				opcode = OP_ATOMIC_STORE_R4;
-			else if (fsig->params [0]->type == MONO_TYPE_R8)
+			else if (t->type == MONO_TYPE_R8)
 				opcode = OP_ATOMIC_STORE_R8;
 #if SIZEOF_REGISTER == 8
-			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
+			else if (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_STORE_I8;
-			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U8 || fsig->params [0]->type == MONO_TYPE_U)
+			else if (is_ref || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U)
 				opcode = OP_ATOMIC_STORE_U8;
 #else
-			else if (fsig->params [0]->type == MONO_TYPE_I)
+			else if (t->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_STORE_I4;
-			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U)
+			else if (is_ref || t->type == MONO_TYPE_U)
 				opcode = OP_ATOMIC_STORE_U4;
 #endif
 
