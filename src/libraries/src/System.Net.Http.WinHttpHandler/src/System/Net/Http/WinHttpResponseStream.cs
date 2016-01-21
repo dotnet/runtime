@@ -139,9 +139,9 @@ namespace System.Net.Http
                     {
                         _state.TcsReadFromResponseStream.TrySetException(previousTask.Exception.InnerException);
                     }
-                    else if (previousTask.IsCanceled)
+                    else if (previousTask.IsCanceled || token.IsCancellationRequested)
                     {
-                        _state.TcsReadFromResponseStream.TrySetCanceled();
+                        _state.TcsReadFromResponseStream.TrySetCanceled(token);
                     }
                     else
                     {
@@ -170,7 +170,7 @@ namespace System.Net.Http
                         }
                     }
                 }, 
-                token, TaskContinuationOptions.None, TaskScheduler.Default);
+                CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
             // TODO: Issue #2165. Register callback on cancellation token to cancel WinHTTP operation.
                 
