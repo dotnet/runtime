@@ -12,14 +12,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
-{
-    return SystemNative_GetPwUidR(uid, pwd, buf, buflen);
-}
-
 extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
 {
     assert(pwd != nullptr);
@@ -61,25 +53,9 @@ extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, 
     return 0;
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" uint32_t GetEUid()
-{
-    return SystemNative_GetEUid();
-}
-
 extern "C" uint32_t SystemNative_GetEUid()
 {
     return geteuid();
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the managed assemblies
-// are synced up with the native assemblies.
-extern "C" uint32_t GetEGid()
-{
-    return SystemNative_GetEGid();
 }
 
 extern "C" uint32_t SystemNative_GetEGid()
