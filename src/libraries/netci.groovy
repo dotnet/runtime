@@ -115,6 +115,33 @@ def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : '
     }
 }
 
+// **************************
+// Define perf testing.  Built locally and submitted to Helix.
+// **************************
+
+// builds with secrets should never be available for pull requests.
+// right now perf tests are only run on Win10 (but can be built on any Windows)
+['Windows 10'].each { os ->
+	['Debug', 'Release'].each { configurationGroup ->
+
+		def newJobName = "perf_${osShortName[os]}_${configurationGroup.toLowerCase()}"
+
+		def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
+			steps {
+				helix("Build.cmd /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
+			}
+			// perf tests can be built on any Windows
+			label("windows10 || windows7 || windows")
+		}
+
+		// Set up standard options.
+		Utilities.standardJobSetup(newJob, project, /* isPR */ false)
+		
+		// Set a periodic trigger
+		Utilities.addPeriodicTrigger(newJob, '@daily')
+	}
+}
+
 // Here are the OS's that needs separate builds and tests.
 // We create a build for the native compilation, a build for the build of corefx itself (on Windows)
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
