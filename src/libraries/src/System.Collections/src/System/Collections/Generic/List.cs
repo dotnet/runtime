@@ -1131,6 +1131,11 @@ namespace System.Collections.Generic
             Contract.Ensures(Contract.Result<T[]>() != null);
             Contract.Ensures(Contract.Result<T[]>().Length == Count);
 
+            if (_size == 0)
+            {
+                return _emptyArray;
+            }
+
             T[] array = new T[_size];
             Array.Copy(_items, 0, array, 0, _size);
             return array;

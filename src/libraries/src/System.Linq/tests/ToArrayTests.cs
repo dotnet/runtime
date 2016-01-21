@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,17 +15,33 @@ namespace System.Linq.Tests
     public class ToArrayTests : EnumerableTests
     {
         [Fact]
-        public void ToArray_AlwaysCreateACopy()
+        public void ToArray_CreateACopyWhenNotEmpty()
         {
             int[] sourceArray = new int[] { 1, 2, 3, 4, 5 };
             int[] resultArray = sourceArray.ToArray();
 
             Assert.NotSame(sourceArray, resultArray);
             Assert.Equal(sourceArray, resultArray);
+        }
 
+        [Fact]
+        public void ToArray_UseArrayEmptyWhenEmpty()
+        {
             int[] emptySourceArray = Array.Empty<int>();
-            Assert.NotSame(emptySourceArray.ToArray(), emptySourceArray.ToArray());
-            Assert.NotSame(emptySourceArray.Select(i => i).ToArray(), emptySourceArray.Select(i => i).ToArray());
+            Assert.Same(emptySourceArray.ToArray(), emptySourceArray.ToArray());
+
+            Assert.Same(emptySourceArray.Select(i => i).ToArray(), emptySourceArray.Select(i => i).ToArray());
+            Assert.Same(emptySourceArray.ToList().Select(i => i).ToArray(), emptySourceArray.ToList().Select(i => i).ToArray());
+            Assert.Same(new Collection<int>(emptySourceArray).Select(i => i).ToArray(), new Collection<int>(emptySourceArray).Select(i => i).ToArray());
+            Assert.Same(emptySourceArray.OrderBy(i => i).ToArray(), emptySourceArray.OrderBy(i => i).ToArray());
+
+            Assert.Same(Enumerable.Range(5, 0).ToArray(), Enumerable.Range(3, 0).ToArray());
+            Assert.Same(Enumerable.Range(5, 3).Take(0).ToArray(), Enumerable.Range(3, 0).ToArray());
+            Assert.Same(Enumerable.Range(5, 3).Skip(3).ToArray(), Enumerable.Range(3, 0).ToArray());
+
+            Assert.Same(Enumerable.Repeat(42, 0).ToArray(), Enumerable.Range(84, 0).ToArray());
+            Assert.Same(Enumerable.Repeat(42, 3).Take(0).ToArray(), Enumerable.Range(84, 3).Take(0).ToArray());
+            Assert.Same(Enumerable.Repeat(42, 3).Skip(3).ToArray(), Enumerable.Range(84, 3).Skip(3).ToArray());
         }
 
 
@@ -200,9 +217,9 @@ namespace System.Linq.Tests
         }
         
         [Fact]
-        public void EmptyArraysNotSameObject()
+        public void EmptyArraysSameObject()
         {
-            Assert.NotSame(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray());
+            Assert.Same(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray());
             
             var array = new int[0];
             Assert.NotSame(array, array.ToArray());
