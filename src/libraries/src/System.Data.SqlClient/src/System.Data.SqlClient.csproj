@@ -13,10 +13,10 @@
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Interop\SNINativeMethodWrapper.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
@@ -146,9 +146,11 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Interop\LocaleMapper.Windows.cs" />
+    <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
+    <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />

@@ -222,6 +222,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\StreamSizes.cs">
       <Link>Common\Interop\Windows\sspicli\StreamSizes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -309,6 +312,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
+      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   
