@@ -4600,14 +4600,18 @@ mono_object_new_fast (MonoVTable *vtable)
 }
 
 MonoObject*
-mono_object_new_mature (MonoVTable *vtable)
+mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
+	MonoObject *o;
+
+	mono_error_init (error);
+
+	o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
 
 	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (vtable->klass->instance_size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
 	else if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
 
