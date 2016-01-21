@@ -257,6 +257,7 @@ namespace System.Collections.Concurrent
         {
             return ToList().ToArray();
         }
+
 #pragma warning disable 0420 // No warning for Interlocked.xxx if compiled with new managed compiler (Roslyn)
         /// <summary>
         /// Copies the <see cref="ConcurrentQueue{T}"/> elements to a new <see

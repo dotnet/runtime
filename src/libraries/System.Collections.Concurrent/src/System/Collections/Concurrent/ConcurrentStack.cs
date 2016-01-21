@@ -698,19 +698,30 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentStack{T}"/>.</returns>
         public T[] ToArray()
         {
-            return ToList().ToArray();
+            Node curr = _head;
+            return curr == null ?
+                Array.Empty<T>() :
+                ToList(curr).ToArray();
         }
 
         /// <summary>
         /// Returns an array containing a snapshot of the list's contents, using
         /// the target list node as the head of a region in the list.
         /// </summary>
-        /// <returns>An array of the list's contents.</returns>
+        /// <returns>A list of the stack's contents.</returns>
         private List<T> ToList()
+        {
+            return ToList(_head);
+        }
+
+        /// <summary>
+        /// Returns an array containing a snapshot of the list's contents starting at the specified node.
+        /// </summary>
+        /// <returns>A list of the stack's contents starting at the specified node.</returns>
+        private List<T> ToList(Node curr)
         {
             List<T> list = new List<T>();
 
-            Node curr = _head;
             while (curr != null)
             {
                 list.Add(curr._value);

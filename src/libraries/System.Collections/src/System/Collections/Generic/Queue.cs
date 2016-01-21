@@ -297,9 +297,12 @@ namespace System.Collections.Generic
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.ToArray"]/*' />
         public T[] ToArray()
         {
-            T[] arr = new T[_size];
             if (_size == 0)
-                return arr; // consider replacing with Array.Empty<T>() to be consistent with non-generic Queue
+            {
+                return Array.Empty<T>();
+            }
+
+            T[] arr = new T[_size];
             
             if (_head < _tail)
             {

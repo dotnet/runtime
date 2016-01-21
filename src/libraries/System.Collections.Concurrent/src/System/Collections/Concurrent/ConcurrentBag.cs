@@ -513,7 +513,7 @@ namespace System.Collections.Concurrent
         {
             // Short path if the bag is empty
             if (_headList == null)
-                return new T[0];
+                return Array.Empty<T>();
 
             bool lockTaken = false;
             try
