@@ -5477,9 +5477,11 @@ str_lookup (MonoDomain *domain, gpointer user_data)
 }
 
 static MonoString*
-mono_string_get_pinned (MonoString *str)
+mono_string_get_pinned (MonoString *str, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
 
 	/* We only need to make a pinned version of a string if this is a moving GC */
 	if (!mono_gc_is_moving ())
@@ -5492,7 +5494,7 @@ mono_string_get_pinned (MonoString *str)
 		memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
 		news->length = mono_string_length (str);
 	} else {
-		mono_gc_out_of_memory (size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
 	}
 	return news;
 }
@@ -5502,6 +5504,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoGHashTable *ldstr_table;
 	MonoString *s, *res;
 	MonoDomain *domain;
@@ -5517,7 +5520,8 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	if (insert) {
 		/* Allocate outside the lock */
 		ldstr_unlock ();
-		s = mono_string_get_pinned (str);
+		s = mono_string_get_pinned (str, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		if (s) {
 			ldstr_lock ();
 			res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, str);
@@ -5615,6 +5619,7 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	const char *str = sig;
 	MonoString *o, *interned;
 	size_t len2;
@@ -5639,7 +5644,8 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	if (interned)
 		return interned; /* o will get garbage collected */
 
-	o = mono_string_get_pinned (o);
+	o = mono_string_get_pinned (o, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	if (o) {
 		ldstr_lock ();
 		interned = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, o);
