@@ -1618,6 +1618,9 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 MonoObject *
 ves_icall_object_new_specific (MonoVTable *vtable);
 
+MonoObject *
+mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error);
+
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value);
 
