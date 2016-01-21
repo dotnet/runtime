@@ -963,7 +963,12 @@ MonoString*
 mono_string_alloc (int length)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	return mono_string_new_size (mono_domain_get (), length);
+
+	MonoError error;
+	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return str;
 }
 
 void
@@ -5080,10 +5085,11 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoString *s;
 	
-	s = mono_string_new_size (domain, len);
-	g_assert (s != NULL);
+	s = mono_string_new_size_checked (domain, len, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	memcpy (mono_string_chars (s), text, len * 2);
 
@@ -5102,21 +5108,22 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoString *s;
 	mono_unichar2 *utf16_output = NULL;
 	gint32 utf16_len = 0;
-	GError *error = NULL;
+	GError *gerror = NULL;
 	glong items_written;
 	
-	utf16_output = g_ucs4_to_utf16 (text, len, NULL, &items_written, &error);
+	utf16_output = g_ucs4_to_utf16 (text, len, NULL, &items_written, &gerror);
 	
-	if (error)
-		g_error_free (error);
+	if (gerror)
+		g_error_free (gerror);
 
 	while (utf16_output [utf16_len]) utf16_len++;
 	
-	s = mono_string_new_size (domain, utf16_len);
-	g_assert (s != NULL);
+	s = mono_string_new_size_checked (domain, utf16_len, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	memcpy (mono_string_chars (s), utf16_output, utf16_len * 2);
 
@@ -5135,15 +5142,29 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
+	MonoError error;
+	MonoString *str = mono_string_new_size_checked (domain, len, &error);
+	mono_error_raise_exception (&error);
+
+	return str;
+}
+
+MonoString *
+mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoString *s;
 	MonoVTable *vtable;
 	size_t size;
 
+	mono_error_init (error);
+
 	/* check for overflow */
-	if (len < 0 || len > ((SIZE_MAX - G_STRUCT_OFFSET (MonoString, chars) - 8) / 2))
-		mono_gc_out_of_memory (-1);
+	if (len < 0 || len > ((SIZE_MAX - G_STRUCT_OFFSET (MonoString, chars) - 8) / 2)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", -1);
+		return NULL;
+	}
 
 	size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)len + 1) * 2));
 	g_assert (size > 0);
@@ -5153,8 +5174,10 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 
 	s = (MonoString *)mono_gc_alloc_string (vtable, size, len);
 
-	if (G_UNLIKELY (!s))
-		mono_gc_out_of_memory (size);
+	if (G_UNLIKELY (!s)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		return NULL;
+	}
 
 	return s;
 }
@@ -5217,6 +5240,7 @@ mono_string_new (MonoDomain *domain, const char *text)
     g_free (ut);
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
 #if 0
+	MonoError error;
 	gunichar2 *str;
 	const gchar *end;
 	int len;
@@ -5226,7 +5250,8 @@ mono_string_new (MonoDomain *domain, const char *text)
 		return NULL;
 
 	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size (domain, len);
+	o = mono_string_new_size_checked (domain, len, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	str = mono_string_chars (o);
 
 	while (text < end) {

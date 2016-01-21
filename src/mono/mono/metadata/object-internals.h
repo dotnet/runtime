@@ -1670,6 +1670,9 @@ ves_icall_object_new_fast (MonoVTable *vtable);
 MonoObject *
 mono_object_clone_checked (MonoObject *obj, MonoError *error);
 
+MonoString *
+mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
