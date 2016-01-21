@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.Primitives</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -15,8 +15,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50'">
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
+    <Compile Include="System\Reflection\CallingConventions.cs" />
+    <Compile Include="System\Reflection\EventAttributes.cs" />
+    <Compile Include="System\Reflection\FieldAttributes.cs" />
+    <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
+    <Compile Include="System\Reflection\MethodAttributes.cs" />
+    <Compile Include="System\Reflection\MethodImplAttributes.cs" />
+    <Compile Include="System\Reflection\ParameterAttributes.cs" />
+    <Compile Include="System\Reflection\PropertyAttributes.cs" />
+    <Compile Include="System\Reflection\TypeAttributes.cs" />
+    <Compile Include="System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="System\Reflection\Emit\Opcode.cs" />
+    <Compile Include="System\Reflection\Emit\OpCodes.cs" />
+    <Compile Include="System\Reflection\Emit\OpcodeType.cs" />
+    <Compile Include="System\Reflection\Emit\OperandType.cs" />
+    <Compile Include="System\Reflection\Emit\PackingSize.cs" />
+    <Compile Include="System\Reflection\Emit\StackBehaviour.cs" />
   </ItemGroup>
 
   <ItemGroup>
