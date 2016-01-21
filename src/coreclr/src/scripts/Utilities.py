@@ -42,6 +42,7 @@ def walk_recursively_and_update(dcmp):
 
 def UpdateDirectory(destpath,srcpath):
 
+    print("Updating %s with %s" % (destpath,srcpath))
     if not os.path.exists(destpath):
         os.makedirs(destpath)
     dcmp = dircmp(destpath,srcpath)
