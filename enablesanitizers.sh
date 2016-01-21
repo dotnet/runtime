@@ -10,15 +10,17 @@ if [ $# -eq 0 ]; then
         echo " cd $(dirname $0);. enablesanitizers.sh [options]; cd -"
     fi
     echo "Usage: [asan] [ubsan] [lsan] [all] [off] [clangx.y]"
-    echo "asan: optional argument to enable Address Sanitizer."
-    echo "ubsan: optional argument to enable Undefined Behavior Sanitizer."
-    echo "lsan - optional argument to enable memory Leak Sanitizer."
-    echo "all - optional argument to enable asan, ubsan and lsan."
-    echo "off - optional argument to turn off all sanitizers."
-    echo "clangx.y - optional argument to specify clang version x.y. which is used to resolve stack traces."
+    echo " asan: optional argument to enable Address Sanitizer."
+    echo " ubsan: optional argument to enable Undefined Behavior Sanitizer."
+    echo " lsan - optional argument to enable memory Leak Sanitizer."
+    echo " all - optional argument to enable asan, ubsan and lsan."
+    echo " off - optional argument to turn off all sanitizers."
+    echo " clangx.y - optional argument to specify clang version x.y. which is used to resolve stack traces. Default is 3.6"
 else
+    # default to clang 3.6 instead of 3.5 because it supports print_stacktrace (otherwise only one stack frame)
     __ClangMajorVersion=3
-    __ClangMinorVersion=5
+    __ClangMinorVersion=6
+
     __EnableASan=0
     __EnableUBSan=0
     __EnableLSan=0
@@ -69,7 +71,10 @@ else
         unset DEBUG_SANITIZERS
         echo "Setting DEBUG_SANITIZERS="
     else
-        ASAN_OPTIONS="symbolize=1"
+        # for now, specify alloc_dealloc_mismatch=0 as there are too many error reports that are not an issue
+        ASAN_OPTIONS="symbolize=1 alloc_dealloc_mismatch=0"
+        # when Clang 3.8 available, add: suppressions=$(readlink -f sanitizersuppressions.txt)
+        UBSAN_OPTIONS="print_stacktrace=1"
 
         if [ $__EnableASan == 1 ]; then
             __Options="$__Options asan"
@@ -91,10 +96,15 @@ else
         export ASAN_OPTIONS
         echo "Setting ASAN_OPTIONS=$ASAN_OPTIONS"
 
+        UBSAN_OPTIONS="\"$UBSAN_OPTIONS\""
+        export UBSAN_OPTIONS
+        echo "Setting UBSAN_OPTIONS=$UBSAN_OPTIONS"
+
         # used by ASan at run-time
         ASAN_SYMBOLIZER_PATH="/usr/bin/llvm-symbolizer-$__ClangMajorVersion.$__ClangMinorVersion"
         export ASAN_SYMBOLIZER_PATH
         echo "Setting ASAN_SYMBOLIZER_PATH=$ASAN_SYMBOLIZER_PATH"
+        echo "Done. You can now run: build.sh Debug clang$__ClangMajorVersion.$__ClangMinorVersion"
     fi
 
     unset __ClangMajorVersion

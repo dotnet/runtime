@@ -1984,14 +1984,16 @@ uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32
         uint32_t uAlloc = uRemain;
 
         // compute the default mask based on that count
-        uint32_t dwNewMask = (MASK_EMPTY << uAlloc);
-
+        uint32_t dwNewMask;
         // are we allocating all of them?
         if (uAlloc >= HANDLE_HANDLES_PER_MASK)
         {
-            // shift above has unpredictable results in this case
-            dwNewMask = MASK_FULL;
+            dwNewMask = MASK_FULL; // avoid unpredictable shift
             uAlloc = HANDLE_HANDLES_PER_MASK;
+        }
+        else
+        {
+            dwNewMask = (MASK_EMPTY << uAlloc);
         }
 
         // set the free mask
