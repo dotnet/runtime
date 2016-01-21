@@ -1557,7 +1557,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			/* No need for a wrapper */
 			return mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (m));
 		} else {
-			addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, FALSE, &arg);
+			addr = mini_add_method_wrappers_llvmonly (m, addr, TRUE, FALSE, &arg);
 
 			/* Returns an ftndesc */
 			return mini_create_llvmonly_ftndesc (domain, addr, arg);
