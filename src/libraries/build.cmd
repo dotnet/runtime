@@ -4,7 +4,7 @@ setlocal
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
+::       assembly.
 
 if not defined VisualStudioVersion (
     if defined VS140COMNTOOLS (
@@ -12,19 +12,14 @@ if not defined VisualStudioVersion (
         goto :CheckNative
     )
 
-    if defined VS120COMNTOOLS (
-        call "%VS120COMNTOOLS%\VsDevCmd.bat"
-        goto :CheckNative
-    )
-
-    echo Error: build.cmd requires Visual Studio 2013 or 2015.  
+    echo Error: build.cmd requires Visual Studio 2015.
     echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
 
 :CheckNative
 
-call init-tools.cmd
+call %~dp0init-tools.cmd
 
 :: Run the Native Windows build
 echo [%time%] Building Native Libraries...
