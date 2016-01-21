@@ -454,8 +454,6 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	LOCK_GC;
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
-	if (G_UNLIKELY (!res))
-		sgen_client_out_of_memory (size);
 	return res;
 }
 

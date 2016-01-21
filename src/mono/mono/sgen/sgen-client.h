@@ -141,14 +141,6 @@ void sgen_client_degraded_allocation (size_t size);
 void sgen_client_total_allocated_heap_changed (size_t allocated_heap_size);
 
 /*
- * Called when an object allocation fails.  The suggested action is to abort the program.
- *
- * FIXME: Don't we want to return a BOOL here that indicates whether to retry the
- * allocation?
- */
-void sgen_client_out_of_memory (size_t size);
-
-/*
  * If the client has registered any internal memory types, this must return a string
  * describing the given type.  Only used for debugging.
  */

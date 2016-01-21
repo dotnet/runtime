@@ -4520,11 +4520,14 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
 	if (!vtable)
 		return NULL;
 
-#ifdef HAVE_SGEN_GC
-	return (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
-#else
-	return mono_object_new_specific (vtable);
-#endif
+	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (mono_class_instance_size (klass));
+	else if (G_UNLIKELY (vtable->klass->has_finalize))
+		mono_object_register_finalizer (o);
+
+	return o;
 }
 
 /**
@@ -4575,7 +4578,9 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 
 	MonoObject *o = (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
-	if (G_UNLIKELY (vtable->klass->has_finalize))
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (vtable->klass->instance_size);
+	else if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
 
 	return o;
@@ -4586,7 +4591,27 @@ mono_object_new_fast (MonoVTable *vtable)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
+	MonoObject *o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (vtable->klass->instance_size);
+
+	return o;
+}
+
+MonoObject*
+mono_object_new_mature (MonoVTable *vtable)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoObject *o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (vtable->klass->instance_size);
+	else if (G_UNLIKELY (vtable->klass->has_finalize))
+		mono_object_register_finalizer (o);
+
+	return o;
 }
 
 /**
@@ -4670,6 +4695,9 @@ mono_object_clone (MonoObject *obj)
 		return (MonoObject*)mono_array_clone ((MonoArray*)obj);
 
 	o = (MonoObject *)mono_gc_alloc_obj (obj->vtable, size);
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (size);
 
 	/* If the object doesn't contain references this will do a simple memmove. */
 	mono_gc_wbarrier_object_copy (o, obj);
@@ -4894,6 +4922,10 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 		o = (MonoObject *)mono_gc_alloc_array (vtable, byte_len, len, bounds_size);
 	else
 		o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, len);
+
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (byte_len);
+
 	array = (MonoArray*)o;
 
 	bounds = array->bounds;
@@ -4944,7 +4976,6 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *o;
-	MonoArray *ao;
 	uintptr_t byte_len;
 
 	if (G_UNLIKELY (n > MONO_ARRAY_MAX_INDEX)) {
@@ -4957,9 +4988,11 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 		return NULL;
 	}
 	o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, n);
-	ao = (MonoArray*)o;
 
-	return ao;
+	if (G_UNLIKELY (!o))
+		mono_gc_out_of_memory (byte_len);
+
+	return (MonoArray*)o;
 }
 
 /**
@@ -5046,6 +5079,9 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	g_assert (vtable);
 
 	s = (MonoString *)mono_gc_alloc_string (vtable, size, len);
+
+	if (G_UNLIKELY (!s))
+		mono_gc_out_of_memory (size);
 
 	return s;
 }
@@ -5440,13 +5476,14 @@ str_lookup (MonoDomain *domain, gpointer user_data)
 	info->res = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
 }
 
-#ifdef HAVE_SGEN_GC
-
 static MonoString*
 mono_string_get_pinned (MonoString *str)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	/* We only need to make a pinned version of a string if this is a moving GC */
+	if (!mono_gc_is_moving ())
+		return str;
 	int size;
 	MonoString *news;
 	size = sizeof (MonoString) + 2 * (mono_string_length (str) + 1);
@@ -5454,13 +5491,11 @@ mono_string_get_pinned (MonoString *str)
 	if (news) {
 		memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
 		news->length = mono_string_length (str);
+	} else {
+		mono_gc_out_of_memory (size);
 	}
 	return news;
 }
-
-#else
-#define mono_string_get_pinned(str) (str)
-#endif
 
 static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)

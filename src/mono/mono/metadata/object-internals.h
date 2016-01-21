@@ -1652,6 +1652,9 @@ mono_error_set_pending_exception (MonoError *error);
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass);
 
+MonoObject*
+mono_object_new_mature (MonoVTable *vtable);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
