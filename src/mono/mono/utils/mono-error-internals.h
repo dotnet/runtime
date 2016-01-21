@@ -18,10 +18,17 @@ typedef struct {
 	MonoClass *klass;
 	const char *full_message;
 	const char *full_message_with_fields;
+	const char *first_argument;
 
-	void *padding [4];
-    char message [128];
+	void *padding [3];
 } MonoErrorInternal;
+
+#define error_init(error) do {	\
+	(error)->error_code = MONO_ERROR_NONE;	\
+	(error)->flags = 0;	\
+} while (0);
+
+#define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)
 
 void
 mono_error_assert_ok (MonoError *error);
