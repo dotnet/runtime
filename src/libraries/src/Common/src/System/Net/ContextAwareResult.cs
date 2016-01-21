@@ -70,7 +70,7 @@ namespace System.Net
 
     // This class will ensure that the correct context is restored on the thread before invoking
     // a user callback.
-    internal class ContextAwareResult : LazyAsyncResult
+    internal partial class ContextAwareResult : LazyAsyncResult
     {
         [Flags]
         private enum StateFlags
@@ -88,9 +88,6 @@ namespace System.Net
         private object _lock;
         private StateFlags _flags;
 
-#if !NetNative
-        private WindowsIdentity _windowsIdentity;
-#endif
 
         internal ContextAwareResult(object myObject, object myState, AsyncCallback myCallBack) :
             this(false, false, myObject, myState, myCallBack)
@@ -123,14 +120,6 @@ namespace System.Net
             {
                 _flags |= StateFlags.ThreadSafeContextCopy;
             }
-        }
-
-        // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
-        private void SafeCaptureIdentity()
-        {
-#if !NetNative
-            _windowsIdentity = WindowsIdentity.GetCurrent();
-#endif
         }
 
         // This can be used to establish a context during an async op for something like calling a delegate or demanding a permission.
@@ -203,75 +192,6 @@ namespace System.Net
                 return _context; // No need to copy on CoreCLR; ExecutionContext is immutable
             }
         }
-
-#if !NetNative
-        // Just like ContextCopy.
-        internal WindowsIdentity Identity
-        {
-            get
-            {
-                if (InternalPeekCompleted)
-                {
-                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
-                    {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Called on completed result.", LoggingHash.HashString(this));
-                        }
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Called on completed result.");
-                    }
-
-                    throw new InvalidOperationException(SR.net_completed_result);
-                }
-
-                if (_windowsIdentity != null)
-                {
-                    return _windowsIdentity;
-                }
-
-                // Make sure the identity was requested.
-                if ((_flags & StateFlags.CaptureIdentity) == 0)
-                {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
-                    }
-                    Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |No identity captured - specify captureIdentity.");
-                }
-
-                // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
-                // don't need an identity anyway.
-                if ((_flags & StateFlags.PostBlockFinished) == 0)
-                {
-                    if (_lock == null)
-                    {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
-                        }
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).");
-                    }
-                    lock (_lock) { }
-                }
-
-                if (InternalPeekCompleted)
-                {
-                    if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
-                    {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Result became completed during call.", LoggingHash.HashString(this));
-                        }
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Result became completed during call.");
-                    }
-
-                    throw new InvalidOperationException(SR.net_completed_result);
-                }
-
-                return _windowsIdentity;
-            }
-        }
-#endif
 
 #if DEBUG
         // Want to be able to verify that the Identity was requested.  If it was requested but isn't available
@@ -382,13 +302,7 @@ namespace System.Net
                 GlobalLog.Print("ContextAwareResult#" + LoggingHash.HashString(this) + "::Cleanup()");
             }
 
-#if !NetNative
-            if (_windowsIdentity != null)
-            {
-                _windowsIdentity.Dispose();
-                _windowsIdentity = null;
-            }
-#endif
+            CleanupInternal();
         }
 
         // This must be called right before returning the result to the user.  It might call the callback itself,
