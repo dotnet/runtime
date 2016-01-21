@@ -18,8 +18,9 @@ typedef struct {
 	MonoClass *klass;
 	const char *full_message;
 	const char *full_message_with_fields;
+	const char *first_argument;
 
-	void *padding [4];
+	void *padding [3];
 } MonoErrorInternal;
 
 void

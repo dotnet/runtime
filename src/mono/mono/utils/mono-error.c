@@ -28,7 +28,7 @@ mono_error_prepare (MonoErrorInternal *error)
 	if (error->error_code != MONO_ERROR_NONE)
 		return;
 
-	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = NULL;
+	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = error->first_argument = NULL;
 	error->klass = NULL;
 }
 
@@ -85,6 +85,7 @@ mono_error_cleanup (MonoError *oerror)
 	g_free ((char*)error->member_name);
 	g_free ((char*)error->exception_name_space);
 	g_free ((char*)error->exception_name);
+	g_free ((char*)error->first_argument);
 }
 
 gboolean
@@ -150,6 +151,7 @@ mono_error_dup_strings (MonoError *oerror, gboolean dup_strings)
 		DUP_STR (member_name);
 		DUP_STR (exception_name_space);
 		DUP_STR (exception_name);
+		DUP_STR (first_argument);
 	}
 #undef DUP_STR
 }
@@ -436,7 +438,7 @@ mono_error_set_argument (MonoError *oerror, const char *argument, const char *ms
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_ARGUMENT;
-	error->type_name = argument; /*use the first available string slot*/
+	error->first_argument = argument;
 
 	set_error_message ();
 }
@@ -599,7 +601,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_ARGUMENT:
-		exception = mono_get_exception_argument (error->type_name, error->full_message);
+		exception = mono_get_exception_argument (error->first_argument, error->full_message);
 		break;
 
 	case MONO_ERROR_NOT_VERIFIABLE: {
