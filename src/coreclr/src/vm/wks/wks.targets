@@ -72,6 +72,7 @@
     <CppCompile Include="$(VmSourcesDir)\decodeMD.cpp" />
     <CppCompile Include="$(VmSourcesDir)\DebugDebugger.cpp" />
     <CppCompile Include="$(VmSourcesDir)\DebugInfoStore.cpp" />
+    <CppCompile Include="$(VmSourcesDir)\disassembler.cpp" />
     <CppCompile Include="$(VmSourcesDir)\DynamicMethod.cpp" />
     <CppCompile Include="$(VmSourcesDir)\ecall.cpp" />
     <CppCompile Include="$(VmSourcesDir)\eeconfig.cpp" />

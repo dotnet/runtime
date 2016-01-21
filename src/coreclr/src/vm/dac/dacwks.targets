@@ -25,6 +25,7 @@
         <CppCompile Include="$(ClrSrcDirectory)\vm\debugdebugger.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\debugHelp.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\debuginfostore.cpp" />
+        <CppCompile Include="$(ClrSrcDirectory)\vm\disassembler.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\DllImport.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\domainfile.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\dynamicmethod.cpp" />
