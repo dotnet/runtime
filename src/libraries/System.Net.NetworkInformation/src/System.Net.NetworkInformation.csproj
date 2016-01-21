@@ -160,6 +160,9 @@
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
       <Link>Common\System\Net\ContextAwareResult.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
