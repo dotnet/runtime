@@ -1747,6 +1747,7 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 void
 ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32 timeout, gint32 *error)
 {
+	MonoError monoerror;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoObject *obj;
 	mono_pollfd *pfds;
@@ -1851,7 +1852,8 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 
 	sock_arr_class= ((MonoObject *)*sockets)->vtable->klass;
 	socks_size = ((uintptr_t)ret) + 3; /* space for the NULL delimiters */
-	socks = mono_array_new_full (mono_domain_get (), sock_arr_class, &socks_size, NULL);
+	socks = mono_array_new_full_checked (mono_domain_get (), sock_arr_class, &socks_size, NULL, &monoerror);
+	mono_error_raise_exception (&monoerror);
 
 	mode = idx = 0;
 	for (i = 0; i < count && ret > 0; i++) {

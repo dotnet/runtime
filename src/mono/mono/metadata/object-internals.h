@@ -1485,6 +1485,9 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest);
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);
 
+MonoArray*
+mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+
 #ifndef DISABLE_REMOTING
 MonoObject *
 mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 

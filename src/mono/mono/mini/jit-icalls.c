@@ -658,6 +658,8 @@ mono_fload_r4_arg (double val)
 MonoArray *
 mono_array_new_va (MonoMethod *cm, ...)
 {
+	MonoError error;
+	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	va_list ap;
 	uintptr_t *lengths;
@@ -691,13 +693,18 @@ mono_array_new_va (MonoMethod *cm, ...)
 	}
 	va_end(ap);
 
-	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 /* Specialized version of mono_array_new_va () which avoids varargs */
 MonoArray *
 mono_array_new_1 (MonoMethod *cm, guint32 length)
 {
+	MonoError error;
+	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [1];
 	intptr_t *lower_bounds;
@@ -718,12 +725,17 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 		lower_bounds = NULL;
 	}
 
-	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
+	MonoError error;
+	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [2];
 	intptr_t *lower_bounds;
@@ -745,12 +757,17 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 		lower_bounds = NULL;
 	}
 
-	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 MonoArray *
 mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3)
 {
+	MonoError error;
+	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [3];
 	intptr_t *lower_bounds;
@@ -773,12 +790,17 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 		lower_bounds = NULL;
 	}
 
-	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 MonoArray *
 mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
 {
+	MonoError error;
+	MonoArray *arr;
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t lengths [4];
 	intptr_t *lower_bounds;
@@ -802,7 +824,10 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 		lower_bounds = NULL;
 	}
 
-	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 gpointer

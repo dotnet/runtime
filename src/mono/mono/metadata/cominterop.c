@@ -2994,6 +2994,7 @@ int mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUboun
 static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray)
 {
+	MonoError error;
 	int dim;
 	uintptr_t *sizes;
 	intptr_t *bounds;
@@ -3052,7 +3053,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 			if (allocateNewArray) {
 				aklass = mono_bounded_array_class_get (mono_defaults.object_class, dim, bounded);
-				*result = mono_array_new_full (mono_domain_get (), aklass, sizes, bounds);
+				*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, bounds, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 			} else {
 				*result = (MonoArray *)parameter;
 			}
