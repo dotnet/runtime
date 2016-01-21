@@ -78,7 +78,7 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
 
 // Calculates the name of the build job based on some typical parameters.
 //
-def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly) {
+def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly, def branchName) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
@@ -86,6 +86,9 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
     def suffix = scenario != 'default' ? "_${scenario}" : '';
     if (isBuildOnly) {
         suffix += '_bld'
+    }
+    if (branchName == 'release/1.0.0-rc2'){
+        suffix += '_rc2'
     }
     def baseName = ''
     switch (architecture) {
@@ -316,7 +319,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
 
 def combinedScenarios = Constants.basicScenarios + Constants.jitStressModeScenarios.keySet()
 combinedScenarios.each { scenario ->
-    [true, false].each { isPR ->
+    ['master', 'release/1.0.0-rc2', 'pr'].each { branchName ->
         Constants.architectureList.each { architecture ->
             Constants.configurationList.each { configuration ->
                 Constants.osList.each { os ->
@@ -327,6 +330,7 @@ combinedScenarios.each { scenario ->
                         isBuildOnly = true
                         os = 'Windows_NT'
                     }
+                    def isPR = (branchName == 'pr');
                     
                     // Skip totally unimplemented (in CI) configurations.
                     switch (architecture) {
@@ -410,14 +414,21 @@ combinedScenarios.each { scenario ->
                 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
-                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly)
+                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly, branchName)
                     
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {}
 
                     setMachineAffinity(newJob, os, architecture)
+
                     // Add all the standard options
-                    Utilities.standardJobSetup(newJob, project, isPR)
+                    def branchParam = ''
+                    if (branchName == 'release/1.0.0-rc2'){
+                        branchParam = '*/${branchName}'
+                    } else {
+                        branchParam = '*/master'
+                    }
+                    Utilities.standardJobSetup(newJob, project, isPR, branchParam)
                     addTriggers(newJob, isPR, architecture, os, configuration, scenario, false)
                 
                     def buildCommands = [];
@@ -567,12 +578,14 @@ combinedScenarios.each { scenario ->
 
 // Create the Linux/OSX coreclr test leg for debug and release and each scenario
 combinedScenarios.each { scenario ->
-    [true, false].each { isPR ->
+    ['master', 'release/1.0.0-rc2', 'pr'].each { branchName ->
         // Architectures.  x64 only at this point
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
             Constants.crossList.each { os ->
                 Constants.configurationList.each { configuration ->
+
+                    def isPR = (branchName == 'pr');
 
                     if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                         if (configuration != 'Checked') {
@@ -600,20 +613,20 @@ combinedScenarios.each { scenario ->
                     
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
-                    def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
+                    def jobName = getJobName(configuration, architecture, os, scenario, false, branchName) + "_tst"
                     def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, 'default', false), isPR)
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, 'default', false, branchName), isPR)
                     // If this is a stress scenario, there isn't any difference in the build job
                     // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
                     // from the default scenario
                     def inputWindowTestsBuildName = ''
                     if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                         inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', 'default', true), isPR)
+                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', 'default', true, branchName), isPR)
                     }
                     else {
                         inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
-                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', scenario, true), isPR)
+                            Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', scenario, true, branchName), isPR)
                     }
                     // Enable Server GC for Ubuntu PR builds
                     def serverGCString = ""
@@ -693,14 +706,25 @@ combinedScenarios.each { scenario ->
                     }
                 
                     setMachineAffinity(newJob, os, architecture)
-                    Utilities.standardJobSetup(newJob, project, isPR)
+
+                    def branchParam = ''
+                    if (branchName == 'release/1.0.0-rc2'){
+                        branchParam = '*/${branchName}'
+                    } else {
+                        branchParam = '*/master'
+                    }
+                    Utilities.standardJobSetup(newJob, project, isPR, branchParam)
+                    //Pri 1 tests need longer timeout
+                    if (scenario == 'pri1') {
+                        Utilities.setJobTimeout(newJob, 240)
+                    }
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                 
                     // Create a build flow to join together the build and tests required to run this
                     // test.
                     // Windows CoreCLR build and Linux CoreCLR build (in parallel) ->
                     // Linux CoreCLR test
-                    def flowJobName = getJobName(configuration, architecture, os, scenario, false) + "_flow"
+                    def flowJobName = getJobName(configuration, architecture, os, scenario, false, branchName) + "_flow"
                     def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
                     def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                         buildFlow("""
@@ -721,7 +745,11 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
                         }
                     }
 
-                    Utilities.standardJobSetup(newFlowJob, project, isPR)
+                    Utilities.standardJobSetup(newFlowJob, project, isPR, branchParam)
+                    //Pri 1 tests need longer timeout
+                    if (scenario == 'pri1') {
+                        Utilities.setJobTimeout(newFlowJob, 240)
+                    }
                     addTriggers(newFlowJob, isPR, architecture, os, configuration, scenario, true)
                 } // configuration
             } // os
