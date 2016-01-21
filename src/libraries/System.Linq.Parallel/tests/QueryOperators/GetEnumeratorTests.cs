@@ -14,14 +14,6 @@ namespace System.Linq.Parallel.Tests
         {
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
             IEnumerator<int> enumerator = labeled.Item.GetEnumerator();
-            if (count == 0 && labeled.ToString().Contains("Array"))
-            {
-                Assert.Same(enumerator, labeled.Item.GetEnumerator());
-            }
-            else
-            {
-                Assert.NotSame(enumerator, labeled.Item.GetEnumerator());
-            }
             while (enumerator.MoveNext())
             {
                 int current = enumerator.Current;
@@ -60,14 +52,6 @@ namespace System.Linq.Parallel.Tests
         {
             int seen = 0;
             IEnumerator<int> enumerator = labeled.Item.GetEnumerator();
-            if (count == 0 && labeled.ToString().Contains("Array"))
-            {
-                Assert.Same(enumerator, labeled.Item.GetEnumerator());
-            }
-            else
-            {
-                Assert.NotSame(enumerator, labeled.Item.GetEnumerator());
-            }
             while (enumerator.MoveNext())
             {
                 int current = enumerator.Current;
