@@ -314,7 +314,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [OuterLoop] // has a timeout
         public async Task TestOutputAvailableAsyncAfterTryReceiveAll()
         {
             Func<Task<bool>> generator = () => {
@@ -331,11 +330,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 return outputAvailableAsync;
             };
 
-            var multipleConcurrentTestsTask = Task.WhenAll(Enumerable.Repeat(0, 1000).Select(_ => generator()));
-            var timeoutTask = Task.Delay(2000);
-            var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask).ConfigureAwait(false);
-
-            Assert.True(completedTask != timeoutTask);
+            bool[] results = await Task.WhenAll(Enumerable.Repeat(0, 10).Select(_ => generator()));
+            Assert.All(results, Assert.True);
         }
 
         [Fact]
