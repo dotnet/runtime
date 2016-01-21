@@ -67,7 +67,9 @@ $json = ""
 $blobs = @()
 try
 {
-    $json = (azure storage blob list -a $storageAccount -k $storageKey $storageContainer --json) -join ""
+    $tmpFileName = [System.IO.Path]::GetTempFileName()
+    azure storage blob list -a $storageAccount -k $storageKey $storageContainer --json > $tmpFileName
+    $json = [System.IO.File]::ReadAllText($tmpFileName)
     $blobs = ConvertFrom-Json $json
 }
 catch
