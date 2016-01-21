@@ -3471,7 +3471,6 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 		return &mono_defaults.uint16_class->byval_arg;
 	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype) {
