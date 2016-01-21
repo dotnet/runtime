@@ -1621,6 +1621,8 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
         shortAsciiName = "libc.dylib";
 #elif defined(__FreeBSD__)
         shortAsciiName = FREEBSD_LIBC;
+#elif defined(__NetBSD__)
+        shortAsciiName = "libc.so";
 #else
         shortAsciiName = LIBC_SO;
 #endif
