@@ -38,6 +38,7 @@
 #include "mono/metadata/mono-debug-debugger.h"
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -1928,6 +1929,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info, *old_info;
 	MonoClassField *field;
@@ -2174,7 +2176,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	/* Special case System.MonoType to avoid infinite recursion */
 	if (klass != mono_defaults.monotype_class) {
 		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object (domain, &klass->byval_arg);
+		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
@@ -2228,7 +2232,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 
 	if (klass == mono_defaults.monotype_class) {
 		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object (domain, &klass->byval_arg);
+		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
@@ -3214,6 +3220,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 {	
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoObject *o;
 	MonoClass *klass;
 	MonoVTable *vtable = NULL;
@@ -3222,7 +3229,6 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
 	gboolean is_ptr = FALSE;
-	MonoError error;
 	MonoType *type = mono_field_get_type_checked (field, &error);
 
 	if (!mono_error_ok (&error))
@@ -3314,7 +3320,8 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 
 		/* MONO_TYPE_PTR is passed by value to runtime_invoke () */
 		args [0] = ptr ? *ptr : NULL;
-		args [1] = mono_type_get_object (mono_domain_get (), type);
+		args [1] = mono_type_get_object_checked (mono_domain_get (), type, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		return mono_runtime_invoke (m, NULL, args, NULL);
 	}
@@ -3901,6 +3908,7 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 
 	static MonoMethod *get_proxy_method;
 
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoRealProxy *real_proxy;
 	MonoReflectionType *reflection_type;
@@ -3912,7 +3920,8 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	g_assert (mono_class_is_marshalbyref (obj->vtable->klass));
 
 	real_proxy = (MonoRealProxy*) mono_object_new (domain, mono_defaults.real_proxy_class);
-	reflection_type = mono_type_get_object (domain, &obj->vtable->klass->byval_arg);
+	reflection_type = mono_type_get_object_checked (domain, &obj->vtable->klass->byval_arg, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	MONO_OBJECT_SETREF (real_proxy, class_to_proxy, reflection_type);
 	MONO_OBJECT_SETREF (real_proxy, unwrapped_server, obj);
@@ -4300,6 +4309,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoMethodSignature *sig = mono_method_signature (method);
 	gpointer *pa = NULL;
 	MonoObject *res;
@@ -4451,7 +4461,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 			g_assert (res->vtable->klass == mono_defaults.int_class);
 			box_args [0] = ((MonoIntPtr*)res)->m_value;
-			box_args [1] = mono_type_get_object (mono_domain_get (), sig->ret);
+			box_args [1] = mono_type_get_object_checked (mono_domain_get (), sig->ret, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			res = mono_runtime_invoke (box_method, NULL, box_args, &box_exc);
 			g_assert (!box_exc);
 		}
@@ -4577,7 +4589,9 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 			vtable->domain->create_proxy_for_type_method = im;
 		}
 	
-		pa [0] = mono_type_get_object (mono_domain_get (), &vtable->klass->byval_arg);
+		pa [0] = mono_type_get_object_checked (mono_domain_get (), &vtable->klass->byval_arg, error);
+		if (!mono_error_ok (error))
+			return NULL;
 
 		o = mono_runtime_invoke (im, NULL, pa, NULL);		
 		if (o != NULL) return o;
@@ -5546,6 +5560,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoVTable *vt;
 
 	if (!obj)
@@ -5586,7 +5601,8 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		im = mono_object_get_virtual_method (rp, im);
 		g_assert (im);
 	
-		pa [0] = mono_type_get_object (domain, &klass->byval_arg);
+		pa [0] = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		pa [1] = obj;
 
 		res = mono_runtime_invoke (im, rp, pa, NULL);
