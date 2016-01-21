@@ -626,7 +626,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     // Fill context record with required information. from pal.h :
     // On non-Win32 platforms, the CONTEXT pointer in the
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
-    CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER);
+    CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
     pointers->ContextRecord = &context;
 
