@@ -928,6 +928,10 @@ ReleaseString:
     {
         CFRelease(cfString);
     }
+#else /*HAVE_COREFOUNDATION */
+    ERROR( "This code page is not in the system.\n" );
+    SetLastError( ERROR_INVALID_PARAMETER );
+    goto EXIT;
 #endif /* HAVE_COREFOUNDATION */
 
 EXIT:
