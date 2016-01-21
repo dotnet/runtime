@@ -110,7 +110,7 @@ static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
 
 static MonoAppDomain *
-mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup);
+mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup, MonoError *error);
 
 static char *
 get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error);
@@ -392,6 +392,7 @@ mono_runtime_quit ()
 MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 {
+	MonoError error;
 	MonoAppDomain *ad;
 	MonoAppDomainSetup *setup;
 	MonoClass *klass;
@@ -400,7 +401,8 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 	setup = (MonoAppDomainSetup *) mono_object_new (mono_domain_get (), klass);
 	setup->configuration_file = configuration_file != NULL ? mono_string_new (mono_domain_get (), configuration_file) : NULL;
 
-	ad = mono_domain_create_appdomain_internal (friendly_name, setup);
+	ad = mono_domain_create_appdomain_internal (friendly_name, setup, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return mono_domain_from_appdomain (ad);
 }
@@ -460,14 +462,13 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
 }
 
 static MonoAppDomain *
-mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup)
+mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup, MonoError *error)
 {
-	MonoError error;
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
 	char *shadow_location;
-	
+
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 
 	/* FIXME: pin all those objects */
@@ -495,9 +496,10 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 
 #ifndef DISABLE_SHADOW_COPY
 	/*FIXME, guard this for when the debugger is not running */
-	shadow_location = get_shadow_assembly_location_base (data, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	shadow_location = get_shadow_assembly_location_base (data, error);
+	if (!mono_error_ok (error))
+		return NULL;
+
 	g_free (shadow_location);
 #endif
 
@@ -864,10 +866,16 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	mono_set_pending_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
 	return NULL;
 #else
-	char *fname = mono_string_to_utf8 (friendly_name);
-	MonoAppDomain *ad = mono_domain_create_appdomain_internal (fname, setup);
-	
+	MonoError error;
+	char *fname;
+	MonoAppDomain *ad;
+
+	fname = mono_string_to_utf8 (friendly_name);
+	ad = mono_domain_create_appdomain_internal (fname, setup, &error);
+
 	g_free (fname);
+
+	mono_error_raise_exception (&error);
 
 	return ad;
 #endif
