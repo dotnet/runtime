@@ -28,7 +28,7 @@ class Constants {
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
-    def static jitStressModeScenarios = ['minopts' : ['COMPLUS_JitMinOpts' : '1']]
+    def static jitStressModeScenarios = ['minopts' : ['COMPLUS_JitMinOpts' : '1'], 'jitstress1' : ['COMPLUS_JitStress' : '1'] ]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -172,6 +172,10 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 Utilities.addPeriodicTrigger(job, '@daily')
                 break
+            case 'jitstress1':
+                assert (os == 'Windows_NT') || (os in Constants.crossList)
+                Utilities.addPeriodicTrigger(job, '@daily')
+                break
             default:
                 println("Unknown scenario: ${scenario}");
                 assert false
@@ -210,18 +214,23 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             break
                         case 'pri1':
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+pri1.*")
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'ilrt':
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'minopts':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
-                               "(?i).*test\\W+${os}\\W+minopts.*")
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
+                        case 'jitstress1':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=1)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
                         default:
                             println("Unknown scenario: ${scenario}");
@@ -247,18 +256,23 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             break
                         case 'pri1':
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+pri1.*")
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'ilrt':
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
+                                Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'minopts':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
-                               "(?i).*test\\W+${os}\\W+minopts.*")
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
+                        case 'jitstress1':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=1)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
                         default:
                             println("Unknown scenario: ${scenario}");
