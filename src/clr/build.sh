@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PYTHON=${PYTHON:-python}
+
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests]"
@@ -65,7 +67,7 @@ build_coreclr()
 {
     if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
         echo "Laying out dynamically generated files consumed by the build system "
-        python "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --inc "$__GeneratedIntermediatesDir/inc" --dummy "$__GeneratedIntermediatesDir/inc/etmdummy.h" --testdir "$__GeneratedIntermediatesDir/eventprovider_tests"
+        $PYTHON "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --inc "$__GeneratedIntermediatesDir/inc" --dummy "$__GeneratedIntermediatesDir/inc/etmdummy.h" --testdir "$__GeneratedIntermediatesDir/eventprovider_tests"
         if  [[ $? != 0 ]]; then
             exit
         fi
@@ -73,7 +75,7 @@ build_coreclr()
         #determine the logging system
         case $__BuildOS in
             Linux)
-                python "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediatesDir/"
+                $PYTHON "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediatesDir/"
                 if  [[ $? != 0 ]]; then
                     exit
                 fi
@@ -84,7 +86,7 @@ build_coreclr()
     fi
 
     export __GeneratedIntermediatesDirPresent="$__IntermediatesDir/Generated" #do not use this variable, it is used below to support incremental build
-    python -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediatesDirPresent\",\"$__GeneratedIntermediatesDir\")"
+    $PYTHON -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediatesDirPresent\",\"$__GeneratedIntermediatesDir\")"
     if  [[ $? != 0 ]]; then
         exit
     fi
