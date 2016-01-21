@@ -142,7 +142,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             return new ExceptionRegionEncoder(
                 Builder, 
                 _exceptionRegionCount,
-                hasLargeRegions: (_attributes & (int)MethodBodyAttributes.LargeExceptionRegions) == 0);
+                hasLargeRegions: (_attributes & (int)MethodBodyAttributes.LargeExceptionRegions) != 0);
         }
 
         public ExceptionRegionEncoder WriteInstructions(ImmutableArray<byte> buffer, out int offset)
