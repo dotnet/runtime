@@ -40,7 +40,7 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
     cd $__DOTNET_PATH
     tar -xf $__DOTNET_PATH/dotnet.tar
-    if [ -n $BUILDTOOLS_OVERRIDE_RUNTIME ]; then
+    if [ -n "$BUILDTOOLS_OVERRIDE_RUNTIME" ]; then
         find $__DOTNET_PATH -name *.ni.* | xargs rm 2>/dev/null
         cp -R $BUILDTOOLS_OVERRIDE_RUNTIME/* $__DOTNET_PATH/bin
         cp -R $BUILDTOOLS_OVERRIDE_RUNTIME/* $__DOTNET_PATH/bin/dnx
