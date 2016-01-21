@@ -1655,6 +1655,9 @@ mono_glist_to_array (GList *list, MonoClass *eclass);
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable);
 
+MonoObject *
+mono_object_clone_checked (MonoObject *obj, MonoError *error);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
