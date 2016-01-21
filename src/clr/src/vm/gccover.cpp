@@ -32,59 +32,16 @@
 #include "gcinfodecoder.h"
 #endif
 
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
-
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-#undef free
-
-// This pragma is needed because public\vc\inc\xiosbase contains
-// a static local variable
-#pragma warning(disable : 4640)
-#include "msvcdis.h"
-#pragma warning(default : 4640)
-
-#include "disx86.h"
-
-#define free(memblock) Use_free(memblock)
-
-    // We need a X86 instruction walker (disassembler), here are some
-    // routines for caching such a disassembler in a concurrent environment. 
-static DIS* g_Disasm = 0;
-
-
-static DIS* GetDisasm() {
-    DIS* myDisasm = FastInterlockExchangePointer(&g_Disasm, 0);
-    if (myDisasm == 0)
-    {
-#ifdef _TARGET_X86_
-        myDisasm = DIS::PdisNew(DIS::distX86);
-#elif defined(_TARGET_AMD64_)
-        myDisasm = DIS::PdisNew(DIS::distX8664);
-#endif
-    }
-    _ASSERTE(myDisasm);
-    return(myDisasm);
-}
-
-static void ReleaseDisasm(DIS* myDisasm) {
-    myDisasm = FastInterlockExchangePointer(&g_Disasm, myDisasm);
-    delete myDisasm;
-}
-
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-
+#include "disassembler.h"
 
 /****************************************************************************/
 
 MethodDesc* AsMethodDesc(size_t addr);
 static SLOT getTargetOfCall(SLOT instrPtr, PCONTEXT regs, SLOT*nextInstr);
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 static void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID codeStart);
 static bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID codeStart);
+#endif
 
 static MethodDesc* getTargetMethodDesc(PCODE target)
 {
@@ -360,8 +317,8 @@ private:
         // entire funclet.
         //
         unsigned ofsLastInterruptible = m_pCodeManager->FindEndOfLastInterruptibleRegion(
-                pCurFunclet     - m_codeStart,
-                m_curFuncletEnd - m_codeStart,
+                static_cast<unsigned int>(pCurFunclet     - m_codeStart),
+                static_cast<unsigned int>(m_curFuncletEnd - m_codeStart),
                 m_pvGCInfo);
 
         if (ofsLastInterruptible)
@@ -450,7 +407,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #endif
 
     cur = codeStart;
-    DIS* pdis = GetDisasm();
+    Disassembler disassembler;
 
     // When we find a direct call instruction and we are partially-interruptible
     //  we determine the target and place a breakpoint after the call
@@ -481,7 +438,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
         _ASSERTE(*cur != INTERRUPT_INSTR && *cur != INTERRUPT_INSTR_CALL);
 
         MethodDesc* targetMD = NULL;
-        size_t len = pdis->CbDisassemble(0, cur, codeEnd-cur);
+        InstructionType instructionType;
+        size_t len = disassembler.DisassembleInstruction(cur, codeEnd - cur, &instructionType);
 
 #ifdef _TARGET_AMD64_
         // REVISIT_TODO apparently the jit does not use the entire RUNTIME_FUNCTION range
@@ -504,9 +462,9 @@ void GCCoverageInfo::SprinkleBreakpoints(
         _ASSERTE(len > 0);
         _ASSERTE(len <= (size_t)(codeEnd-cur));
 
-        switch(pdis->Trmt())
+        switch(instructionType)
         {
-        case DIS::trmtCallInd:
+        case InstructionType::Call_IndirectUnconditional:
 #ifdef _TARGET_AMD64_
             if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
@@ -515,7 +473,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
             }
             break;
 
-        case DIS::trmtCall:
+        case InstructionType::Call_DirectUnconditional:
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
             {       
 #ifdef _TARGET_AMD64_
@@ -532,11 +490,16 @@ void GCCoverageInfo::SprinkleBreakpoints(
                 }
             }
             break;
+
 #ifdef _TARGET_AMD64_
-        case DIS::trmtBraInd:
+        case InstructionType::Branch_IndirectUnconditional:
             fSawPossibleSwitch = true;
             break;
 #endif
+
+        default:
+            // Clang issues an error saying that some enum values are not handled in the switch, that's intended
+            break;
         }
 
         if (prevDirectCallTargetMD != 0)
@@ -552,7 +515,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         // up only touching the call instructions (specially so that we
         // can really do the GC on the instruction just after the call).
         _ASSERTE(FitsIn<DWORD>((cur - codeStart) + regionOffsetAdj));
-        if (codeMan->IsGcSafe(&codeInfo, (cur - codeStart) + (DWORD)regionOffsetAdj))
+        if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>((cur - codeStart) + regionOffsetAdj)))
             *cur = INTERRUPT_INSTR;
 
 #ifdef _TARGET_X86_
@@ -585,8 +548,6 @@ void GCCoverageInfo::SprinkleBreakpoints(
     assert(codeSize > 0);
     if ((regionOffsetAdj==0) && (*codeStart != INTERRUPT_INSTR))
         doingEpilogChecks = false;
-
-    ReleaseDisasm(pdis);
 
 #elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     //Save the method code from hotRegion
@@ -1155,6 +1116,38 @@ int GCcoverCount = 0;
 void* forceStack[8];
 
 /****************************************************************************/
+
+bool IsGcCoverageInterrupt(LPVOID ip)
+{
+    // Determine if the IP is valid for a GC marker first, before trying to dereference it to check the instruction
+
+    EECodeInfo codeInfo(reinterpret_cast<PCODE>(ip));
+    if (!codeInfo.IsValid())
+    {
+        return false;
+    }
+
+    GCCoverageInfo *gcCover = codeInfo.GetMethodDesc()->m_GcCover;
+    if (gcCover == nullptr)
+    {
+        return false;
+    }
+
+    // Now it's safe to dereference the IP to check the instruction
+    UINT8 instructionCode = *reinterpret_cast<UINT8 *>(ip);
+    switch (instructionCode)
+    {
+        case INTERRUPT_INSTR:
+        case INTERRUPT_INSTR_CALL:
+        case INTERRUPT_INSTR_PROTECT_RET:
+            return true;
+
+        default:
+            // Another thread may have already changed the code back to the original
+            return instructionCode == gcCover->savedCode[codeInfo.GetRelOffset()];
+    }
+}
+
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
     SO_NOT_MAINLINE_FUNCTION;
@@ -1672,12 +1665,6 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     return;
    
 }
-
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER: warning C4244
-#endif // _TARGET_X86_ || _TARGET_AMD64_
 
 #endif // HAVE_GCCOVER
 

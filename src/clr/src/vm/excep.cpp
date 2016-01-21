@@ -7097,7 +7097,24 @@ bool IsInterceptableException(Thread *pThread)
             );
 }
 
-// Did we hit an DO_A_GC_HERE marker in JITTed code?
+// Determines whether we hit an DO_A_GC_HERE marker in JITted code, and returns the 
+// appropriate exception code, or zero if the code is not a GC marker.
+DWORD GetGcMarkerExceptionCode(LPVOID ip)
+{
+#if defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+    WRAPPER_NO_CONTRACT;
+
+    if (GCStress<cfg_any>::IsEnabled() && IsGcCoverageInterrupt(ip))
+    {
+        return STATUS_CLR_GCCOVER_CODE;
+    }
+#else // !(defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR))
+    LIMITED_METHOD_CONTRACT;
+#endif // defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+    return 0;
+}
+
+// Did we hit an DO_A_GC_HERE marker in JITted code?
 bool IsGcMarker(DWORD exceptionCode, CONTEXT *pContext)
 {
 #ifdef HAVE_GCCOVER
