@@ -214,7 +214,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
       unwind-x86_64
     )
   endif()
-    
+
   target_link_libraries(coreclrpal
     gcc_s
     pthread
@@ -253,7 +253,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 add_subdirectory(examples)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    add_subdirectory($ENV{__GeneratedIntermediatesDir}/eventprovider ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
+    add_subdirectory($ENV{__IntermediatesDir}/Generated/eventprovider ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 # Install the static PAL library for VS

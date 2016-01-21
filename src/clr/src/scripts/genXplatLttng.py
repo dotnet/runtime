@@ -48,8 +48,8 @@
 ##)
 #
 
-import os 
-from genXplatEventing import * 
+import os
+from genXplatEventing import *
 
 stdprolog="""
 //
@@ -119,11 +119,11 @@ ctfDataTypeMapping ={
         }
 
 def generateLttngHeader(providerName,allTemplates,eventNodes):
-    lTTngHdr = []    
+    lTTngHdr = []
     for templateName in allTemplates.keys():
         for subTemplate in allTemplates[templateName].allAbstractTemplateTypes:
             fnSig   = allTemplates[templateName].getFnFrame(subTemplate)
-#TP_ARGS                
+#TP_ARGS
             tp_args       = []
             tp_args_param = []
             tp_args.append("\n#define ")
@@ -131,23 +131,22 @@ def generateLttngHeader(providerName,allTemplates,eventNodes):
             tp_args.append('_TRACEPOINT_ARGS \\\n')
             tp_args.append('TP_ARGS(\\\n')
 
-
             for params in fnSig.paramlist:
                 fnparam     = fnSig.getParam(params)
                 wintypeName = fnparam.winType
                 typewName   = lttngDataTypeMapping[wintypeName]
                 winCount    = fnparam.count
                 countw      = lttngDataTypeMapping[winCount]
-                
+
                 tp_args_param.append("        ")
                 tp_args_param.append(typewName)
                 if countw != " ":
                     tp_args_param.append(countw)
-                    
+
                 tp_args_param.append(" ,")
                 tp_args_param.append(fnparam.name)
                 tp_args_param.append(",\\\n")
-                
+
             if len(tp_args_param) > 0:
                 del tp_args_param[-1]
             tp_args.extend(tp_args_param)
@@ -161,7 +160,7 @@ def generateLttngHeader(providerName,allTemplates,eventNodes):
             tp_fields.append("    " + subTemplate + "_TRACEPOINT_ARGS,\n")
             tp_fields.append("    " + " TP_FIELDS(\n")
 #TP_FIELDS
-                
+
             for params in fnSig.paramlist:
                 fnparam     = fnSig.getParam(params)
                 wintypeName = fnparam.winType
@@ -192,12 +191,11 @@ def generateLttngHeader(providerName,allTemplates,eventNodes):
                     else:
                         raise Exception("no such ctf intrinsic called: " +  ctf_type)
 
-
                 tp_fields.append("        ")
                 tp_fields.append(ctf_type + "(")
                 tp_fields.extend(tp_fields_body)
                 tp_fields.append(")\n")
-                
+
             tp_fields.append("    )\n)\n")
             lTTngHdr.extend(tp_fields)
 
@@ -240,7 +238,7 @@ TRACEPOINT_EVENT_INSTANCE(\\
             lTTngHdr.append("T_TRACEPOINT_INSTANCE(")
             lTTngHdr.append(eventName +")\n")
             continue
-            
+
         for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
             subevent = subtemplate;
             subevent = subevent.replace(templateName,'')
@@ -253,7 +251,7 @@ TRACEPOINT_EVENT_INSTANCE(\\
     lTTngHdr.append("#include <lttng/tracepoint-event.h>")
 
     return ''.join(lTTngHdr)
-        
+
 def generateLttngTpProvider(providerName,eventNodes,allTemplates):
     lTTngImpl = []
     for eventNode in eventNodes:
@@ -270,7 +268,6 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
         fnptype.append("extern \"C\" ULONG  FireEtXplat")
         fnptype.append(eventName)
         fnptype.append("(\n")
-        
 
         if templateName:
             for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
@@ -281,12 +278,12 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
                     typewName   = palDataTypeMapping[wintypeName]
                     winCount    = fnparam.count
                     countw      = palDataTypeMapping[winCount]
-                    
+
                     linefnptype.append(lindent)
                     linefnptype.append(typewName)
                     if countw != " ":
                         linefnptype.append(countw)
-                        
+
                     linefnptype.append(" ")
                     linefnptype.append(fnparam.name)
                     linefnptype.append(",\n")
@@ -306,7 +303,7 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
 
         linefnbody = []
         if templateName:
-            #emit code to init variables convert unicode to ansi string            
+            #emit code to init variables convert unicode to ansi string
             for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
                 fnSig   = allTemplates[templateName].getFnFrame(subtemplate)
                 for params in fnSig.paramlist:
@@ -319,7 +316,7 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
                         lTTngImpl.append("    INT " + paramname + "_full_name_path_size")
                         lTTngImpl.append(" = WideCharToMultiByte( CP_ACP, 0, " + paramname + ", -1, NULL, 0, NULL, NULL );\n")
                         lTTngImpl.append("    CHAR* " + paramname + "_full_name = NULL;\n")
-            
+
             lTTngImpl.append("\n")
 
 #emit tracepoints
@@ -348,7 +345,7 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
                         #emit code to convert unicode to ansi string
                         lTTngImpl.append("    "+ paramname + "_full_name = (CHAR*)malloc(")
                         lTTngImpl.append(paramname + "_full_name_path_size*sizeof(CHAR));\n")
-                        
+
                         lTTngImpl.append("    _ASSERTE("+paramname+ "_full_name != NULL);\n")
                         lTTngImpl.append("    if(" + paramname + "_full_name == NULL){goto LExit;}\n\n")
 
@@ -356,38 +353,38 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
                         lTTngImpl.append(paramname + ", -1, ")
                         lTTngImpl.append(paramname + "_full_name, ")
                         lTTngImpl.append(paramname + "_full_name_path_size, NULL, NULL );\n")
-                        
+
                         lTTngImpl.append("    _ASSERTE(" +paramname+ "_path_size == " )
                         lTTngImpl.append(paramname + "_full_name_path_size );\n")
-                        
+
                         lTTngImpl.append("    if( " + paramname + "_path_size == 0 ){ Error = ERROR_INVALID_PARAMETER; goto LExit;}\n")
-                        
+
                         vars_to_be_freed.append(paramname + "_full_name")
-                        
+
                         linefnbody.append(paramname + "_full_name")
                         linefnbody.append(",\n")
                         continue
-                    
+
                     elif ctf_type == "ctf_sequence" or wintypeName == "win:Pointer":
                         linefnbody.append("(" + lttngDataTypeMapping[wintypeName])
                         if not  lttngDataTypeMapping[winCount] == " ":
                             linefnbody.append( lttngDataTypeMapping[winCount])
-                            
+
                         linefnbody.append(") ")
-                    
+
                     linefnbody.append(paramname)
                     linefnbody.append(",\n")
-           
+
                 if len(linefnbody) > 0 :
                     del linefnbody[-1]
                 linefnbody.append("\n        );\n")
-        
+
         else:
             linefnbody.append("\n     tracepoint(\n")
             linefnbody.append("        "+providerName + ",\n")
             linefnbody.append("        "+eventName)
             linefnbody.append("\n     );\n")
-            
+
         lTTngImpl.extend(linefnbody)
         lTTngImpl.append("        Error = ERROR_SUCCESS;\n")
 
@@ -398,36 +395,34 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
                 lTTngImpl.append("        if ("+ var + " != NULL) {free(" )
                 lTTngImpl.append(var)
                 lTTngImpl.append(");}\n")
-                
+
         lTTngImpl.append("\nreturn Error;\n}\n")
 
     return ''.join(lTTngImpl)
 
-def generateLttngFiles(etwmanifest,intermediate):
+def generateLttngFiles(etwmanifest,eventprovider_directory):
 
-    tree           = DOM.parse(etwmanifest)
+    eventprovider_directory = eventprovider_directory + "/"
+    tree                    = DOM.parse(etwmanifest)
 
-    if not os.path.exists(intermediate):
-        os.makedirs(intermediate)
-   
-    eventprovider_directory      = intermediate + "/eventprovider/" 
-    tracepointprovider_directory = eventprovider_directory + "/tracepointprovider"
-    lttng_directory              = eventprovider_directory + "/lttng/"
+    #keep these relative
+    tracepointprovider_directory =  "tracepointprovider"
+    lttng_directory              =  "lttng"
+
     lttngevntprovPre             = lttng_directory + "/eventprov"
     lttngevntprovTpPre           = lttng_directory + "/traceptprov"
 
     if not os.path.exists(eventprovider_directory):
         os.makedirs(eventprovider_directory)
-        
-    if not os.path.exists(lttng_directory):
-        os.makedirs(lttng_directory)
-    
-    if not os.path.exists(tracepointprovider_directory):
-        os.makedirs(tracepointprovider_directory)
 
+    if not os.path.exists(eventprovider_directory + lttng_directory):
+        os.makedirs(eventprovider_directory + lttng_directory)
+
+    if not os.path.exists(eventprovider_directory + tracepointprovider_directory):
+        os.makedirs(eventprovider_directory + tracepointprovider_directory)
 
 #Top level Cmake
-    topCmake          = open(eventprovider_directory + "/CMakeLists.txt", 'w')
+    topCmake          = open(eventprovider_directory + "CMakeLists.txt", 'w')
     topCmake.write(stdprolog_cmake + "\n")
     topCmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
 
@@ -450,37 +445,37 @@ def generateLttngFiles(etwmanifest,intermediate):
 
         providerName_File = providerName.replace('-','')
         providerName_File = providerName_File.lower()
-        
+
         topCmake.write('        "'+ lttngevntprovPre + providerName_File + ".cpp" + '"\n')
 
     topCmake.write(""")
     add_subdirectory(tracepointprovider)
-    
-    # Install the static eventprovider library 
+
+    # Install the static eventprovider library
     install (TARGETS eventprovider DESTINATION lib)
     """)
     topCmake.close()
 
 #TracepointProvider  Cmake
-    
-    tracepointprovider_Cmake          = open(tracepointprovider_directory + "/CMakeLists.txt", 'w')
-    
+
+    tracepointprovider_Cmake          = open(eventprovider_directory + tracepointprovider_directory + "/CMakeLists.txt", 'w')
+
     tracepointprovider_Cmake.write(stdprolog_cmake + "\n")
     tracepointprovider_Cmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
-    
+
     project(coreclrtraceptprovider)
-    
+
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
-    
+
     add_definitions(-DPAL_STDCPP_COMPAT=1)
     include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
     include_directories(../lttng/)
     add_compile_options(-fPIC)
-    
+
     add_library(coreclrtraceptprovider
         SHARED
     """)
-    
+
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
         providerName = providerName.replace("Windows-",'')
@@ -488,15 +483,15 @@ def generateLttngFiles(etwmanifest,intermediate):
 
         providerName_File = providerName.replace('-','')
         providerName_File = providerName_File.lower()
-        
-        tracepointprovider_Cmake.write('        "'+ lttngevntprovTpPre + providerName_File +".cpp" + '"\n')
+
+        tracepointprovider_Cmake.write('        "../'+ lttngevntprovTpPre + providerName_File +".cpp" + '"\n')
 
     tracepointprovider_Cmake.write("""    )
-    
+
     target_link_libraries(coreclrtraceptprovider
                          -llttng-ust
     )
-            
+
    #Install the static coreclrtraceptprovider library
    install (TARGETS coreclrtraceptprovider DESTINATION .)
    """)
@@ -504,7 +499,7 @@ def generateLttngFiles(etwmanifest,intermediate):
 
 # Generate Lttng specific instrumentation
     for providerNode in tree.getElementsByTagName('provider'):
-        
+
         providerName = providerNode.getAttribute('name')
         providerName = providerName.replace("Windows-",'')
         providerName = providerName.replace("Microsoft-",'')
@@ -514,10 +509,9 @@ def generateLttngFiles(etwmanifest,intermediate):
         providerName      = providerName.replace('-','_')
 
         lttngevntheadershortname = "tp" + providerName_File +".h";
-        lttngevntheader          = eventprovider_directory +"lttng/"+ lttngevntheadershortname
-        lttngevntprov            = lttngevntprovPre + providerName_File + ".cpp"
-        lttngevntprovTp          = lttngevntprovTpPre + providerName_File +".cpp"
-
+        lttngevntheader          = eventprovider_directory + "lttng/" + lttngevntheadershortname
+        lttngevntprov            = eventprovider_directory + lttngevntprovPre + providerName_File + ".cpp"
+        lttngevntprovTp          = eventprovider_directory + lttngevntprovTpPre + providerName_File +".cpp"
 
         lTTngHdr          = open(lttngevntheader, 'w')
         lTTngImpl         = open(lttngevntprov, 'w')
@@ -528,10 +522,9 @@ def generateLttngFiles(etwmanifest,intermediate):
         lTTngTpImpl.write(stdprolog + "\n")
 
         lTTngTpImpl.write("\n#define TRACEPOINT_CREATE_PROBES\n")
-        
-       
+
         lTTngTpImpl.write("#include \"./"+lttngevntheadershortname + "\"\n")
-        
+
         lTTngHdr.write("""
 #include "palrt.h"
 #include "pal.h"
@@ -540,7 +533,6 @@ def generateLttngFiles(etwmanifest,intermediate):
 
 """)
 
-
         lTTngHdr.write("#define TRACEPOINT_PROVIDER " + providerName + "\n")
         lTTngHdr.write("""
 
@@ -548,7 +540,6 @@ def generateLttngFiles(etwmanifest,intermediate):
 """)
 
         lTTngHdr.write("#define TRACEPOINT_INCLUDE \"./" + lttngevntheadershortname + "\"\n\n")
-
 
         lTTngHdr.write("#if !defined(LTTNG_CORECLR_H" + providerName + ") || defined(TRACEPOINT_HEADER_MULTI_READ)\n\n")
         lTTngHdr.write("#define LTTNG_CORECLR_H" + providerName + "\n")
@@ -560,8 +551,6 @@ def generateLttngFiles(etwmanifest,intermediate):
 #define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
 """)
         lTTngImpl.write("#include \"" + lttngevntheadershortname + "\"\n\n")
-        
-
 
         templateNodes = providerNode.getElementsByTagName('template')
         eventNodes = providerNode.getElementsByTagName('event')
@@ -572,7 +561,7 @@ def generateLttngFiles(etwmanifest,intermediate):
 
         #create the implementation of eventing functions : lttngeventprov*.cp
         lTTngImpl.write(generateLttngTpProvider(providerName,eventNodes,allTemplates) + "\n")
-        
+
         lTTngHdr.close()
         lTTngImpl.close()
         lTTngTpImpl.close()
@@ -589,7 +578,7 @@ def main(argv):
     required.add_argument('--man',  type=str, required=True,
                                     help='full path to manifest containig the description of events')
     required.add_argument('--intermediate', type=str, required=True,
-                                    help='full path to intermediate directory')
+                                    help='full path to eventprovider  intermediate directory')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -603,4 +592,3 @@ def main(argv):
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
     sys.exit(return_code)
-
