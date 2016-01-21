@@ -438,7 +438,7 @@ combinedScenarios.each { scenario ->
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
-                                        buildCommands += "test\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
+                                        buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
