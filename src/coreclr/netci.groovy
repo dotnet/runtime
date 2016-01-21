@@ -64,8 +64,14 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
         }
     }
     else {
-        println("Unknown OS while creating testenv script step: ${os}")
-        assert false
+        // For these we don't use a script, we use directly
+        stepScript += "echo Setting variables for ${stressModeName}\n"
+        stressModeVars.each{ k, v -> 
+            // Write out what we are writing to the script file
+            stepScript += "echo Setting ${k}=${v}\n"
+            // Write out the set itself to the script file`
+            stepScript += "${k}=${v}\n"
+        }
     }
     return stepScript
 }
@@ -211,6 +217,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} IL RoundTrip Build and Test", "(?i).*test\\W+${os}\\W+ilrt.*")
                             }
+                            break
+                        case 'minopts':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
+                               "(?i).*test\\W+${os}\\W+minopts.*")
                             break
                         default:
                             println("Unknown scenario: ${scenario}");
@@ -555,36 +566,43 @@ combinedScenarios.each { scenario ->
 } // scenario
 
 // Create the Linux/OSX coreclr test leg for debug and release and each scenario
-Constants.basicScenarios.each { scenario ->
+combinedScenarios.each { scenario ->
     [true, false].each { isPR ->
         // Architectures.  x64 only at this point
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
             Constants.crossList.each { os ->
                 Constants.configurationList.each { configuration ->
-                    
-                    // Skip scenarios
-                    switch (scenario) {
-                        case 'pri1':
-                            // Nothing skipped
-                            break
-                        case 'ilrt':
-                            // Nothing skipped
-                            break
-                        case 'default':
-                            // Nothing skipped
-                            break
-                        default:
-                            println("Unknown scenario: ${scenario}")
-                            assert false
-                            break
+
+                    if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                        if (configuration != 'Checked') {
+                            return
+                        }
+                    }
+                    else {
+                        // Skip scenarios
+                        switch (scenario) {
+                            case 'pri1':
+                                // Nothing skipped
+                                break
+                            case 'ilrt':
+                                // Nothing skipped
+                                break
+                            case 'default':
+                                // Nothing skipped
+                                break
+                            default:
+                                println("Unknown scenario: ${scenario}")
+                                assert false
+                                break
+                        }
                     }
                     
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
                     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
                     def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
-                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, scenario, false), isPR)
+                        Utilities.getFullJobName(project, getJobName(configuration, architecture, os, 'default', false), isPR)
                     // If this is a stress scenario, there isn't any difference in the build job
                     // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
                     // from the default scenario
@@ -656,7 +674,13 @@ Constants.basicScenarios.each { scenario ->
                             shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
                         
                             // Execute the tests
-                            shell("""
+                            // If we are running a stress mode, we'll set those variables first
+                            def stressModeString = ""
+                            if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                stressModeString = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)
+                            }
+                            
+                            shell("""${stressModeString}
         ./tests/runtest.sh \\
             --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
             --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
