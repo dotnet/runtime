@@ -7,8 +7,6 @@ project(CoreCLR)
 # Enable @rpath support for shared libraries.
 set(MACOSX_RPATH ON)
 
-#SET_PROPERTY(GLOBAL PROPERTY GLOBAL_DEPENDS_DEBUG_MODE 1)
-
 if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
     cmake_policy(SET CMP0042 NEW)
 endif()
@@ -126,7 +124,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # Linux and Darwin identify it as "x86_64" while FreeBSD uses the
   # "amd64" string. Accept either of the two here.
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-    set(IS_64BIT_BUILD 1)  
+    set(IS_64BIT_BUILD 1)
   endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
@@ -161,7 +159,7 @@ function(get_compile_definitions DefinitionName)
 
     foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
         if (${DEFINITION} MATCHES "^\\$<\\$<CONFIG:([^>]+)>:([^>]+)>$")
-            # The entries that contain generator expressions must have the -D inside of the 
+            # The entries that contain generator expressions must have the -D inside of the
             # expression. So we transform e.g. $<$<CONFIG:Debug>:_DEBUG> to $<$<CONFIG:Debug>:-D_DEBUG>
             set(DEFINITION "$<$<CONFIG:${CMAKE_MATCH_1}>:-D${CMAKE_MATCH_2}>")
         else()
@@ -182,13 +180,13 @@ function(get_include_directories IncludeDirectories)
 endfunction(get_include_directories)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
-# to form absolute paths. 
-# The parameters after the RetSources are the input files. 
+# to form absolute paths.
+# The parameters after the RetSources are the input files.
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
     foreach(Source IN LISTS Sources)
         list(APPEND AbsolutePathSources ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
-    endforeach()            
+    endforeach()
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
 endfunction(convert_to_absolute_path)
 
@@ -234,10 +232,10 @@ function(add_precompiled_header header cppFile targetSources)
                                            OBJECT_OUTPUTS "${precompiledBinary}")
     set_source_files_properties(${${targetSources}}
                                 PROPERTIES COMPILE_FLAGS "/Yu\"${header}\" /Fp\"${precompiledBinary}\""
-                                           OBJECT_DEPENDS "${precompiledBinary}")  
+                                           OBJECT_DEPENDS "${precompiledBinary}")
     # Add cppFile to SourcesVar
     set(${targetSources} ${${targetSources}} ${cppFile} PARENT_SCOPE)
-  endif(MSVC)    
+  endif(MSVC)
 endfunction()
 
 # Includes
@@ -286,10 +284,9 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
 
 endif(WIN32)
 
-
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
-  
+
   if(CLR_CMAKE_PLATFORM_LINUX)
     add_definitions(-D__LINUX__=1)
     if(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
@@ -337,7 +334,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
       set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS} -fsanitize=")
       set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
-      if (${__ASAN_POS} GREATER -1) 
+      if (${__ASAN_POS} GREATER -1)
         set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}address,")
         set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
         message("Address Sanitizer (asan) enabled")
@@ -386,7 +383,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 
   #These seem to indicate real issues
   add_compile_options(-Wno-invalid-offsetof)
-  # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied 
+  # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
   # to a struct or a class that has virtual members or a base class. In that case, clang
   # may not generate the same object layout as MSVC.
   add_compile_options(-Wno-incompatible-ms-struct)
@@ -448,7 +445,7 @@ if (WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO")
 
-  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221") 
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
@@ -670,7 +667,7 @@ endif(WIN32)
 add_definitions(-DFEATURE_CORECLR)
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
-endif(CLR_CMAKE_PLATFORM_UNIX)  
+endif(CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DFEATURE_CORESYSTEM)
 add_definitions(-DFEATURE_CORRUPTING_EXCEPTIONS)
 if(WIN32)
