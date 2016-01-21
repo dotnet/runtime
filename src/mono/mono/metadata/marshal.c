@@ -10571,7 +10571,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size)
 	res = g_try_malloc (s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 
 	return res;
 }
@@ -10583,7 +10583,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, g
 	size_t s = (size_t)size;
 
 	if (ptr == NULL) {
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 		return NULL;
 	}
 
@@ -10593,7 +10593,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, g
 	res = g_try_realloc (ptr, s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 
 	return res;
 }
@@ -10623,7 +10623,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 	res = g_try_malloc ((gulong)size);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 	return res;
 }
 
@@ -10648,7 +10648,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 	res = g_try_realloc (ptr, (gulong)size);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 	return res;
 }
 
