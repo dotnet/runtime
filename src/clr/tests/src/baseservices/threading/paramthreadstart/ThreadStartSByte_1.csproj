@@ -15,7 +15,7 @@
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>2</CLRTestPriority>
     <CLRTestProjectToRun>ThreadStartSByte.csproj</CLRTestProjectToRun>
     <CLRTestExecutionArguments>max</CLRTestExecutionArguments>
   </PropertyGroup>
