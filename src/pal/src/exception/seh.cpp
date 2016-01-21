@@ -57,6 +57,7 @@ const UINT RESERVED_SEH_BIT = 0x800000;
 /* Internal variables definitions **********************************************/
 
 PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
+PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode = NULL;
 
 /* Internal function definitions **********************************************/
 
@@ -131,6 +132,26 @@ PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler)
 {
     g_hardwareExceptionHandler = exceptionHandler;
+}
+
+/*++
+Function:
+    PAL_SetGetGcMarkerExceptionCode
+
+    Register a function that determines if the specified IP has code that is a GC marker for GCCover.
+
+Parameters:
+    getGcMarkerExceptionCode - the function to register
+
+Return value:
+    None
+--*/
+VOID
+PALAPI 
+PAL_SetGetGcMarkerExceptionCode(
+    IN PGET_GCMARKER_EXCEPTION_CODE getGcMarkerExceptionCode)
+{
+    g_getGcMarkerExceptionCode = getGcMarkerExceptionCode;
 }
 
 /*++
