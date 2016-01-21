@@ -38,7 +38,6 @@ typedef struct _MonoError {
     unsigned short hidden_0; /*DON'T TOUCH */
 
 	void *hidden_1 [12]; /*DON'T TOUCH */
-    char hidden_2 [128]; /*DON'T TOUCH */
 } MonoError;
 
 MONO_BEGIN_DECLS

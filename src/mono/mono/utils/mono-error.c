@@ -14,17 +14,11 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 
-#define mono_internal_error_get_message(E) ((E)->full_message ? (E)->full_message : (E)->message)
-
 #define set_error_message() do { \
 	va_list args; \
 	va_start (args, msg_format); \
-	if (g_vsnprintf (error->message, sizeof (error->message), msg_format, args) >= sizeof (error->message)) {\
-		va_end (args); \
-		va_start (args, msg_format); \
-		if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
+	if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
 			error->flags |= MONO_ERROR_INCOMPLETE; \
-	} \
 	va_end (args); \
 } while (0)
 
@@ -36,7 +30,6 @@ mono_error_prepare (MonoErrorInternal *error)
 
 	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = NULL;
 	error->klass = NULL;
-	error->message [0] = 0;
 }
 
 static const char*
@@ -127,12 +120,12 @@ mono_error_get_message (MonoError *oerror)
 		return error->full_message_with_fields;
 
 	error->full_message_with_fields = g_strdup_printf ("%s assembly:%s type:%s member:%s",
-		mono_internal_error_get_message (error),
+		error->full_message,
 		get_assembly_name (error),
 		get_type_name (error),
 		error->member_name ? error->member_name : "<none>");
 
-	return error->full_message_with_fields ? error->full_message_with_fields : mono_internal_error_get_message (error);
+	return error->full_message_with_fields ? error->full_message_with_fields : error->full_message;
 }
 
 /*
@@ -352,7 +345,7 @@ mono_error_set_from_loader_error (MonoError *oerror)
 		error->error_code = MONO_ERROR_MISSING_METHOD;
 		mono_error_set_type_name (oerror, loader_error->class_name);
 		mono_error_set_member_name (oerror, loader_error->member_name);
-		g_snprintf (error->message, sizeof (error->message), "Failed for unknown reasons.");
+		error->full_message = g_strdup ("Failed for unknown reasons.");
 		break;
 
 	case MONO_EXCEPTION_MISSING_FIELD:
@@ -418,10 +411,10 @@ mono_loader_set_error_from_mono_error (MonoError *oerror)
 		mono_loader_set_error_assembly_load (get_assembly_name (error), FALSE);
 		break;
 	case MONO_ERROR_BAD_IMAGE:
-		mono_loader_set_error_bad_image (g_strdup (mono_internal_error_get_message (error)));
+		mono_loader_set_error_bad_image (g_strdup (error->full_message));
 		break;
 	default:
-		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", mono_internal_error_get_message (error)));
+		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", error->full_message));
 	}
 }
 
@@ -429,13 +422,11 @@ void
 mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	va_list args;
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_OUT_OF_MEMORY;
-	va_start (args, msg_format);
-	g_vsnprintf (error->message, sizeof (error->message), msg_format, args);
-	va_end (args);
+
+	set_error_message ();
 }
 
 void
@@ -489,7 +480,7 @@ get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, Mono
 static void
 set_message_on_exception (MonoException *exception, MonoErrorInternal *error, MonoError *error_out)
 {
-	MonoString *msg = mono_string_new (mono_domain_get (), mono_internal_error_get_message (error));
+	MonoString *msg = mono_string_new (mono_domain_get (), error->full_message);
 	if (msg)
 		MONO_OBJECT_SETREF (exception, message, msg);
 	else
@@ -528,7 +519,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 			if (exception)
 				set_message_on_exception (exception, error, error_out);
 		} else {
-		 	exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", mono_internal_error_get_message (error));
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", error->full_message);
 		}
 		break;
 
@@ -548,7 +539,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 			if (exception)
 				set_message_on_exception (exception, error, error_out);
 		} else {
-		 	exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", mono_internal_error_get_message (error));
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", error->full_message);
 		}
 		break;
 
@@ -570,14 +561,14 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 			if (exception)
 				set_message_on_exception (exception, error, error_out);
 		} else {
-		 	exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", mono_internal_error_get_message (error));
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", error->full_message);
 		}
 		break;
 
 	case MONO_ERROR_FILE_NOT_FOUND:
 	case MONO_ERROR_BAD_IMAGE:
 		if (error->assembly_name) {
-			msg = mono_string_new (domain, mono_internal_error_get_message (error));
+			msg = mono_string_new (domain, error->full_message);
 			if (!msg) {
 				mono_error_set_out_of_memory (error_out, "Could not allocate message");
 				break;
@@ -597,9 +588,9 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 				exception = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "BadImageFormatException", msg, assembly_name);
 		} else {
 			if (error->error_code == MONO_ERROR_FILE_NOT_FOUND)
-				exception = mono_exception_from_name_msg (mono_get_corlib (), "System.IO", "FileNotFoundException", mono_internal_error_get_message (error));
+				exception = mono_exception_from_name_msg (mono_get_corlib (), "System.IO", "FileNotFoundException", error->full_message);
 			else
-				exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", mono_internal_error_get_message (error));
+				exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", error->full_message);
 		}
 		break;
 
@@ -608,7 +599,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_ARGUMENT:
-		exception = mono_get_exception_argument (error->type_name, mono_internal_error_get_message (error));
+		exception = mono_get_exception_argument (error->type_name, error->full_message);
 		break;
 
 	case MONO_ERROR_NOT_VERIFIABLE: {
@@ -620,7 +611,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 				break;
 			}
 		}
-		message = g_strdup_printf ("Error in %s:%s %s", type_name, error->member_name, mono_internal_error_get_message (error));
+		message = g_strdup_printf ("Error in %s:%s %s", type_name, error->member_name, error->full_message);
 		if (!message) {
 			g_free (type_name);
 			mono_error_set_out_of_memory (error_out, "Could not allocate message");
@@ -635,7 +626,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		if (!error->exception_name_space || !error->exception_name)
 			mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "MonoError with generic error but no exception name was supplied");
 		else
-			exception = mono_exception_from_name_msg (mono_defaults.corlib, error->exception_name_space, error->exception_name, mono_internal_error_get_message (error));
+			exception = mono_exception_from_name_msg (mono_defaults.corlib, error->exception_name_space, error->exception_name, error->full_message);
 		break;
 
 	default:

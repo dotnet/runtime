@@ -20,7 +20,6 @@ typedef struct {
 	const char *full_message_with_fields;
 
 	void *padding [4];
-    char message [128];
 } MonoErrorInternal;
 
 void
