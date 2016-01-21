@@ -629,7 +629,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoObject *)GC_MALLOC_ATOMIC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->vtable = vtable;
@@ -638,11 +638,11 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoObject *)GC_GCJ_MALLOC (size, vtable);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 	} else {
 		obj = (MonoObject *)GC_MALLOC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->vtable = vtable;
@@ -661,7 +661,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->obj.vtable = vtable;
@@ -670,11 +670,11 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoArray *)GC_GCJ_MALLOC (size, vtable);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 	} else {
 		obj = (MonoArray *)GC_MALLOC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->obj.vtable = vtable;
@@ -695,7 +695,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->obj.vtable = vtable;
@@ -704,11 +704,11 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoArray *)GC_GCJ_MALLOC (size, vtable);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 	} else {
 		obj = (MonoArray *)GC_MALLOC (size);
-		if (!G_UNLIKELY (obj))
+		if (G_UNLIKELY (!obj))
 			return NULL;
 
 		obj->obj.vtable = vtable;
@@ -729,7 +729,7 @@ void *
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 {
 	MonoString *obj = (MonoString *)GC_MALLOC_ATOMIC (size);
-	if (!G_UNLIKELY (obj))
+	if (G_UNLIKELY (!obj))
 		return NULL;
 
 	obj->object.vtable = vtable;
