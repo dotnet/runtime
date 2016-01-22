@@ -4743,18 +4743,34 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 MonoObject *
 mono_object_clone (MonoObject *obj)
 {
+	MonoError error;
+	MonoObject *o = mono_object_clone_checked (obj, &error);
+	mono_error_raise_exception (&error);
+
+	return o;
+}
+
+MonoObject *
+mono_object_clone_checked (MonoObject *obj, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *o;
-	int size = obj->vtable->klass->instance_size;
+	int size;
+
+	mono_error_init (error);
+
+	size = obj->vtable->klass->instance_size;
 
 	if (obj->vtable->klass->rank)
 		return (MonoObject*)mono_array_clone ((MonoArray*)obj);
 
 	o = (MonoObject *)mono_gc_alloc_obj (obj->vtable, size);
 
-	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (size);
+	if (G_UNLIKELY (!o)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		return NULL;
+	}
 
 	/* If the object doesn't contain references this will do a simple memmove. */
 	mono_gc_wbarrier_object_copy (o, obj);

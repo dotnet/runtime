@@ -1667,6 +1667,9 @@ mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error);
 MonoObject *
 ves_icall_object_new_fast (MonoVTable *vtable);
 
+MonoObject *
+mono_object_clone_checked (MonoObject *obj, MonoError *error);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

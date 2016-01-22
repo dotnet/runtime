@@ -868,8 +868,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObj
 {
 	if ((obj == NULL) || (! (obj->vtable->klass->valuetype)))
 		return obj;
-	else
-		return mono_object_clone (obj);
+	else {
+		MonoError error;
+		MonoObject *ret = mono_object_clone_checked (obj, &error);
+		mono_error_raise_exception (&error);
+
+		return ret;
+	}
 }
 
 ICALL_EXPORT void
@@ -937,7 +942,11 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 ICALL_EXPORT MonoObject *
 ves_icall_System_Object_MemberwiseClone (MonoObject *this_obj)
 {
-	return mono_object_clone (this_obj);
+	MonoError error;
+	MonoObject *ret = mono_object_clone_checked (this_obj, &error);
+	mono_error_raise_exception (&error);
+
+	return ret;
 }
 
 ICALL_EXPORT gint32
