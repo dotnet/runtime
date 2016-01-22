@@ -30,7 +30,7 @@ if(CLR_CMAKE_PLATFORM_LINUX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
 endif(CLR_CMAKE_PLATFORM_LINUX)
 
-add_library(dbgshim SHARED ${DBGSHIM_SOURCES})
+add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 set(DBGSHIM_LIBRARIES
     debug-pal

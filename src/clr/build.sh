@@ -31,8 +31,6 @@ setup_dirs()
     mkdir -p "$__BinDir"
     mkdir -p "$__LogsDir"
     mkdir -p "$__IntermediatesDir"
-    # Ensure there are no stale generated files
-    rm -rf "$__GeneratedIntermediatesDir"
 }
 
 # Performs "clean build" type actions (deleting and remaking directories)
@@ -65,9 +63,24 @@ check_prereqs()
 
 build_coreclr()
 {
+
+# Event Logging Infrastructure
+   __GeneratedIntermediate="$__IntermediatesDir/Generated"
+   __GeneratedIntermediateEventProvider="$__GeneratedIntermediate/eventprovider_new"
+    if [[ -d "$__GeneratedIntermediateEventProvider" ]]; then
+        rm -rf  "$__GeneratedIntermediateEventProvider"
+    fi
+
+    if [[ ! -d "$__GeneratedIntermediate/eventprovider" ]]; then
+        mkdir -p "$__GeneratedIntermediate/eventprovider"
+    fi
+
+    mkdir -p "$__GeneratedIntermediateEventProvider"
     if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
         echo "Laying out dynamically generated files consumed by the build system "
-        $PYTHON "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --inc "$__GeneratedIntermediatesDir/inc" --dummy "$__GeneratedIntermediatesDir/inc/etmdummy.h" --testdir "$__GeneratedIntermediatesDir/eventprovider_tests"
+        echo "Laying out dynamically generated Event Logging Test files"
+        $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --testdir "$__GeneratedIntermediateEventProvider/tests"
+
         if  [[ $? != 0 ]]; then
             exit
         fi
@@ -75,7 +88,8 @@ build_coreclr()
         #determine the logging system
         case $__BuildOS in
             Linux)
-                $PYTHON "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediatesDir/"
+                echo "Laying out dynamically generated Event Logging Implementation of Lttng"
+                $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventProvider"
                 if  [[ $? != 0 ]]; then
                     exit
                 fi
@@ -85,18 +99,18 @@ build_coreclr()
         esac
     fi
 
-    export __GeneratedIntermediatesDirPresent="$__IntermediatesDir/Generated" #do not use this variable, it is used below to support incremental build
-    $PYTHON -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediatesDirPresent\",\"$__GeneratedIntermediatesDir\")"
+    echo "Cleaning the temp folder of dynamically generated Event Logging files"
+    $PYTHON -B -Wall -Werror -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventprovider\",\"$__GeneratedIntermediateEventProvider\")"
     if  [[ $? != 0 ]]; then
         exit
     fi
 
-    # Do not do any more processing from now on:
+    rm -rf "$__GeneratedIntermediateEventProvider"
+
     # All set to commence the build
 
     echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType in $__IntermediatesDir"
 
-    export __GeneratedIntermediatesDir="$__GeneratedIntermediatesDirPresent"
     cd "$__IntermediatesDir"
 
     generator=""
@@ -435,9 +449,8 @@ __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
+export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
-export __GeneratedIntermediatesDir="$__IntermediatesDir/Generated_latest" # use this variable to locate dynamically generated files, the actual location though will be different
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.

@@ -3,4 +3,4 @@ set( COMCRYPT_WKS_SOURCES
   X509Certificate.cpp
 )
 
-add_library( comcrypt_wks ${COMCRYPT_WKS_SOURCES})
+add_library_clr( comcrypt_wks ${COMCRYPT_WKS_SOURCES})

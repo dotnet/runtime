@@ -328,45 +328,6 @@ if not exist "%__IntermediatesDir%\install.vcxproj" (
 
 REM =========================================================================================
 REM ===
-REM === Build ETW infrastructure
-REM ===
-REM =========================================================================================
-
-echo %__MsgPrefix%Generating ETW files
-
-if not defined PythonPath (
-    echo %__MsgPrefix%Error: Couldn't find Python.
-    exit /b 1
-)
-
-:: Ensure there are no stale files in the Generated Directory
-if exist "%__GeneratedIntermediatesDir%" rd /s /q "%__GeneratedIntermediatesDir%"
-md "%__GeneratedIntermediatesDir%"
-md "%__GeneratedIntermediatesDir%\inc"
-set "genetw=%__SourceDir%\scripts\genWinEtw.py"
-
-mc -h "%__GeneratedIntermediatesDir%\inc" -r "%__GeneratedIntermediatesDir%" -b -co -um -p FireEtw "%__SourceDir%\VM\ClrEtwAll.man"
-IF ERRORLEVEL 1 goto FailedToGenEtwMetadata
-
-"%PythonPath%"  "%genetw%" --man "%__SourceDir%\VM\ClrEtwAll.man" --exc "%__SourceDir%\VM\ClrEtwAllMeta.lst" --eventheader "%__GeneratedIntermediatesDir%\inc\ClrEtwAll.h" --macroheader "%__GeneratedIntermediatesDir%\inc\clretwallmain.h" --dummy "%__GeneratedIntermediatesDir%\inc\etmdummy.h"
-IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata
-
-:: Do not use this variable; it is used below to support incremental build.
-set "__GeneratedIntermediatesDirPresent=%__IntermediatesDir%\Generated"
-"%PythonPath%" -c "import sys;sys.path.insert(0,r\"%__SourceDir%\scripts\"); from Utilities import *;UpdateDirectory(r\"%__GeneratedIntermediatesDirPresent%\",r\"%__GeneratedIntermediatesDir%\")"
-IF  ERRORLEVEL 1 goto FailedToGenEtwMetadata
-
-set __GeneratedIntermediatesDir="%__GeneratedIntermediatesDirPresent%"
-goto DoneGenEtwMetadata
-
-:FailedToGenEtwMetadata
-echo %__MsgPrefix%Error: failed to generate ETW files.
-exit /b %ERRORLEVEL%
-
-:DoneGenEtwMetadata
-
-REM =========================================================================================
-REM ===
 REM === Build the CLR VM
 REM ===
 REM =========================================================================================

@@ -12,5 +12,5 @@ add_custom_target(dialib ALL
 
 # In order to use dialib.dll as library target it needs to be imported into cmake
 # Target is used in ToolBox/SOS/dactablegen/cmakelists.txt
-add_library(dialib_dll SHARED IMPORTED GLOBAL)
+add_library_clr(dialib_dll SHARED IMPORTED GLOBAL)
 set_property(TARGET dialib_dll PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/dialib.dll)

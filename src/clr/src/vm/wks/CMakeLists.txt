@@ -18,7 +18,7 @@ if (WIN32)
   endif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
 endif (WIN32)
 
-add_library(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
+add_library_clr(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
 
 if (WIN32)
 # Get the current list of definitions

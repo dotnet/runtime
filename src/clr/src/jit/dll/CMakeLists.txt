@@ -9,18 +9,18 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
     add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
-    add_library(ClrJit
+    add_library_clr(ClrJit
       STATIC
       ${SHARED_LIB_SOURCES}
     )
     add_dependencies(ClrJit coreclrpal gcinfo)
 else()
-    add_library(ClrJit
+    add_library_clr(ClrJit
        ${SOURCES}
     )
 # Disable up to here (see above) the following for UNIX altjit on Windows 
 # Enable the following for UNIX altjit on Windows
-#    add_library(ClrJit
+#    add_library_clr(ClrJit
 #       SHARED
 #       ${SHARED_LIB_SOURCES}
 #    )
