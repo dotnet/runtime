@@ -201,9 +201,8 @@ LocalVarSig ::=
   
 LocalVarType ::=
   Type
-  CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
-  CustomMod* Constraint Type
+  CustomMod* Constraint? BYREF? Type
   
 ```
 
