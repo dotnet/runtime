@@ -149,6 +149,11 @@ namespace System.ComponentModel
                 throw new ArgumentNullException("type");
             }
 
+            // Check the cached TypeConverter dictionary for an exact match of the given type.
+            object ans = SearchIntrinsicTable_ExactTypeMatch(type);
+            if (ans != null)
+                return (TypeConverter)ans;
+
             // Obtaining attributes follows a very critical order: we must take care that
             // we merge attributes the right way.  Consider this:
             //
@@ -346,6 +351,36 @@ namespace System.ComponentModel
                     {
                         ReflectTypeDescriptionProvider.IntrinsicTypeConverters[callingType] = hashEntry;
                     }
+                }
+            }
+            return hashEntry;
+        }
+
+        private static object SearchIntrinsicTable_ExactTypeMatch(Type callingType)
+        {
+            object hashEntry = null;
+
+            // We take a lock on this table.  Nothing in this code calls out to
+            // other methods that lock, so it should be fairly safe to grab this
+            // lock.  Also, this allows multiple intrinsic tables to be searched
+            // at once.
+            //
+            lock (s_syncObject)
+            {
+                if (callingType != null && !IntrinsicTypeConverters.TryGetValue(callingType, out hashEntry))
+                    return null;
+
+                // If the entry is a type, create an instance of it and then
+                // replace the entry.  This way we only need to create once.
+                // We can only do this if the object doesn't want a type
+                // in its constructor.
+                Type type = hashEntry as Type;
+                if (type != null)
+                {
+                    bool noTypeConstructor = true;
+                    hashEntry = CreateInstance(type, callingType, ref noTypeConstructor);
+                    if (noTypeConstructor)
+                        IntrinsicTypeConverters[callingType] = hashEntry;
                 }
             }
             return hashEntry;

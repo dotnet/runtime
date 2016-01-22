@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0025",
     "System.ComponentModel": "4.0.0",
     "System.ComponentModel.Primitives": "4.0.0",
     "System.Globalization": "4.0.10",
