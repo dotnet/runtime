@@ -17,6 +17,15 @@ def static getOSGroup(def os) {
     return osGroupMap[os]
 }
 
+def static getFullBranchName(def branch) {
+    def branchMap = ['master':'*/master',
+        'rc2':'*/release/1.0.0-rc2',
+        'pr':'*/master']
+    def fullBranchName = branchMap.get(branch, null)
+    assert fullBranchName != null : "Could not find a full branch name for ${branch}"
+    return branchMap[branch]
+}
+
 // We use this class (vs variables) so that the static functions can access data here.
 class Constants {
     // Innerloop build OS's
@@ -40,6 +49,8 @@ class Constants {
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86']
+    // This is the set of branches
+    def static branchList = ['master', 'rc2', 'pr']
 }
 
 def static setMachineAffinity(def job, def os, def architecture) {
@@ -92,7 +103,7 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
     if (isBuildOnly) {
         suffix += '_bld'
     }
-    if (branchName == 'release/1.0.0-rc2'){
+    if (branchName == 'rc2'){
         suffix += '_rc2'
     }
     def baseName = ''
@@ -433,7 +444,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
 
 def combinedScenarios = Constants.basicScenarios + Constants.jitStressModeScenarios.keySet()
 combinedScenarios.each { scenario ->
-    ['master', 'release/1.0.0-rc2', 'pr'].each { branchName ->
+    Constants.branchList.each { branchName ->
         Constants.architectureList.each { architecture ->
             Constants.configurationList.each { configuration ->
                 Constants.osList.each { os ->
@@ -536,13 +547,7 @@ combinedScenarios.each { scenario ->
                     setMachineAffinity(newJob, os, architecture)
 
                     // Add all the standard options
-                    def branchParam = ''
-                    if (branchName == 'release/1.0.0-rc2'){
-                        branchParam = '*/${branchName}'
-                    } else {
-                        branchParam = '*/master'
-                    }
-                    Utilities.standardJobSetup(newJob, project, isPR, branchParam)
+                    Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
                     addTriggers(newJob, isPR, architecture, os, configuration, scenario, false)
                 
                     def buildCommands = [];
@@ -692,7 +697,7 @@ combinedScenarios.each { scenario ->
 
 // Create the Linux/OSX coreclr test leg for debug and release and each scenario
 combinedScenarios.each { scenario ->
-    ['master', 'release/1.0.0-rc2', 'pr'].each { branchName ->
+    Constants.branchList.each { branchName ->
         // Architectures.  x64 only at this point
         ['x64'].each { architecture ->
             // Put the OS's supported for coreclr cross testing here
@@ -820,14 +825,7 @@ combinedScenarios.each { scenario ->
                     }
                 
                     setMachineAffinity(newJob, os, architecture)
-
-                    def branchParam = ''
-                    if (branchName == 'release/1.0.0-rc2'){
-                        branchParam = '*/${branchName}'
-                    } else {
-                        branchParam = '*/master'
-                    }
-                    Utilities.standardJobSetup(newJob, project, isPR, branchParam)
+                    Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
                     //Pri 1 tests need longer timeout
                     if (scenario == 'pri1') {
                         Utilities.setJobTimeout(newJob, 240)
@@ -859,7 +857,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
                         }
                     }
 
-                    Utilities.standardJobSetup(newFlowJob, project, isPR, branchParam)
+                    Utilities.standardJobSetup(newFlowJob, project, isPR, getFullBranchName(branchName))
                     //Pri 1 tests need longer timeout
                     if (scenario == 'pri1') {
                         Utilities.setJobTimeout(newFlowJob, 240)
