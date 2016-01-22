@@ -62,8 +62,42 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
         IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
         
         hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
+
+#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)        
+        if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
+            (hr == FUSION_E_APP_DOMAIN_LOCKED) || (hr == FUSION_E_REF_DEF_MISMATCH))
+        {
+            // If we are here, one of the following is possible:
+            //
+            // 1) The assembly has not been found in the current binder's application context (i.e. it has not already been loaded), OR
+            // 2) An assembly with the same simple name was already loaded in the context of the current binder but we ran into a Ref/Def
+            //    mismatch (either due to version difference or strong-name difference).
+            //
+            // Thus, if default binder has been overridden, then invoke it in an attempt to perform the binding for it make the call
+            // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
+            // that has been loaded.
+
+            // Attempt to resolve the assembly via managed TPA ALC instance if one exists
+            INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
+            if (pManagedAssemblyLoadContext != NULL)
+            {
+              hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, &pCoreCLRFoundAssembly);
+              if (SUCCEEDED(hr))
+              {
+                  // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
+                  // In such a case, we will not overwrite the binding context (which would be wrong since it would not
+                  // be present in the cache of the current binding context).
+                  if (pCoreCLRFoundAssembly->GetBinder() == NULL)
+                  {
+                      pCoreCLRFoundAssembly->SetBinder(this);
+                  }
+              }
+            }
+        }
+#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
+        
         IF_FAIL_GO(hr);
-            
+
         *ppAssembly = pCoreCLRFoundAssembly.Extract();
 
 Exit:;        

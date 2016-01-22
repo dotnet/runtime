@@ -14227,7 +14227,7 @@ BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid)
 }
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(CLRPrivBinderAssemblyLoadContext *pLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -14256,9 +14256,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(CLRPrivBinderAssemblyLoadContext *pLoa
         
         GCPROTECT_BEGIN(_gcRefs);
         
-        // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pLoadContextToBindWithin->GetManagedAssemblyLoadContext();
-        
         // Prepare to invoke System.Runtime.Loader.AssemblyLoadContext.Resolve method.
         //
         // First, initialize an assembly spec for the requested assembly
@@ -14280,7 +14277,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(CLRPrivBinderAssemblyLoadContext *pLoa
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
-                PtrToArgSlot(ptrManagedAssemblyLoadContext), // IntPtr for managed assembly load context instance
+                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
                 ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
             };
 
