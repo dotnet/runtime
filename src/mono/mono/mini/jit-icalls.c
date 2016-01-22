@@ -1246,10 +1246,12 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 }
 
 static MonoMethod*
-constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg)
+constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg, MonoError *error)
 {
 	MonoMethod *m;
 	int vt_slot, iface_offset;
+
+	mono_error_init (error);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MonoObject *this_obj;
@@ -1306,11 +1308,17 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args)
 {
+	MonoError error;
 	MonoMethod *m;
 	gpointer this_arg;
 	gpointer new_args [16];
 
-	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
+
 	if (!m)
 		return NULL;
 	if (args && deref_arg) {
