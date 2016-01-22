@@ -1466,6 +1466,8 @@ BOOL TransitionFrame::Protects(OBJECTREF * ppORef)
 {
     WRAPPER_NO_CONTRACT;
     IsObjRefProtectedScanContext sc (ppORef);
+    // Set the stack limit for the scan to the SP of the managed frame above the transition frame
+    sc.stack_limit = GetSP();
     GcScanRoots (IsObjRefProtected, &sc);
     return sc.oref_protected;
 }
