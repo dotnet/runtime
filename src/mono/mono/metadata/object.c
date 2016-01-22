@@ -5062,12 +5062,17 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoClass *ac;
+	MonoArray *arr;
 
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
-	return mono_array_new_specific (mono_class_vtable_full (domain, ac, TRUE), n);
+	arr = mono_array_new_specific_checked (mono_class_vtable_full (domain, ac, TRUE), n, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
 }
 
 /**
@@ -5081,26 +5086,50 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 MonoArray *
 mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 {
+	MonoError error;
+	MonoArray *arr = mono_array_new_specific_checked (vtable, n, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return arr;
+}
+
+MonoArray*
+mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *o;
 	uintptr_t byte_len;
 
+	mono_error_init (error);
+
 	if (G_UNLIKELY (n > MONO_ARRAY_MAX_INDEX)) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_error_set_generic_error (error, "System", "OverflowException", "");
 		return NULL;
 	}
 
 	if (!mono_array_calc_byte_len (vtable->klass, n, &byte_len)) {
-		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
 		return NULL;
 	}
 	o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, n);
 
-	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (byte_len);
+	if (G_UNLIKELY (!o)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", byte_len);
+		return NULL;
+	}
 
 	return (MonoArray*)o;
+}
+
+MonoArray*
+ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
+{
+	MonoError error;
+	MonoArray *arr = mono_array_new_specific_checked (vtable, n, &error);
+	mono_error_raise_exception (&error);
+
+	return arr;
 }
 
 /**
@@ -6284,8 +6313,10 @@ mono_message_init (MonoDomain *domain,
 	static MonoClass *object_array_klass;
 	static MonoClass *byte_array_klass;
 	static MonoClass *string_array_klass;
+	MonoError error;
 	MonoMethodSignature *sig = mono_method_signature (method->method);
 	MonoString *name;
+	MonoArray *arr;
 	int i, j;
 	char **names;
 	guint8 arg_type;
@@ -6309,14 +6340,26 @@ mono_message_init (MonoDomain *domain,
 
 	MONO_OBJECT_SETREF (this_obj, method, method);
 
-	MONO_OBJECT_SETREF (this_obj, args, mono_array_new_specific (mono_class_vtable (domain, object_array_klass), sig->param_count));
-	MONO_OBJECT_SETREF (this_obj, arg_types, mono_array_new_specific (mono_class_vtable (domain, byte_array_klass), sig->param_count));
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, object_array_klass), sig->param_count, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	MONO_OBJECT_SETREF (this_obj, args, arr);
+
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, byte_array_klass), sig->param_count, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	MONO_OBJECT_SETREF (this_obj, arg_types, arr);
+
 	this_obj->async_result = NULL;
 	this_obj->call_type = CallType_Sync;
 
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method->method, (const char **) names);
-	MONO_OBJECT_SETREF (this_obj, names, mono_array_new_specific (mono_class_vtable (domain, string_array_klass), sig->param_count));
+
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, string_array_klass), sig->param_count, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	MONO_OBJECT_SETREF (this_obj, names, arr);
 	
 	for (i = 0; i < sig->param_count; i++) {
 		name = mono_string_new (domain, names [i]);
@@ -6392,10 +6435,12 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	static MonoClass *object_array_klass;
+	MonoError error;
 	MonoDomain *domain; 
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoObject *ret;
+	MonoArray *arr;
 	int i, j, outarg_count = 0;
 
 #ifndef DISABLE_REMOTING
@@ -6428,7 +6473,10 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		object_array_klass = klass;
 	}
 
-	mono_gc_wbarrier_generic_store (out_args, (MonoObject*) mono_array_new_specific (mono_class_vtable (domain, object_array_klass), outarg_count));
+	arr = mono_array_new_specific_checked (mono_class_vtable (domain, object_array_klass), outarg_count, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	mono_gc_wbarrier_generic_store (out_args, (MonoObject*) arr);
 	*exc = NULL;
 
 	ret = mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);

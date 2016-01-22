@@ -1521,7 +1521,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						if (managed_alloc)
 							dest = mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 						else
-							dest = mono_emit_jit_icall (cfg, mono_array_new_specific, iargs);
+							dest = mono_emit_jit_icall (cfg, ves_icall_array_new_specific, iargs);
 						dest->dreg = ins->dreg;
 					}
 					break;
