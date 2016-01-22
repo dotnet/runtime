@@ -979,7 +979,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	if (!gcj_inited) {
 		mono_loader_lock ();
 
-		mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
+		mono_register_jit_icall (ves_icall_object_new_fast, "ves_icall_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
 		gcj_inited = TRUE;
@@ -4618,12 +4618,36 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
 {
+	MonoError error;
+	MonoObject *o = mono_object_new_fast_checked (vtable, &error);
+	mono_error_raise_exception (&error);
+
+	return o;
+}
+
+MonoObject*
+mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
+	MonoObject *o;
+
+	mono_error_init (error);
+
+	o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
 	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (vtable->klass->instance_size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
+
+	return o;
+}
+
+MonoObject *
+ves_icall_object_new_fast (MonoVTable *vtable)
+{
+	MonoError error;
+	MonoObject *o = mono_object_new_fast_checked (vtable, &error);
+	mono_error_raise_exception (&error);
 
 	return o;
 }
@@ -4664,10 +4688,10 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 
 	if (vtable->gc_descr != MONO_GC_DESCRIPTOR_NULL) {
 
-		return mono_object_new_fast;
+		return ves_icall_object_new_fast;
 
 		/* 
-		 * FIXME: This is actually slower than mono_object_new_fast, because
+		 * FIXME: This is actually slower than ves_icall_object_new_fast, because
 		 * of the overhead of parameter passing.
 		 */
 		/*

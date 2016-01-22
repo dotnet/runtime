@@ -1661,6 +1661,12 @@ mono_glist_to_array (GList *list, MonoClass *eclass);
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable);
 
+MonoObject*
+mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error);
+
+MonoObject *
+ves_icall_object_new_fast (MonoVTable *vtable);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
