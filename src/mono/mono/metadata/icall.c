@@ -820,14 +820,14 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 	}
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#define SWAP(n) {\
-	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); \
-	guint ## n *src = (guint ## n *) field_data; \
-	guint ## n *end = (guint ## n *)((char*)src + size); \
-\
-	for (; src < end; data++, src++) { \
-		*data = read ## n (src); \
-	} \
+#define SWAP(n) {								\
+	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); 	\
+	guint ## n *src = (guint ## n *) field_data; 				\
+	int i;									\
+										\
+	for (i = 0; i < (size / sizeof(guint ## n)); i++) { 			\
+		data[i] = read ## n (&src[i]);					\
+	} 									\
 }
 
 	/* printf ("Initialize array with elements of %s type\n", klass->element_class->name); */
