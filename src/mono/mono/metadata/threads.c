@@ -568,33 +568,37 @@ set_current_thread_for_domain (MonoDomain *domain, MonoInternalThread *thread, M
 }
 
 static MonoThread*
-create_thread_object (MonoDomain *domain)
+create_thread_object (MonoDomain *domain, MonoError *error)
 {
-	MonoError error;
 	MonoVTable *vt = mono_class_vtable (domain, mono_defaults.thread_class);
-	MonoThread *t = (MonoThread*)mono_object_new_mature (vt, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoThread *t = (MonoThread*)mono_object_new_mature (vt, error);
 	return t;
 }
 
 static MonoThread*
 new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 {
-	MonoThread *thread = create_thread_object (domain);
+	MonoError error;
+	MonoThread *thread;
+
+	thread = create_thread_object (domain, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
+
 	return thread;
 }
 
 static MonoInternalThread*
-create_internal_thread (void)
+create_internal_thread (MonoError *error)
 {
-	MonoError error;
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
 	vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
-	thread = (MonoInternalThread*)mono_object_new_mature (vt, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	thread = (MonoInternalThread*) mono_object_new_mature (vt, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	thread->synch_cs = g_new0 (MonoCoopMutex, 1);
 	mono_coop_mutex_init_recursive (thread->synch_cs);
@@ -902,13 +906,18 @@ guint32 mono_threads_get_default_stacksize (void)
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size)
 {
+	MonoError error;
 	MonoThread *thread;
 	MonoInternalThread *internal;
 	StartInfo *start_info;
 	gboolean res;
 
-	thread = create_thread_object (domain);
-	internal = create_internal_thread ();
+	thread = create_thread_object (domain, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	internal = create_internal_thread (&error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
 	start_info = g_new0 (StartInfo, 1);
@@ -944,6 +953,7 @@ mono_thread_attach (MonoDomain *domain)
 MonoThread *
 mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 {
+	MonoError error;
 	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
@@ -961,7 +971,8 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", mono_native_thread_id_get ());
 	}
 
-	thread = create_internal_thread ();
+	thread = create_internal_thread (&error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	thread_handle = mono_thread_info_open_handle ();
 	g_assert (thread_handle);
@@ -1083,7 +1094,11 @@ mono_thread_exit ()
 void
 ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 {
-	MonoInternalThread *internal = create_internal_thread ();
+	MonoError error;
+	MonoInternalThread *internal;
+
+	internal = create_internal_thread (&error);
+	mono_error_raise_exception (&error);
 
 	internal->state = ThreadState_Unstarted;
 
