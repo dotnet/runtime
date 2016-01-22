@@ -2008,6 +2008,14 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Fact]
+    public static void DCS_DifferentCollectionsOfSameTypeAsKnownTypes()
+    {
+        Assert.Throws<InvalidOperationException>(() => { 
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
+        });
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
