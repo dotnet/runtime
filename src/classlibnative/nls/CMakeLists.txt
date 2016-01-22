@@ -5,4 +5,4 @@ set( COMMLS_WKS_SOURCES
   nlstable.cpp
 )
 
-add_library(comnls_wks ${COMMLS_WKS_SOURCES})
+add_library_clr(comnls_wks ${COMMLS_WKS_SOURCES})

@@ -1,4 +1,4 @@
-add_library(v3binder
+add_library_clr(v3binder
     STATIC
     ${BINDER_SOURCES}
 )

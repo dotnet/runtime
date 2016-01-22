@@ -21,5 +21,4 @@ add_subdirectory(miscellaneous)
 add_subdirectory(pal_specific)
 add_subdirectory(samples)
 add_subdirectory(threading)
-add_subdirectory($ENV{__GeneratedIntermediatesDir}/eventprovider_tests ${CMAKE_CURRENT_BINARY_DIR}/eventprovider )
-
+add_subdirectory($ENV{__IntermediatesDir}/Generated/eventprovider/tests ${CMAKE_CURRENT_BINARY_DIR}/eventprovider )

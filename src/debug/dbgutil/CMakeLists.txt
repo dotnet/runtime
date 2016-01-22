@@ -13,4 +13,4 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-add_library(dbgutil STATIC ${DBGUTIL_SOURCES})
+add_library_clr(dbgutil STATIC ${DBGUTIL_SOURCES})

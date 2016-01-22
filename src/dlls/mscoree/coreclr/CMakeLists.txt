@@ -44,7 +44,7 @@ endif (WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
-add_library(coreclr
+add_library_clr(coreclr
     SHARED
     ${CLR_SOURCES}
 )
