@@ -2292,6 +2292,7 @@ deregister_reflection_info_roots (MonoDomain *domain)
 static guint32 WINAPI
 unload_thread_main (void *arg)
 {
+	MonoError error;
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
 	MonoThread *thread;
@@ -2299,7 +2300,8 @@ unload_thread_main (void *arg)
 
 	/* Have to attach to the runtime so shutdown can wait for this thread */
 	/* Force it to be attached to avoid racing during shutdown. */
-	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE);
+	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 

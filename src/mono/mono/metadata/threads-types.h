@@ -246,7 +246,9 @@ gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, gu
 
 MonoException* mono_thread_resume_interruption (void);
 void mono_threads_perform_thread_dump (void);
-MonoThread *mono_thread_attach_full (MonoDomain *domain, gboolean force_attach);
+
+MonoThread *
+mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *error);
 
 void mono_thread_init_tls (void);
 

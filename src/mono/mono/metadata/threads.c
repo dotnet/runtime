@@ -950,18 +950,23 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
-	return mono_thread_attach_full (domain, FALSE);
+	MonoError error;
+	MonoThread *thread = mono_thread_attach_full (domain, FALSE, &error);
+	mono_error_raise_exception (&error);
+
+	return thread;
 }
 
 MonoThread *
-mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
+mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *error)
 {
-	MonoError error;
 	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
 	HANDLE thread_handle;
 	MonoNativeThreadId tid;
+
+	mono_error_init (error);
 
 	if ((thread = mono_thread_internal_current ())) {
 		if (domain != mono_domain_get ())
@@ -974,8 +979,9 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", mono_native_thread_id_get ());
 	}
 
-	thread = create_internal_thread (&error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	thread = create_internal_thread (error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	thread_handle = mono_thread_info_open_handle ();
 	g_assert (thread_handle);
@@ -993,8 +999,9 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	thread->thread_info = info;
 	thread->small_id = info->small_id;
 
-	current_thread = new_thread_with_internal (domain, thread, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	current_thread = new_thread_with_internal (domain, thread, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	if (!handle_store (current_thread, force_attach)) {
 		/* Mono is shutting down, so just wait for the end */
