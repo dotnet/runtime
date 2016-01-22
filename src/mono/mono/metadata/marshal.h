@@ -19,6 +19,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/remoting.h>
+#include <mono/utils/mono-error.h>
 
 #define mono_marshal_find_bitfield_offset(type, elem, byte_offset, bitmask) \
 	do { \
@@ -442,7 +443,7 @@ mono_marshal_unlock_internal (void);
 /* marshaling internal calls */
 
 void * 
-mono_marshal_alloc (gulong size);
+mono_marshal_alloc (gulong size, MonoError *error);
 
 void 
 mono_marshal_free (gpointer ptr);

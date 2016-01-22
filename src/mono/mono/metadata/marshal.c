@@ -44,6 +44,7 @@
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-error-internals.h>
 
 #include <string.h>
 #include <errno.h>
@@ -139,6 +140,9 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 
 static void init_safe_handle (void);
 
+static void*
+ves_icall_marshal_alloc (gulong size);
+
 /* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
 static MonoMethod *sh_dangerous_add_ref;
 static MonoMethod *sh_dangerous_release;
@@ -215,7 +219,7 @@ mono_marshal_init (void)
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32 int32", FALSE);
 		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32 int32", FALSE);
-		register_icall (mono_marshal_alloc, "mono_marshal_alloc", "ptr int32", FALSE);
+		register_icall (ves_icall_marshal_alloc, "ves_icall_marshal_alloc", "ptr int32", FALSE);
 		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
 		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
 		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", FALSE);
@@ -830,7 +834,8 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
-	GError *error = NULL;
+	MonoError error;
+	GError *gerror = NULL;
 
 	if (!sb)
 		return NULL;
@@ -840,16 +845,17 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 
 	guint str_len = mono_string_builder_string_length (sb);
 
-	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, NULL, &error);
+	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, NULL, &gerror);
 
-	if (error) {
-		g_error_free (error);
+	if (gerror) {
+		g_error_free (gerror);
 		g_free (str_utf16);
 		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
 		return NULL;
 	} else {
 		guint len = mono_string_builder_capacity (sb) + 1;
-		gchar *res = (gchar *)mono_marshal_alloc (len * sizeof (gchar));
+		gchar *res = (gchar *)mono_marshal_alloc (len * sizeof (gchar), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		g_assert (str_len < len);
 		memcpy (res, tmp, str_len * sizeof (gchar));
 		res[str_len] = '\0';
@@ -874,6 +880,8 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 {
+	MonoError error;
+
 	if (!sb)
 		return NULL;
 
@@ -884,7 +892,9 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	if (len == 0)
 		len = 1;
 
-	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((len + 1) * sizeof (gunichar2));
+	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((len + 1) * sizeof (gunichar2), &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	str[len] = '\0';
 
 	if (len == 0)
@@ -4916,7 +4926,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		g_assert (m->retobj_var);
 		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_CONV_I);
-		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_icall (mb, ves_icall_marshal_alloc);
 		mono_mb_emit_stloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_stloc (mb, m->retobj_var);
@@ -5759,7 +5769,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* Allocate and set dest */
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_icall (mb, mono_marshal_alloc);
+			mono_mb_emit_icall (mb, ves_icall_marshal_alloc);
 			mono_mb_emit_stloc (mb, 1);
 			
 			/* Update argument pointer */
@@ -5823,7 +5833,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Allocate and set dest */
 		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_CONV_I);
-		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_icall (mb, ves_icall_marshal_alloc);
 		mono_mb_emit_byte (mb, CEE_DUP);
 		mono_mb_emit_stloc (mb, 1);
 		mono_mb_emit_stloc (mb, 3);
@@ -6645,7 +6655,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_ADD);
 		}
 		mono_mb_emit_byte (mb, CEE_MUL);
-		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_icall (mb, ves_icall_marshal_alloc);
 		mono_mb_emit_stloc (mb, dest);
 		mono_mb_emit_ldloc (mb, dest);
 		mono_mb_emit_stloc (mb, 3);
@@ -10049,18 +10059,30 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 }
 
 void*
-mono_marshal_alloc (gulong size)
+mono_marshal_alloc (gulong size, MonoError *error)
 {
 	gpointer res;
+
+	mono_error_init (error);
 
 #ifdef HOST_WIN32
 	res = CoTaskMemAlloc (size);
 #else
 	res = g_try_malloc ((gulong)size);
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
 #endif
 	return res;
+}
+
+static void*
+ves_icall_marshal_alloc (gulong size)
+{
+	MonoError error;
+	void *ret = mono_marshal_alloc (size, &error);
+	mono_error_raise_exception (&error);
+
+	return ret;
 }
 
 void
@@ -10098,7 +10120,9 @@ mono_marshal_string_to_utf16_copy (MonoString *s)
 	if (s == NULL) {
 		return NULL;
 	} else {
-		gunichar2 *res = (gunichar2 *)mono_marshal_alloc ((mono_string_length (s) * 2) + 2);
+		MonoError error;
+		gunichar2 *res = (gunichar2 *)mono_marshal_alloc ((mono_string_length (s) * 2) + 2, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		memcpy (res, mono_string_chars (s), mono_string_length (s) * 2);
 		res [mono_string_length (s)] = 0;
 		return res;
@@ -10547,7 +10571,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size)
 	res = g_try_malloc (s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 
 	return res;
 }
@@ -10559,7 +10583,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, g
 	size_t s = (size_t)size;
 
 	if (ptr == NULL) {
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 		return NULL;
 	}
 
@@ -10569,7 +10593,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, g
 	res = g_try_realloc (ptr, s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory (s);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 
 	return res;
 }
@@ -10599,7 +10623,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 	res = g_try_malloc ((gulong)size);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 	return res;
 }
 
@@ -10624,7 +10648,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 	res = g_try_realloc (ptr, (gulong)size);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 	return res;
 }
 
@@ -11025,6 +11049,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 gpointer
 mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_attrs)
 {
+	MonoError error;
 	MonoType *t;
 	MonoClass *klass;
 
@@ -11077,7 +11102,8 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 			klass->blittable || klass->enumtype))
 			return mono_object_unbox (o);
 
-		res = mono_marshal_alloc (mono_class_native_size (klass, NULL));
+		res = mono_marshal_alloc (mono_class_native_size (klass, NULL), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		if (!((param_attrs & PARAM_ATTRIBUTE_OUT) && !(param_attrs & PARAM_ATTRIBUTE_IN))) {
 			method = mono_marshal_get_struct_to_ptr (o->vtable->klass);
