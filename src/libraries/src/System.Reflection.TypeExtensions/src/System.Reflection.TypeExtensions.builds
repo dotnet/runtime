@@ -2,11 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj" />
-    <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj">
+    <Project Include="System.Reflection.TypeExtensions.csproj" />
+    <Project Include="System.Reflection.TypeExtensions.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
-    <Project Include="System.Reflection.TypeExtensions.CoreCLR.csproj">
+    <Project Include="System.Reflection.TypeExtensions.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
