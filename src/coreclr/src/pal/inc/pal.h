@@ -3494,6 +3494,20 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 #define PAL_CS_NATIVE_DATA_SIZE 116
 #elif defined(__LINUX__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__NetBSD__) && defined(__amd64__)
+#define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__NetBSD__) && defined(__earm__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__NetBSD__) && defined(__hppa__)
+#define PAL_CS_NATIVE_DATA_SIZE 92
+#elif defined(__NetBSD__) && defined(__i386__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__NetBSD__) && defined(__mips__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__NetBSD__) && (defined(__sparc__) && !defined(__sparc64__))
+#define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__NetBSD__) && defined(__sparc64__)
+#define PAL_CS_NATIVE_DATA_SIZE 92
 #elif defined(__sun__)
 #define PAL_CS_NATIVE_DATA_SIZE 48
 #else 
