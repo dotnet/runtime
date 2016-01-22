@@ -130,5 +130,7 @@ sgen_array_list_get_slot (SgenArrayList *array, guint32 index)
 #define SGEN_ARRAY_LIST_END_FOREACH_SLOT_RANGE	} }
 
 guint32 sgen_array_list_add (SgenArrayList *array, gpointer ptr, int data, gboolean increase_size_before_set);
+guint32 sgen_array_list_find (SgenArrayList *array, gpointer ptr);
+void sgen_array_list_remove_nulls (SgenArrayList *array);
 
 #endif

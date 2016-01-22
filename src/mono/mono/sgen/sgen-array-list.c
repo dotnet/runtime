@@ -150,4 +150,38 @@ retry:
 	return index;
 }
 
+/*
+ * Removes all NULL pointers from the array. Not thread safe
+ */
+void
+sgen_array_list_remove_nulls (SgenArrayList *array)
+{
+	guint32 start = 0;
+	volatile gpointer *slot;
+
+	SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
+		if (*slot)
+			*sgen_array_list_get_slot (array, start++) = *slot;
+	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+
+	mono_memory_write_barrier ();
+	array->next_slot = start;
+}
+
+/*
+ * Does a linear search through the pointer array to find `ptr`.  Returns the index if
+ * found, otherwise (guint32)-1.
+ */
+guint32
+sgen_array_list_find (SgenArrayList *array, gpointer ptr)
+{
+	volatile gpointer *slot;
+
+	SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
+		if (*slot == ptr)
+			return __index;
+	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+	return (guint32)-1;
+}
+
 #endif
