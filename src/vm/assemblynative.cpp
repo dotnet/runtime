@@ -2533,14 +2533,14 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        INT_PTR ptrTPAAssemblyLoadContext = pTPABinderContext->GetManagedTPABinderInstance();
+        INT_PTR ptrTPAAssemblyLoadContext = pTPABinderContext->GetManagedAssemblyLoadContext();
         if ((ptrTPAAssemblyLoadContext != NULL) && (ptrTPAAssemblyLoadContext != ptrManagedAssemblyLoadContext))
         {
             COMPlusThrow(kInvalidOperationException, IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_TPA_BINDING_CONTEXT);
         }
 
         // Attach the managed TPA binding context with the native one.
-        pTPABinderContext->SetManagedTPABinderInstance(ptrManagedAssemblyLoadContext);
+        pTPABinderContext->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
         ptrNativeAssemblyLoadContext = reinterpret_cast<INT_PTR>(pTPABinderContext);
     }
    

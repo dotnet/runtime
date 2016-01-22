@@ -56,7 +56,7 @@ extern BOOL RuntimeIsLegacyNetCF(DWORD adid);
 #include "clrprivbindercoreclr.h"
 #include "clrprivbinderassemblyloadcontext.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
-extern HRESULT RuntimeInvokeHostAssemblyResolver(CLRPrivBinderAssemblyLoadContext *pLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
+extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, IAssemblyName *pIAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
 
 // Helper to check if we have a host assembly resolver set
 extern BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid);
@@ -1856,7 +1856,7 @@ namespace BINDER_SPACE
 #endif //CROSSGEN_COMPILE
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)
-HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ CLRPrivBinderAssemblyLoadContext *pLoadContextToBindWithin,
+HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                        /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ IAssemblyName      *pIAssemblyName,
                                                       /* out */ Assembly           **ppAssembly)
@@ -1864,15 +1864,11 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver (/* in */ CLRPrivBinderAss
     HRESULT hr = E_FAIL;
     BINDER_LOG_ENTER(W("AssemblyBinder::BindUsingHostAssemblyResolver"));
     
-    _ASSERTE(pLoadContextToBindWithin != NULL);
-    
-    // Get the application context within which the assembly will be bound and loaded
-    ApplicationContext *pApplicationContext = pLoadContextToBindWithin->GetAppContext();
-    _ASSERTE(pApplicationContext != NULL);
+    _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
     
     // Call into the VM to use the HostAssemblyResolver and load the assembly
     ICLRPrivAssembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pLoadContextToBindWithin, pIAssemblyName, &pLoadedAssembly);
+    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
