@@ -132,7 +132,7 @@ endif()
 
 list(APPEND SOS_SOURCES ${SOS_SOURCES_ARCH})
 
-add_library(sos SHARED ${SOS_SOURCES})
+add_library_clr(sos SHARED ${SOS_SOURCES})
 add_dependencies(sos mscordaccore)
 target_link_libraries(sos ${SOS_LIBRARY})
 

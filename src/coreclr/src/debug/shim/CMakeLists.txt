@@ -12,4 +12,4 @@ set(DEBUGSHIM_SOURCES
   debugshim.cpp
 )
 
-add_library(debugshim STATIC ${DEBUGSHIM_SOURCES})
+add_library_clr(debugshim STATIC ${DEBUGSHIM_SOURCES})

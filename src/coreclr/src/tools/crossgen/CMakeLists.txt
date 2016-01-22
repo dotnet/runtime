@@ -19,7 +19,7 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DFX_VER_INTERNALNAME_STR=crossgen.exe)
 add_definitions(-DNO_NGENPDB)
 
-add_executable(crossgen
+add_executable_clr(crossgen
   ${crossgen_SOURCES}
   ${crossgen_RESOURCES}
 )

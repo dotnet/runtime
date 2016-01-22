@@ -12,7 +12,7 @@ set(ILDASM_RESOURCES
     ../dasm.rc
 )
 
-add_library(ildasmrc
+add_library_clr(ildasmrc
     SHARED
     ${ILDASM_RESOURCES}
 )
