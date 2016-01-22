@@ -37,10 +37,10 @@
   <PropertyGroup>
     <BaseOutputPathWithConfig>$(ProjectDir)\..\bin\tests\$(BuildOS).$(Platform).$(Configuration)\</BaseOutputPathWithConfig>
     <BaseOutputPathWithConfig Condition="'$(__TestBinDir)' != ''">$(__TestBinDir)\</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)\..</BinDir>
-    <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\</BaseIntermediateOutputPath>
+    <BinDir>$(BaseOutputPathWithConfig)</BinDir>
+    <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\$(BuildOS).$(Platform).$(Configuration)\Managed</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\obj\$(BuildOS).$(Platform).$(Configuration)\))</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\obj\$(BuildOS).$(Platform).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)</IntermediateOutputPath>
