@@ -1526,11 +1526,11 @@ AppDomain* STDCALL GetAppDomainGeneric()
 // FLS getter to avoid unnecessary indirection via execution engine. It will be used if we get high TLS slot
 // from the OS where we cannot use the fast optimized assembly helpers. (It happens pretty often in hosted scenarios).
 //
-VOID * ClrFlsGetBlockDirect()
+LPVOID* ClrFlsGetBlockDirect()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return UnsafeTlsGetValue(CExecutionEngine::GetTlsIndex());
+    return (LPVOID*)UnsafeTlsGetValue(CExecutionEngine::GetTlsIndex());
 }
 
 extern "C" void * ClrFlsGetBlock();
@@ -1660,10 +1660,10 @@ void InitThreadManager()
     CExecutionEngine::CheckThreadState(0, FALSE);
 
     DWORD masterSlotIndex = CExecutionEngine::GetTlsIndex();
-    POPTIMIZEDTLSGETTER pGetter = MakeOptimizedTlsGetter(masterSlotIndex, (PVOID)ClrFlsGetBlock, TLS_GETTER_MAX_SIZE);
+    CLRFLSGETBLOCK pGetter = (CLRFLSGETBLOCK)MakeOptimizedTlsGetter(masterSlotIndex, (PVOID)ClrFlsGetBlock, TLS_GETTER_MAX_SIZE);
     __ClrFlsGetBlock = pGetter ? pGetter : ClrFlsGetBlockDirect;
 #else
-    __ClrFlsGetBlock = (POPTIMIZEDTLSGETTER) CExecutionEngine::GetTlsData;
+    __ClrFlsGetBlock = CExecutionEngine::GetTlsData;
 #endif // FEATURE_IMPLICIT_TLS
 
     IfFailThrow(Thread::CLRSetThreadStackGuarantee(Thread::STSGuarantee_Force));
