@@ -2368,6 +2368,19 @@ namespace SerializationTypes
     {
         public string Name { get; set; }
     }
+
+    [KnownType(typeof(List<SimpleType>))]
+    [KnownType(typeof(SimpleType[]))]
+    [DataContract]
+    public class TypeWithKnownTypesOfCollectionsWithConflictingXmlName
+    {
+        [DataMember]
+        public object Value1 = new List<SimpleType>();
+
+        [DataMember]
+        public object Value2 = new SimpleType[1];
+
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1
