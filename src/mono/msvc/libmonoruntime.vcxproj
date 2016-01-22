@@ -116,6 +116,7 @@
     <ClCompile Include="..\mono\sgen\sgen-pinning-stats.c" />
     <ClCompile Include="..\mono\sgen\sgen-pinning.c" />
     <ClCompile Include="..\mono\sgen\sgen-pointer-queue.c" />
+    <ClCompile Include="..\mono\sgen\sgen-array-list.c" />
     <ClCompile Include="..\mono\sgen\sgen-protocol.c" />
     <ClCompile Include="..\mono\sgen\sgen-qsort.c" />
     <ClCompile Include="..\mono\sgen\sgen-simple-nursery.c" />
