@@ -166,6 +166,11 @@
       <Project>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</Project>
       <Name>System.Dynamic.Runtime</Name>
     </ProjectReference>
+    <!-- TODO: Temporary workaround.  Workaround a break in System.Linq.Expressions until a new package is available. -->
+    <ProjectReference Include="..\..\System.Linq.Expressions\src\System.Linq.Expressions.csproj">
+      <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>
+      <Name>System.Linq.Expressions</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
