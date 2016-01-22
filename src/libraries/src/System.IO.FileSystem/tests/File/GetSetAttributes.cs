@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -119,7 +120,7 @@ namespace System.IO.Tests
         // the symbolic link may fail to create. Only run this test if it creates
         // links successfully.
         [ConditionalFact("CanCreateSymbolicLinks")]
-        public void SymLinksDoNotReflectTargetAttributes()
+        public void SymLinksReflectTargetAttributes()
         {
             var path = GetTestFilePath();
             var linkPath = GetTestFilePath();
@@ -131,22 +132,15 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.ReadOnly, Get(path));
 
             // Can't assume that ReparsePoint is the only attribute because Windows will add Archive automatically
-            // Instead, just make sure that ReparsePoint is present and ReadOnly is not
+            // Instead, make sure that ReparsePoint is present.
             Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(linkPath));
-            Assert.Equal((FileAttributes)0, FileAttributes.ReadOnly & Get(linkPath));
-        }
 
-        private static bool CanCreateSymbolicLinks
-        {
-            get
-            {
-                var path = Path.GetTempFileName();
-                var linkPath = path + ".link";
-                var ret = MountHelper.CreateSymbolicLink(linkPath, path);
-                try { File.Delete(path); } catch { }
-                try { File.Delete(linkPath); } catch { }
-                return ret;
-            }
+            // Then for ReadOnly, there is a difference between Windows and Unix.  Given the prevalence of symlinks
+            // on Unix, matching the existing Windows behavior doesn't make as much sense, so we still follow
+            // to the target object.  As such, on Windows ReadOnly should not be set, but it should be set elsewhere.
+            Assert.Equal(
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (FileAttributes)0 : FileAttributes.ReadOnly,
+                FileAttributes.ReadOnly & Get(linkPath));
         }
     }
 }

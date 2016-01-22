@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -53,25 +54,12 @@ namespace System.IO.Tests
                 Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
 
                 var info = new FileInfo(path);
-                var linkInfo = new FileInfo(linkPath);
                 Assert.Equal(2000, info.Length);
-                // On Windows, sym links report 0 size; on Linux, their size is the length of the path they point to
-                // Confirm that the size we get is not the size of the target file (and that it's less, since our temporary
-                // sym links should never exceed 500 bytes.
-                Assert.True(2000 > linkInfo.Length);
-            }
-        }
 
-        private static bool CanCreateSymbolicLinks
-        {
-            get
-            {
-                var path = Path.GetTempFileName();
-                var linkPath = path + ".link";
-                var ret = MountHelper.CreateSymbolicLink(linkPath, path);
-                try { File.Delete(path); } catch { }
-                try { File.Delete(linkPath); } catch { }
-                return ret;
+                // On Windows, symlinks have length 0.  
+                // On Unix, we follow to the target and report on the target's size.
+                var linkInfo = new FileInfo(linkPath);
+                Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : info.Length, linkInfo.Length);
             }
         }
     }
