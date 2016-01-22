@@ -152,6 +152,7 @@ namespace System.Net.Security.Tests
                 auth[1] = server.AuthenticateAsServerAsync();
 
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
+                Assert.True(finished, "Handshake completed in the allotted time");
 
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
