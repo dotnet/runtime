@@ -19,7 +19,7 @@
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <ProjectReference Include="$(SourceDir)System.Reflection.TypeExtensions\src\System.Reflection.TypeExtensions.CoreCLR.csproj" />
+    <ProjectReference Include="$(SourceDir)System.Reflection.TypeExtensions\src\System.Reflection.TypeExtensions.csproj" />
     <TargetingPackReference Include="System.Private.Reflection.Execution" />
     <TargetingPackReference Include="System.Private.Reflection.MissingMetadataException" />
     <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
