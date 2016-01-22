@@ -823,9 +823,10 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #define SWAP(n) {								\
 	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); 	\
 	guint ## n *src = (guint ## n *) field_data; 				\
-	int i;									\
+	int i,									\
+	    nEnt = (size / sizeof(guint ## n));					\
 										\
-	for (i = 0; i < (size / sizeof(guint ## n)); i++) { 			\
+	for (i = 0; i < nEnt; i++) {						\
 		data[i] = read ## n (&src[i]);					\
 	} 									\
 }
