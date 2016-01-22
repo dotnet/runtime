@@ -11,6 +11,18 @@ namespace System.Collections.Specialized.Tests
     public static class ListDictionaryTests
     {
         /// <summary>
+        /// Construct ListDictionaries, empty..
+        /// </summary>
+        /// Format is:
+        ///  1. Dictionary
+        /// <returns>Row of data</returns>
+        public static IEnumerable<object[]> ListDictionary_Empty_Data()
+        {
+            yield return new object[] { new ListDictionary() };
+            yield return new object[] { new ListDictionary(StringComparer.Ordinal) };
+        }
+
+        /// <summary>
         /// Data used for testing with a set of collections.
         /// </summary>
         /// Format is:
@@ -45,10 +57,10 @@ namespace System.Collections.Specialized.Tests
             new KeyValuePair<string, string>("nullvaluekey", null),
         };
 
-        [Fact]
-        public static void Constructor_DefaultTests()
+        [Theory]
+        [MemberData("ListDictionary_Empty_Data")]
+        public static void Constructor_DefaultTests(ListDictionary ld)
         {
-            ListDictionary ld = new ListDictionary();
             Assert.Equal(0, ld.Count);
             Assert.False(ld.IsReadOnly);
             Assert.Empty(ld);
@@ -56,26 +68,6 @@ namespace System.Collections.Specialized.Tests
             Assert.Empty(ld.Values);
             Assert.False(ld.Contains(new object()));
             Assert.Null(ld[new object()]);
-        }
-
-        [Fact]
-        public static void Constructor_ComparerTests()
-        {
-            ListDictionary ld = new ListDictionary(StringComparer.OrdinalIgnoreCase);
-            Assert.NotNull(ld);
-            Assert.Equal(0, ld.Count);
-            Assert.False(ld.IsReadOnly);
-            Assert.Empty(ld);
-            Assert.Empty(ld.Keys);
-            Assert.Empty(ld.Values);
-            Assert.False(ld.Contains(new object()));
-            Assert.Null(ld[new object()]);
-
-            ld.Add("key", "value");
-            Assert.True(ld.Contains("key"));
-            Assert.True(ld.Contains("KEY"));
-            Assert.Equal("value", ld["key"]);
-            Assert.Equal("value", ld["KEY"]);
         }
 
         [Theory]
@@ -86,8 +78,6 @@ namespace System.Collections.Specialized.Tests
             ListDictionary added = new ListDictionary();
             IList keys = new ArrayList();
             IList values = new ArrayList();
-            Assert.Empty(added.Keys);
-            Assert.Empty(added.Values);
             for (int i = 0; i < s_dictionaryData.Length; i++)
             {
                 string key = s_dictionaryData[i].Key;
@@ -95,16 +85,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal(i, added.Count);
                 Assert.Null(added[key]);
                 Assert.False(added.Contains(key));
-                CollectionAsserts.Equal(keys, added.Keys);
-                CollectionAsserts.Equal(values, added.Values);
-                if (addViaSet)
-                {
-                    added[key] = value;
-                }
-                else
-                {
-                    added.Add(key, value);
-                }
+                added.Add(addViaSet, key, value);
                 keys.Add(key);
                 values.Add(value);
                 Assert.Equal(value, added[key]);
@@ -120,57 +101,42 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void Add_CustomComparatorTest(bool addViaSet)
+        public static void Add_CustomComparerTest(bool addViaSet)
         {
-            ListDictionary added = new ListDictionary(StringComparer.OrdinalIgnoreCase);
-            int duplicateKeys = 0;
+            ObservableStringComparer comparer = new ObservableStringComparer();
+            ListDictionary added = new ListDictionary(comparer);
+
             for (int i = 0; i < s_dictionaryData.Length; i++)
             {
                 string key = s_dictionaryData[i].Key;
                 string value = s_dictionaryData[i].Value;
-                if (key == Key)
-                {
-                    Assert.Equal(i, added.Count);
-                    Assert.Null(added[key]);
-                    Assert.False(added.Contains(key));
-                    if (addViaSet)
-                    {
-                        added[key] = value;
-                    }
-                    else
-                    {
-                        added.Add(key, value);
-                    }
-                    Assert.Equal(value, added[key]);
-                    Assert.True(added.Contains(key));
-                    Assert.Equal(i + 1, added.Count);
-                }
-                else if (StringComparer.OrdinalIgnoreCase.Equals(key, Key))
-                {
-                    Assert.Equal(1, added.Count);
-                    Assert.Equal("key-value", added[key]);
-                    Assert.True(added.Contains(key));
-                    Assert.Throws<ArgumentException>(() => added.Add(key, value));
-                    duplicateKeys++;
-                }
-                else
-                {
-                    Assert.Equal(i - duplicateKeys, added.Count);
-                    Assert.Null(added[key]);
-                    Assert.False(added.Contains(key));
-                    if (addViaSet)
-                    {
-                        added[key] = value;
-                    }
-                    else
-                    {
-                        added.Add(key, value);
-                    }
-                    Assert.Equal(i - duplicateKeys + 1, added.Count);
-                    Assert.Equal(value, added[key]);
-                    Assert.True(added.Contains(key));
-                }
+
+                Assert.Equal(i, added.Count);
+                comparer.AssertCompared(i, () => Assert.Null(added[key]));
+                comparer.AssertCompared(i, () => Assert.False(added.Contains(key)));
+
+                // comparer is called for each element in sequence during add.
+                comparer.AssertCompared(i, () => added.Add(addViaSet, key, value));
+                comparer.AssertCompared(i + 1, () => Assert.Equal(value, added[key]));
+                comparer.AssertCompared(i + 1, () => Assert.True(added.Contains(key)));
+                Assert.Equal(i + 1, added.Count);
+                comparer.AssertCompared(i + 1, () => Assert.Throws<ArgumentException>(() => added.Add(key, "duplicate")));
             }
+            Assert.Equal(s_dictionaryData.Length, added.Count);
+
+            // Because the dictionary maintains insertion order, "add"-ing an already-present element only iterates
+            // until the initial key is reached.
+            int middleIndex = s_dictionaryData.Length / 2;
+            string middleKey = s_dictionaryData[middleIndex].Key;
+            string middleValue = s_dictionaryData[middleIndex].Value;
+
+            Assert.Equal(middleValue, added[middleKey]);
+            Assert.True(added.Contains(middleKey));
+            // Index is 0-based, count is 1-based
+            //  ... Add throws exception
+            comparer.AssertCompared(middleIndex + 1, () => Assert.Throws<ArgumentException>(() => added.Add(middleKey, "middleValue")));
+            Assert.Equal(middleValue, added[middleKey]);
+            Assert.True(added.Contains(middleKey));
         }
 
         [Theory]
@@ -179,16 +145,8 @@ namespace System.Collections.Specialized.Tests
         public static void Add_MultipleTypesTest(bool addViaSet)
         {
             ListDictionary added = new ListDictionary();
-            if (addViaSet)
-            {
-                added["key"] = "value";
-                added["key".GetHashCode()] = "hashcode".GetHashCode();
-            }
-            else
-            {
-                added.Add("key", "value");
-                added.Add("key".GetHashCode(), "hashcode".GetHashCode());
-            }
+            added.Add(addViaSet, "key", "value");
+            added.Add(addViaSet, "key".GetHashCode(), "hashcode".GetHashCode());
 
             Assert.True(added.Contains("key"));
             Assert.True(added.Contains("key".GetHashCode()));
@@ -288,6 +246,25 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
+        [Fact]
+        public static void Set_CustomComparerTest()
+        {
+            ObservableStringComparer comparer = new ObservableStringComparer();
+            ListDictionary ld = Fill(new ListDictionary(comparer), s_dictionaryData);
+
+            int visited = s_dictionaryData.Length;
+
+            Assert.All(s_dictionaryData.Reverse(), element =>
+            {
+                string newValue = "new" + element.Value;
+                Assert.True(ld.Contains(element.Key));
+                // Removing items in reverse order, so iterates over everything ahead of the key.
+                comparer.AssertCompared(visited--, () => ld[element.Key] = newValue);
+                Assert.True(ld.Contains(element.Key));
+                Assert.Equal(newValue, ld[element.Key]);
+            });
+        }
+
         [Theory]
         [MemberData("ListDictionary_Data")]
         public static void GetSet_ArgumentInvalidTest(ListDictionary ld, KeyValuePair<string, string>[] data)
@@ -380,19 +357,18 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Fact]
-        public static void Remove_CustomComparatorTest()
+        public static void Remove_CustomComparerTest()
         {
-            KeyValuePair<string, string>[] data = new[] {
-                new KeyValuePair<string, string>("key", "value"),
-                new KeyValuePair<string, string>("otherkey", "othervalue"),
-            };
-            ListDictionary ld = Fill(new ListDictionary(StringComparer.OrdinalIgnoreCase), data);
+            ObservableStringComparer comparer = new ObservableStringComparer();
+            ListDictionary ld = Fill(new ListDictionary(comparer), s_dictionaryData);
 
-            Assert.All(data, element =>
+            Assert.All(s_dictionaryData.Reverse(), element =>
             {
-                Assert.True(ld.Contains(element.Key.ToUpper()));
-                ld.Remove(element.Key.ToUpper());
-                Assert.False(ld.Contains(element.Key.ToUpper()));
+                int originalSize = ld.Count;
+                Assert.True(ld.Contains(element.Key));
+                // Removing items in reverse order, so iterates over everything.
+                comparer.AssertCompared(originalSize, () => ld.Remove(element.Key));
+                Assert.False(ld.Contains(element.Key));
             });
             Assert.Equal(0, ld.Count);
         }
@@ -496,6 +472,32 @@ namespace System.Collections.Specialized.Tests
             {
                 ld.Add("newKey", "newValue");
                 Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            }
+        }
+
+        private static void Add(this ListDictionary ld, bool addViaSet, object key, object value)
+        {
+            if (addViaSet) ld[key] = value;
+            else ld.Add(key, value);
+        }
+
+        private class ObservableStringComparer : IComparer
+        {
+            private int _compared = 0;
+
+            public void AssertCompared(int expected, Action action)
+            {
+                // Reset before compare
+                _compared = 0;
+                action();
+                Assert.Equal(expected, _compared);
+            }
+
+            public int Compare(object x, object y)
+            {
+                _compared++;
+
+                return StringComparer.Ordinal.Compare((string)x, (string)y);
             }
         }
     }
