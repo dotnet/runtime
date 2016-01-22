@@ -49,6 +49,7 @@ internal static partial class Interop
         internal const string SecurityCpwl = "api-ms-win-security-cpwl-l1-1-0.dll";
         internal const string SecurityLsa = "api-ms-win-security-lsalookup-l2-1-0.dll";
         internal const string SecurityLsaPolicy = "api-ms-win-security-lsapolicy-l1-1-0";
+        internal const string SecurityProvider = "api-ms-win-security-provider-l1-1-0";
         internal const string SecuritySddl = "api-ms-win-security-sddl-l1-1-0";
         internal const string ServiceCore = "api-ms-win-service-core-l1-1-1.dll";
         internal const string ServiceMgmt_L1 = "api-ms-win-service-management-l1-1-0.dll";

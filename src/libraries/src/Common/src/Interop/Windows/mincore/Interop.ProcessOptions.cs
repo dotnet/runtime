@@ -7,6 +7,7 @@ internal partial class Interop
     {
         internal partial class SEPrivileges
         {
+            internal const uint SE_PRIVILEGE_DISABLED = 0;
             internal const int SE_PRIVILEGE_ENABLED = 2;
         }
 

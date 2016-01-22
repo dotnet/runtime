@@ -48,14 +48,24 @@ internal partial class Interop
             internal const int ERROR_PIPE_LISTENING = 0x218;
             internal const int ERROR_OPERATION_ABORTED = 0x3E3;
             internal const int ERROR_IO_PENDING = 0x3E5;
+            internal const int ERROR_NO_TOKEN = 0x3f0;
             internal const int ERROR_DLL_INIT_FAILED = 0x45A;
             internal const int ERROR_NOT_FOUND = 0x490;
-            internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
-            internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
-            internal const int ERROR_NO_TOKEN = 0x3f0;
             internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
+            internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;
+            internal const int ERROR_UNKNOWN_REVISION = 0x519;
+            internal const int ERROR_INVALID_OWNER = 0x51B;
+            internal const int ERROR_INVALID_PRIMARY_GROUP = 0x51C;
+            internal const int ERROR_NO_SUCH_PRIVILEGE = 0x521;
+            internal const int ERROR_PRIVILEGE_NOT_HELD = 0x522;
+            internal const int ERROR_INVALID_ACL = 0x538;
+            internal const int ERROR_INVALID_SECURITY_DESCR = 0x53A;
             internal const int ERROR_INVALID_SID = 0x539;
+            internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
+            internal const int ERROR_CANT_OPEN_ANONYMOUS = 0x543;
+            internal const int ERROR_NO_SECURITY_ON_OBJECT = 0x546;
             internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
+            internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
             internal const int EFail = unchecked((int)0x80004005);
         }
     }
