@@ -1,24 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">net46_Debug</Configuration>
-  </PropertyGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Security.AccessControl</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'" >true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='net46'" >
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Security\AccessControl\ACE.cs" />
+    <Compile Include="System\Security\AccessControl\ACL.cs" />
+    <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\Enums.cs" />
+    <Compile Include="System\Security\AccessControl\NativeObjectSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\ObjectSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\ObjectSecurityT.cs" />
+    <Compile Include="System\Security\AccessControl\Privilege.cs" />
+    <Compile Include="System\Security\AccessControl\PrivilegeNotHeldException.cs" />
+    <Compile Include="System\Security\AccessControl\SecurityDescriptor.cs" />
+    <Compile Include="System\Security\AccessControl\Rules.cs" />
+    <Compile Include="System\Security\AccessControl\Win32.cs" />
+    <Compile Include="System\Security\Principal\Win32.cs" />
+    <Compile Include="System\Security\SafeSecurityHandles.cs" />
+    <!-- PInvoke sources -->
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUID.cs">
+      <Link>Common\Interop\Interop.LUID.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUIDAndAttributes.cs">
+      <Link>Common\Interop\Interop.LUIDAndAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUIDAndAttributes1.cs">
+      <Link>Common\Interop\Interop.LUIDAndAttributes1.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.TokenPrivilege.cs">
+      <Link>Common\Interop\Interop.TokenPrivilege.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityImpersonationLevel.cs">
+      <Link>Common\Interop\Interop.SecurityImpersonationLevel.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ProcessOptions.cs">
+      <Link>Common\Interop\Interop.ProcessOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupPrivilegeValue.cs">
+      <Link>Common\Interop\Interop.LookupPrivilegeValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RevertToSelf.cs">
+      <Link>Common\Interop\Interop.RevertToSelf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs">
+      <Link>Common\Interop\Interop.LocalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConvertSdToStringSd.cs">
+      <Link>Common\Interop\Interop.ConvertSdToStringSd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConvertStringSdToSd.cs">
+      <Link>Common\Interop\Interop.ConvertStringSdToSd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityInfoByHandle.cs">
+      <Link>Common\Interop\Interop.GetSecurityInfoByHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetSecurityInfoByHandle.cs">
+      <Link>Common\Interop\Interop.SetSecurityInfoByHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityInfoByName.cs">
+      <Link>Common\Interop\Interop.GetSecurityInfoByName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetSecurityInfoByName.cs">
+      <Link>Common\Interop\Interop.SetSecurityInfoByName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSecurityDescriptorLength.cs">
+      <Link>Common\Interop\Interop.GetSecurityDescriptorLength.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenThreadToken_SafeTokenHandle.cs">
+      <Link>Common\Interop\Interop.OpenThreadToken_SafeTokenHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenProcessToken_IntPtr.cs">
+      <Link>Common\Interop\Interop.OpenProcessToken_IntPtrs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetThreadToken.cs">
+      <Link>Common\Interop\Interop.SetThreadToken.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentThread.cs">
+      <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.AdjustTokenPrivileges_TokenPrivilege.cs">
+      <Link>Common\Interop\Interop.AdjustTokenPrivileges_TokenPrivilege.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateTokenEx_SafeTokenHandle.cs">
+      <Link>Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs</Link>
+    </Compile>    
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
