@@ -183,11 +183,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #ifdef USE_JUMP_TABLES
 	gpointer *load_get_lmf_addr = NULL, *load_trampoline = NULL;
 #else
-        guint8 *load_get_lmf_addr  = NULL, *load_trampoline  = NULL;
+	guint8 *load_get_lmf_addr  = NULL, *load_trampoline  = NULL;
 	gpointer *constants;
 #endif
-
-	int cfa_offset, regsave_size, lr_offset;
+	int i, cfa_offset, regsave_size, lr_offset;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 	int buf_len;
@@ -223,6 +222,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, cfa_offset);
 	// PC saved at sp+LR_OFFSET
 	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, -4);
+	/* Callee saved regs */
+	for (i = 0; i < 8; ++i)
+		mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_R4 + i, -regsave_size + ((4 + i) * 4));
 
 	if (aot) {
 		/* 
