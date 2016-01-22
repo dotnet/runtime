@@ -10,7 +10,8 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "Newtonsoft.Json": "7.0.1"
+    "Newtonsoft.Json": "7.0.1",
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16530"
   },
   "frameworks": {
     "net451": { },
