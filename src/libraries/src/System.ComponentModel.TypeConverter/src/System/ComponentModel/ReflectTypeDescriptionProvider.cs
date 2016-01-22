@@ -212,7 +212,10 @@ namespace System.ComponentModel
                 if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType.GetTypeInfo()))
                 {
                     bool noTypeConstructor = true;
-                    return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, type, ref noTypeConstructor);
+                    object instance = (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, type, ref noTypeConstructor);
+                    if (noTypeConstructor)
+                        ReflectTypeDescriptionProvider.IntrinsicTypeConverters[type] = instance;
+                    return (TypeConverter)instance;
                 }
             }
 
