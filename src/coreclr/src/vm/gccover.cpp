@@ -378,7 +378,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         size_t regionOffsetAdj,
         BOOL   fZapped)
 {
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && USE_DISASSEMBLER
 
     BYTE * codeStart = (BYTE *)pCode;
 
