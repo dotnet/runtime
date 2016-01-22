@@ -3476,6 +3476,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 
 #ifdef PLATFORM_UNIX
 
+/* PAL_CS_NATIVE_DATA_SIZE is defined as sizeof(PAL_CRITICAL_SECTION_NATIVE_DATA) */
+
 #if defined(_AIX)
 #define PAL_CS_NATIVE_DATA_SIZE 100
 #elif defined(__APPLE__) && defined(__i386__)
