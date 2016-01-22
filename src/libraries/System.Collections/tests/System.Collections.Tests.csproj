@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -48,6 +48,7 @@
     <Compile Include="Generic\Dictionary\DictionaryTests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
+    <Compile Include="Generic\EqualityComparer\EqualityComparerCompareTest.cs" />
     <Compile Include="Generic\HashSet\HashSetTestSupport.cs" />
     <Compile Include="Generic\HashSet\HashSet_Add_RemoveTests.cs" />
     <Compile Include="Generic\HashSet\HashSet_ConstructorTests.cs" />
