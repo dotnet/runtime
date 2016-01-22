@@ -48,6 +48,11 @@
         <Name>System.Net.Http</Name>		
         <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>		
     </ProjectReference>
+    <!-- TODO: Temporary workaround.  Workaround a break in System.IO.FileSystem until a new package is available. -->
+    <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj">
+      <Project>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</Project>
+      <Name>System.IO.FileSystem</Name>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
