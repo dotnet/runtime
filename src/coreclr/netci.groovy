@@ -28,7 +28,12 @@ class Constants {
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
-    def static jitStressModeScenarios = ['minopts' : ['COMPLUS_JitMinOpts' : '1'], 'jitstress1' : ['COMPLUS_JitStress' : '1'] ]
+    def static jitStressModeScenarios = ['minopts' : ['COMPlus_JitMinOpts' : '1'], 'forcerelocs' : ['COMPlus_ForceRelocs' : '1'],
+	           'jitstress1' : ['COMPlus_JitStress' : '1'], 'jitstress2' : ['COMPlus_JitStress' : '2'],
+			   'jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
+			   'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
+			   'jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
+			   'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80']]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -168,11 +173,17 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     }
                 }
                 break
+            case 'jitstressregs1':
+            case 'jitstressregs2':
+            case 'jitstressregs3':
+            case 'jitstressregs4':
+			case 'jitstressregs8':
+			case 'jitstressregs0x10':
+			case 'jitstressregs0x80':
             case 'minopts':
-                assert (os == 'Windows_NT') || (os in Constants.crossList)
-                Utilities.addPeriodicTrigger(job, '@daily')
-                break
+			case 'forcerelocs':
             case 'jitstress1':
+            case 'jitstress2':			
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 Utilities.addPeriodicTrigger(job, '@daily')
                 break
@@ -232,6 +243,50 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=1)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
+                        case 'jitstress2':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=2)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break							
+						case 'forcerelocs':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ForceRelocs)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                        case 'jitstressregs1':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=1)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break							
+						case 'jitstressregs2':
+							assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=2)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break													
+						case 'jitstressregs3':
+							assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=3)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break													
+						case 'jitstressregs4':		
+							assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=4)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break													
+						case 'jitstressregs8':
+							assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=8)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
+						case 'jitstressregs0x10':
+							assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x10)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
+						case 'jitstressregs0x80':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break							
                         default:
                             println("Unknown scenario: ${scenario}");
                             assert false
@@ -269,12 +324,57 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
+						case 'forcerelocs':							
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ForceRelocs)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+							break							
                         case 'jitstress1':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=1)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
-                        default:
+                        case 'jitstress2':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStress=2)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
+                        case 'jitstressregs1':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=1)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs2':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=2)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs3':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=3)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs4':		
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=4)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs8':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=8)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs0x10':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x10)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						case 'jitstressregs0x80':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break						
+						default:
                             println("Unknown scenario: ${scenario}");
                             assert false
                             break
