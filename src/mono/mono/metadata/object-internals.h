@@ -1659,7 +1659,7 @@ MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass);
 
 MonoObject*
-mono_object_new_mature (MonoVTable *vtable);
+mono_object_new_mature (MonoVTable *vtable, MonoError *error);
 
 MonoObject*
 mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error);
