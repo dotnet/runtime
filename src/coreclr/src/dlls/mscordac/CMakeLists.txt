@@ -42,7 +42,7 @@ else(WIN32)
     endif(CLR_CMAKE_PLATFORM_LINUX)
 endif(WIN32)
 
-add_library(mscordaccore SHARED ${CLR_DAC_SOURCES})
+add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES})
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared 

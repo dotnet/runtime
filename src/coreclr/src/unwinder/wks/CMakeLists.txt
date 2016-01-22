@@ -1,1 +1,1 @@
-add_library(unwinder_wks ${UNWINDER_SOURCES})
+add_library_clr(unwinder_wks ${UNWINDER_SOURCES})

@@ -1,5 +1,4 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories($ENV{__GeneratedIntermediatesDir})
 
 if(WIN32)
     # remove /ltcg from resource-only libraries
@@ -12,8 +11,8 @@ endif(WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)
 
-add_library(clretwrc SHARED
-  clretwrc.rc
+add_library_clr(clretwrc SHARED
+    clretwrc.rc
 )
 
 # add the install targets
