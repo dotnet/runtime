@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -99,16 +100,16 @@ internal static partial class Interop
                 BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
             }
 
-            Ssl.SslErrorCode error;
             int retVal = Ssl.SslDoHandshake(context);
 
             if (retVal != 1)
             {
-                error = GetSslError(context, retVal);
+                Exception innerError;
+                Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
 
                 if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
-                    throw CreateSslException(context, SR.net_ssl_handshake_failed_error, retVal);
+                    throw new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
                 }
             }
 
@@ -160,7 +161,8 @@ internal static partial class Interop
 
             if (retVal != count)
             {
-                errorCode = GetSslError(context, retVal);
+                Exception innerError;
+                errorCode = GetSslError(context, retVal, out innerError);
                 retVal = 0;
 
                 switch (errorCode)
@@ -171,7 +173,7 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw CreateSslException(SR.net_ssl_encrypt_failed, errorCode);
+                        throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), innerError);
                 }
             }
             else
@@ -205,7 +207,8 @@ internal static partial class Interop
 
             if (retVal != count)
             {
-                errorCode = GetSslError(context, retVal);
+                Exception innerError;
+                errorCode = GetSslError(context, retVal, out innerError);
                 retVal = 0;
 
                 switch (errorCode)
@@ -222,7 +225,7 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw CreateSslException(SR.net_ssl_decrypt_failed, errorCode);
+                        throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), innerError);
                 }
             }
 
@@ -459,12 +462,31 @@ internal static partial class Interop
             return bytes;
         }
 
-        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result)
+        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result, out Exception innerError)
         {
+            ErrorInfo lastErrno = Sys.GetLastErrorInfo(); // cache it before we make more P/Invoke calls, just in case we need it
+
             Ssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
-            if (retVal == Ssl.SslErrorCode.SSL_ERROR_SYSCALL)
+            switch (retVal)
             {
-                retVal = (Ssl.SslErrorCode)Crypto.ErrGetError();
+                case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:
+                    // Some I/O error occurred
+                    innerError =
+                        Crypto.ErrPeekError() != 0 ? Crypto.CreateOpenSslCryptographicException() : // crypto error queue not empty
+                        result == 0 ? new EndOfStreamException() : // end of file that violates protocol
+                        result == -1 && lastErrno.Error != Error.SUCCESS ? new IOException(lastErrno.GetErrorMessage(), lastErrno.RawErrno) : // underlying I/O error
+                        null; // no additional info available
+                    break;
+
+                case Ssl.SslErrorCode.SSL_ERROR_SSL:
+                    // OpenSSL failure occurred.  The error queue contains more details.
+                    innerError = Interop.Crypto.CreateOpenSslCryptographicException();
+                    break;
+
+                default:
+                    // No additional info available.
+                    innerError = null;
+                    break;
             }
             return retVal;
         }
@@ -504,28 +526,6 @@ internal static partial class Interop
             return new SslException(msg, (int)errorVal);
         }
 
-        private static SslException CreateSslException(string message, Ssl.SslErrorCode error)
-        {
-            string msg = SR.Format(message, error);
-            switch (error)
-            {
-                case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:
-                    return CreateSslException(msg);
-
-                case Ssl.SslErrorCode.SSL_ERROR_SSL:
-                    Exception innerEx = Interop.Crypto.CreateOpenSslCryptographicException();
-                    return new SslException(innerEx.Message, innerEx);
-
-                default:
-                    return new SslException(msg, error);
-            }
-        }
-
-        private static SslException CreateSslException(SafeSslHandle context, string message, int error)
-        {
-            return CreateSslException(message, Ssl.SslGetError(context, error));
-        }
-
         #endregion
 
         #region Internal class
@@ -539,11 +539,6 @@ internal static partial class Interop
 
             public SslException(string inputMessage, Exception ex)
                 : base(inputMessage, ex)
-            {
-            }
-
-            public SslException(string inputMessage, Ssl.SslErrorCode error)
-                : this(inputMessage, (int)error)
             {
             }
 

@@ -11,6 +11,10 @@ extern "C" uint64_t CryptoNative_ErrGetError()
     return ERR_get_error();
 }
 
+extern "C" uint64_t CryptoNative_ErrPeekError()
+{
+    return ERR_peek_error();
+}
 extern "C" uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
 {
     unsigned long err = ERR_get_error();

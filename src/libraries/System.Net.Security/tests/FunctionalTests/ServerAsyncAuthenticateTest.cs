@@ -192,6 +192,9 @@ namespace System.Net.Security.Tests
               X509Chain chain,
               SslPolicyErrors sslPolicyErrors)
         {
+            Assert.True(
+                (sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) == SslPolicyErrors.RemoteCertificateNotAvailable,
+                "Client didn't supply a cert, the server required one, yet sslPolicyErrors is " + sslPolicyErrors);
             return true;  // allow everything
         }
 

@@ -73,6 +73,7 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(5557, PlatformID.Linux)]
         [Fact]
         public async Task ServerRequireEncryption_ClientNoEncryption_NoConnect()
         {
