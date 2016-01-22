@@ -106,14 +106,14 @@ namespace System.Net.Security.Tests
 
                 Task[] tasks = new Task[2];
 
-                tasks[0] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                tasks[1] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                tasks[0] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                tasks[1] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
                 bool finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Send/receive completed in the allotted time");
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
-                tasks[0] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                tasks[1] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                tasks[0] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                tasks[1] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
                 finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Send/receive completed in the allotted time");
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
