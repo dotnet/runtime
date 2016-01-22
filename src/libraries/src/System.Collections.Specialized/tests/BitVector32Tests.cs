@@ -175,22 +175,26 @@ namespace System.Collections.Specialized.Tests
         public static void Mask_DefaultTest()
         {
             Assert.Equal(1, BitVector32.CreateMask());
+            Assert.Equal(1, BitVector32.CreateMask(0));
         }
 
         [Theory]
-        [InlineData(1, 0)]
+        [InlineData(2, 1)]
         [InlineData(6, 3)]
+        [InlineData(short.MaxValue + 1, 1 << 14)]
         [InlineData(-2, int.MaxValue)]
-        [InlineData(int.MinValue, 1 << 31)]
         [InlineData(-2, -1)]
         // Works even if the mask has multiple bits set, which probably wasn't the intended use.
-        public static void Mask_SeriesTest(int expected, int argument)
+        public static void Mask_SeriesTest(int expected, int actual)
         {
-            for (int actual; argument > int.MinValue; expected <<= 1, argument = actual)
+            while (actual != int.MinValue)
             {
-                Assert.Equal(expected, actual = BitVector32.CreateMask(argument));
+                actual = BitVector32.CreateMask(actual);
+                Assert.Equal(expected, actual);
+                expected <<= 1;
             }
-            Assert.Equal(int.MinValue, argument);
+
+            Assert.Equal(int.MinValue, actual);
         }
 
         [Fact]
@@ -235,14 +239,7 @@ namespace System.Collections.Specialized.Tests
             for (int index = 0; index < 32; index++)
             {
                 mask = BitVector32.CreateMask(mask);
-                if (index % 2 == 0)
-                {
-                    Assert.True(some[mask]);
-                }
-                else
-                {
-                    Assert.False(some[mask]);
-                }
+                Assert.Equal(index % 2 == 0, some[mask]);
             }
             Assert.Equal(int.MinValue, mask);
         }
@@ -369,8 +366,10 @@ namespace System.Collections.Specialized.Tests
             {
                 BitVector32 data = new BitVector32();
                 BitVector32.Section section = BitVector32.CreateSection(maximum);
-#if DEBUG
 
+                // In debug mode, attempting to set a value to a section that is too large triggers an assert.
+                // There is no accompanying check in release mode, however, allowing invalid values to be set.
+#if DEBUG
                 Exception e = Assert.ThrowsAny<Exception>(() => data[section] = value);
                 Assert.Equal("DebugAssertException", e.GetType().Name);
 #else
@@ -459,7 +458,14 @@ namespace System.Collections.Specialized.Tests
             BitVector32.Section overflow = BitVector32.CreateSection(prior, initial);
             // Final masked value can hang off the end
             Assert.Equal(prior, overflow.Mask);
-            Assert.InRange(overflow.Offset + CountBitsRequired(overflow.Mask), 32 + 1, 32 + 1 + 16);
+            Assert.Equal(30, overflow.Offset);
+            // The next section would be created "off the end"
+            //     - the current offset is 30, and the current mask requires more than the remaining 1 bit.
+            Assert.InRange(CountBitsRequired(overflow.Mask), 2, 15);
+
+            // In release mode, the check throws an exception if a section would **start** (_not_ end!) off the end of the vector.
+            //    .... this means that it's possible to silently lose bits "off the end" of the vector.
+            // In debug mode, this check is preceded by an assert covering the same condition, causing the original exception to not appear.
 #if DEBUG
             Exception e = Assert.ThrowsAny<Exception>(() => BitVector32.CreateSection(invalid, overflow));
             Assert.Equal("DebugAssertException", e.GetType().Name);
