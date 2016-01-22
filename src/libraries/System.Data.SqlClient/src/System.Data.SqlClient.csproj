@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -13,7 +13,8 @@
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
+  <!--PropertyGroup Condition=" '$(TargetsWindows)' != 'true' "-->
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
@@ -147,11 +148,12 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="System\Data\Locale\Locale.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <!--ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Interop\LocaleMapper.Windows.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' "-->
+  <ItemGroup>
     <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
@@ -161,6 +163,7 @@
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNINpHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIProxy.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />

@@ -208,6 +208,38 @@ namespace System.Data.SqlClient.SNI
                 case TdsEnums.TCP:
                     return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
 
+                case TdsEnums.NP:
+                    // Named Pipe Format: np:\\<host name>\pipe\<pipe name>
+                    const int minPipeLength = 10; // eg: //./pipe/a
+                    string pipePath = serverNameParts[1].Trim();
+                    if (pipePath.Length < minPipeLength)
+                    {
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path is malformed A");
+                        return null;
+                    }
+
+                    if (pipePath[0] != '\\' || pipePath[1] != '\\')
+                    {
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path is malformed B");
+                        return null;
+                    }
+
+                    int endofServerName = pipePath.IndexOf('\\', 2);
+
+                    string pipeToken = @"\pipe\";
+                    if (0 != string.Compare(pipeToken, 0, pipePath, endofServerName, pipeToken.Length))
+                    {
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path must contain \'pipe\' after server name.");
+                        return null;
+                    }
+
+                    string serverName = pipePath.Substring(2, endofServerName - 2);
+                    string pipeName = pipePath.Substring(endofServerName + pipeToken.Length);
+
+
+
+                    return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject, async);
+
                 default:
                     if (parallel)
                     {
