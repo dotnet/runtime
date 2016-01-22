@@ -73,6 +73,7 @@ struct _LOSSection {
 	unsigned char *free_chunk_map;
 };
 
+/* We allow read only access on the list while sweep is not running */
 LOSObject *los_object_list = NULL;
 mword los_memory_usage = 0;
 
@@ -410,6 +411,11 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	*vtslot = vtable;
 	sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
 	obj->next = los_object_list;
+	/*
+	 * We need a memory barrier so we don't expose as head of the los object list
+	 * a LOSObject that doesn't have its fields initialized.
+	 */
+	mono_memory_write_barrier ();
 	los_object_list = obj;
 	los_memory_usage += size;
 	los_num_objects++;
