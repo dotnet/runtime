@@ -695,7 +695,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         {
             //Target is calculated wrt the saved instruction pointer
             //Find the real target wrt the real instruction pointer
-            int delta = target - savedInstrPtr;
+            int delta = static_cast<int>(target - savedInstrPtr);
             target = delta + instrPtr;
 
             MethodDesc* targetMD = getTargetMethodDesc((PCODE)target);

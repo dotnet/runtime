@@ -2884,9 +2884,9 @@ private:
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
         kRedirectedForYieldTask,
-#ifdef HAVE_GCCOVER
+#if defined(HAVE_GCCOVER) && defined(_TARGET_AMD64_)
         kRedirectedForGCStress,
-#endif // HAVE_GCCOVER
+#endif // HAVE_GCCOVER && _TARGET_AMD64_
         kMaxHijackFunctions,
     };
 
@@ -2975,10 +2975,10 @@ void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
 void RedirectedHandledJITCaseForYieldTask_Stub();
 void RedirectedHandledJITCaseForYieldTask_StubEnd();
-#ifdef HAVE_GCCOVER
+#if defined(HAVE_GCCOVER) && defined(_TARGET_AMD64_)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
-#endif // HAVE_GCCOVER
+#endif // HAVE_GCCOVER && _TARGET_AMD64_
 };
 
 
