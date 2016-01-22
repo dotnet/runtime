@@ -5,7 +5,7 @@ set cleanlog=%~dp0clean.log
 echo Running Clean.cmd %* > %cleanlog%
 
 if [%1] == [] (
-  set clean_targets=Clean
+  set clean_targets=Clean;
   goto Begin
 )
 
@@ -70,8 +70,8 @@ if /I [%clean_src%] == [true] (
 
 if NOT "%clean_targets%" == "" (
   echo Running msbuild clean targets "%clean_targets:~0,-1%" ...
-  echo msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=diag;Append;LogFile=%cleanlog% >> %cleanlog%
-  call msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=diag;Append;LogFile=%cleanlog%
+  echo msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog% >> %cleanlog%
+  call msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog%
   if NOT [%ERRORLEVEL%]==[0] (
     echo ERROR: An error occurred while cleaning, see %cleanlog% for more details.
     exit /b
@@ -98,7 +98,7 @@ echo.
 echo Options:
 echo     /b     - Deletes the binary output directory.
 echo     /p     - Deletes the repo-local nuget package directory.
-echo     /c     - Deleted the user-local nuget package cache.
+echo     /c     - Deletes the user-local nuget package cache.
 echo     /t     - Deletes the tools directory.
 echo     /s     - Deletes the untracked files under src directory (git clean src -xdf).
 echo     /all   - Combines all of the above.
