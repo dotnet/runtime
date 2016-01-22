@@ -2838,7 +2838,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 }
 
 static MonoObject*
-do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoObject *result = NULL;
 	MonoError error;
@@ -2896,6 +2896,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoObject *result;
 
 	if (mono_runtime_get_no_exec ())
@@ -2906,7 +2907,8 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 
 	MONO_PREPARE_RESET_BLOCKING;
 
-	result = do_runtime_invoke (method, obj, params, exc);
+	result = do_runtime_invoke (method, obj, params, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	MONO_FINISH_RESET_BLOCKING;
 
@@ -3481,7 +3483,9 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	do_runtime_invoke (prop->set, obj, params, exc);
+	MonoError error;
+	do_runtime_invoke (prop->set, obj, params, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 /**
@@ -3506,7 +3510,11 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return do_runtime_invoke (prop->get, obj, params, exc);
+	MonoError error;
+	MonoObject *val = do_runtime_invoke (prop->get, obj, params, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return val;
 }
 
 /*

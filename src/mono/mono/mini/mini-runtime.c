@@ -2328,7 +2328,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 }
 
 static MonoObject*
-mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc)
+mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoMethodSignature *sig = info->sig;
 	MonoDomain *domain = mono_domain_get ();
@@ -2338,6 +2338,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	guint8 retval [256];
 	gpointer *param_refs;
 	int i, pindex;
+
+	mono_error_init (error);
 
 	g_assert (info->gsharedvt_invoke);
 
@@ -2407,7 +2409,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
  * @exc: used to catch exceptions objects
  */
 static MonoObject*
-mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoError *error, MonoObject **exc)
+mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
@@ -2565,7 +2567,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoError
 #endif
 
 	if (mono_llvm_only)
-		return mono_llvmonly_runtime_invoke (method, info, obj, params, exc);
+		return mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
 
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
