@@ -1080,7 +1080,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 		while (quadsize [0] != 1 && quadsize [0] != 2 && quadsize [0] != 4 && quadsize [0] != 8)
 			quadsize [0] ++;
-		while (quadsize [1] != 1 && quadsize [1] != 2 && quadsize [1] != 4 && quadsize [1] != 8)
+		while (quadsize [1] != 0 && quadsize [1] != 1 && quadsize [1] != 2 && quadsize [1] != 4 && quadsize [1] != 8)
 			quadsize [1] ++;
 
 		ainfo->storage = ArgValuetypeInReg;
