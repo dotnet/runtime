@@ -80,6 +80,9 @@ void
 mono_error_set_argument (MonoError *error, const char *argument, const char *msg_format, ...);
 
 void
+mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...);
+
+void
 mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...);
 
 void

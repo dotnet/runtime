@@ -481,6 +481,18 @@ mono_error_set_argument (MonoError *oerror, const char *argument, const char *ms
 }
 
 void
+mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	mono_error_prepare (error);
+
+	error->error_code = MONO_ERROR_ARGUMENT_NULL;
+	error->first_argument = argument;
+
+	set_error_message ();
+}
+
+void
 mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
@@ -642,6 +654,10 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 
 	case MONO_ERROR_ARGUMENT:
 		exception = mono_get_exception_argument (error->first_argument, error->full_message);
+		break;
+
+	case MONO_ERROR_ARGUMENT_NULL:
+		exception = mono_get_exception_argument_null (error->first_argument);
 		break;
 
 	case MONO_ERROR_NOT_VERIFIABLE: {
