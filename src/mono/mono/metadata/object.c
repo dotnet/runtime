@@ -4587,7 +4587,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 		if (o != NULL) return o;
 	}
 
-	return mono_object_new_alloc_specific (vtable);
+	return mono_object_new_alloc_specific_checked (vtable, error);
 }
 
 MonoObject *
@@ -4603,12 +4603,26 @@ ves_icall_object_new_specific (MonoVTable *vtable)
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
+	MonoError error;
+	MonoObject *o = mono_object_new_alloc_specific_checked (vtable, &error);
+	mono_error_raise_exception (&error);
+
+	return o;
+}
+
+MonoObject *
+mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o = (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
+	MonoObject *o;
+
+	mono_error_init (error);
+
+	o = (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
 	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (vtable->klass->instance_size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
 	else if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
 
@@ -5268,6 +5282,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoObject *res;
 	int size;
 	MonoVTable *vtable;
@@ -5280,7 +5295,8 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	if (!vtable)
 		return NULL;
 	size = mono_class_instance_size (klass);
-	res = mono_object_new_alloc_specific (vtable);
+	res = mono_object_new_alloc_specific_checked (vtable, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	size = size - sizeof (MonoObject);
 

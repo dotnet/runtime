@@ -1600,6 +1600,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal
 MonoObject *
 ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoDomain *domain;
 	MonoObject *obj;
@@ -1607,13 +1608,15 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
 
-	/* call mono_object_new_alloc_specific instead of mono_object_new
+	/* call mono_object_new_alloc_specific_checked instead of mono_object_new
 	 * because we want to actually create object. mono_object_new checks
 	 * to see if type is import and creates transparent proxy. this method
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	*/
-	obj = mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
+	obj = mono_object_new_alloc_specific_checked (mono_class_vtable_full (domain, klass, TRUE), &error);
+	mono_error_raise_exception (&error);
+
 	return obj;
 }
 

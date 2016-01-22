@@ -6418,8 +6418,10 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 ICALL_EXPORT MonoObject *
 ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionType *type)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoDomain *domain;
+	MonoObject *ret;
 	
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
@@ -6435,7 +6437,10 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		return (MonoObject *) mono_array_new (domain, klass->element_class, 0);
 	} else {
 		/* Bypass remoting object creation check */
-		return mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
+		ret = mono_object_new_alloc_specific_checked (mono_class_vtable_full (domain, klass, TRUE), &error);
+		mono_error_raise_exception (&error);
+
+		return ret;
 	}
 }
 
