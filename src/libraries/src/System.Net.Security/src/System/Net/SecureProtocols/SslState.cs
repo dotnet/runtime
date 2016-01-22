@@ -596,9 +596,17 @@ namespace System.Net.Security
                         KeyExchangeStrength);
                 }
             }
+            catch (Exception)
+            {
+                // If an exception emerges synchronously, the asynchronous operation was not
+                // initiated, so no operation is in progress.
+                _nestedAuth = 0;
+                throw;
+            }
             finally
             {
-                if (lazyResult == null || _exception != null)
+                // For synchronous operations, the operation has completed.
+                if (lazyResult == null)
                 {
                     _nestedAuth = 0;
                 }

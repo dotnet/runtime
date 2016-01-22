@@ -238,6 +238,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\SecuritySafeHandles.cs">
       <Link>Common\Interop\Unix\libssl\SecuritySafeHandles.cs</Link>
     </Compile>
