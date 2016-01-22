@@ -1,19 +1,19 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class mincore
+    internal static partial class mincore
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct LUID
+        internal partial struct LUID_AND_ATTRIBUTES
         {
-            internal int LowPart;
-            internal int HighPart;
+            public LUID Luid;
+            public uint Attributes;
         }
     }
 }
