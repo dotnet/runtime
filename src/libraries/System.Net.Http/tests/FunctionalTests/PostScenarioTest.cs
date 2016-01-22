@@ -56,6 +56,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [ActiveIssue(5485, PlatformID.Windows)]
         [Theory, MemberData("EchoServers")]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
         {
