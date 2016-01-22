@@ -1646,7 +1646,6 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	guint32 attrs;
 	char *shadow;
 	gboolean copy_result;
-	MonoException *exc;
 	struct stat src_sbuf;
 	struct utimbuf utbuf;
 	char *dir_name = g_path_get_dirname (filename);
