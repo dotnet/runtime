@@ -60,6 +60,7 @@ struct _MonoJitInfoTableChunk
 	int		       refcount;
 	volatile int           num_elements;
 	volatile gint8        *last_code_end;
+	MonoJitInfo *next_tombstone;
 	MonoJitInfo * volatile data [MONO_JIT_INFO_TABLE_CHUNK_SIZE];
 };
 
@@ -201,7 +202,10 @@ struct _MonoJitInfo {
 		gpointer aot_info;
 		gpointer tramp_info;
 	} d;
-	struct _MonoJitInfo *next_jit_code_hash;
+	union {
+		struct _MonoJitInfo *next_jit_code_hash;
+		struct _MonoJitInfo *next_tombstone;
+	} n;
 	gpointer    code_start;
 	guint32     unwind_info;
 	int         code_size;
