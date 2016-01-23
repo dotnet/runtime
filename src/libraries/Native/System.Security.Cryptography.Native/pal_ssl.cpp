@@ -5,6 +5,7 @@
 #include "pal_crypto_config.h"
 
 #include <assert.h>
+#include <string.h>
 
 static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
 static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");
@@ -159,209 +160,186 @@ extern "C" int32_t CryptoNative_SslSessionReused(SSL* ssl)
     return SSL_session_reused(ssl) == 1;
 }
 
-/*
-The values used in OpenSSL for SSL_CIPHER algorithm_enc.
-*/
-enum class SSL_CipherAlgorithm : int64_t
+static CipherAlgorithmType MapCipherAlgorithmType(const char* encryption, size_t encryptionLength)
 {
-    SSL_DES = 1,
-    SSL_3DES = 2,
-    SSL_RC4 = 4,
-    SSL_RC2 = 8,
-    SSL_IDEA = 16,
-    SSL_eNULL = 32,
-    SSL_AES128 = 64,
-    SSL_AES256 = 128,
-    SSL_CAMELLIA128 = 256,
-    SSL_CAMELLIA256 = 512,
-    SSL_eGOST2814789CNT = 1024,
-    SSL_SEED = 2048,
-    SSL_AES128GCM = 4096,
-    SSL_AES256GCM = 8192
-};
-
-static CipherAlgorithmType MapCipherAlgorithmType(const SSL_CIPHER* cipher)
-{
-    unsigned long enc = cipher->algorithm_enc;
-
-    SSL_CipherAlgorithm sslEnc = static_cast<SSL_CipherAlgorithm>(enc);
-    switch (sslEnc)
-    {
-        case SSL_CipherAlgorithm::SSL_DES:
-            return CipherAlgorithmType::Des;
-
-        case SSL_CipherAlgorithm::SSL_3DES:
-            return CipherAlgorithmType::TripleDes;
-
-        case SSL_CipherAlgorithm::SSL_RC4:
-            return CipherAlgorithmType::Rc4;
-
-        case SSL_CipherAlgorithm::SSL_RC2:
-            return CipherAlgorithmType::Rc2;
-
-        case SSL_CipherAlgorithm::SSL_eNULL:
-            return CipherAlgorithmType::Null;
-
-        case SSL_CipherAlgorithm::SSL_IDEA:
-            return CipherAlgorithmType::SSL_IDEA;
-
-        case SSL_CipherAlgorithm::SSL_SEED:
-            return CipherAlgorithmType::SSL_SEED;
-
-        case SSL_CipherAlgorithm::SSL_AES128:
-            return CipherAlgorithmType::Aes128;
-
-        case SSL_CipherAlgorithm::SSL_AES256:
-            return CipherAlgorithmType::Aes256;
-
-        case SSL_CipherAlgorithm::SSL_CAMELLIA128:
-            return CipherAlgorithmType::SSL_CAMELLIA128;
-
-        case SSL_CipherAlgorithm::SSL_CAMELLIA256:
-            return CipherAlgorithmType::SSL_CAMELLIA256;
-
-        case SSL_CipherAlgorithm::SSL_eGOST2814789CNT:
-            return CipherAlgorithmType::SSL_eGOST2814789CNT;
-
-        case SSL_CipherAlgorithm::SSL_AES128GCM:
-            return CipherAlgorithmType::Aes128;
-
-        case SSL_CipherAlgorithm::SSL_AES256GCM:
-            return CipherAlgorithmType::Aes256;
-    }
+    if (strncmp(encryption, "DES(56)", encryptionLength) == 0)
+        return CipherAlgorithmType::Des;
+    if (strncmp(encryption, "3DES(168)", encryptionLength) == 0)
+        return CipherAlgorithmType::TripleDes;
+    if (strncmp(encryption, "RC4(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::Rc4;
+    if (strncmp(encryption, "RC2(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::Rc2;
+    if (strncmp(encryption, "None", encryptionLength) == 0)
+        return CipherAlgorithmType::Null;
+    if (strncmp(encryption, "IDEA(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::SSL_IDEA;
+    if (strncmp(encryption, "SEED(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::SSL_SEED;
+    if (strncmp(encryption, "AES(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::Aes128;
+    if (strncmp(encryption, "AES(256)", encryptionLength) == 0)
+        return CipherAlgorithmType::Aes256;
+    if (strncmp(encryption, "Camellia(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::SSL_CAMELLIA128;
+    if (strncmp(encryption, "Camellia(256)", encryptionLength) == 0)
+        return CipherAlgorithmType::SSL_CAMELLIA256;
+    if (strncmp(encryption, "GOST89(256)", encryptionLength) == 0)
+        return CipherAlgorithmType::SSL_eGOST2814789CNT;
+    if (strncmp(encryption, "AESGCM(128)", encryptionLength) == 0)
+        return CipherAlgorithmType::Aes128;
+    if (strncmp(encryption, "AESGCM(256)", encryptionLength) == 0)
+        return CipherAlgorithmType::Aes256;
 
     return CipherAlgorithmType::None;
 }
 
-/*
-The values used in OpenSSL for SSL_CIPHER algorithm_mkey.
-*/
-enum class SSL_KeyExchangeAlgorithm : int64_t
+static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, size_t keyExchangeLength)
 {
-    SSL_kRSA = 1,
-    /* DH cert, RSA CA cert */
-    SSL_kDHr = 2,
-    /* DH cert, DSA CA cert */
-    SSL_kDHd = 4,
-    /* tmp DH key no DH cert */
-    SSL_kEDH = 8,
-    /* Kerberos5 key exchange */
-    SSL_kKRB5 = 16,
-    /* ECDH cert, RSA CA cert */
-    SSL_kECDHr = 32,
-    /* ECDH cert, ECDSA CA cert */
-    SSL_kECDHe = 64,
-    SSL_kEECDH = 128,
-    SSL_kPSK = 256,
-    SSL_kGOST = 512,
-    SSL_kSRP = 1024,
-};
-
-static ExchangeAlgorithmType MapExchangeAlgorithmType(const SSL_CIPHER* cipher)
-{
-    unsigned long mkey = cipher->algorithm_mkey;
-
-    SSL_KeyExchangeAlgorithm sslMkey = static_cast<SSL_KeyExchangeAlgorithm>(mkey);
-    switch (sslMkey)
-    {
-        case SSL_KeyExchangeAlgorithm::SSL_kRSA:
-            return ExchangeAlgorithmType::RsaKeyX;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kDHr:
-            return ExchangeAlgorithmType::DiffieHellman;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kDHd:
-            return ExchangeAlgorithmType::DiffieHellman;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kEDH:
-            return ExchangeAlgorithmType::DiffieHellman;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kKRB5:
-            return ExchangeAlgorithmType::SSL_kKRB5;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kECDHr:
-            return ExchangeAlgorithmType::SSL_ECDH;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kECDHe:
-            return ExchangeAlgorithmType::SSL_ECDSA;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kEECDH:
-            return ExchangeAlgorithmType::SSL_ECDSA;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kPSK:
-            return ExchangeAlgorithmType::SSL_kPSK;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kGOST:
-            return ExchangeAlgorithmType::SSL_kGOST;
-
-        case SSL_KeyExchangeAlgorithm::SSL_kSRP:
-            return ExchangeAlgorithmType::SSL_kSRP;
-    }
+    if (strncmp(keyExchange, "RSA", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::RsaKeyX;
+    if (strncmp(keyExchange, "DH/RSA", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::DiffieHellman;
+    if (strncmp(keyExchange, "DH/DSS", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::DiffieHellman;
+    if (strncmp(keyExchange, "DH", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::DiffieHellman;
+    if (strncmp(keyExchange, "KRB5", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_kKRB5;
+    if (strncmp(keyExchange, "ECDH/RSA", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_ECDH;
+    if (strncmp(keyExchange, "ECDH/ECDSA", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_ECDSA;
+    if (strncmp(keyExchange, "ECDH", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_ECDSA;
+    if (strncmp(keyExchange, "PSK", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_kPSK;
+    if (strncmp(keyExchange, "GOST", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_kGOST;
+    if (strncmp(keyExchange, "SRP", keyExchangeLength) == 0)
+        return ExchangeAlgorithmType::SSL_kSRP;
 
     return ExchangeAlgorithmType::None;
 }
 
-/*
-The values used in OpenSSL for SSL_CIPHER algorithm_mac.
-*/
-enum class SSL_DataHashAlgorithm : int64_t
+static void GetHashAlgorithmTypeAndSize(const char* mac, size_t macLength, HashAlgorithmType& dataHashAlg, DataHashSize& hashKeySize)
 {
-    SSL_MD5 = 1,
-    SSL_SHA1 = 2,
-    SSL_GOST94 = 4,
-    SSL_GOST89MAC = 8,
-    SSL_SHA256 = 16,
-    SSL_SHA384 = 32,
-    SSL_AEAD = 64
-};
-
-static void
-GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHashAlg, DataHashSize* hashKeySize)
-{
-    unsigned long mac = cipher->algorithm_mac;
-
-    SSL_DataHashAlgorithm sslMac = static_cast<SSL_DataHashAlgorithm>(mac);
-    switch (sslMac)
+    if (strncmp(mac, "MD5", macLength) == 0)
     {
-        case SSL_DataHashAlgorithm::SSL_MD5:
-            *dataHashAlg = HashAlgorithmType::Md5;
-            *hashKeySize = DataHashSize::MD5_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_SHA1:
-            *dataHashAlg = HashAlgorithmType::Sha1;
-            *hashKeySize = DataHashSize::SHA1_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_GOST94:
-            *dataHashAlg = HashAlgorithmType::SSL_GOST94;
-            *hashKeySize = DataHashSize::GOST_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_GOST89MAC:
-            *dataHashAlg = HashAlgorithmType::SSL_GOST89;
-            *hashKeySize = DataHashSize::GOST_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_SHA256:
-            *dataHashAlg = HashAlgorithmType::SSL_SHA256;
-            *hashKeySize = DataHashSize::SHA256_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_SHA384:
-            *dataHashAlg = HashAlgorithmType::SSL_SHA384;
-            *hashKeySize = DataHashSize::SHA384_HashKeySize;
-            return;
-
-        case SSL_DataHashAlgorithm::SSL_AEAD:
-            *dataHashAlg = HashAlgorithmType::SSL_AEAD;
-            *hashKeySize = DataHashSize::Default;
-            return;
+        dataHashAlg = HashAlgorithmType::Md5;
+        hashKeySize = DataHashSize::MD5_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "SHA1", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::Sha1;
+        hashKeySize = DataHashSize::SHA1_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "GOST94", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::SSL_GOST94;
+        hashKeySize = DataHashSize::GOST_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "GOST89", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::SSL_GOST89;
+        hashKeySize = DataHashSize::GOST_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "SHA256", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::SSL_SHA256;
+        hashKeySize = DataHashSize::SHA256_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "SHA384", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::SSL_SHA384;
+        hashKeySize = DataHashSize::SHA384_HashKeySize;
+        return;
+    }
+    if (strncmp(mac, "AEAD", macLength) == 0)
+    {
+        dataHashAlg = HashAlgorithmType::SSL_AEAD;
+        hashKeySize = DataHashSize::Default;
+        return;
     }
 
-    *dataHashAlg = HashAlgorithmType::None;
-    *hashKeySize = DataHashSize::Default;
-    return;
+    dataHashAlg = HashAlgorithmType::None;
+    hashKeySize = DataHashSize::Default;
+}
+
+/*
+Given a keyName string like "Enc=XXX", parses the description string and returns the
+'XXX' into value and valueLength return variables.
+
+Returns a value indicating whether the pattern starting with keyName was found in description.
+*/
+static bool GetDescriptionValue(const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t& valueLength)
+{
+    // search for keyName in description
+    const char* keyNameStart = strstr(description, keyName);
+    if (keyNameStart != nullptr)
+    {
+        // set valueStart to the begining of the value
+        const char* valueStart = keyNameStart + keyNameLength;
+        size_t index = 0;
+
+        // the value ends when we hit a space or the end of the string
+        while (valueStart[index] != ' ' && valueStart[index] != '\0')
+        {
+            index++;
+        }
+
+        *value = valueStart;
+        valueLength = index;
+        return true;
+    }
+
+    return false;
+}
+
+/*
+Parses the Kx, Enc, and Mac values out of the SSL_CIPHER_description and
+maps the values to the corresponding .NET enum value.
+*/
+static bool GetSslConnectionInfoFromDescription(const SSL_CIPHER* cipher,
+                                                CipherAlgorithmType& dataCipherAlg,
+                                                ExchangeAlgorithmType& keyExchangeAlg,
+                                                HashAlgorithmType& dataHashAlg,
+                                                DataHashSize& hashKeySize)
+{
+    const int descriptionLength = 256;
+    char description[descriptionLength] = {};
+    SSL_CIPHER_description(cipher, description, descriptionLength - 1); // ensure description is NULL-terminated
+
+    const char* keyExchange;
+    size_t keyExchangeLength;
+    if (!GetDescriptionValue(description, "Kx=", 3, &keyExchange, keyExchangeLength))
+    {
+        return false;
+    }
+
+    const char* encryption;
+    size_t encryptionLength;
+    if (!GetDescriptionValue(description, "Enc=", 4, &encryption, encryptionLength))
+    {
+        return false;
+    }
+
+    const char* mac;
+    size_t macLength;
+    if (!GetDescriptionValue(description, "Mac=", 4, &mac, macLength))
+    {
+        return false;
+    }
+
+    keyExchangeAlg = MapExchangeAlgorithmType(keyExchange, keyExchangeLength);
+    dataCipherAlg = MapCipherAlgorithmType(encryption, encryptionLength);
+    GetHashAlgorithmTypeAndSize(mac, macLength, dataHashAlg, hashKeySize);
+    return true;
 }
 
 extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
@@ -384,12 +362,11 @@ extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
         goto err;
     }
 
-    *dataCipherAlg = MapCipherAlgorithmType(cipher);
-    *keyExchangeAlg = MapExchangeAlgorithmType(cipher);
     *dataKeySize = cipher->alg_bits;
-    GetHashAlgorithmTypeAndSize(cipher, dataHashAlg, hashKeySize);
-
-    return 1;
+    if (GetSslConnectionInfoFromDescription(cipher, *dataCipherAlg, *keyExchangeAlg, *dataHashAlg, *hashKeySize))
+    {
+        return 1;
+    }
 
 err:
     assert(false);
