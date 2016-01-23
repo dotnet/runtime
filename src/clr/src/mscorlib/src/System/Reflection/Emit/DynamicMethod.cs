@@ -438,6 +438,7 @@ namespace System.Reflection.Emit
         [System.Security.SecurityCritical]  // auto-generated
         private void PerformSecurityCheck(Module m, ref StackCrawlMark stackMark, bool skipVisibility)
         {
+#if !FEATURE_CORECLR
             if (m == null) 
                 throw new ArgumentNullException("m");
             Contract.EndContractBlock();
@@ -477,11 +478,13 @@ namespace System.Reflection.Emit
                 new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
 #pragma warning restore 618
 #endif //FEATURE_CORECLR
+#endif //!FEATURE_CORECLR
         }
 
         [System.Security.SecurityCritical]  // auto-generated
         private void PerformSecurityCheck(Type owner, ref StackCrawlMark stackMark, bool skipVisibility)
         {
+#if !FEATURE_CORECLR
             if (owner == null)
                 throw new ArgumentNullException("owner");
 
@@ -519,6 +522,7 @@ namespace System.Reflection.Emit
                 new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
 #pragma warning restore 618
 #endif //FEATURE_CORECLR
+#endif //!FEATURE_CORECLR
         }
 
         //
