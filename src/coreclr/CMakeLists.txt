@@ -794,4 +794,8 @@ if(WIN32)
   add_compile_options(/Zl) # omit default library name in .OBJ
 endif(WIN32)
 
+# TODO change version
+set(BuildToolsVersion "1.0.4-prerelease")
+set(BuildToolsDir "${CLR_DIR}/packages/Microsoft.DotNet.BuildTools.CoreCLR.${BuildToolsVersion}")
+
 add_subdirectory(src)
