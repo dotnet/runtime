@@ -975,6 +975,15 @@ HRESULT AllowObjectInspection()
     return S_OK;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// helper functions for the GC events
+//
+
+
+#endif // PROFILING_SUPPORTED
+
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
@@ -996,7 +1005,6 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        if (!NativeThreadInGC()) { MODE_COOPERATIVE; }
     } 
     CONTRACTL_END;
 
@@ -1008,13 +1016,6 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
 
     return TypeHandleToClassID(th);
 }
-
-
-//---------------------------------------------------------------------------------------
-//
-// helper functions for the GC events
-//
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -1037,7 +1038,6 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 
     return TRUE;
 }
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -1073,12 +1073,13 @@ BOOL SaveContainedObjectRef(Object * pBO, void * context)
     return TRUE;
 }
 
-
 //---------------------------------------------------------------------------------------
 //
 // Callback of type walk_fn used by the GC when walking the heap, to help profapi and ETW
 // track objects.  This guy orchestrates the use of the above callbacks which dig
 // into object references contained each object encountered by this callback.
+// This method is defined when either GC_PROFILING is defined or FEATURE_EVENT_TRACING
+// is defined and can operate fully when only one of the two is defined.
 //
 // Arguments:
 //      pBO - Object reference encountered on the heap
@@ -1090,7 +1091,6 @@ BOOL SaveContainedObjectRef(Object * pBO, void * context)
 //      TRUE=continue
 //      FALSE=stop
 //
-
 extern bool s_forcedGCInProgress;
 
 BOOL HeapWalkHelper(Object * pBO, void * pvContext)
@@ -1145,6 +1145,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
     HRESULT hr = E_FAIL;
 
+#if defined(GC_PROFILING)
     if (pProfilerWalkHeapContext->fProfilerPinned)
     {
         // It is not safe and could be overflowed to downcast size_t to ULONG on WIN64.
@@ -1156,6 +1157,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
             (ULONG) cNumRefs, 
             (ObjectID *) arrObjRef);
     }
+#endif
 
     if (s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
@@ -1194,6 +1196,9 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     return (pProfilerWalkHeapContext->fProfilerPinned) ? SUCCEEDED(hr) : TRUE;
 }
 
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACING)
+
+#ifdef PROFILING_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
 // Callback of type walk_fn used by the GC when walking the heap, to help profapi
@@ -1235,6 +1240,8 @@ BOOL AllocByClassHelper(Object * pBO, void * pv)
     return TRUE;
 }
 
+#endif // PROFILING_SUPPORTED
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
@@ -1275,6 +1282,8 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
         dwEtwRootFlags |= kEtwGCRootFlagsInterior;
     if (dwFlags & GC_CALL_PINNED)
         dwEtwRootFlags |= kEtwGCRootFlagsPinning;
+
+#if defined(GC_PROFILING)
     void *rootID = NULL;
     switch (pPSC->dwEtwRootKind)
     {
@@ -1297,6 +1306,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
         g_profControlBlock.pProfInterface->
             RootReference2((BYTE *)*ppObject, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
     }
+#endif
 
     // Notify ETW of the root
     if (s_forcedGCInProgress &&
@@ -1315,6 +1325,8 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     }
 }
 
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#ifdef PROFILING_SUPPORTED
 
 //---------------------------------------------------------------------------------------
 //
