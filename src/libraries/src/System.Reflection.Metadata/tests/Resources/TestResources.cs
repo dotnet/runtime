@@ -33,6 +33,11 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] NamespaceTests = ResourceHelper.GetResource("Namespace.NamespaceTests.dll");
     }
 
+    internal static class WinRT
+    {
+        public static readonly byte[] Lib = ResourceHelper.GetResource("WinRT.Lib.winmd");
+    }
+
     internal static class ResourceHelper
     {
         public static byte[] GetResource(string name)

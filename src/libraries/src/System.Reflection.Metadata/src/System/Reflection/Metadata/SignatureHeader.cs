@@ -23,6 +23,11 @@ namespace System.Reflection.Metadata
             _rawValue = rawValue;
         }
 
+        public SignatureHeader(SignatureKind kind, SignatureCallingConvention convention, SignatureAttributes attributes)
+             : this((byte)((int)kind | (int)convention | (int)attributes))
+        {
+        }
+
         public byte RawValue
         {
             get { return _rawValue; }

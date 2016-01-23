@@ -65,13 +65,13 @@ namespace System.Reflection.Metadata.Tests
 
         internal static readonly Dictionary<byte[], GCHandle> peImages = new Dictionary<byte[], GCHandle>();
 
-        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, bool isModule = false, MetadataStringDecoder decoder = null)
+        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, bool isModule = false, MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder decoder = null)
         {
             int _;
-            return GetMetadataReader(peImage, out _, isModule, decoder);
+            return GetMetadataReader(peImage, out _, isModule, options, decoder);
         }
 
-        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, out int metadataStartOffset, bool isModule = false, MetadataStringDecoder decoder = null)
+        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, out int metadataStartOffset, bool isModule = false, MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder decoder = null)
         {
             GCHandle pinned;
             if (!peImages.TryGetValue(peImage, out pinned))
@@ -80,7 +80,7 @@ namespace System.Reflection.Metadata.Tests
             }
             var headers = new PEHeaders(new MemoryStream(peImage));
             metadataStartOffset = headers.MetadataStartOffset;
-            return new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize, MetadataReaderOptions.Default, decoder);
+            return new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize, options, decoder);
         }
 
         private List<CustomAttributeHandle> GetCustomAttributes(MetadataReader reader, int token)
@@ -178,6 +178,38 @@ namespace System.Reflection.Metadata.Tests
 
             // since we're reading the same PE image our handles are still valid.
             Assert.Throws<DecoderFallbackException>(() => reader.GetString(handle)); // BOOM!
+        }
+
+        [Fact]
+        public void GetToken_Projected()
+        {
+            var reader = GetMetadataReader(WinRT.Lib, options: MetadataReaderOptions.ApplyWindowsRuntimeProjections);
+            int expectedToken = 0x23000001;
+            foreach (var assemblyRefHandle in reader.AssemblyReferences)
+            {
+                Assert.Equal(expectedToken >= 0x23000004, assemblyRefHandle.IsVirtual);
+                Assert.Equal(expectedToken, reader.GetToken(assemblyRefHandle));
+                Assert.Equal(expectedToken, reader.GetToken((Handle)assemblyRefHandle));
+                expectedToken++;
+            }
+
+            Assert.Equal(9, reader.AssemblyReferences.Count);
+        }
+
+        [Fact]
+        public void GetToken_NotProjected()
+        {
+            var reader = GetMetadataReader(WinRT.Lib, options: MetadataReaderOptions.None);
+            var expectedToken = 0x23000001;
+            foreach (var assemblyRefHandle in reader.AssemblyReferences)
+            {
+                Assert.False(assemblyRefHandle.IsVirtual);
+                Assert.Equal(expectedToken, reader.GetToken(assemblyRefHandle));
+                Assert.Equal(expectedToken, reader.GetToken((Handle)assemblyRefHandle));
+                expectedToken++;
+            }
+
+            Assert.Equal(3, reader.AssemblyReferences.Count);
         }
 
         /// <summary>
