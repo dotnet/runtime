@@ -197,12 +197,13 @@ c) In section II.23.2.6 LocalVarSig, replace the diagram with production rules:
 
 ```
 LocalVarSig ::= 
-  LOCAL_SIG Count LocalVarType* 
+  LOCAL_SIG Count LocalVarType+
   
 LocalVarType ::=
   Type
+  CustomMod* Constraint BYREF? Type
+  CustomMod* BYREF Type
   CustomMod* TYPEDBYREF
-  CustomMod* Constraint? BYREF? Type
   
 ```
 
