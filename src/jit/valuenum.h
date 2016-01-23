@@ -397,7 +397,13 @@ public:
     // (liberal/conservative) to read from the SSA def referenced in the phi argument.
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN);
 
-    ValueNum VNForMapSelectWork(ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, unsigned* pBudget);
+    // A method that does the work for VNForMapSelect and may call itself recursively.
+    ValueNum VNForMapSelectWork(ValueNumKind vnk,
+                                var_types typ,
+                                ValueNum op1VN,
+                                ValueNum op2VN,
+                                unsigned* pBudget,
+                                bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN);
