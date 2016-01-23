@@ -17,6 +17,58 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #if defined(_TARGET_AMD64_)
+#ifdef UNIX_AMD64_ABI
+int Compiler::mapRegNumToDwarfReg(regNumber reg)
+{
+    int dwarfReg = DWARF_REG_ILLEGAL;
+
+    switch (reg)
+    {
+    case REG_RAX:  dwarfReg = 0; break;
+    case REG_RCX:  dwarfReg = 2; break;
+    case REG_RDX:  dwarfReg = 1; break;
+    case REG_RBX:  dwarfReg = 3; break;
+    case REG_RSP:  dwarfReg = 7; break;
+    case REG_RBP:  dwarfReg = 6; break;
+    case REG_RSI:  dwarfReg = 4; break;
+    case REG_RDI:  dwarfReg = 5; break;
+    case REG_R8:   dwarfReg = 8; break;
+    case REG_R9:   dwarfReg = 9; break;
+    case REG_R10:  dwarfReg = 10; break;
+    case REG_R11:  dwarfReg = 11; break;
+    case REG_R12:  dwarfReg = 12; break;
+    case REG_R13:  dwarfReg = 13; break;
+    case REG_R14:  dwarfReg = 14; break;
+    case REG_R15:  dwarfReg = 15; break;
+    case REG_XMM0: dwarfReg = 17; break;
+    case REG_XMM1: dwarfReg = 18; break;
+    case REG_XMM2: dwarfReg = 19; break;
+    case REG_XMM3: dwarfReg = 20; break;
+    case REG_XMM4: dwarfReg = 21; break;
+    case REG_XMM5: dwarfReg = 22; break;
+    case REG_XMM6: dwarfReg = 23; break;
+    case REG_XMM7: dwarfReg = 24; break;
+    case REG_XMM8: dwarfReg = 25; break;
+    case REG_XMM9: dwarfReg = 26; break;
+    case REG_XMM10:dwarfReg = 27; break;
+    case REG_XMM11:dwarfReg = 28; break;
+    case REG_XMM12:dwarfReg = 29; break;
+    case REG_XMM13:dwarfReg = 30; break;
+    case REG_XMM14:dwarfReg = 31; break;
+    case REG_XMM15:dwarfReg = 32; break;
+    default:
+        noway_assert(!"unexpected REG_NUM");
+    }
+
+    return dwarfReg;
+}
+
+void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcode, USHORT dwarfReg, INT offset)
+{
+    CFI_CODE cfiEntry(codeOffset, cfiOpcode, dwarfReg, offset);
+    func->cfiCodes->push_back(cfiEntry);
+}
+#endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
 // Compiler::unwindGetCurrentOffset: Calculate the current byte offset of the
@@ -31,7 +83,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 {
     assert(compGeneratingProlog);
-
     UNATIVE_OFFSET offset;
     if (func->funKind == FUNC_ROOT)
     {
@@ -50,7 +101,21 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 // Compiler::unwindBegProlog: Initialize the unwind info data structures.
 // Called at the beginning of main function or funclet prolog generation.
 //
-void Compiler::unwindBegProlog() 
+void Compiler::unwindBegProlog()
+{
+#ifdef UNIX_AMD64_ABI
+    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    {
+        unwindBegPrologCFI();
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindBegPrologWindows();
+    }
+}
+
+void Compiler::unwindBegPrologWindows()
 {
     assert(compGeneratingProlog);
 
@@ -73,6 +138,37 @@ void Compiler::unwindBegProlog()
     func->unwindHeader.FrameRegister = 0;
     func->unwindHeader.FrameOffset = 0;
 }
+
+#ifdef UNIX_AMD64_ABI
+template <typename T>
+inline
+static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 5)
+{
+    return jitstd::allocator<T>(alloc).allocate(count);
+}
+typedef jitstd::vector<CFI_CODE> CFICodeVector;
+
+void Compiler::unwindBegPrologCFI()
+{
+    assert(compGeneratingProlog);
+
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // There is only one prolog for a function/funclet, and it comes first. So now is
+    // a good time to initialize all the unwind data structures.
+
+    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+    if (fgFirstColdBlock != nullptr)
+    {
+        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
+    }
+
+    jitstd::allocator<void> allocator(getAllocator());
+
+    func->cfiCodes = new (allocate_any<CFICodeVector>(allocator), jitstd::placement_t()) CFICodeVector(allocator);
+}
+#endif // UNIX_AMD64_ABI
 
 //------------------------------------------------------------------------
 // Compiler::unwindEndProlog: Called at the end of main function or funclet
@@ -109,6 +205,20 @@ void Compiler::unwindEndEpilog()
 //
 void Compiler::unwindPush(regNumber reg)
 {
+#ifdef UNIX_AMD64_ABI
+    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    {
+        unwindPushCFI(reg);
+    }
+    else
+#endif
+    {
+        unwindPushWindows(reg);
+    }
+}
+
+void Compiler::unwindPushWindows(regNumber reg)
+{
     assert(compGeneratingProlog);
 
     FuncInfoDsc* func = funCurrentFunc();
@@ -120,6 +230,7 @@ void Compiler::unwindPush(regNumber reg)
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
     code->CodeOffset = (BYTE)cbProlog;
+
     if ((RBM_CALLEE_SAVED & genRegMask(reg))
 #if ETW_EBP_FRAMED
         // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
@@ -141,6 +252,32 @@ void Compiler::unwindPush(regNumber reg)
     }
 }
 
+#ifdef UNIX_AMD64_ABI
+void Compiler::unwindPushCFI(regNumber reg)
+{
+    assert(compGeneratingProlog);
+
+    FuncInfoDsc* func = funCurrentFunc();
+
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
+
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, 8);
+    if ((RBM_CALLEE_SAVED & genRegMask(reg))
+#if ETW_EBP_FRAMED
+        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+        // is excluded from the callee-save register list.
+        // Make sure the register gets PUSH unwind info in this case,
+        // since it is pushed as a frame register.
+        || (reg == REG_FPBASE)
+#endif // ETW_EBP_FRAMED
+        )
+    {
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
+    }
+}
+#endif // UNIX_AMD64_ABI
+
 //------------------------------------------------------------------------
 // Compiler::unwindAllocStack: Record a stack frame allocation (sub sp, X).
 //
@@ -148,6 +285,20 @@ void Compiler::unwindPush(regNumber reg)
 //    size - The size of the stack frame allocation (the amount subtracted from the stack pointer).
 //
 void Compiler::unwindAllocStack(unsigned size)
+{
+#ifdef UNIX_AMD64_ABI
+    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    {
+        unwindAllocStackCFI(size);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindAllocStackWindows(size);
+    }
+}
+
+void Compiler::unwindAllocStackWindows(unsigned size)
 {
     assert(compGeneratingProlog);
 
@@ -187,6 +338,19 @@ void Compiler::unwindAllocStack(unsigned size)
     code->CodeOffset = (BYTE)cbProlog;
 }
 
+#ifdef UNIX_AMD64_ABI
+void Compiler::unwindAllocStackCFI(unsigned size)
+{
+    assert(compGeneratingProlog);
+
+    FuncInfoDsc* func = funCurrentFunc();
+
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, size);
+}
+#endif // UNIX_AMD64_ABI
+
 //------------------------------------------------------------------------
 // Compiler::unwindSetFrameReg: Record a frame register.
 //
@@ -195,6 +359,20 @@ void Compiler::unwindAllocStack(unsigned size)
 //    offset - The offset from the current stack pointer that the frame pointer will point at.
 //
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
+{
+#ifdef UNIX_AMD64_ABI
+    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    {
+        unwindSetFrameRegCFI(reg, offset);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindSetFrameRegWindows(reg, offset);
+    }
+}
+
+void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 {
     assert(compGeneratingProlog);
 
@@ -215,6 +393,23 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
     func->unwindHeader.FrameOffset = offset / 16;
 }
 
+#ifdef UNIX_AMD64_ABI
+void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
+{
+    assert(compGeneratingProlog);
+    FuncInfoDsc* func = funCurrentFunc();
+
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
+
+    createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
+    if (offset != 0)
+    {
+        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, offset);
+    }
+}
+#endif // UNIX_AMD64_ABI
+
 //------------------------------------------------------------------------
 // Compiler::unwindSaveReg: Record a register save.
 //
@@ -223,6 +418,20 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 //    offset - The offset from the current stack pointer where the register is being saved.
 //
 void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
+{
+#ifdef UNIX_AMD64_ABI
+    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    {
+        unwindSaveRegCFI(reg, offset);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindSaveRegWindows(reg, offset);
+    }
+}
+
+void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 {
     assert(compGeneratingProlog);
 
@@ -265,6 +474,22 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
         code->CodeOffset = (BYTE)cbProlog;
     }
 }
+
+#ifdef UNIX_AMD64_ABI
+void Compiler::unwindSaveRegCFI(regNumber reg, unsigned offset)
+{
+    assert(compGeneratingProlog);
+
+    if (RBM_CALLEE_SAVED & genRegMask(reg))
+    {
+        FuncInfoDsc* func = funCurrentFunc();
+
+        unsigned int cbProlog = unwindGetCurrentOffset(func);
+        noway_assert((BYTE)cbProlog == cbProlog);
+        createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+    }
+}
+#endif // UNIX_AMD64_ABI
 
 #ifdef DEBUG
 
@@ -409,6 +634,50 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
     }
 }
 
+#ifdef UNIX_AMD64_ABI
+//------------------------------------------------------------------------
+// DumpCfiInfo: Dump the Cfi data.
+//
+// Arguments:
+//    isHotCode   - true if this cfi data is for the hot section, false otherwise.
+//    startOffset - byte offset of the code start that this cfi data represents.
+//    endOffset   - byte offset of the code end   that this cfi data represents.
+//    pcFiCode    - pointer to the cfi data blob.
+//
+void DumpCfiInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET endOffset, DWORD cfiCodeBytes, const CFI_CODE * const pCfiCode)
+{
+    printf("Cfi Info%s:\n", isHotCode ? "" : " COLD");
+    printf("  >> Start offset   : 0x%06x \n", dspOffset(startOffset));
+    printf("  >>   End offset   : 0x%06x \n", dspOffset(endOffset));
+
+    for (int i = 0; i < cfiCodeBytes / sizeof(CFI_CODE); i++)
+    {
+        const CFI_CODE * const pCode = &(pCfiCode[i]);
+
+        UCHAR codeOffset = pCode->CodeOffset;
+        SHORT dwarfReg = pCode->DwarfReg;
+        INT offset = pCode->Offset;
+
+        switch (pCode->CfiOpCode)
+        {
+            case CFI_REL_OFFSET:
+                printf("    CodeOffset: 0x%02X Op: RelOffset DwarfReg:0x%x Offset:0x%X\n", codeOffset, dwarfReg, offset);
+                break;
+            case CFI_DEF_CFA_REGISTER:
+                assert(offset == 0);
+                printf("    CodeOffset: 0x%02X Op: DefCfaRegister DwarfReg:0x%X\n", codeOffset, dwarfReg);
+                break;
+            case CFI_ADJUST_CFA_OFFSET:
+                assert(dwarfReg == DWARF_REG_ILLEGAL);
+                printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
+                break;
+            default:
+                printf("    Unrecognized CFI_CODE: 0x%IX\n", *(UINT64*)pCode);
+                break;
+        }
+    }
+}
+#endif // UNIX_AMD64_ABI
 #endif // DEBUG
 
 
@@ -439,9 +708,6 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
-    assert(func->unwindHeader.CountOfUnwindCodes == 0); // Only call this once per prolog
-
     unwindReserveFuncHelper(func, true);
 
     if (fgFirstColdBlock != nullptr)
@@ -460,34 +726,41 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 //
 void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 {
-    DWORD unwindCodeBytes;
-
+    DWORD unwindCodeBytes = 0;
     if (isHotCode)
     {
-        // Set the size of the prolog to be the last encoded action
-        if (func->unwindCodeSlot < sizeof(func->unwindCodes))
+#ifdef UNIX_AMD64_ABI
+        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
         {
-            UNWIND_CODE * code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot];
-            func->unwindHeader.SizeOfProlog = code->CodeOffset;
+            unwindCodeBytes = func->cfiCodes->size() * sizeof(CFI_CODE);
         }
         else
+#endif // UNIX_AMD64_ABI
         {
-            func->unwindHeader.SizeOfProlog = 0;
+            assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
+            assert(func->unwindHeader.CountOfUnwindCodes == 0); // Only call this once per prolog
+
+            // Set the size of the prolog to be the last encoded action
+            if (func->unwindCodeSlot < sizeof(func->unwindCodes))
+            {
+                UNWIND_CODE * code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot];
+                func->unwindHeader.SizeOfProlog = code->CodeOffset;
+            }
+            else
+            {
+                func->unwindHeader.SizeOfProlog = 0;
+            }
+            func->unwindHeader.CountOfUnwindCodes = (BYTE)((sizeof(func->unwindCodes) - func->unwindCodeSlot) / sizeof(UNWIND_CODE));
+
+            // Prepend the unwindHeader onto the unwind codes
+            assert(func->unwindCodeSlot >= offsetof(UNWIND_INFO, UnwindCode));
+
+            func->unwindCodeSlot -= offsetof(UNWIND_INFO, UnwindCode);
+            UNWIND_INFO * pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot];
+            memcpy(pHeader, &func->unwindHeader, offsetof(UNWIND_INFO, UnwindCode));
+
+            unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
         }
-        func->unwindHeader.CountOfUnwindCodes = (BYTE)((sizeof(func->unwindCodes) - func->unwindCodeSlot) / sizeof(UNWIND_CODE));
-
-        // Prepend the unwindHeader onto the unwind codes
-        assert(func->unwindCodeSlot >= offsetof(UNWIND_INFO, UnwindCode));
-
-        func->unwindCodeSlot -= offsetof(UNWIND_INFO, UnwindCode);
-        UNWIND_INFO * pHeader = (UNWIND_INFO*)&func->unwindCodes[func->unwindCodeSlot];
-        memcpy(pHeader, &func->unwindHeader, offsetof(UNWIND_INFO, UnwindCode));
-
-        unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
-    }
-    else
-    {
-        unwindCodeBytes = 0;
     }
 
     BOOL isFunclet = (func->funKind != FUNC_ROOT);
@@ -531,8 +804,8 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 {
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
-    DWORD unwindCodeBytes;
-    BYTE* pUnwindBlock;
+    DWORD unwindCodeBytes = 0;
+    BYTE* pUnwindBlock = nullptr;
 
     if (isHotCode)
     {
@@ -554,15 +827,29 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
             endOffset = func->endLoc->CodeOffset(genEmitter);
         }
 
-        unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
+#ifdef UNIX_AMD64_ABI
+        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+        {
+            int size = func->cfiCodes->size();
+            if (size > 0)
+            {
+                unwindCodeBytes = size * sizeof(CFI_CODE);
+                pUnwindBlock = (BYTE*)&(*func->cfiCodes)[0];
+            }
+        }
+        else
+#endif // UNIX_AMD64_ABI
+        {
+            unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
 
 #ifdef DEBUG
-        UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) (&func->unwindCodes[func->unwindCodeSlot]);
-        DWORD unwindCodeBytesSpecified = offsetof(UNWIND_INFO, UnwindCode) + pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE); // This is what the unwind codes themselves say; it better match what we tell the VM.
-        assert(unwindCodeBytes == unwindCodeBytesSpecified);
+            UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *)(&func->unwindCodes[func->unwindCodeSlot]);
+            DWORD unwindCodeBytesSpecified = offsetof(UNWIND_INFO, UnwindCode) + pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE); // This is what the unwind codes themselves say; it better match what we tell the VM.
+            assert(unwindCodeBytes == unwindCodeBytesSpecified);
 #endif // DEBUG
 
-        pUnwindBlock = &func->unwindCodes[func->unwindCodeSlot];
+            pUnwindBlock = &func->unwindCodes[func->unwindCodeSlot];
+        }
     }
     else
     {
@@ -586,15 +873,21 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         {
             endOffset = func->coldEndLoc->CodeOffset(genEmitter);
         }
-
-        unwindCodeBytes = 0; // The VM handles creating chained unwind info, and requires this to be zero.
-        pUnwindBlock = nullptr;
     }
 
 #ifdef DEBUG
     if (opts.dspUnwind)
     {
-        DumpUnwindInfo(isHotCode, startOffset, endOffset, (const UNWIND_INFO * const)pUnwindBlock);
+#ifdef UNIX_AMD64_ABI
+        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+        {
+            DumpCfiInfo(isHotCode, startOffset, endOffset, unwindCodeBytes, (const CFI_CODE * const)pUnwindBlock);
+        }
+        else
+#endif // UNIX_AMD64_ABI
+        {
+            DumpUnwindInfo(isHotCode, startOffset, endOffset, (const UNWIND_INFO * const)pUnwindBlock);
+        }
     }
 #endif // DEBUG
 
