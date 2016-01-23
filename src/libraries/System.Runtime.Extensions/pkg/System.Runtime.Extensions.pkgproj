@@ -9,7 +9,7 @@
       <SupportedFramework>netcore50;dnxcore50;net46;</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj" >
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.Runtime.Extensions.pkgproj" />
     <ProjectReference Include="unix\System.Runtime.Extensions.pkgproj" />
