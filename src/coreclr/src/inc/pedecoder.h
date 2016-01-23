@@ -93,12 +93,12 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #endif
 
 // Machine code for native images
-#if defined(__LINUX__)
-#define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x7B79
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x4644
 #elif defined(__FreeBSD__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0xADC4
+#elif defined(__LINUX__)
+#define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x7B79
 #else
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0
 #endif
