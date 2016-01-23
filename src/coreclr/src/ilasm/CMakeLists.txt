@@ -60,12 +60,12 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     palrt
   )
 
-  # FreeBSD implements dlopen in libc
-  if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  # FreeBSD and NetBSD implement dlopen(3) in libc
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     target_link_libraries(ilasm
       dl
     )
-  endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 
 else()
   target_link_libraries(ilasm
