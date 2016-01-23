@@ -1135,13 +1135,30 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     }
 }
 
+//------------------------------------------------------------------------------
+// VNForMapStore : Evaluate VNF_MapStore with the given arguments.
+//
+//
+// Arguments:
+//    typ  -    Value type
+//    arg0VN  - Map value number
+//    arg1VN  - Index value number
+//    arg2VN  - New value for map[index]
+//
+// Return Value:
+//    Value number for the result of the evaluation.
+
 ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
 {
     ValueNum result = VNForFunc(typ, VNF_MapStore, arg0VN, arg1VN, arg2VN);
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForMapStore(" STR_VN "%x, " STR_VN "%x, " STR_VN "%x):%s returns ", arg0VN, arg1VN, arg2VN, varTypeName(typ));
+        printf("    VNForMapStore(" STR_VN "%x, " STR_VN "%x, " STR_VN "%x):%s returns ",
+               arg0VN,
+               arg1VN,
+               arg2VN,
+               varTypeName(typ));
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
@@ -1149,10 +1166,30 @@ ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum a
     return result;
 }
 
+//------------------------------------------------------------------------------
+// VNForMapSelect : Evaluate VNF_MapSelect with the given arguments.
+//
+//
+// Arguments:
+//    vnk  -    Value number kind
+//    typ  -    Value type
+//    arg0VN  - Map value number
+//    arg1VN  - Index value number
+//
+// Return Value:
+//    Value number for the result of the evaluation.
+//
+// Notes:
+//    This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
+//    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
+//    (liberal/conservative) to read from the SSA def referenced in the phi argument.
+
+
 ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum arg0VN, ValueNum arg1VN)
 {
     unsigned budget = m_mapSelectBudget;
-    ValueNum result = VNForMapSelectWork(vnk, typ, arg0VN, arg1VN, &budget);
+    bool usedRecursiveVN = false;
+    ValueNum result = VNForMapSelectWork(vnk, typ, arg0VN, arg1VN, &budget, &usedRecursiveVN);
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
@@ -1164,13 +1201,41 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum
     return result;
 }
 
-ValueNum ValueNumStore::VNForMapSelectWork(ValueNumKind vnk, var_types typ, ValueNum arg0VN, ValueNum arg1VN, unsigned* pBudget)
+//------------------------------------------------------------------------------
+// VNForMapSelectWork : A method that does the work for VNForMapSelect and may call itself recursively.
+//
+//
+// Arguments:
+//    vnk  -             Value number kind
+//    typ  -             Value type
+//    arg0VN  -          Zeroth argument
+//    arg1VN  -          First argument
+//    pBudget -          Remaining budget for the outer evaluation
+//    pUsedRecursiveVN - Out-parameter that is set to true iff RecursiveVN was returned from this method
+//                       or from a method called during one of recursive invocations.
+//
+// Return Value:
+//    Value number for the result of the evaluation.
+//
+// Notes:
+//    This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
+//    "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
+//    (liberal/conservative) to read from the SSA def referenced in the phi argument.
+
+ValueNum ValueNumStore::VNForMapSelectWork(ValueNumKind vnk,
+                                           var_types typ,
+                                           ValueNum arg0VN,
+                                           ValueNum arg1VN,
+                                           unsigned* pBudget,
+                                           bool* pUsedRecursiveVN)
 {
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
 TailCall:
     assert(arg0VN != NoVN && arg1VN != NoVN);
     assert(arg0VN == VNNormVal(arg0VN));  // Arguments carry no exceptions.
     assert(arg1VN == VNNormVal(arg1VN));  // Arguments carry no exceptions.
+
+    *pUsedRecursiveVN = false;
 
 #ifdef DEBUG
     // Provide a mechanism for writing tests that ensure we don't call this ridiculously often.
@@ -1204,6 +1269,7 @@ TailCall:
         // If it's recursive, stop the recursion.
         if (SelectIsBeingEvaluatedRecursively(arg0VN, arg1VN))
         {
+            *pUsedRecursiveVN = true;
             return RecursiveVN;
         }
         
@@ -1240,7 +1306,8 @@ TailCall:
 #endif
                     // This is the equivalent of the recursive tail call:
                     // return VNForMapSelect(vnk, typ, funcApp.m_args[0], arg1VN);
-                    arg0VN = funcApp.m_args[0];  // Make sure we capture any exceptions from the "i" and "v" of the store...
+                    // Make sure we capture any exceptions from the "i" and "v" of the store...
+                    arg0VN = funcApp.m_args[0];
                     goto TailCall;
                 }
             }
@@ -1284,7 +1351,12 @@ TailCall:
                     {
                         bool allSame = true;
                         ValueNum argRest = phiFuncApp.m_args[1];
-                        ValueNum sameSelResult = VNForMapSelectWork(vnk, typ, phiArgVN, arg1VN, pBudget);
+                        ValueNum sameSelResult = VNForMapSelectWork(vnk,
+                                                                    typ,
+                                                                    phiArgVN,
+                                                                    arg1VN,
+                                                                    pBudget,
+                                                                    pUsedRecursiveVN);
                         while (allSame && argRest != ValueNumStore::NoVN)
                         {
                             ValueNum cur = argRest;
@@ -1314,7 +1386,14 @@ TailCall:
                             }
                             else
                             {
-                                ValueNum curResult = VNForMapSelectWork(vnk, typ, phiArgVN, arg1VN, pBudget);
+                                bool usedRecursiveVN = false;
+                                ValueNum curResult = VNForMapSelectWork(vnk,
+                                                                        typ,
+                                                                        phiArgVN,
+                                                                        arg1VN,
+                                                                        pBudget,
+                                                                        &usedRecursiveVN);
+                                *pUsedRecursiveVN |= usedRecursiveVN;
                                 if (sameSelResult == ValueNumStore::RecursiveVN)
                                     sameSelResult = curResult;
                                 if (curResult != ValueNumStore::RecursiveVN && curResult != sameSelResult)
@@ -1328,7 +1407,13 @@ TailCall:
                             m_fixedPointMapSels.Pop();
 
                             // To avoid exponential searches, we make sure that this result is memo-ized.
-                            GetVNFunc2Map()->Set(fstruct, sameSelResult);
+                            // The result is always valid for memoization if we didn't rely on RecursiveVN to get it.
+                            // If RecursiveVN was used, we are processing a loop and we can't memo-ize this intermediate
+                            // result if, e.g., this block is in a multi-entry loop.
+                            if (!*pUsedRecursiveVN)
+                            {
+                                GetVNFunc2Map()->Set(fstruct, sameSelResult);
+                            }
 
                             return sameSelResult;
                         }
@@ -4208,8 +4293,11 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis)
 #ifdef DEBUG
                 ValueNum oldPhiAppVN = phiAppVN;
 #endif
-                phiAppVN = vnStore->VNForFunc(TYP_REF, VNF_Phi, vnStore->VNForIntCon(phiArgs->GetSsaNum()), phiAppVN);
-                JITDUMP("  Building phi application: $%x = phi(%d, $%x).\n", phiAppVN, phiArgs->GetSsaNum(), oldPhiAppVN);
+                unsigned phiArgSSANum = phiArgs->GetSsaNum();
+                ValueNum phiArgSSANumVN = vnStore->VNForIntCon(phiArgSSANum);
+                JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiArgSSANumVN, phiArgSSANum);
+                phiAppVN = vnStore->VNForFunc(TYP_REF, VNF_Phi, phiArgSSANumVN, phiAppVN);
+                JITDUMP("  Building phi application: $%x = phi($%x, $%x).\n", phiAppVN, phiArgSSANumVN, oldPhiAppVN);
                 phiArgs = phiArgs->m_nextArg;
             }
             if (allSame)
