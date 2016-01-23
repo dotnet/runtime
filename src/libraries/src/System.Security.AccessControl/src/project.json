@@ -12,15 +12,15 @@
         "System.Runtime.InteropServices": "4.0.20",
         "System.Security.Claims": "4.0.0",
         "System.Security.Principal": "4.0.0",
-        "System.Security.Principal.Windows": "4.0.0-rc2-23713",
+        "System.Security.Principal.Windows": "4.0.0-rc3-23722",
         "System.Reflection": "4.0.0",
         "System.Threading": "4.0.10",
-        "System.Threading.Thread": "4.0.0-rc2-23713"
+        "System.Threading.Thread": "4.0.0-rc3-23722"
       }
     },
-    "net46":{
+    "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0",
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
       }
     }
   }
