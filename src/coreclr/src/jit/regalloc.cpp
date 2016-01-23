@@ -678,7 +678,7 @@ regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *ar
 
 #if FEATURE_MULTIREG_STRUCT_ARGS
 #ifdef _TARGET_ARM64_
-    if (argDsc->lvOtherArgReg != REG_NA)
+    if ((argDsc->lvOtherArgReg != REG_STK) && (argDsc->lvOtherArgReg != REG_NA))
     {
         regNumber secondArgReg = argDsc->lvOtherArgReg;
 
