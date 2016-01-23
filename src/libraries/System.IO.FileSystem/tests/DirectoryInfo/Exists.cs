@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -93,6 +94,18 @@ namespace System.IO.Tests
             File.Create(fileName).Dispose();
             DirectoryInfo di = new DirectoryInfo(fileName);
             Assert.False(di.Exists);
+        }
+
+        [ConditionalFact("CanCreateSymbolicLinks")]
+        public void SymlinkToNewDirectoryInfo()
+        {
+            string targetPath = GetTestFilePath();
+            new DirectoryInfo(targetPath).Create();
+
+            string linkPath = GetTestFilePath();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetPath));
+
+            Assert.NotEqual(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), new DirectoryInfo(linkPath).Exists);
         }
     }
 }
