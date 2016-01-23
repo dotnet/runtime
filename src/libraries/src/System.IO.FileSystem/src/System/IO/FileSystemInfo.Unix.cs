@@ -9,6 +9,8 @@ namespace System.IO
     {
         /// <summary>The last cached stat information about the file.</summary>
         private Interop.Sys.FileStatus _fileStatus;
+        /// <summary>Whether the target is a symlink.</summary>
+        private bool _isSymlink;
 
         /// <summary>
         /// Whether we've successfully cached a stat structure.
@@ -44,7 +46,7 @@ namespace System.IO
                 {
                     attrs |= FileAttributes.ReadOnly;
                 }
-                if (IsLink)
+                if (_isSymlink)
                 {
                     attrs |= FileAttributes.ReparsePoint;
                 }
@@ -87,14 +89,6 @@ namespace System.IO
             get
             {
                 return (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-            }
-        }
-
-        private bool IsLink
-        {
-            get
-            {
-                return (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 
@@ -228,18 +222,39 @@ namespace System.IO
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.
-            // Use LStat (rather than Stat) so that information about a symbolic link will be retrieved
-            // (rather than information about the target) if FullPath points to a symbolic link.
+
+            // Use LStat so that we don't follow a symlink, at least not initially.
+            // If we find that it is a symlink, we can then use Stat to get the real data
+            // but remember that this is a symlink so we can report it appropriately in the
+            // attributes we give back.  Note that this behavior differs from Windows, which
+            // always does the effective equivalent of LStat.  But that also means that functionality
+            // like EnumerateFiles would fail on a symlink to a directory, and given their prevalence 
+            // on unix systems, that would be quite problematic.
             int result = Interop.Sys.LStat(FullPath, out _fileStatus);
             if (result >= 0)
             {
-                _fileStatusInitialized = 0;
+                // Successfully got stats.
+                if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+                {
+                    // If it's a symlink, get the stats for the actual target.
+                    _isSymlink = true;
+                    result = Interop.Sys.Stat(FullPath, out _fileStatus);
+                    if (result >= 0)
+                    {
+                        _fileStatusInitialized = 0;
+                        return;
+                    }
+                }
+                else
+                {
+                    _fileStatusInitialized = 0;
+                    return;
+                }
             }
-            else
-            {
-                var errorInfo = Interop.Sys.GetLastErrorInfo();
-                _fileStatusInitialized = errorInfo.RawErrno;
-            }
+
+            // Couldn't get stats on the object.
+            var errorInfo = Interop.Sys.GetLastErrorInfo();
+            _fileStatusInitialized = errorInfo.RawErrno;
         }
 
         private void EnsureStatInitialized()
