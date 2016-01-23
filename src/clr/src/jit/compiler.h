@@ -1175,6 +1175,10 @@ struct FuncInfoDsc
     BYTE                unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF*sizeof(UNWIND_CODE))];
     unsigned            unwindCodeSlot;
 
+#ifdef UNIX_AMD64_ABI
+    jitstd::vector<CFI_CODE>* cfiCodes;
+#endif // UNIX_AMD64_ABI
+
 #elif defined(_TARGET_ARMARCH_)
 
     UnwindInfo          uwi;        // Unwind information for this function/funclet's hot  section
@@ -6899,6 +6903,21 @@ private:
     void                unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
     UNATIVE_OFFSET      unwindGetCurrentOffset(FuncInfoDsc* func);
 
+    void                unwindBegPrologWindows();
+    void                unwindPushWindows(regNumber reg);
+    void                unwindAllocStackWindows(unsigned size);
+    void                unwindSetFrameRegWindows(regNumber reg, unsigned offset);
+    void                unwindSaveRegWindows(regNumber reg, unsigned offset);
+
+#ifdef UNIX_AMD64_ABI
+    void                unwindBegPrologCFI();
+    void                unwindPushCFI(regNumber reg);
+    void                unwindAllocStackCFI(unsigned size);
+    void                unwindSetFrameRegCFI(regNumber reg, unsigned offset);
+    void                unwindSaveRegCFI(regNumber reg, unsigned offset);
+    int                 mapRegNumToDwarfReg(regNumber reg);
+    void                createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR opcode, USHORT dwarfReg, INT offset = 0);
+#endif // UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM_)
 
     void                unwindPushPopMaskInt(regMaskTP mask, bool useOpsize16);

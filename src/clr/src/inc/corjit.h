@@ -124,7 +124,7 @@ enum CorJitFlag
 #ifdef MDIL
     CORJIT_FLG_MDIL                = 0x00004000, // Generate MDIL code instead of machine code
 #else // MDIL
-    CORJIT_FLG_UNUSED7             = 0x00004000,
+    CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
 #endif // MDIL
 
 #ifdef MDIL
