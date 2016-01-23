@@ -228,6 +228,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsDigit()
     {
@@ -239,6 +240,7 @@ public static class CharTests
             Assert.False(char.IsDigit(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsDigitStrInt()
     {
@@ -256,6 +258,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsDigit("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetter()
     {
@@ -275,6 +278,7 @@ public static class CharTests
             Assert.False(char.IsLetter(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterStrInt()
     {
@@ -300,6 +304,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetter("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterOrDigit()
     {
@@ -321,6 +326,7 @@ public static class CharTests
             Assert.False(char.IsLetterOrDigit(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterOrDigitStrInt()
     {
@@ -348,6 +354,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetterOrDigit("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLower()
     {
@@ -359,6 +366,7 @@ public static class CharTests
             Assert.False(char.IsLower(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLowerStrInt()
     {
@@ -376,6 +384,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLower("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsNumber()
     {
@@ -389,6 +398,7 @@ public static class CharTests
             Assert.False(char.IsNumber(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsNumberStrInt()
     {
