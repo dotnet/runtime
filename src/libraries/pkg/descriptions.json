@@ -1075,7 +1075,8 @@
             "System.UInt32",
             "System.UInt64",
             "System.IDisposable",
-            "System.Uri"
+            "System.Uri",
+            "System.Runtime.InteropServices.GCHandle"
         ]
     },
     {
@@ -1122,13 +1123,22 @@
     },
     {
         "Name": "System.Runtime.InteropServices",
-        "Description": "Provides types that support COM interop and platform invoke services.",
+        "Description": "Provides Windows/Legacy types that support COM interop and platform invoke services. Cross platform Interop types have been moved and forwarded to System.Runtime.InteropServices.PInvoke.  Cross platform members of Marshal have also been moved to PInvokeMarshal in System.Runtime.InteropServices.PInvoke.",
         "CommonTypes": [
-            "System.Runtime.InteropServices.GCHandle",
-            "System.Runtime.InteropServices.GuidAttribute",
             "System.Runtime.InteropServices.COMException",
+            "System.Runtime.InteropServices.Marshal"
+        ]
+    },
+    {
+        "Name": "System.Runtime.InteropServices.PInvoke",
+        "Description": "Provides types that support platform invoke services.",
+        "CommonTypes": [
             "System.DllNotFoundException",
-            "System.Runtime.InteropServices.DllImportAttribute"
+            "System.Runtime.InteropServices.DllImportAttribute",
+            "System.Runtime.InteropServices.GuidAttribute",
+            "System.Runtime.InteropServices.PInvokeMarshal",
+            "System.Runtime.InteropServices.MarshalAsAttribute",
+            "System.Runtime.InteropServices.SafeBuffer"
         ]
     },
     {
