@@ -151,7 +151,6 @@ namespace System
                 }
 
                 // We have no buffers in the aged freelist, so get one from the newer list.   Try to pick the best one.
-                // Debug.Assert(_notGen2.Count != 0);
                 int idx = _notGen2.Count - 1;
                 if (GC.GetGeneration(_notGen2[idx]) < GC.MaxGeneration && GC.GetGeneration(_notGen2[0]) == GC.MaxGeneration)
                 {

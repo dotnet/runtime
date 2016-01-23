@@ -138,6 +138,7 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Called on completed result.", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::ContextCopy |Called on completed result.");
                     }
 
@@ -157,6 +158,7 @@ namespace System.Net
                     {
                         GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::ContextCopy |No context captured - specify a callback or forceCaptureContext.");
                 }
 
@@ -170,6 +172,7 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) +"::ContextCopy |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
                     }
                     lock (_lock) { }
@@ -183,6 +186,7 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Result became completed during call.", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::ContextCopy |Result became completed during call.");
                     }
 
@@ -221,6 +225,7 @@ namespace System.Net
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::StartPostingAsyncOp|Called on completed result.", LoggingHash.HashString(this));
                 }
+
                 Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::StartPostingAsyncOp |Called on completed result.");
             }
 
@@ -318,6 +323,7 @@ namespace System.Net
                 {
                     GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", LoggingHash.HashString(this));
                 }
+
                 Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete |Called without calling StartPostingAsyncOp.");
             }
 
@@ -384,6 +390,7 @@ namespace System.Net
                     {
                         GlobalLog.AssertFormat("ContextAwareResult#{0}::CaptureOrComplete|Didn't capture context, but didn't complete synchronously!", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::CaptureOrComplete |Didn't capture context, but didn't complete synchronously!");
                 }
             }

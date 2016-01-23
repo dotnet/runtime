@@ -47,6 +47,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult == null");
                 }
+
                 Debug.Fail("AsyncProtocolRequest()|userAsyncResult == null");
             }
             if (userAsyncResult.InternalPeekCompleted)
@@ -55,6 +56,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult is already completed.");
                 }
+
                 Debug.Fail("AsyncProtocolRequest()|userAsyncResult is already completed.");
             }
             UserAsyncResult = userAsyncResult;

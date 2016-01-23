@@ -153,12 +153,13 @@ namespace System.Net
 
         private void ReadFrameCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is WorkerAsyncResult))
+            if (!(transportResult.AsyncState is WorkerAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("StreamFramer::ReadFrameCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
                 }
+
                 Debug.Fail("StreamFramer::ReadFrameCallback|The state expected to be WorkerAsyncResult, received:" + transportResult.GetType().FullName + ".");
             }
 
@@ -200,12 +201,13 @@ namespace System.Net
         {
             do
             {
-                if ((transportResult.AsyncState is WorkerAsyncResult))
+                if (!(transportResult.AsyncState is WorkerAsyncResult))
                 {
                     if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("StreamFramer::ReadFrameComplete|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.GetType().FullName);
                     }
+
                     Debug.Fail("StreamFramer::ReadFrameComplete|The state expected to be WorkerAsyncResult, received:" + transportResult.GetType().FullName + ".");
                 }
 
@@ -214,12 +216,13 @@ namespace System.Net
                 int bytesRead = _transportAPM.EndRead(transportResult);
                 workerResult.Offset += bytesRead;
 
-                if ((workerResult.Offset <= workerResult.End))
+                if (!(workerResult.Offset <= workerResult.End))
                 {
                     if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("StreamFramer::ReadFrameCallback|WRONG: offset - end = {0}", workerResult.Offset - workerResult.End);
                     }
+
                     Debug.Fail("StreamFramer::ReadFrameCallback|WRONG: offset - end = " + (workerResult.Offset - workerResult.End));
                 }
 
@@ -390,12 +393,13 @@ namespace System.Net
 
         private void BeginWriteCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is WorkerAsyncResult))
+            if (!(transportResult.AsyncState is WorkerAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.AssertFormat("StreamFramer::BeginWriteCallback|The state expected to be WorkerAsyncResult, received:{0}.", transportResult.AsyncState.GetType().FullName);
                 }
+
                 Debug.Fail("StreamFramer::BeginWriteCallback|The state expected to be WorkerAsyncResult, received:" + transportResult.AsyncState.GetType().FullName + ".");
             }
 

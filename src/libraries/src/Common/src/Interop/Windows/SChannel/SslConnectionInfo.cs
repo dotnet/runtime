@@ -42,6 +42,7 @@ namespace System.Net
                     {
                         GlobalLog.Assert("SslConnectionInfo::.ctor", "Negative size.");
                     }
+
                     Debug.Fail("SslConnectionInfo::.ctor", "Negative size.");
                     throw;
                 }

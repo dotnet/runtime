@@ -105,13 +105,13 @@ namespace System.Net
                 context.DangerousRelease();
             }
 
-
             if (status == 0 && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
                 }
+
                 Debug.Fail("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
                 throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
             }

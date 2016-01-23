@@ -46,6 +46,7 @@ namespace System.Net.Security
                     {
                         GlobalLog.Assert("SSPIHandlCache", "Attempted to throw: " + e.ToString());
                     }
+
                     Debug.Fail("SSPIHandlCache", "Attempted to throw: " + e.ToString());
                 }
             }

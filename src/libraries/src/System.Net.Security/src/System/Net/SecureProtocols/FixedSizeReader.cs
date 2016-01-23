@@ -111,6 +111,7 @@ namespace System.Net
                 {
                     GlobalLog.AssertFormat("FixedSizeReader::CheckCompletion()|State got out of range. Total:{0} Count:{1}", _totalRead + bytes, _request.Count);
                 }
+
                 Debug.Fail("FixedSizeReader::CheckCompletion()|State got out of range. Total:" + (_totalRead + bytes) + " Count:" + _request.Count);
             }
 
@@ -131,6 +132,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("ReadCallback|State type is wrong, expected FixedSizeReader.");
                 }
+
                 Debug.Fail("ReadCallback|State type is wrong, expected FixedSizeReader.");
             }
 

@@ -549,6 +549,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
                 }
+
                 Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
             }
             if (inSecBuffer != null && inSecBuffers != null)
@@ -557,6 +558,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
                 }
+
                 Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
             }
 
@@ -859,6 +861,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
                 }
+
                 Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
             }
             if (inSecBuffer != null && inSecBuffers != null)
@@ -867,6 +870,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
                 }
+
                 Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
             }
 
@@ -1142,6 +1146,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
                 }
+
                 Debug.Fail("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
             }
 

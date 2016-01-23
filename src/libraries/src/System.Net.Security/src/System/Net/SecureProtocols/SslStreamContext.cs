@@ -17,6 +17,7 @@ namespace System.Net
                 {
                     GlobalLog.Assert("SslStreamContext..ctor(): Not expecting a null sslStream!");
                 }
+
                 Debug.Fail("SslStreamContext..ctor(): Not expecting a null sslStream!");
             }
 

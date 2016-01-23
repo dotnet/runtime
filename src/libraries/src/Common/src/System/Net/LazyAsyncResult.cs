@@ -79,6 +79,7 @@ namespace System.Net
                 {
                     GlobalLog.AssertFormat("LazyAsyncResult#{0}::.ctor()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
                 }
+
                 Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::.ctor()|Result can't be set to DBNull - it's a special internal value.");
             }
 
@@ -335,14 +336,17 @@ namespace System.Net
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Result can't be set to DBNull - it's a special internal value.");
                 }
+
                 if (InternalPeekCompleted)
                 {
                     if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Called on completed result.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Called on completed result.");
                 }
                 _result = value;

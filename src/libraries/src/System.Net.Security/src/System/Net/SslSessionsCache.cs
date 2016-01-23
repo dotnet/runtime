@@ -169,6 +169,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("CacheCredential|creds == null");
                 }
+
                 Debug.Fail("CacheCredential|creds == null");
             }
 
@@ -178,6 +179,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Print("CacheCredential() Refused to cache an Invalid Handle = " + creds.ToString() + ", Current Cache Count = " + s_CachedCreds.Count);
                 }
+
                 return;
             }
 
