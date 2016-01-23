@@ -378,6 +378,33 @@ namespace System {
             return ic.ToType(conversionType, provider);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowCharOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Char")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowByteOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Byte")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowSByteOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_SByte")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowInt16OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int16")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowUInt16OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt16")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowInt32OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int32")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowUInt32OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt32")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowInt64OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int64")); }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowUInt64OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt64")); }
+
         // Conversions to Boolean
         public static bool ToBoolean(Object value) {
             return value == null? false: ((IConvertible)value).ToBoolean(null);
@@ -491,7 +518,7 @@ namespace System {
 
         [CLSCompliant(false)]
         public static char ToChar(sbyte value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value < 0) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
@@ -501,7 +528,7 @@ namespace System {
         }
 
         public static char ToChar(short value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value < 0) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
@@ -512,27 +539,27 @@ namespace System {
         }
 
         public static char ToChar(int value) {
-            if (value < 0 || value > Char.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value < 0 || value > Char.MaxValue) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
 
         [CLSCompliant(false)]   
         public static char ToChar(uint value) {
-            if (value > Char.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value > Char.MaxValue) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
 
         public static char ToChar(long value) {
-            if (value < 0 || value > Char.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value < 0 || value > Char.MaxValue) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
 
         [CLSCompliant(false)]   
         public static char ToChar(ulong value) {
-            if (value > Char.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Char"));
+            if (value > Char.MaxValue) ThrowCharOverflowException();
             Contract.EndContractBlock();
             return (char)value;
         }
@@ -610,56 +637,56 @@ namespace System {
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(char value) {
-            if (value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(byte value) {
-            if (value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(short value) {
-            if (value < SByte.MinValue || value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value < SByte.MinValue || value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]   
         public static sbyte ToSByte(ushort value) {
-            if (value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(int value) {
-            if (value < SByte.MinValue || value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value < SByte.MinValue || value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]   
         public static sbyte ToSByte(uint value) {
-            if (value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(long value) {
-            if (value < SByte.MinValue || value > SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value < SByte.MinValue || value > SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
 
         [CLSCompliant(false)]   
         public static sbyte ToSByte(ulong value) {
-            if (value > (ulong)SByte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (value > (ulong)SByte.MaxValue) ThrowSByteOverflowException();
             Contract.EndContractBlock();
             return (sbyte)value;
         }
@@ -719,53 +746,53 @@ namespace System {
         }
 
         public static byte ToByte(char value) {
-            if (value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         [CLSCompliant(false)]
         public static byte ToByte(sbyte value) {
-            if (value < Byte.MinValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value < Byte.MinValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         public static byte ToByte(short value) {
-            if (value < Byte.MinValue || value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value < Byte.MinValue || value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         [CLSCompliant(false)]   
         public static byte ToByte(ushort value) {
-            if (value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         public static byte ToByte(int value) {
-            if (value < Byte.MinValue || value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value < Byte.MinValue || value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         [CLSCompliant(false)]   
         public static byte ToByte(uint value) {
-            if (value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         public static byte ToByte(long value) {
-            if (value < Byte.MinValue || value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value < Byte.MinValue || value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
 
         [CLSCompliant(false)]   
         public static byte ToByte(ulong value) {
-            if (value > Byte.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (value > Byte.MaxValue) ThrowByteOverflowException();
             Contract.EndContractBlock();
             return (byte)value;
         }
@@ -818,7 +845,7 @@ namespace System {
         }
 
         public static short ToInt16(char value) {
-            if (value > Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value > Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
@@ -834,20 +861,20 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static short ToInt16(ushort value) {
-            if (value > Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value > Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
 
         public static short ToInt16(int value) {
-            if (value < Int16.MinValue || value > Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value < Int16.MinValue || value > Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
 
         [CLSCompliant(false)]   
         public static short ToInt16(uint value) {
-            if (value > Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value > Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
@@ -857,14 +884,14 @@ namespace System {
         }
 
         public static short ToInt16(long value) {
-            if (value < Int16.MinValue || value > Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value < Int16.MinValue || value > Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
 
         [CLSCompliant(false)]   
         public static short ToInt16(ulong value) {
-            if (value > (ulong)Int16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (value > (ulong)Int16.MaxValue) ThrowInt16OverflowException();
             Contract.EndContractBlock();
             return (short)value;
         }
@@ -927,7 +954,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ushort ToUInt16(sbyte value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value < 0) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
@@ -939,14 +966,14 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ushort ToUInt16(short value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value < 0) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
 
         [CLSCompliant(false)]   
         public static ushort ToUInt16(int value) {
-            if (value < 0 || value > UInt16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value < 0 || value > UInt16.MaxValue) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
@@ -958,7 +985,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ushort ToUInt16(uint value) {
-            if (value > UInt16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value > UInt16.MaxValue) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
@@ -966,14 +993,14 @@ namespace System {
         
         [CLSCompliant(false)]   
         public static ushort ToUInt16(long value) {
-            if (value < 0 || value > UInt16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value < 0 || value > UInt16.MaxValue) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
 
         [CLSCompliant(false)]   
         public static ushort ToUInt16(ulong value) {
-            if (value > UInt16.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (value > UInt16.MaxValue) ThrowUInt16OverflowException();
             Contract.EndContractBlock();
             return (ushort)value;
         }
@@ -1055,7 +1082,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static int ToInt32(uint value) {
-            if (value > Int32.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+            if (value > Int32.MaxValue) ThrowInt32OverflowException();
             Contract.EndContractBlock();
             return (int)value;
         }
@@ -1065,14 +1092,14 @@ namespace System {
         }
 
         public static int ToInt32(long value) {
-            if (value < Int32.MinValue || value > Int32.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+            if (value < Int32.MinValue || value > Int32.MaxValue) ThrowInt32OverflowException();
             Contract.EndContractBlock();
             return (int)value;
         }
 
         [CLSCompliant(false)]   
         public static int ToInt32(ulong value) {
-            if (value > Int32.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+            if (value > Int32.MaxValue) ThrowInt32OverflowException();
             Contract.EndContractBlock();
             return (int)value;
         }
@@ -1152,7 +1179,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static uint ToUInt32(sbyte value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            if (value < 0) ThrowUInt32OverflowException();
             Contract.EndContractBlock();
             return (uint)value;
         }
@@ -1164,7 +1191,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static uint ToUInt32(short value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            if (value < 0) ThrowUInt32OverflowException();
             Contract.EndContractBlock();
             return (uint)value;
         }
@@ -1176,7 +1203,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static uint ToUInt32(int value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            if (value < 0) ThrowUInt32OverflowException();
             Contract.EndContractBlock();
             return (uint)value;
         }
@@ -1188,14 +1215,14 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static uint ToUInt32(long value) {
-            if (value < 0 || value > UInt32.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            if (value < 0 || value > UInt32.MaxValue) ThrowUInt32OverflowException();
             Contract.EndContractBlock();
             return (uint)value;
         }
 
         [CLSCompliant(false)]   
         public static uint ToUInt32(ulong value) {
-            if (value > UInt32.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            if (value > UInt32.MaxValue) ThrowUInt32OverflowException();
             Contract.EndContractBlock();
             return (uint)value;
         }
@@ -1292,7 +1319,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static long ToInt64(ulong value) {
-            if (value > Int64.MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int64"));
+            if (value > Int64.MaxValue) ThrowInt64OverflowException();
             Contract.EndContractBlock();
             return (long)value;
         }
@@ -1359,7 +1386,7 @@ namespace System {
     
         [CLSCompliant(false)]   
         public static ulong ToUInt64(sbyte value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+            if (value < 0) ThrowUInt64OverflowException();
             Contract.EndContractBlock();
             return (ulong)value;
         }
@@ -1371,7 +1398,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ulong ToUInt64(short value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+            if (value < 0) ThrowUInt64OverflowException();
             Contract.EndContractBlock();
             return (ulong)value;
         }
@@ -1383,7 +1410,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ulong ToUInt64(int value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+            if (value < 0) ThrowUInt64OverflowException();
             Contract.EndContractBlock();
             return (ulong)value;
         }
@@ -1395,7 +1422,7 @@ namespace System {
 
         [CLSCompliant(false)]   
         public static ulong ToUInt64(long value) {
-            if (value < 0) throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+            if (value < 0) ThrowUInt64OverflowException();
             Contract.EndContractBlock();
             return (ulong)value;
         }
@@ -1978,7 +2005,7 @@ namespace System {
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value,fromBase,ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < Byte.MinValue || r > Byte.MaxValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+                ThrowByteOverflowException();
             return (byte) r;
         }
 
@@ -1997,7 +2024,7 @@ namespace System {
                 return (sbyte)r;
 
             if (r < SByte.MinValue || r > SByte.MaxValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+                ThrowSByteOverflowException();
             return (sbyte) r;
         }
 
@@ -2015,7 +2042,7 @@ namespace System {
                 return (short)r;
 
             if (r < Int16.MinValue || r > Int16.MaxValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+                ThrowInt16OverflowException();
             return (short) r;
         }
 
@@ -2031,7 +2058,7 @@ namespace System {
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value,fromBase,ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < UInt16.MinValue || r > UInt16.MaxValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+                ThrowUInt16OverflowException();
             return (ushort) r;
         }
 
