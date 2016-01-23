@@ -36,6 +36,7 @@ namespace System.Net
                     {
                         GlobalLog.Assert("StreamSizes::.ctor", "Negative size.");
                     }
+
                     Debug.Fail("StreamSizes::.ctor", "Negative size.");
                     throw;
                 }

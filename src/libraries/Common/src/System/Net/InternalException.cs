@@ -13,6 +13,7 @@ namespace System.Net
             {
                 GlobalLog.Assert("InternalException thrown.");
             }
+
             Debug.Fail("InternalException thrown.");
         }
     }

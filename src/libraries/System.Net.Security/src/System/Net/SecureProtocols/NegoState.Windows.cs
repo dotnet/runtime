@@ -755,12 +755,13 @@ namespace System.Net.Security
 
         private static void WriteCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult))
+            if (!(transportResult.AsyncState is LazyAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("WriteCallback|State type is wrong, expected LazyAsyncResult.");
                 }
+
                 Debug.Fail("WriteCallback|State type is wrong, expected LazyAsyncResult.");
             }
 
@@ -800,12 +801,13 @@ namespace System.Net.Security
 
         private static void ReadCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult))
+            if (!(transportResult.AsyncState is LazyAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("ReadCallback|State type is wrong, expected LazyAsyncResult.");
                 }
+
                 Debug.Fail("ReadCallback|State type is wrong, expected LazyAsyncResult.");
             }
 

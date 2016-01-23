@@ -34,6 +34,7 @@ namespace System.Net
                     {
                         GlobalLog.Assert("SecSizes::.ctor", "Negative size.");
                     }
+
                     Debug.Fail("SecSizes::.ctor", "Negative size.");
                     throw;
                 }
