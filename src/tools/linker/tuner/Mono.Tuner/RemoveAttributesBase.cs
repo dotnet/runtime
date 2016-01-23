@@ -88,13 +88,16 @@ namespace Mono.Tuner {
 				return;
 
 			for (int i = 0; i < provider.CustomAttributes.Count; i++) {
-				if (!IsRemovedAttribute (provider.CustomAttributes [i]))
+				var attrib = provider.CustomAttributes [i];
+				if (!IsRemovedAttribute (attrib))
 					continue;
 
+				WillRemoveAttribute (provider, attrib);
 				provider.CustomAttributes.RemoveAt (i--);
 			}
 		}
 
 		protected abstract bool IsRemovedAttribute (CustomAttribute attribute);
+		protected virtual void WillRemoveAttribute (ICustomAttributeProvider provider, CustomAttribute attribute) { }
 	}
 }
