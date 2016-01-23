@@ -8,6 +8,9 @@
 #Look at the Code in  <root>/src/inc/genXplatLttng.py for using subroutines in this file
 #
 
+# Python 2 compatibility
+from __future__ import print_function
+
 import os
 import xml.dom.minidom as DOM
 
@@ -475,14 +478,14 @@ def generateSanityTest(sClrEtwAllMan,testDir):
     Testinfo   = open(testinfo,'w')
 
     #CMake File:
-    print >>Cmake_file, stdprolog_cmake
-    print >>Cmake_file, """
+    Cmake_file.write(stdprolog_cmake)
+    Cmake_file.write("""
     cmake_minimum_required(VERSION 2.8.12.2)
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
     set(SOURCES
-    """
-    print >>Cmake_file, test_cpp
-    print >>Cmake_file, """
+    """)
+    Cmake_file.write(test_cpp)
+    Cmake_file.write("""
         )
     include_directories(${GENERATED_INCLUDE_DIR})
     include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
@@ -509,8 +512,8 @@ def generateSanityTest(sClrEtwAllMan,testDir):
                           coreclrpal
                           ${EVENT_PROVIDER_LINKER_OTPTIONS}
                           )
-    """
-    print >>Testinfo, """
+    """)
+    Testinfo.write("""
  Copyright (c) Microsoft Corporation.  All rights reserved.
  #
 
@@ -522,11 +525,11 @@ def generateSanityTest(sClrEtwAllMan,testDir):
  EXE1 = eventprovidertest
  Description
  =This is a sanity test to check that there are no crashes in Xplat eventing
-    """
+    """)
 
     #Test.cpp
-    print >>Test_cpp, stdprolog
-    print >>Test_cpp, """
+    Test_cpp.write(stdprolog)
+    Test_cpp.write("""
 /*=====================================================================
 **
 ** Source:   clralltestevents.cpp
@@ -574,10 +577,10 @@ int __cdecl main(int argc, char **argv)
             ULONG Error = ERROR_SUCCESS;
 #if defined(FEATURE_EVENT_TRACE)
             Trace("\\n Starting functional  eventing APIs tests  \\n");
-"""
+""")
 
-    print >>Test_cpp, generateClralltestEvents(sClrEtwAllMan)
-    print >>Test_cpp,"""
+    Test_cpp.write(generateClralltestEvents(sClrEtwAllMan))
+    Test_cpp.write("""
 /* Shutdown the PAL.
  */
 
@@ -592,7 +595,7 @@ int __cdecl main(int argc, char **argv)
           return PASS;
                                  }
 
-"""
+""")
     Cmake_file.close()
     Test_cpp.close()
     Testinfo.close()
