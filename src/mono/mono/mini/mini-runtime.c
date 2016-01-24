@@ -2287,15 +2287,14 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 #ifndef ENABLE_GSHAREDVT
 			g_assert_not_reached ();
 #endif
+			info->gsharedvt_invoke = TRUE;
 			if (!callee_gsharedvt) {
 				/* Invoke a gsharedvt out wrapper instead */
 				MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
 
-				info->gsharedvt_invoke = TRUE;
 				info->wrapper_arg = g_malloc0 (2 * sizeof (gpointer));
-				info->wrapper_arg [0] = info->compiled_method;
-				info->wrapper_arg [1] = mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL;
+				info->wrapper_arg [0] = mini_add_method_wrappers_llvmonly (method, info->compiled_method, FALSE, FALSE, &(info->wrapper_arg [1]));
 
 				/* Pass has_rgctx == TRUE since the wrapper has an extra arg */
 				invoke = mono_marshal_get_runtime_invoke_for_sig (wrapper_sig);
@@ -2307,7 +2306,6 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				/* The out wrapper has the same signature as the compiled gsharedvt method */
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
 
-				info->gsharedvt_invoke = TRUE;
 				info->wrapper_arg = mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL;
 
 				invoke = mono_marshal_get_runtime_invoke_for_sig (wrapper_sig);

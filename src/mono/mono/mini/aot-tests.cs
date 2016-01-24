@@ -467,4 +467,12 @@ class Tests
 		var m2 = typeof (GetCurrentMethodClass<>).GetMethod ("get_current");
 		return m == m2 ? 0 : 1;
 	}
+
+	public static int test_0_array_wrappers_runtime_invoke () {
+		string[][] arr = new string [10][];
+		IEnumerable<string[]> iface = arr;
+		var m = typeof(IEnumerable<string[]>).GetMethod ("GetEnumerator");
+		m.Invoke (arr, null);
+		return 0;
+	}
 }
