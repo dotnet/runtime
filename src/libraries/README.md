@@ -82,7 +82,7 @@
       </a>
       <br />
       <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/code_coverage_windows/Code_Coverage_Report">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/code_coverage_windows/Code_Coverage_Report/badge_combined.svg" alt="Code coverage" />
+        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/code_coverage_windows.svg?label=coverage" alt="Code coverage" />
       </a>
     </td>
     <td>
