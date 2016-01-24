@@ -206,7 +206,8 @@ MonoMethod* mono_gc_get_write_barrier (void);
 void mono_gc_wbarrier_value_copy_bitmap (gpointer dest, gpointer src, int size, unsigned bitmap);
 
 /* helper for the managed alloc support */
-MonoString *mono_string_alloc (int length);
+MonoString *
+ves_icall_string_alloc (int length);
 
 /* 
  * Functions supplied by the runtime and called by the GC. Currently only used
