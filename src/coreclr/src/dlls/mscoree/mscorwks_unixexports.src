@@ -43,6 +43,7 @@ FlushFileBuffers
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
+GetComputerNameW
 GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
