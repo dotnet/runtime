@@ -15,27 +15,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BitVector32\CreateMaskIntTests.cs" />
-    <Compile Include="BitVector32\CreateMaskTests.cs" />
-    <Compile Include="BitVector32\CreateSectionShortSectionTests.cs" />
-    <Compile Include="BitVector32\CreateSectionShortTests.cs" />
-    <Compile Include="BitVector32\CtorBitvector32Tests.cs" />
-    <Compile Include="BitVector32\CtorIntTests.cs" />
-    <Compile Include="BitVector32\CtorTests.cs" />
-    <Compile Include="BitVector32\EqualsObjTests.cs" />
-    <Compile Include="BitVector32\GetDataTests.cs" />
-    <Compile Include="BitVector32\GetHashCodeTests.cs" />
-    <Compile Include="BitVector32\GetItemIntTests.cs" />
-    <Compile Include="BitVector32\GetItemSectionTests.cs" />
-    <Compile Include="BitVector32\SectionEqualsObjTests.cs" />
-    <Compile Include="BitVector32\SectionGetHashCodeTests.cs" />
-    <Compile Include="BitVector32\SetItemIntBoolTests.cs" />
-    <Compile Include="BitVector32\SetItemSectionIntTests.cs" />
-    <Compile Include="BitVector32\ToStringBvTests.cs" />
-    <Compile Include="BitVector32\ToStringTests.cs" />
-    <Compile Include="Common\CollectionTesting\ICollectionTest.cs" />
-    <Compile Include="Common\CollectionTesting\IEnumerableTest.cs" />
-    <Compile Include="Common\CollectionTesting\TestSupport.cs" />
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="BitVector32Tests.cs" />
     <Compile Include="Common\GenStrings.cs" />
     <Compile Include="HybridDictionary\AddObjObjTests.cs" />
     <Compile Include="HybridDictionary\ClearTests.cs" />
@@ -57,23 +40,7 @@
     <Compile Include="HybridDictionary\IEnumerableGetEnumeratorTests.cs" />
     <Compile Include="HybridDictionary\RemoveObjTests.cs" />
     <Compile Include="HybridDictionary\SetItemObjObjTests.cs" />
-    <Compile Include="ListDictionary\AddObjObjTests.cs" />
-    <Compile Include="ListDictionary\ClearTests.cs" />
-    <Compile Include="ListDictionary\ContainsObjTests.cs" />
-    <Compile Include="ListDictionary\CopyToArrayIntTests.cs" />
-    <Compile Include="ListDictionary\CtorICompTests.cs" />
-    <Compile Include="ListDictionary\CtorTests.cs" />
-    <Compile Include="ListDictionary\GetCountTests.cs" />
-    <Compile Include="ListDictionary\GetEnumeratorTests.cs" />
-    <Compile Include="ListDictionary\GetIsFixedSizeTests.cs" />
-    <Compile Include="ListDictionary\GetIsReadOnlyTests.cs" />
-    <Compile Include="ListDictionary\GetIsSynchronizedTests.cs" />
-    <Compile Include="ListDictionary\GetItemObjTests.cs" />
-    <Compile Include="ListDictionary\GetKeysTests.cs" />
-    <Compile Include="ListDictionary\GetSyncRootTests.cs" />
-    <Compile Include="ListDictionary\GetValuesTests.cs" />
-    <Compile Include="ListDictionary\RemoveObjTests.cs" />
-    <Compile Include="ListDictionary\SetItemObjObjTests.cs" />
+    <Compile Include="ListDictionaryTests.cs" />
     <Compile Include="NameObjectCollectionBase\CopyToTests.cs" />
     <Compile Include="NameObjectCollectionBase\GetAllValuesTests.cs" />
     <Compile Include="NameObjectCollectionBase\GetEnumeratorTests.cs" />
@@ -107,23 +74,7 @@
     <Compile Include="NameValueCollection\SetStrStrTests.cs" />
     <Compile Include="OrderedDictionary\CaseInsensitiveEqualityComparer.cs" />
     <Compile Include="OrderedDictionary\OrderedDictionaryTests.cs" />
-    <Compile Include="StringCollection\AddRangeStrATests.cs" />
-    <Compile Include="StringCollection\AddStrTests.cs" />
-    <Compile Include="StringCollection\ClearTests.cs" />
-    <Compile Include="StringCollection\ContainsStrTests.cs" />
-    <Compile Include="StringCollection\CopyToStrAIntTests.cs" />
-    <Compile Include="StringCollection\CtorTests.cs" />
-    <Compile Include="StringCollection\GetCountTests.cs" />
-    <Compile Include="StringCollection\GetEnumeratorTests.cs" />
-    <Compile Include="StringCollection\GetIsReadOnlyTests.cs" />
-    <Compile Include="StringCollection\GetIsSynchronizedTests.cs" />
-    <Compile Include="StringCollection\GetItemTests.cs" />
-    <Compile Include="StringCollection\GetSyncRootTests.cs" />
-    <Compile Include="StringCollection\IndexOfStrTests.cs" />
-    <Compile Include="StringCollection\InsertIntStrTests.cs" />
-    <Compile Include="StringCollection\RemoveAtIntTests.cs" />
-    <Compile Include="StringCollection\RemoveStrTests.cs" />
-    <Compile Include="StringCollection\SetItemTests.cs" />
+    <Compile Include="StringCollectionTests.cs" />
     <Compile Include="StringDictionary\AddStrStrTests.cs" />
     <Compile Include="StringDictionary\ClearTests.cs" />
     <Compile Include="StringDictionary\ContainsKeyStrTests.cs" />
@@ -139,9 +90,6 @@
     <Compile Include="StringDictionary\GetValuesTests.cs" />
     <Compile Include="StringDictionary\RemoveStrTests.cs" />
     <Compile Include="StringDictionary\SetItemStrStrTests.cs" />
-    <Compile Include="StringEnumerator\GetCurrentTests.cs" />
-    <Compile Include="StringEnumerator\MoveNextTests.cs" />
-    <Compile Include="StringEnumerator\ResetTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Collections.Specialized.csproj">
