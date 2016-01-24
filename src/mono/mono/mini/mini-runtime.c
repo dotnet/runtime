@@ -3029,25 +3029,32 @@ is_callee_gsharedvt_variable (gpointer addr)
 	return callee_gsharedvt;
 }
 
+gpointer
+mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
+{
+	gpointer arg = NULL;
+
+	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+		arg = mini_method_get_rgctx (method);
+
+	/*
+	 * Avoid adding gsharedvt in wrappers since they might not exist if
+	 * this delegate is called through a gsharedvt delegate invoke wrapper.
+	 * Instead, encode that the method is gsharedvt in del->rgctx,
+	 * the CEE_MONO_CALLI_EXTRA_ARG implementation in the JIT depends on this.
+	 */
+	if (method->is_inflated && is_callee_gsharedvt_variable (method_ptr)) {
+		g_assert ((((mgreg_t)arg) & 1) == 0);
+		arg = (gpointer)(((mgreg_t)arg) | 1);
+	}
+	return arg;
+}
+
 void
 mini_init_delegate (MonoDelegate *del)
 {
 	if (mono_llvm_only) {
-		MonoMethod *method = del->method;
-
-		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-			del->rgctx = mini_method_get_rgctx (method);
-
-		/*
-		 * Avoid adding gsharedvt in wrappers since they might not exist if
-		 * this delegate is called through a gsharedvt delegate invoke wrapper.
-		 * Instead, encode that the method is gsharedvt in del->rgctx,
-		 * the CEE_MONO_CALLI_EXTRA_ARG implementation in the JIT depends on this.
-		 */
-		if (is_callee_gsharedvt_variable (del->method_ptr)) {
-			g_assert ((((mgreg_t)del->rgctx) & 1) == 0);
-			del->rgctx = (gpointer)(((mgreg_t)del->rgctx) | 1);
-		}
+		del->rgctx = mini_get_delegate_arg (del->method, del->method_ptr);
 	}
 }
 
@@ -3908,7 +3915,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_llvmonly_get_calling_assembly, "mono_llvmonly_get_calling_assembly", "object");
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr ptr int", FALSE);
-	register_icall (mono_llvmonly_init_delegate, "mono_llvmonly_init_delegate", "void object object ptr", TRUE);
+	register_icall (mono_llvmonly_init_delegate, "mono_llvmonly_init_delegate", "void object", TRUE);
 	register_icall (mono_llvmonly_init_delegate_virtual, "mono_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);

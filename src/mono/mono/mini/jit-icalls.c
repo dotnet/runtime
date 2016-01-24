@@ -1618,13 +1618,23 @@ mono_init_vtable_slot (MonoVTable *vtable, int slot)
  * Similar to mono_delegate_ctor ().
  */
 void
-mono_llvmonly_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
+mono_llvmonly_init_delegate (MonoDelegate *del)
 {
-	MONO_OBJECT_SETREF (del, target, target);
-	del->method = method;
-	del->method_ptr = mono_compile_method (method);
+	/*
+	 * We store a MonoFtnDesc in del->method_code.
+	 */
+	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
 
-	mini_init_delegate (del);
+	if (G_UNLIKELY (!ftndesc)) {
+		gpointer addr = mono_compile_method (del->method);
+		gpointer arg = mini_get_delegate_arg (del->method, addr);
+
+		ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
+		mono_memory_barrier ();
+		*del->method_code = (gpointer)ftndesc;
+	}
+	del->method_ptr = ftndesc->addr;
+	del->rgctx = ftndesc->arg;
 }
 
 void
@@ -1634,7 +1644,6 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 
 	method = mono_object_get_virtual_method (target, method);
 
-	MONO_OBJECT_SETREF (del, target, target);
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
 

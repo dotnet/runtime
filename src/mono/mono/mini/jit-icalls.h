@@ -205,7 +205,7 @@ MonoFtnDesc* mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_sl
 
 gpointer mono_init_vtable_slot (MonoVTable *vtable, int slot);
 
-void mono_llvmonly_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+void mono_llvmonly_init_delegate (MonoDelegate *del);
 
 void mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 

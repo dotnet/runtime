@@ -2594,6 +2594,7 @@ void              mono_allocate_gsharedvt_vars (MonoCompile *cfg);
 void              mono_if_conversion (MonoCompile *cfg);
 
 /* Delegates */
+gpointer          mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr);
 void              mini_init_delegate (MonoDelegate *del);
 gpointer          mono_get_delegate_virtual_invoke_impl  (MonoMethodSignature *sig, MonoMethod *method);
 

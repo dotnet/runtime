@@ -5032,22 +5032,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (!obj)
 		return NULL;
 
- 	if (cfg->llvm_only) {
-		MonoInst *args [16];
-
-		/*
-		 * If the method to be called needs an rgctx, we can't fall back to mono_delegate_ctor (), since it might receive
-		 * the address of a gshared method. So use a JIT icall.
-		 * FIXME: Optimize this.
-		 */
-		args [0] = obj;
-		args [1] = target;
-		args [2] = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD);
-		mono_emit_jit_icall (cfg, virtual_ ? mono_llvmonly_init_delegate_virtual : mono_llvmonly_init_delegate, args);
-
-		return obj;
-	}
-
 	/* Inline the contents of mono_delegate_ctor */
 
 	/* Set target field */
@@ -5090,6 +5074,22 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			code_slot_ins = emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
 		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
+	}
+
+ 	if (cfg->llvm_only) {
+		MonoInst *args [16];
+
+		if (virtual_) {
+			args [0] = obj;
+			args [1] = target;
+			args [2] = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD);
+			mono_emit_jit_icall (cfg, mono_llvmonly_init_delegate_virtual, args);
+		} else {
+			args [0] = obj;
+			mono_emit_jit_icall (cfg, mono_llvmonly_init_delegate, args);
+		}
+
+		return obj;
 	}
 
 	if (cfg->compile_aot) {
