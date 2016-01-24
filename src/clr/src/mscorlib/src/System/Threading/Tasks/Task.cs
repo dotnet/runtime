@@ -2329,7 +2329,7 @@ namespace System.Threading.Tasks
 
 
         /// <summary>
-        /// Final stage of the task completion code path. Notifies the parent (if any) that another of its childre are done, and runs continuations.
+        /// Final stage of the task completion code path. Notifies the parent (if any) that another of its children are done, and runs continuations.
         /// This function is only separated out from FinishStageTwo because these two operations are also needed to be called from CancellationCleanupLogic()
         /// </summary>
         internal void FinishStageThree()
