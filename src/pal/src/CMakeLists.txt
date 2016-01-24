@@ -139,6 +139,7 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
+  misc/identity.cpp
   misc/miscpalapi.cpp
   misc/msgbox.cpp
   misc/strutil.cpp
