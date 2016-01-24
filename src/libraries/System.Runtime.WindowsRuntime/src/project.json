@@ -9,6 +9,7 @@
     "netcore50": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc3-23722",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.0",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Dynamic.Runtime": "4.0.10",
