@@ -600,7 +600,7 @@ namespace System.Collections.Generic
         {
             if (action == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException("action");
             }
 
             int version = _version;
