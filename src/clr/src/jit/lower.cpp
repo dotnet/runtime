@@ -2475,7 +2475,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compCallUnmanaged);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME
 
@@ -2570,7 +2570,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     assert(returnBB != nullptr);
     assert(comp->info.compCallUnmanaged);
 
-    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    if (comp->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
@@ -2645,7 +2645,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // First argument is the address of the frame variable.
         GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
@@ -2789,7 +2789,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 // insert the code that goes after every inlined pinvoke call
 void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
-    if (comp->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
+    if (comp->opts.ShouldUsePInvokeHelpers())
     {
         noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
@@ -2860,26 +2860,28 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
     InsertPInvokeCallProlog(call);
 
-    if ((comp->opts.eeFlags & CORJIT_FLG_PINVOKE_DIRECT_CALLS) == 0 && call->gtCallType != CT_INDIRECT)
+    if (call->gtCallType != CT_INDIRECT)
     {
-        GenTree* indir = nullptr;
-
         noway_assert(call->gtCallType == CT_USER_FUNC);
         CORINFO_METHOD_HANDLE methHnd  = call->gtCallMethHnd;
 
-        void* pAddr;
-        addr = comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, (void**)&pAddr);
+        CORINFO_CONST_LOOKUP lookup;
+        comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, &lookup);
 
-        if (addr != nullptr)
+        switch (lookup.accessType)
         {
-            indir = Ind(AddrGen(addr));
+            case IAT_VALUE:
+                // No need for any indirection. The target is already correct.
+                break;
+
+            case IAT_PVALUE:
+                result = Ind(AddrGen(lookup.addr));
+                break;
+
+            case IAT_PPVALUE:
+                result = Ind(Ind(AddrGen(lookup.addr)));
+                break;
         }
-        else
-        {
-            // double indirection
-            indir = Ind(Ind(AddrGen(pAddr)));
-        }
-        result = indir;
     }
 
     InsertPInvokeCallEpilog(call);
