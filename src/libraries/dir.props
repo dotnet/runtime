@@ -86,6 +86,9 @@
     <ValidationPattern Include="^(System\..*TestData)$">
       <ExpectedVersion>1.0.0-prerelease</ExpectedVersion>
     </ValidationPattern>
+    <ValidationPattern Include="^(Microsoft\.TargetingPack\.NetFramework.%2A)$">
+      <ExpectedVersion>1.0.0</ExpectedVersion>
+    </ValidationPattern>
     <ValidationPattern Include="^xunit$">
       <ExpectedVersion>2.1.0</ExpectedVersion>
     </ValidationPattern>
