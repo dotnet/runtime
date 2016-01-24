@@ -7557,7 +7557,7 @@ void CodeGen::genPrologPadForReJit()
 regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
 {
     assert(compiler->compGeneratingProlog);
-    noway_assert((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS) == 0);
+    noway_assert(!compiler->opts.ShouldUsePInvokeHelpers());
     noway_assert(compiler->info.compCallUnmanaged);
 
     CORINFO_EE_INFO * pInfo = compiler->eeGetEEInfo();
@@ -7777,7 +7777,7 @@ regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
 void                CodeGen::genPInvokeMethodEpilog()
 {
     noway_assert(compiler->info.compCallUnmanaged);
-    noway_assert((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS) == 0);
+    noway_assert(!compiler->opts.ShouldUsePInvokeHelpers());
     noway_assert(compiler->compCurBB == compiler->genReturnBB ||
                  (compiler->compTailCallUsed && (compiler->compCurBB->bbJumpKind == BBJ_THROW)) ||
                  (compiler->compJmpOpUsed && (compiler->compCurBB->bbFlags & BBF_HAS_JMP)));
@@ -8520,11 +8520,9 @@ void                CodeGen::genFnProlog()
     if (compiler->info.compCallUnmanaged)
     {
         excludeMask |= RBM_PINVOKE_FRAME;
-        if (compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
-        {
-            noway_assert(compiler->info.compLvFrameListRoot == BAD_VAR_NUM);
-        }
-        else
+
+        assert(!compiler->opts.ShouldUsePInvokeHelpers() || compiler->info.compLvFrameListRoot == BAD_VAR_NUM);
+        if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);
 
@@ -8534,7 +8532,9 @@ void                CodeGen::genFnProlog()
             //
             LclVarDsc *  varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
             if (varDsc->lvRegister)
+            {
                 excludeMask |= genRegMask(varDsc->lvRegNum);
+            }
         }
     }
 #endif // INLINE_NDIRECT
