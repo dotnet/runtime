@@ -36,8 +36,14 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
  if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
 
  if [ ! -e $__DOTNET_PATH ]; then
-    mkdir -p "$__DOTNET_PATH"
-    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
+    which curl > /dev/null 2> /dev/null
+    if [ $? -ne 0 ]; then
+      mkdir -p "$__DOTNET_PATH"
+      wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    else
+      curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    fi
     cd $__DOTNET_PATH
     tar -xf $__DOTNET_PATH/dotnet.tar
     if [ -n "$BUILDTOOLS_OVERRIDE_RUNTIME" ]; then
