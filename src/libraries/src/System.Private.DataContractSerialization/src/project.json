@@ -29,7 +29,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc2-23714",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23722",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",

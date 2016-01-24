@@ -2,14 +2,14 @@
   "frameworks": {
     "dotnet5.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23714"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23722"
       }
     },
     "netcore50": {
       "dependencies": {
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Runtime": "4.0.0",
-        "System.Threading": "4.0.0"        
+        "System.Threading": "4.0.0"
       }
     },
     "net46": {
