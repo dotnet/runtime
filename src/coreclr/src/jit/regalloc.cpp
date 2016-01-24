@@ -6439,11 +6439,8 @@ void               Compiler::rpPredictRegUse()
         // it must not be in a register trashed by the callee
         if (info.compCallUnmanaged != 0)
         {
-            if (opts.eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS)
-            {
-                noway_assert(info.compLvFrameListRoot == BAD_VAR_NUM);
-            }
-            else
+            assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+            if (!opts.ShouldUsePInvokeHelpers())
             {
                 noway_assert(info.compLvFrameListRoot < lvaCount);
 
