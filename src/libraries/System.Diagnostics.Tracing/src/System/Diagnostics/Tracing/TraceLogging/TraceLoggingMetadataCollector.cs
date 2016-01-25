@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 
@@ -228,11 +231,7 @@ namespace System.Diagnostics.Tracing
 
             if (this.BeginningBufferedArray)
             {
-#if PROJECTN
-                throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedNestedArraysEnums", null));
-#else
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
-#endif
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
             }
 
             this.impl.AddScalar(2);
@@ -244,11 +243,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.bufferedArrayFieldCount >= 0)
             {
-#if PROJECTN
-                throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedNestedArraysEnums", null));
-#else
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
-#endif
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
             }
 
             this.bufferedArrayFieldCount = 0;
@@ -259,11 +254,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.bufferedArrayFieldCount != 1)
             {
-#if PROJECTN
-                throw new InvalidOperationException(SR.GetResourceString("EventSource_IncorrentlyAuthoredTypeInfo", null));
-#else
-                throw new InvalidOperationException(Environment.GetResourceString("EventSource_IncorrentlyAuthoredTypeInfo"));
-#endif
+                throw new InvalidOperationException(Resources.GetResourceString("EventSource_IncorrentlyAuthoredTypeInfo"));
             }
 
             this.bufferedArrayFieldCount = int.MinValue;
@@ -282,11 +273,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.BeginningBufferedArray)
             {
-#if PROJECTN
-                throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedCustomSerializedData", null));
-#else
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedCustomSerializedData"));
-#endif
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedCustomSerializedData"));
             }
 
             this.impl.AddScalar(2);

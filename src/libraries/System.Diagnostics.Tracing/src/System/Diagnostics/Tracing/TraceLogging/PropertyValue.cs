@@ -1,6 +1,12 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
+#if !ES_BUILD_AGAINST_DOTNET_V35
+using Contract = System.Diagnostics.Contracts.Contract;
+#else
+using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
+#endif
+
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -126,7 +132,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Debug.Assert(_scalarLength == 0, "This ReflectedValue refers to an unboxed value type, not a reference type or boxed value type.");
+                Contract.Assert(_scalarLength == 0, "This ReflectedValue refers to an unboxed value type, not a reference type or boxed value type.");
                 return _reference;
             }
         }
@@ -135,7 +141,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Debug.Assert(_scalarLength > 0, "This ReflectedValue refers to a reference type or boxed value type, not an unboxed value type");
+                Contract.Assert(_scalarLength > 0, "This ReflectedValue refers to a reference type or boxed value type, not an unboxed value type");
                 return _scalar;
             }
         }
@@ -144,7 +150,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Debug.Assert(_scalarLength > 0, "This ReflectedValue refers to a reference type or boxed value type, not an unboxed value type");
+                Contract.Assert(_scalarLength > 0, "This ReflectedValue refers to a reference type or boxed value type, not an unboxed value type");
                 return _scalarLength;
             }
         }
