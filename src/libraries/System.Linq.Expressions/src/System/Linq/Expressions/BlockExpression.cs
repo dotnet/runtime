@@ -890,7 +890,7 @@ namespace System.Linq.Expressions
             var expressionList = expressions.ToReadOnly();
             var variableList = variables.ToReadOnly();
 
-            if (variableList.Count == 0)
+            if (variableList.Count == 0 && expressionList.Count != 0)
             {
                 var expressionCount = expressionList.Count;
 
@@ -915,12 +915,20 @@ namespace System.Linq.Expressions
 
         private static BlockExpression BlockCore(Type type, ReadOnlyCollection<ParameterExpression> variableList, ReadOnlyCollection<Expression> expressionList)
         {
-            ContractUtils.RequiresNotEmpty(expressionList, "expressions");
             RequiresCanRead(expressionList, "expressions");
             ValidateVariables(variableList, "variables");
 
             if (type != null)
             {
+                if (expressionList.Count == 0)
+                {
+                    if (type != typeof(void))
+                    {
+                        throw Error.ArgumentTypesMustMatch();
+                    }
+
+                    return new ScopeWithType(variableList, expressionList, type);
+                }
                 Expression last = expressionList.Last();
                 if (type != typeof(void))
                 {
@@ -936,13 +944,14 @@ namespace System.Linq.Expressions
                 }
             }
 
-            if (expressionList.Count == 1)
+            switch (expressionList.Count)
             {
-                return new Scope1(variableList, expressionList[0]);
-            }
-            else
-            {
-                return new ScopeN(variableList, expressionList);
+                case 0:
+                    return new ScopeWithType(variableList, expressionList, typeof(void));
+                case 1:
+                    return new Scope1(variableList, expressionList[0]);
+                default:
+                    return new ScopeN(variableList, expressionList);
             }
         }
 
@@ -980,12 +989,12 @@ namespace System.Linq.Expressions
             RequiresCanRead(expressions, "expressions");
             switch (expressions.Count)
             {
+                case 0: return BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance);
                 case 2: return new Block2(expressions[0], expressions[1]);
                 case 3: return new Block3(expressions[0], expressions[1], expressions[2]);
                 case 4: return new Block4(expressions[0], expressions[1], expressions[2], expressions[3]);
                 case 5: return new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
                 default:
-                    ContractUtils.RequiresNotEmptyList(expressions, "expressions");
                     return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
             }
         }
