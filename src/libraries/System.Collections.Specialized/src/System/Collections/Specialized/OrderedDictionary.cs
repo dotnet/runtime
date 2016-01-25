@@ -1,9 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Collections.Specialized
 {
@@ -46,10 +44,7 @@ namespace System.Collections.Specialized
 
         private OrderedDictionary(OrderedDictionary dictionary)
         {
-            if (dictionary == null)
-            {
-                throw new ArgumentNullException("dictionary");
-            }
+            Debug.Assert(dictionary != null);
 
             _readOnly = true;
             _objectsArray = dictionary._objectsArray;
@@ -469,7 +464,7 @@ namespace System.Collections.Specialized
                 if (array == null)
                     throw new ArgumentNullException("array");
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 foreach (object o in _objects)
                 {
                     array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
