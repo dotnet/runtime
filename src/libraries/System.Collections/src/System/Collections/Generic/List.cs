@@ -45,7 +45,7 @@ namespace System.Collections.Generic
         // 
         public List(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity", capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             if (capacity == 0)
@@ -111,7 +111,7 @@ namespace System.Collections.Generic
             {
                 if (value < _size)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_SmallCapacity);
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_SmallCapacity);
                 }
                 Contract.EndContractBlock();
 
@@ -300,9 +300,9 @@ namespace System.Collections.Generic
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.Ensures(Contract.Result<int>() <= index + count);
@@ -383,7 +383,7 @@ namespace System.Collections.Generic
         {
             if ((array != null) && (array.Rank != 1))
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
             }
             Contract.EndContractBlock();
 
@@ -394,7 +394,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType);
+                throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
             }
         }
 
@@ -497,12 +497,12 @@ namespace System.Collections.Generic
         {
             if ((uint)startIndex > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("startIndex", startIndex, SR.ArgumentOutOfRange_Index);
             }
 
             if (count < 0 || startIndex > _size - count)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_Count);
             }
 
             if (match == null)
@@ -568,22 +568,18 @@ namespace System.Collections.Generic
                 // Special case for 0 length List
                 if (startIndex != -1)
                 {
-                    throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException("startIndex", startIndex, SR.ArgumentOutOfRange_Index);
                 }
             }
-            else
+            else if ((uint)startIndex >= (uint)_size) // Make sure we're not out of range
             {
-                // Make sure we're not out of range            
-                if ((uint)startIndex >= (uint)_size)
-                {
-                    throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
-                }
+                throw new ArgumentOutOfRangeException("startIndex", startIndex, SR.ArgumentOutOfRange_Index);
             }
 
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_Count);
             }
 
             int endIndex = startIndex - count;
@@ -644,12 +640,12 @@ namespace System.Collections.Generic
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (_size - index < count)
@@ -702,7 +698,7 @@ namespace System.Collections.Generic
         public int IndexOf(T item, int index)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
@@ -721,10 +717,10 @@ namespace System.Collections.Generic
         public int IndexOf(T item, int index, int count)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || index > _size - count)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_Count);
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
@@ -741,7 +737,7 @@ namespace System.Collections.Generic
             // Note that insertions at the end are legal.
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_ListInsert);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_BiggerThanCollection);
             }
             Contract.EndContractBlock();
             if (_size == _items.Length) EnsureCapacity(_size + 1);
@@ -783,7 +779,7 @@ namespace System.Collections.Generic
 
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -863,7 +859,7 @@ namespace System.Collections.Generic
         public int LastIndexOf(T item, int index)
         {
             if (index >= _size)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(((Count == 0) && (Contract.Result<int>() == -1)) || ((Count > 0) && (Contract.Result<int>() <= index)));
             Contract.EndContractBlock();
@@ -883,12 +879,12 @@ namespace System.Collections.Generic
         {
             if ((Count != 0) && (index < 0))
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if ((Count != 0) && (count < 0))
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(((Count == 0) && (Contract.Result<int>() == -1)) || ((Count > 0) && (Contract.Result<int>() <= index)));
@@ -901,12 +897,12 @@ namespace System.Collections.Generic
 
             if (index >= _size)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_BiggerThanCollection);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             }
 
             if (count > index + 1)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_BiggerThanCollection);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_Count);
             }
 
             return Array.LastIndexOf(_items, item, index, count);
@@ -980,7 +976,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
             _size--;
@@ -998,12 +994,12 @@ namespace System.Collections.Generic
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (_size - index < count)
@@ -1038,12 +1034,12 @@ namespace System.Collections.Generic
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (_size - index < count)
@@ -1094,12 +1090,12 @@ namespace System.Collections.Generic
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (_size - index < count)
@@ -1255,4 +1251,3 @@ namespace System.Collections.Generic
         }
     }
 }
-

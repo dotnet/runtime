@@ -86,7 +86,7 @@ namespace System.Collections.Generic
                 return 0;
             if (obj is T)
                 return GetHashCode((T)obj);
-            throw new ArgumentException(SR.Argument_InvalidArgumentForComparison);
+            throw new ArgumentException(SR.Argument_InvalidArgumentForComparison, "obj");
         }
 
         bool IEqualityComparer.Equals(object x, object y)
