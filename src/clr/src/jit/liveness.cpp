@@ -437,23 +437,19 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged)))
+            if (tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged))
             {
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
-                if (!opts.ShouldUsePInvokeHelpers())
+                /* Get the TCB local and mark it as used */
+
+                noway_assert(info.compLvFrameListRoot < lvaCount);
+
+                LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
+
+                if (varDsc->lvTracked)
                 {
-                    /* Get the TCB local and mark it as used */
-
-                    noway_assert(info.compLvFrameListRoot < lvaCount);
-
-                    LclVarDsc* varDsc = &lvaTable[info.compLvFrameListRoot];
-
-                    if (varDsc->lvTracked)
+                    if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
                     {
-                        if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
-                        {
-                            VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
-                        }
+                        VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
                     }
                 }
             }
@@ -633,21 +629,17 @@ void                Compiler::fgPerBlockLocalVarLiveness()
 
         /* Get the TCB local and mark it as used */
 
-        if (block->bbJumpKind == BBJ_RETURN && info.compCallUnmanaged)
+        if  (block->bbJumpKind == BBJ_RETURN && info.compCallUnmanaged)
         {
-            assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
-            if (!opts.ShouldUsePInvokeHelpers())
+            noway_assert(info.compLvFrameListRoot < lvaCount);
+
+            LclVarDsc * varDsc = &lvaTable[info.compLvFrameListRoot];
+
+            if (varDsc->lvTracked)
             {
-                noway_assert(info.compLvFrameListRoot < lvaCount);
-
-                LclVarDsc * varDsc = &lvaTable[info.compLvFrameListRoot];
-
-                if (varDsc->lvTracked)
+                if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
                 {
-                    if (!VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
-                    {
-                        VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
-                    }
+                    VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
                 }
             }
         }
@@ -1750,25 +1742,21 @@ SKIP_QMARK:
 
             if (tree->gtCall.IsTailCall() && info.compCallUnmanaged)
             {
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
-                if (!opts.ShouldUsePInvokeHelpers())
+                /* Get the TCB local and make it live */
+
+                noway_assert(info.compLvFrameListRoot < lvaCount);
+
+                LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+                if (frameVarDsc->lvTracked)
                 {
-                    /* Get the TCB local and make it live */
+                    VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, frameVarDsc->lvVarIndex));
 
-                    noway_assert(info.compLvFrameListRoot < lvaCount);
+                    VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
 
-                    LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
+                    /* Record interference with other live variables */
 
-                    if (frameVarDsc->lvTracked)
-                    {
-                        VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, frameVarDsc->lvVarIndex));
-
-                        VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
-
-                        /* Record interference with other live variables */
-
-                        fgMarkIntf(life, varBit);
-                    }
+                    fgMarkIntf(life, varBit);
                 }
             }
 
@@ -1782,41 +1770,38 @@ SKIP_QMARK:
             if (tree->gtCall.IsUnmanaged())
             {
                 /* Get the TCB local and make it live */
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
-                if (!opts.ShouldUsePInvokeHelpers())
+
+                noway_assert(info.compLvFrameListRoot < lvaCount);
+
+                LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+                if (frameVarDsc->lvTracked)
                 {
-                    noway_assert(info.compLvFrameListRoot < lvaCount);
+                    unsigned varIndex  = frameVarDsc->lvVarIndex;
+                    noway_assert(varIndex < lvaTrackedCount);
 
-                    LclVarDsc* frameVarDsc = &lvaTable[info.compLvFrameListRoot];
-
-                    if (frameVarDsc->lvTracked)
+                    // Is the variable already known to be alive?
+                    //
+                    if  (VarSetOps::IsMember(this, life, varIndex))
                     {
-                        unsigned varIndex  = frameVarDsc->lvVarIndex;
-                        noway_assert(varIndex < lvaTrackedCount);
-
-                        // Is the variable already known to be alive?
+                        // Since we may call this multiple times, clear the GTF_CALL_M_FRAME_VAR_DEATH if set.
                         //
-                        if  (VarSetOps::IsMember(this, life, varIndex))
-                        {
-                            // Since we may call this multiple times, clear the GTF_CALL_M_FRAME_VAR_DEATH if set.
-                            //
-                            tree->gtCall.gtCallMoreFlags &= ~GTF_CALL_M_FRAME_VAR_DEATH; 
-                        }
-                        else
-                        {
-                            // The variable is just coming to life
-                            // Since this is a backwards walk of the trees 
-                            // that makes this change in liveness a 'last-use'
-                            //
-                            VarSetOps::AddElemD(this, life, varIndex);
-                            tree->gtCall.gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
-                        }
-
-                        // Record an interference with the other live variables
-                        //
-                        VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, varIndex));
-                        fgMarkIntf(life, varBit);
+                        tree->gtCall.gtCallMoreFlags &= ~GTF_CALL_M_FRAME_VAR_DEATH; 
                     }
+                    else
+                    {
+                        // The variable is just coming to life
+                        // Since this is a backwards walk of the trees 
+                        // that makes this change in liveness a 'last-use'
+                        //
+                        VarSetOps::AddElemD(this, life, varIndex);
+                        tree->gtCall.gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
+                    }
+
+                    // Record an interference with the other live variables
+                    //
+                    VARSET_TP VARSET_INIT_NOCOPY(varBit, VarSetOps::MakeSingleton(this, varIndex));
+                    fgMarkIntf(life, varBit);
                 }
 
                 /* Do we have any live variables? */
