@@ -2090,6 +2090,8 @@ if test x$host_win32 = xno; then
 		 #include <unistd.h>])
 	AC_CHECK_TYPES([suseconds_t], [AC_DEFINE(HAVE_SUSECONDS_T)], ,
 		[#include <sys/time.h>])
+	AC_CHECK_TYPES([struct cmsghdr], [AC_DEFINE(HAVE_STRUCT_CMSGHDR)], ,
+		[#include <sys/socket.h>])
 	AC_CHECK_TYPES([struct flock], [AC_DEFINE(HAVE_STRUCT_FLOCK)], ,
 		[#include <unistd.h>
 		 #include <fcntl.h>])
