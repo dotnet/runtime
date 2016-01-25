@@ -694,7 +694,7 @@ __declspec (naked) void BackPatchWorkerAsmStub()
 //
 BOOL isDelegateCall(BYTE *interiorPtr)
 {
-    WRAPPER_NO_CONTRACT; 
+    LIMITED_METHOD_CONTRACT;
 
     if (GCHeap::GetGCHeap()->IsHeapPointer((void*)interiorPtr))
     {
