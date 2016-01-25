@@ -1113,7 +1113,7 @@ create_allocator (int atype, gboolean slowpath)
 		case ATYPE_VECTOR:
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_ldarg (mb, 1);
-			mono_mb_emit_icall (mb, mono_array_new_specific);
+			mono_mb_emit_icall (mb, ves_icall_array_new_specific);
 			break;
 		case ATYPE_STRING:
 			mono_mb_emit_ldarg (mb, 1);

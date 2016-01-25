@@ -3467,6 +3467,7 @@ ICALL_EXPORT MonoArray*
 ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
 	static MonoClass *MethodInfo_array;
+	MonoError error;
 	MonoDomain *domain; 
 	MonoArray *res;
 	MonoVTable *array_vtable;
@@ -3486,8 +3487,12 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	refklass = mono_class_from_mono_type (reftype->type);
 	domain = ((MonoObject *)type)->vtable->domain;
 	array_vtable = mono_class_vtable_full (domain, MethodInfo_array, TRUE);
-	if (type->type->byref)
-		return mono_array_new_specific (array_vtable, 0);
+	if (type->type->byref) {
+		res = mono_array_new_specific_checked (array_vtable, 0, &error);
+		mono_error_raise_exception (&error);
+
+		return res;
+	}
 
 	if (name)
 		mname = mono_string_to_utf8 (name);
@@ -3499,7 +3504,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		return NULL;
 	}
 
-	res = mono_array_new_specific (array_vtable, method_array->len);
+	res = mono_array_new_specific_checked (array_vtable, method_array->len, &error);
+	mono_error_raise_exception (&error);
 
 	for (i = 0; i < method_array->len; ++i) {
 		MonoMethod *method = (MonoMethod *)g_ptr_array_index (method_array, i);

@@ -11852,7 +11852,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (managed_alloc)
 					ins = mono_emit_method_call (cfg, managed_alloc, args, NULL);
 				else
-					ins = mono_emit_jit_icall (cfg, mono_array_new_specific, args);
+					ins = mono_emit_jit_icall (cfg, ves_icall_array_new_specific, args);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					/* Decompose now to avoid problems with references to the domainvar */
