@@ -2731,9 +2731,9 @@ void * ZapInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **p
     return NULL;
 }
 
-void ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup)
+void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppIndirection)
 {
-    _ASSERTE(pLookup != NULL);
+    _ASSERTE(ppIndirection != NULL);
 
     m_pImage->m_pPreloader->AddMethodToTransitiveClosureOfInstantiations(method);
 
@@ -2741,9 +2741,8 @@ void ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, CORINFO_CON
     if (moduleHandle == m_pImage->m_hModule 
         && m_pImage->m_pPreloader->CanEmbedMethodHandle(method, m_currentMethodHandle))
     {
-        pLookup->accessType = IAT_PVALUE;
-        pLookup->addr = PVOID(m_pImage->GetWrappers()->GetAddrOfPInvokeFixup(method));
-        return;
+        *ppIndirection = NULL;
+        return PVOID(m_pImage->GetWrappers()->GetAddrOfPInvokeFixup(method));
     }
 
     //
@@ -2756,8 +2755,8 @@ void ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, CORINFO_CON
     ZapImport * pImport = m_pImage->GetImportTable()->GetIndirectPInvokeTargetImport(method);
     AppendConditionalImport(pImport);
 
-    pLookup->accessType = IAT_PPVALUE;
-    pLookup->addr = pImport;
+    *ppIndirection = pImport;
+    return NULL;
 }
 
 CORINFO_JUST_MY_CODE_HANDLE ZapInfo::getJustMyCodeHandle(
