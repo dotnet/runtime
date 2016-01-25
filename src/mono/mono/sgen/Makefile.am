@@ -43,7 +43,6 @@ monosgen_sources = \
 	sgen-los.c \
 	sgen-major-copy-object.h \
 	sgen-marksweep-drain-gray-stack.h \
-	sgen-marksweep-scan-object-concurrent.h \
 	sgen-marksweep.c \
 	sgen-memory-governor.c \
 	sgen-memory-governor.h \

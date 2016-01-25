@@ -1184,6 +1184,7 @@ static guint64 stat_drain_loops;
 #define COPY_OR_MARK_WITH_EVACUATION
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_with_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_with_evacuation
+#define SCAN_VTYPE_FUNCTION_NAME	major_scan_vtype_with_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
@@ -1229,8 +1230,6 @@ drain_gray_stack_concurrent (SgenGrayQueue *queue)
 	else
 		return drain_gray_stack_concurrent_no_evacuation (queue);
 }
-
-#include "sgen-marksweep-scan-object-concurrent.h"
 
 static void
 major_copy_or_mark_object_canonical (GCObject **ptr, SgenGrayQueue *queue)
@@ -2497,7 +2496,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
 		collector->major_ops_concurrent_finish.scan_object = major_scan_object_with_evacuation;
-		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
+		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_with_evacuation;
 		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack;
 	}
 
