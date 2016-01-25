@@ -397,7 +397,7 @@ namespace System.Net.NetworkInformation
 
         internal static IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
         {
-            using (StreamReader sr = File.OpenText(filePath))
+            using (StreamReader sr = new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false)))
             {
                 sr.ReadLine();
                 sr.ReadLine();

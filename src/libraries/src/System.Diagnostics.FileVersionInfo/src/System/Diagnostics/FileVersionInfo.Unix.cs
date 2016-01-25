@@ -43,7 +43,7 @@ namespace System.Diagnostics
             try
             {
                 // Try to load the file using the managed metadata reader
-                using (FileStream assemblyStream = File.OpenRead(_fileName))
+                using (FileStream assemblyStream = new FileStream(_fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false))
                 using (PEReader peReader = new PEReader(assemblyStream))
                 {
                     if (peReader.HasMetadata)
