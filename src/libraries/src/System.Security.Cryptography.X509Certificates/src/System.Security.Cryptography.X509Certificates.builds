@@ -14,6 +14,9 @@
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
       <TargetGroup>netcore50</TargetGroup>
     </Project>
+    <Project Include="System.Security.Cryptography.X509Certificates.csproj">
+      <TargetGroup>net461</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
