@@ -167,7 +167,7 @@ GetUserNameW(
 
     while (NULL == pPasswd)
     {
-        pchBuffer = (char*) InternalMalloc(pPalThread, sizeof(pchBuffer[0]) * dwBufLen);
+        pchBuffer = (char*) PAL_malloc(sizeof(pchBuffer[0]) * dwBufLen);
         if (NULL == pchBuffer)
         {
             pPalThread->SetLastError(ERROR_OUTOFMEMORY);
@@ -182,7 +182,7 @@ GetUserNameW(
 
             if (ERANGE == iRet) // need a bigger buffer
             {
-                InternalFree(pPalThread, pchBuffer);
+                PAL_free(pchBuffer);
                 pchBuffer = NULL;
                 pPasswd = NULL;
                 dwBufLen *= 2; // double the buffer
@@ -274,12 +274,12 @@ done:
 #if HAVE_GETPWUID_R
     if (NULL != pchBuffer)
     {
-        InternalFree(pPalThread, pchBuffer);
+        PAL_free(pchBuffer);
     }
 #else // HAVE_GETPWUID_R
     if (NULL != szUserName)
     {
-        InternalFree(pPalThread, szUserName);
+        PAL_free(szUserName);
     }
 #endif // HAVE_GETPWUID_R
 
@@ -341,12 +341,6 @@ GetComputerNameW(
     if (NULL != pchDot)
     {
         *pchDot = '\0'; // remove the domain name info
-    }
-
-    // clip the hostname to MAX_COMPUTERNAME_LENGTH
-    if (sizeof(szHostName) > MAX_COMPUTERNAME_LENGTH)
-    {
-        szHostName[MAX_COMPUTERNAME_LENGTH] = '\0';
     }
 
     // copy the hostname (including NULL character)

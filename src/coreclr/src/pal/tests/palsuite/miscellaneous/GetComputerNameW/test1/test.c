@@ -18,7 +18,8 @@
 int __cdecl main(int argc, char *argv[]) 
 {
 
-    WCHAR wzComputerName[MAX_COMPUTERNAME_LENGTH+1];
+    int HOST_NAME_MAX = 255;
+    WCHAR wzComputerName[HOST_NAME_MAX+1];
     DWORD dwSize = sizeof(wzComputerName)/sizeof(wzComputerName[0]);
   
     // Initialize the PAL and return FAILURE if this fails
@@ -32,8 +33,8 @@ int __cdecl main(int argc, char *argv[])
         Fail("ERROR: GetComputerName failed with %d!\n", GetLastError());
     }
   
-    // dwSize is the length of wzComputerName without NULL
-    if (dwSize <= 0 || dwSize > (sizeof(wzComputerName)/sizeof(wzComputerName[0]) - 1))
+    // dwSize is the length of wzComputerName without NULL 
+    if (dwSize < 0 || dwSize > (sizeof(wzComputerName)/sizeof(wzComputerName[0]) - 1))
     {
         Fail("ERROR: GetComputerName returned %S with dwSize = %u whereas the passed in buffer size is %d!\n",
                 wzComputerName, dwSize, sizeof(wzComputerName)/sizeof(wzComputerName[0]));
