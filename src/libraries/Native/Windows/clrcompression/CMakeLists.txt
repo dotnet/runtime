@@ -7,6 +7,34 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include (GenerateExportHeader)
 
+if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
+set(NATIVECOMPRESSION_SOURCES
+    clrcompression.def
+    zlib-intel/adler32.c
+    zlib-intel/crc_folding.c
+    zlib-intel/crc32.c
+    zlib-intel/deflate_quick.c
+    zlib-intel/deflate.c
+    zlib-intel/fill_window_sse.c
+    zlib-intel/match.c
+    zlib-intel/trees.c
+    zlib-intel/x86.c
+    zlib-intel/zutil.c
+    zlib/compress.c 
+    zlib/inffast.c
+    zlib/inflate.c
+    zlib/inftrees.c
+    #zlib/gzclose.c
+    #zlib/gzlib.c
+    #zlib/gzread.c
+    #zlib/gzwrite.c
+    #zlib/uncompr.c
+    #zlib/infback.c
+    #zlib/uncompr.c
+)
+endif()
+
+if($ENV{__BuildArch} STREQUAL arm)
 set(NATIVECOMPRESSION_SOURCES
     clrcompression.def
     zlib/adler32.c
@@ -22,6 +50,7 @@ set(NATIVECOMPRESSION_SOURCES
     #zlib/infback.c
     #zlib/uncompr.c
 )
+endif()
 
 if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
