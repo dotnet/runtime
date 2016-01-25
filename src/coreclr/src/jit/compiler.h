@@ -7527,6 +7527,10 @@ public :
         inline bool         IsReadyToRun() { return false; }
 #endif
 
+        // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
+        // PInvoke transitions inline (e.g. when targeting CoreRT).
+        inline bool         ShouldUsePInvokeHelpers() { return (eeFlags & CORJIT_FLG_PINVOKE_USE_HELPERS) != 0; }
+
         // true if we must generate compatible code with Jit64 quirks
         inline bool         IsJit64Compat()
         {

@@ -2159,17 +2159,21 @@ void               Compiler::lvaDecRefCnts(GenTreePtr tree)
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
-        /* Get the special variable descriptor */
+        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            /* Get the special variable descriptor */
 
-        lclNum = info.compLvFrameListRoot;
-            
-        noway_assert(lclNum <= lvaCount);
-        varDsc = lvaTable + lclNum;
-            
-        /* Decrement the reference counts twice */
+            lclNum = info.compLvFrameListRoot;
 
-        varDsc->decRefCnts(compCurBB->getBBWeight(this), this);  
-        varDsc->decRefCnts(compCurBB->getBBWeight(this), this);
+            noway_assert(lclNum <= lvaCount);
+            varDsc = lvaTable + lclNum;
+
+            /* Decrement the reference counts twice */
+
+            varDsc->decRefCnts(compCurBB->getBBWeight(this), this);  
+            varDsc->decRefCnts(compCurBB->getBBWeight(this), this);
+        }
     }
     else
     {
@@ -2214,17 +2218,21 @@ void               Compiler::lvaIncRefCnts(GenTreePtr tree)
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
-        /* Get the special variable descriptor */
+        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            /* Get the special variable descriptor */
 
-        lclNum = info.compLvFrameListRoot;
-            
-        noway_assert(lclNum <= lvaCount);
-        varDsc = lvaTable + lclNum;
-            
-        /* Increment the reference counts twice */
+            lclNum = info.compLvFrameListRoot;
 
-        varDsc->incRefCnts(compCurBB->getBBWeight(this), this);  
-        varDsc->incRefCnts(compCurBB->getBBWeight(this), this);
+            noway_assert(lclNum <= lvaCount);
+            varDsc = lvaTable + lclNum;
+
+            /* Increment the reference counts twice */
+
+            varDsc->incRefCnts(compCurBB->getBBWeight(this), this);  
+            varDsc->incRefCnts(compCurBB->getBBWeight(this), this);
+        }
     }
     else
     {
@@ -2800,16 +2808,20 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
     /* Is this a call to unmanaged code ? */
     if (tree->gtOper == GT_CALL && tree->gtFlags & GTF_CALL_UNMANAGED) 
     {
-        /* Get the special variable descriptor */
+        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            /* Get the special variable descriptor */
 
-        unsigned lclNum = info.compLvFrameListRoot;
-            
-        noway_assert(lclNum <= lvaCount);
-        LclVarDsc * varDsc = lvaTable + lclNum;
+            unsigned lclNum = info.compLvFrameListRoot;
 
-        /* Increment the ref counts twice */
-        varDsc->incRefCnts(lvaMarkRefsWeight, this);
-        varDsc->incRefCnts(lvaMarkRefsWeight, this);
+            noway_assert(lclNum <= lvaCount);
+            LclVarDsc * varDsc = lvaTable + lclNum;
+
+            /* Increment the ref counts twice */
+            varDsc->incRefCnts(lvaMarkRefsWeight, this);
+            varDsc->incRefCnts(lvaMarkRefsWeight, this);
+        }
     }
 #endif
         
@@ -3166,15 +3178,19 @@ void                Compiler::lvaMarkLocalVars()
 
     if (info.compCallUnmanaged != 0)
     {
-        noway_assert(info.compLvFrameListRoot >= info.compLocalsCount &&
-                     info.compLvFrameListRoot <  lvaCount);
+        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            noway_assert(info.compLvFrameListRoot >= info.compLocalsCount &&
+                         info.compLvFrameListRoot <  lvaCount);
 
-        lvaTable[info.compLvFrameListRoot].lvType       = TYP_I_IMPL;
+            lvaTable[info.compLvFrameListRoot].lvType       = TYP_I_IMPL;
 
-        /* Set the refCnt, it is used in the prolog and return block(s) */
+            /* Set the refCnt, it is used in the prolog and return block(s) */
 
-        lvaTable[info.compLvFrameListRoot].lvRefCnt     = 2;
-        lvaTable[info.compLvFrameListRoot].lvRefCntWtd  = 2 * BB_UNITY_WEIGHT;        
+            lvaTable[info.compLvFrameListRoot].lvRefCnt     = 2;
+            lvaTable[info.compLvFrameListRoot].lvRefCntWtd  = 2 * BB_UNITY_WEIGHT;
+        }
     }
 #endif
 

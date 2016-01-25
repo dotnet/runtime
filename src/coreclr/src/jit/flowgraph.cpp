@@ -8237,7 +8237,12 @@ void                Compiler::fgAddInternal()
 #if INLINE_NDIRECT
     if (info.compCallUnmanaged != 0)
     {
-        info.compLvFrameListRoot = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
+        // The P/Invoke helpers only require a frame variable, so only allocate the
+        // TCB variable if we're not using them.
+        if (!opts.ShouldUsePInvokeHelpers())
+        {
+            info.compLvFrameListRoot = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
+        }
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
@@ -8248,8 +8253,9 @@ void                Compiler::fgAddInternal()
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
 #if FEATURE_FIXED_OUT_ARGS
         // Grab and reserve space for TCB, Frame regs used in PInvoke epilog to pop the inlined frame.
-        // See genPInvokeMethodEpilog() for use of the grabbed var.
-        if (compJmpOpUsed)
+        // See genPInvokeMethodEpilog() for use of the grabbed var. This is only necessary if we are
+        // not using the P/Invoke helpers.
+        if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
             varDsc = &lvaTable[lvaPInvokeFrameRegSaveVar];
