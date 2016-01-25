@@ -888,8 +888,8 @@ public class deltablue
     public static int Main(String[] args)
     {
         deltablue d = new deltablue();
-        d.inst_main(args);
-        return 100;
+        bool result = d.inst_main(args);
+        return (result ? 100 : -1);
     }
 
     [Benchmark]
@@ -906,17 +906,22 @@ public class deltablue
         }
     }
 
-    public void inst_main(String[] args)
+    public bool inst_main(String[] args)
     {
         int iterations = 200; // read iterations from arguments, walter 7/97
-        try
-        {   // read iterations from arguments, walter 7/97
-            iterations = Int32.Parse(args[0]);
-        }
-        catch (Exception)
+        if (args.Length > 0)
         {
+            bool parsed = Int32.TryParse(args[0], out iterations);
+            if (!parsed)
+            {
+                Console.WriteLine("Error: expected iteration count, got '{0}'", args[0]);
+                return false;
+            }
         }
+
         inst_inner(iterations, true);
+
+        return true;
     }
 
     public void inst_inner(int iterations, bool verbose)
