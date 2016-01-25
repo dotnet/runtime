@@ -47,6 +47,17 @@
     <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
     <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
   </PropertyGroup>
+
+   <!-- list of nuget package sources passed to dnu --> 
+   <ItemGroup> 
+     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. --> 
+     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" /> 
+     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" /> 
+     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" /> 
+     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/" /> 
+     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" /> 
+   </ItemGroup> 
+
   
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
@@ -67,7 +78,7 @@
     
     <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     
   </PropertyGroup>
