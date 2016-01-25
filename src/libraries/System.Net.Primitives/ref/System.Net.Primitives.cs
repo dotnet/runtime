@@ -413,7 +413,9 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl2 = 12,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl3 = 48,
         Tls = 192,
         Tls11 = 768,
