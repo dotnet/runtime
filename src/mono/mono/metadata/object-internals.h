@@ -786,7 +786,8 @@ struct _MonoDelegate {
 	MonoObject *target;
 	MonoMethod *method;
 	gpointer delegate_trampoline;
-	gpointer rgctx;
+	/* Extra argument passed to the target method in llvmonly mode */
+	gpointer extra_arg;
 	/* 
 	 * If non-NULL, this points to a memory location which stores the address of 
 	 * the compiled code of the method, or NULL if it is not yet compiled.

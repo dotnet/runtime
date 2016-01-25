@@ -3040,7 +3040,7 @@ mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 	/*
 	 * Avoid adding gsharedvt in wrappers since they might not exist if
 	 * this delegate is called through a gsharedvt delegate invoke wrapper.
-	 * Instead, encode that the method is gsharedvt in del->rgctx,
+	 * Instead, encode that the method is gsharedvt in del->extra_arg,
 	 * the CEE_MONO_CALLI_EXTRA_ARG implementation in the JIT depends on this.
 	 */
 	if (method->is_inflated && is_callee_gsharedvt_variable (method_ptr)) {
@@ -3053,9 +3053,8 @@ mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 void
 mini_init_delegate (MonoDelegate *del)
 {
-	if (mono_llvm_only) {
-		del->rgctx = mini_get_delegate_arg (del->method, del->method_ptr);
-	}
+	if (mono_llvm_only)
+		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
 gpointer
