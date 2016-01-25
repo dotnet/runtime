@@ -13,6 +13,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 
 #define set_error_message() do { \
 	va_list args; \
@@ -22,6 +24,12 @@
 	va_end (args); \
 } while (0)
 
+static gboolean
+is_managed_exception (MonoErrorInternal *error)
+{
+	return (error->error_code == MONO_ERROR_EXCEPTION_INSTANCE);
+}
+
 static void
 mono_error_prepare (MonoErrorInternal *error)
 {
@@ -29,7 +37,18 @@ mono_error_prepare (MonoErrorInternal *error)
 		return;
 
 	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = error->first_argument = NULL;
-	error->klass = NULL;
+	error->exn.klass = NULL;
+}
+
+static MonoClass*
+get_class (MonoErrorInternal *error)
+{
+	MonoClass *klass = NULL;
+	if (is_managed_exception (error))
+		klass = mono_object_class (mono_gchandle_get_target (error->exn.instance_handle));
+	else
+		klass = error->exn.klass;
+	return klass;
 }
 
 static const char*
@@ -37,8 +56,9 @@ get_type_name (MonoErrorInternal *error)
 {
 	if (error->type_name)
 		return error->type_name;
-	if (error->klass)
-		return error->klass->name;
+	MonoClass *klass = get_class (error);
+	if (klass)
+		return klass->name;
 	return "<unknown type>";
 }
 
@@ -47,8 +67,9 @@ get_assembly_name (MonoErrorInternal *error)
 {
 	if (error->assembly_name)
 		return error->assembly_name;
-	if (error->klass && error->klass->image)
-		return error->klass->image->name;
+	MonoClass *klass = get_class (error);
+	if (klass && klass->image)
+		return klass->image->name;
 	return "<unknown assembly>";
 }
 
@@ -74,6 +95,9 @@ mono_error_cleanup (MonoError *oerror)
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	if (error->error_code == MONO_ERROR_NONE)
 		return;
+
+	if (is_managed_exception (error))
+		mono_gchandle_free (error->exn.instance_handle);
 
 	g_free ((char*)error->full_message);
 	g_free ((char*)error->full_message_with_fields);
@@ -196,7 +220,9 @@ mono_error_set_class (MonoError *oerror, MonoClass *klass)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 
-	error->klass = klass;	
+	if (is_managed_exception (error))
+		return;
+	error->exn.klass = klass;	
 }
 
 static void
@@ -317,6 +343,15 @@ mono_error_set_generic_error (MonoError *oerror, const char * name_space, const 
 }
 
 void
+mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+
+	error->error_code = MONO_ERROR_EXCEPTION_INSTANCE;
+	error->exn.instance_handle = mono_gchandle_new (exc ? &exc->object : NULL, FALSE);
+}
+
+void
 mono_error_set_from_loader_error (MonoError *oerror)
 {
 	MonoLoaderError *loader_error = mono_loader_get_last_error ();
@@ -403,7 +438,7 @@ mono_loader_set_error_from_mono_error (MonoError *oerror)
 		mono_loader_set_error_method_load (get_type_name (error), error->member_name);
 		break;
 	case MONO_ERROR_MISSING_FIELD:
-		mono_loader_set_error_field_load (error->klass, error->member_name);
+		mono_loader_set_error_field_load (error->exn.klass, error->member_name);
 		break;
 	case MONO_ERROR_TYPE_LOAD:
 		mono_loader_set_error_type_load (get_type_name (error), get_assembly_name (error));
@@ -415,6 +450,8 @@ mono_loader_set_error_from_mono_error (MonoError *oerror)
 	case MONO_ERROR_BAD_IMAGE:
 		mono_loader_set_error_bad_image (g_strdup (error->full_message));
 		break;
+	case MONO_ERROR_EXCEPTION_INSTANCE:
+		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error"));
 	default:
 		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", error->full_message));
 	}
@@ -467,11 +504,14 @@ get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, Mono
 	if (error->type_name) {
 		res = mono_string_new (domain, error->type_name);
 		
-	} else if (error->klass) {
-		char *name = mono_type_full_name (&error->klass->byval_arg);
-		if (name) {
-			res = mono_string_new (domain, name);
-			g_free (name);
+	} else {
+		MonoClass *klass = get_class (error);
+		if (klass) {
+			char *name = mono_type_full_name (&klass->byval_arg);
+			if (name) {
+				res = mono_string_new (domain, name);
+				g_free (name);
+			}
 		}
 	}
 	if (!res)
@@ -506,7 +546,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		return NULL;
 
 	case MONO_ERROR_MISSING_METHOD:
-		if ((error->type_name || error->klass) && error->member_name) {
+		if ((error->type_name || error->exn.klass) && error->member_name) {
 			type_name = get_type_name_as_mono_string (error, domain, error_out);
 			if (!mono_error_ok (error_out))
 				break;
@@ -526,7 +566,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_MISSING_FIELD:
-		if ((error->type_name || error->klass) && error->member_name) {
+		if ((error->type_name || error->exn.klass) && error->member_name) {
 			type_name = get_type_name_as_mono_string (error, domain, error_out);
 			if (!mono_error_ok (error_out))
 				break;
@@ -606,8 +646,8 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 
 	case MONO_ERROR_NOT_VERIFIABLE: {
 		char *type_name = NULL, *message;
-		if (error->klass) {
-			type_name = mono_type_get_full_name (error->klass);
+		if (error->exn.klass) {
+			type_name = mono_type_get_full_name (error->exn.klass);
 			if (!type_name) {
 				mono_error_set_out_of_memory (error_out, "Could not allocate message");
 				break;
@@ -629,6 +669,10 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 			mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "MonoError with generic error but no exception name was supplied");
 		else
 			exception = mono_exception_from_name_msg (mono_defaults.corlib, error->exception_name_space, error->exception_name, error->full_message);
+		break;
+
+	case MONO_ERROR_EXCEPTION_INSTANCE:
+		exception = (MonoException*) mono_gchandle_get_target (error->exn.instance_handle);
 		break;
 
 	default:

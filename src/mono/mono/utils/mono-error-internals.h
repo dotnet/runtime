@@ -15,7 +15,16 @@ typedef struct {
 	const char *member_name;
 	const char *exception_name_space;
 	const char *exception_name;
-	MonoClass *klass;
+	union {
+		/* Valid if error_code != MONO_ERROR_EXCEPTION_INSTANCE.
+		 * Used by type or field load errors and generic error specified by class.
+		 */
+		MonoClass *klass;
+		/* Valid if error_code == MONO_ERROR_EXCEPTION_INSTANCE.
+		 * Generic error specified by a managed instance.
+		 */
+		uint32_t instance_handle;
+	} exn;
 	const char *full_message;
 	const char *full_message_with_fields;
 	const char *first_argument;
@@ -75,6 +84,9 @@ mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char
 
 void
 mono_error_set_generic_error (MonoError *error, const char * name_space, const char *name, const char *msg_format, ...);
+
+void
+mono_error_set_exception_instance (MonoError *error, MonoException *exc);
 
 void
 mono_error_set_from_loader_error (MonoError *error);
