@@ -169,7 +169,7 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     {
         SIZE_T *pLoc = (SIZE_T *)saveLoc.u.addr;
         // Filter out fake save locations that point to unwContext 
-        if ((pLoc < (SIZE_T *)unwContext) || ((SIZE_T *)(unwContext + 1) <= pLoc))
+        if (unwContext == NULL || (pLoc < (SIZE_T *)unwContext) || ((SIZE_T *)(unwContext + 1) <= pLoc))
             *contextPointer = (SIZE_T *)saveLoc.u.addr;
     }
 #endif
@@ -483,7 +483,6 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
     LockHolder lockHolder(&lock.cs);
 
     int st;
-    unw_context_t unwContext;
     unw_cursor_t cursor;
     unw_addr_space_t addrSpace = 0;
     void *libunwindUptPtr = NULL;
@@ -491,7 +490,7 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 
     LibunwindCallbacksInfo.Context = context;
     LibunwindCallbacksInfo.readMemCallback = readMemCallback;
-    WinContextToUnwindContext(context, &unwContext);
+
     addrSpace = unw_create_addr_space(&unwind_accessors, 0);
 #ifdef HAVE_LIBUNWIND_PTRACE    
     libunwindUptPtr = _UPT_create(pid);
@@ -514,7 +513,7 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 
     if (contextPointers != NULL)
     {
-        GetContextPointers(&cursor, &unwContext, contextPointers);
+        GetContextPointers(&cursor, NULL, contextPointers);
     }
     result = TRUE;
 
