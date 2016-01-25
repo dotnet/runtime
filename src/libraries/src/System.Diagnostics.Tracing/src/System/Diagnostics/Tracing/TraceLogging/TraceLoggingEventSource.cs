@@ -1,6 +1,9 @@
-// Copyright (c) Microsoft Corporation.  All rights reserved
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
+
 #define FEATURE_MANAGED_ETW
 
 #if !ES_BUILD_STANDALONE
@@ -15,16 +18,6 @@
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-#else
-#if PROJECTN
-using NativeInterop = Interop.mincore;
-using ManifestEtw = Interop.mincore;
-using Win32Interop = Interop.mincore;
-#else
-using NativeInterop = UnsafeNativeMethods;
-using ManifestEtw = UnsafeNativeMethods.ManifestEtw;
-using Win32Interop = Win32Native;
-#endif
 #endif
 
 using System;
@@ -482,6 +475,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     this.WriteEventRaw(
+                        eventName,
                         ref descriptor,
                         activityID,
                         childActivityID,
@@ -592,6 +586,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     this.WriteEventRaw(
+                        eventName,
                         ref descriptor,
                         activityID,
                         childActivityID,
@@ -674,6 +669,7 @@ namespace System.Diagnostics.Tracing
                             info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(data));
 
                             this.WriteEventRaw(
+                                eventName,
                                 ref descriptor,
                                 pActivityId,
                                 pRelatedActivityId,
@@ -693,7 +689,7 @@ namespace System.Diagnostics.Tracing
                             if (ex is EventSourceException)
                                 throw;
                             else
-                                ThrowEventSourceException(ex);
+                                ThrowEventSourceException(eventName, ex);
                         }
                         finally
                         {
@@ -707,7 +703,7 @@ namespace System.Diagnostics.Tracing
                 if (ex is EventSourceException)
                     throw;
                 else
-                    ThrowEventSourceException(ex);
+                    ThrowEventSourceException(eventName, ex);
             }
         }
 
@@ -716,8 +712,9 @@ namespace System.Diagnostics.Tracing
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
-            eventCallbackArgs.m_keywords = (EventKeywords)eventDescriptor.Keywords;
-            eventCallbackArgs.m_opcode = (EventOpcode)eventDescriptor.Opcode;
+            eventCallbackArgs.m_level = (EventLevel) eventDescriptor.Level;
+            eventCallbackArgs.m_keywords = (EventKeywords) eventDescriptor.Keywords;
+            eventCallbackArgs.m_opcode = (EventOpcode) eventDescriptor.Opcode;
             eventCallbackArgs.m_tags = tags;
 
             // Self described events do not have an id attached. We mark it internally with -1.
@@ -731,7 +728,7 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DisptachToAllListeners(-1, pActivityId, eventCallbackArgs);
+            DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
         }
 
 #if (!ES_BUILD_PCL && !PROJECTN)
@@ -773,11 +770,7 @@ namespace System.Diagnostics.Tracing
                             }
                             else
                             {
-#if PROJECTN
-                                throw new ArgumentException(SR.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
-#else
-                                throw new ArgumentException(Environment.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
-#endif
+                                throw new ArgumentException(Resources.GetResourceString("UnknownEtwTrait", etwTrait), "traits");
                             }
                         }
                         string value = m_traits[i + 1];
@@ -815,32 +808,24 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 1; i < value.Length; i++)
                 {
-                    if (value[i] != ' ')        // Skp spaces between bytes.  
+                    if (value[i] != ' ')        // Skip spaces between bytes.  
                     {
                         if (!(i + 1 < value.Length))
                         {
-#if PROJECTN
-                            throw new ArgumentException(SR.GetResourceString("EvenHexDigits", null), "traits");
-#else
-                            throw new ArgumentException(Environment.GetResourceString("EvenHexDigits"), "traits");
-#endif
+                            throw new ArgumentException(Resources.GetResourceString("EvenHexDigits"), "traits");
                         }
                         metaData.Add((byte)(HexDigit(value[i]) * 16 + HexDigit(value[i + 1])));
                         i++;
                     }
                 }
             }
-            else if (' ' <= firstChar)      // Is it alphabetic (excludes digits and most punctuation. 
+            else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation). 
             {
                 metaData.AddRange(Encoding.UTF8.GetBytes(value));
             }
             else
             {
-#if PROJECTN
-                throw new ArgumentException(SR.GetResourceString("IllegalValue", value), "traits");
-#else
-                throw new ArgumentException(Environment.GetResourceString("IllegalValue", value), "traits");
-#endif
+                throw new ArgumentException(Resources.GetResourceString("IllegalValue", value), "traits");
             }
 
             return metaData.Count - startPos;
@@ -863,11 +848,8 @@ namespace System.Diagnostics.Tracing
             {
                 return (c - 'A' + 10);
             }
-#if PROJECTN
-            throw new ArgumentException(SR.Format("BadHexDigit", c), "traits");
-#else
-            throw new ArgumentException(Environment.GetResourceString("BadHexDigit", c), "traits");
-#endif
+            
+            throw new ArgumentException(Resources.GetResourceString("BadHexDigit", c), "traits");
         }
 
         private NameInfo UpdateDescriptor(

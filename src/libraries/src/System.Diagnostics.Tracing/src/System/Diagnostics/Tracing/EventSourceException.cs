@@ -1,14 +1,8 @@
-// ==++==
-// 
-//   Copyright (c) Microsoft Corporation.  All rights reserved.
-// 
-// ==--==
-/*============================================================
-**
-** File: EventSourceException.cs
-** 
-============================================================*/
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
+using System.Runtime.Serialization;
 
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
@@ -32,11 +26,7 @@ namespace System.Diagnostics.Tracing
         /// Initializes a new instance of the EventSourceException class.
         /// </summary>
         public EventSourceException() :
-#if PROJECTN
-            base(SR.GetResourceString("EventSource_ListenerWriteFailure", "EventSource_ListenerWriteFailure")) { }
-#else
-            base(Environment.GetResourceString("EventSource_ListenerWriteFailure")) { }
-#endif
+            base(Resources.GetResourceString("EventSource_ListenerWriteFailure")) { }
 
         /// <summary>
         /// Initializes a new instance of the EventSourceException class with a specified error message.
@@ -57,10 +47,6 @@ namespace System.Diagnostics.Tracing
 #endif
 
         internal EventSourceException(Exception innerException) :
-#if PROJECTN
-            base(SR.GetResourceString("EventSource_ListenerWriteFailure", "EventSource_ListenerWriteFailure"), innerException) { }
-#else
-            base(Environment.GetResourceString("EventSource_ListenerWriteFailure"), innerException) { }
-#endif
+            base(Resources.GetResourceString("EventSource_ListenerWriteFailure"), innerException) { }
     }
 }
