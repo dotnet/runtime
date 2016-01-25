@@ -1187,14 +1187,12 @@ static guint64 stat_drain_loops;
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
-#undef COPY_OR_MARK_WITH_EVACUATION
 #define COPY_OR_MARK_CONCURRENT
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent_no_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent_no_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_no_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
-#undef COPY_OR_MARK_CONCURRENT
 #define COPY_OR_MARK_CONCURRENT_WITH_EVACUATION
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent_with_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent_with_evacuation
