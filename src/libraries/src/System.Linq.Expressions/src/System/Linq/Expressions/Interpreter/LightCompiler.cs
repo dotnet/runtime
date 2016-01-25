@@ -2179,6 +2179,28 @@ namespace System.Linq.Expressions.Interpreter
             CompileAddress(node, -1);
         }
 
+        private static bool ShouldWritebackNode(Expression node)
+        {
+            if (node.Type.GetTypeInfo().IsValueType)
+            {
+                switch (node.NodeType)
+                {
+                    case ExpressionType.Parameter:
+                    case ExpressionType.Call:
+                    case ExpressionType.ArrayIndex:
+                        return true;
+                    case ExpressionType.Index:
+                        return ((IndexExpression)node).Object.Type.IsArray;
+                    case ExpressionType.MemberAccess:
+                        return ((MemberExpression)node).Member is FieldInfo;
+                    // ExpressionType.Unbox does have the behaviour write-back is used to simulate, but
+                    // it doesn't need explicit write-back to produce it, so include it in the default
+                    // false cases.
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// Emits the address of the specified node.  
         /// </summary>
@@ -2187,115 +2209,108 @@ namespace System.Linq.Expressions.Interpreter
         /// <returns></returns>
         private ByRefUpdater CompileAddress(Expression node, int index)
         {
-            switch (node.NodeType)
+            if (index != -1 || ShouldWritebackNode(node))
             {
-                case ExpressionType.Parameter:
-                    LoadLocalNoValueTypeCopy((ParameterExpression)node);
+                switch (node.NodeType)
+                {
+                    case ExpressionType.Parameter:
+                        LoadLocalNoValueTypeCopy((ParameterExpression)node);
 
-                    return new ParameterByRefUpdater(ResolveLocal((ParameterExpression)node), index);
-                case ExpressionType.ArrayIndex:
-                    BinaryExpression array = (BinaryExpression)node;
+                        return new ParameterByRefUpdater(ResolveLocal((ParameterExpression)node), index);
+                    case ExpressionType.ArrayIndex:
+                        BinaryExpression array = (BinaryExpression)node;
 
-                    return CompileArrayIndexAddress(array.Left, array.Right, index);
-                case ExpressionType.Index:
-                    var indexNode = (IndexExpression)node;
-                    if (/*!TypeUtils.AreEquivalent(type, node.Type) || */indexNode.Indexer != null)
-                    {
-                        LocalDefinition? objTmp = null;
-                        if (indexNode.Object != null)
+                        return CompileArrayIndexAddress(array.Left, array.Right, index);
+                    case ExpressionType.Index:
+                        var indexNode = (IndexExpression)node;
+                        if (/*!TypeUtils.AreEquivalent(type, node.Type) || */indexNode.Indexer != null)
                         {
-                            Compile(indexNode.Object);
-                            objTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Object.Type), _instructions.Count);
+                            LocalDefinition? objTmp = null;
+                            if (indexNode.Object != null)
+                            {
+                                Compile(indexNode.Object);
+                                objTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Object.Type), _instructions.Count);
+                                _instructions.EmitDup();
+                                _instructions.EmitStoreLocal(objTmp.Value.Index);
+                            }
+
+                            List<LocalDefinition> indexLocals = new List<LocalDefinition>();
+                            for (int i = 0; i < indexNode.Arguments.Count; i++)
+                            {
+                                Compile(indexNode.Arguments[i]);
+
+                                var argTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Arguments[i].Type), _instructions.Count);
+                                _instructions.EmitDup();
+                                _instructions.EmitStoreLocal(argTmp.Index);
+
+                                indexLocals.Add(argTmp);
+                            }
+
+                            EmitIndexGet(indexNode);
+
+                            return new IndexMethodByRefUpdater(objTmp, indexLocals.ToArray(), indexNode.Indexer.GetSetMethod(), index);
+                        }
+                        else if (indexNode.Arguments.Count == 1)
+                        {
+                            return CompileArrayIndexAddress(indexNode.Object, indexNode.Arguments[0], index);
+                        }
+                        else
+                        {
+                            return CompileMultiDimArrayAccess(indexNode.Object, indexNode.Arguments, index);
+                        }
+                    case ExpressionType.MemberAccess:
+                        var member = (MemberExpression)node;
+
+                        LocalDefinition? memberTemp = null;
+                        if (member.Expression != null)
+                        {
+                            memberTemp = _locals.DefineLocal(Expression.Parameter(member.Expression.Type, "member"), _instructions.Count);
+                            EmitThisForMethodCall(member.Expression);
                             _instructions.EmitDup();
-                            _instructions.EmitStoreLocal(objTmp.Value.Index);
+                            _instructions.EmitStoreLocal(memberTemp.Value.Index);
                         }
 
-                        List<LocalDefinition> indexLocals = new List<LocalDefinition>();
-                        for (int i = 0; i < indexNode.Arguments.Count; i++)
+                        FieldInfo field = member.Member as FieldInfo;
+                        if (field != null)
                         {
-                            Compile(indexNode.Arguments[i]);
-
-                            var argTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Arguments[i].Type), _instructions.Count);
-                            _instructions.EmitDup();
-                            _instructions.EmitStoreLocal(argTmp.Index);
-
-                            indexLocals.Add(argTmp);
+                            _instructions.EmitLoadField(field);
+                            if (!field.IsLiteral && !field.IsInitOnly)
+                            {
+                                return new FieldByRefUpdater(memberTemp, field, index);
+                            }
+                            return null;
                         }
-
-                        EmitIndexGet(indexNode);
-
-                        return new IndexMethodByRefUpdater(objTmp, indexLocals.ToArray(), indexNode.Indexer.GetSetMethod(), index);
-                    }
-                    else if (indexNode.Arguments.Count == 1)
-                    {
-                        return CompileArrayIndexAddress(indexNode.Object, indexNode.Arguments[0], index);
-                    }
-                    else
-                    {
-                        return CompileMultiDimArrayAccess(indexNode.Object, indexNode.Arguments, index);
-                    }
-                case ExpressionType.MemberAccess:
-                    var member = (MemberExpression)node;
-
-                    LocalDefinition? memberTemp = null;
-                    if (member.Expression != null)
-                    {
-                        memberTemp = _locals.DefineLocal(Expression.Parameter(member.Expression.Type, "member"), _instructions.Count);
-                        EmitThisForMethodCall(member.Expression);
-                        _instructions.EmitDup();
-                        _instructions.EmitStoreLocal(memberTemp.Value.Index);
-                    }
-
-                    FieldInfo field = member.Member as FieldInfo;
-                    if (field != null)
-                    {
-                        _instructions.EmitLoadField(field);
-                        if (!field.IsLiteral && !field.IsInitOnly)
-                        {
-                            return new FieldByRefUpdater(memberTemp, field, index);
-                        }
-                        return null;
-                    }
-                    PropertyInfo property = member.Member as PropertyInfo;
-                    if (property != null)
-                    {
+                        Debug.Assert(member.Member is PropertyInfo);
+                        PropertyInfo property = (PropertyInfo)member.Member;
                         _instructions.EmitCall(property.GetGetMethod(true));
                         if (property.CanWrite)
                         {
                             return new PropertyByRefUpdater(memberTemp, property, index);
                         }
                         return null;
-                    }
-                    throw new InvalidOperationException(String.Format("Address of {0}", node.NodeType));
-                case ExpressionType.Call:
-                    // An array index of a multi-dimensional array is represented by a call to Array.Get,
-                    // rather than having its own array-access node. This means that when we are trying to
-                    // get the address of a member of a multi-dimensional array, we'll be trying to
-                    // get the address of a Get method, and it will fail to do so. Instead, detect
-                    // this situation and replace it with a call to the Address method.
-                    MethodCallExpression call = (MethodCallExpression)node;
-                    if (!call.Method.IsStatic &&
-                        call.Object.Type.IsArray &&
-                        call.Method == call.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
-                    {
-                        return CompileMultiDimArrayAccess(
-                            call.Object,
-                            call.Arguments,
-                            index
-                        );
-                    }
-                    else
-                    {
-                        goto default;
-                    }
-
-                case ExpressionType.Unbox:
-                    Compile(node);
-                    return null;
-                default:
-                    Compile(node);
-                    return null;
+                    case ExpressionType.Call:
+                        // An array index of a multi-dimensional array is represented by a call to Array.Get,
+                        // rather than having its own array-access node. This means that when we are trying to
+                        // get the address of a member of a multi-dimensional array, we'll be trying to
+                        // get the address of a Get method, and it will fail to do so. Instead, detect
+                        // this situation and replace it with a call to the Address method.
+                        MethodCallExpression call = (MethodCallExpression)node;
+                        if (!call.Method.IsStatic &&
+                            call.Object.Type.IsArray &&
+                            call.Method == call.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
+                        {
+                            return CompileMultiDimArrayAccess(
+                                call.Object,
+                                call.Arguments,
+                                index
+                            );
+                        }
+                        break;
+                }
             }
+            // Includes Unbox case as it doesn't need explicit write-back.
+            Compile(node);
+            return null;
         }
 
         private ByRefUpdater CompileMultiDimArrayAccess(Expression array, IList<Expression> arguments, int index)
