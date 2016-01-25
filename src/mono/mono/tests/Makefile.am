@@ -1,6 +1,6 @@
 SUBDIRS = assemblyresolve gc-descriptors
 
-check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform test-process-exit test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload rm-empty-logs
+check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform test-process-exit test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -1406,6 +1406,13 @@ test-appdomain-unload: appdomain-loader.exe appdomain-tester.exe
 	$(RUNTIME) appdomain-loader.exe > appdomain-loader.exe.2.stdout || exit 1;
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) -O=gshared appdomain-loader.exe > appdomain-loader.exe.3.stdout || exit 1;
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) appdomain-loader.exe > appdomain-loader.exe.4.stdout || exit 1;
+
+EXTRA_DIST += console-output.cs console-output.exe.stderr.expected console-output.exe.stdout.expected
+test-console-output: console-output.exe
+	@$(RUNTIME) console-output.exe 1>console-output.exe.stdout
+	@$(RUNTIME) console-output.exe 2>console-output.exe.stderr
+	@diff -w console-output.exe.stdout $(srcdir)/console-output.exe.stdout.expected \
+		&& diff -w console-output.exe.stderr $(srcdir)/console-output.exe.stderr.expected
 
 coreclr-gcstress:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress
