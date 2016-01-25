@@ -44,6 +44,7 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRP
             if(SUCCEEDED(hr))
             {
                 pApplicationContext->SetAppDomainId(dwAppDomainId);
+                pBinder->SetManagedAssemblyLoadContext(NULL);
                 *ppTPABinder = clr::SafeAddRef(pBinder.Extract());
             }
         }
