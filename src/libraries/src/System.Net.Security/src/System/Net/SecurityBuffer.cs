@@ -23,14 +23,17 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecurityBuffer::.ctor", "'offset' out of range.  [" + offset + "]");
                 }
+
                 Debug.Fail("SecurityBuffer::.ctor", "'offset' out of range.  [" + offset + "]");
             }
+
             if (size < 0 || size > (data == null ? 0 : data.Length - offset))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
                 }
+
                 Debug.Fail("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
             }
 
@@ -55,6 +58,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
                 }
+
                 Debug.Fail("SecurityBuffer::.ctor", "'size' out of range.  [" + size + "]");
             }
 

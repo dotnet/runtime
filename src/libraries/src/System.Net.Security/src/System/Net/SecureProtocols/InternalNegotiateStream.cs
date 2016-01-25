@@ -301,12 +301,13 @@ namespace System.Net.Security
                 return 0;
             }
 
-            if ((readBytes == _ReadHeader.Length))
+            if (!(readBytes == _ReadHeader.Length))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.AssertFormat("NegoStream::ProcessHeader()|Frame size must be 4 but received {0} bytes.", readBytes);
                 }
+
                 Debug.Fail("NegoStream::ProcessHeader()|Frame size must be 4 but received " + readBytes + " bytes.");
             }
 
@@ -398,12 +399,13 @@ namespace System.Net.Security
                 return;
             }
 
-            if ((transportResult.AsyncState is AsyncProtocolRequest))
+            if (!(transportResult.AsyncState is AsyncProtocolRequest))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
                 }
+
                 Debug.Fail("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
             }
 
