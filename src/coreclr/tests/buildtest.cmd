@@ -87,7 +87,8 @@ if %__verbosity%==detailed (
 echo %__MsgPrefix%Commencing CoreCLR repo test build
 
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%\"
+set "__TestRootDir=%__RootBinDir%\tests"
+set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 :: We have different managed and native intermediate dirs because the managed bits will include
 :: the configuration information deeper in the intermediates path.
 :: These variables are used by the msbuild project files.
