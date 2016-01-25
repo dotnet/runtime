@@ -2108,7 +2108,7 @@ struct GenTreeLclVar: public GenTreeLclVarCommon
                             DEBUG_ARG(largeNode)),
             gtLclILoffs(ilOffs)
             {
-                assert(OperIsLocal(oper) || OperIsLocalAddr(oper));
+                assert(OperIsLocal(oper));
             }
     
 #if DEBUGGABLE_GENTREE
