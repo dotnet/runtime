@@ -429,6 +429,9 @@ void                Compiler::lvaInitThisPtr(InitVarDscInfo *       varDscInfo)
         noway_assert(varDscInfo->intRegArgNum == 0);
 
         varDsc->lvArgReg  = genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet());
+#if FEATURE_MULTIREG_STRUCT_ARGS
+        varDsc->lvOtherArgReg = REG_NA;
+#endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
@@ -471,6 +474,9 @@ void                Compiler::lvaInitRetBuffArg(InitVarDscInfo *    varDscInfo)
         varDsc->lvSingleDef = 1;
 #endif
         varDsc->lvArgReg  = genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet());
+#if FEATURE_MULTIREG_STRUCT_ARGS
+        varDsc->lvOtherArgReg = REG_NA;
+#endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
@@ -971,6 +977,9 @@ void                Compiler::lvaInitGenericsCtxt(InitVarDscInfo *  varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet());
+#if FEATURE_MULTIREG_STRUCT_ARGS
+            varDsc->lvOtherArgReg = REG_NA;
+#endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
             varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
@@ -1026,6 +1035,9 @@ void                Compiler::lvaInitVarArgsHandle(InitVarDscInfo * varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL);
+#if FEATURE_MULTIREG_STRUCT_ARGS
+            varDsc->lvOtherArgReg = REG_NA;
+#endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
             varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 #ifdef _TARGET_ARM_
