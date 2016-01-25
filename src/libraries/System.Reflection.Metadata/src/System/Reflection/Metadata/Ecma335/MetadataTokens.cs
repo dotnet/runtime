@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Reflection.Metadata.Ecma335
 {
     public static class MetadataTokens
@@ -59,6 +57,21 @@ namespace System.Reflection.Metadata.Ecma335
         /// Returns the metadata token of the specified <paramref name="handle"/> in the context of <paramref name="reader"/>.
         /// </summary>
         /// <returns>Metadata token.</returns>
+        /// <exception cref="NotSupportedException">The operation is not supported for the specified <paramref name="handle"/>.</exception>
+        public static int GetToken(this MetadataReader reader, EntityHandle handle)
+        {
+            if (handle.IsVirtual)
+            {
+                return (int)handle.Type | MapVirtualHandleRowId(reader, handle);
+            }
+
+            return handle.Token;
+        }
+
+        /// <summary>
+        /// Returns the metadata token of the specified <paramref name="handle"/> in the context of <paramref name="reader"/>.
+        /// </summary>
+        /// <returns>Metadata token.</returns>
         /// <exception cref="ArgumentException">
         /// Handle represents a metadata entity that doesn't have a token.
         /// A token can only be retrieved for a metadata table handle or a heap handle of type <see cref="HandleKind.UserString"/>.
@@ -94,7 +107,7 @@ namespace System.Reflection.Metadata.Ecma335
                     throw new NotSupportedException(SR.CantGetOffsetForVirtualHeapHandle);
 
                 default:
-                    throw new ArgumentException(SR.InvalidHandle, "handle");
+                    throw new ArgumentException(SR.InvalidHandle, nameof(handle));
             }
         }
 
@@ -158,6 +171,18 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             return handle.Token;
+        }
+
+        /// <summary>
+        /// Returns the metadata token of the specified <paramref name="handle"/>.
+        /// </summary>
+        /// <returns>
+        /// Metadata token, or 0 if <paramref name="handle"/> can only be interpreted in a context of a specific <see cref="MetadataReader"/>.
+        /// See <see cref="GetToken(MetadataReader, EntityHandle)"/>.
+        /// </returns>
+        public static int GetToken(EntityHandle handle)
+        {
+            return handle.IsVirtual ? 0 : handle.Token;
         }
 
         /// <summary>
@@ -245,7 +270,17 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Creates a handle from a token value.
+        /// Creates an <see cref="Metadata.EntityHandle"/> from a token value.
+        /// </summary>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="tableIndex"/> is not a valid table index.</exception>
+        public static EntityHandle EntityHandle(TableIndex tableIndex, int rowNumber)
+        {
+            return Handle(tableIndex, rowNumber);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Metadata.EntityHandle"/> from a token value.
         /// </summary>
         /// <exception cref="ArgumentException">
         /// <paramref name="tableIndex"/> is not a valid table index.</exception>

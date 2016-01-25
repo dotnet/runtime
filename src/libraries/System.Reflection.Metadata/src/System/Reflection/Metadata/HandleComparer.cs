@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata
         /// Compares two handles.
         /// </summary>
         /// <remarks>
-        /// The order of handles that differ in kind is undefined.
+        /// The order of handles that differ in kind and are not <see cref="EntityHandle"/> is undefined.
         /// Returns 0 if and only if <see cref="Equals(Handle, Handle)"/> returns true.
         /// </remarks>
         public int Compare(Handle x, Handle y)
@@ -54,7 +54,6 @@ namespace System.Reflection.Metadata
         /// Compares two entity handles.
         /// </summary>
         /// <remarks>
-        /// The order of handles that differ in kind is undefined.
         /// Returns 0 if and only if <see cref="Equals(EntityHandle, EntityHandle)"/> returns true.
         /// </remarks>
         public int Compare(EntityHandle x, EntityHandle y)

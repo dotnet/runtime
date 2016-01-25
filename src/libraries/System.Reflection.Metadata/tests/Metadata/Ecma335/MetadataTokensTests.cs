@@ -41,6 +41,9 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         [Fact]
         public void GetToken()
         {
+            Assert.Equal(0x23000001, MetadataTokens.GetToken((Handle)s_assemblyRefHandle));
+            Assert.Equal(0, MetadataTokens.GetToken((Handle)s_virtualAssemblyRefHandle));
+
             Assert.Equal(0x23000001, MetadataTokens.GetToken(s_assemblyRefHandle));
             Assert.Equal(0, MetadataTokens.GetToken(s_virtualAssemblyRefHandle));
             Assert.Equal(0x70000001, MetadataTokens.GetToken(s_userStringHandle));
@@ -53,7 +56,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
-        public void CreateHandle()
+        public void HandleFactories_FromToken()
         {
             Assert.Equal(s_assemblyRefHandle, MetadataTokens.Handle(0x23000001));
             Assert.Equal(s_userStringHandle, MetadataTokens.Handle(0x70000001));
@@ -67,6 +70,26 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7a000001));
             Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7e000001));
             Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7fffffff));
+        }
+
+        [Fact]
+        public void HandleFactories_FromTableIndex()
+        {
+            Assert.Equal(s_assemblyRefHandle, MetadataTokens.Handle(TableIndex.AssemblyRef, 1));
+            Assert.Equal(s_exportedTypeHandle, MetadataTokens.Handle(TableIndex.ExportedType, s_exportedTypeHandle.RowId));
+
+            Assert.Equal(s_assemblyRefHandle, MetadataTokens.EntityHandle(TableIndex.AssemblyRef, 1));
+            Assert.Equal(s_exportedTypeHandle, MetadataTokens.EntityHandle(TableIndex.ExportedType, s_exportedTypeHandle.RowId));
+
+            Assert.Equal(s_userStringHandle, MetadataTokens.Handle((TableIndex)0x70, 1));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x71, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x72, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x73, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x74, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x7a, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x7e, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x7f, 0xffffff));
         }
     }
 }

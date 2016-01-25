@@ -2444,7 +2444,12 @@ namespace System.Reflection.Metadata
         }
     }
 
-    // #UserString heap handle
+    /// <summary>
+    /// #UserString heap handle.
+    /// </summary>
+    /// <remarks>
+    /// The handle is 32-bit wide.
+    /// </remarks>
     public struct UserStringHandle : IEquatable<UserStringHandle>
     {
         // bits:
