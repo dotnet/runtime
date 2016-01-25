@@ -3471,33 +3471,58 @@ namespace System {
             // fall back to reading from the local machine 
             // when the cache is not fully populated               
             if (!cachedData.m_allSystemTimeZonesRead) {
-#if FEATURE_WIN32_REGISTRY
-                result = TryGetTimeZoneByRegistryKey(id, out match, out e);
-#elif PLATFORM_UNIX
-                result = TryGetTimeZoneByFile(id, out match, out e);
-#endif // FEATURE_WIN32_REGISTRY
-
-                if (result == TimeZoneInfoResult.Success) {
-                    if (cachedData.m_systemTimeZones == null)
-                        cachedData.m_systemTimeZones = new Dictionary<string, TimeZoneInfo>();
-
-                    cachedData.m_systemTimeZones.Add(id, match);
-
-                    if (dstDisabled && match.m_supportsDaylightSavingTime) {
-                        // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match.m_id, match.m_baseUtcOffset, match.m_displayName, match.m_standardDisplayName);
-                    }
-                    else {
-                        value = new TimeZoneInfo(match.m_id, match.m_baseUtcOffset, match.m_displayName, match.m_standardDisplayName,
-                                              match.m_daylightDisplayName, match.m_adjustmentRules, false);
-                    }
-                }
-                else {
-                    value = null;
-                }
+                result = TryGetTimeZoneFromLocalMachine(id, dstDisabled, out value, out e, cachedData);
             }
+#if PLATFORM_UNIX
+            // On UNIX, there may be some tzfiles that aren't in the zones.tab file, and thus aren't returned from GetSystemTimeZones().
+            // If a caller asks for one of these zones before calling GetSystemTimeZones(), the time zone is returned successfully. But if
+            // GetSystemTimeZones() is called first, FindSystemTimeZoneById will throw TimeZoneNotFoundException, which is inconsistent.
+            // To fix this, even if m_allSystemTimeZonesRead is true, try reading the tzfile from disk, but don't add the time zone to the
+            // list returned from GetSystemTimeZones(). These time zones will only be available if asked for directly.
+            else {
+                result = TryGetTimeZoneFromLocalMachine(id, dstDisabled, out value, out e, cachedData);
+            }
+#else
             else {
                 result = TimeZoneInfoResult.TimeZoneNotFoundException;
+                value = null;
+            }
+#endif // PLATFORM_UNIX
+
+            return result;
+        }
+
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, bool dstDisabled, out TimeZoneInfo value, out Exception e, CachedData cachedData)
+        {
+            TimeZoneInfoResult result;
+            TimeZoneInfo match;
+
+#if FEATURE_WIN32_REGISTRY
+            result = TryGetTimeZoneByRegistryKey(id, out match, out e);
+#elif PLATFORM_UNIX
+            result = TryGetTimeZoneByFile(id, out match, out e);
+#endif // FEATURE_WIN32_REGISTRY
+
+            if (result == TimeZoneInfoResult.Success)
+            {
+                if (cachedData.m_systemTimeZones == null)
+                    cachedData.m_systemTimeZones = new Dictionary<string, TimeZoneInfo>();
+
+                cachedData.m_systemTimeZones.Add(id, match);
+
+                if (dstDisabled && match.m_supportsDaylightSavingTime)
+                {
+                    // we found a cache hit but we want a time zone without DST and this one has DST data
+                    value = CreateCustomTimeZone(match.m_id, match.m_baseUtcOffset, match.m_displayName, match.m_standardDisplayName);
+                }
+                else
+                {
+                    value = new TimeZoneInfo(match.m_id, match.m_baseUtcOffset, match.m_displayName, match.m_standardDisplayName,
+                                          match.m_daylightDisplayName, match.m_adjustmentRules, false);
+                }
+            }
+            else
+            {
                 value = null;
             }
 
