@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="src\dir.props" />
+  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(NoBuild)' != 'true'" /> 
 
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
@@ -86,6 +87,7 @@ $(_XunitEpilog)
     <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
@@ -113,8 +115,9 @@ $(_XunitEpilog)
     <Reference Include="mscorlib" />
   </ItemGroup>
   <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), helix.targets))\helix.targets" />
   <PropertyGroup>
-     <OutDir>$(XunitWrapperOutputIntermediatedDirBase)\XunitRunner\</OutDir>
+     <OutDir>$(XunitTestBinBase)\$(Category)\</OutDir>
   </PropertyGroup>
 </Project>
         ]]>
@@ -179,6 +182,7 @@ using Xunit%3B
 using System%3B
 using System.Collections.Generic%3B
 using System.Diagnostics%3B
+using System.Reflection%3B
 using CoreclrTestLib%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
@@ -192,16 +196,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
             static _Global()
             {
-                reportBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
-                testBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
+                reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
+                testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
                 coreRoot = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
 
                 if (String.IsNullOrEmpty(reportBase)) {
-                    throw new ArgumentException("Environment variable XunitTestReportDirBase is not set")%3B
+                    reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
                 }
-
-                if (String.IsNullOrEmpty(testBinaryBase)) {
-                    throw new ArgumentException("Environment variable XunitTestBinBase is not set")%3B
+                else
+                {
+                    reportBase = System.IO.Path.GetFullPath(reportBase)%3B
                 }
 
                 if (String.IsNullOrEmpty(coreRoot)) {
@@ -256,7 +260,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                   string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
                   outputFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
                   errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
-                  testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
 
                   if (!_Global.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
