@@ -540,7 +540,7 @@ mono_threads_attach_tools_thread (void)
 	g_assert (!mono_native_tls_get_value (thread_info_key));
 	
 	while (!mono_threads_inited) { 
-		g_usleep (10);
+		mono_thread_info_usleep (10);
 	}
 
 	info = mono_thread_info_attach (&dummy);

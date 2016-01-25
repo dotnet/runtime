@@ -539,7 +539,7 @@ cleanup (void)
 
 	selector_thread_wakeup ();
 	while (io_selector_running)
-		g_usleep (1000);
+		mono_thread_info_usleep (1000);
 
 	mono_coop_mutex_destroy (&threadpool_io->updates_lock);
 	mono_coop_cond_destroy (&threadpool_io->updates_cond);
