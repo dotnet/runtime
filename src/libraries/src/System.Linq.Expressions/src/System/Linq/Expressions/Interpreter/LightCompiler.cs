@@ -1468,6 +1468,26 @@ namespace System.Linq.Expressions.Interpreter
 
             if (node.Cases.All(c => c.TestValues.All(t => t is ConstantExpression)))
             {
+                if (node.Cases.Count == 0)
+                {
+                    // Emit the switch value in case it has side-effects, but as void
+                    // since the value is ignored.
+                    CompileAsVoid(node.SwitchValue);
+
+                    // Now if there is a default body, it happens unconditionally.
+                    if (node.DefaultBody != null)
+                    {
+                        Compile(node.DefaultBody);
+                    }
+                    else
+                    {
+                        // If there are no cases and no default then the type must be void.
+                        // Assert that earlier validation caught any exceptions to that.
+                        Debug.Assert(expr.Type == typeof(void));
+                    }
+                    return;
+                }
+
                 var switchType = System.Dynamic.Utils.TypeExtensions.GetTypeCode(node.SwitchValue.Type);
 
                 if (node.Comparison == null)
