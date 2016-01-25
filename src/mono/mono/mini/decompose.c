@@ -1936,7 +1936,8 @@ mono_local_emulate_ops (MonoCompile *cfg)
 	 * at IR level, instead of inlining the icall wrapper. FIXME
 	 */
 	if (inlined_wrapper) {
-		mono_decompose_long_opts (cfg);
+		if (!COMPILE_LLVM (cfg))
+			mono_decompose_long_opts (cfg);
 		if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
 			mono_local_cprop (cfg);
 	}
