@@ -74,6 +74,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.AssertFormat("SecureChannel#{0}::.ctor()|hostname == null", LoggingHash.HashString(this));
                 }
+
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::.ctor()|hostname == null");
             }
             _hostName = hostname;
@@ -623,6 +624,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("AcquireClientCredentials()|'selectedCert' does not match 'clientCertificate'.");
                 }
+
                 Debug.Fail("AcquireClientCredentials()|'selectedCert' does not match 'clientCertificate'.");
             }
 
@@ -749,6 +751,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("AcquireServerCredentials()|'selectedCert' does not match 'localCertificate'.");
                 }
+
                 Debug.Fail("AcquireServerCredentials()|'selectedCert' does not match 'localCertificate'.");
             }
 
@@ -849,6 +852,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'offset' out of range.");
                 }
+
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException("offset");
             }
@@ -859,6 +863,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'count' out of range.");
                 }
+
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException("count");
             }
@@ -1001,6 +1006,7 @@ namespace System.Net.Security
                         {
                             GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::ProcessHandshakeSuccess", "StreamSizes out of range.");
                         }
+
                         Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::ProcessHandshakeSuccess", "StreamSizes out of range.");
                     }
 
@@ -1073,6 +1079,7 @@ namespace System.Net.Security
                     {
                         GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
                     }
+
                     Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Arguments out of range.");
                 }
 
@@ -1113,6 +1120,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'offset' out of range.");
                 }
+
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException("offset");
             }
@@ -1123,6 +1131,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'count' out of range.");
                 }
+
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException("count");
             }
