@@ -872,7 +872,7 @@ WorkingDir=JIT\Methodical\divrem\div\r8div_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [_il_relgcval_sideeffect.exe_4581]
 RelativePath=JIT\Methodical\tailcall\_il_relgcval_sideeffect\_il_relgcval_sideeffect.exe
 WorkingDir=JIT\Methodical\tailcall\_il_relgcval_sideeffect
@@ -1404,7 +1404,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldadd_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [25param3b_il_d.exe_4201]
 RelativePath=JIT\Methodical\Invoke\25params\25param3b_il_d\25param3b_il_d.exe
 WorkingDir=JIT\Methodical\Invoke\25params\25param3b_il_d
@@ -6514,7 +6514,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldmul_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [unicodeencodinggetpreamble.exe_2345]
 RelativePath=CoreMangLib\cti\system\text\unicodeencoding\UnicodeEncodingGetPreamble\UnicodeEncodingGetPreamble.exe
 WorkingDir=CoreMangLib\cti\system\text\unicodeencoding\UnicodeEncodingGetPreamble
@@ -11204,7 +11204,7 @@ WorkingDir=JIT\Methodical\divrem\div\r4div_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [b48990b.exe_5169]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b48990\b48990b\b48990b.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b48990\b48990b
@@ -11645,7 +11645,7 @@ WorkingDir=JIT\Methodical\divrem\div\r4div_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [box_unbox.exe_2996]
 RelativePath=JIT\Directed\PREFIX\unaligned\4\Box_Unbox\Box_Unbox.exe
 WorkingDir=JIT\Directed\PREFIX\unaligned\4\Box_Unbox
@@ -17210,7 +17210,7 @@ WorkingDir=baseservices\threading\generics\threadstart\GThread24
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;EXPECTED_PASS;DBG_FAIL
 [class04.exe_3129]
 RelativePath=JIT\Generics\Arrays\ConstructedTypes\Jagged\class04\class04.exe
 WorkingDir=JIT\Generics\Arrays\ConstructedTypes\Jagged\class04
@@ -21529,7 +21529,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclflddiv_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [opcodesldarga.exe_1749]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga\OpCodesLdarga.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga
@@ -22544,7 +22544,7 @@ WorkingDir=JIT\Methodical\divrem\div\r8div_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [_il_relrefarg_f4.exe_3943]
 RelativePath=JIT\Methodical\explicit\basic\_il_relrefarg_f4\_il_relrefarg_f4.exe
 WorkingDir=JIT\Methodical\explicit\basic\_il_relrefarg_f4
@@ -23587,7 +23587,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldsub_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [_il_dbgstress2.exe_4532]
 RelativePath=JIT\Methodical\refany\_il_dbgstress2\_il_dbgstress2.exe
 WorkingDir=JIT\Methodical\refany\_il_dbgstress2
@@ -24889,7 +24889,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldsub_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [idictionaryisfixedsize.exe_698]
 RelativePath=CoreMangLib\cti\system\collections\idictionary\IDictionaryIsFixedSize\IDictionaryIsFixedSize.exe
 WorkingDir=CoreMangLib\cti\system\collections\idictionary\IDictionaryIsFixedSize
@@ -26184,7 +26184,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclflddiv_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [stackclear.exe_674]
 RelativePath=CoreMangLib\cti\system\collections\generic\stack\StackClear\StackClear.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\stack\StackClear
@@ -26541,7 +26541,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldmul_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [listindexof1.exe_646]
 RelativePath=CoreMangLib\cti\system\collections\generic\list\ListIndexOf1\ListIndexOf1.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\list\ListIndexOf1
@@ -31728,7 +31728,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\lclfldadd_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2849;DBG_FAIL
 [opcodescall.exe_1692]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCall\OpCodesCall.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCall
@@ -38910,7 +38910,7 @@ WorkingDir=CoreMangLib\cti\system\array\ArrayGetValue2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;REL_FAIL
+Categories=RT;EXPECTED_PASS;REL_FAIL;DBG_FAIL
 [_il_dbgjumper4.exe_4610]
 RelativePath=JIT\Methodical\VT\callconv\_il_dbgjumper4\_il_dbgjumper4.exe
 WorkingDir=JIT\Methodical\VT\callconv\_il_dbgjumper4
