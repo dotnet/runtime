@@ -60,6 +60,13 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<ArrayTypeMismatchException>(() => { Array array = noc.GetAllValues(typeof(String)); });
         }
 
+        [Fact]
+        public static void TestGetAllValues_NullType_Throws()
+        {
+            var nameObjectCollection = new MyNameObjectCollection();
+            Assert.Throws<ArgumentNullException>("type", () => nameObjectCollection.GetAllValues(null));
+        }
+
         void CheckObjArray(Object[] array, MyNameObjectCollection expected)
         {
             if (array.Length != expected.Count)

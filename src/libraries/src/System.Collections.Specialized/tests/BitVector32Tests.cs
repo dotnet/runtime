@@ -462,16 +462,8 @@ namespace System.Collections.Specialized.Tests
             // The next section would be created "off the end"
             //     - the current offset is 30, and the current mask requires more than the remaining 1 bit.
             Assert.InRange(CountBitsRequired(overflow.Mask), 2, 15);
-
-            // In release mode, the check throws an exception if a section would **start** (_not_ end!) off the end of the vector.
-            //    .... this means that it's possible to silently lose bits "off the end" of the vector.
-            // In debug mode, this check is preceded by an assert covering the same condition, causing the original exception to not appear.
-#if DEBUG
-            Exception e = Assert.ThrowsAny<Exception>(() => BitVector32.CreateSection(invalid, overflow));
-            Assert.Equal("DebugAssertException", e.GetType().Name);
-#else
+            
             Assert.Throws<InvalidOperationException>(() => BitVector32.CreateSection(invalid, overflow));
-#endif
         }
 
         [Theory]
@@ -513,6 +505,18 @@ namespace System.Collections.Specialized.Tests
         {
             Assert.Equal(left.GetHashCode(), left.GetHashCode());
             Assert.Equal(left.GetHashCode(), right.GetHashCode());
+        }
+
+        public static void Section_ToStringTest()
+        {
+            Random random = new Random(-55);
+            
+            short maxValue = (short)random.Next(1, short.MaxValue);
+            BitVector32.Section section1 = BitVector32.CreateSection(maxValue);
+            BitVector32.Section section2 = BitVector32.CreateSection(maxValue);
+
+            Assert.Equal(section1.ToString(), section2.ToString());
+            Assert.Equal(section1.ToString(), BitVector32.Section.ToString(section2));
         }
 
         [Fact]
