@@ -9953,8 +9953,8 @@ void* CEEInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method,
 
 /*********************************************************************/
     // return address of fixup area for late-bound N/Direct calls.
-void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
-                                        void **ppIndirection)
+void CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
+                                       CORINFO_CONST_LOOKUP *pLookup)
 {
     CONTRACTL {
         SO_TOLERANT;
@@ -9963,22 +9963,16 @@ void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
     JIT_TO_EE_TRANSITION_LEAF();
 
     MethodDesc* ftn = GetMethod(method);
     _ASSERTE(ftn->IsNDirect());
     NDirectMethodDesc *pMD = (NDirectMethodDesc*)ftn;
 
-    result = (LPVOID)&(pMD->GetWriteableData()->m_pNDirectTarget);
+    pLookup->accessType = IAT_PVALUE;
+    pLookup->addr = (LPVOID)&(pMD->GetWriteableData()->m_pNDirectTarget);
 
     EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
 }
 
 
