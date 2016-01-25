@@ -159,5 +159,92 @@ namespace System.Linq.Expressions.Tests
                 );
             Assert.NotSame(block, new ParameterChangingVisitor().Visit(block));
         }
+
+        [Fact]
+        public static void EmptyBlockCompiled()
+        {
+            var block = Expression.Block();
+            Assert.Equal(typeof(void), block.Type);
+            Action nop = Expression.Lambda<Action>(block).Compile(false);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyBlockIntepreted()
+        {
+            var block = Expression.Block();
+            Assert.Equal(typeof(void), block.Type);
+            Action nop = Expression.Lambda<Action>(block).Compile(true);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyBlockExplicitTypeCompiled()
+        {
+            var block = Expression.Block(typeof(void));
+            Assert.Equal(typeof(void), block.Type);
+            Action nop = Expression.Lambda<Action>(block).Compile(false);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyBlockExplicitTypeInterpreted()
+        {
+            var block = Expression.Block(typeof(void));
+            Assert.Equal(typeof(void), block.Type);
+            Action nop = Expression.Lambda<Action>(block).Compile(true);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyBlockWrongExplicitType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int)));
+        }
+
+        [Fact]
+        public static void EmptyScopeCompiled()
+        {
+            var scope = Expression.Block(new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
+            Assert.Equal(typeof(void), scope.Type);
+            Action nop = Expression.Lambda<Action>(scope).Compile(false);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyScopeIntepreted()
+        {
+            var scope = Expression.Block(new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
+            Assert.Equal(typeof(void), scope.Type);
+            Action nop = Expression.Lambda<Action>(scope).Compile(true);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyScopeExplicitTypeCompiled()
+        {
+            var scope = Expression.Block(typeof(void), new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
+            Assert.Equal(typeof(void), scope.Type);
+            Action nop = Expression.Lambda<Action>(scope).Compile(false);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyScopeExplicitTypeInterpreted()
+        {
+            var scope = Expression.Block(typeof(void), new[] { Expression.Parameter(typeof(int), "x") }, new Expression[0]);
+            Assert.Equal(typeof(void), scope.Type);
+            Action nop = Expression.Lambda<Action>(scope).Compile(true);
+            nop();
+        }
+
+        [Fact]
+        public static void EmptyScopeExplicitWrongType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Block(
+                typeof(int),
+                new[] { Expression.Parameter(typeof(int), "x") },
+                new Expression[0]));
+        }
     }
 }

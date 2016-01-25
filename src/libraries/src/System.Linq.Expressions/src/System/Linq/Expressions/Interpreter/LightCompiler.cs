@@ -492,11 +492,15 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileBlockExpression(Expression expr, bool asVoid)
         {
             var node = (BlockExpression)expr;
-            var end = CompileBlockStart(node);
 
-            var lastExpression = node.Expressions[node.Expressions.Count - 1];
-            Compile(lastExpression, asVoid);
-            CompileBlockEnd(end);
+            if (node.ExpressionCount != 0)
+            {
+                var end = CompileBlockStart(node);
+
+                var lastExpression = node.Expressions[node.Expressions.Count - 1];
+                Compile(lastExpression, asVoid);
+                CompileBlockEnd(end);
+            }
         }
 
         private LocalDefinition[] CompileBlockStart(BlockExpression node)
