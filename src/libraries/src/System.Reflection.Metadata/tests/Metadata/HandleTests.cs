@@ -98,6 +98,7 @@ namespace System.Reflection.Metadata.Tests
             assert(default(MethodDebugInformationHandle), HandleKind.MethodDebugInformation);
             assert(default(LocalScopeHandle), HandleKind.LocalScope);
             assert(default(LocalConstantHandle), HandleKind.LocalConstant);
+            assert(default(LocalVariableHandle), HandleKind.LocalVariable);
             assert(default(ImportScopeHandle), HandleKind.ImportScope);
             assert(default(CustomDebugInformationHandle), HandleKind.CustomDebugInformation);
 

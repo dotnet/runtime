@@ -37,6 +37,7 @@ namespace System.Reflection.Metadata
         Document = (byte)HandleType.Document,
         MethodDebugInformation = (byte)HandleType.MethodDebugInformation,
         LocalScope = (byte)HandleType.LocalScope,
+        LocalVariable = (byte)HandleType.LocalVariable,
         LocalConstant = (byte)HandleType.LocalConstant,
         ImportScope = (byte)HandleType.ImportScope,
         CustomDebugInformation = (byte)HandleType.CustomDebugInformation,
