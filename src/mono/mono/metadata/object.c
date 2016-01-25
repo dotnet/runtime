@@ -4471,14 +4471,6 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 }
 
-static void
-arith_overflow (void)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	mono_raise_exception (mono_get_exception_overflow ());
-}
-
 /**
  * mono_object_new:
  * @klass: the class of the object that we want to create
@@ -4841,6 +4833,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoArray *o;
 	uintptr_t size, i;
 	uintptr_t *sizes;
@@ -4848,7 +4841,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 
 	if (array->bounds == NULL) {
 		size = mono_array_length (array);
-		o = mono_array_new_full (domain, klass, &size, NULL);
+		o = mono_array_new_full_checked (domain, klass, &size, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		size *= mono_array_element_size (klass);
 #ifdef HAVE_SGEN_GC
@@ -4873,7 +4867,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		size *= array->bounds [i].length;
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
-	o = mono_array_new_full (domain, klass, sizes, (intptr_t*)sizes + klass->rank);
+	o = mono_array_new_full_checked (domain, klass, sizes, (intptr_t*)sizes + klass->rank, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
@@ -4956,6 +4951,16 @@ mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res)
 MonoArray*
 mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds)
 {
+	MonoError error;
+	MonoArray *array = mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, &error);
+	mono_error_raise_exception (&error);
+
+	return array;
+}
+
+MonoArray*
+mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	uintptr_t byte_len = 0, len, bounds_size;
@@ -4965,6 +4970,8 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	MonoVTable *vtable;
 	int i;
 
+	mono_error_init (error);
+
 	if (!array_class->inited)
 		mono_class_init (array_class);
 
@@ -4973,31 +4980,43 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	/* A single dimensional array with a 0 lower bound is the same as an szarray */
 	if (array_class->rank == 1 && ((array_class->byval_arg.type == MONO_TYPE_SZARRAY) || (lower_bounds && lower_bounds [0] == 0))) {
 		len = lengths [0];
-		if (len > MONO_ARRAY_MAX_INDEX)//MONO_ARRAY_MAX_INDEX
-			arith_overflow ();
+		if (len > MONO_ARRAY_MAX_INDEX) {
+			mono_error_set_generic_error (error, "System", "OverflowException", "");
+			return NULL;
+		}
 		bounds_size = 0;
 	} else {
 		bounds_size = sizeof (MonoArrayBounds) * array_class->rank;
 
 		for (i = 0; i < array_class->rank; ++i) {
-			if (lengths [i] > MONO_ARRAY_MAX_INDEX) //MONO_ARRAY_MAX_INDEX
-				arith_overflow ();
-			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
-				mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+			if (lengths [i] > MONO_ARRAY_MAX_INDEX) {
+				mono_error_set_generic_error (error, "System", "OverflowException", "");
+				return NULL;
+			}
+			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i])) {
+				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
+				return NULL;
+			}
 			len *= lengths [i];
 		}
 	}
 
-	if (!mono_array_calc_byte_len (array_class, len, &byte_len))
-		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+	if (!mono_array_calc_byte_len (array_class, len, &byte_len)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
+		return NULL;
+	}
 
 	if (bounds_size) {
 		/* align */
-		if (CHECK_ADD_OVERFLOW_UN (byte_len, 3))
-			mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+		if (CHECK_ADD_OVERFLOW_UN (byte_len, 3)) {
+			mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
+			return NULL;
+		}
 		byte_len = (byte_len + 3) & ~3;
-		if (CHECK_ADD_OVERFLOW_UN (byte_len, bounds_size))
-			mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+		if (CHECK_ADD_OVERFLOW_UN (byte_len, bounds_size)) {
+			mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
+			return NULL;
+		}
 		byte_len += bounds_size;
 	}
 	/* 
@@ -5010,8 +5029,10 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	else
 		o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, len);
 
-	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (byte_len);
+	if (G_UNLIKELY (!o)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", byte_len);
+		return NULL;
+	}
 
 	array = (MonoArray*)o;
 
@@ -5066,7 +5087,7 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	uintptr_t byte_len;
 
 	if (G_UNLIKELY (n > MONO_ARRAY_MAX_INDEX)) {
-		arith_overflow ();
+		mono_raise_exception (mono_get_exception_overflow ());
 		return NULL;
 	}
 
