@@ -7867,20 +7867,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
 	g_free (tempbc);
 
-	if (acfg->aot_opts.llvm_only) {
-		/* Use the stock clang from xcode */
-		// FIXME: arch
-		// FIXME: -O2
-		// FIXME: llc/opt flags
-		command = g_strdup_printf ("clang -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
-		//command = g_strdup_printf ("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.3.sdk -Qunused-arguments -miphoneos-version-min=8.2 -arch arm64 -fpic -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
-
-		aot_printf (acfg, "Executing clang: %s\n", command);
-		if (execute_system (command) != 0)
-			return FALSE;
-		return TRUE;
-	}
-
 	/*
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes
 	 * a lot of time, and doesn't seem to save much space.
@@ -7909,7 +7895,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * Here, if 'Earlier' refers to a memset, and Later has no size info, it mistakenly thinks the memset is redundant.
 	 */
 	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -inline-cost -inline -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
-	opts = g_strdup ("");
 #if 1
 	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
 	aot_printf (acfg, "Executing opt: %s\n", command);
@@ -7917,6 +7902,20 @@ emit_llvm_file (MonoAotCompile *acfg)
 		return FALSE;
 #endif
 	g_free (opts);
+
+	if (acfg->aot_opts.llvm_only) {
+		/* Use the stock clang from xcode */
+		// FIXME: arch
+		// FIXME: -O2
+		// FIXME: llc/opt flags
+		command = g_strdup_printf ("clang -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O0 -c -o \"%s\" \"%s.opt.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+		//command = g_strdup_printf ("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.3.sdk -Qunused-arguments -miphoneos-version-min=8.2 -arch arm64 -fpic -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+
+		aot_printf (acfg, "Executing clang: %s\n", command);
+		if (execute_system (command) != 0)
+			return FALSE;
+		return TRUE;
+	}
 
 	if (!acfg->llc_args)
 		acfg->llc_args = g_string_new ("");
