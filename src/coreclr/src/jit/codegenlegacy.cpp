@@ -19684,15 +19684,15 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                 else
                 {
                     noway_assert(callType == CT_USER_FUNC);
-                    
-                    void* pAddr;
-                    addr = compiler->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, (void**)&pAddr);
-                    if (addr != NULL)
+
+                    CORINFO_CONST_LOOKUP lookup;
+                    comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, &lookup);
+                    if (lookup.accessType == IAT_PVALUE)
                     {
 #if CPU_LOAD_STORE_ARCH
                         // Load the address into a register, indirect it and call  through a register
                         indCallReg = regSet.rsGrabReg(RBM_ALLINT);     // Grab an available register to use for the CALL indirection
-                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addr);
+                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)lookup.addr);
                         getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
                         regTracker.rsTrackRegTrash(indCallReg);
                         // Now make the call "call indCallReg"
@@ -19718,12 +19718,14 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                     }
                     else
                     {
+                        assert(lookup.accessType == IAT_PPVALUE);
+
                         // Double-indirection. Load the address into a register
                         // and call indirectly through a register
                         indCallReg = regSet.rsGrabReg(RBM_ALLINT);     // Grab an available register to use for the CALL indirection
 
 #if CPU_LOAD_STORE_ARCH
-                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)pAddr);
+                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)lookup.addr);
                         getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
                         getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
                         regTracker.rsTrackRegTrash(indCallReg);
