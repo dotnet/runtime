@@ -824,6 +824,8 @@ mono_thread_detach
 mono_thread_detach_if_exiting
 mono_thread_exit
 mono_thread_get_main
+mono_thread_get_managed_id
+mono_thread_get_name_utf8
 mono_thread_get_undeniable_exception
 mono_thread_init
 mono_thread_is_foreign

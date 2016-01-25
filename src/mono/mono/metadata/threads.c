@@ -1246,6 +1246,53 @@ mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len)
 	return res;
 }
 
+/*
+ * mono_thread_get_name_utf8:
+ *
+ * Return the name of the thread in UTF-8.
+ * Return NULL if the thread has no name.
+ * The returned memory is owned by the caller.
+ */
+char *
+mono_thread_get_name_utf8 (MonoThread *thread)
+{
+	if (thread == NULL)
+		return NULL;
+
+	MonoInternalThread *internal = thread->internal_thread;
+	if (internal == NULL)
+		return NULL;
+
+	LOCK_THREAD (internal);
+
+	char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
+
+	UNLOCK_THREAD (internal);
+
+	return tname;
+}
+
+/*
+ * mono_thread_get_managed_id:
+ *
+ * Return the Thread.ManagedThreadId value of `thread`.
+ * Returns -1 if `thread` is NULL.
+ */
+int32_t
+mono_thread_get_managed_id (MonoThread *thread)
+{
+	if (thread == NULL)
+		return -1;
+
+	MonoInternalThread *internal = thread->internal_thread;
+	if (internal == NULL)
+		return -1;
+
+	int32_t id = internal->managed_id;
+
+	return id;
+}
+
 MonoString* 
 ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj)
 {
