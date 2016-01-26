@@ -91,8 +91,12 @@ set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%\"
 :: We have different managed and native intermediate dirs because the managed bits will include
 :: the configuration information deeper in the intermediates path.
 :: These variables are used by the msbuild project files.
-set "__NativeTestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%\Native"
-set "__ManagedTestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%\Managed"
+
+if not defined __TestIntermediateDir (
+    set "__TestIntermediateDir=tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+)
+set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDirDir%\Native"
+set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__TestBinDir%"
