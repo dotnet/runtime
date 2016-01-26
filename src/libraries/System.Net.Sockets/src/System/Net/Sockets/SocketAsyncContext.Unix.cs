@@ -615,7 +615,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new AcceptOperation {
                     Event = @event,
@@ -710,7 +710,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ConnectOperation {
                     Event = @event,
@@ -798,7 +798,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveOperation {
                     Event = @event,
@@ -908,7 +908,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveOperation {
                     Event = @event,
@@ -1004,7 +1004,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveMessageFromOperation {
                     Event = @event,
@@ -1124,7 +1124,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new SendOperation {
                     Event = @event,
@@ -1227,7 +1227,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new SendOperation {
                     Event = @event,
