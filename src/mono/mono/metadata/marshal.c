@@ -855,11 +855,15 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	} else {
 		guint len = mono_string_builder_capacity (sb) + 1;
 		gchar *res = (gchar *)mono_marshal_alloc (len * sizeof (gchar), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!mono_error_ok (&error)) {
+			g_free (str_utf16);
+			g_free (tmp);
+			mono_error_raise_exception (&error);
+		}
+
 		g_assert (str_len < len);
 		memcpy (res, tmp, str_len * sizeof (gchar));
 		res[str_len] = '\0';
-
 
 		g_free (str_utf16);
 		g_free (tmp);
@@ -893,7 +897,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 		len = 1;
 
 	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((len + 1) * sizeof (gunichar2), &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_raise_exception (&error);
 
 	str[len] = '\0';
 
