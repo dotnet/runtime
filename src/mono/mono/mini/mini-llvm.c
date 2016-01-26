@@ -4357,7 +4357,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_FCLT_UN:
 		case OP_FCGT:
 		case OP_FCGT_UN:
-		case OP_FCGE: {
+		case OP_FCGE:
+		case OP_FCLE: {
 			CompRelation rel;
 			LLVMValueRef cmp;
 
