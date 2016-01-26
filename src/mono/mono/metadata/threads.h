@@ -39,6 +39,9 @@ extern MONO_API MonoThread *mono_thread_attach (MonoDomain *domain);
 extern MONO_API void mono_thread_detach (MonoThread *thread);
 extern MONO_API void mono_thread_exit (void);
 
+extern MONO_API char   *mono_thread_get_name_utf8 (MonoThread *thread);
+extern MONO_API int32_t mono_thread_get_managed_id (MonoThread *thread);
+
 MONO_API void     mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback func);
 
 extern MONO_API void mono_threads_set_default_stacksize (uint32_t stacksize);
