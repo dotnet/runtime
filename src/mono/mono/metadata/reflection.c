@@ -6834,6 +6834,26 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
+	MonoError error;
+	MonoReflectionMethod *ret = NULL;
+	ret = mono_method_get_object_checked (domain, method, refclass, &error);
+	mono_error_raise_exception (&error);
+	return ret;
+}
+
+/*
+ * mono_method_get_object_checked:
+ * @domain: an app domain
+ * @method: a method
+ * @refclass: the reflected type (can be NULL)
+ * @error: set on error.
+ *
+ * Return an System.Reflection.MonoMethod object representing the method @method.
+ * Returns NULL and sets @error on error.
+ */
+MonoReflectionMethod*
+mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error)
+{
 	/*
 	 * We use the same C representation for methods and constructors, but the type 
 	 * name in C# is different.
@@ -6842,10 +6862,11 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	static MonoClass *System_Reflection_MonoCMethod = NULL;
 	static MonoClass *System_Reflection_MonoGenericMethod = NULL;
 	static MonoClass *System_Reflection_MonoGenericCMethod = NULL;
-	MonoError error;
 	MonoReflectionType *rt;
 	MonoClass *klass;
 	MonoReflectionMethod *ret;
+
+	mono_error_init (error);
 
 	if (method->is_inflated) {
 		MonoReflectionGenericMethod *gret;
@@ -6854,22 +6875,30 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 			refclass = method->klass;
 		CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
 		if ((*method->name == '.') && (!strcmp (method->name, ".ctor") || !strcmp (method->name, ".cctor"))) {
-			if (!System_Reflection_MonoGenericCMethod)
-				System_Reflection_MonoGenericCMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoGenericCMethod");
+			if (!System_Reflection_MonoGenericCMethod) {
+				System_Reflection_MonoGenericCMethod = mono_class_from_name_checked (mono_defaults.corlib, "System.Reflection", "MonoGenericCMethod", error);
+				if (!mono_error_ok (error))
+					goto leave;
+			}
 			klass = System_Reflection_MonoGenericCMethod;
 		} else {
-			if (!System_Reflection_MonoGenericMethod)
-				System_Reflection_MonoGenericMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoGenericMethod");
+			if (!System_Reflection_MonoGenericMethod) {
+				System_Reflection_MonoGenericMethod = mono_class_from_name_checked (mono_defaults.corlib, "System.Reflection", "MonoGenericMethod", error);
+				if (!mono_error_ok (error))
+					goto leave;
+			}
 			klass = System_Reflection_MonoGenericMethod;
 		}
-		gret = (MonoReflectionGenericMethod*)mono_object_new_checked (domain, klass, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		gret = (MonoReflectionGenericMethod*)mono_object_new_checked (domain, klass, error);
+		if (!mono_error_ok (error))
+			goto leave;
 		gret->method.method = method;
 
 		MONO_OBJECT_SETREF (gret, method.name, mono_string_new (domain, method->name));
 
-		rt = mono_type_get_object_checked (domain, &refclass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		rt = mono_type_get_object_checked (domain, &refclass->byval_arg, error);
+		if (!mono_error_ok (error))
+		    goto leave;
 
 		MONO_OBJECT_SETREF (gret, method.reftype, rt);
 
@@ -6881,25 +6910,37 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 
 	CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
 	if (*method->name == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)) {
-		if (!System_Reflection_MonoCMethod)
-			System_Reflection_MonoCMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoCMethod");
+		if (!System_Reflection_MonoCMethod) {
+			System_Reflection_MonoCMethod = mono_class_from_name_checked (mono_defaults.corlib, "System.Reflection", "MonoCMethod", error);
+			if (!mono_error_ok (error))
+				goto leave;
+		}
 		klass = System_Reflection_MonoCMethod;
 	}
 	else {
-		if (!System_Reflection_MonoMethod)
-			System_Reflection_MonoMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoMethod");
+		if (!System_Reflection_MonoMethod) {
+			System_Reflection_MonoMethod = mono_class_from_name_checked (mono_defaults.corlib, "System.Reflection", "MonoMethod", error);
+			if (!mono_error_ok (error))
+				goto leave;
+		}
 		klass = System_Reflection_MonoMethod;
 	}
-	ret = (MonoReflectionMethod*)mono_object_new_checked (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionMethod*)mono_object_new_checked (domain, klass, error);
+	if (!mono_error_ok (error))
+		goto leave;
 	ret->method = method;
 
-	rt = mono_type_get_object_checked (domain, &refclass->byval_arg, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */;
+	rt = mono_type_get_object_checked (domain, &refclass->byval_arg, error);
+	if (!mono_error_ok (error))
+		goto leave;
 
 	MONO_OBJECT_SETREF (ret, reftype, rt);
 
 	CACHE_OBJECT (MonoReflectionMethod *, method, ret, refclass);
+
+leave:
+	g_assert (!mono_error_ok (error));
+	return NULL;
 }
 
 /*
