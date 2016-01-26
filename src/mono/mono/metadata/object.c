@@ -4512,20 +4512,21 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
  * For SGEN, these objects will only be freed at appdomain unload.
  */
 MonoObject *
-mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
+mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoVTable *vtable;
 
+	mono_error_init (error);
+
 	vtable = mono_class_vtable (domain, klass);
-	if (!vtable)
-		return NULL;
+	g_assert (vtable); /* FIXME don't swallow the error */
 
 	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
 
 	if (G_UNLIKELY (!o))
-		mono_gc_out_of_memory (mono_class_instance_size (klass));
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", mono_class_instance_size (klass));
 	else if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
 

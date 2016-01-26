@@ -223,6 +223,7 @@ void
 mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 		   MonoThreadAttachCB attach_cb)
 {
+	MonoError error;
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *klass;
@@ -245,10 +246,12 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_thread_init (start_cb, attach_cb);
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass);
+	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass);
+	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;
@@ -327,11 +330,13 @@ mono_check_corlib_version (void)
 void
 mono_context_init (MonoDomain *domain)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoAppContext *context;
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = (MonoAppContext *) mono_object_new_pinned (domain, klass);
+	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
 	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
