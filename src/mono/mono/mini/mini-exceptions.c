@@ -193,6 +193,18 @@ mono_get_throw_corlib_exception (void)
 	return throw_corlib_exception_func;
 }
 
+/*
+ * mono_get_throw_exception_addr:
+ *
+ *   Return an address which stores the result of
+ * mono_get_throw_exception.
+ */
+gpointer
+mono_get_throw_exception_addr (void)
+{
+	return &throw_exception_func;
+}
+
 static gboolean
 is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 {

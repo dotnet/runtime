@@ -277,13 +277,13 @@ guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	char *tramp_name;
-	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
-	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, ctx_offset, saved_regs_offset;
+	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code, *br_ex_check;
+	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, ex_offset, tramp_offset, ctx_offset, saved_regs_offset;
 	int r11_save_offset, saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
 	gboolean has_caller;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
-	const guint kMaxCodeSize = NACL_SIZE (600, 600*2);
+	const guint kMaxCodeSize = NACL_SIZE (630, 630*2);
 
 #if defined(__native_client_codegen__)
 	const guint kNaClTrampOffset = 17;
@@ -302,6 +302,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	offset += sizeof(mgreg_t);
 	rax_offset = -offset;
+
+	offset += sizeof(mgreg_t);
+	ex_offset = -offset;
 
 	offset += sizeof(mgreg_t);
 	r11_save_offset = -offset;
@@ -540,21 +543,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		amd64_mov_reg_imm (code, AMD64_R11, tramp);
 	}
 	amd64_call_reg (code, AMD64_R11);
-
-	/* Check for thread interruption */
-	/* This is not perf critical code so no need to check the interrupt flag */
-	/* 
-	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
-	 */
 	amd64_mov_membase_reg (code, AMD64_RBP, res_offset, AMD64_RAX, sizeof(mgreg_t));
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
-	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, (guint8*)mono_thread_force_interruption_checkpoint);
-	}
-	amd64_call_reg (code, AMD64_R11);
-
-	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, sizeof(mgreg_t));	
 
 	/* Restore LMF */
 	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
@@ -566,7 +555,52 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * Save rax to the stack, after the leave instruction, this will become part of
 	 * the red zone.
 	 */
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, sizeof(mgreg_t));
 	amd64_mov_membase_reg (code, AMD64_RBP, rax_offset, AMD64_RAX, sizeof(mgreg_t));
+
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	/* 
+	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
+	 */
+	if (aot) {
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint_noraise");
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, (guint8*)mono_thread_force_interruption_checkpoint_noraise);
+	}
+	amd64_call_reg (code, AMD64_R11);
+
+	amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+	br_ex_check = code;
+	amd64_branch8 (code, X86_CC_Z, -1, 1);
+
+	/*
+	 * Exception case:
+	 * We have an exception we want to throw in the caller's frame, so pop
+	 * the trampoline frame and throw from the caller.
+	 */
+	amd64_leave (code);
+	/* We are in the parent frame, the exception is in rax */
+	/*
+	 * EH is initialized after trampolines, so get the address of the variable
+	 * which contains throw_exception, and load it from there.
+	 */
+	if (aot) {
+		/* Not really a jit icall */
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, (guint8*)mono_get_throw_exception_addr ());
+	}
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, sizeof(gpointer));
+	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, sizeof(mgreg_t));
+	/*
+	 * We still have the original return value on the top of the stack, so the
+	 * throw trampoline will use that as the throw site.
+	 */
+	amd64_jump_reg (code, AMD64_R11);
+
+	/* Normal case */
+	mono_amd64_patch (br_ex_check, code);
 
 	/* Restore argument registers, r10 (imt method/rgxtx)
 	   and rax (needed for direct calls to C vararg functions). */
@@ -580,7 +614,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	amd64_leave (code);
 	cfa_offset -= sizeof (mgreg_t);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, AMD64_RSP, cfa_offset);
-
 
 	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
 		/* Load result */

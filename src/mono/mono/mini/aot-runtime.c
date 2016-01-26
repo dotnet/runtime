@@ -4862,6 +4862,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = mono_get_lmf_addr;
 				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint")) {
 					target = mono_thread_force_interruption_checkpoint;
+				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint_noraise")) {
+					target = mono_thread_force_interruption_checkpoint_noraise;
 				} else if (!strcmp (ji->data.name, "mono_exception_from_token")) {
 					target = mono_exception_from_token;
 				} else if (!strcmp (ji->data.name, "mono_throw_exception")) {
@@ -4884,6 +4886,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = debugger_agent_single_step_from_context;
 				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
 					target = debugger_agent_breakpoint_from_context;
+				} else if (!strcmp (ji->data.name, "throw_exception_addr")) {
+					target = mono_get_throw_exception_addr ();
 				} else if (strstr (ji->data.name, "generic_trampoline_")) {
 					target = mono_aot_get_trampoline (ji->data.name);
 				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
