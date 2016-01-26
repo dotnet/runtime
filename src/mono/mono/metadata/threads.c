@@ -4497,20 +4497,6 @@ mono_thread_force_interruption_checkpoint_noraise (void)
 }
 
 /*
- * Performs the interruption of the current thread, if one has been requested.
- * Throw the exception which needs to be thrown, if any.
- */
-void
-mono_thread_force_interruption_checkpoint (void)
-{
-	MonoException *ex;
-
-	ex = mono_thread_interruption_checkpoint_request (TRUE);
-	if (ex)
-		mono_raise_exception (ex);
-}
-
-/*
  * mono_thread_get_and_clear_pending_exception:
  *
  *   Return any pending exceptions for the current thread and clear it as a side effect.
