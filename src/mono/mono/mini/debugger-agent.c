@@ -1078,9 +1078,7 @@ finish_agent_init (gboolean on_startup)
 		}
 	}
 
-	MONO_PREPARE_BLOCKING;
 	transport_connect (agent_config.address);
-	MONO_FINISH_BLOCKING;
 
 	if (!on_startup) {
 		/* Do some which is usually done after sending the VMStart () event */
@@ -1123,6 +1121,8 @@ socket_transport_recv (void *buf, int len)
 	static gint32 last_keepalive;
 	gint32 msecs;
 
+	MONO_PREPARE_BLOCKING;
+
 	do {
 	again:
 		res = recv (fd, (char *) buf + total, len - total, flags);
@@ -1146,6 +1146,9 @@ socket_transport_recv (void *buf, int len)
 			}
 		}
 	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
+
+	MONO_FINISH_BLOCKING;
+
 	return total;
 }
  
@@ -1168,7 +1171,10 @@ set_keepalive (void)
 static int
 socket_transport_accept (int socket_fd)
 {
+	MONO_PREPARE_BLOCKING;
 	conn_fd = accept (socket_fd, NULL, NULL);
+	MONO_FINISH_BLOCKING;
+
 	if (conn_fd == -1) {
 		fprintf (stderr, "debugger-agent: Unable to listen on %d\n", socket_fd);
 	} else {
@@ -1183,9 +1189,14 @@ socket_transport_send (void *data, int len)
 {
 	int res;
 
+	MONO_PREPARE_BLOCKING;
+
 	do {
 		res = send (conn_fd, data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+
+	MONO_FINISH_BLOCKING;
+
 	if (res != len)
 		return FALSE;
 	else
@@ -1302,16 +1313,18 @@ socket_transport_connect (const char *address)
 			tv.tv_usec = agent_config.timeout * 1000;
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
+
+			MONO_PREPARE_BLOCKING;
 			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
+			MONO_FINISH_BLOCKING;
+
 			if (res == 0) {
 				fprintf (stderr, "debugger-agent: Timed out waiting to connect.\n");
 				exit (1);
 			}
 		}
 
-		MONO_PREPARE_BLOCKING;
 		conn_fd = socket_transport_accept (sfd);
-		MONO_FINISH_BLOCKING;
 		if (conn_fd == -1)
 			exit (1);
 
@@ -1330,10 +1343,16 @@ socket_transport_connect (const char *address)
 			if (sfd == -1)
 				continue;
 
-			if (connect (sfd, &sockaddr.addr, sock_len) != -1)
+			MONO_PREPARE_BLOCKING;
+			res = connect (sfd, &sockaddr.addr, sock_len);
+			MONO_FINISH_BLOCKING;
+
+			if (res != -1)
 				break;       /* Success */
 			
+			MONO_PREPARE_BLOCKING;
 			close (sfd);
+			MONO_FINISH_BLOCKING;
 		}
 
 		if (rp == 0) {
@@ -1364,7 +1383,9 @@ socket_transport_close1 (void)
 #else
 	shutdown (conn_fd, SHUT_RD);
 	shutdown (listen_fd, SHUT_RDWR);
+	MONO_PREPARE_BLOCKING;
 	close (listen_fd);
+	MONO_FINISH_BLOCKING;
 #endif
 }
 
@@ -1530,19 +1551,15 @@ transport_handshake (void)
 	
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
-	/* Must use try blocking as this can nest into code that runs blocking */
-	MONO_PREPARE_BLOCKING;
+
 	do {
 		res = transport_send (handshake_msg, strlen (handshake_msg));
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-	MONO_FINISH_BLOCKING;
 
 	g_assert (res != -1);
 
 	/* Read answer */
-	MONO_PREPARE_BLOCKING;
 	res = transport_recv (buf, strlen (handshake_msg));
-	MONO_FINISH_BLOCKING;
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		return FALSE;
@@ -1585,9 +1602,7 @@ stop_debugger_thread (void)
 	if (!inited)
 		return;
 
-	MONO_PREPARE_BLOCKING;
 	transport_close1 ();
-	MONO_FINISH_BLOCKING;
 
 	/* 
 	 * Wait for the thread to exit.
@@ -1604,9 +1619,7 @@ stop_debugger_thread (void)
 		} while (!debugger_thread_exited);
 	}
 
-	MONO_PREPARE_BLOCKING;
 	transport_close2 ();
-	MONO_FINISH_BLOCKING;
 }
 
 static void
@@ -1800,9 +1813,7 @@ send_packet (int command_set, int command, Buffer *data)
 	buffer_add_byte (&buf, command);
 	memcpy (buf.buf + 11, data->buf, data->p - data->buf);
 
-	MONO_PREPARE_BLOCKING;
 	res = transport_send (buf.buf, len);
-	MONO_FINISH_BLOCKING;
 
 	buffer_free (&buf);
 
@@ -1829,9 +1840,7 @@ send_reply_packets (int npackets, ReplyPacket *packets)
 		buffer_add_buffer (&buf, packets [i].data);
 	}
 
-	MONO_PREPARE_BLOCKING;
 	res = transport_send (buf.buf, len);
-	MONO_FINISH_BLOCKING;
 
 	buffer_free (&buf);
 
@@ -9564,9 +9573,7 @@ wait_for_attach (void)
 	}
 
 	/* Block and wait for client connection */
-	MONO_PREPARE_BLOCKING;
 	conn_fd = socket_transport_accept (listen_fd);
-	MONO_FINISH_BLOCKING;
 
 	DEBUG_PRINTF (1, "Accepted connection on %d\n", conn_fd);
 	if (conn_fd == -1) {
@@ -9626,9 +9633,7 @@ debugger_thread (void *arg)
 	}
 	
 	while (!attach_failed) {
-		MONO_PREPARE_BLOCKING;
 		res = transport_recv (header, HEADER_LENGTH);
-		MONO_FINISH_BLOCKING;
 
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH) {
@@ -9663,9 +9668,7 @@ debugger_thread (void *arg)
 		data = (guint8 *)g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
 		{
-			MONO_PREPARE_BLOCKING;
 			res = transport_recv (data, len - HEADER_LENGTH);
-			MONO_FINISH_BLOCKING;
 			if (res != len - HEADER_LENGTH) {
 				DEBUG_PRINTF (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, len - HEADER_LENGTH);
 				break;
