@@ -3940,10 +3940,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 
                 regArgNum = genMapRegNumToRegArgNum(regNum, regType);
                 
-                if ((!doingFloat &&
-                    ((structDesc.eightByteClassifications[slotCounter] == SystemVClassificationTypeInteger) || 
-                     (structDesc.eightByteClassifications[slotCounter] == SystemVClassificationTypeIntegerReference))) ||
-                     (doingFloat && structDesc.eightByteClassifications[slotCounter] == SystemVClassificationTypeSSE))
+                if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
+                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
                 {
                     // Store the reg for the first slot.
                     if (slots == 0)

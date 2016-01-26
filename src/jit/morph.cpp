@@ -3455,12 +3455,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 {
                     for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
                     {
-                        if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeInteger ||
-                            structDesc.eightByteClassifications[i] == SystemVClassificationTypeIntegerReference)
+                        if (structDesc.IsIntegralSlot(i))
                         {
                             structIntRegs++;
                         }
-                        else if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE)
+                        else if (structDesc.IsSseSlot(i))
                         {
                             structFloatRegs++;
                         }
@@ -3552,8 +3551,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 unsigned int curFloatReg = nextFltArgRegNum;
                 for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
                 {
-                    if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeInteger ||
-                        structDesc.eightByteClassifications[i] == SystemVClassificationTypeIntegerReference)
+                    if (structDesc.IsIntegralSlot(i))
                     {
                         if (i == 0)
                         {
@@ -3582,7 +3580,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
                         curIntReg++;
                     }
-                    else if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE)
+                    else if (structDesc.IsSseSlot(i))
                     {
                         if (i == 0)
                         {
