@@ -16,9 +16,11 @@ namespace System.Net.Test.Common
             | SslProtocols.Tls11
             | SslProtocols.Tls12;
 
+#pragma warning disable 0618
         public const SslProtocols UnsupportedSslProtocols =
             SslProtocols.Ssl2
             | SslProtocols.Ssl3;
+#pragma warning restore 0618
 
         public class SupportedSslProtocolsTestData : IEnumerable<object[]>
         {
