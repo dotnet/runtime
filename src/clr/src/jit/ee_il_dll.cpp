@@ -977,14 +977,15 @@ void Compiler::dumpSystemVClassificationType(SystemVClassificationType ct)
 {
     switch (ct)
     {
-    case SystemVClassificationTypeUnknown:              printf("UNKNOWN");          break;
-    case SystemVClassificationTypeStruct:               printf("Struct");           break;
-    case SystemVClassificationTypeNoClass:              printf("NoClass");          break;
-    case SystemVClassificationTypeMemory:               printf("Memory");           break;
-    case SystemVClassificationTypeInteger:              printf("Integer");          break;
-    case SystemVClassificationTypeIntegerReference:     printf("IntegerReference"); break;
-    case SystemVClassificationTypeSSE:                  printf("SSE");              break;
-    default:                                            printf("ILLEGAL");          break;
+    case SystemVClassificationTypeUnknown:              printf("UNKNOWN");              break;
+    case SystemVClassificationTypeStruct:               printf("Struct");               break;
+    case SystemVClassificationTypeNoClass:              printf("NoClass");              break;
+    case SystemVClassificationTypeMemory:               printf("Memory");               break;
+    case SystemVClassificationTypeInteger:              printf("Integer");              break;
+    case SystemVClassificationTypeIntegerReference:     printf("IntegerReference");     break;
+    case SystemVClassificationTypeIntegerByRef:         printf("IntegerByReference");   break;
+    case SystemVClassificationTypeSSE:                  printf("SSE");                  break;
+    default:                                            printf("ILLEGAL");              break;
     }
 }
 #endif // DEBUG
