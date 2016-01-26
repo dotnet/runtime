@@ -75,9 +75,10 @@ bool Disassembler::IsAvailable()
 void Disassembler::StaticInitialize()
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!IsAvailable());
 
 #if USE_COREDISTOOLS_DISASSEMBLER
+    _ASSERTE(!IsAvailable());
+
     // TODO: The 'coredistools' library will eventually be part of a NuGet package, need to be able to load
     // that using appropriate search paths
     LPCWSTR libraryName = MAKEDLLNAME(W("coredistools"));
