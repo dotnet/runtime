@@ -276,12 +276,26 @@ enum SystemVClassificationType : unsigned __int8
     SystemVClassificationTypeMemory             = 3,
     SystemVClassificationTypeInteger            = 4,
     SystemVClassificationTypeIntegerReference   = 5,
-    SystemVClassificationTypeSSE                = 6,
+    SystemVClassificationTypeIntegerByRef       = 6,
+    SystemVClassificationTypeSSE                = 7,
     // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-    SystemVClassificationTypeMAX = 7,
+
+    // Internal flags - never returned outside of the classification implementation.
+
+    // This value represents a very special type with two eightbytes. 
+    // First ByRef, second Integer (platform int).
+    // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
+    // This is the classification counterpart for that element type. It is used to detect 
+    // the special TypedReference type and specialize its classification.
+    // This type is represented as a struct with two fields. The classification needs to do
+    // special handling of it since the source/methadata type of the fieds is IntPtr. 
+    // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
+    // special handling is warranted (similar thing is done in the getGCLayout function for this type).
+    SystemVClassificationTypeTypedReference     = 8,
+    SystemVClassificationTypeMAX                = 9,
 };
 
 // Represents classification information for a struct.
@@ -298,6 +312,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     unsigned __int8             eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];           // The size of the eightbytes (an eightbyte could include padding. This represents the no padding size of the eightbyte).
     unsigned __int8             eightByteOffsets[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];         // The start offset of the eightbytes (in bytes).
 
+    // Members
 
     //------------------------------------------------------------------------
     // CopyFrom: Copies a struct classification into this one.
@@ -318,7 +333,40 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
         }
     }
 
-    // Members
+    //------------------------------------------------------------------------
+    // IsIntegralSlot: Returns whether the eightbyte at slotIndex is of integral type.
+    //
+    // Arguments:
+    //    'slotIndex' the slot number we are determining if it is of integral type.
+    //
+    // Return value:
+    //     returns true if we the eightbyte at index slotIndex is of integral type.
+    // 
+
+    bool IsIntegralSlot(unsigned slotIndex) const
+    {
+        return ((eightByteClassifications[slotIndex] == SystemVClassificationTypeInteger) ||
+                (eightByteClassifications[slotIndex] == SystemVClassificationTypeIntegerReference) ||
+                (eightByteClassifications[slotIndex] == SystemVClassificationTypeIntegerByRef));
+    }
+
+    //------------------------------------------------------------------------
+    // IsSseSlot: Returns whether the eightbyte at slotIndex is SSE type.
+    //
+    // Arguments:
+    //    'slotIndex' the slot number we are determining if it is of SSE type.
+    //
+    // Return value:
+    //     returns true if we the eightbyte at index slotIndex is of SSE type.
+    // 
+    // Follows the rules of the AMD64 System V ABI specification at www.x86-64.org/documentation/abi.pdf.
+    // Please reffer to it for definitions/examples.
+    //
+    bool IsSseSlot(unsigned slotIndex) const
+    {
+        return (eightByteClassifications[slotIndex] == SystemVClassificationTypeSSE);
+    }
+
 private:
     void Initialize()
     {
