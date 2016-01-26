@@ -378,10 +378,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Check for interruptions */
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_interruption_checkpoint_from_trampoline");
 		x86_call_reg (code, X86_EAX);
 	} else {
-		x86_call_code (code, (guint8*)mono_thread_force_interruption_checkpoint);
+		x86_call_code (code, (guint8*)mono_interruption_checkpoint_from_trampoline);
 	}
 
 	/* Restore LMF */

@@ -256,7 +256,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* This is not perf critical code so no need to check the interrupt flag */
 	ia64_mov (code, l2, IA64_R8);
 
-	tramp = (guint8*)mono_thread_force_interruption_checkpoint;
+	tramp = (guint8*)mono_interruption_checkpoint_from_trampoline;
 	ia64_movl (code, l0, tramp);
 	ia64_ld8_inc_imm (code, l1, l0, 8);
 	ia64_mov_to_br (code, IA64_B6, l1);

@@ -18,6 +18,7 @@
 
 #include "jit-icalls.h"
 #include <mono/utils/mono-error-internals.h>
+#include <mono/metadata/threads-types.h>
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
@@ -1716,4 +1717,23 @@ mono_llvmonly_get_calling_assembly (void)
 	if (!jit_tls->calling_image)
 		mono_raise_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
 	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), jit_tls->calling_image->assembly);
+}
+
+/*
+ * mono_interruption_checkpoint_from_trampoline:
+ *
+ *   Check whenever the thread has a pending exception, and throw it
+ * if needed.
+ * Architectures should move away from calling this function and
+ * instead call mono_thread_force_interruption_checkpoint_noraise (),
+ * rewrind to the parent frame, and throw the exception normally.
+ */
+void
+mono_interruption_checkpoint_from_trampoline (void)
+{
+	MonoException *ex;
+
+	ex = mono_thread_force_interruption_checkpoint_noraise ();
+	if (ex)
+		mono_raise_exception (ex);
 }

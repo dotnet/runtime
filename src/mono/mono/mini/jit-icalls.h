@@ -186,6 +186,8 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 void
 mono_generic_class_init (MonoVTable *vtable);
 
+void mono_interruption_checkpoint_from_trampoline (void);
+
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
 

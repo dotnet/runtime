@@ -379,7 +379,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
 	 */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
+		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_interruption_checkpoint_from_trampoline");
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
@@ -389,11 +389,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #ifdef USE_JUMP_TABLES
 		gpointer *jte = mono_jumptable_add_entry ();
 		code = mono_arm_load_jumptable_entry (code, jte, ARMREG_IP);
-		jte [0] = mono_thread_force_interruption_checkpoint;
+		jte [0] = mono_interruption_checkpoint_from_trampoline;
 #else
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
-		*(gpointer*)code = mono_thread_force_interruption_checkpoint;
+		*(gpointer*)code = mono_interruption_checkpoint_from_trampoline;
 		code += 4;
 #endif
 	}
