@@ -46,7 +46,7 @@
 #include <mono/utils/checked-build.h>
 
 static gboolean is_usertype (MonoReflectionType *ref);
-static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type);
+static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
 
 typedef struct {
 	char *p;
@@ -170,7 +170,7 @@ static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffe
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
-static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type);
+static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
 static gboolean is_sre_array (MonoClass *klass);
 static gboolean is_sre_byref (MonoClass *klass);
 static gboolean is_sre_pointer (MonoClass *klass);
@@ -194,11 +194,16 @@ static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj);
 static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
 static void init_type_builder_generics (MonoObject *type);
 
-#define RESOLVE_TYPE(type) do { type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type); } while (0)
-#define RESOLVE_ARRAY_TYPE_ELEMENT(array, index) do {	\
-	MonoReflectionType *__type = mono_array_get (array, MonoReflectionType*, index);	\
-	__type = mono_reflection_type_resolve_user_types (__type);	\
-	mono_array_set (arr, MonoReflectionType*, index, __type);	\
+#define RESOLVE_TYPE(type) do {						\
+	MonoError __error;						\
+	type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type, &__error); \
+	mono_error_raise_exception (&__error); /* FIXME don't raise here */ \
+} while (0)
+#define RESOLVE_ARRAY_TYPE_ELEMENT(array, index, error) do {		\
+	MonoReflectionType *__type = mono_array_get (array, MonoReflectionType*, index); \
+	__type = mono_reflection_type_resolve_user_types (__type, error); \
+	if (mono_error_ok (error))					\
+		mono_array_set (arr, MonoReflectionType*, index, __type); \
 } while (0)
 
 #define mono_type_array_get_and_resolve(array, index) mono_reflection_type_get_handle ((MonoReflectionType*)mono_array_get (array, gpointer, index))
@@ -1626,12 +1631,14 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 static void
 reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb)
 {
+	MonoError error;
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
-	rmb->rtype = mono_reflection_type_resolve_user_types ((MonoReflectionType*)mb->rtype);
+	rmb->rtype = mono_reflection_type_resolve_user_types ((MonoReflectionType*)mb->rtype, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = mb->generic_params;
 	rmb->generic_container = mb->generic_container;
@@ -9909,15 +9916,18 @@ is_usertype (MonoReflectionType *ref)
 }
 
 static MonoReflectionType*
-mono_reflection_type_resolve_user_types (MonoReflectionType *type)
+mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error)
 {
+	mono_error_init (error);
 	if (!type || type->type)
 		return type;
 
 	if (is_usertype (type)) {
 		type = mono_reflection_type_get_underlying_system_type (type);
-		if (is_usertype (type))
-			mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported22"));
+		if (is_usertype (type)) {
+			mono_error_set_generic_error (error, "System", "NotSupportedException", "User defined subclasses of System.Type are not yet supported22");
+			return NULL;
+		}
 	}
 
 	return type;
@@ -11749,13 +11759,17 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 static void
 check_array_for_usertypes (MonoArray *arr)
 {
+	MonoError error;
 	int i;
 
 	if (!arr)
 		return;
 
-	for (i = 0; i < mono_array_length (arr); ++i)
-		RESOLVE_ARRAY_TYPE_ELEMENT (arr, i);
+	for (i = 0; i < mono_array_length (arr); ++i) {
+		RESOLVE_ARRAY_TYPE_ELEMENT (arr, i, &error);
+		if (!mono_error_ok (&error))
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
 }
 
 MonoReflectionType*
