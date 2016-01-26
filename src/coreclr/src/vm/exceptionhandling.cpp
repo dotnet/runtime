@@ -4671,8 +4671,18 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
                 // Get the managed frame to continue unwinding from.
                 CONTEXT frameContext;
                 RtlCaptureContext(&frameContext);
+                UINT_PTR currentSP = GetSP(&frameContext);
                 Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
- 
+                UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
+            
+                // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them
+                // using the C++ handling. This is a special case when the UNINSTALL_MANAGED_EXCEPTION_DISPATCHER was
+                // not at the managed to native boundary.
+                if (NativeExceptionHolderBase::FindNextHolder(nullptr, (void*)currentSP, (void*)firstManagedFrameSP) != nullptr)
+                {
+                    break;
+                }
+
                 UnwindManagedExceptionPass2(ex, &frameContext);
             }
             UNREACHABLE();
@@ -4681,8 +4691,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
         {
             ex = ex2;
         }
+
     }
     while (true);
+
+    throw ex;
 }
 
 #ifdef _AMD64_
