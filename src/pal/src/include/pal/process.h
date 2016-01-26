@@ -153,19 +153,6 @@ Return
 --*/
 BOOL InitializeFlushProcessWriteBuffers();
 
-#if HAVE_MACH_EXCEPTIONS
-/*++
-Function:
-  PROCThreadFromMachPort
-  
-  Given a Mach thread port, return the CPalThread associated with it.
-
-Return
-    CPalThread*
---*/
-CorUnix::CPalThread *PROCThreadFromMachPort(mach_port_t hThread);
-#endif // HAVE_MACH_EXCEPTIONS
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
