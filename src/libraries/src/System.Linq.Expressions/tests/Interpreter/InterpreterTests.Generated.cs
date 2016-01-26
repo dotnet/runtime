@@ -180,7 +180,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact(Skip = "4019")]
+        [Fact]
         public static void CompileInterpretCrossCheck_Convert()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact(Skip = "4022")]
+        [Fact]
         public static void CompileInterpretCrossCheck_ConvertChecked()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -1218,8 +1218,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void CompileInterpretCrossCheck_PowerAssign()
+        [Fact]        public static void CompileInterpretCrossCheck_PowerAssign()
         {
             var exprs = default(IEnumerable<Expression>);
             if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PowerAssign, out exprs))

@@ -160,6 +160,11 @@ namespace System.Dynamic.Utils
             return false;
         }
 
+        public static bool IsNumericOrBool(Type type)
+        {
+            return IsNumeric(type) || IsBool(type);
+        }
+
         // Checks if the type is a valid target for an instance call
         public static bool IsValidInstanceType(MemberInfo member, Type instanceType)
         {
