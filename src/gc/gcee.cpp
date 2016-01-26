@@ -421,7 +421,7 @@ BOOL ProfilerShouldTrackConditionalWeakTableElements() {
 #if defined(GC_PROFILING)
     return CORProfilerTrackConditionalWeakTableElements();
 #else
-        return FALSE;
+    return FALSE;
 #endif // defined (GC_PROFILING)
 }
 
