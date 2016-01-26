@@ -746,15 +746,15 @@ void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
     GetExecutionEngine()->TLS_AssociateCallback(slot, callback);
 }
 
-void * __stdcall ClrFlsGetBlockGeneric()
+void ** __stdcall ClrFlsGetBlockGeneric()
 {
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    return GetExecutionEngine()->TLS_GetDataBlock();
+    return (void **) GetExecutionEngine()->TLS_GetDataBlock();
 }
 
-POPTIMIZEDTLSGETTER __ClrFlsGetBlock = (POPTIMIZEDTLSGETTER)ClrFlsGetBlockGeneric;
+CLRFLSGETBLOCK __ClrFlsGetBlock = ClrFlsGetBlockGeneric;
 
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {
