@@ -2764,7 +2764,7 @@ sgen_gc_init (void)
 			return;
 		case -1:
 			/* being inited by another thread */
-			g_usleep (1000);
+			mono_thread_info_usleep (1000);
 			break;
 		case 0:
 			/* we will init it */
