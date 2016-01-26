@@ -11757,18 +11757,18 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 }
 
 static void
-check_array_for_usertypes (MonoArray *arr)
+check_array_for_usertypes (MonoArray *arr, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	int i;
 
 	if (!arr)
 		return;
 
 	for (i = 0; i < mono_array_length (arr); ++i) {
-		RESOLVE_ARRAY_TYPE_ELEMENT (arr, i, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		RESOLVE_ARRAY_TYPE_ELEMENT (arr, i, error);
+		if (!mono_error_ok (error))
+			break;
 	}
 }
 
@@ -11788,14 +11788,17 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * Check for user defined Type subclasses.
 	 */
 	RESOLVE_TYPE (tb->parent);
-	check_array_for_usertypes (tb->interfaces);
+	check_array_for_usertypes (tb->interfaces, &error);
+	mono_error_raise_exception (&error); /*FIXME don't raise here */
 	if (tb->fields) {
 		for (i = 0; i < mono_array_length (tb->fields); ++i) {
 			MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
 			if (fb) {
 				RESOLVE_TYPE (fb->type);
-				check_array_for_usertypes (fb->modreq);
-				check_array_for_usertypes (fb->modopt);
+				check_array_for_usertypes (fb->modreq, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				check_array_for_usertypes (fb->modopt, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
 				if (fb->marshal_info && fb->marshal_info->marshaltyperef)
 					RESOLVE_TYPE (fb->marshal_info->marshaltyperef);
 			}
@@ -11806,15 +11809,22 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)mono_array_get (tb->methods, gpointer, i);
 			if (mb) {
 				RESOLVE_TYPE (mb->rtype);
-				check_array_for_usertypes (mb->return_modreq);
-				check_array_for_usertypes (mb->return_modopt);
-				check_array_for_usertypes (mb->parameters);
+				check_array_for_usertypes (mb->return_modreq, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				check_array_for_usertypes (mb->return_modopt, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				check_array_for_usertypes (mb->parameters, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
 				if (mb->param_modreq)
-					for (j = 0; j < mono_array_length (mb->param_modreq); ++j)
-						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j));
+					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
+						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
+						mono_error_raise_exception (&error); /*FIXME don't raise here */
+					}
 				if (mb->param_modopt)
-					for (j = 0; j < mono_array_length (mb->param_modopt); ++j)
-						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j));
+					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
+						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
+						mono_error_raise_exception (&error); /*FIXME don't raise here */
+					}
 			}
 		}
 	}
@@ -11822,13 +11832,18 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
 			MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)mono_array_get (tb->ctors, gpointer, i);
 			if (mb) {
-				check_array_for_usertypes (mb->parameters);
+				check_array_for_usertypes (mb->parameters, &error);
+				mono_error_raise_exception (&error); /*FIXME don't raise here */
 				if (mb->param_modreq)
-					for (j = 0; j < mono_array_length (mb->param_modreq); ++j)
-						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j));
+					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
+						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
+						mono_error_raise_exception (&error); /*FIXME don't raise here */
+					}
 				if (mb->param_modopt)
-					for (j = 0; j < mono_array_length (mb->param_modopt); ++j)
-						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j));
+					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
+						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
+						mono_error_raise_exception (&error); /*FIXME don't raise here */
+					}
 			}
 		}
 	}
@@ -11999,6 +12014,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 MonoArray *
 mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 {
+	MonoError error;
 	MonoReflectionModuleBuilder *module = sig->module;
 	MonoDynamicImage *assembly = module != NULL ? module->dynamic_image : NULL;
 	guint32 na = sig->arguments ? mono_array_length (sig->arguments) : 0;
@@ -12006,7 +12022,8 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 	MonoArray *result;
 	SigBuffer buf;
 
-	check_array_for_usertypes (sig->arguments);
+	check_array_for_usertypes (sig->arguments, &error);
+	mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 	sigbuffer_init (&buf, 32);
 
@@ -12030,13 +12047,15 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 MonoArray *
 mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 {
+	MonoError error;
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = sig->arguments ? mono_array_length (sig->arguments) : 0;
 	guint32 buflen, i;
 	MonoArray *result;
 	SigBuffer buf;
 
-	check_array_for_usertypes (sig->arguments);
+	check_array_for_usertypes (sig->arguments, &error);
+	mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 	sigbuffer_init (&buf, 32);
 
