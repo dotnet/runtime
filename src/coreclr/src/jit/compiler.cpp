@@ -5737,6 +5737,9 @@ var_types Compiler::GetTypeFromClassificationAndSizes(SystemVClassificationType 
     case SystemVClassificationTypeIntegerReference:
         type = TYP_REF;
         break;
+    case SystemVClassificationTypeIntegerByRef:
+        type = TYP_BYREF;
+        break;
     case SystemVClassificationTypeSSE:
         if (size <= 4)
         {
@@ -5793,6 +5796,10 @@ var_types Compiler::getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
     case SystemVClassificationTypeIntegerReference:
         assert(len == REGSIZE_BYTES);
         eightByteType = TYP_REF;
+        break;
+    case SystemVClassificationTypeIntegerByRef:
+        assert(len == REGSIZE_BYTES);
+        eightByteType = TYP_BYREF;
         break;
     case SystemVClassificationTypeSSE:
         if (structDesc.eightByteSizes[slotNum] <= 4)
