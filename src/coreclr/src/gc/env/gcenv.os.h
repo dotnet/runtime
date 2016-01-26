@@ -257,18 +257,6 @@ public:
     // Return:
     //  Time stamp in milliseconds
     static uint32_t GetLowPrecisionTimeStamp();
-
-    //
-    // File
-    //
-
-    // Open a file
-    // Parameters:
-    //  filename - name of the file to open
-    //  mode     - mode to open the file in (like in the CRT fopen)
-    // Return:
-    //  FILE* of the opened file
-    static FILE* OpenFile(const WCHAR* filename, const WCHAR* mode);
 };
 
 #endif // __GCENV_OS_H__

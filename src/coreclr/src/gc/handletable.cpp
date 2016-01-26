@@ -391,7 +391,7 @@ void ValidateFetchObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
     _ASSERTE(!pDomain->NoAccessToHandleTable());
 
 #if CHECK_APP_DOMAIN_LEAKS
-	if (g_pConfig->AppDomainLeaks() && objref != NULL)
+    if (g_pConfig->AppDomainLeaks() && objref != NULL)
     {
         if (appDomainIndex.m_dwIndex)
             objref->TryAssignAppDomain(pDomain);

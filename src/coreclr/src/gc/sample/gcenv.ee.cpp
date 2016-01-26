@@ -250,7 +250,7 @@ void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
 {
 }
 
-VOID LogSpewAlways(const char * /*fmt*/, ...)
+void LogSpewAlways(const char * /*fmt*/, ...)
 {
 }
 
@@ -282,7 +282,7 @@ uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
     }
 }
 
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal)
+HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, TCHAR * * outVal)
 {
     *outVal = NULL;
     return 0;
