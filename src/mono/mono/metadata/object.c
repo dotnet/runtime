@@ -960,13 +960,11 @@ mono_class_insecure_overlapping (MonoClass *klass)
 #endif
 
 MonoString*
-mono_string_alloc (int length)
+ves_icall_string_alloc (int length)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	MonoError error;
 	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_raise_exception (&error);
 
 	return str;
 }
@@ -985,7 +983,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		mono_loader_lock ();
 
 		mono_register_jit_icall (ves_icall_object_new_fast, "ves_icall_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
-		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
+		mono_register_jit_icall (ves_icall_string_alloc, "ves_icall_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
 		gcj_inited = TRUE;
 		mono_loader_unlock ();
