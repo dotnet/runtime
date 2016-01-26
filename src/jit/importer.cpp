@@ -3097,7 +3097,7 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
         return op1;
 
 
-#ifndef _TARGET_ARM_
+#ifdef _TARGET_XARCH_
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
     case CORINFO_INTRINSIC_InterlockedAdd32:
         interlockedOperator = GT_LOCKADD; goto InterlockedBinOpCommon;
@@ -3135,7 +3135,7 @@ InterlockedBinOpCommon:
         op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
         op1->gtFlags |= GTF_GLOB_EFFECT;
         return op1;
-#endif
+#endif // _TARGET_XARCH_
 
     case CORINFO_INTRINSIC_MemoryBarrier:
 
