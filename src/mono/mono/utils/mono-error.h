@@ -29,7 +29,9 @@ enum {
 	 * This is a generic error mechanism is you need to raise an arbitrary corlib exception.
 	 * You must pass the exception name otherwise prepare_exception will fail with internal execution. 
 	 */
-	MONO_ERROR_GENERIC = 9
+	MONO_ERROR_GENERIC = 9,
+	/* This one encapsulates a managed exception instance */
+	MONO_ERROR_EXCEPTION_INSTANCE = 10
 };
 
 /*Keep in sync with MonoErrorInternal*/
