@@ -13,7 +13,7 @@ namespace System.IO
     {
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
-        // This is used by AsyncFSCallback and all of the async methods.
+        // This is used by IOCallback and all of the async methods.
         unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             private const long NoResult = 0;
@@ -23,40 +23,36 @@ namespace System.IO
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
 
-            private readonly ThreadPoolBoundHandle _handle;
+            private static Action<object> s_cancelCallback;
+
+            private readonly Win32FileStream _stream;
             private readonly int _numBufferedBytes;
             private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationRegistration;
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
 #endif
-
-            // Overlapped class will take care of the async IO operations in progress 
-            // when an appdomain unload occurs.
-            private NativeOverlapped* _overlapped;
-
-            // Using long since this needs to be used in Interlocked APIs
-            private long _result;
-            
-            private unsafe static IOCompletionCallback s_IOCallback;
-
-            private static Action<object> s_cancelCallback;
+            private NativeOverlapped* _overlapped; // Overlapped class responsible for operations in progress when an appdomain unload occurs
+            private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(int numBufferedBytes, byte[] bytes, ThreadPoolBoundHandle handle, CancellationToken cancellationToken)
+            internal FileStreamCompletionSource(Win32FileStream stream, int numBufferedBytes, byte[] bytes, CancellationToken cancellationToken)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
-                _handle = handle;
+                _stream = stream;
                 _result = NoResult;
                 _cancellationToken = cancellationToken;
 
-                // Create a managed overlapped class
-                // We will set the file offsets later
-                var ioCallback = s_IOCallback; // cached static delegate; delay initialized due to it being SecurityCritical
-                if (ioCallback == null) s_IOCallback = ioCallback = new IOCompletionCallback(AsyncFSCallback);
-                _overlapped = handle.AllocateNativeOverlapped(ioCallback, this, bytes);
-                Debug.Assert(_overlapped != null, "Did Overlapped.Pack or Overlapped.UnsafePack just return a null?");
+                // Create the native overlapped. We try to use the preallocated overlapped if possible: 
+                // it's possible if the byte buffer is the same one that's associated with the preallocated overlapped 
+                // and if no one else is currently using the preallocated overlapped.  This is the fast-path for cases 
+                // where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's 
+                // buffer is used) and where operations on the FileStream are not being performed concurrently.
+                _overlapped = ReferenceEquals(bytes, _stream._buffer) && Interlocked.CompareExchange(ref _stream._currentOverlappedOwner, this, null) == null ?
+                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
+                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
+                Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
             internal NativeOverlapped* Overlapped
@@ -109,26 +105,38 @@ namespace System.IO
 
             internal void ReleaseNativeResource()
             {
-                    // Ensure that cancellation has been completed and cleaned up
-                    _cancellationRegistration.Dispose();
+                // Ensure that cancellation has been completed and cleaned up.
+                _cancellationRegistration.Dispose();
 
-                    // Free the overlapped
-                    // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
-                    // (this is why we disposed the registration above)
-                    if (_overlapped != null)
-                    {
-                        _handle.FreeNativeOverlapped(_overlapped);
-                        _overlapped = null;
-                    }
+                // Free the overlapped.
+                // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
+                // (this is why we disposed the registration above).
+                if (_overlapped != null)
+                {
+                    _stream._handle.ThreadPoolBinding.FreeNativeOverlapped(_overlapped);
+                    _overlapped = null;
                 }
+
+                // Ensure we're no longer set as the current completion source (we may not have been to begin with).
+                // Only one operation at a time is eligible to use the preallocated overlapped, 
+                Interlocked.CompareExchange(ref _stream._currentOverlappedOwner, null, this);
+            }
 
             // When doing IO asynchronously (ie, _isAsync==true), this callback is 
             // called by a free thread in the threadpool when the IO operation 
             // completes.  
-            unsafe private static void AsyncFSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+            internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                // Extract async result from overlapped
-                FileStreamCompletionSource completionSource = (FileStreamCompletionSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                // Extract the completion source from the overlapped.  The state in the overlapped
+                // will either be a Win32FileStream (in the case where the preallocated overlapped was used),
+                // in which case the operation being completed is its _currentOverlappedOwner, or it'll
+                // be directly the FileStreamCompletion that's completing (in the case where the preallocated
+                // overlapped was already in use by another operation).
+                object state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                Win32FileStream fs = state as Win32FileStream;
+                FileStreamCompletionSource completionSource = fs != null ? 
+                    fs._currentOverlappedOwner : 
+                    (FileStreamCompletionSource)state;
                 Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
@@ -194,7 +202,8 @@ namespace System.IO
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO
-                if ((!completionSource._handle.Handle.IsInvalid) && (!Interop.mincore.CancelIoEx(completionSource._handle.Handle, completionSource._overlapped)))
+                if (!completionSource._stream._handle.IsInvalid && 
+                    !Interop.mincore.CancelIoEx(completionSource._stream._handle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
