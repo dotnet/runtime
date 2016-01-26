@@ -484,19 +484,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     return true;
 }
 
-// Open a file
-// Parameters:
-//  filename - name of the file to open
-//  mode     - mode to open the file in (like in the CRT fopen)
-// Return:
-//  FILE* of the opened file
-FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return _wfopen(filename, mode);
-}
-
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
 {

@@ -721,7 +721,7 @@
 #endif // FEATURE_CORESYSTEM
 
 #ifndef _T
-#define _T(str) L ## str
+#define _T(str) W(str)
 #endif
 
 

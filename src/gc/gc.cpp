@@ -168,7 +168,7 @@ size_t GetHighPrecisionTimeStamp()
 GCStatistics g_GCStatistics;
 GCStatistics g_LastGCStatistics;
 
-WCHAR* GCStatistics::logFileName = NULL;
+TCHAR* GCStatistics::logFileName = NULL;
 FILE*  GCStatistics::logFile = NULL;
 
 void GCStatistics::AddGCStats(const gc_mechanisms& settings, size_t timeInMSec)
@@ -9507,21 +9507,22 @@ void gc_heap::adjust_ephemeral_limits ()
 FILE* CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
 {
     FILE* logFile;
-    LPWSTR  temp_logfile_name = NULL;
+    TCHAR * temp_logfile_name = NULL;
     CLRConfig::GetConfigValue(info, &temp_logfile_name);
 
-    WCHAR logfile_name[MAX_LONGPATH+1];
+    TCHAR logfile_name[MAX_LONGPATH+1];
     if (temp_logfile_name != 0)
     {
-        wcscpy(logfile_name, temp_logfile_name);
+        _tcscpy(logfile_name, temp_logfile_name);
     }
 
-    size_t logfile_name_len = wcslen(logfile_name);
-    WCHAR* szPid = logfile_name + logfile_name_len;
+    size_t logfile_name_len = _tcslen(logfile_name);
+    TCHAR* szPid = logfile_name + logfile_name_len;
     size_t remaining_space = MAX_LONGPATH + 1 - logfile_name_len;
-    swprintf_s(szPid, remaining_space, W(".%d%s"), GCToOSInterface::GetCurrentProcessId(), (is_config ? W(".config.log") : W(".log")));
 
-    logFile = GCToOSInterface::OpenFile(logfile_name, W("wb"));
+    _stprintf_s(szPid, remaining_space, _T(".%d%s"), GCToOSInterface::GetCurrentProcessId(), (is_config ? _T(".config.log") : _T(".log")));
+
+    logFile = _tfopen(logfile_name, _T("wb"));
 
     delete temp_logfile_name;
 
@@ -9614,9 +9615,8 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     GCStatistics::logFileName = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCMixLog);
     if (GCStatistics::logFileName != NULL)
     {
-        GCStatistics::logFile = GCToOSInterface::OpenFile((LPCWSTR)GCStatistics::logFileName, W("a"));
+        GCStatistics::logFile = _tfopen(GCStatistics::logFileName, _T("a"));
     }
-
 #endif // GC_STATS
 
     HRESULT hres = S_OK;
@@ -14567,7 +14567,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         // Need to get it early enough for all heaps to use.
         available_physical_mem = ms.ullAvailPhys;
         local_settings->entry_memory_load = ms.dwMemoryLoad;
-        
+
         // @TODO: Force compaction more often under GCSTRESS
         if (ms.dwMemoryLoad >= high_memory_load_th || low_memory_detected)
         {
