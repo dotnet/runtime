@@ -19,6 +19,7 @@
 #include "jit-icalls.h"
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/reflection-internals.h>
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
@@ -1733,7 +1734,11 @@ mono_get_assembly_object (MonoImage *image)
 MonoObject*
 mono_get_method_object (MonoMethod *method)
 {
-	return (MonoObject*)mono_method_get_object (mono_domain_get (), method, method->klass);
+	MonoError error;
+	MonoObject * result;
+	result = (MonoObject*)mono_method_get_object_checked (mono_domain_get (), method, method->klass, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 double

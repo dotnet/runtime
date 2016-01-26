@@ -7194,7 +7194,8 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	 */
 	CHECK_OBJECT (MonoArray*, &(method->signature), refclass);
 
-	member = mono_method_get_object (domain, method, refclass);
+	member = mono_method_get_object_checked (domain, method, refclass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 
@@ -9140,6 +9141,7 @@ static MonoObject*
 create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 {
 	static MonoMethod *ctor;
+
 	MonoError error;
 	MonoDomain *domain;
 	MonoObject *attr;
@@ -9153,7 +9155,8 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 	domain = mono_domain_get ();
 	attr = mono_object_new_checked (domain, mono_defaults.customattribute_data_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	params [0] = mono_method_get_object (domain, cattr->ctor, NULL);
+	params [0] = mono_method_get_object_checked (domain, cattr->ctor, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	params [1] = mono_assembly_get_object (domain, image->assembly);
 	params [2] = (gpointer)&cattr->data;
 	params [3] = &cattr->data_size;
@@ -11289,7 +11292,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
 		mono_raise_exception (mono_get_exception_argument ("typeArguments", "Invalid generic arguments"));
 	
-	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
+	MonoReflectionMethod *ret = mono_method_get_object_checked (mono_object_domain (rmethod), inflated, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return ret;
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
