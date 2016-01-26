@@ -6,25 +6,17 @@ namespace System.Data.SqlClient.Tests
     public class ExceptionTest
     {
         // test connection string
-        string conn_string = "server=tcp:server,1432;database=test;uid=admin;pwd=SQLDB;connect timeout=60;";
+        private string connectionString = "server=tcp:server,1432;database=test;uid=admin;pwd=SQLDB;connect timeout=60;";
 
         // data value and server consts
         private const string badServer = "NotAServer";
         private const string sqlsvrBadConn = "A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)";
         private const string execReaderFailedMessage = "ExecuteReader requires an open and available Connection. The connection's current state is closed.";
         private const string orderIdQuery = "select orderid from orders where orderid < 10250";
-
-
-        [Fact]
-        public void RunDataTest()
-        {
-            ExceptionTests(conn_string);
-            IndependentConnectionExceptionTest(conn_string);
-            VariousExceptionTests(conn_string);
-        }
         
 
-        private void ExceptionTests(string connectionString)
+        [Fact]
+        private void ExceptionTests()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
 
@@ -34,7 +26,8 @@ namespace System.Data.SqlClient.Tests
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), sqlsvrBadConn, VerifyException);
         }
 
-        private void VariousExceptionTests(string connectionString)
+        [Fact]
+        private void VariousExceptionTests()
         {
             // Test exceptions - makes sure they are only thrown from upper layers
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
@@ -50,7 +43,8 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
-        private void IndependentConnectionExceptionTest(string connectionString)
+        [Fact]
+        private void IndependentConnectionExceptionTestOpenConnection()
         {
             // Test exceptions for existing connection to ensure proper exception and call stack
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
@@ -58,17 +52,26 @@ namespace System.Data.SqlClient.Tests
             SqlConnectionStringBuilder badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { DataSource = badServer, ConnectTimeout = 1 };
             using (var sqlConnection = new SqlConnection(badBuilder.ConnectionString))
             {
-                // Test 1
                 VerifyConnectionFailure<SqlException>(() => sqlConnection.Open(), sqlsvrBadConn, VerifyException);
+            }
+        }
 
-                // Test 2
+        [Fact]
+        private void IndependentConnectionExceptionTestExecuteReader()
+        {
+            // Test exceptions for existing connection to ensure proper exception and call stack
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
+
+            SqlConnectionStringBuilder badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { DataSource = badServer, ConnectTimeout = 1 };
+            using (var sqlConnection = new SqlConnection(badBuilder.ConnectionString))
+            {
                 using (SqlCommand command = new SqlCommand(orderIdQuery, sqlConnection))
                 {
                     VerifyConnectionFailure<InvalidOperationException>(() => command.ExecuteReader(), execReaderFailedMessage);
                 }
             }
         }
-        
+
         private void GenerateConnectionException(string connectionString)
         {
             using (SqlConnection sqlConnection = new SqlConnection(connectionString))
