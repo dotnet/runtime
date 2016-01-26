@@ -1085,7 +1085,7 @@ namespace System.Linq.Expressions.Interpreter
             Type nonNullableTo = typeTo.GetNonNullableType();
 
             // use numeric conversions for both numeric types and enums
-            if ((TypeUtils.IsNumeric(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
+            if ((TypeUtils.IsNumericOrBool(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
                  && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum))
             {
                 Type enumTypeTo = null;
@@ -1133,7 +1133,13 @@ namespace System.Linq.Expressions.Interpreter
                     _instructions.MarkLabel(whenNull);
                 }
 
+                return;
+            }
 
+            if (typeTo.GetTypeInfo().IsEnum)
+            {
+                _instructions.Emit(NullCheckInstruction.Instance);
+                _instructions.EmitCastToEnum(typeTo);
                 return;
             }
 

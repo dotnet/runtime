@@ -207,6 +207,7 @@
     <Compile Include="Unary\UnaryArithmeticNegateCheckedTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
+    <Compile Include="Unary\UnaryConvertTests.cs" />
     <Compile Include="Unary\UnaryDecrementTests.cs" />
     <Compile Include="Unary\UnaryDecrementNullableTests.cs" />
     <Compile Include="Unary\UnaryIncrementNullableTests.cs" />
