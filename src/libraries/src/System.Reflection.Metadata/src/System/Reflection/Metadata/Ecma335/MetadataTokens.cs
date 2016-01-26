@@ -336,6 +336,11 @@ namespace System.Reflection.Metadata.Ecma335
             return Metadata.TypeSpecificationHandle.FromRowId(ToRowId(rowNumber));
         }
 
+        public static InterfaceImplementationHandle InterfaceImplementationHandle(int rowNumber)
+        {
+            return Metadata.InterfaceImplementationHandle.FromRowId(ToRowId(rowNumber));
+        }
+
         public static MemberReferenceHandle MemberReferenceHandle(int rowNumber)
         {
             return Metadata.MemberReferenceHandle.FromRowId(ToRowId(rowNumber));
@@ -416,6 +421,11 @@ namespace System.Reflection.Metadata.Ecma335
         public static DocumentHandle DocumentHandle(int rowNumber)
         {
             return Metadata.DocumentHandle.FromRowId(ToRowId(rowNumber));
+        }
+
+        public static MethodDebugInformationHandle MethodDebugInformationHandle(int rowNumber)
+        {
+            return Metadata.MethodDebugInformationHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static LocalScopeHandle LocalScopeHandle(int rowNumber)
