@@ -37,18 +37,6 @@
 typedef uint32_t BOOL;
 typedef uint32_t DWORD;
 typedef void* LPVOID;
-typedef uint32_t UINT;
-typedef int32_t LONG;
-typedef uintptr_t ULONG_PTR;
-typedef void VOID;
-typedef void* PVOID;
-typedef void * LPSECURITY_ATTRIBUTES;
-typedef void const * LPCVOID;
-typedef wchar_t * PWSTR, *LPWSTR;
-typedef const wchar_t *LPCWSTR, *PCWSTR;
-typedef size_t SIZE_T;
-
-typedef void * HANDLE;
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
@@ -105,12 +93,22 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
-#define INVALID_HANDLE_VALUE    ((HANDLE)-1)
-
 #ifdef PLATFORM_UNIX
 #define  _vsnprintf vsnprintf
 #define sprintf_s snprintf
 #define swprintf_s swprintf
+#endif
+
+#ifdef UNICODE
+#define _tcslen wcslen
+#define _tcscpy wcscpy
+#define _stprintf_s swprintf_s
+#define _tfopen _wfopen
+#else
+#define _tcslen strlen
+#define _tcscpy strcpy
+#define _stprintf_s sprintf_s
+#define _tfopen fopen
 #endif
 
 #define WINAPI __stdcall
@@ -123,12 +121,12 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #if defined(_MSC_VER) 
  #if defined(_ARM_)
-  
+
   __forceinline void YieldProcessor() { }
   extern "C" void __emit(const unsigned __int32 opcode);
   #pragma intrinsic(__emit)
   #define MemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
- 
+
  #elif defined(_ARM64_)
 
   extern "C" void __yield(void);
@@ -141,26 +139,26 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
  #elif defined(_AMD64_)
   
-  extern "C" VOID
+  extern "C" void
   _mm_pause (
-      VOID
+      void
       );
   
-  extern "C" VOID
+  extern "C" void
   _mm_mfence (
-      VOID
+      void
       );
-  
+
   #pragma intrinsic(_mm_pause)
   #pragma intrinsic(_mm_mfence)
   
   #define YieldProcessor _mm_pause
   #define MemoryBarrier _mm_mfence
-  
+
  #elif defined(_X86_)
   
   #define YieldProcessor() __asm { rep nop }
-  
+
   __forceinline void MemoryBarrier()
   {
       int32_t Barrier;
@@ -168,7 +166,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
           xchg Barrier, eax
       }
   }
-  
+
  #else // !_ARM_ && !_AMD64_ && !_X86_
   #error Unsupported architecture
  #endif
@@ -465,15 +463,6 @@ public:
 #ifdef FEATURE_REDHAWK
 typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext);
-
-enum PalCapability
-{
-    WriteWatchCapability                = 0x00000001,   // GetWriteWatch() and friends
-    LowMemoryNotificationCapability     = 0x00000002,   // CreateMemoryResourceNotification() and friends
-    GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
-};
-
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability);
 #endif // FEATURE_REDHAWK
 
 void DestroyThread(Thread * pThread);
@@ -530,7 +519,7 @@ namespace ETW
 
 #define LOG(x)
 
-VOID LogSpewAlways(const char *fmt, ...);
+void LogSpewAlways(const char *fmt, ...);
 
 #define LL_INFO10 4
 
@@ -581,7 +570,7 @@ public:
     typedef CLRConfigTypes ConfigStringInfo;
 
     static uint32_t GetConfigValue(ConfigDWORDInfo eType);
-    static HRESULT GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal);
+    static HRESULT GetConfigValue(ConfigStringInfo /*eType*/, TCHAR * * outVal);
 };
 
 inline bool FitsInU1(uint64_t val)
