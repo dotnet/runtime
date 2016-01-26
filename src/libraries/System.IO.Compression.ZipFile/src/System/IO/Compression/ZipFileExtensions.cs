@@ -178,11 +178,11 @@ namespace System.IO.Compression
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
 
-            // Argument checking gets passed down to File.Open and CreateEntry
+            // Argument checking gets passed down to FileStream's ctor and CreateEntry
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
             Contract.EndContractBlock();
 
-            using (Stream fs = File.Open(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (Stream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false))
             {
                 ZipArchiveEntry entry = compressionLevel.HasValue
                                                 ? destination.CreateEntry(entryName, compressionLevel.Value)
@@ -276,13 +276,13 @@ namespace System.IO.Compression
             if (destinationFileName == null)
                 throw new ArgumentNullException("destinationFileName");
 
-            // Rely on File.Open for further checking destinationFileName parameter
+            // Rely on FileStream's ctor for further checking destinationFileName parameter
 
             Contract.EndContractBlock();
 
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
-            using (Stream fs = File.Open(destinationFileName, fMode, FileAccess.Write, FileShare.None))
+            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
