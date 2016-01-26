@@ -85,7 +85,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
         proc.Group = (WORD)affinity->Group;
         proc.Number = (BYTE)affinity->Processor;
         proc.Reserved = 0;
-        
+
         success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
     }
     else
@@ -94,7 +94,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
         {
             proc.Number = affinity->Processor;
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
-        }        
+        }
     }
 #endif
 
@@ -412,17 +412,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     CloseHandle(gc_thread);
 
     return true;
-}
-
-// Open a file
-// Parameters:
-//  filename - name of the file to open
-//  mode     - mode to open the file in (like in the CRT fopen)
-// Return:
-//  FILE* of the opened file
-FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
-{
-    return _wfopen(filename, mode);
 }
 
 // Initialize the critical section
