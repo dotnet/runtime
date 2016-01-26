@@ -30,7 +30,7 @@ Abstract:
 #include <errno.h>
 #include <unistd.h>
 
-SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
+SET_DEFAULT_DEBUG_CHANNEL(THREAD);
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -832,8 +832,8 @@ Function:
 --*/
 kern_return_t
 CONTEXT_GetThreadContextFromPort(
-        mach_port_t Port,
-        LPCONTEXT lpContext)
+    mach_port_t Port,
+    LPCONTEXT lpContext)
 {
     // Extract the CONTEXT from the Mach thread.
     
@@ -841,7 +841,7 @@ CONTEXT_GetThreadContextFromPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
   
-    if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER))
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
     {
 #ifdef _X86_  
         x86_thread_state32_t State;
@@ -852,67 +852,15 @@ CONTEXT_GetThreadContextFromPort(
 #else
 #error Unexpected architecture.
 #endif
-
         StateCount = sizeof(State) / sizeof(natural_t);
-
-        MachRet = thread_get_state(Port,
-           StateFlavor,
-           (thread_state_t)&State,
-           &StateCount);
+        MachRet = thread_get_state(Port, StateFlavor, (thread_state_t)&State, &StateCount);
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_get_state(THREAD_STATE) failed: %d\n", MachRet);
-            goto EXIT;
+            goto exit;
         }
 
-        // Copy in the GPRs and the various other control registers
-#ifdef _X86_
-        lpContext->Eax = State.eax;
-        lpContext->Ebx = State.ebx;
-        lpContext->Ecx = State.ecx;
-        lpContext->Edx = State.edx;
-        lpContext->Edi = State.edi;
-        lpContext->Esi = State.esi;
-        lpContext->Ebp = State.ebp;
-        lpContext->Esp = State.esp;
-        lpContext->SegSs = State.ss;
-        lpContext->EFlags = State.eflags;
-        lpContext->Eip = State.eip;
-        lpContext->SegCs = State.cs;
-        lpContext->SegDs_PAL_Undefined = State.ds;
-        lpContext->SegEs_PAL_Undefined = State.es;
-        lpContext->SegFs_PAL_Undefined = State.fs;
-        lpContext->SegGs_PAL_Undefined = State.gs;
-#elif defined(_AMD64_)
-        lpContext->Rax = State.__rax;
-        lpContext->Rbx = State.__rbx;
-        lpContext->Rcx = State.__rcx;
-        lpContext->Rdx = State.__rdx;
-        lpContext->Rdi = State.__rdi;
-        lpContext->Rsi = State.__rsi;
-        lpContext->Rbp = State.__rbp;
-        lpContext->Rsp = State.__rsp;
-        lpContext->R8 = State.__r8;
-        lpContext->R9 = State.__r9;
-        lpContext->R10 = State.__r10;
-        lpContext->R11 = State.__r11;
-        lpContext->R12 = State.__r12;
-        lpContext->R13 = State.__r13;
-        lpContext->R14 = State.__r14;
-        lpContext->R15 = State.__r15;
-        lpContext->EFlags = State.__rflags;
-        lpContext->Rip = State.__rip;
-        lpContext->SegCs = State.__cs;
-        // RtlRestoreContext uses the actual ss instead of this one
-        // to build the iret frame so just set it zero.
-        lpContext->SegSs = 0;
-        lpContext->SegDs = 0;
-        lpContext->SegEs = 0;
-        lpContext->SegFs = State.__fs;
-        lpContext->SegGs = State.__gs;
-#else
-#error Unexpected architecture.
-#endif
+        CONTEXT_GetThreadContextFromThreadState(StateFlavor, (thread_state_t)&State, lpContext);
     }
     
     if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING) {
@@ -926,73 +874,173 @@ CONTEXT_GetThreadContextFromPort(
 #error Unexpected architecture.
 #endif
         StateCount = sizeof(State) / sizeof(natural_t);
-        
-        MachRet = thread_get_state(Port,
-            StateFlavor,
-            (thread_state_t)&State,
-            &StateCount);
+        MachRet = thread_get_state(Port, StateFlavor, (thread_state_t)&State, &StateCount);
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_get_state(FLOAT_STATE) failed: %d\n", MachRet);
-            goto EXIT;
+            goto exit;
         }
         
-        if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
-        {
-            // Copy the FPRs
+        CONTEXT_GetThreadContextFromThreadState(StateFlavor, (thread_state_t)&State, lpContext);
+    }
+
+exit:
+    return MachRet;
+}
+
+/*++
+Function:
+  CONTEXT_GetThreadContextFromThreadState
+
+--*/
+void
+CONTEXT_GetThreadContextFromThreadState(
+    thread_state_flavor_t threadStateFlavor,
+    thread_state_t threadState,
+    LPCONTEXT lpContext)
+{
+    switch (threadStateFlavor)
+    {
 #ifdef _X86_
-            lpContext->FloatSave.ControlWord = *(DWORD*)&State.fpu_fcw;
-            lpContext->FloatSave.StatusWord = *(DWORD*)&State.fpu_fsw;
-            lpContext->FloatSave.TagWord = State.fpu_ftw;
-            lpContext->FloatSave.ErrorOffset = State.fpu_ip;
-            lpContext->FloatSave.ErrorSelector = State.fpu_cs;
-            lpContext->FloatSave.DataOffset = State.fpu_dp;
-            lpContext->FloatSave.DataSelector = State.fpu_ds;
-            lpContext->FloatSave.Cr0NpxState = State.fpu_mxcsr;
-            
-            // Windows stores the floating point registers in a packed layout (each 10-byte register end to end
-            // for a total of 80 bytes). But Mach returns each register in an 16-bit structure (presumably for
-            // alignment purposes). So we can't just memcpy the registers over in a single block, we need to copy
-            // them individually.
-            for (int i = 0; i < 8; i++)
-                memcpy(&lpContext->FloatSave.RegisterArea[i * 10], (&State.fpu_stmm0)[i].mmst_reg, 10);
+        case x86_THREAD_STATE32:
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
+            {
+                x86_thread_state32_t *pState = (x86_thread_state32_t *)threadState;
+
+                lpContext->Eax = pState->eax;
+                lpContext->Ebx = pState->ebx;
+                lpContext->Ecx = pState->ecx;
+                lpContext->Edx = pState->edx;
+                lpContext->Edi = pState->edi;
+                lpContext->Esi = pState->esi;
+                lpContext->Ebp = pState->ebp;
+                lpContext->Esp = pState->esp;
+                lpContext->SegSs = pState->ss;
+                lpContext->EFlags = pState->eflags;
+                lpContext->Eip = pState->eip;
+                lpContext->SegCs = pState->cs;
+                lpContext->SegDs_PAL_Undefined = pState->ds;
+                lpContext->SegEs_PAL_Undefined = pState->es;
+                lpContext->SegFs_PAL_Undefined = pState->fs;
+                lpContext->SegGs_PAL_Undefined = pState->gs;
+            }
+            break;
+
+        case x86_FLOAT_STATE32:
+        {
+            x86_float_state32_t *pState = (x86_float_state32_t *)threadState;
+
+            if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
+            {
+                lpContext->FloatSave.ControlWord = *(DWORD*)&pState->fpu_fcw;
+                lpContext->FloatSave.StatusWord = *(DWORD*)&pState->fpu_fsw;
+                lpContext->FloatSave.TagWord = pState->fpu_ftw;
+                lpContext->FloatSave.ErrorOffset = pState->fpu_ip;
+                lpContext->FloatSave.ErrorSelector = pState->fpu_cs;
+                lpContext->FloatSave.DataOffset = pState->fpu_dp;
+                lpContext->FloatSave.DataSelector = pState->fpu_ds;
+                lpContext->FloatSave.Cr0NpxState = pState->fpu_mxcsr;
+
+                // Windows stores the floating point registers in a packed layout (each 10-byte register end to end
+                // for a total of 80 bytes). But Mach returns each register in an 16-bit structure (presumably for
+                // alignment purposes). So we can't just memcpy the registers over in a single block, we need to copy
+                // them individually.
+                for (int i = 0; i < 8; i++)
+                    memcpy(&lpContext->FloatSave.RegisterArea[i * 10], (&pState->fpu_stmm0)[i].mmst_reg, 10);
+            }
+
+            if (lpContext->ContextFlags & CONTEXT_EXTENDED_REGISTERS)
+            {
+                // The only extended register information that Mach will tell us about are the xmm register values.
+                // Both Windows and Mach store the registers in a packed layout (each of the 8 registers is 16 bytes)
+                // so we can simply memcpy them across.
+                memcpy(lpContext->ExtendedRegisters + CONTEXT_EXREG_XMM_OFFSET, &pState->fpu_xmm0, 8 * 16);
+            }
+        }
+        break;
+
 #elif defined(_AMD64_)
-            lpContext->FltSave.ControlWord = *(DWORD*)&State.__fpu_fcw;
-            lpContext->FltSave.StatusWord = *(DWORD*)&State.__fpu_fsw;
-            lpContext->FltSave.TagWord = State.__fpu_ftw;
-            lpContext->FltSave.ErrorOffset = State.__fpu_ip;
-            lpContext->FltSave.ErrorSelector = State.__fpu_cs;
-            lpContext->FltSave.DataOffset = State.__fpu_dp;
-            lpContext->FltSave.DataSelector = State.__fpu_ds;
-            lpContext->FltSave.MxCsr = State.__fpu_mxcsr;
-            lpContext->FltSave.MxCsr_Mask = State.__fpu_mxcsrmask; // note: we don't save the mask for x86
-            
-            // Windows stores the floating point registers in a packed layout (each 10-byte register end to end
-            // for a total of 80 bytes). But Mach returns each register in an 16-bit structure (presumably for
-            // alignment purposes). So we can't just memcpy the registers over in a single block, we need to copy
-            // them individually.
-            for (int i = 0; i < 8; i++)
-                memcpy(&lpContext->FltSave.FloatRegisters[i], (&State.__fpu_stmm0)[i].__mmst_reg, 10);
-            
-            // AMD64's FLOATING_POINT includes the xmm registers.
-            memcpy(&lpContext->Xmm0, &State.__fpu_xmm0, 8 * 16);
+        case x86_THREAD_STATE64:
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
+            {
+                x86_thread_state64_t *pState = (x86_thread_state64_t *)threadState;
+
+                lpContext->Rax = pState->__rax;
+                lpContext->Rbx = pState->__rbx;
+                lpContext->Rcx = pState->__rcx;
+                lpContext->Rdx = pState->__rdx;
+                lpContext->Rdi = pState->__rdi;
+                lpContext->Rsi = pState->__rsi;
+                lpContext->Rbp = pState->__rbp;
+                lpContext->Rsp = pState->__rsp;
+                lpContext->R8 = pState->__r8;
+                lpContext->R9 = pState->__r9;
+                lpContext->R10 = pState->__r10;
+                lpContext->R11 = pState->__r11;
+                lpContext->R12 = pState->__r12;
+                lpContext->R13 = pState->__r13;
+                lpContext->R14 = pState->__r14;
+                lpContext->R15 = pState->__r15;
+                lpContext->EFlags = pState->__rflags;
+                lpContext->Rip = pState->__rip;
+                lpContext->SegCs = pState->__cs;
+                // RtlRestoreContext uses the actual ss instead of this one
+                // to build the iret frame so just set it zero.
+                lpContext->SegSs = 0;
+                lpContext->SegDs = 0;
+                lpContext->SegEs = 0;
+                lpContext->SegFs = pState->__fs;
+                lpContext->SegGs = pState->__gs;
+            }
+            break;
+
+        case x86_FLOAT_STATE64:
+            if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
+            {
+                x86_float_state64_t *pState = (x86_float_state64_t *)threadState;
+
+                lpContext->FltSave.ControlWord = *(DWORD*)&pState->__fpu_fcw;
+                lpContext->FltSave.StatusWord = *(DWORD*)&pState->__fpu_fsw;
+                lpContext->FltSave.TagWord = pState->__fpu_ftw;
+                lpContext->FltSave.ErrorOffset = pState->__fpu_ip;
+                lpContext->FltSave.ErrorSelector = pState->__fpu_cs;
+                lpContext->FltSave.DataOffset = pState->__fpu_dp;
+                lpContext->FltSave.DataSelector = pState->__fpu_ds;
+                lpContext->FltSave.MxCsr = pState->__fpu_mxcsr;
+                lpContext->FltSave.MxCsr_Mask = pState->__fpu_mxcsrmask; // note: we don't save the mask for x86
+
+                // Windows stores the floating point registers in a packed layout (each 10-byte register end to end
+                // for a total of 80 bytes). But Mach returns each register in an 16-bit structure (presumably for
+                // alignment purposes). So we can't just memcpy the registers over in a single block, we need to copy
+                // them individually.
+                for (int i = 0; i < 8; i++)
+                    memcpy(&lpContext->FltSave.FloatRegisters[i], (&pState->__fpu_stmm0)[i].__mmst_reg, 10);
+
+                // AMD64's FLOATING_POINT includes the xmm registers.
+                memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 8 * 16);
+            }
+            break;
 #else
 #error Unexpected architecture.
 #endif
+        case x86_THREAD_STATE:
+        {
+            x86_thread_state_t *pState = (x86_thread_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->tsh.flavor, (thread_state_t)&pState->uts, lpContext);
         }
+        break;
 
-#ifdef _X86_
-        if (lpContext->ContextFlags & CONTEXT_EXTENDED_REGISTERS) {
-            // The only extended register information that Mach will tell us about are the xmm register values.
-            // Both Windows and Mach store the registers in a packed layout (each of the 8 registers is 16 bytes)
-            // so we can simply memcpy them across.
-            memcpy(lpContext->ExtendedRegisters + CONTEXT_EXREG_XMM_OFFSET, &State.fpu_xmm0, 8 * 16);
+        case x86_FLOAT_STATE:
+        {
+            x86_float_state_t *pState = (x86_float_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->fsh.flavor, (thread_state_t)&pState->ufs, lpContext);
         }
-#endif
+        break;
+
+        default:
+            ASSERT("Invalid thread state flavor %d\n", threadStateFlavor);
+            break;
     }
-
-EXIT:
-    return MachRet;
 }
 
 /*++

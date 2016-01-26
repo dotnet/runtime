@@ -46,8 +46,8 @@ typedef	mach_exception_data_type_t	mach_exception_subcode_t;
 #ifdef _DEBUG
 
 // Debug-only output with printf-style formatting.
-#define NONPAL_TRACE(_format, ...) do {                                 \
-        if (getenv("NONPAL_TRACING")) printf(_format, ## __VA_ARGS__);  \
+#define NONPAL_TRACE(_format, ...) do {                                                  \
+        if (getenv("NONPAL_TRACING")) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
     } while (false)
 #else // _DEBUG
 #define NONPAL_TRACE(_format, ...)
@@ -81,8 +81,11 @@ public:
     };
 
     // Construct an empty message. Use Receive() to form a message that can be inspected or SendSetThread(),
-    // ForwardNotification(), ReplyToNotification() or ForwardReply() to construct a message and sent it.
+    // ForwardNotification() or ReplyToNotification() to construct a message and sent it.
     MachMessage();
+
+    // Initializes this message from another
+    void InitializeFrom(const MachMessage& source);
 
     // Listen for the next message on the given port and initialize this class with the contents. The message
     // type must match one of the MessageTypes indicated above (or the process will be aborted).
@@ -128,26 +131,14 @@ public:
     // Initialize the message (overwriting any previous content) to represent a forwarded version of the given
     // exception notification message and send that message to the chain-back handler previously registered
     // for the exception type being notified. The new message takes account of the fact that the target
-    // handler may not have requested the same notification behavior or flavor as our handler. A new Mach port
-    // is created to receive the reply, and this port is returned to the caller.
-    mach_port_t ForwardNotification(CorUnix::MachExceptionHandler *pHandler,
-                                    MachMessage *pNotification);
+    // handler may not have requested the same notification behavior or flavor as our handler. Blocks until
+    // the reply is received.
+    void ForwardNotification(CorUnix::MachExceptionHandler *pHandler, MachMessage *pNotification);
 
     // Initialize the message (overwriting any previous content) to represent a reply to the given exception
     // notification and send that reply back to the original sender of the notification. This is used when our
     // handler handles the exception rather than forwarding it to a chain-back handler.
-    void ReplyToNotification(MachMessage *pNotification,
-                             kern_return_t eResult);
-
-    // Initialize the message (overwriting any previous content) to represent a reply to a notification
-    // message of the given format given a reply from another handler that might be in another format and send
-    // it to the given port. This is used to reply to an exception notification we didn't handle ourselves but
-    // instead forwarded to a chain-back handler.
-    void ForwardReply(mach_port_t hForwardPort,
-                      MessageType eNotificationType,
-                      thread_act_t hThread,
-                      thread_state_flavor_t eNotificationFlavor,
-                      MachMessage *pReply);
+    void ReplyToNotification(MachMessage *pNotification, kern_return_t eResult);
 
 private:
     // The maximum size in bytes of any Mach message we can send or receive. Calculating an exact size for

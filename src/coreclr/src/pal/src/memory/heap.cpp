@@ -39,24 +39,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MEM);
 #define DUMMY_HEAP 0x01020304
 #endif // __APPLE__
 
-#ifdef __APPLE__
-#define CACHE_HEAP_ZONE
-#endif // __APPLE__
-
-#ifdef CACHE_HEAP_ZONE
-/* This is a kludge.
- *
- * We need to know whether an instruction pointer fault is in our executable
- * heap, but the intersection between the HeapX functions on Windows and the
- * malloc_zone functions on Mac OS X are somewhat at odds and we'd have to 
- * implement an unnecessarily complicated HeapWalk. Instead, we cache the only
- * "heap" we create, knowing it's the executable heap, and use that instead
- * with the much simpler malloc_zone_from_ptr.
- */
-extern malloc_zone_t *s_pExecutableHeap;
-malloc_zone_t *s_pExecutableHeap = NULL;
-#endif // CACHE_HEAP_ZONE
-
 /*++
 Function:
   RtlMoveMemory
@@ -172,13 +154,6 @@ GetProcessHeap(
 #else
     malloc_zone_t *pZone = malloc_default_zone();
     ret = (HANDLE)pZone;
-#ifdef CACHE_HEAP_ZONE
-    if (s_pExecutableHeap == NULL)
-    {
-        s_pExecutableHeap = pZone;
-        TRACE("s_pExecutableHeap is %p (process heap).\n", s_pExecutableHeap);
-    }
-#endif // CACHE_HEAP_ZONE
 #endif // HEAP_HANDLES_ARE_REAL_HANDLES
 #else
     ret = (HANDLE) DUMMY_HEAP;
