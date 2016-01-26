@@ -194,10 +194,8 @@ static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj);
 static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
 static void init_type_builder_generics (MonoObject *type);
 
-#define RESOLVE_TYPE(type) do {						\
-	MonoError __error;						\
-	type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type, &__error); \
-	mono_error_raise_exception (&__error); /* FIXME don't raise here */ \
+#define RESOLVE_TYPE(type, error) do {					\
+	type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type, error); \
 } while (0)
 #define RESOLVE_ARRAY_TYPE_ELEMENT(array, index, error) do {		\
 	MonoReflectionType *__type = mono_array_get (array, MonoReflectionType*, index); \
@@ -10321,7 +10319,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	MonoError error;
 	MonoClass *klass, *parent;
 
-	RESOLVE_TYPE (tb->parent);
+	RESOLVE_TYPE (tb->parent, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	mono_loader_lock ();
 
@@ -11787,20 +11786,24 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	/*
 	 * Check for user defined Type subclasses.
 	 */
-	RESOLVE_TYPE (tb->parent);
+	RESOLVE_TYPE (tb->parent, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	check_array_for_usertypes (tb->interfaces, &error);
 	mono_error_raise_exception (&error); /*FIXME don't raise here */
 	if (tb->fields) {
 		for (i = 0; i < mono_array_length (tb->fields); ++i) {
 			MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
 			if (fb) {
-				RESOLVE_TYPE (fb->type);
+				RESOLVE_TYPE (fb->type, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 				check_array_for_usertypes (fb->modreq, &error);
 				mono_error_raise_exception (&error); /*FIXME don't raise here */
 				check_array_for_usertypes (fb->modopt, &error);
 				mono_error_raise_exception (&error); /*FIXME don't raise here */
-				if (fb->marshal_info && fb->marshal_info->marshaltyperef)
-					RESOLVE_TYPE (fb->marshal_info->marshaltyperef);
+				if (fb->marshal_info && fb->marshal_info->marshaltyperef) {
+					RESOLVE_TYPE (fb->marshal_info->marshaltyperef, &error);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
+				}
 			}
 		}
 	}
@@ -11808,7 +11811,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		for (i = 0; i < mono_array_length (tb->methods); ++i) {
 			MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)mono_array_get (tb->methods, gpointer, i);
 			if (mb) {
-				RESOLVE_TYPE (mb->rtype);
+				RESOLVE_TYPE (mb->rtype, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 				check_array_for_usertypes (mb->return_modreq, &error);
 				mono_error_raise_exception (&error); /*FIXME don't raise here */
 				check_array_for_usertypes (mb->return_modopt, &error);
