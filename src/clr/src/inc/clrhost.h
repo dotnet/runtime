@@ -82,12 +82,8 @@ extern int RFS_HashStack();
 
 void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback);
 
-// Function pointer for fast TLS fetch - do not use directly
-typedef LPVOID (*POPTIMIZEDTLSGETTER)();
-
 typedef LPVOID* (*CLRFLSGETBLOCK)();
-
-extern POPTIMIZEDTLSGETTER __ClrFlsGetBlock;
+extern CLRFLSGETBLOCK __ClrFlsGetBlock;
 
 #ifndef CLR_STANDALONE_BINDER
 // Combining getter/setter into a single call
@@ -101,8 +97,7 @@ inline void ClrFlsIncrementValue(DWORD slot, int increment)
 
     _ASSERTE(increment != 0);
     
-    CLRFLSGETBLOCK clrFlsGetBlockFn = (CLRFLSGETBLOCK)__ClrFlsGetBlock;
-    void **block = (*clrFlsGetBlockFn)();
+    void **block = (*__ClrFlsGetBlock)();
     size_t value;
 
     if (block != NULL)
@@ -137,9 +132,8 @@ inline void * ClrFlsGetValue (DWORD slot)
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    CLRFLSGETBLOCK clrFlsGetBlockFn = (CLRFLSGETBLOCK)__ClrFlsGetBlock;
-    void **block = (*clrFlsGetBlockFn)();
-    if (block != NULL)
+	void **block = (*__ClrFlsGetBlock)();
+	if (block != NULL)
     {
         return block[slot];
     }
@@ -163,9 +157,8 @@ inline BOOL ClrFlsCheckValue(DWORD slot, void ** pValue)
 #ifdef _DEBUG
     *pValue = ULongToPtr(0xcccccccc);
 #endif //_DEBUG 
-    CLRFLSGETBLOCK clrFlsGetBlockFn = (CLRFLSGETBLOCK)__ClrFlsGetBlock;
-    void **block = (*clrFlsGetBlockFn)();
-    if (block != NULL)
+	void **block = (*__ClrFlsGetBlock)();
+	if (block != NULL)
     {
         *pValue = block[slot];
         return TRUE;    
@@ -186,9 +179,8 @@ inline void ClrFlsSetValue(DWORD slot, void *pData)
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    CLRFLSGETBLOCK clrFlsGetBlockFn = (CLRFLSGETBLOCK)__ClrFlsGetBlock;
-    void **block = (*clrFlsGetBlockFn)();
-    if (block != NULL)
+	void **block = (*__ClrFlsGetBlock)();
+	if (block != NULL)
     {
         block[slot] = pData;
     }

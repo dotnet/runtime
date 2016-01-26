@@ -32,14 +32,14 @@ static PTLS_CALLBACK_FUNCTION Callbacks[MAX_PREDEFINED_TLS_SLOT];
 HANDLE (*g_fnGetExecutableHeapHandle)();
 #endif
 
-extern LPVOID (*__ClrFlsGetBlock)();
+extern LPVOID* (*__ClrFlsGetBlock)();
 
 //
 // FLS getter to avoid unnecessary indirection via execution engine.
 //
-VOID * ClrFlsGetBlockDirect()
+LPVOID* ClrFlsGetBlockDirect()
 {
-    return UnsafeTlsGetValue(TlsIndex);
+    return (LPVOID*)UnsafeTlsGetValue(TlsIndex);
 }
 
 //
