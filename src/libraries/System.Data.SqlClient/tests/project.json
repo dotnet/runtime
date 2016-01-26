@@ -1,0 +1,14 @@
+﻿{
+    "dependencies": {
+        "Microsoft.CSharp": "4.0.1-rc3-23722",
+        "System.Console": "4.0.0-rc3-23722",
+        "System.Data.Common": "4.0.1-rc3-23722",
+        "xunit": "2.1.0",
+        "xunit.netcore.extensions": "1.0.0-prerelease-00123"
+    },
+    "frameworks": {
+        "dnxcore50": {
+            "imports": "portable-net45+win8"
+        }
+    }
+}
