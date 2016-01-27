@@ -695,7 +695,11 @@ mono_array_new_va (MonoMethod *cm, ...)
 	va_end(ap);
 
 	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return arr;
 }
@@ -727,7 +731,11 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	}
 
 	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return arr;
 }
@@ -759,7 +767,11 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	}
 
 	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return arr;
 }
@@ -792,7 +804,11 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	}
 
 	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return arr;
 }
@@ -826,7 +842,11 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	}
 
 	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return arr;
 }
