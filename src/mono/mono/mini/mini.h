@@ -714,7 +714,13 @@ struct MonoBasicBlock {
 	guint real_offset;
 
 	GSList *seq_points;
+
+	// The MonoInst of the last sequence point for the current basic block.
 	MonoInst *last_seq_point;
+	
+	// This will hold a list of last sequence points of incoming basic blocks
+	MonoInst **pred_seq_points;
+	guint num_pred_seq_points;
 
 	GSList *spill_slot_defs;
 
