@@ -1,38 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// This is a simple Win32 service which does nothing except respond to control
-// events by settings its status appropriately. It takes its own service and
-// service display name as parameters to allow many tests to spin up their own
-// instances of this service in parallel.
-//
-// Because this will eventually run on OneCore on systems which may not have
-// sc.exe, this also provides a means to create, start, stop, and delete this
-// service via the command line:
-//
-//   - When run like this:
-//
-//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service" create
-//
-//     This creates a service named "TestService" with display name
-//     "Test Service", and starts the service. This also creates additional
-//     instances of this service which depend on "TestService" for the purposes
-//     of testing.
-//
-//   - When run like this:
-//
-//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service" delete
-//
-//     This attempts to stop "TestService" and delete it and its dependent
-//     services.
-//
-//   - When run like this:
-//
-//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service"
-//
-//     This executable assumes it is being run as a service, and simply waits
-//     for and responds to control events.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
