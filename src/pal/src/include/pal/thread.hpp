@@ -123,24 +123,6 @@ namespace CorUnix
         
 #ifdef FEATURE_PAL_SXS
 #if HAVE_MACH_EXCEPTIONS
-    // Structure used to record all Mach exception handlers registered on a given thread at a specific point
-    // in time.
-    struct CThreadMachExceptionHandlerNode
-    {
-        // Maximum number of exception ports we hook.  Must be the count
-        // of all bits set in the exception masks defined in machexception.h.
-        static const int s_nPortsMax = 6;
-
-        // Saved exception ports, exactly as returned by
-        // thread_swap_exception_ports.
-        int m_nPorts;
-        exception_mask_t m_masks[s_nPortsMax];
-        exception_handler_t m_handlers[s_nPortsMax];
-        exception_behavior_t m_behaviors[s_nPortsMax];
-        thread_state_flavor_t m_flavors[s_nPortsMax];
-        
-        CThreadMachExceptionHandlerNode() : m_nPorts(-1) {}
-    };
 
     // Structure used to return data about a single handler to a caller.
     struct MachExceptionHandler
@@ -151,22 +133,26 @@ namespace CorUnix
         thread_state_flavor_t m_flavor;
     };
 
-    // Class abstracting previousy registered Mach exception handlers for a thread.
-    class CThreadMachExceptionHandlers
+    // Class abstracting previously registered Mach exception handlers for a thread.
+    struct CThreadMachExceptionHandlers
     {
     public:
-        // Returns a pointer to the handler node that should be initialized next. The first time this is
-        // called for a thread the bottom node will be returned. Thereafter the top node will be returned.
-        // Also returns the Mach exception port that should be registered.
-        CThreadMachExceptionHandlerNode *GetNodeForInitialization();
+        // Maximum number of exception ports we hook.  Must be the count
+        // of all bits set in the exception masks defined in machexception.h.
+        static const int s_nPortsMax = 6;
 
-        // Returns a pointer to the handler node for cleanup. This will always be the bottom node. This isn't
-        // really the right algorithm (because there isn't one). There are lots of reasonable scenarios where
-        // we will break chaining by removing our handler from a thread (by registering two handler ports we
-        // can support a lot more chaining scenarios but we can't pull the same sort of trick when
-        // unregistering, in particular we have two sets of chain back handlers and no way to reach into other
-        // components and alter what their chain-back information is).
-        CThreadMachExceptionHandlerNode *GetNodeForCleanup() { return &m_node; }
+        // Saved exception ports, exactly as returned by
+        // thread_swap_exception_ports.
+        mach_msg_type_number_t m_nPorts;
+        exception_mask_t m_masks[s_nPortsMax];
+        exception_handler_t m_handlers[s_nPortsMax];
+        exception_behavior_t m_behaviors[s_nPortsMax];
+        thread_state_flavor_t m_flavors[s_nPortsMax];
+        
+        CThreadMachExceptionHandlers() : 
+            m_nPorts(-1)
+        {
+        }
 
         // Get handler details for a given type of exception. If successful the structure pointed at by
         // pHandler is filled in and true is returned. Otherwise false is returned.
@@ -175,9 +161,7 @@ namespace CorUnix
     private:
         // Look for a handler for the given exception within the given handler node. Return its index if
         // successful or -1 otherwise.
-        int GetIndexOfHandler(exception_mask_t bmExceptionMask, CThreadMachExceptionHandlerNode *pNode);
-
-        CThreadMachExceptionHandlerNode m_node;
+        int GetIndexOfHandler(exception_mask_t bmExceptionMask);
     };
 #endif // HAVE_MACH_EXCEPTIONS
 #endif // FEATURE_PAL_SXS
