@@ -59,6 +59,7 @@
 
 #include "mini.h"
 #include "mini-s390x.h"
+#include "support-s390x.h"
 
 /*========================= End of Includes ========================*/
 
@@ -306,12 +307,8 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
 	s390_lgr  (code, s390_r3, s390_r2);
 	if (corlib) {
-		s390_basr (code, s390_r13, 0);
-		s390_j    (code, 10);
-		s390_llong(code, mono_defaults.exception_class->image);
-		s390_llong(code, mono_exception_from_token);
-		s390_lg   (code, s390_r2, 0, s390_r13, 4);
-		s390_lg   (code, s390_r1, 0, s390_r13, 12);
+		S390_SET  (code, s390_r1, (guint8 *)mono_exception_from_token);
+		S390_SET  (code, s390_r2, (guint8 *)mono_defaults.exception_class->image);
 		s390_basr (code, s390_r14, s390_r1);
 	}
 
@@ -354,12 +351,9 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	s390_la   (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_ACCREGS);
 	s390_stg  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_ACCPRM);
 	s390_stfpc(code, STK_BASE, S390_THROWSTACK_FPCPRM+4);
+	S390_SET  (code, s390_r1, (guint8 *)throw_exception);
 	s390_lghi (code, s390_r7, rethrow);
 	s390_stg  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_RETHROW);
-	s390_basr (code, s390_r13, 0);
-	s390_j    (code, 6);
-	s390_llong(code, throw_exception);
-	s390_lg   (code, s390_r1, 0, s390_r13, 4);
 	s390_basr (code, s390_r14, s390_r1);
 	/* we should never reach this breakpoint */
 	s390_break (code);

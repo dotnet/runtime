@@ -48,6 +48,7 @@
 #include "mini.h"
 #include "mini-s390x.h"
 #include "support-s390x.h"
+#include "jit-icalls.h"
 
 /*========================= End of Includes ========================*/
 
@@ -57,6 +58,7 @@
 
 typedef struct {
 	guint8	stk[S390_MINIMAL_STACK_SIZE];	/* Standard s390x stack	*/
+	guint64	saveFn;				/* Call address		*/
 	struct MonoLMF  LMF;			/* LMF			*/
 } trampStack_t;
 
@@ -308,15 +310,22 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	S390_SET  (buf, s390_r1, tramp);
 	s390_basr (buf, s390_r14, s390_r1);
 		
-	/* OK, code address is now on r2. Move it to r1, so that we
-	   can restore r2 and use it from r1 later */
-	s390_lgr  (buf, s390_r1, s390_r2);
+	/* OK, code address is now on r2. Save it, so that we
+	   can restore r2 and use it later */
+	s390_stg  (buf, s390_r2, 0, STK_BASE, G_STRUCT_OFFSET(trampStack_t, saveFn));
+
+	/* Check for thread interruption */
+	S390_SET  (buf, s390_r1, (guint8 *)mono_interruption_checkpoint_from_trampoline);
+	s390_basr (buf, s390_r14, s390_r1);
 
 	/*----------------------------------------------------------
 	  STEP 3: Restore the LMF
 	  ----------------------------------------------------------*/
 	restoreLMF(buf, STK_BASE, sizeof(trampStack_t));
 	
+	/* Reload result */
+	s390_lg   (buf, s390_r1, 0, STK_BASE, G_STRUCT_OFFSET(trampStack_t, saveFn));
+
 	/*----------------------------------------------------------
 	  STEP 4: call the compiled method
 	  ----------------------------------------------------------*/
