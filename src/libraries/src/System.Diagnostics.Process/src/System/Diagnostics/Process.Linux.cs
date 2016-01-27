@@ -193,17 +193,8 @@ namespace System.Diagnostics
         /// <returns>The converted time.</returns>
         internal static DateTime BootTimeToDateTime(ulong ticksAfterBoot)
         {
-            // Read procfs to determine the system's uptime, aka how long ago it booted
-            string uptimeStr = File.ReadAllText(Interop.procfs.ProcUptimeFilePath, Encoding.UTF8);
-            int spacePos = uptimeStr.IndexOf(' ');
-            double uptime;
-            if (spacePos < 1 || !double.TryParse(uptimeStr.Substring(0, spacePos), out uptime))
-            {
-                throw new Win32Exception();
-            }
-
             // Use the uptime and the current time to determine the absolute boot time
-            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromSeconds(uptime);
+            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
 
             // And use that to determine the absolute time for ticksStartedAfterBoot
             DateTime dt = bootTime + TicksToTimeSpan(ticksAfterBoot);
