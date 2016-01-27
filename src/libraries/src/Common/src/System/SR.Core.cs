@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
 using System.Runtime.CompilerServices;
@@ -59,7 +60,7 @@ namespace System
             {
                 // It is not expected to have resourceString is null at this point.
                 // this means our framework resources is missing while it is expected to be there. 
-                // we have to throw on that or otherwise we’ll eventually get stack overflow exception.
+                // we have to throw on that or otherwise we'll eventually get stack overflow exception.
                 // we have to use hardcode the exception message here as we cannot lookup the resources for other keys.
                 // We cannot throw MissingManifestResourceException as we cannot depend on the System.Resources here.
 
