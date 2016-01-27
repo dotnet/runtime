@@ -12,6 +12,7 @@ set(NATIVE_SOURCES
     pal_networkstatistics.cpp
     pal_process.cpp
     pal_runtimeinformation.cpp
+    pal_runtimeextensions.cpp
     pal_string.cpp
     pal_tcpstate.cpp
     pal_time.cpp
