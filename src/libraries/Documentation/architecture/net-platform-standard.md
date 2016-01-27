@@ -26,6 +26,7 @@ The .NET Platform Standard version represents binary portability across platform
 - **.NET Platform Standard** - a specific versioned set of reference assemblies that all .NET Platforms must support as defined in the [CoreFX repo](https://github.com/dotnet/corefx).
 - **PCL** - Portable Class Library
 - **Platform** - e.g. .NET Framework 4.5, .NET Framework 4.6, Windows Phone 8.1, MonoTouch, UWP, etc.
+- **TFM** - Target Framework Moniker. The name that represents a specific **Platform**
 - **Reference Assembly** - An assembly that contains API surface only. There is no IL in the method bodies. It is used for compilation only, and cannot be used to run. Also commonly referred to as "Contracts".
 - **Implementation Assembly** - An assembly that contains an implementation of a reference assembly. These can be implemented as standalone assemblies but can sometimes be anchored by a platform and cannot be updated without updating the platform.
 - **Anchored Assembly** - An implementation assembly where at least one platform provides the implementation as part of the platform rather than on top of it. Such an "anchored assembly" may only be updated on that platform by updating the platform itself.
