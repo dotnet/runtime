@@ -53,7 +53,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue(2613, PlatformID.Linux)]
         public void TestStartTimeProperty()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
@@ -78,10 +77,10 @@ namespace System.Diagnostics.Tests
                     // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
                     // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
                     // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                    // Allowing for error in 10 ms.
-                    long tenMSTicks = new TimeSpan(0, 0, 0, 0, 10).Ticks;
-                    long beforeTicks = timeBeforeCreatingProcess.Ticks - tenMSTicks;
-                    long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
+                    // Allowing for error in 10 ms, on windows 15ms.
+                    long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
+                    long beforeTicks = timeBeforeCreatingProcess.Ticks - intervalTicks;
+                    long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
                     Assert.InRange(thread.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
                 }
             }

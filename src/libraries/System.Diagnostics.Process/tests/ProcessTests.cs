@@ -342,10 +342,19 @@ namespace System.Diagnostics.Tests
             Assert.True(_process.VirtualMemorySize64 > 0);
         }
 
-        [ActiveIssue(3281, PlatformID.OSX)]
         [Fact]
         public void TestWorkingSet64()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // resident memory can be 0 on OSX. From apple documentation: 
+                // Wired: Information in RAM that can't be moved to the Mac's drive.
+                // The amount of Wired memory depends on the applications you are using.
+                // Does not specify if there is a significant wired memory for each app.
+                Assert.True(_process.WorkingSet64 >= 0);
+                return;
+            }
+
             Assert.True(_process.WorkingSet64 > 0);
         }
 
@@ -369,7 +378,7 @@ namespace System.Diagnostics.Tests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [Fact, ActiveIssue(3037)]
+        [Fact]
         public void TestProcessStartTime()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
