@@ -113,7 +113,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_Call()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -403,7 +402,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_MemberAccess()
         {
             var exprs = default(IEnumerable<Expression>);
