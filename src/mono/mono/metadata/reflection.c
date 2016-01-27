@@ -9101,7 +9101,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 		attr->ctor = mono_get_method_checked (image, mtoken, NULL, NULL, &error);
 		if (!attr->ctor) {
 			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to %s", image->name, mtoken, mono_error_get_message (&error));
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			mono_loader_set_error_from_mono_error (&error);
 			g_list_free (list);
 			g_free (ainfo);
 			return NULL;
