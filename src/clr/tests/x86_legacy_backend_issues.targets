@@ -1,155 +1,460 @@
-<Project DefaultTargets = "GetListOfTestCmds"
-	xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+<?xml version="1.0" ?><Project DefaultTargets="GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-		<ExcludeList Include="$(XunitTestBinBase)\GC\Features\HeapExpansion\Finalizer\Finalizer.cmd" >
-			<Issue>2406</Issue>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgpointer\_il_dbgpointer.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" >
-			<Issue>2389</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_il_cs\_dbgsin_il_cs.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd" >
-			<Issue>2409</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgrecurse_ep_void\_il_dbgrecurse_ep_void.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\1\arglist\arglist.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\2\arglist\arglist.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic2\rva_rvastatic2.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\4\arglist\arglist.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_cs_il\_relsin_cs_il.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\volatile\1\arglist\arglist.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_rellocalloc\_il_rellocalloc.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray1\HugeArray1.cmd" >
-			<Issue>2408</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof64\_il_dbgsizeof64.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_dbgconcurgc_il\_dbgconcurgc_il.cmd" >
-			<Issue>2410</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\misc\_relconcurgc_il\_relconcurgc_il.cmd" >
-			<Issue>2410</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic2\rvastatic2.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd" >
-			<Issue>2413</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_r\filter_il_r.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd" >
-			<Issue>2413</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\2\arglist\arglist.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_do\u8rem_cs_do.cmd" >
-			<Issue>2412</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic1\rvastatic1.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_ro\u8rem_cs_ro.cmd" >
-			<Issue>2412</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch3\switch3.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_d\dblarray4_cs_d.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_do\dblarray4_cs_do.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch10\switch10.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_r\dblarray4_cs_r.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b65423\b65423\b65423.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_ro\dblarray4_cs_ro.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_il_cs\_odbgsin_il_cs.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgi_array_merge\_il_dbgi_array_merge.cmd" >
-			<Issue>2415</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic1\rva_rvastatic1.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgsizeof\_il_dbgsizeof.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads3_il_d\threads3_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgu_array_merge\_il_dbgu_array_merge.cmd" >
-			<Issue>2415</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_ro\dblarray4_cs_ro.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_reli_array_merge\_il_reli_array_merge.cmd" >
-			<Issue>2415</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_cs_il\_dbgsin_cs_il.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relsizeof\_il_relsizeof.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relu_array_merge\_il_relu_array_merge.cmd" >
-			<Issue>2415</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\tail_il_d\tail_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\structs\systemvbringup\structinregs\structinregs.cmd" >
-			<Issue>2417</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof\_il_dbgsizeof.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_il_il\_dbgsin_il_il.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof32\_il_dbgsizeof32.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\1\arglist\arglist.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof64\_il_dbgsizeof64.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_ro\u8div_cs_ro.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof\_il_relsizeof.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d\ldelemnullarr1_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof32\_il_relsizeof32.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\simple\precise3_il_d\precise3_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof64\_il_relsizeof64.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.cmd Timed Out">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\Locals.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_reli_array_merge\_il_reli_array_merge.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch11\switch11.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex\CircleInConvex.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch9\switch9.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102637\b102637\b102637.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_dbgarrres\_il_dbgarrres.cmd" >
-			<Issue>2419</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch2\switch2.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b108129\b108129\b108129.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_do\u8rem_cs_do.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_large\verify01_large.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
-			<Issue>2420</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd Timed Out">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M09.5-PDC\b14426\b14426\b14426.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_il_cs\_orelsin_il_cs.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57367\b57367\b57367.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\overlap\overlap.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M02\b20785\b20785\b20785.cmd" >
-			<Issue>2421</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\unaligned\4\arglist\arglist.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\badldsfld_il_r\badldsfld_il_r.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b14585\b14585\b14585.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relsizeof\_il_relsizeof.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13621\b13621\b13621.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer_i\_il_relpointer_i.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray1\HugeArray1.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b16102\b16102\b16102.cmd" >
-			<Issue>2406</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relrecurse_ep_void\_il_relrecurse_ep_void.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b101136\b101136\b101136.cmd" >
-			<Issue>2422</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinally_r.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b399444\b399444a\b399444a.cmd" >
-			<Issue>2418</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b399444\b399444a\b399444a.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
-		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_relarrres\_il_relarrres.cmd" >
-			<Issue>2419</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_cs_il\_orelsin_cs_il.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\Desktop\_il_relthread-race\_il_relthread-race.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b03689\b03689\b03689.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof32\_il_dbgsizeof32.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof\_il_relsizeof.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57367\b57367\b57367.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b101136\b101136\b101136.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgsizeof\_il_dbgsizeof.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch7\switch7.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\rem_r4\rem_r4.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\NegativeCases\NegativeCases.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer\_il_relpointer.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M01\b12390\b12390\b12390.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch5\switch5.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic4\rvastatic4.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_d\badcodeafterfinally_d.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_cs\_relsin_il_cs.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M14-SP1\b119538\b119538a\b119538a.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof32\_il_relsizeof32.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic02\ThreadStatic02.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_r\ldelemnullarr1_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_reltest_void\_il_reltest_void.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\threads3_il_r\threads3_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b16102\b16102\b16102.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgu_array_merge\_il_dbgu_array_merge.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgpointer_i\_il_dbgpointer_i.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_r\global_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch32\mismatch32\mismatch32.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b108129\b108129\b108129.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\AttributeConflict\AttributeConflict.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgtest_implicit\_il_dbgtest_implicit.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M10\b04914\b04914\b04914.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_d\fault_il_d.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_do\dblarray4_cs_do.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_il_il\_odbgsin_il_il.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\badldsfld_il_d\badldsfld_il_d.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch64\mismatch64\mismatch64.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_r\nonrefsdarr_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_reltest_implicit\_il_reltest_implicit.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_r\dblarray4_cs_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\structs\systemvbringup\structinregs\structinregs.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_il\_relsin_il_il.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_r\fault_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\forceinlining\PositiveCases\PositiveCases.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M09.5-PDC\b14426\b14426\b14426.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\test-tls\test-tls.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\simple\precise3_il_r\precise3_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic02\ThreadStatic02.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\rem\u8rem_cs_ro\u8rem_cs_ro.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test1\test1.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\prefix\volatile\1\arglist\arglist.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgi_array_merge\_il_dbgi_array_merge.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof\_il_dbgsizeof.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_il_il\_orelsin_il_il.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\extended\extended.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b15307\b15307\b15307.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch6\switch6.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch1\switch1.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic4\rva_rvastatic4.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof64\_il_relsizeof64.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch4\switch4.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09\b13621\b13621\b13621.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_relu_array_merge\_il_relu_array_merge.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgtest_void\_il_dbgtest_void.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd Timed Out">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\switch\switch8\switch8.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M14-SP1\b119538\b119538b\b119538b.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic5\rvastatic5.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_cs_il\_odbgsin_cs_il.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\doublearray\dblarray4_cs_d\dblarray4_cs_d.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\102754\test2\test2.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\tail_il_r\tail_il_r.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\Conformance_Base\conv_ovf_i8_i\conv_ovf_i8_i.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_d\filter_il_d.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b49644\b49644\b49644.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b321799\b321799\b321799.cmd">
+			<Issue>needs triage</Issue>
+		</ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_d\nonrefsdarr_il_d.cmd">
+			<Issue>needs triage</Issue>
 		</ExcludeList>
 	</ItemGroup>
 </Project>
