@@ -638,7 +638,9 @@ namespace System.Threading
 
                 int myIndex = Thread.CurrentThread.ManagedThreadId % s_nLists;
 
-                CancellationCallbackInfo callbackInfo = new CancellationCallbackInfo(callback, stateForCallback, targetSyncContext, executionContext, this);
+                CancellationCallbackInfo callbackInfo = targetSyncContext != null ?
+                    new CancellationCallbackInfo.WithSyncContext(callback, stateForCallback, executionContext, this, targetSyncContext) :
+                    new CancellationCallbackInfo(callback, stateForCallback, executionContext, this);
 
                 //allocate the callback list array
                 var registeredCallbacksLists = m_registeredCallbacksLists;
@@ -769,10 +771,11 @@ namespace System.Threading
                                     // We assume that syncCtx.Send() has forwarded on user exceptions when appropriate.
                                     try
                                     {
-                                        if (m_executingCallback.TargetSyncContext != null)
+                                        var wsc = m_executingCallback as CancellationCallbackInfo.WithSyncContext;
+                                        if (wsc != null)
                                         {
-
-                                            m_executingCallback.TargetSyncContext.Send(CancellationCallbackCoreWork_OnSyncContext, args);
+                                            Contract.Assert(wsc.TargetSyncContext != null, "Should only have derived CCI if non-null SyncCtx");
+                                            wsc.TargetSyncContext.Send(CancellationCallbackCoreWork_OnSyncContext, args);
                                             // CancellationCallbackCoreWork_OnSyncContext may have altered ThreadIDExecutingCallbacks, so reset it. 
                                             ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
                                         }
@@ -979,17 +982,30 @@ namespace System.Threading
     {
         internal readonly Action<object> Callback;
         internal readonly object StateForCallback;
-        internal readonly SynchronizationContext TargetSyncContext;
         internal readonly ExecutionContext TargetExecutionContext;
         internal readonly CancellationTokenSource CancellationTokenSource;
 
+        internal sealed class WithSyncContext : CancellationCallbackInfo
+        {
+            // Very rarely used, and as such it is separated out into a 
+            // a derived type so that the space for it is pay-for-play.
+            internal readonly SynchronizationContext TargetSyncContext;
+
+            internal WithSyncContext(
+                Action<object> callback, object stateForCallback, ExecutionContext targetExecutionContext, CancellationTokenSource cancellationTokenSource,
+                SynchronizationContext targetSyncContext) :
+                base(callback, stateForCallback, targetExecutionContext, cancellationTokenSource)
+            {
+                TargetSyncContext = targetSyncContext;
+            }
+
+        }
+
         internal CancellationCallbackInfo(
-            Action<object> callback, object stateForCallback, SynchronizationContext targetSyncContext, ExecutionContext targetExecutionContext,
-            CancellationTokenSource cancellationTokenSource)
+            Action<object> callback, object stateForCallback, ExecutionContext targetExecutionContext, CancellationTokenSource cancellationTokenSource)
         {
             Callback = callback;
             StateForCallback = stateForCallback;
-            TargetSyncContext = targetSyncContext;
             TargetExecutionContext = targetExecutionContext;
             CancellationTokenSource = cancellationTokenSource;
         }
