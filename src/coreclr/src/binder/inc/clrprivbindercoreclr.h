@@ -86,8 +86,6 @@ public:
 
     void SetManagedAssemblyLoadContext(INT_PTR ptrManagedTPABinderInstance)
     {
-        _ASSERTE(m_ptrManagedAssemblyLoadContext == NULL);
-
         m_ptrManagedAssemblyLoadContext = ptrManagedTPABinderInstance;
     }
     
