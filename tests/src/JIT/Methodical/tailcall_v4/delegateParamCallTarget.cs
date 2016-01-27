@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*
  * When generating the code for a tail call, the JIT was not careful to preserve any stack-based parameters used in the computation of the call target address if it is a simple indirection (like in the case of delgate.Invoke).
