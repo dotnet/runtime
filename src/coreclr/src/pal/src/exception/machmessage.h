@@ -4,17 +4,13 @@
 
 /*++
 
-
-
 Module Name:
 
-    machexception.cpp
+    machmessage.h
 
 Abstract:
 
     Abstraction over Mach messages used during exception handling.
-
-
 
 --*/
 
@@ -22,37 +18,83 @@ Abstract:
 #include <mach/mach_error.h>
 #include <mach/thread_status.h>
 
+using namespace CorUnix;
+
 #if HAVE_MACH_EXCEPTIONS
 
 #if defined(_AMD64_)
-// Constant (exception behavior modifier) defined only in the 10.5 SDK. This is OR'd with one of the standard
-// behavior codes (EXCEPTION_STATE_IDENTITY etc.) to modify the format of the message sent to use 64-bit
-// exception sub-codes instead of the default 32-bit ones.
-#ifndef MACH_EXCEPTION_CODES
-#define MACH_EXCEPTION_CODES 0x80000000
-#endif
-
-typedef	int64_t				mach_exception_data_type_t;
-typedef mach_exception_data_type_t	*mach_exception_data_t;
-typedef	mach_exception_data_type_t	mach_exception_code_t;
-typedef	mach_exception_data_type_t	mach_exception_subcode_t;
-
 #define MACH_EH_TYPE(x) mach_##x
 #else
 #define MACH_EH_TYPE(x) x
 #endif // defined(_AMD64_)
 
+// The vast majority of Mach calls we make in this module are critical: we cannot recover from failures of
+// these methods (principally because we're handling hardware exceptions in the context of a single dedicated
+// handler thread). The following macro encapsulates checking the return code from Mach methods and emitting 
+// some useful data and aborting the process on failure.
+#define CHECK_MACH(_msg, machret) do {                                      \
+        if (machret != KERN_SUCCESS)                                        \
+        {                                                                   \
+            char _szError[1024];                                            \
+            sprintf(_szError, "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            mach_error(_szError, machret);                                  \
+            abort();                                                        \
+        }                                                                   \
+    } while (false)
+
+// This macro terminates the process with some useful debug info as above, but for the general failure points
+// that have nothing to do with Mach.
+#define NONPAL_RETAIL_ASSERT(_msg, ...) do {                                    \
+        printf("%s: %u: " _msg "\n", __FUNCTION__, __LINE__, ## __VA_ARGS__);   \
+        abort();                                                                \
+    } while (false)
+
+#define NONPAL_RETAIL_ASSERTE(_expr) do {                    \
+        if (!(_expr))                                        \
+            NONPAL_RETAIL_ASSERT("ASSERT: %s\n", #_expr);    \
+    } while (false)
+
 #ifdef _DEBUG
+
+#define NONPAL_TRACE_ENABLED getenv("NONPAL_TRACING")
+
+#define NONPAL_ASSERT(_msg, ...) NONPAL_RETAIL_ASSERT(_msg, __VA_ARGS__)
+
+// Assert macro that doesn't rely on the PAL.
+#define NONPAL_ASSERTE(_expr) do {                           \
+        if (!(_expr))                                        \
+            NONPAL_RETAIL_ASSERT("ASSERT: %s\n", #_expr);    \
+    } while (false)
 
 // Debug-only output with printf-style formatting.
 #define NONPAL_TRACE(_format, ...) do {                                                  \
-        if (getenv("NONPAL_TRACING")) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
+        if (NONPAL_TRACE_ENABLED) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
     } while (false)
+
 #else // _DEBUG
+
+#define NONPAL_TRACE_ENABLED false 
+#define NONPAL_ASSERT(_msg, ...)
+#define NONPAL_ASSERTE(_expr)
 #define NONPAL_TRACE(_format, ...)
+
 #endif // _DEBUG
 
-struct MachExceptionHandler;
+class MachMessage;
+
+// Contains all the exception and thread state information needed to forward the exception.
+struct MachExceptionInfo
+{
+    exception_type_t ExceptionType;
+    mach_msg_type_number_t SubcodeCount;
+    MACH_EH_TYPE(exception_data_type_t) Subcodes[2];
+    x86_thread_state_t ThreadState;
+    x86_float_state_t FloatState;
+    x86_debug_state_t DebugState;
+
+    MachExceptionInfo(mach_port_t thread, MachMessage& message);
+    void RestoreState(mach_port_t thread);
+};
 
 // Abstraction of a subset of Mach message types. Provides accessors that hide the subtle differences in the
 // message layout of similar message types.
@@ -64,6 +106,7 @@ public:
     enum MessageType
     {
         SET_THREAD_MESSAGE_ID = 1,
+        FORWARD_EXCEPTION_MESSAGE_ID = 2,
         NOTIFY_SEND_ONCE_MESSAGE_ID = 71,
         EXCEPTION_RAISE_MESSAGE_ID = 2401,
         EXCEPTION_RAISE_STATE_MESSAGE_ID = 2402,
@@ -83,19 +126,16 @@ public:
     // ForwardNotification() or ReplyToNotification() to construct a message and sent it.
     MachMessage();
 
-    // Initializes this message from another
-    void InitializeFrom(const MachMessage& source);
-
     // Listen for the next message on the given port and initialize this class with the contents. The message
     // type must match one of the MessageTypes indicated above (or the process will be aborted).
     void Receive(mach_port_t hPort);
 
     // Indicate whether a received message belongs to a particular semantic class.
     bool IsSetThreadRequest();          // Message is a request to set the context of a particular thread
+    bool IsForwardExceptionRequest();   // Message is a request to forward the exception
+    bool IsSendOnceDestroyedNotify();   // Message is a notification that a send-once message was destroyed by the receiver
     bool IsExceptionNotification();     // Message is a notification of an exception
     bool IsExceptionReply();            // Message is a reply to the notification of an exception
-    bool IsSendOnceDestroyedNotify();   // Message is a notification that a send-once message was destroyed by
-                                        // the receiver
 
     // Get properties of a received message header.
     MessageType GetMessageType();       // The message type
@@ -106,6 +146,12 @@ public:
     // Get the properties of a set thread request. Fills in the provided context structure with the context
     // from the message and returns the target thread to which the context should be applied.
     thread_act_t GetThreadContext(CONTEXT *pContext);
+
+    // Returns the pal thread instance for the forward exception message
+    CPalThread *GetPalThread();
+
+    // Returns the exception info from the forward exception message
+    MachExceptionInfo *GetExceptionInfo();
 
     // Get properties of the type-specific portion of the message. The following properties are supported by
     // exception notification messages only.
@@ -122,22 +168,27 @@ public:
     // message doesn't contain a thread state or the flavor of the state in the message doesn't match, the
     // state will be fetched directly from the target thread instead (which can be computed implicitly for
     // exception messages or passed explicitly for reply messages).
-    size_t GetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, thread_act_t hThread = NULL);
+    mach_msg_type_number_t GetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, thread_act_t thread = NULL);
+
+    // Fetch the return code from a reply type message.
+    kern_return_t GetReturnCode();
 
     // Initialize and send a request to set the register context of a particular thread.
-    void SendSetThread(mach_port_t hServerPort, thread_act_t hThread, CONTEXT *pContext);
+    void SendSetThread(mach_port_t hServerPort, CONTEXT *pContext);
+
+    // Initialize and send a request to forward the exception message to the notification thread
+    void SendForwardException(mach_port_t hServerPort, MachExceptionInfo *pExceptionInfo, CPalThread *ppalThread);
 
     // Initialize the message (overwriting any previous content) to represent a forwarded version of the given
     // exception notification message and send that message to the chain-back handler previously registered
     // for the exception type being notified. The new message takes account of the fact that the target
-    // handler may not have requested the same notification behavior or flavor as our handler. Blocks until
-    // the reply is received.
-    void ForwardNotification(CorUnix::MachExceptionHandler *pHandler, MachMessage *pNotification);
+    // handler may not have requested the same notification behavior or flavor as our handler.
+    void ForwardNotification(MachExceptionHandler *pHandler, MachMessage& message);
 
     // Initialize the message (overwriting any previous content) to represent a reply to the given exception
     // notification and send that reply back to the original sender of the notification. This is used when our
     // handler handles the exception rather than forwarding it to a chain-back handler.
-    void ReplyToNotification(MachMessage *pNotification, kern_return_t eResult);
+    void ReplyToNotification(MachMessage& message, kern_return_t eResult);
 
 private:
     // The maximum size in bytes of any Mach message we can send or receive. Calculating an exact size for
@@ -155,6 +206,17 @@ private:
         CONTEXT new_context;
     };
 
+    // Request to forward the exception notification
+    // FORWARD_EXCEPTION_MESSAGE_ID
+    struct forward_exception_request_t
+    {
+        thread_act_t thread;
+        CPalThread *ppalThread;
+        MachExceptionInfo exception_info;
+    };
+
+#pragma pack(4)
+
     // EXCEPTION_RAISE_MESSAGE_ID
     struct exception_raise_notification_t
     {
@@ -164,7 +226,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        integer_t code[2];
+        exception_data_type_t code[2];
     };
 
     // EXCEPTION_RAISE_REPLY_MESSAGE_ID
@@ -183,7 +245,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        int64_t code[2];
+        mach_exception_data_type_t code[2];
     };
 
     // EXCEPTION_RAISE_REPLY_64_MESSAGE_ID
@@ -199,7 +261,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        integer_t code[2];
+        exception_data_type_t code[2];
         thread_state_flavor_t flavor;
         mach_msg_type_number_t old_state_count;
         natural_t old_state[THREAD_STATE_MAX];
@@ -221,7 +283,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        int64_t code[2];
+        mach_exception_data_type_t code[2];
         thread_state_flavor_t flavor;
         mach_msg_type_number_t old_state_count;
         natural_t old_state[THREAD_STATE_MAX];
@@ -246,7 +308,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        integer_t code[2];
+        exception_data_type_t code[2];
         thread_state_flavor_t flavor;
         mach_msg_type_number_t old_state_count;
         natural_t old_state[THREAD_STATE_MAX];
@@ -271,7 +333,7 @@ private:
         NDR_record_t ndr;
         exception_type_t exception;
         mach_msg_type_number_t code_count;
-        int64_t code[2];
+        mach_exception_data_type_t code[2];
         thread_state_flavor_t flavor;
         mach_msg_type_number_t old_state_count;
         natural_t old_state[THREAD_STATE_MAX];
@@ -287,6 +349,8 @@ private:
         natural_t new_state[THREAD_STATE_MAX];
     };
 
+#pragma pack()
+
     // All the above messages are sent with a standard Mach header prepended. This structure unifies the
     // message formats.
     struct mach_message_t
@@ -295,6 +359,7 @@ private:
         union
         {
             set_thread_request_t                                set_thread;
+            forward_exception_request_t                         forward_exception;
             exception_raise_notification_t                      raise;
             exception_raise_state_notification_t                raise_state;
             exception_raise_state_identity_notification_t       raise_state_identity;
@@ -337,9 +402,6 @@ private:
     // Transform a Mach message ID for an exception notification into the corresponding ID for the reply.
     mach_msg_id_t MapNotificationToReplyType(mach_msg_id_t eNotificationType);
 
-    // Fetch the return code from a reply type message.
-    kern_return_t GetReturnCode();
-
     // The following methods initialize fields on the message prior to transmission. Each is valid for either
     // notification, replies or both. If a particular setter is defined for replies, say, then it will be a
     // no-op for any replies which don't contain that field. This makes transforming between notifications and
@@ -347,7 +409,7 @@ private:
     // those operations that make sense will do any work).
 
     // Defined for notifications:
-    void SetThread(thread_act_t hThread);
+    void SetThread(thread_act_t thread);
     void SetException(exception_type_t eException);
     void SetExceptionCodeCount(int cCodes);
     void SetExceptionCode(int iIndex, MACH_EH_TYPE(exception_data_type_t) iCode);
@@ -356,7 +418,7 @@ private:
     void SetReturnCode(kern_return_t eReturnCode);
 
     // Defined for both notifications and replies.
-    void SetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, size_t cbState);
+    void SetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, mach_msg_type_number_t count);
 
     // Maximally sized buffer for the message to be received into or transmitted out of this class.
     unsigned char   m_rgMessageBuffer[kcbMaxMessageSize];
