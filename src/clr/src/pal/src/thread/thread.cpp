@@ -2738,51 +2738,41 @@ PAL_InjectActivation(
 
 extern mach_port_t s_ExceptionPort;
 
-// Returns a pointer to the handler node that should be initialized next. The first time this is called for a
-// thread the bottom node will be returned. Thereafter the top node will be returned. Also returns the Mach
-// exception port that should be registered.
-CorUnix::CThreadMachExceptionHandlerNode *CorUnix::CThreadMachExceptionHandlers::GetNodeForInitialization()
-{
-    return &m_node;
-}
-
 // Get handler details for a given type of exception. If successful the structure pointed at by pHandler is
 // filled in and true is returned. Otherwise false is returned.
 bool CorUnix::CThreadMachExceptionHandlers::GetHandler(exception_type_t eException, CorUnix::MachExceptionHandler *pHandler)
 {
     exception_mask_t bmExceptionMask = (1 << eException);
-    CThreadMachExceptionHandlerNode *pNode = &m_node;
-    int idxHandler = GetIndexOfHandler(bmExceptionMask, pNode);
+    int idxHandler = GetIndexOfHandler(bmExceptionMask);
 
     // Did we find a handler?
     if (idxHandler == -1)
         return false;
 
     // Found one, so initialize the output structure with the details.
-    pHandler->m_mask = pNode->m_masks[idxHandler];
-    pHandler->m_handler = pNode->m_handlers[idxHandler];
-    pHandler->m_behavior = pNode->m_behaviors[idxHandler];
-    pHandler->m_flavor = pNode->m_flavors[idxHandler];
+    pHandler->m_mask = m_masks[idxHandler];
+    pHandler->m_handler = m_handlers[idxHandler];
+    pHandler->m_behavior = m_behaviors[idxHandler];
+    pHandler->m_flavor = m_flavors[idxHandler];
 
     return true;
 }
 
 // Look for a handler for the given exception within the given handler node. Return its index if successful or
 // -1 otherwise.
-int CorUnix::CThreadMachExceptionHandlers::GetIndexOfHandler(exception_mask_t bmExceptionMask,
-                                                             CorUnix::CThreadMachExceptionHandlerNode *pNode)
+int CorUnix::CThreadMachExceptionHandlers::GetIndexOfHandler(exception_mask_t bmExceptionMask)
 {
     // Check all handler entries for one handling the exception mask.
-    for (int i = 0; i < pNode->m_nPorts; i++)
+    for (mach_msg_type_number_t i = 0; i < m_nPorts; i++)
     {
-        if (pNode->m_masks[i] & bmExceptionMask &&      // Entry covers this exception type
-            pNode->m_handlers[i] != MACH_PORT_NULL &&   // And the handler isn't null
-            pNode->m_handlers[i] != s_ExceptionPort)    // And the handler isn't ourselves
-        {
+        // Entry covers this exception type and the handler isn't null
+        if (m_masks[i] & bmExceptionMask && m_handlers[i] != MACH_PORT_NULL)
+        { 
+            _ASSERTE(m_handlers[i] != s_ExceptionPort);
+
             // One more check; has the target handler port become dead?
             mach_port_type_t ePortType;
-            if (mach_port_type(mach_task_self(), pNode->m_handlers[i], &ePortType) == KERN_SUCCESS &&
-                !(ePortType & MACH_PORT_TYPE_DEAD_NAME))
+            if (mach_port_type(mach_task_self(), m_handlers[i], &ePortType) == KERN_SUCCESS && !(ePortType & MACH_PORT_TYPE_DEAD_NAME))
             {
                 // Got a matching entry.
                 return i;
