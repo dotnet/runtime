@@ -1970,7 +1970,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 MonoMethod *
 mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
-	return mono_get_method_full (image, token, klass, NULL);
+	MonoError error;
+	MonoMethod *result = mono_get_method_checked (image, token, klass, NULL, &error);
+	mono_error_cleanup (&error);
+	return result;
 }
 
 MonoMethod *
