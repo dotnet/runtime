@@ -1958,8 +1958,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	offsets = mono_allocate_stack_slots (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 		char *mname = mono_method_full_name (cfg->method, TRUE);
-		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-		cfg->exception_message = g_strdup_printf ("Method %s stack is too big.", mname);
+		mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Method %s stack is too big.", mname));
 		g_free (mname);
 		return;
 	}
@@ -2475,8 +2474,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 			if (size >= 10000) {
 				/* Avoid asserts in emit_memcpy () */
-				cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-				cfg->exception_message = g_strdup_printf ("Passing an argument of size '%d'.", size);
+				mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Passing an argument of size '%d'.", size));
 				/* Continue normally */
 			}
 
