@@ -1116,14 +1116,14 @@ void                Compiler::fgExtendDbgLifetimes()
         }
     }
 
-    /* raMarkStkVars() reserves stack space for unused variables (which
-       needs to be initialized). However, arguments don't need to be initialized.
-       So just ensure that they don't have a 0 ref cnt */
+    // raMarkStkVars() reserves stack space for unused variables (which
+    //   needs to be initialized). However, arguments don't need to be initialized.
+    //   So just ensure that they don't have a 0 ref cnt
 
     unsigned lclNum = 0;
     for (LclVarDsc* varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
-        if (varDsc->lvRefCnt == 0 && varDsc->lvArgReg)
+        if (varDsc->lvRefCnt == 0 && varDsc->lvIsRegArg)
         {
             varDsc->lvRefCnt = 1;
         }
