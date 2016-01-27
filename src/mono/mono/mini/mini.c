@@ -1208,7 +1208,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 /*
  * mini_method_verify:
  * 
- * Verify the method using the new verfier.
+ * Verify the method using the verfier.
  * 
  * Returns true if the method is invalid. 
  */
@@ -1217,7 +1217,6 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	GSList *tmp, *res;
 	gboolean is_fulltrust;
-	MonoLoaderError *error;
 
 	if (method->verification_success)
 		return FALSE;
@@ -1230,11 +1229,13 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 
 	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility, is_fulltrust);
 
-	if ((error = mono_loader_get_last_error ())) {
-		if (fail_compile)
-			cfg->exception_type = error->exception_type;
-		else
+	if (mono_loader_get_last_error ()) {
+		if (fail_compile) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+			mono_error_set_from_loader_error (&cfg->error);
+		} else {
 			mono_loader_clear_error ();
+		}
 		if (res)
 			mono_free_verify_list (res);
 		return TRUE;
@@ -1256,16 +1257,20 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
 				if (fail_compile) {
 					char *method_name = mono_method_full_name (method, TRUE);
+					char *msg = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
 
-					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS) {
-						if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
-							mono_error_set_generic_error (&cfg->error, "System", "MethodAccessException", "Error verifying %s: %s", method_name, info->info.message);
-						else
-							mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "Error verifying %s: %s", method_name, info->info.message);
-						cfg->exception_type = MONO_EXCEPTION_MONO_ERROR;
+					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
+						mono_error_set_generic_error (&cfg->error, "System", "MethodAccessException", "%s", msg);
+					else if (info->exception_type == info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
+						mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "%s", msg);
+					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
+						mono_error_set_generic_error (&cfg->error, "System.Security", "VerificationException", msg);
+					if (!mono_error_ok (&cfg->error)) {
+						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+						g_free (msg);
 					} else {
 						cfg->exception_type = info->exception_type;
-						cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+						cfg->exception_message = msg;
 					}
 					g_free (method_name);
 				}
@@ -3481,10 +3486,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	header = cfg->header;
 	if (!header) {
-		MonoLoaderError *error;
-
-		if ((error = mono_loader_get_last_error ())) {
-			cfg->exception_type = error->exception_type;
+		if (mono_loader_get_last_error ()) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+			mono_error_set_from_loader_error (&cfg->error);
 		} else {
 			mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name));
 		}
@@ -4327,33 +4331,24 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_FILE_NOT_FOUND:
 	case MONO_EXCEPTION_BAD_IMAGE: {
 		/* Throw a type load exception if needed */
-		MonoLoaderError *error = mono_loader_get_last_error ();
-
-		if (error) {
-			ex = mono_loader_error_prepare_exception (error);
+		if (cfg->exception_ptr) {
+			ex = mono_class_get_exception_for_failure ((MonoClass *)cfg->exception_ptr);
 		} else {
-			if (cfg->exception_ptr) {
-				ex = mono_class_get_exception_for_failure ((MonoClass *)cfg->exception_ptr);
-			} else {
-				if (cfg->exception_type == MONO_EXCEPTION_MISSING_FIELD)
-					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", cfg->exception_message);
-				else if (cfg->exception_type == MONO_EXCEPTION_MISSING_METHOD)
-					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", cfg->exception_message);
-				else if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
-					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", cfg->exception_message);
-				else if (cfg->exception_type == MONO_EXCEPTION_FILE_NOT_FOUND)
-					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.IO", "FileNotFoundException", cfg->exception_message);
-				else if (cfg->exception_type == MONO_EXCEPTION_BAD_IMAGE)
-					ex = mono_get_exception_bad_image_format (cfg->exception_message);
-				else
-					g_assert_not_reached ();
-			}
+			if (cfg->exception_type == MONO_EXCEPTION_MISSING_FIELD)
+				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", cfg->exception_message);
+			else if (cfg->exception_type == MONO_EXCEPTION_MISSING_METHOD)
+				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", cfg->exception_message);
+			else if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
+				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", cfg->exception_message);
+			else if (cfg->exception_type == MONO_EXCEPTION_FILE_NOT_FOUND)
+				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.IO", "FileNotFoundException", cfg->exception_message);
+			else if (cfg->exception_type == MONO_EXCEPTION_BAD_IMAGE)
+				ex = mono_get_exception_bad_image_format (cfg->exception_message);
+			else
+				g_assert_not_reached ();
 		}
 		break;
 	}
-	case MONO_EXCEPTION_UNVERIFIABLE_IL:
-		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", cfg->exception_message);
-		break;
 	case MONO_EXCEPTION_MONO_ERROR:
 		g_assert (!mono_error_ok (&cfg->error));
 		ex = mono_error_convert_to_exception (&cfg->error);

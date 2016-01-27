@@ -7084,12 +7084,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cheader = mono_method_get_header (cmethod);
 
 	if (cheader == NULL || mono_loader_get_last_error ()) {
-		MonoLoaderError *error = mono_loader_get_last_error ();
-
 		if (cheader)
 			mono_metadata_free_mh (cheader);
-		if (inline_always && error)
-			mono_cfg_set_exception (cfg, error->exception_type);
+		if (inline_always && mono_loader_get_last_error ()) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+			mono_error_set_from_loader_error (&cfg->error);
+		}
 
 		mono_loader_clear_error ();
 		return 0;
@@ -8152,10 +8152,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	image = method->klass->image;
 	header = mono_method_get_header (method);
 	if (!header) {
-		MonoLoaderError *error;
-
-		if ((error = mono_loader_get_last_error ())) {
-			mono_cfg_set_exception (cfg, error->exception_type);
+		if (mono_loader_get_last_error ()) {
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+			mono_error_set_from_loader_error (&cfg->error);
 		} else {
 			mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name));
 		}
@@ -9220,8 +9219,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 					
-			if (!cmethod || mono_loader_get_last_error ())
-				LOAD_ERROR;
+			if (!cmethod || mono_loader_get_last_error ()) {
+				if (mono_loader_get_last_error ()) {
+					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+					mono_error_set_from_loader_error (&cfg->error);
+					CHECK_CFG_ERROR;
+				} else {
+					LOAD_ERROR;
+				}
+			}
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {
