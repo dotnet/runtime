@@ -4492,12 +4492,12 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 // the second pass to unwind the stack and execute the handler.
 //
 // Arguments:
-//      ex - a PAL_SEHException that stores information about the managed
-//           exception that needs to be dispatched.
+//      ex           - a PAL_SEHException that stores information about the managed
+//                     exception that needs to be dispatched.
+//      frameContext - the context of the first managed frame of the exception call stack
 //
-VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
+VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT* frameContext)
 {
-    CONTEXT frameContext;
     CONTEXT unwindStartContext;
     EXCEPTION_DISPOSITION disposition;
     DISPATCHER_CONTEXT dispatcherContext;
@@ -4510,17 +4510,14 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     GetThread()->UnhijackThread();
 #endif
 
-    RtlCaptureContext(&frameContext);
-
-    controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
-
-    unwindStartContext = frameContext;
+    controlPc = GetIP(frameContext);
+    unwindStartContext = *frameContext;
 
     if (!ExecutionManager::IsManagedCode(GetIP(&ex.ContextRecord)))
     {
         // This is the first time we see the managed exception, set its context to the managed frame that has caused
         // the exception to be thrown
-        ex.ContextRecord = frameContext;
+        ex.ContextRecord = *frameContext;
         ex.ExceptionRecord.ExceptionAddress = (VOID*)controlPc;
     }
 
@@ -4545,7 +4542,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
                 dispatcherContext.ImageBase,
                 dispatcherContext.ControlPc,
                 dispatcherContext.FunctionEntry,
-                &frameContext,
+                frameContext,
                 &handlerData,
                 &establisherFrame,
                 NULL);
@@ -4559,7 +4556,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             }
 
             dispatcherContext.EstablisherFrame = establisherFrame;
-            dispatcherContext.ContextRecord = &frameContext;
+            dispatcherContext.ContextRecord = frameContext;
 
             // Find exception handler in the current frame
             disposition = ProcessCLRException(&ex.ExceptionRecord,
@@ -4570,7 +4567,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             if (disposition == ExceptionContinueSearch)
             {
                 // Exception handler not found. Try the parent frame.
-                controlPc = GetIP(&frameContext);
+                controlPc = GetIP(frameContext);
             }
             else if (disposition == ExceptionStackUnwind)
             {
@@ -4587,22 +4584,22 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
         }
         else
         {
-            controlPc = Thread::VirtualUnwindLeafCallFrame(&frameContext);
+            controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
         {
-            UINT_PTR sp = GetSP(&frameContext);
+            UINT_PTR sp = GetSP(frameContext);
 
-            BOOL success = PAL_VirtualUnwind(&frameContext, NULL);
+            BOOL success = PAL_VirtualUnwind(frameContext, NULL);
             if (!success)
             {
                 _ASSERTE(!"UnwindManagedExceptionPass1: PAL_VirtualUnwind failed");
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
 
-            controlPc = GetIP(&frameContext);
+            controlPc = GetIP(frameContext);
 
             if (controlPc == 0)
             {
@@ -4615,7 +4612,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
                 UNREACHABLE();
             }
 
-            UINT_PTR parentSp = GetSP(&frameContext);
+            UINT_PTR parentSp = GetSP(frameContext);
 
             // Find all holders on this frame that are in scopes embedded in each other and call their filters.
             NativeExceptionHolderBase* holder = nullptr;
@@ -4635,7 +4632,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             }
         }
 
-    } while (Thread::IsAddressInCurrentStack((void*)GetSP(&frameContext)));
+    } while (Thread::IsAddressInCurrentStack((void*)GetSP(frameContext)));
 
     _ASSERTE(!"UnwindManagedExceptionPass1: Failed to find a handler. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
@@ -4661,28 +4658,28 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     {
         try
         {
+            // Unwind the context to the first managed frame
+            CONTEXT frameContext;
+            RtlCaptureContext(&frameContext);
+            UINT_PTR currentSP = GetSP(&frameContext);
+            Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
+            UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
+
+            // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them
+            // using the C++ handling. This is a special case when the UNINSTALL_MANAGED_EXCEPTION_DISPATCHER was
+            // not at the managed to native boundary.
+            if (NativeExceptionHolderBase::FindNextHolder(nullptr, (void*)currentSP, (void*)firstManagedFrameSP) != nullptr)
+            {
+                break;
+            }
+
             if (ex.IsFirstPass())
             {
-                UnwindManagedExceptionPass1(ex);
+                UnwindManagedExceptionPass1(ex, &frameContext);
             }
             else
             {
                 // This is a continuation of pass 2 after native frames unwinding.
-                // Get the managed frame to continue unwinding from.
-                CONTEXT frameContext;
-                RtlCaptureContext(&frameContext);
-                UINT_PTR currentSP = GetSP(&frameContext);
-                Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
-                UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
-            
-                // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them
-                // using the C++ handling. This is a special case when the UNINSTALL_MANAGED_EXCEPTION_DISPATCHER was
-                // not at the managed to native boundary.
-                if (NativeExceptionHolderBase::FindNextHolder(nullptr, (void*)currentSP, (void*)firstManagedFrameSP) != nullptr)
-                {
-                    break;
-                }
-
                 UnwindManagedExceptionPass2(ex, &frameContext);
             }
             UNREACHABLE();
