@@ -4190,7 +4190,7 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
  *   Main entry point for the JIT.
  */
 gpointer
-mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt, MonoException **jit_ex)
+mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error)
 {
 	MonoCompile *cfg;
 	gpointer code = NULL;
@@ -4200,6 +4200,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	guint32 prof_options;
 	GTimer *jit_timer;
 	MonoMethod *prof_method, *shared;
+
+	mono_error_init (error);
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
@@ -4263,7 +4265,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 		full_name = mono_method_full_name (method, TRUE);
 		msg = g_strdup_printf ("Unrecognizable runtime implemented method '%s'", full_name);
-		*jit_ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", msg);
+		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", msg);
+		mono_error_set_exception_instance (error, ex);
 		g_free (full_name);
 		g_free (msg);
 		return NULL;
@@ -4306,7 +4309,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		char *fullname = mono_method_full_name (method, TRUE);
 		char *msg = g_strdup_printf ("Attempting to JIT compile method '%s' while running with --aot-only. See http://docs.xamarin.com/ios/about/limitations for more information.\n", fullname);
 
-		*jit_ex = mono_get_exception_execution_engine (msg);
+		ex = mono_get_exception_execution_engine (msg);
+		mono_error_set_exception_instance (error, ex);
 		g_free (fullname);
 		g_free (msg);
 		
@@ -4350,6 +4354,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		break;
 	}
 	case MONO_EXCEPTION_MONO_ERROR:
+		// FIXME: MonoError has no copy ctor
 		g_assert (!mono_error_ok (&cfg->error));
 		ex = mono_error_convert_to_exception (&cfg->error);
 		break;
@@ -4362,7 +4367,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 
 		mono_destroy_compile (cfg);
-		*jit_ex = ex;
+		mono_error_set_exception_instance (error, ex);
 
 		return NULL;
 	}
@@ -4459,7 +4464,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (!vtable) {
 		ex = mono_class_get_exception_for_failure (method->klass);
 		g_assert (ex);
-		*jit_ex = ex;
+		mono_error_set_exception_instance (error, ex);
 		return NULL;
 	}
 
@@ -4479,7 +4484,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	ex = mono_runtime_class_init_full (vtable, FALSE);
 	if (ex) {
-		*jit_ex = ex;
+		mono_error_set_exception_instance (error, ex);
 		return NULL;
 	}
 	return code;

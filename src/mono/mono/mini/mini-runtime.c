@@ -1846,7 +1846,7 @@ no_gsharedvt_in_wrapper (void)
 }
 
 static gpointer
-mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex)
+mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *error)
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
@@ -1854,6 +1854,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	MonoJitInfo *ji;
 	MonoJitICallInfo *callinfo = NULL;
 	WrapperInfo *winfo = NULL;
+
+	mono_error_init (error);
 
 	/*
 	 * ICALL wrappers are handled specially, since there is only one copy of them
@@ -1887,9 +1889,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 				ctx = mono_method_get_context (method);
 			method = info->d.synchronized_inner.method;
 			if (ctx) {
-				MonoError error;
-				method = mono_class_inflate_generic_method_checked (method, ctx, &error);
-				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				method = mono_class_inflate_generic_method_checked (method, ctx, error);
+				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 			}
 		}
 	}
@@ -1904,9 +1905,9 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 			mono_jit_stats.methods_lookups++;
 			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
-			tmpEx = mono_runtime_class_init_full (vtable, ex == NULL);
+			tmpEx = mono_runtime_class_init_full (vtable, FALSE);
 			if (tmpEx) {
-				*ex = tmpEx;
+				mono_error_set_exception_instance (error, tmpEx);
 				return NULL;
 			}
 			return mono_create_ftnptr (target_domain, info->code_start);
@@ -1937,7 +1938,9 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 #endif
 
 	if (!code)
-		code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
+		code = mono_jit_compile_method_inner (method, target_domain, opt, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	if (!code && mono_llvm_only) {
 		if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
@@ -1990,13 +1993,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 gpointer
 mono_jit_compile_method (MonoMethod *method)
 {
-	MonoException *ex = NULL;
+	MonoError error;
 	gpointer code;
 
-	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), &ex);
+	mono_error_init (&error);
+	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), &error);
 	if (!code) {
-		g_assert (ex);
-		mono_raise_exception (ex);
+		g_assert (!mono_error_ok (&error));
+		mono_error_raise_exception (&error);
 	}
 
 	return code;
@@ -2458,16 +2462,16 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (callee) {
-			MonoException *jit_ex = NULL;
+			MonoError error;
 
-			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), &jit_ex);
+			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), &error);
 			if (!compiled_method) {
-				g_assert (jit_ex);
+				g_assert (!mono_error_ok (&error));
 				if (exc) {
-					*exc = (MonoObject*)jit_ex;
+					*exc = (MonoObject*)mono_error_convert_to_exception (&error);
 					return NULL;
 				} else {
-					mono_raise_exception (jit_ex);
+					mono_error_raise_exception (&error);
 					/* coverity[unreachable] */
 				}
 			}
