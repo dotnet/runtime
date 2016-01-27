@@ -559,6 +559,14 @@ combinedScenarios.each { scenario ->
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
+
+                                    // This will shorten the output file path lengths
+                                    // if __TestIntermediateDir is already set, buildtest.cmd will
+                                    // output test binaries to that directory. If it is not set, the 
+                                    // binaries are sent to a default directory whose name is about
+                                    // 35 characters long.
+                                    buildCommands += "set __TestIntermediateDir=int"
+                                    
                                     if (scenario == 'default' || Constants.jitStressModeScenarios.containsKey(scenario)) {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture}"
                                     }
