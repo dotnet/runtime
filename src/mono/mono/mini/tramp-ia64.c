@@ -18,6 +18,7 @@
 
 #include "mini.h"
 #include "mini-ia64.h"
+#include "jit-icalls.h"
 
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30

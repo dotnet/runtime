@@ -18,6 +18,7 @@
 
 #include "mini.h"
 #include "mini-sparc.h"
+#include "jit-icalls.h"
 
 /*
  * mono_arch_get_unbox_trampoline:

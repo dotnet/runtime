@@ -23,6 +23,7 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "debugger-agent.h"
+#include "jit-icalls.h"
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
