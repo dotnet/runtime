@@ -8,8 +8,11 @@
     <ProjectReference Include="..\ref\4.0.10\System.Diagnostics.Tracing.depproj">
       <SupportedFramework>net451;netcore451;wpa81</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\ref\4.0.20\System.Diagnostics.Tracing.depproj">
+      <SupportedFramework>net46</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Diagnostics.Tracing.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net462;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Tracing.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />

@@ -22,9 +22,9 @@
         "System.Threading": "4.0.10.0"
       }
     },
-    "net46": {
+    "net462": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0-rc2-23530"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.0-rc2-23530"
       }
     }
   }
