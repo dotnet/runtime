@@ -721,12 +721,6 @@ mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 											 MonoGenericContext    *context,
 											 MonoError *error);
 
-MonoArrayType *
-mono_metadata_parse_array_full              (MonoImage             *image,
-					     MonoGenericContainer  *container,
-					     const char            *ptr,
-					     const char           **rptr);
-
 MONO_API MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
 					     MonoGenericContainer  *container,

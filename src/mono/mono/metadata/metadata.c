@@ -1355,22 +1355,15 @@ mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *containe
 }
 
 MonoArrayType *
-mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
-								const char *ptr, const char **rptr)
+mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
 	MonoError error;
-	MonoArrayType *ret = mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr, &error);
+	MonoArrayType *ret = mono_metadata_parse_array_internal (m, NULL, FALSE, ptr, rptr, &error);
 	if (!ret) {
 		mono_loader_set_error_from_mono_error (&error);
 		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 	}
 	return ret;
-}
-
-MonoArrayType *
-mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
-{
-	return mono_metadata_parse_array_full (m, NULL, ptr, rptr);
 }
 
 /*
