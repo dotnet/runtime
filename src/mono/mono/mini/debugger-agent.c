@@ -62,6 +62,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
@@ -7858,6 +7859,7 @@ collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
 static ErrorCode
 type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
+	MonoError error;
 	MonoClass *nested;
 	MonoType *type;
 	gpointer iter;
@@ -8162,7 +8164,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_type_get_object (domain, &klass->byval_arg);
+		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, &klass->byval_arg, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		buffer_add_objid (buf, o);
 		break;
 	}
@@ -8221,7 +8224,6 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	case CMD_TYPE_GET_INTERFACES: {
 		MonoClass *parent;
 		GHashTable *iface_hash = g_hash_table_new (NULL, NULL);
-		MonoError error;
 		MonoClass *tclass, *iface;
 		GHashTableIter iter;
 

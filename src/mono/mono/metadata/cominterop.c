@@ -35,6 +35,8 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/strenc.h"
 #include "mono/utils/atomic.h"
+#include "mono/utils/mono-error.h"
+#include "mono/utils/mono-error-internals.h"
 #include <string.h>
 #include <errno.h>
 
@@ -520,11 +522,17 @@ cominterop_get_hresult_for_exception (MonoException* exc)
 static MonoReflectionType *
 cominterop_type_from_handle (MonoType *handle)
 {
+	MonoError error;
+	MonoReflectionType *ret;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *klass = mono_class_from_mono_type (handle);
 
 	mono_class_init (klass);
-	return mono_type_get_object (domain, handle);
+
+	ret = mono_type_get_object_checked (domain, handle, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return ret;
 }
 
 void

@@ -17,4 +17,7 @@ mono_identifier_unescape_type_name_chars (char* identifier);
 MonoImage *
 mono_find_dynamic_image_owner (void *ptr);
 
+MonoReflectionType*
+mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *error);
+
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

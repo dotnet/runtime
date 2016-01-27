@@ -60,6 +60,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/mono-basic-block.h>
+#include <mono/metadata/reflection-internals.h>
 
 #include "trace.h"
 
@@ -12255,7 +12256,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 						}
 					} else {
-						EMIT_NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, (MonoType *)handle));
+						MonoError error;
+						MonoReflectionType *rt = mono_type_get_object_checked (cfg->domain, (MonoType *)handle, &error);
+						mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+						EMIT_NEW_PCONST (cfg, ins, rt);
 					}
 					ins->type = STACK_OBJ;
 					ins->klass = cmethod->klass;

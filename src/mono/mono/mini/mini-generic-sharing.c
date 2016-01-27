@@ -12,6 +12,7 @@
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-counters.h>
 
 #include "mini.h"
@@ -1468,6 +1469,7 @@ static gpointer
 instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti,
 				  MonoGenericContext *context, MonoClass *klass)
 {
+	MonoError error;
 	gpointer data;
 	gboolean temporary;
 
@@ -1516,8 +1518,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	}
 	case MONO_RGCTX_INFO_TYPE:
 		return data;
-	case MONO_RGCTX_INFO_REFLECTION_TYPE:
-		return mono_type_get_object (domain, (MonoType *)data);
+	case MONO_RGCTX_INFO_REFLECTION_TYPE: {
+		MonoReflectionType *ret = mono_type_get_object_checked (domain, (MonoType *)data, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+		return ret;
+	}
 	case MONO_RGCTX_INFO_METHOD:
 		return data;
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: {
