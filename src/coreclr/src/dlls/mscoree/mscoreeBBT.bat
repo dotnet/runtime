@@ -1,8 +1,7 @@
-@rem ==++==
-@rem 
-@rem   Copyright (c) Microsoft Corporation.  All rights reserved.
-@rem 
-@rem ==--==
+@rem Licensed to the .NET Foundation under one or more agreements.
+@rem The .NET Foundation licenses this file to you under the MIT license.
+@rem See the LICENSE file in the project root for more information.
+
 setlocal
 rem @echo off
 REM Args are 1) full path to here 2) compile output dir 3) target platform 4) resulting binary
