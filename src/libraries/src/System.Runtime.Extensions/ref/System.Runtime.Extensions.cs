@@ -432,6 +432,7 @@ namespace System
     {
         public static int CurrentManagedThreadId { get { return default(int); } }
         public static bool HasShutdownStarted { get { return default(bool); } }
+        public static string MachineName { get { return default(string); } }
         public static string NewLine { get { return default(string); } }
         public static int ProcessorCount { get { return default(int); } }
         public static string StackTrace { get { return default(string); } }
