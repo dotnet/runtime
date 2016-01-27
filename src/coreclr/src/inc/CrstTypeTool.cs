@@ -1,7 +1,6 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 // 
 // This tool exists to transform a high level description of Crst dependencies (i.e. which Crst type may be
@@ -132,8 +131,9 @@ class CrstTypeTool
         // header comment to discourage direct editing and point the user at the CrstTypes.def file instead
         // (where all will be explained in greater detail).
         writer.WriteLine("//");
-        writer.WriteLine("// Copyright (c) Microsoft. All rights reserved.");
-        writer.WriteLine("// Licensed under the MIT license. See LICENSE file in the project root for full license information.");
+        writer.WriteLine("// Licensed to the .NET Foundation under one or more agreements.");
+        writer.WriteLine("// The .NET Foundation licenses this file to you under the MIT license.");
+        writer.WriteLine("// See the LICENSE file in the project root for more information.");
         writer.WriteLine("//");
         writer.WriteLine();
         writer.WriteLine("#ifndef __CRST_TYPES_INCLUDED");

@@ -1,9 +1,7 @@
-﻿;==++==
-;
-;   Copyright (c) Microsoft Corporation.  All rights reserved.
-;
-;==--==
-;
+﻿; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+; See the LICENSE file in the project root for more information.
+
 ; These are the managed resources for mscorlib.dll.
 ; See those first three bytes in the file?  This is in UTF-8.  Leave the
 ; Unicode byte order mark (U+FEFF) written in UTF-8 at the start of this file.

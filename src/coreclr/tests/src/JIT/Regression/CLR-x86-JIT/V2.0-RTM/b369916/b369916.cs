@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //
 
 //((((((s.e*((s.a+(s.b*s.c))-(s.c*s.d)))-((s.f+(s.e*s.f))-(s.g*s.h)))+(s.e+((s.a+(s.b*s.c))-(s.c*s.d))))-(s.g+((s.f+(s.e*s.f))-(s.g*s.h))))+((s.a+((s.h+(s.f+s.g))-(s.p*s.q)))*(((s.a+s.b)+s.g)-((s.c+s.b)*s.k))))-(((s.b*s.b)+s.g)-((s.c+s.b)*s.k)))
