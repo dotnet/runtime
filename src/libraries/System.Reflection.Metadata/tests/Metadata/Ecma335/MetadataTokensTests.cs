@@ -91,5 +91,45 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x7e, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => MetadataTokens.Handle((TableIndex)0x7f, 0xffffff));
         }
+
+        [Fact]
+        public void SpecificHandleFactories()
+        {
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.MethodDefinitionHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.MethodImplementationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.MethodSpecificationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.TypeDefinitionHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ExportedTypeHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.TypeReferenceHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.TypeSpecificationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.InterfaceImplementationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.MemberReferenceHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.FieldDefinitionHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.EventDefinitionHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.PropertyDefinitionHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.StandaloneSignatureHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ParameterHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.GenericParameterHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.GenericParameterConstraintHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ModuleReferenceHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.AssemblyReferenceHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.CustomAttributeHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.DeclarativeSecurityAttributeHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ConstantHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ManifestResourceHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.AssemblyFileHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.DocumentHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.MethodDebugInformationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.LocalScopeHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.LocalVariableHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.LocalConstantHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.ImportScopeHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetRowNumber(MetadataTokens.CustomDebugInformationHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(MetadataTokens.UserStringHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(MetadataTokens.StringHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(MetadataTokens.BlobHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset(MetadataTokens.GuidHandle(1)));
+            Assert.Equal(1, MetadataTokens.GetHeapOffset((BlobHandle)MetadataTokens.DocumentNameBlobHandle(1)));
+        }
     }
 }
