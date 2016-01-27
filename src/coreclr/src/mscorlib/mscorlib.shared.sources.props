@@ -789,7 +789,9 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
