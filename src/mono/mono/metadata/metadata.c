@@ -1601,9 +1601,8 @@ mono_metadata_cleanup (void)
  */
 static MonoType*
 mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container,
-								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr)
+								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
-	MonoError error;
 	MonoType *type, *cached;
 	MonoType stype;
 	gboolean byref = FALSE;
@@ -1611,6 +1610,8 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	const char *tmp_ptr;
 	int count = 0; // Number of mod arguments
 	gboolean found;
+
+	mono_error_init (error);
 
 	/*
 	 * According to the spec, custom modifiers should come before the byref
@@ -1649,8 +1650,10 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 		size = MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod);
 		type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
 		type->num_mods = count;
-		if (count > 64)
-			g_warning ("got more than 64 modifiers in type");
+		if (count > 64) {
+			mono_error_set_bad_image (error, m, "Invalid type with more than 64 modifiers");
+			return NULL;
+		}
 	} else {     // The type is of standard size, so we can allocate it on the stack.
 		type = &stype;
 		memset (type, 0, MONO_SIZEOF_TYPE);
@@ -1683,11 +1686,8 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
 
-	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, &error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, error))
 		return NULL;
-	}
 
 	if (rptr)
 		*rptr = ptr;
@@ -1740,20 +1740,7 @@ MonoType*
 mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
 							   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
-	MonoType *ret;
-
-	mono_error_init (error);
-
-	ret = mono_metadata_parse_type_internal (m, container, opt_attrs, transient, ptr, rptr);
-
-	if (!ret) {
-		if (mono_loader_get_last_error ())
-			mono_error_set_from_loader_error (error);
-		else
-			mono_error_set_bad_image (error, m, "Could not parse type at %p due to unknown reasons", ptr);
-	}
-
-	return ret;
+	return mono_metadata_parse_type_internal (m, container, opt_attrs, transient, ptr, rptr, error);
 }
 
 
@@ -1761,7 +1748,15 @@ MonoType*
 mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container,
 							   short opt_attrs, const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_type_internal (m, container, opt_attrs, FALSE, ptr, rptr);
+	MonoError error;
+	MonoType * type = mono_metadata_parse_type_internal (m, container, opt_attrs, FALSE, ptr, rptr, &error);
+	mono_loader_assert_no_error ();
+	if (!mono_error_ok (&error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
+
+	return type;
 }
 
 /*
@@ -3757,8 +3752,13 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh = (MonoMethodHeader *)g_malloc0 (MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*) + num_clauses * sizeof (MonoExceptionClause));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
-			mh->locals [i] = mono_metadata_parse_type_internal (m, container,
-																0, TRUE, locals_ptr, &locals_ptr);
+			MonoError error;
+			mh->locals [i] = mono_metadata_parse_type_internal (m, container, 0, TRUE, locals_ptr, &locals_ptr, &error);
+			if (!mono_error_ok (&error)) {
+				mono_loader_set_error_from_mono_error (&error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			}
+
 			if (!mh->locals [i])
 				goto fail;
 		}
