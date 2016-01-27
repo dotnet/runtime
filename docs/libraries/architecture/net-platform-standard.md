@@ -39,7 +39,7 @@ The .NET Platform Standard version represents binary portability across platform
 - Lower versions are always compatible with higher versions.
 
 ## Relationship to Platforms
-The .NET Platform Standard is not a platform in and of itself. It is a standard that platforms are implemented to. The .NET Platform Standard defines reference assemblies (contracts) that platforms must implement. These reference assemblies (ie. the standard) are defined in the [CoreFX repo](https://github.com/dotnet/corefx). This is the [proposed list of the contracts that are in the Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-proposed-standard-platform-contracts-from-corefx-tentative).
+The .NET Platform Standard is not a platform in and of itself. It is a standard that platforms are implemented to. The .NET Platform Standard defines reference assemblies (contracts) that platforms must implement. These reference assemblies (ie. the standard) are defined in the [CoreFX repo](https://github.com/dotnet/corefx). This is the [proposed list of the contracts that are in the Platform Standard](#list-of-proposed-standard-platform-contracts-from-corefx-tentative).
 
 ![Platform Standard and Library](https://cloud.githubusercontent.com/assets/8228359/11072769/52bc69d6-879c-11e5-8640-d92f9ee1e2d9.png)
 
