@@ -1979,11 +1979,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 {
 	MonoError error;
 	MonoMethod *result = mono_get_method_checked (image, token, klass, context, &error);
-	mono_loader_assert_no_error ();
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-	}
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -2126,12 +2122,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoError error;
 	MonoMethod *result = mono_get_method_constrained_checked (image, token, constrained_class, context, cil_method, &error);
-
-	mono_loader_assert_no_error ();
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-	}
+	mono_error_cleanup (&error);
 	return result;
 }
 
