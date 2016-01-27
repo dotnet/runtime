@@ -954,8 +954,10 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 
 	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
 	if (!addr) {
-		method = mono_get_method (image, token, NULL);
-		g_assert (method);
+		MonoError error;
+		method = mono_get_method_checked (image, token, NULL, NULL, &error);
+		if (!method)
+			g_error ("Could not load AOT trampoline due to %s", mono_error_get_message (&error));
 
 		/* Use the generic code */
 		return mono_magic_trampoline (regs, code, method, tramp);

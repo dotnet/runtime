@@ -541,12 +541,17 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
 	for (i = 0; i < mono_table_info_get_rows (methods); ++i) {
+		MonoError error;
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
 		const char *n = mono_metadata_string_heap (image, token);
 
 		if (strcmp (n, desc->name))
 			continue;
-		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error);
+			continue;
+		}
 		if (mono_method_desc_full_match (desc, method))
 			return method;
 	}

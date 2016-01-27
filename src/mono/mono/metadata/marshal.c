@@ -8155,6 +8155,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 {
+	MonoError error;
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -8162,7 +8163,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 	g_assert (token);
 
-	method = mono_get_method (image, token, NULL);
+	method = mono_get_method_checked (image, token, NULL, NULL, &error);
+	if (!method)
+		g_error ("Could not load vtfixup token 0x%x due to %s", token, mono_error_get_message (&error));
 	g_assert (method);
 
 	if (type & (VTFIXUP_TYPE_FROM_UNMANAGED | VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN)) {

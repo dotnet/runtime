@@ -7629,7 +7629,10 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (token == 0) {
 				buffer_add_id (buf, 0);
 			} else {
-				m = mono_get_method (ass->image, token, NULL);
+				MonoError error;
+				m = mono_get_method_checked (ass->image, token, NULL, NULL, &error);
+				if (!m)
+					mono_error_cleanup (&error); /* FIXME don't swallow the error */
 				buffer_add_methodid (buf, domain, m);
 			}
 		}

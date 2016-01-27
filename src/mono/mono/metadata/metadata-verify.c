@@ -2925,6 +2925,7 @@ verify_cattr_table (VerifyContext *ctx)
 static void
 verify_cattr_table_full (VerifyContext *ctx)
 {
+	MonoError error;
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	MonoMethod *ctor;
 	const char *ptr;
@@ -2949,7 +2950,12 @@ verify_cattr_table_full (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute constructor row %d Token 0x%08x", i, data [MONO_CUSTOM_ATTR_TYPE]));
 		}
 
-		ctor = mono_get_method (ctx->image, mtoken, NULL);
+		ctor = mono_get_method_checked (ctx->image, mtoken, NULL, NULL, &error);
+
+		if (!ctor) {
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Could not load ctor due to %s", i, mono_error_get_message (&error)));
+			mono_error_cleanup (&error);
+		}
 
 		/*This can't fail since this is checked in is_valid_cattr_blob*/
 		g_assert (decode_signature_header (ctx, data [MONO_CUSTOM_ATTR_VALUE], &size, &ptr));

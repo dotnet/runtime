@@ -7374,19 +7374,19 @@ exception_exit:
 }
 
 static inline MonoMethod *
-mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
+mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *method;
+
+	mono_error_init (error);
 
 	if (m->wrapper_type != MONO_WRAPPER_NONE) {
 		method = (MonoMethod *)mono_method_get_wrapper_data (m, token);
 		if (context) {
-			MonoError error;
-			method = mono_class_inflate_generic_method_checked (method, context, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			method = mono_class_inflate_generic_method_checked (method, context, error);
 		}
 	} else {
-		method = mono_get_method_full (m->klass->image, token, klass, context);
+		method = mono_get_method_checked (m->klass->image, token, klass, context, error);
 	}
 
 	return method;
@@ -7395,10 +7395,16 @@ mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, Mono
 static inline MonoMethod *
 mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
-	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context);
+	MonoError error;
+	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context, cfg ? &cfg->error : &error);
 
-	if (method && cfg && !cfg->gshared && mono_class_is_open_constructed_type (&method->klass->byval_arg))
-		return NULL;
+	if (method && cfg && !cfg->gshared && mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
+		mono_error_set_bad_image (&cfg->error, cfg->method->klass->image, "Method with open type while not compiling gshared");
+		method = NULL;
+	}
+
+	if (!method && !cfg)
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 	return method;
 }
@@ -8981,9 +8987,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
-
-			if (!cmethod || mono_loader_get_last_error ())
-				LOAD_ERROR;
+			CHECK_CFG_ERROR;
  
 			if (cfg->gshared && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
@@ -9183,6 +9187,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = NULL;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			CHECK_CFG_ERROR;
+
 			cil_method = cmethod;
 				
 			if (constrained_class) {
@@ -9228,7 +9234,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {
-					target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context));
+					target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context), &cfg->error);
+					CHECK_CFG_ERROR;
 				}
 				if (!mono_method_can_access_method (method_definition, target_method) &&
 					!mono_method_can_access_method (method, cil_method))
@@ -10782,8 +10789,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
-			if (!cmethod || mono_loader_get_last_error ())
-				LOAD_ERROR;
+			CHECK_CFG_ERROR;
+
 			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
 			CHECK_CFG_ERROR;
 
@@ -13045,8 +13052,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
-				if (!cmethod || mono_loader_get_last_error ())
-					LOAD_ERROR;
+				CHECK_CFG_ERROR;
+
 				mono_class_init (cmethod->klass);
 
 				mono_save_token_info (cfg, image, n, cmethod);
@@ -13122,8 +13129,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
-				if (!cmethod || mono_loader_get_last_error ())
-					LOAD_ERROR;
+				CHECK_CFG_ERROR;
+
 				mono_class_init (cmethod->klass);
  
 				context_used = mini_method_check_context_used (cfg, cmethod);

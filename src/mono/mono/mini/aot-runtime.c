@@ -1218,9 +1218,11 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		if (!image)
 			return FALSE;
 
-		ref->method = mono_get_method_full (image, ref->token, NULL, NULL);
-		if (!ref->method)
+		ref->method = mono_get_method_checked (image, ref->token, NULL, NULL, &error);
+		if (!ref->method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			return FALSE;
+		}
 
 		memset (&ctx, 0, sizeof (ctx));
 
@@ -1229,7 +1231,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			ctx.method_inst = NULL;
  
 			ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			if (!ref->method)
+				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
 		}			
 
 		memset (&ctx, 0, sizeof (ctx));
@@ -1238,7 +1241,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			return FALSE;
 
 		ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, &error);
-		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+		if (!ref->method)
+			g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+
 	} else if (image_index == MONO_AOT_METHODREF_ARRAY) {
 		MonoClass *klass;
 		int method_type;
@@ -1300,8 +1305,10 @@ decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **
 static MonoMethod*
 decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target, guint8 *buf, guint8 **endbuf)
 {
+	MonoError error;
 	MethodRef ref;
 	gboolean res;
+	MonoMethod *result;
 
 	res = decode_method_ref_with_target (module, &ref, target, buf, endbuf);
 	if (!res)
@@ -1310,7 +1317,10 @@ decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target
 		return ref.method;
 	if (!ref.image)
 		return NULL;
-	return mono_get_method (ref.image, ref.token, NULL);
+	result = mono_get_method_checked (ref.image, ref.token, NULL, NULL, &error);
+	if (!result)
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+	return result;
 }
 
 static MonoMethod*
@@ -3313,8 +3323,11 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 					/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 					return NULL;
 			} else {
+				MonoError error;
 				token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
-				method = mono_get_method (image, token, NULL);
+				method = mono_get_method_checked (image, token, NULL, NULL, &error);
+				if (!method)
+					g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
 			}
 		}
 		/* FIXME: */
@@ -3391,10 +3404,14 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			ji->type = MONO_PATCH_INFO_ABS;
 		}
 		else {
-			if (ref.method)
+			if (ref.method) {
 				ji->data.method = ref.method;
-			else
-				ji->data.method = mono_get_method (ref.image, ref.token, NULL);
+			}else {
+				MonoError error;
+				ji->data.method = mono_get_method_checked (ref.image, ref.token, NULL, NULL, &error);
+				if (!ji->data.method)
+					g_error ("AOT Runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+			}
 			g_assert (ji->data.method);
 			mono_class_init (ji->data.method->klass);
 		}
@@ -3771,8 +3788,11 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 				char *full_name;
 
-				if (!method)
-					method = mono_get_method (image, token, NULL);
+				if (!method) {
+					MonoError error;
+					method = mono_get_method_checked (image, token, NULL, NULL, &error);
+					g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				}
 				full_name = mono_method_full_name (method, TRUE);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: NOT FOUND: %s.", full_name);
 				g_free (full_name);
@@ -3803,8 +3823,12 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		if (mono_jit_stats.methods_aot >= mono_last_aot_method)
 				return NULL;
 		else if (mono_jit_stats.methods_aot == mono_last_aot_method - 1) {
-			if (!method)
-				method = mono_get_method (image, token, NULL);
+			if (!method) {
+				MonoError error;
+				method = mono_get_method_checked (image, token, NULL, NULL, &error);
+				if (!method)
+					mono_error_cleanup (&error);/* FIXME don't swallow the error */
+			}
 			if (method) {
 				char *name = mono_method_full_name (method, TRUE);
 				g_print ("LAST AOT METHOD: %s.\n", name);
@@ -3824,8 +3848,12 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		char *full_name;
 
-		if (!method)
-			method = mono_get_method (image, token, NULL);
+		if (!method) {
+			MonoError error;
+			method = mono_get_method_checked (image, token, NULL, NULL, &error);
+			if (!method)
+				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+		}
 
 		full_name = mono_method_full_name (method, TRUE);
 
@@ -3853,8 +3881,10 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		MonoJitInfo *jinfo;
 
 		if (!method) {
-			method = mono_get_method (amodule->assembly->image, token, NULL);
-			g_assert (method);
+			MonoError error;
+			method = mono_get_method_checked (amodule->assembly->image, token, NULL, NULL, &error);
+			if (!method)
+				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
 		}
 		mono_profiler_method_jit (method);
 		jinfo = mono_jit_info_table_find (domain, (char*)code);
@@ -4329,7 +4359,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, &error), TRUE, TRUE);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			if (!m)
+				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
 
 			/* 
 			 * Get the code for the <object> instantiation which should be emitted into
@@ -4363,7 +4394,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, &error), TRUE, TRUE);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			if (!m)
+				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
 
 			/* Avoid recursion */
 			if (method == m)
