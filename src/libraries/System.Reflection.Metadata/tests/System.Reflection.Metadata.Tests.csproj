@@ -46,6 +46,7 @@
     <Compile Include="Metadata\MetadataReaderTestHelpers.cs" />
     <Compile Include="Metadata\MetadataReaderTests.cs" />
     <Compile Include="Metadata\MethodImportRow.cs" />
+    <Compile Include="Metadata\PortablePdb\StandalonePortablePdbStreamTests.cs" />
     <Compile Include="Metadata\TagToTokenTests.cs" />
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
     <Compile Include="PortableExecutable\AbstractMemoryBlockTests.cs" />
