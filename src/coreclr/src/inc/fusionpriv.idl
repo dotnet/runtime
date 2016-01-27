@@ -1,7 +1,6 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //+---------------------------------------------------------------------------
 //
 //  Microsoft Windows
@@ -18,12 +17,9 @@
 cpp_quote("//=--------------------------------------------------------------------------=")
 cpp_quote("// fusionpriv.h")
 cpp_quote("//=--------------------------------------------------------------------------=")
-cpp_quote("// Copyright (c) Microsoft Corporation.  All rights reserved.")
-cpp_quote("//")
-cpp_quote("// THIS CODE AND INFORMATION IS PROVIDED \"AS IS\" WITHOUT WARRANTY OF")
-cpp_quote("// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO")
-cpp_quote("// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A")
-cpp_quote("// PARTICULAR PURPOSE.")
+cpp_quote("// Licensed to the .NET Foundation under one or more agreements.")
+cpp_quote("// The .NET Foundation licenses this file to you under the MIT license.")
+cpp_quote("// See the LICENSE file in the project root for more information.")
 cpp_quote("//=--------------------------------------------------------------------------=")
 cpp_quote("")
 cpp_quote("#ifdef _MSC_VER")

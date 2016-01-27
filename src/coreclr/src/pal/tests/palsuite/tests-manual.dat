@@ -1,6 +1,6 @@
-#
-# Copyright (c) Microsoft Corporation.  All rights reserved.
-#
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
 
 c_runtime/exit/test2,1
 pal_specific/pal_get_stderr/test1,1
