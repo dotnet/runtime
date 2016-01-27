@@ -11,45 +11,29 @@
 #include "seq-points.h"
 
 static void
-insert_pred_seq_point (MonoBasicBlock *in_bb, MonoInst *ins, GSList **next)
+collect_pred_seq_points (MonoBasicBlock *bb, MonoInst *ins, GSList **next, int depth)
 {
+	int i;
+	MonoBasicBlock *in_bb;
 	GSList *l;
-	int src_index = in_bb->last_seq_point->backend.size;
-	int dst_index = ins->backend.size;
 
-	/* bb->in_bb might contain duplicates */
-	for (l = next [src_index]; l; l = l->next)
-		if (GPOINTER_TO_UINT (l->data) == dst_index)
-			break;
-	if (!l)
-		next [src_index] = g_slist_append (next [src_index], GUINT_TO_POINTER (dst_index));
-}
+	for (i = 0; i < bb->in_count; ++i) {
+		in_bb = bb->in_bb [i];
 
-static void
-collect_pred_seq_points (MonoBasicBlock *bb, MonoInst *ins, GSList **next, GHashTable *memoize)
-{
-	const gpointer MONO_SEQ_SEEN_LOOP = GINT_TO_POINTER(-1);
+		if (in_bb->last_seq_point) {
+			int src_index = in_bb->last_seq_point->backend.size;
+			int dst_index = ins->backend.size;
 
-	for (int i = 0; i < bb->in_count; ++i) {
-		MonoBasicBlock *in_bb = bb->in_bb [i];
-		gpointer result = g_hash_table_lookup (memoize, in_bb);
-
-		if (result == MONO_SEQ_SEEN_LOOP) {
-			// We've looped or handled this before, exit early.
-			// No last sequence points to find.
-			continue;
-		} else if (in_bb->last_seq_point) {
-			// if last seq point, insert into next
-			insert_pred_seq_point (in_bb, ins, next);
+			/* bb->in_bb might contain duplicates */
+			for (l = next [src_index]; l; l = l->next)
+				if (GPOINTER_TO_UINT (l->data) == dst_index)
+					break;
+			if (!l)
+				next [src_index] = g_slist_append (next [src_index], GUINT_TO_POINTER (dst_index));
 		} else {
-			// Compute predecessors of in_bb
-
-			// Insert/remove sentinel into the memoize table to detect loops containing in_bb
-			// This works to ensure that we only have a basic block on the stack once
-			// at any given time
-			g_hash_table_insert (memoize, in_bb, MONO_SEQ_SEEN_LOOP);
-			collect_pred_seq_points (in_bb, ins, next, memoize);
-			g_hash_table_remove (memoize, in_bb);
+			/* Have to look at its predecessors */
+			if (depth < 5)
+				collect_pred_seq_points (in_bb, ins, next, depth + 1);
 		}
 	}
 }
@@ -91,7 +75,6 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		 * following it, this is needed to implement 'step over' in the debugger agent.
 		 */
 		next = g_new0 (GSList*, cfg->seq_points->len);
-		GHashTable *memoize = g_hash_table_new (NULL, NULL);
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			bb_seq_points = g_slist_reverse (bb->seq_points);
 			last = NULL;
@@ -109,7 +92,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 					next [last->backend.size] = g_slist_append (next [last->backend.size], GUINT_TO_POINTER (ins->backend.size));
 				} else {
 					/* Link with the last bb in the previous bblocks */
-					collect_pred_seq_points (bb, ins, next, memoize);
+					collect_pred_seq_points (bb, ins, next, 0);
 				}
 
 				last = ins;
@@ -140,7 +123,6 @@ mono_save_seq_point_info (MonoCompile *cfg)
 				}
 			}
 		}
-		g_hash_table_destroy (memoize);
 
 		if (cfg->verbose_level > 2) {
 			printf ("\nSEQ POINT MAP: \n");
