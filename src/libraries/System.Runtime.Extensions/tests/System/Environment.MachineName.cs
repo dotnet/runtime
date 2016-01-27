@@ -9,6 +9,7 @@ namespace System.Runtime.Extensions.Tests
 {
     public class Environment_MachineName
     {
+        [ActiveIssue(5732, PlatformID.OSX)]
         [Fact]
         public void TestMachineNameProperty()
         {
