@@ -5163,12 +5163,34 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	MonoString *res = NULL;
+	res = mono_string_new_utf16_checked (domain, text, len, &error);
+	mono_error_raise_exception (&error);
+
+	return res;
+}
+
+/**
+ * mono_string_new_utf16_checked:
+ * @text: a pointer to an utf16 string
+ * @len: the length of the string
+ * @error: written on error.
+ *
+ * Returns: A newly created string object which contains @text.
+ * On error, returns NULL and sets @error.
+ */
+MonoString *
+mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoString *s;
 	
-	s = mono_string_new_size_checked (domain, len, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
-	memcpy (mono_string_chars (s), text, len * 2);
+	mono_error_init (error);
+	
+	s = mono_string_new_size_checked (domain, len, error);
+	if (s != NULL)
+		memcpy (mono_string_chars (s), text, len * 2);
 
 	return s;
 }
