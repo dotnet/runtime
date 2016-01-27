@@ -106,6 +106,8 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         "AppDomainCompatSwitch",
         // TODO: pipe this from corehost.json
         "SERVER_GC",
+        // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
+        "APP_CONTEXT_BASE_DIRECTORY",
     };
 
     auto tpa_paths_cstr = pal::to_stdstring(probe_paths.tpa);
@@ -132,6 +134,8 @@ int run(const arguments_t& args, const pal::string_t& clr_path)
         "UseLatestBehaviorWhenTFMNotSpecified",
         // SERVER_GC
         server_gc_cstr.c_str(),
+        // APP_CONTEXT_BASE_DIRECTORY
+        app_base_cstr.c_str()
     };
 
     size_t property_size = sizeof(property_keys) / sizeof(property_keys[0]);
