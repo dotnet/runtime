@@ -208,7 +208,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
         #region Building
 
-        public void AddModule(
+        public ModuleDefinitionHandle AddModule(
             int generation,
             StringHandle moduleName,
             GuidHandle mvid,
@@ -223,9 +223,11 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 EncId = encId,
                 EncBaseId = encBaseId,
             });
+
+            return EntityHandle.ModuleDefinition;
         }
 
-        public void AddAssembly(
+        public AssemblyDefinitionHandle AddAssembly(
             StringHandle name, 
             Version version,
             StringHandle culture,
@@ -242,6 +244,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 AssemblyName = name,
                 AssemblyCulture = culture
             });
+
+            return EntityHandle.AssemblyDefinition;
         }
 
         public AssemblyReferenceHandle AddAssemblyReference(
@@ -281,7 +285,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Flags = (uint)attributes,
                 Name = name,
                 Namespace = @namespace,
-                Extends = baseType.IsNil ? 0 : (uint)CodedIndex.ToTypeDefOrRef(baseType),
+                Extends = baseType.IsNil ? 0 : (uint)CodedIndex.ToTypeDefOrRefOrSpec(baseType),
                 FieldList = (uint)MetadataTokens.GetRowNumber(fieldList),
                 MethodList = (uint)MetadataTokens.GetRowNumber(methodList)
             });
@@ -302,15 +306,18 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddInterfaceImplementation(
+        public InterfaceImplementationHandle AddInterfaceImplementation(
             TypeDefinitionHandle type,
             EntityHandle implementedInterface)
         {
             _interfaceImplTable.Add(new InterfaceImplRow
             {
                 Class = (uint)MetadataTokens.GetRowNumber(type),
-                Interface = (uint)CodedIndex.ToTypeDefOrRef(implementedInterface)
+                Interface = (uint)CodedIndex.ToTypeDefOrRefOrSpec(implementedInterface)
             });
+
+            // TODO:
+            return (InterfaceImplementationHandle)MetadataTokens.Handle(TableIndex.InterfaceImpl, _interfaceImplTable.Count);
         }
 
         public void AddNestedType(
@@ -342,23 +349,27 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.TypeReferenceHandle(_typeRefTable.Count);
         }
 
-        public void AddTypeSpecification(BlobHandle signature)
+        public TypeSpecificationHandle AddTypeSpecification(BlobHandle signature)
         {
             _typeSpecTable.Add(new TypeSpecRow
             {
                 Signature = signature
             });
+
+            return MetadataTokens.TypeSpecificationHandle(_typeSpecTable.Count);
         }
 
-        public void AddStandaloneSignature(BlobHandle signature)
+        public StandaloneSignatureHandle AddStandaloneSignature(BlobHandle signature)
         {
             _standAloneSigTable.Add(new StandaloneSigRow
             {
                 Signature = signature
             });
+
+            return MetadataTokens.StandaloneSignatureHandle(_standAloneSigTable.Count);
         }
 
-        public void AddProperty(PropertyAttributes attributes, StringHandle name, BlobHandle signature)
+        public PropertyDefinitionHandle AddProperty(PropertyAttributes attributes, StringHandle name, BlobHandle signature)
         {
             _propertyTable.Add(new PropertyRow
             {
@@ -366,6 +377,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Name = name,
                 Type = signature
             });
+
+            return MetadataTokens.PropertyDefinitionHandle(_propertyTable.Count);
         }
 
         public void AddPropertyMap(TypeDefinitionHandle declaringType, PropertyDefinitionHandle propertyList)
@@ -377,14 +390,16 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddEvent(EventAttributes attributes, StringHandle name, EntityHandle type)
+        public EventDefinitionHandle AddEvent(EventAttributes attributes, StringHandle name, EntityHandle type)
         {
             _eventTable.Add(new EventRow
             {
                 EventFlags = (ushort)attributes,
                 Name = name,
-                EventType = (uint)CodedIndex.ToTypeDefOrRef(type)
+                EventType = (uint)CodedIndex.ToTypeDefOrRefOrSpec(type)
             });
+
+            return MetadataTokens.EventDefinitionHandle(_eventTable.Count);
         }
 
         public void AddEventMap(TypeDefinitionHandle declaringType, EventDefinitionHandle eventList)
@@ -396,7 +411,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddConstant(EntityHandle parent, object value)
+        public ConstantHandle AddConstant(EntityHandle parent, object value)
         {
             uint parentCodedIndex = (uint)CodedIndex.ToHasConstant(parent);
 
@@ -410,6 +425,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Parent = parentCodedIndex,
                 Value = GetConstantBlob(value)
             });
+
+            return MetadataTokens.ConstantHandle(_constantTable.Count);
         }
 
         public void AddMethodSemantics(EntityHandle association, ushort semantics, MethodDefinitionHandle methodDefinition)
@@ -428,7 +445,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddCustomAttribute(EntityHandle parent, EntityHandle constructor, BlobHandle value)
+        public CustomAttributeHandle AddCustomAttribute(EntityHandle parent, EntityHandle constructor, BlobHandle value)
         {
             uint parentCodedIndex = (uint)CodedIndex.ToHasCustomAttribute(parent);
 
@@ -442,26 +459,32 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Type = (uint)CodedIndex.ToCustomAttributeType(constructor),
                 Value = value
             });
+
+            return MetadataTokens.CustomAttributeHandle(_customAttributeTable.Count);
         }
 
-        public void AddMethodSpecification(EntityHandle method, BlobHandle instantiation)
+        public MethodSpecificationHandle AddMethodSpecification(EntityHandle method, BlobHandle instantiation)
         {
             _methodSpecTable.Add(new MethodSpecRow
             {
                 Method = (uint)CodedIndex.ToMethodDefOrRef(method),
                 Instantiation = instantiation
             });
+
+            return MetadataTokens.MethodSpecificationHandle(_methodSpecTable.Count);
         }
 
-        public void AddModuleReference(StringHandle moduleName)
+        public ModuleReferenceHandle AddModuleReference(StringHandle moduleName)
         {
             _moduleRefTable.Add(new ModuleRefRow
             {
                 Name = moduleName
             });
+
+            return MetadataTokens.ModuleReferenceHandle(_moduleRefTable.Count);
         }
 
-        public void AddParameter(ParameterAttributes attributes, StringHandle name, int sequenceNumber)
+        public ParameterHandle AddParameter(ParameterAttributes attributes, StringHandle name, int sequenceNumber)
         {
             _paramTable.Add(new ParamRow
             {
@@ -469,6 +492,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Name = name,
                 Sequence = (ushort)sequenceNumber
             });
+
+            return MetadataTokens.ParameterHandle(_paramTable.Count);
         }
 
         public GenericParameterHandle AddGenericParameter(
@@ -488,18 +513,20 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.GenericParameterHandle(_genericParamTable.Count);
         }
 
-        public void AddGenericParameterConstraint(
+        public GenericParameterConstraintHandle AddGenericParameterConstraint(
             GenericParameterHandle genericParameter,
             EntityHandle constraint)
         {
             _genericParamConstraintTable.Add(new GenericParamConstraintRow
             {
                 Owner = (uint)MetadataTokens.GetRowNumber(genericParameter),
-                Constraint = (uint)CodedIndex.ToTypeDefOrRef(constraint),
+                Constraint = (uint)CodedIndex.ToTypeDefOrRefOrSpec(constraint),
             });
+
+            return MetadataTokens.GenericParameterConstraintHandle(_genericParamConstraintTable.Count);
         }
 
-        public void AddFieldDefinition(
+        public FieldDefinitionHandle AddFieldDefinition(
             FieldAttributes attributes,
             StringHandle name,
             BlobHandle signature)
@@ -510,6 +537,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Name = name,
                 Signature = signature
             });
+
+            return MetadataTokens.FieldDefinitionHandle(_fieldTable.Count);
         }
 
         public void AddFieldLayout(
@@ -587,7 +616,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddMethodImplementation(
+        public MethodImplementationHandle AddMethodImplementation(
             TypeDefinitionHandle type,
             EntityHandle methodBody,
             EntityHandle methodDeclaration)
@@ -598,8 +627,10 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 MethodBody = (uint)CodedIndex.ToMethodDefOrRef(methodBody),
                 MethodDecl = (uint)CodedIndex.ToMethodDefOrRef(methodDeclaration)
             });
+
+            return MetadataTokens.MethodImplementationHandle(_methodImplTable.Count);
         }
-        
+
         public MemberReferenceHandle AddMemberReference(
             EntityHandle parent,
             StringHandle name,
@@ -615,7 +646,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.MemberReferenceHandle(_memberRefTable.Count);
         }
 
-        public void AddManifestResource(
+        public ManifestResourceHandle AddManifestResource(
             ManifestResourceAttributes attributes,
             StringHandle name,
             EntityHandle implementation,
@@ -628,9 +659,11 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Implementation = implementation.IsNil ? 0 : (uint)CodedIndex.ToImplementation(implementation),
                 Offset = (uint)offset
             });
+
+            return MetadataTokens.ManifestResourceHandle(_manifestResourceTable.Count);
         }
 
-        public void AddAssemblyFile(
+        public AssemblyFileHandle AddAssemblyFile(
             StringHandle name,
             BlobHandle hashValue,
             bool containsMetadata)
@@ -641,9 +674,11 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Flags = containsMetadata ? 0u : 1u,
                 HashValue = hashValue
             });
+
+            return MetadataTokens.AssemblyFileHandle(_fileTable.Count);
         }
 
-        public void AddExportedType(
+        public ExportedTypeHandle AddExportedType(
             TypeAttributes attributes,
             StringHandle @namespace,
             StringHandle name,
@@ -658,6 +693,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 TypeName = name,
                 TypeDefId = (uint)typeDefinitionId
             });
+
+            return MetadataTokens.ExportedTypeHandle(_exportedTypeTable.Count);
         }
 
         // TODO: remove
@@ -666,7 +703,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return _exportedTypeTable[rowId].Flags;
         }
 
-        public void AddDeclarativeSecurityAttribute(
+        public DeclarativeSecurityAttributeHandle AddDeclarativeSecurityAttribute(
             EntityHandle parent,
             DeclarativeSecurityAction action,
             BlobHandle permissionSet)
@@ -683,6 +720,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Action = (ushort)action,
                 PermissionSet = permissionSet
             });
+
+            return MetadataTokens.DeclarativeSecurityAttributeHandle(_declSecurityTable.Count);
         }
 
         public void AddEncLogEntry(EntityHandle entity, EditAndContinueOperation code)
@@ -715,13 +754,16 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.DocumentHandle(_documentTable.Count);
         }
 
-        public void AddMethodDebugInformation(DocumentHandle document, BlobHandle sequencePoints)
+        public MethodDebugInformationHandle AddMethodDebugInformation(DocumentHandle document, BlobHandle sequencePoints)
         {
             _methodDebugInformationTable.Add(new MethodDebugInformationRow
             {
                 Document = (uint)MetadataTokens.GetRowNumber(document),
                 SequencePoints = sequencePoints
             });
+
+            // TODO:
+            return (MethodDebugInformationHandle)MetadataTokens.Handle(TableIndex.MethodDebugInformation, _methodDebugInformationTable.Count);
         }
 
         public LocalScopeHandle AddLocalScope(MethodDefinitionHandle method, ImportScopeHandle importScope, LocalVariableHandle variableList, LocalConstantHandle constantList, int startOffset, int length)
@@ -782,7 +824,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             });
         }
 
-        public void AddCustomDebugInformation(EntityHandle parent, GuidHandle kind, BlobHandle value)
+        public CustomDebugInformationHandle AddCustomDebugInformation(EntityHandle parent, GuidHandle kind, BlobHandle value)
         {
             _customDebugInformationTable.Add(new CustomDebugInformationRow
             {
@@ -790,6 +832,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 Kind = kind,
                 Value = value
             });
+
+            return MetadataTokens.CustomDebugInformationHandle(_customDebugInformationTable.Count);
         }
 
         #endregion
