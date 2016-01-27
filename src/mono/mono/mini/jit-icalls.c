@@ -1714,8 +1714,10 @@ mono_llvmonly_get_calling_assembly (void)
 
 	jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 	g_assert (jit_tls);
-	if (!jit_tls->calling_image)
-		mono_raise_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
+	if (!jit_tls->calling_image) {
+		mono_set_pending_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
+		return NULL;
+	}
 	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), jit_tls->calling_image->assembly);
 }
 
