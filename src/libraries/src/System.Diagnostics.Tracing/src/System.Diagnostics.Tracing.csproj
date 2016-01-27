@@ -5,8 +5,10 @@
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <ProjectGuid>{EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>4.0.21.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.6</PackageTargetFramework>
+    <!-- The following line needs to be removed once we have a targeting pack for 4.6.2 -->
+    <TargetingPackNugetPackageId Condition="'$(TargetGroup)'=='net462'">Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -22,8 +24,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
