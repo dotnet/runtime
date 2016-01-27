@@ -958,6 +958,7 @@ dis_property_methods (MonoImage *m, guint32 prop, MonoGenericContainer *containe
 static char*
 dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *container)
 {
+	MonoError error;
 	MonoTableInfo *propt = &m->tables [MONO_TABLE_PROPERTY];
 	const char *ptr;
 	guint32 pcount, i;
@@ -980,8 +981,13 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 		g_string_append (res, "instance ");
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
-	blurb = dis_stringify_type (m, type, TRUE);
+	type = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, &error);
+	if (type) {
+		blurb = dis_stringify_type (m, type, TRUE);
+	} else {
+		blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+	}
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
 	if (prop_flags & 0x0400)
@@ -993,8 +999,14 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
-		blurb = dis_stringify_param (m, param);
+		param = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, &error);
+		if (type) {
+			blurb = dis_stringify_param (m, param);
+		} else {
+			blurb = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+		}
+
 		g_string_append (res, blurb);
 		g_free (blurb);
 	}
