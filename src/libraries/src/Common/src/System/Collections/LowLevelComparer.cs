@@ -1,12 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// LowLevelComparer emulates the desktop type System.Collections.Comparer.
-//
-// This type is not part of the Win8P surface area but it is used by some code inside System.Private.CoreLib as well as the
-// the implementation of Comparer<T> in System.Collections.
-//
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;

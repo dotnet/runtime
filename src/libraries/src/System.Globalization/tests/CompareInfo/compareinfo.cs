@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;
@@ -32,7 +33,7 @@ namespace System.Globalization.Tests
             // iL is the length of the substring. 
             int iL = 18;
 
-            // Searches for the ligature Æ.
+            // Searches for the ligature Ã†.
             String myStr = "Is AE or ae the same as \u00C6 or \u00E6?";
 
             Assert.Equal(myComp.IndexOf(myStr, "AE", iS, iL), 24);
@@ -124,8 +125,8 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [InlineData("de-DE", "Ü", "UE", -1)]
-        [InlineData("de-DE_phoneb", "Ü", "UE", 0)]
+        [InlineData("de-DE", "Ãœ", "UE", -1)]
+        [InlineData("de-DE_phoneb", "Ãœ", "UE", 0)]
         [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void TestLocaleAlternateSortOrder(string locale, string string1, string string2, int expected)
         {

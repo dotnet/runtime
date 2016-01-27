@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -9,7 +10,7 @@ using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
 // TODO when we upgrade to C# V6 you can remove this.  
-// warning CS0420: ‘P.x': a reference to a volatile field will not be treated as volatile
+// warning CS0420: 'P.x': a reference to a volatile field will not be treated as volatile
 // This happens when you pass a _subcribers (a volatile field) to interlocked operations (which are byref). 
 // This was fixed in C# V6.  
 #pragma warning disable 0420

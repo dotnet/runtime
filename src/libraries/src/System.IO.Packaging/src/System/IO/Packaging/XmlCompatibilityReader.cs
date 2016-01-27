@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /***************************************************************************\
 *
@@ -1325,7 +1326,7 @@ namespace System.IO.Packaging
             }
 
             // Just in case one of the namespaces that preceded the Ignorable declaration
-            // was an ignorable namespace, we have to recompute _ignoredAttributeCount :Þ .
+            // was an ignorable namespace, we have to recompute _ignoredAttributeCount.
             // No need to check if we haven't yet had any non-ignored attributes.
             if (_ignoredAttributeCount < _attributePosition)
             {

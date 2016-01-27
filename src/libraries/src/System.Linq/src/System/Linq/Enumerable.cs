@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -4555,7 +4556,7 @@ namespace System.Linq
         }
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
-        // Time complexity: O(n + k log k) best and average case. O(n²) worse case.  
+        // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.  
         private void PartialQuickSort(int[] map, int left, int right, int minIdx, int maxIdx)
         {
             do
@@ -4593,7 +4594,7 @@ namespace System.Linq
         }
 
         // Finds the element that would be at idx if the collection was sorted.
-        // Time complexity: O(n) best and average case. O(n²) worse case.
+        // Time complexity: O(n) best and average case. O(n^2) worse case.
         private int QuickSelect(int[] map, int right, int idx)
         {
             int left = 0;
