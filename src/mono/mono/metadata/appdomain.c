@@ -489,8 +489,11 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	if (!setup->application_base) {
 		/* Inherit from the root domain since MS.NET does this */
 		MonoDomain *root = mono_get_root_domain ();
-		if (root->setup->application_base)
-			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
+		if (root->setup->application_base) {
+			MonoString *s = mono_string_new_utf16_checked (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base), error);
+			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			MONO_OBJECT_SETREF (setup, application_base, s);
+		}
 	}
 
 	mono_context_init (data);
@@ -2185,7 +2188,11 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid)
 	mono_domain_lock (mono_root_domain);
 	if (process_guid_set) {
 		mono_domain_unlock (mono_root_domain);
-		return mono_string_new_utf16 (mono_domain_get (), process_guid, sizeof(process_guid)/2);
+		MonoError error;
+		MonoString *res = NULL;
+		res = mono_string_new_utf16_checked (mono_domain_get (), process_guid, sizeof(process_guid)/2, &error);
+		mono_error_raise_exception (&error);
+		return res;
 	}
 	memcpy (process_guid, mono_string_chars(newguid), sizeof(process_guid));
 	process_guid_set = TRUE;

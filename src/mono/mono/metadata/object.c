@@ -5293,20 +5293,24 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	GError *error = NULL;
+	MonoError error;
+	GError *eg_error = NULL;
 	MonoString *o = NULL;
 	guint16 *ut;
 	glong items_written;
 
-	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &error);
+	mono_error_init (&error);
 
-	if (!error)
-		o = mono_string_new_utf16 (domain, ut, items_written);
+	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
+
+	if (!eg_error)
+		o = mono_string_new_utf16_checked (domain, ut, items_written, &error);
 	else 
-		g_error_free (error);
+		g_error_free (eg_error);
 
 	g_free (ut);
 
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return o;
 }
 
@@ -5321,22 +5325,27 @@ mono_string_new (MonoDomain *domain, const char *text)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-    GError *error = NULL;
+	MonoError error;
+    GError *eg_error = NULL;
     MonoString *o = NULL;
     guint16 *ut;
     glong items_written;
     int l;
 
+    mono_error_init (&error);
+
     l = strlen (text);
    
-    ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
+    ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &eg_error);
 
-    if (!error)
-        o = mono_string_new_utf16 (domain, ut, items_written);
+    if (!eg_error)
+	    o = mono_string_new_utf16_checked (domain, ut, items_written, &error);
     else
-        g_error_free (error);
+        g_error_free (eg_error);
 
     g_free (ut);
+    mono_error_raise_exception (&error);
+    
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
 #if 0
 	MonoError error;
@@ -5828,7 +5837,8 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
-	o = mono_string_new_utf16 (domain, (guint16*)str, len2);
+	o = mono_string_new_utf16_checked (domain, (guint16*)str, len2, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
@@ -6063,6 +6073,8 @@ mono_string_from_utf16 (gunichar2 *data)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
+	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
 
@@ -6071,7 +6083,9 @@ mono_string_from_utf16 (gunichar2 *data)
 
 	while (data [len]) len++;
 
-	return mono_string_new_utf16 (domain, data, len);
+	res = mono_string_new_utf16_checked (domain, data, len, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return res;
 }
 
 /**

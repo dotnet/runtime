@@ -542,6 +542,8 @@ mono_string_from_byvalstr (const char *data, int max_len)
 static MonoString *
 mono_string_from_byvalwstr (gunichar2 *data, int max_len)
 {
+	MonoError error;
+	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	int len = 0;
 
@@ -550,7 +552,9 @@ mono_string_from_byvalwstr (gunichar2 *data, int max_len)
 
 	while (data [len]) len++;
 
-	return mono_string_new_utf16 (domain, data, MIN (len, max_len));
+	res = mono_string_new_utf16_checked (domain, data, MIN (len, max_len), &error);
+	mono_error_raise_exception (&error);
+	return res;
 }
 
 gpointer
@@ -10248,6 +10252,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 {
+	MonoError error;
+	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get (); 
 	int len = 0;
 	guint16 *t = ptr;
@@ -10258,20 +10264,30 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 	while (*t++)
 		len++;
 
-	return mono_string_new_utf16 (domain, ptr, len);
+	res = mono_string_new_utf16_checked (domain, ptr, len, &error);
+	mono_error_raise_exception (&error);
+	return res;
 }
 
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len)
 {
+	MonoError error;
+	MonoString *res = NULL;
 	MonoDomain *domain = mono_domain_get (); 
 
+	mono_error_init (&error);
+
 	if (ptr == NULL) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("ptr"));
-		return NULL;
+		res = NULL;
+		mono_error_set_argument_null (&error, "ptr", "");
 	} else {
-		return mono_string_new_utf16 (domain, ptr, len);
+		res = mono_string_new_utf16_checked (domain, ptr, len, &error);
 	}
+
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
+	return res;
 }
 
 guint32 

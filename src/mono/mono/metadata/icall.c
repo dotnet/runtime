@@ -6098,8 +6098,11 @@ ves_icall_System_Environment_get_MachineName (void)
 	buf = g_new (gunichar2, len);
 
 	result = NULL;
-	if (GetComputerName (buf, (PDWORD) &len))
-		result = mono_string_new_utf16 (mono_domain_get (), buf, len);
+	if (GetComputerName (buf, (PDWORD) &len)) {
+		MonoError error;
+		result = mono_string_new_utf16_checked (mono_domain_get (), buf, len, &error);
+		mono_error_raise_exception (&error);
+	}
 
 	g_free (buf);
 	return result;
@@ -6262,7 +6265,9 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 			if (*env_string != '=') {
 				equal_str = wcschr(env_string, '=');
 				g_assert(equal_str);
-				str = mono_string_new_utf16 (domain, env_string, equal_str-env_string);
+				MonoError error;
+				str = mono_string_new_utf16_checked (domain, env_string, equal_str-env_string, &error);
+				mono_error_raise_exception (&error);
 				mono_array_setref (names, n, str);
 				n++;
 			}
@@ -6404,7 +6409,10 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder)
 		int len = 0;
 		while (path [len])
 			++ len;
-		return mono_string_new_utf16 (mono_domain_get (), path, len);
+		MonoError error;
+		MonoString *res = mono_string_new_utf16_checked (mono_domain_get (), path, len, &error);
+		mono_error_raise_exception (&error);
+		return res;
 	}
 #else
 	g_warning ("ves_icall_System_Environment_GetWindowsFolderPath should only be called on Windows!");
@@ -6415,6 +6423,7 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder)
 ICALL_EXPORT MonoArray *
 ves_icall_System_Environment_GetLogicalDrives (void)
 {
+	MonoError error;
         gunichar2 buf [256], *ptr, *dname;
 	gunichar2 *u16;
 	guint initial_size = 127, size = 128;
@@ -6453,7 +6462,8 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 		len = 0;
 		u16 = dname;
 		while (*u16) { u16++; len ++; }
-		drivestr = mono_string_new_utf16 (domain, dname, len);
+		drivestr = mono_string_new_utf16_checked (domain, dname, len, &error);
+		mono_error_raise_exception (&error);
 		mono_array_setref (result, ndrives++, drivestr);
 		while (*dname++);
 	} while (*dname);
@@ -7483,6 +7493,7 @@ ves_icall_Mono_Runtime_GetDisplayName (void)
 ICALL_EXPORT MonoString*
 ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage (guint32 code)
 {
+	MonoError error;
 	MonoString *message;
 	guint32 ret;
 	gunichar2 buf[256];
@@ -7493,7 +7504,8 @@ ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage (guint32 code)
 	if (ret == 0) {
 		message = mono_string_new (mono_domain_get (), "Error looking up error string");
 	} else {
-		message = mono_string_new_utf16 (mono_domain_get (), buf, ret);
+		message = mono_string_new_utf16_checked (mono_domain_get (), buf, ret, &error);
+		mono_error_raise_exception (&error);
 	}
 	
 	return message;

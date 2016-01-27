@@ -2660,27 +2660,32 @@ mono_string_to_bstr (MonoString *string_obj)
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
+	MonoError error;
+	MonoString * res = NULL;
+	
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
-		return mono_string_new_utf16 (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
+		res = mono_string_new_utf16_checked (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		MonoString* str = NULL;
 		glong written = 0;
 		gunichar2* utf16 = NULL;
 
 		utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		str = mono_string_new_utf16 (mono_domain_get (), utf16, written);
+		str = mono_string_new_utf16_checked (mono_domain_get (), utf16, written, &error);
 		g_free (utf16);
-		return str;
+		res = str;
 	} else {
 		g_assert_not_reached ();
 	}
 
 #endif
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return res;
 }
 
 void
@@ -3270,13 +3275,17 @@ mono_string_to_bstr (MonoString *string_obj)
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
+	MonoString *res = NULL;
+	MonoError error;
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
 #else
-	return mono_string_new_utf16 (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
 #endif
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return res;
 }
 
 void

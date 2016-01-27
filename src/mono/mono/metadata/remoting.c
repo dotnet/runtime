@@ -1977,6 +1977,7 @@ mono_get_xdomain_marshal_type (MonoType *t)
 MonoObject *
 mono_marshal_xdomain_copy_value (MonoObject *val)
 {
+	MonoError error;
 	MonoDomain *domain;
 	if (val == NULL) return NULL;
 
@@ -2002,7 +2003,10 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 	}
 	case MONO_TYPE_STRING: {
 		MonoString *str = (MonoString *) val;
-		return (MonoObject *) mono_string_new_utf16 (domain, mono_string_chars (str), mono_string_length (str));
+		MonoObject *res = NULL;
+		res = (MonoObject *) mono_string_new_utf16_checked (domain, mono_string_chars (str), mono_string_length (str), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return res;
 	}
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY: {
