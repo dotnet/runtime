@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -261,7 +262,7 @@ namespace System.Linq.Expressions.Interpreter
     /// the goto expression and the target label node pushed and not consumed yet. 
     /// A goto expression can jump into a node that evaluates arguments only if it carries 
     /// a value and jumps right after the first argument (the carried value will be used as the first argument). 
-    /// Goto can jump into an arbitrary child of a BlockExpression since the block doesn�t accumulate values 
+    /// Goto can jump into an arbitrary child of a BlockExpression since the block doesn't accumulate values 
     /// on evaluation stack as its child expressions are being evaluated.
     /// 
     /// Goto needs to execute any finally blocks on the way to the target label.

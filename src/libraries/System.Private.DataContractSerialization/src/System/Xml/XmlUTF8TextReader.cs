@@ -1,10 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
-// Parser
-// PERF: Optimize double, decimal?  They get converted to strings in lots of cases
-// PERF: Cleanup CharType.  Don't generate tables at runtime.  Use const tables.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
