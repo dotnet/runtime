@@ -7914,7 +7914,7 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 unsigned
 CodeGen::getFirstArgWithStackSlot()
 {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     unsigned baseVarNum = compiler->lvaFirstStackIncomingArgNum;
 
     if (compiler->lvaFirstStackIncomingArgNum != BAD_VAR_NUM)
@@ -7942,11 +7942,11 @@ CodeGen::getFirstArgWithStackSlot()
     }
 
     return baseVarNum;
-#elif _TARGET_AMD64_
+#elif defined(_TARGET_AMD64_)
     return 0;
 #else
     // Not implemented for x86.
-     NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
+    NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
     return BAD_VAR_NUM;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
