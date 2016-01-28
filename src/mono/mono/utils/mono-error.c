@@ -119,12 +119,12 @@ mono_error_ok (MonoError *error)
 }
 
 void
-mono_error_assert_ok (MonoError *error)
+mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno)
 {
 	if (mono_error_ok (error))
 		return;
 
-	g_error ("%s\n", mono_error_get_message (error));
+	g_error ("%s:%d: %s\n", filename, lineno, mono_error_get_message (error));
 }
 
 unsigned short
