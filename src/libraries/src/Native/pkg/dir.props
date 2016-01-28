@@ -5,6 +5,7 @@
          a coordinating build that produces all packages from OS-specific native builds -->
     <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)native</BuildNativePath>
     <CentOSNativePath Condition="'$(CentOSNativePath)' == ''">$(BuildNativePath)</CentOSNativePath>
+    <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
     <UbuntuNativePath Condition="'$(UbuntuNativePath)' == ''">$(BuildNativePath)</UbuntuNativePath>
 
