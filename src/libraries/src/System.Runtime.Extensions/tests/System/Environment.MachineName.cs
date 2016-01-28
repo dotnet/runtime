@@ -10,7 +10,6 @@ namespace System.Runtime.Extensions.Tests
 {
     public class Environment_MachineName
     {
-        [ActiveIssue(5732, PlatformID.OSX)]
         [Fact]
         public void TestMachineNameProperty()
         {
@@ -26,7 +25,9 @@ namespace System.Runtime.Extensions.Tests
             }
             else
             {
-                return Interop.Sys.GetNodeName();
+                string temp = Interop.Sys.GetNodeName();
+                int index = temp.IndexOf('.');
+                return index < 0 ? temp : temp.Substring(0, index);
             }
         }
     }
