@@ -28,7 +28,7 @@ def walk_recursively_and_update(dcmp):
     #delete left only files
     for name in dcmp.left_only:
         path = dcmp.left + "/" + name
-        print("Deleting " % (path))
+        print("Deleting %s" % (path))
         if  os.path.isfile(path):
             os.remove(path)
         elif  os.path.isdir(path):
