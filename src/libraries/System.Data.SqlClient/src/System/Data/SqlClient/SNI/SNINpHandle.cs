@@ -30,7 +30,7 @@ namespace System.Data.SqlClient.SNI
         private SNIAsyncCallback _receiveCallback;
         private SNIAsyncCallback _sendCallback;
 
-        public SNINpHandle(string serverName, string pipeName, long timerExpire, object callbackObject, bool async)
+        public SNINpHandle(string serverName, string pipeName, long timerExpire, object callbackObject)
         {
             _targetServer = serverName;
             _callbackObject = callbackObject;
@@ -39,7 +39,7 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                _pipeStream = new NamedPipeClientStream(serverName, pipeName, PipeDirection.InOut, (async ? PipeOptions.Asynchronous : PipeOptions.WriteThrough), Security.Principal.TokenImpersonationLevel.None);
+                _pipeStream = new NamedPipeClientStream(serverName, pipeName, PipeDirection.InOut, PipeOptions.WriteThrough, Security.Principal.TokenImpersonationLevel.None);
 
                 bool isInfiniteTimeOut = long.MaxValue == timerExpire;
                 if (isInfiniteTimeOut)
@@ -51,7 +51,6 @@ namespace System.Data.SqlClient.SNI
                     TimeSpan ts = DateTime.FromFileTime(timerExpire) - DateTime.Now;
                     ts = ts.Ticks < 0 ? TimeSpan.FromTicks(0) : ts;
 
-                    Console.WriteLine("NP Timeout Set to: " + ts.TotalMilliseconds);
                     _pipeStream.Connect((int)ts.TotalMilliseconds);
                 }
             }
