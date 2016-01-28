@@ -840,13 +840,17 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 }
 
 static gpointer
-class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_type)
+class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_type, MonoError *error)
 {
+	mono_error_init (error);
+
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
 		MonoVTable *vtable = mono_class_vtable (domain, klass);
-		if (!vtable)
-			mono_raise_exception (mono_class_get_exception_for_failure (klass));
+		if (!vtable) {
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
+			return NULL;
+		}
 		return mono_vtable_get_static_field_data (vtable);
 	}
 	case MONO_RGCTX_INFO_KLASS:
@@ -855,8 +859,10 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 		return klass->element_class;
 	case MONO_RGCTX_INFO_VTABLE: {
 		MonoVTable *vtable = mono_class_vtable (domain, klass);
-		if (!vtable)
-			mono_raise_exception (mono_class_get_exception_for_failure (klass));
+		if (!vtable) {
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
+			return NULL;
+		}
 		return vtable;
 	}
 	case MONO_RGCTX_INFO_CAST_CACHE: {
@@ -960,7 +966,9 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 		else
 			method = mono_class_get_method_from_name (klass, "Unbox", 1);
 
-		addr = mono_compile_method (method);
+		addr = mono_jit_compile_method (method, error);
+		if (!mono_error_ok (error))
+			return NULL;
 
 		// The caller uses the gsharedvt call signature
 
@@ -1465,13 +1473,19 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	return addr;
 }
 
+/*
+ * instantiate_info:
+ *
+ *   Instantiate the info given by OTI for context CONTEXT.
+ */
 static gpointer
 instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti,
-				  MonoGenericContext *context, MonoClass *klass)
+				  MonoGenericContext *context, MonoClass *klass, MonoError *error)
 {
-	MonoError error;
 	gpointer data;
 	gboolean temporary;
+
+	mono_error_init (error);
 
 	if (!oti->data)
 		return NULL;
@@ -1514,13 +1528,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		if (oti->info_type == MONO_RGCTX_INFO_KLASS)
 			mono_class_compute_gc_descriptor (arg_class);
 
-		return class_type_info (domain, arg_class, oti->info_type);
+		return class_type_info (domain, arg_class, oti->info_type, error);
 	}
 	case MONO_RGCTX_INFO_TYPE:
 		return data;
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: {
-		MonoReflectionType *ret = mono_type_get_object_checked (domain, (MonoType *)data, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoReflectionType *ret = mono_type_get_object_checked (domain, (MonoType *)data, error);
 
 		return ret;
 	}
@@ -1573,7 +1586,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
 		MonoClass *iface_class = info->method->klass;
 		MonoMethod *method;
-		MonoError error;
 		int ioffset, slot;
 		gpointer addr;
 
@@ -1590,8 +1602,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (info->klass->vtable);
 		method = info->klass->vtable [ioffset + slot];
 
-		method = mono_class_inflate_generic_method_checked (method, context, &error);
-
+		method = mono_class_inflate_generic_method_checked (method, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		addr = mono_compile_method (method);
 		return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
 	}
@@ -1648,8 +1661,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (method->context.method_inst);
 
 		vtable = mono_class_vtable (domain, method->method.method.klass);
-		if (!vtable)
-			mono_raise_exception (mono_class_get_exception_for_failure (method->method.method.klass));
+		if (!vtable) {
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (method->method.method.klass));
+			return NULL;
+		}
 
 		return mono_method_lookup_rgctx (vtable, method->context.method_inst);
 	}
@@ -1860,7 +1875,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				offset += size;
 				break;
 			default:
-				res->entries [i] = instantiate_info (domain, template_, context, klass);
+				res->entries [i] = instantiate_info (domain, template_, context, klass, error);
+				if (!mono_error_ok (error))
+					return NULL;
 				break;
 			}
 		}
@@ -2231,7 +2248,7 @@ alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 
 static gpointer
 fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint32 slot,
-		MonoGenericInst *method_inst)
+							  MonoGenericInst *method_inst, MonoError *error)
 {
 	gpointer info;
 	int i, first_slot, size;
@@ -2242,6 +2259,8 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
 	int rgctx_index;
 	gboolean do_free;
+
+	mono_error_init (error);
 
 	g_assert (rgctx);
 
@@ -2285,7 +2304,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	oti = class_get_rgctx_template_oti (get_shared_class (klass),
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
 	/* This might take the loader lock */
-	info = instantiate_info (domain, &oti, &context, klass);
+	info = instantiate_info (domain, &oti, &context, klass, error);
 	g_assert (info);
 
 	/*
@@ -2319,7 +2338,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
  * Instantiates a slot in the RGCTX, returning its value.
  */
 gpointer
-mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot, MonoError *error)
 {
 	static gboolean inited = FALSE;
 	static int num_alloced = 0;
@@ -2327,6 +2346,8 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 	MonoDomain *domain = class_vtable->domain;
 	MonoRuntimeGenericContext *rgctx;
 	gpointer info;
+
+	mono_error_init (error);
 
 	mono_domain_lock (domain);
 
@@ -2344,7 +2365,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 
 	mono_domain_unlock (domain);
 
-	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0);
+	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0, error);
 
 	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (&class_vtable->klass->byval_arg), slot, info));
 
@@ -2359,11 +2380,11 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
  * Instantiates a slot in the MRGCTX.
  */
 gpointer
-mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot)
+mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot, MonoError *error)
 {
 	gpointer info;
 
-	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot, mrgctx->method_inst);
+	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot, mrgctx->method_inst, error);
 
 	return info;
 }
