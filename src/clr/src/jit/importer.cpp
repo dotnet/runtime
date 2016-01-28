@@ -16560,11 +16560,23 @@ JitInlineResult  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 
         if (sigType != inlArgNode->gtType)
         {
-            /* This can only happen for short integer types or byrefs <-> [native] ints */
+            /* In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
+               but in bad IL cases with caller-callee signature mismatches we can see other types. 
+               Intentionally reject cases with mismatches so the jit is more flexible when
+               encountering bad IL. */
 
-            assert(genActualType(sigType) == genActualType(inlArgNode->gtType) ||
-                   (genActualTypeIsIntOrI(sigType) && inlArgNode->gtType  == TYP_BYREF) ||
-                   (sigType == TYP_BYREF && genActualTypeIsIntOrI(inlArgNode->gtType)));
+            bool isPlausibleTypeMatch = 
+                (genActualType(sigType) == genActualType(inlArgNode->gtType)) ||
+                (genActualTypeIsIntOrI(sigType) && inlArgNode->gtType == TYP_BYREF) ||
+                (sigType == TYP_BYREF && genActualTypeIsIntOrI(inlArgNode->gtType));
+
+            if (!isPlausibleTypeMatch)
+            {
+                JITLOG((LL_INFO100000, INLINER_FAILED "Arguments incompatible"
+                           " %s called by %s\n",
+                           eeGetMethodFullName(pInlineInfo->fncHandle), info.compFullName));
+                inlineFailReason = "Arguments incompatible"; goto InlineFailed;
+            }
 
             /* Is it a narrowing or widening cast?
              * Widening casts are ok since the value computed is already
