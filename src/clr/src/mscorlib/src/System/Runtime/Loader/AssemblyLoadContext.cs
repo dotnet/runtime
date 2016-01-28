@@ -292,21 +292,23 @@ namespace System.Runtime.Loader
         {
             get
             {
-                while (m_DefaultAssemblyLoadContext == null)
+                if (s_DefaultAssemblyLoadContext == null)
                 {
                     // Try to initialize the default assembly load context with apppath one if we are allowed to
                     if (AssemblyLoadContext.CanUseAppPathAssemblyLoadContextInCurrentDomain())
                     {
-#pragma warning disable 0420
-                        Interlocked.CompareExchange(ref m_DefaultAssemblyLoadContext, new AppPathAssemblyLoadContext(), null);
-                        break;
-#pragma warning restore 0420
+                        // Synchronize access to initializing Default ALC
+                        lock(s_initLock)
+                        {
+                            if (s_DefaultAssemblyLoadContext == null)
+                            {
+                                s_DefaultAssemblyLoadContext = new AppPathAssemblyLoadContext();
+                            }
+                        }
                     }
-                    // Otherwise, need to yield to other thread to finish the initialization
-                    Thread.Yield();
                 }
                 
-                return m_DefaultAssemblyLoadContext;
+                return s_DefaultAssemblyLoadContext;
             }
         }
 
@@ -329,7 +331,7 @@ namespace System.Runtime.Loader
             }
             
             // Update the managed side as well.
-            m_DefaultAssemblyLoadContext = context;
+            s_DefaultAssemblyLoadContext = context;
         }
         
         // This call opens and closes the file, but does not add the
@@ -412,7 +414,10 @@ namespace System.Runtime.Loader
         // Each AppDomain contains the reference to its AssemblyLoadContext instance, if one is
         // specified by the host. By having the field as a static, we are
         // making it an AppDomain-wide field.
-        private static volatile AssemblyLoadContext m_DefaultAssemblyLoadContext;
+        private static volatile AssemblyLoadContext s_DefaultAssemblyLoadContext;
+
+        // Synchronization primitive for controlling initialization of Default load context
+        private static readonly object s_initLock = new Object();
     }
 
     [System.Security.SecuritySafeCritical]
