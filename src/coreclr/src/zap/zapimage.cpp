@@ -1852,7 +1852,14 @@ void ZapImage::OutputTables()
 
     if (IsReadyToRunCompilation())
     {
+#ifndef FEATURE_CORECLR
+        // Some older versions of Windows (e.g., Win7) can incorrectly fixup
+        // relocations if IsDll is not set. In CoreCLR, we handle this by
+        // always using the default value of IsDll, which is true. We can't
+        // use the same fix in desktop CLR, since in this case the ReadyToRun
+        // image can be used to create processes.
         SetIsDll(m_ModuleDecoder.IsDll());
+#endif
 
         SetSizeOfStackReserve(m_ModuleDecoder.GetSizeOfStackReserve());
         SetSizeOfStackCommit(m_ModuleDecoder.GetSizeOfStackCommit());
