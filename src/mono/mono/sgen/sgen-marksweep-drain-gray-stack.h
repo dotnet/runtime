@@ -40,7 +40,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 #ifdef HEAVY_STATISTICS
 	++stat_optimized_copy;
 	{
-		char *forwarded;
+		GCObject *forwarded;
 		SgenDescriptor desc;
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
 			desc = sgen_obj_get_descriptor_safe (forwarded);
