@@ -808,6 +808,10 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
     case CORINFO_HELP_PROF_FCN_TAILCALL:
         return RBM_PROFILER_LEAVE_TRASH;
 
+    case CORINFO_HELP_ASSIGN_BYREF:
+        // this helper doesn't trash RSI and RDI
+        return RBM_CALLEE_TRASH_NOGC & ~(RBM_RSI | RBM_RDI);
+
     default:
         return RBM_CALLEE_TRASH_NOGC;
     }
