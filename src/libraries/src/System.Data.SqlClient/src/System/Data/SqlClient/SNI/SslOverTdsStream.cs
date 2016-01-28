@@ -106,30 +106,36 @@ namespace System.Data.SqlClient.SNI
 
                     count -= currentCount;
 
-                    byte[] header = new byte[TdsEnums.HEADER_LEN];
+                    // Prepend buffer data with TDS prelogin header
+                    byte[] combinedBuffer = new byte[TdsEnums.HEADER_LEN + currentCount];
 
                     // We can only send 4088 bytes in one packet. Header[1] is set to 1 if this is a 
                     // partial packet (whether or not count != 0).
                     // 
-                    header[0] = PRELOGIN_PACKET_TYPE;
-                    header[1] = (byte)(count > 0 ? 0 : 1);
-                    header[2] = (byte)((currentCount + TdsEnums.HEADER_LEN) / 0x100);
-                    header[3] = (byte)((currentCount + TdsEnums.HEADER_LEN) % 0x100);
-                    header[4] = 0;
-                    header[5] = 0;
-                    header[6] = 0;
-                    header[7] = 0;
+                    combinedBuffer[0] = PRELOGIN_PACKET_TYPE;
+                    combinedBuffer[1] = (byte)(count > 0 ? 0 : 1);
+                    combinedBuffer[2] = (byte)((currentCount + TdsEnums.HEADER_LEN) / 0x100);
+                    combinedBuffer[3] = (byte)((currentCount + TdsEnums.HEADER_LEN) % 0x100);
+                    combinedBuffer[4] = 0;
+                    combinedBuffer[5] = 0;
+                    combinedBuffer[6] = 0;
+                    combinedBuffer[7] = 0;
 
-                    _stream.Write(header, 0, TdsEnums.HEADER_LEN);
-                    _stream.Flush();
+                    for(int i = 8; i < combinedBuffer.Length; i++)
+                    {
+                        combinedBuffer[i] = buffer[currentOffset + i - 8];
+                    }
+
+                    _stream.Write(combinedBuffer, 0, combinedBuffer.Length);
                 }
                 else
                 {
                     currentCount = count;
                     count = 0;
+
+                    _stream.Write(buffer, currentOffset, currentCount);
                 }
 
-                _stream.Write(buffer, currentOffset, currentCount);
                 _stream.Flush();
                 currentOffset += currentCount;
             }

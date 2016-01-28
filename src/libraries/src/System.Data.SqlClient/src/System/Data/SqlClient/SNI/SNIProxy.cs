@@ -236,9 +236,7 @@ namespace System.Data.SqlClient.SNI
                     string serverName = pipePath.Substring(2, endofServerName - 2);
                     string pipeName = pipePath.Substring(endofServerName + pipeToken.Length);
 
-
-
-                    return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject, async);
+                    return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject);
 
                 default:
                     if (parallel)
