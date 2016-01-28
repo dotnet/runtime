@@ -12,7 +12,7 @@
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Diagnostics.Tracing.csproj">
-      <SupportedFramework>net462;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Tracing.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
