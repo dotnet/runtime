@@ -40,7 +40,9 @@ typedef struct {
 #define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)
 
 void
-mono_error_assert_ok (MonoError *error);
+mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno);
+
+#define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__);
 
 void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);
