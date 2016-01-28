@@ -1817,23 +1817,22 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
-static void
-mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
+static gboolean
+mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoError error;
 
 	MonoDynamicTable *table;
 	guint32 *values;
 	ReflectionMethodBuilder rmb;
 	int i;
 
-	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, &error))
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_init (error);
 
-	mono_image_basic_method (&rmb, assembly, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, error) ||
+	    !mono_image_basic_method (&rmb, assembly, error))
+		return FALSE;
+
 	mb->table_idx = *rmb.table_idx;
 
 	if (mb->dll) { /* It's a P/Invoke method */
@@ -1874,6 +1873,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 		}
 	}
 
+	return TRUE;
 }
 
 static gboolean
@@ -3681,14 +3681,15 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
  * Insert into the metadata tables all the info about the TypeBuilder tb.
  * Data in the tables is inserted in a predefined order, since some tables need to be sorted.
  */
-static void
-mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoDynamicImage *assembly)
+static gboolean
+mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoDynamicImage *assembly, MonoError *error)
 {
-	MonoError error;
 	MonoDynamicTable *table;
 	guint *values;
 	int i, is_object = 0, is_system = 0;
 	char *n;
+
+	mono_error_init (error);
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
@@ -3758,10 +3759,10 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		table->rows += mono_array_length (tb->ctors);
 		alloc_table (table, table->rows);
 		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
-			mono_image_get_ctor_info (domain,
-						  mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i),
-						  assembly, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			if (!mono_image_get_ctor_info (domain,
+						       mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i),
+						       assembly, error))
+				return FALSE;
 		}
 	}
 
@@ -3770,9 +3771,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		table = &assembly->tables [MONO_TABLE_METHOD];
 		table->rows += tb->num_methods;
 		alloc_table (table, table->rows);
-		for (i = 0; i < tb->num_methods; ++i)
-			mono_image_get_method_info (
-				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly);
+		for (i = 0; i < tb->num_methods; ++i) {
+			if (!mono_image_get_method_info (
+				    mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly, error))
+				return FALSE;
+		}
 	}
 
 	/* Do the same with properties etc.. */
@@ -3842,6 +3845,8 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 			ntable->next_idx++;
 		}
 	}
+
+	return TRUE;
 }
 #endif
 
@@ -4952,9 +4957,11 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *erro
 		table = &assembly->tables [MONO_TABLE_METHOD];
 		table->rows += mono_array_length (moduleb->global_methods);
 		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (moduleb->global_methods); ++i)
-			mono_image_get_method_info (
-				mono_array_get (moduleb->global_methods, MonoReflectionMethodBuilder*, i), assembly);
+		for (i = 0; i < mono_array_length (moduleb->global_methods); ++i) {
+			if (!mono_image_get_method_info (
+				    mono_array_get (moduleb->global_methods, MonoReflectionMethodBuilder*, i), assembly, error))
+				goto leave;
+		}
 	}
 	if (moduleb->global_fields) {
 		table = &assembly->tables [MONO_TABLE_FIELD];
@@ -4998,7 +5005,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *erro
 
 	for (i = 0; i < mono_ptr_array_size (types); ++i) {
 		MonoReflectionTypeBuilder *type = (MonoReflectionTypeBuilder *)mono_ptr_array_get (types, i);
-		mono_image_get_type_info (domain, type, assembly);
+		if (!mono_image_get_type_info (domain, type, assembly, error))
+			goto leave_types;
 	}
 
 	/* 
