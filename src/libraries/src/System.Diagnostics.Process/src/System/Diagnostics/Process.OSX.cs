@@ -42,6 +42,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64(info.ri_system_time));
             }
@@ -54,6 +55,7 @@ namespace System.Diagnostics
             {
                 // Get the RUsage data and convert the process start time (which is the number of
                 // nanoseconds elapse from boot to that the process started) to seconds.
+                EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 double seconds = info.ri_proc_start_abstime / NanoSecondToSecondFactor;
                 
@@ -71,6 +73,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64(info.ri_system_time + info.ri_user_time));
             }
@@ -84,6 +87,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64(info.ri_user_time));
             }
