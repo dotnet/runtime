@@ -132,19 +132,11 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            if (array != _array)
-            {
-                int srcIndex = 0;
-                int dstIndex = arrayIndex + _size;
-                for (int i = 0; i < _size; i++)
-                    array[--dstIndex] = _array[srcIndex++];
-            }
-            else
-            {
-                // Legacy fallback in case we ever end up copying within the same array.
-                Array.Copy(_array, 0, array, arrayIndex, _size);
-                Array.Reverse(array, arrayIndex, _size);
-            }
+            Debug.Assert(array != _array);
+            int srcIndex = 0;
+            int dstIndex = arrayIndex + _size;
+            for (int i = 0; i < _size; i++)
+                array[--dstIndex] = _array[srcIndex++];
         }
 
         void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
@@ -253,11 +245,6 @@ namespace System.Collections.Generic
         // Copies the Stack to an array, in the same order Pop would return the items.
         public T[] ToArray()
         {
-            if (_size == 0)
-            {
-                return Array.Empty<T>();
-            }
-
             T[] objArray = new T[_size];
             int i = 0;
             while (i < _size)
