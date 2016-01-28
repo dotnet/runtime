@@ -646,7 +646,10 @@ namespace System.Net.Security
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
                 // (instead of going anonymous as we do here).
-                if (sessionRestartAttempt && cachedCredentialHandle == null && selectedCert != null)
+                if (sessionRestartAttempt &&
+                    cachedCredentialHandle == null &&
+                    selectedCert != null &&
+                    SslStreamPal.StartMutualAuthAsAnonymous)
                 {
                     if (GlobalLog.IsEnabled)
                     {
