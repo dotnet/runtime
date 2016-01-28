@@ -5,8 +5,6 @@
 //
 // clr_std/utility
 //
-// <owner>simonhal</owner>
-//
 // Copy of some key Standard Template Library functionality.
 // See http://msdn.microsoft.com/en-us/library/bb982077.aspx for documentation.
 //
@@ -547,3 +545,5 @@ namespace std
 
 #endif // __clr_std_type_traits_h__
 
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp

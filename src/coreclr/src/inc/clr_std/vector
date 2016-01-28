@@ -5,8 +5,6 @@
 //
 // clr_std/vector
 //
-// <owner>simonhal</owner>
-//
 // Copy of some key Standard Template Library functionality
 //
 
@@ -19,6 +17,15 @@
 #else
 #ifndef __clr_std_vector_h__
 #define __clr_std_vector_h__
+
+// This is defined in the debugmacrosext.h header, but don't take a dependency on that.
+#ifndef INDEBUG
+#ifdef _DEBUG
+#define INDEBUG(x)          x
+#else
+#define INDEBUG(x)
+#endif
+#endif // !def INDEBUG
 
 namespace std
 {
@@ -210,7 +217,7 @@ namespace std
             }
 
 
-            size_t size()
+            size_t size() const
             {
                 return m_size;
             }
@@ -221,6 +228,11 @@ namespace std
                 return m_pelements[iIndex];
             }
 
+            T & operator[](size_t iIndex) const
+            {
+                assert(iIndex < m_size);
+                return m_pelements[iIndex];
+            }
 
             void resize(size_t newsize)
             {
@@ -330,6 +342,16 @@ namespace std
                 return iterator(m_pelements + m_size);
             }
 
+            const_iterator cbegin() const
+            {
+                return const_iterator(m_pelements);
+            }
+
+            const_iterator cend() const
+            {
+                return const_iterator(m_pelements + m_size);
+            }
+
             iterator erase(iterator position)
             {
                 assert(m_isBufferOwner);
@@ -351,6 +373,11 @@ namespace std
                 memcpy(&m_pelements[index], &m_pelements[index + elements], sizeof(T) * (m_size - index - elements));
                 m_size -= elements;
                 return iterator(m_pelements + (position - begin()));
+            }
+
+            const T* data() const
+            {
+                return m_pelements;
             }
 
          private:
@@ -399,3 +426,6 @@ namespace std
 #endif /* __clr_std_vector_h__ */
 
 #endif // !USE_STL
+
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp
