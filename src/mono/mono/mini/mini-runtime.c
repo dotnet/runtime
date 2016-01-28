@@ -1999,22 +1999,6 @@ mono_jit_compile_method (MonoMethod *method, MonoError *error)
 	return code;
 }
 
-static gpointer
-mono_jit_compile_method_raise (MonoMethod *method)
-{
-	MonoError error;
-	gpointer code;
-
-	mono_error_init (&error);
-	code = mono_jit_compile_method (method, &error);
-	if (!code) {
-		g_assert (!mono_error_ok (&error));
-		mono_error_raise_exception (&error);
-	}
-
-	return code;
-}
-
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 static void
 invalidated_delegate_trampoline (char *desc)
@@ -3515,6 +3499,10 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_INVOKE_WORKS
 	callbacks.runtime_invoke = mono_jit_runtime_invoke;
 #endif
+#define JIT_TRAMPOLINES_WORK
+#ifdef JIT_TRAMPOLINES_WORK
+	callbacks.compile_method = mono_jit_compile_method;
+#endif
 
 	mono_install_callbacks (&callbacks);
 
@@ -3584,9 +3572,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
-#define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK
-	mono_install_compile_method (mono_jit_compile_method_raise);
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_jump_trampoline (mono_create_jump_trampoline);

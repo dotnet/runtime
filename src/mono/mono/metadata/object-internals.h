@@ -619,6 +619,7 @@ typedef struct {
 	gboolean (*tls_key_supported) (MonoTlsKey key);
 	void     (*init_delegate) (MonoDelegate *del);
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoError *error, MonoObject **exc);
+	void*    (*compile_method) (MonoMethod *method, MonoError *error);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -633,12 +634,8 @@ typedef struct {
 	gboolean (*mono_install_handler_block_guard) (MonoThreadUnwindState *unwind_state);
 } MonoRuntimeExceptionHandlingCallbacks;
 
-
 /* used to free a dynamic method */
-typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
-
-/* Used to initialize the method pointers inside vtables */
-typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
+typedef void        (*MonoFreeMethodFunc)       (MonoDomain *domain, MonoMethod *method);
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
@@ -683,9 +680,6 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
-
-void	    
-mono_install_compile_method (MonoCompileFunc func);
 
 void
 mono_install_free_method    (MonoFreeMethodFunc func);

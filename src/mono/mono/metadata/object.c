@@ -584,20 +584,6 @@ mono_set_always_build_imt_thunks (gboolean value)
 	always_build_imt_thunks = value;
 }
 
-static MonoCompileFunc default_mono_compile_method = NULL;
-
-/**
- * mono_install_compile_method:
- * @func: function to install
- *
- * This is a VM internal routine
- */
-void        
-mono_install_compile_method (MonoCompileFunc func)
-{
-	default_mono_compile_method = func;
-}
-
 /**
  * mono_compile_method:
  * @method: The method to compile.
@@ -608,13 +594,19 @@ mono_install_compile_method (MonoCompileFunc func)
 gpointer 
 mono_compile_method (MonoMethod *method)
 {
+	gpointer res;
+	MonoError error;
+
 	MONO_REQ_GC_NEUTRAL_MODE
 
-	if (!default_mono_compile_method) {
+	if (!callbacks.compile_method) {
 		g_error ("compile method called on uninitialized runtime");
 		return NULL;
 	}
-	return default_mono_compile_method (method);
+	res = callbacks.compile_method (method, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+	return res;
 }
 
 gpointer
@@ -2855,7 +2847,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 	result = callbacks.runtime_invoke (method, obj, params, &error, exc);
 	if (!mono_error_ok (&error)) {
 		if (exc) {
-			*exc = mono_error_convert_to_exception (&error);
+			*exc = (MonoObject*)mono_error_convert_to_exception (&error);
 			return NULL;
 		} else {
 			mono_error_raise_exception (&error);
