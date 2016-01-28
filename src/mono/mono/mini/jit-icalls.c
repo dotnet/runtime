@@ -1372,13 +1372,29 @@ mono_generic_class_init (MonoVTable *vtable)
 gpointer
 mono_fill_class_rgctx (MonoVTable *vtable, int index)
 {
-	return mono_class_fill_runtime_generic_context (vtable, index);
+	MonoError error;
+	gpointer res;
+
+	res = mono_class_fill_runtime_generic_context (vtable, index, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
+	return res;
 }
 
 gpointer
 mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
-	return mono_method_fill_runtime_generic_context (mrgctx, index);
+	MonoError error;
+	gpointer res;
+
+	res = mono_method_fill_runtime_generic_context (mrgctx, index, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
+	return res;
 }
 
 /*

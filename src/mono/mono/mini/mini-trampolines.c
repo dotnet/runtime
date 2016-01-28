@@ -1037,6 +1037,8 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	gpointer arg = (gpointer)(gssize)r [MONO_ARCH_VTABLE_REG];
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	MonoError error;
+	gpointer res;
 
 	trampoline_calls ++;
 
@@ -1048,9 +1050,14 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	num_lookups++;
 
 	if (mrgctx)
-		return mono_method_fill_runtime_generic_context ((MonoMethodRuntimeGenericContext *)arg, index);
+		res = mono_method_fill_runtime_generic_context ((MonoMethodRuntimeGenericContext *)arg, index, &error);
 	else
-		return mono_class_fill_runtime_generic_context ((MonoVTable *)arg, index);
+		res = mono_class_fill_runtime_generic_context ((MonoVTable *)arg, index, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
+	return res;
 }
 
 /*
