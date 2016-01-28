@@ -64,4 +64,5 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
  fi
 
  sh $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+ chmod a+x $__TOOLRUNTIME_DIR/corerun
 fi

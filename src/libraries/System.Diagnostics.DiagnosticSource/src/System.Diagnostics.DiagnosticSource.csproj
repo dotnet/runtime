@@ -7,7 +7,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
-    <UseOpenKey>true</UseOpenKey>
+    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
