@@ -1,110 +1,41 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
-namespace LinkedList_LinkedList_CtorPropertyTests
+namespace System.Collections.Tests
 {
-    public class LinkedList_CtorPropertyTests
-    {
-        [Fact]
-        public static void CtorTest()
-        {
-            LinkedList_T_Tests<string> helper = new LinkedList_T_Tests<string>(new LinkedList<string>(), new string[0]);
-            helper.InitialItems_Tests();
-            LinkedList_T_Tests<Person> helper2 = new LinkedList_T_Tests<Person>(new LinkedList<Person>(), new Person[0]);
-            helper2.InitialItems_Tests();
-        }
-
-        [Fact]
-        public static void Ctor_IEnumerableTest()
-        {
-            int arraySize = 16;
-            int[] intArray = new int[arraySize];
-            Person[] personArray = new Person[arraySize];
-
-            int printableCharIndex = 65; // ascii "A"
-            for (int i = 0; i < arraySize; ++i)
-            {
-                intArray[i] = i;
-                char asChar = (char)(printableCharIndex + i);
-                personArray[i] = new Person(asChar.ToString(), i);
-            }
-
-            // Testing with value types
-            LinkedList<int> intList = new LinkedList<int>(Clone(intArray));
-            LinkedList_T_Tests<int> helper = new LinkedList_T_Tests<int>(intList, intArray);
-            helper.InitialItems_Tests();
-
-            intArray = new int[0];
-            intList = new LinkedList<int>(Clone(intArray));
-            helper = new LinkedList_T_Tests<int>(intList, intArray);
-            helper.InitialItems_Tests();
-
-            intArray = new int[] { -3 };
-            intList = new LinkedList<int>(Clone(intArray));
-            helper = new LinkedList_T_Tests<int>(intList, intArray);
-            helper.InitialItems_Tests();
-
-            // Testing with an reference type
-            LinkedList<Person> personList = new LinkedList<Person>(Clone(personArray));
-            LinkedList_T_Tests<Person> helper2 = new LinkedList_T_Tests<Person>(personList, personArray);
-            helper2.InitialItems_Tests();
-
-            personArray = new Person[0];
-            personList = new LinkedList<Person>(Clone(personArray));
-            helper2 = new LinkedList_T_Tests<Person>(personList, personArray);
-            helper2.InitialItems_Tests();
-
-            personArray = new Person[] { new Person("Jack", 18) };
-            personList = new LinkedList<Person>(Clone(personArray));
-            helper2 = new LinkedList_T_Tests<Person>(personList, personArray);
-            helper2.InitialItems_Tests();
-        }
-
-        [Fact]
-        public static void Ctor_IEnumerableTest_Negative()
-        {
-            Assert.Throws<ArgumentNullException>(() => new LinkedList<string>(null)); //"Err_982092 Expected ArgumentNullException to be thrown with null collection"
-        }
-
-        private static IEnumerable<T> Clone<T>(T[] source)
-        {
-            if (source == null)
-                return null;
-            return (T[])source.Clone();
-        }
-    }
-
     /// <summary>
-    /// Helper class that verifies some properties of the linked list.
+    /// Contains tests that ensure the correctness of the LinkedList class.
     /// </summary>
-    internal class LinkedList_T_Tests<T>
+    public abstract partial class LinkedList_Generic_Tests<T> : ICollection_Generic_Tests<T>
     {
-        private readonly LinkedList<T> _collection;
-        private readonly T[] _expectedItems;
+        #region ICollection<T> Helper Methods
 
-        /// <summary>
-        /// Tests the linked list based on the expected items and the given linked list.
-        /// </summary>
-        internal LinkedList_T_Tests(LinkedList<T> collection, T[] expectedItems)
+        protected override ICollection<T> GenericICollectionFactory()
         {
-            _collection = collection;
-            _expectedItems = expectedItems;
+            return GenericLinkedListFactory();
+        }
+
+        #endregion
+
+        #region LinkedList<T> Helper Methods
+
+        protected virtual LinkedList<T> GenericLinkedListFactory()
+        {
+            return new LinkedList<T>();
         }
 
         /// <summary>
-        /// Tests the initial items in the list.
+        /// Tests the items in the list to make sure they are the same.
         /// </summary>
-        internal void InitialItems_Tests()
+        private void InitialItems_Tests(LinkedList<T> collection, T[] expectedItems)
         {
-            VerifyState(_collection, _expectedItems);
-            VerifyGenericEnumerator(_collection, _expectedItems);
-            VerifyEnumerator(_collection, _expectedItems);
+            VerifyState(collection, expectedItems);
+            VerifyGenericEnumerator(collection, expectedItems);
+            VerifyEnumerator(collection, expectedItems);
         }
 
         /// <summary>
@@ -174,8 +105,7 @@ namespace LinkedList_LinkedList_CtorPropertyTests
             //[] Verify Contains
             for (int i = 0; i < expectedItems.Length; i++)
             {
-                Assert.True(linkedList.Contains(expectedItems[i]),
-                    "Err_9872haid Expected Contains with item=" + expectedItems[i] + " to return true");
+                Assert.True(linkedList.Contains(expectedItems[i]), "Err_9872haid Expected Contains with item=" + expectedItems[i] + " to return true");
             }
 
             //[] Verify CopyTo
@@ -328,7 +258,10 @@ namespace LinkedList_LinkedList_CtorPropertyTests
 
                 for (int i = 0; i < itemsVisited.Length; ++i)
                 {
-                    if (!itemsVisited[i] && expectedItems[i].Equals(currentItem))
+                    if (itemsVisited[i])
+                        continue;
+                    if ((expectedItems[i] == null && currentItem == null)
+                        || (expectedItems[i] != null && expectedItems[i].Equals(currentItem)))
                     {
                         itemsVisited[i] = true;
                         itemFound = true;
@@ -369,37 +302,205 @@ namespace LinkedList_LinkedList_CtorPropertyTests
                 catch (Exception) { }
             }
         }
-    }
 
-    /// <summary>
-    /// Class to test reference type.
-    /// </summary>
-    internal class Person
-    {
-        internal readonly string Name;
-
-        internal readonly int Age;
-
-        internal Person(string name, int age)
+        private void VerifyContains(LinkedList<T> linkedList, T[] expectedItems)
         {
-            Name = name;
-            Age = age;
+            //[] Verify Contains
+            for (int i = 0; i < expectedItems.Length; i++)
+            {
+                Assert.True(linkedList.Contains(expectedItems[i]),
+                    "Err_9872haid Expected Contains with item=" + expectedItems[i] + " to return true");
+            }
         }
 
-        public override bool Equals(object obj)
+        private void VerifyFindLastDuplicates(LinkedList<T> linkedList, T[] expectedItems)
         {
-            Person given = obj as Person;
-            if (given == null)
-                return false;
+            LinkedListNode<T> previousNode, currentNode = null, nextNode;
+            LinkedListNode<T>[] nodes = new LinkedListNode<T>[expectedItems.Length];
+            int index = 0;
 
-            bool isNameEqual = Name.Equals(given.Name);
-            bool isAgeEqual = Age.Equals(given.Age);
-            return isNameEqual && isAgeEqual;
+            currentNode = linkedList.First;
+
+            while (currentNode != null)
+            {
+                nodes[index] = currentNode;
+                currentNode = currentNode.Next;
+                ++index;
+            }
+
+            for (int i = 0; i < expectedItems.Length; ++i)
+            {
+                currentNode = linkedList.FindLast(expectedItems[i]);
+
+                index = Array.LastIndexOf(expectedItems, expectedItems[i]);
+                previousNode = 0 < index ? nodes[index - 1] : null;
+                nextNode = nodes.Length - 1 > index ? nodes[index + 1] : null;
+
+                Assert.Equal(nodes[index], currentNode); //"Node returned from FindLast idnex=" + i.ToString()
+
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
         }
 
-        public override int GetHashCode()
+        private void VerifyFindDuplicates(LinkedList<T> linkedList, T[] expectedItems)
         {
-            return base.GetHashCode();
+            LinkedListNode<T> previousNode, currentNode = null, nextNode;
+            LinkedListNode<T>[] nodes = new LinkedListNode<T>[expectedItems.Length];
+            int index = 0;
+
+            currentNode = linkedList.First;
+
+            while (currentNode != null)
+            {
+                nodes[index] = currentNode;
+                currentNode = currentNode.Next;
+                ++index;
+            }
+
+            for (int i = 0; i < expectedItems.Length; ++i)
+            {
+                currentNode = linkedList.Find(expectedItems[i]);
+
+                index = Array.IndexOf(expectedItems, expectedItems[i]);
+                previousNode = 0 < index ? nodes[index - 1] : null;
+                nextNode = nodes.Length - 1 > index ? nodes[index + 1] : null;
+
+                Assert.Equal(nodes[index], currentNode); //"Node returned from Find idnex=" + i.ToString()
+
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
         }
+
+        private void VerifyFindLast(LinkedList<T> linkedList, T[] expectedItems)
+        {
+            LinkedListNode<T> previousNode, currentNode, nextNode;
+
+            currentNode = null;
+            for (int i = 0; i < expectedItems.Length; ++i)
+            {
+                previousNode = currentNode;
+                currentNode = linkedList.FindLast(expectedItems[i]);
+                nextNode = currentNode.Next;
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
+
+            currentNode = null;
+            for (int i = expectedItems.Length - 1; 0 <= i; --i)
+            {
+                nextNode = currentNode;
+                currentNode = linkedList.FindLast(expectedItems[i]);
+                previousNode = currentNode.Previous;
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
+        }
+
+        private void VerifyFind(LinkedList<T> linkedList, T[] expectedItems)
+        {
+            LinkedListNode<T> previousNode, currentNode, nextNode;
+
+            currentNode = null;
+            for (int i = 0; i < expectedItems.Length; ++i)
+            {
+                previousNode = currentNode;
+                currentNode = linkedList.Find(expectedItems[i]);
+                nextNode = currentNode.Next;
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
+
+            currentNode = null;
+            for (int i = expectedItems.Length - 1; 0 <= i; --i)
+            {
+                nextNode = currentNode;
+                currentNode = linkedList.Find(expectedItems[i]);
+                previousNode = currentNode.Previous;
+                VerifyLinkedListNode(currentNode, expectedItems[i], linkedList, previousNode, nextNode);
+            }
+        }
+
+        private void VerifyRemovedNode(LinkedListNode<T> node, T expectedValue)
+        {
+            LinkedList<T> tempLinkedList = new LinkedList<T>();
+            LinkedListNode<T> headNode, tailNode;
+
+            tempLinkedList.AddLast(default(T));
+            tempLinkedList.AddLast(default(T));
+            headNode = tempLinkedList.First;
+            tailNode = tempLinkedList.Last;
+
+            Assert.Null(node.List); //"Err_298298anied Node.LinkedList returned non null"
+            Assert.Null(node.Previous); //"Err_298298anied Node.Previous returned non null"
+            Assert.Null(node.Next); //"Err_298298anied Node.Next returned non null"
+            Assert.Equal(expectedValue, node.Value); //"Err_969518aheoia Node.Value"
+
+            tempLinkedList.AddAfter(tempLinkedList.First, node);
+
+            Assert.Equal(tempLinkedList, node.List); //"Err_7894ahioed Node.LinkedList"
+            Assert.Equal(headNode, node.Previous); //"Err_14520aheoak Node.Previous"
+            Assert.Equal(tailNode, node.Next); //"Err_42358aujea Node.Next"
+            Assert.Equal(expectedValue, node.Value); //"Err_64888joqaxz Node.Value"
+
+            InitialItems_Tests(tempLinkedList, new T[] { default(T), expectedValue, default(T) });
+        }
+
+        private void VerifyRemovedNode(LinkedList<T> linkedList, LinkedListNode<T> node, T expectedValue)
+        {
+            LinkedListNode<T> tailNode = linkedList.Last;
+
+            Assert.Null(node.List); //"Err_564898ajid Node.LinkedList returned non null"
+            Assert.Null(node.Previous); //"Err_30808wia Node.Previous returned non null"
+            Assert.Null(node.Next); //"Err_78280aoiea Node.Next returned non null"
+            Assert.Equal(expectedValue, node.Value); //"Err_98234aued Node.Value"
+
+            linkedList.AddLast(node);
+            Assert.Equal(linkedList, node.List); //"Err_038369aihead Node.LinkedList"
+            Assert.Equal(tailNode, node.Previous); //"Err_789108aiea Node.Previous"
+            Assert.Null(node.Next); //"Err_37896riad Node.Next returned non null"
+
+            linkedList.RemoveLast();
+        }
+
+        private void VerifyRemovedNode(LinkedList<T> linkedList, T[] linkedListValues, LinkedListNode<T> node, T expectedValue)
+        {
+            LinkedListNode<T> tailNode = linkedList.Last;
+
+            Assert.Null(node.List); //"Err_564898ajid Node.LinkedList returned non null"
+            Assert.Null(node.Previous); //"Err_30808wia Node.Previous returned non null"
+            Assert.Null(node.Next); //"Err_78280aoiea Node.Next returned non null"
+            Assert.Equal(expectedValue, node.Value); //"Err_98234aued Node.Value"
+
+            linkedList.AddLast(node);
+            Assert.Equal(linkedList, node.List); //"Err_038369aihead Node.LinkedList"
+            Assert.Equal(tailNode, node.Previous); //"Err_789108aiea Node.Previous"
+            Assert.Null(node.Next); //"Err_37896riad Node.Next returned non null"
+            Assert.Equal(expectedValue, node.Value); //"Err_823902jaied Node.Value"
+
+            T[] expected = new T[linkedListValues.Length + 1];
+            Array.Copy(linkedListValues, 0, expected, 0, linkedListValues.Length);
+            expected[linkedListValues.Length] = expectedValue;
+
+            InitialItems_Tests(linkedList, expected);
+            linkedList.RemoveLast();
+        }
+
+        #endregion
+
+        #region Constructor_IEnumerable
+
+        [Theory]
+        [MemberData("EnumerableTestData")]
+        public void LinkedList_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
+        {
+            IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
+            LinkedList<T> queue = new LinkedList<T>(enumerable);
+            Assert.Equal(enumerable, queue);
+        }
+
+        [Fact]
+        public void LinkedList_Generic_Constructor_IEnumerable_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("collection", () => new LinkedList<T>(null));
+        }
+
+        #endregion
     }
 }
