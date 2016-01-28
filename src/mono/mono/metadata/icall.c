@@ -1154,7 +1154,10 @@ ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *o
 {
 	MONO_CHECK_ARG_NULL (obj, 0);
 	
-	return mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE);
+	MonoError error;
+	gint32 result = mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE, &error);
+	mono_error_raise_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT gint32
