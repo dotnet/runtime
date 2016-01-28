@@ -859,16 +859,23 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
             hEventShutDownToFinalizer->Wait(INFINITE,FALSE);
             GetFinalizerThread()->DisablePreemptiveGC();
 
-            GCHeap::GetGCHeap()->SetFinalizeQueueForShutdown (FALSE);
-
-            // Finalize all registered objects during shutdown, even they are still reachable.
-            // we have been asked to quit, so must be shutting down      
+            // We have been asked to quit, so must be shutting down
             _ASSERTE(g_fEEShutDown);
             _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
 
-            // This will apply any policy for swallowing exceptions during normal
-            // processing, without allowing the finalizer thread to disappear on us.
-            ManagedThreadBase::FinalizerBase(FinalizeObjectsOnShutdown);
+            bool finalizeOnShutdown = DEFAULT_FinalizeOnShutdown != 0;
+#ifdef _DEBUG
+            finalizeOnShutdown = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FinalizeOnShutdown) != 0;
+#endif
+            if (finalizeOnShutdown)
+            {
+                // Finalize all registered objects during shutdown, even they are still reachable.
+                GCHeap::GetGCHeap()->SetFinalizeQueueForShutdown(FALSE);
+
+                // This will apply any policy for swallowing exceptions during normal
+                // processing, without allowing the finalizer thread to disappear on us.
+                ManagedThreadBase::FinalizerBase(FinalizeObjectsOnShutdown);
+            }
 
             _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
 
@@ -1205,17 +1212,28 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
             pGenGCHeap->background_gc_wait();
 #endif //BACKGROUND_GC
 
-        _ASSERTE ((g_fEEShutDown & ShutDown_Finalize1) || g_fFastExitProcess);
-        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_SHUTDOWN);
+        _ASSERTE((g_fEEShutDown & ShutDown_Finalize1) || g_fFastExitProcess);
 
-        g_fSuspendOnShutdown = TRUE;
-        
-        // Do not balance the trap returning threads.
-        // We are shutting down CLR.  Only Finalizer/Shutdown threads can
-        // return from DisablePreemptiveGC.
-        ThreadStore::TrapReturningThreads(TRUE);
+        bool finalizeOnShutdown = DEFAULT_FinalizeOnShutdown != 0;
+#ifdef _DEBUG
+        finalizeOnShutdown = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FinalizeOnShutdown) != 0;
+#endif
+        if (finalizeOnShutdown)
+        {
+            // When running finalizers on shutdown (including for reachable objects), suspend threads for shutdown before
+            // running finalizers, so that the reachable objects will not be used after they are finalized.
 
-        ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_SHUTDOWN);
+
+            g_fSuspendOnShutdown = TRUE;
+
+            // Do not balance the trap returning threads.
+            // We are shutting down CLR.  Only Finalizer/Shutdown threads can
+            // return from DisablePreemptiveGC.
+            ThreadStore::TrapReturningThreads(TRUE);
+
+            ThreadSuspend::RestartEE(FALSE, TRUE);
+        }
 
         if (g_fFastExitProcess)
         {

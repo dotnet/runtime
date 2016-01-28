@@ -123,6 +123,14 @@ CONFIG_DWORD_INFO(INTERNAL_AppDomainNoUnload, W("AppDomainNoUnload"), 0, "Not us
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_TargetFrameworkMoniker, W("TargetFrameworkMoniker"), "Allows the test team to specify what TargetFrameworkMoniker to use.", CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::IgnoreConfigFiles | CLRConfig::IgnoreWindowsQuirkDB)
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_AppContextSwitchOverrides, W("AppContextSwitchOverrides"), "Allows default switch values defined in AppContext to be overwritten by values in the Config", CLRConfig::IgnoreEnv | CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::IgnoreWindowsQuirkDB | CLRConfig::ConfigFile_ApplicationFirst)
 
+#ifdef FEATURE_CORECLR
+// For the proposal and discussion on why finalizers are not run on shutdown by default anymore in CoreCLR, see the API review:
+// https://github.com/dotnet/corefx/issues/5205
+#define DEFAULT_FinalizeOnShutdown (0)
+#else
+#define DEFAULT_FinalizeOnShutdown (1)
+#endif
+CONFIG_DWORD_INFO(INTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), DEFAULT_FinalizeOnShutdown, "When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects")
 
 //
 // ARM
