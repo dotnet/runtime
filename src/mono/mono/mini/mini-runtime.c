@@ -1991,13 +1991,22 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 }
 
 gpointer
-mono_jit_compile_method (MonoMethod *method)
+mono_jit_compile_method (MonoMethod *method, MonoError *error)
+{
+	gpointer code;
+
+	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), error);
+	return code;
+}
+
+static gpointer
+mono_jit_compile_method_raise (MonoMethod *method)
 {
 	MonoError error;
 	gpointer code;
 
 	mono_error_init (&error);
-	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), &error);
+	code = mono_jit_compile_method (method, &error);
 	if (!code) {
 		g_assert (!mono_error_ok (&error));
 		mono_error_raise_exception (&error);
@@ -2203,7 +2212,7 @@ typedef struct {
 } RuntimeInvokeInfo;
 
 static RuntimeInvokeInfo*
-create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt)
+create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, MonoError *error)
 {
 	MonoMethod *invoke;
 	RuntimeInvokeInfo *info;
@@ -2306,7 +2315,11 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				invoke = mono_marshal_get_runtime_invoke_for_sig (wrapper_sig);
 				g_free (wrapper_sig);
 
-				info->compiled_method = mono_jit_compile_method (wrapper);
+				info->compiled_method = mono_jit_compile_method (wrapper, error);
+				if (!mono_error_ok (error)) {
+					g_free (info);
+					return NULL;
+				}
 			} else {
 				/* Gsharedvt methods can be invoked the same way */
 				/* The out wrapper has the same signature as the compiled gsharedvt method */
@@ -2318,7 +2331,11 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				g_free (wrapper_sig);
 			}
 		}
-		info->runtime_invoke = mono_jit_compile_method (invoke);
+		info->runtime_invoke = mono_jit_compile_method (invoke, error);
+		if (!mono_error_ok (error)) {
+			g_free (info);
+			return NULL;
+		}
 	}
 
 	return info;
@@ -2412,6 +2429,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
+	MonoError error;
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
@@ -2462,8 +2480,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (callee) {
-			MonoError error;
-
 			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), &error);
 			if (!compiled_method) {
 				g_assert (!mono_error_ok (&error));
@@ -2489,7 +2505,15 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			compiled_method = NULL;
 		}
 
-		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt);
+		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, &error);
+		if (!mono_error_ok (&error)) {
+			if (exc) {
+				*exc = (MonoObject*)mono_error_convert_to_exception (&error);
+				return NULL;
+			} else {
+				mono_error_raise_exception (&error);
+			}
+		}
 
 		mono_domain_lock (domain);
 		info2 = (RuntimeInvokeInfo *)mono_conc_hashtable_insert (domain_info->runtime_invoke_hash, method, info);
@@ -2527,7 +2551,16 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		if (!dyn_runtime_invoke) {
 			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method (invoke);
+			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method (invoke, &error);
+			if (!mono_error_ok (&error)) {
+				if (exc) {
+					*exc = (MonoObject*)mono_error_convert_to_exception (&error);
+					return NULL;
+				} else {
+					mono_error_raise_exception (&error);
+					/* coverity[unreachable] */
+				}
+			}
 		}
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
@@ -3566,7 +3599,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK
-	mono_install_compile_method (mono_jit_compile_method);
+	mono_install_compile_method (mono_jit_compile_method_raise);
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
