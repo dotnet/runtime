@@ -1177,7 +1177,9 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 ICALL_EXPORT void
 ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
-	mono_image_create_pefile (mb, file);
+	MonoError error;
+	mono_image_create_pefile (mb, file, &error);
+	mono_error_raise_exception (&error);
 }
 
 ICALL_EXPORT void

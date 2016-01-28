@@ -2475,17 +2475,17 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	g_ptr_array_add (assembly->gen_params, entry);
 }
 
-static void
-write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *entry)
+static gboolean
+write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *entry, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoError error;
 
 	MonoDynamicTable *table;
 	MonoGenericParam *param;
 	guint32 *values;
 	guint32 table_idx;
+
+	mono_error_init (error);
 
 	table = &assembly->tables [MONO_TABLE_GENERICPARAM];
 	table_idx = table->next_idx ++;
@@ -2498,14 +2498,12 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	values [MONO_GENERICPARAM_NUMBER] = mono_generic_param_num (param);
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, mono_generic_param_info (param)->name);
 
-	if (!mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs, &error))
-		goto fail;
+	if (!mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs, error))
+		return FALSE;
 
 	encode_constraints (entry->gparam, table_idx, assembly);
-	return;
 
-fail:
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return TRUE;
 }
 
 static guint32
@@ -4305,8 +4303,8 @@ struct StreamDesc {
  * and the metadata tables are comnpressed from the guint32 array representation, 
  * to the compressed on-disk format.
  */
-static void
-build_compressed_metadata (MonoDynamicImage *assembly)
+static gboolean
+build_compressed_metadata (MonoDynamicImage *assembly, MonoError *error)
 {
 	MonoDynamicTable *table;
 	int i;
@@ -4323,10 +4321,13 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	unsigned char *p;
 	struct StreamDesc stream_desc [5];
 
+	mono_error_init (error);
+
 	qsort (assembly->gen_params->pdata, assembly->gen_params->len, sizeof (gpointer), compare_genericparam);
-	for (i = 0; i < assembly->gen_params->len; i++){
+	for (i = 0; i < assembly->gen_params->len; i++) {
 		GenericParamTableEntry *entry = (GenericParamTableEntry *)g_ptr_array_index (assembly->gen_params, i);
-		write_generic_param_entry (assembly, entry);
+		if (!write_generic_param_entry (assembly, entry, error))
+			return FALSE;
 	}
 
 	stream_desc [0].name  = "#~";
@@ -4525,6 +4526,8 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	memcpy (meta->raw_metadata + assembly->guid.offset, assembly->guid.data, assembly->guid.index);
 
 	assembly->meta_size = assembly->guid.offset + assembly->guid.index;
+
+	return TRUE;
 }
 
 /*
@@ -6011,10 +6014,9 @@ checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
  * This function creates the PE-COFF header, the image sections, the CLI header  * etc. all the data is written in
  * assembly->pefile where it can be easily retrieved later in chunks.
  */
-void
-mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
+gboolean
+mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoError *error)
 {
-	MonoError error;
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
 	MonoSectionTable *section;
@@ -6039,6 +6041,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 		0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,  0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
+	mono_error_init (error);
+
 	assemblyb = mb->assemblyb;
 
 	mono_image_basic_init (assemblyb);
@@ -6049,8 +6053,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->pe_kind = assemblyb->pe_kind;
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->machine = assemblyb->machine;
 	
-	if (!mono_image_build_metadata (mb, &error))
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!mono_image_build_metadata (mb, error))
+		return FALSE;
 	
 
 	if (mb->is_main && assemblyb->resources) {
@@ -6065,7 +6069,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 			assembly_add_resource (mb, assembly, (MonoReflectionResource*)mono_array_addr (mb->resources, MonoReflectionResource, i));
 	}
 
-	build_compressed_metadata (assembly);
+	if (!build_compressed_metadata (assembly, error))
+		return FALSE;
 
 	if (mb->is_main)
 		assembly_add_win32_resources (assembly, assemblyb);
@@ -6363,12 +6368,14 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 	g_hash_table_foreach (assembly->blob_cache, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (assembly->blob_cache);
 	assembly->blob_cache = NULL;
+
+	return TRUE;
 }
 
 #else /* DISABLE_REFLECTION_EMIT_SAVE */
 
-void
-mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
+gboolean
+mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoError *error)
 {
 	g_assert_not_reached ();
 }
