@@ -1392,7 +1392,7 @@ void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 MonoReflectionModule * mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec, gboolean register_token, MonoError *error);
-guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types);
+guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types, MonoError *error);
 void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
 void          mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj);
 void          mono_dynamic_image_free (MonoDynamicImage *image);

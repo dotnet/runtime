@@ -1778,7 +1778,7 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 	int i;
 
 	mono_error_init (error);
-	
+
 	if (!mb->override_methods)
 		return TRUE;
 
@@ -5112,13 +5112,13 @@ mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 }
 
 guint32
-mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types)
+mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types, MonoError *error)
 {
-	MonoError error;
-
 	MonoClass *klass;
 	guint32 token = 0;
 	MonoMethodSignature *sig;
+
+	mono_error_init (error);
 
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MonoMethod") == 0 || strcmp (klass->name, "MonoCMethod") == 0) {
@@ -5163,7 +5163,6 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 		ReflectionMethodBuilder rmb;
 		guint32 parent, sig_token;
 		int nopt_args, nparams, ngparams, i;
-		char *name;
 
 		reflection_methodbuilder_from_method_builder (&rmb, mb);
 		rmb.opt_types = opt_param_types;
@@ -5193,14 +5192,15 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 
 		sig_token = method_builder_encode_signature (assembly, &rmb);
 
-		parent = mono_image_create_token (assembly, obj, TRUE, TRUE, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		parent = mono_image_create_token (assembly, obj, TRUE, TRUE, error);
+		if (!mono_error_ok (error))
+			goto fail;
 		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
 
 		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
 		parent |= MONO_MEMBERREF_PARENT_METHODDEF;
 
-		name = mono_string_to_utf8 (rmb.name);
+		char *name = mono_string_to_utf8 (rmb.name);
 		token = mono_image_get_varargs_method_token (
 			assembly, parent, name, sig_token);
 		g_free (name);
@@ -5211,6 +5211,9 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 	g_hash_table_insert (assembly->vararg_aux_hash, GUINT_TO_POINTER (token), sig);
 	register_dyn_token (assembly, token, obj);
 	return token;
+fail:
+	g_assert (!mono_error_ok (error));
+	return 0;
 }
 
 /*
@@ -12965,7 +12968,7 @@ mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 }
 
 guint32
-mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types)
+mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types, MonoError *error)
 {
 	g_assert_not_reached ();
 	return 0;
