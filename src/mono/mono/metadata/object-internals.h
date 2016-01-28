@@ -1459,8 +1459,8 @@ mono_reflection_type_get_handle (MonoReflectionType *ref);
 void
 mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass);
 
-void
-mono_image_build_metadata (MonoReflectionModuleBuilder *module);
+gboolean
+mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 
 int
 mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);

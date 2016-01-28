@@ -1455,12 +1455,10 @@ mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
  * idx is the table index of the object
  * type is one of MONO_CUSTOM_ATTR_*
  */
-static void
-mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, MonoArray *cattrs)
+static gboolean
+mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, MonoArray *cattrs, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoError error;
 
 	MonoDynamicTable *table;
 	MonoReflectionCustomAttr *cattr;
@@ -1469,9 +1467,11 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	char blob_size [6];
 	char *p = blob_size;
 	
+	mono_error_init (error);
+
 	/* it is legal to pass a NULL cattrs: we avoid to use the if in a lot of places */
 	if (!cattrs)
-		return;
+		return TRUE;
 	count = mono_array_length (cattrs);
 	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	table->rows += count;
@@ -1482,8 +1482,8 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		values [MONO_CUSTOM_ATTR_PARENT] = idx;
-		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error);
+		if (!mono_error_ok (error)) goto fail;
 		type = mono_metadata_token_index (token);
 		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (mono_metadata_token_table (token)) {
@@ -1510,6 +1510,11 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 		values += MONO_CUSTOM_ATTR_SIZE;
 		++table->next_idx;
 	}
+
+	return TRUE;
+
+fail:
+	return FALSE;
 }
 
 static void
@@ -2468,6 +2473,8 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
+
 	MonoDynamicTable *table;
 	MonoGenericParam *param;
 	guint32 *values;
@@ -2484,9 +2491,14 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	values [MONO_GENERICPARAM_NUMBER] = mono_generic_param_num (param);
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, mono_generic_param_info (param)->name);
 
-	mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs);
+	if (!mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs, &error))
+		goto fail;
 
 	encode_constraints (entry->gparam, table_idx, assembly);
+	return;
+
+fail:
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 static guint32
@@ -3845,53 +3857,64 @@ compare_types_by_table_idx (MonoReflectionTypeBuilder **type1, MonoReflectionTyp
 		return 0;
 }
 
-static void
-params_add_cattrs (MonoDynamicImage *assembly, MonoArray *pinfo) {
+static gboolean
+params_add_cattrs (MonoDynamicImage *assembly, MonoArray *pinfo, MonoError *error) {
 	int i;
 
+	mono_error_init (error);
 	if (!pinfo)
-		return;
+		return TRUE;
 	for (i = 0; i < mono_array_length (pinfo); ++i) {
 		MonoReflectionParamBuilder *pb;
 		pb = mono_array_get (pinfo, MonoReflectionParamBuilder *, i);
 		if (!pb)
 			continue;
-		mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PARAMDEF, pb->cattrs);
+		if (!mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PARAMDEF, pb->cattrs, error))
+			return FALSE;
 	}
+
+	return TRUE;
 }
 
-static void
-type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
+static gboolean
+type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error) {
 	int i;
+
+	mono_error_init (error);
 	
-	mono_image_add_cattrs (assembly, tb->table_idx, MONO_CUSTOM_ATTR_TYPEDEF, tb->cattrs);
+	if (!mono_image_add_cattrs (assembly, tb->table_idx, MONO_CUSTOM_ATTR_TYPEDEF, tb->cattrs, error))
+		return FALSE;
 	if (tb->fields) {
 		for (i = 0; i < tb->num_fields; ++i) {
 			MonoReflectionFieldBuilder* fb;
 			fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i);
-			mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs);
+			if (!mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
+				return FALSE;
 		}
 	}
 	if (tb->events) {
 		for (i = 0; i < mono_array_length (tb->events); ++i) {
 			MonoReflectionEventBuilder* eb;
 			eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
-			mono_image_add_cattrs (assembly, eb->table_idx, MONO_CUSTOM_ATTR_EVENT, eb->cattrs);
+			if (!mono_image_add_cattrs (assembly, eb->table_idx, MONO_CUSTOM_ATTR_EVENT, eb->cattrs, error))
+				return FALSE;
 		}
 	}
 	if (tb->properties) {
 		for (i = 0; i < mono_array_length (tb->properties); ++i) {
 			MonoReflectionPropertyBuilder* pb;
 			pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
-			mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PROPERTY, pb->cattrs);
+			if (!mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PROPERTY, pb->cattrs, error))
+				return FALSE;
 		}
 	}
 	if (tb->ctors) {
 		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
 			MonoReflectionCtorBuilder* cb;
 			cb = mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i);
-			mono_image_add_cattrs (assembly, cb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, cb->cattrs);
-			params_add_cattrs (assembly, cb->pinfo);
+			if (!mono_image_add_cattrs (assembly, cb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, cb->cattrs, error) ||
+			    !params_add_cattrs (assembly, cb->pinfo, error))
+				return FALSE;
 		}
 	}
 
@@ -3899,43 +3922,57 @@ type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
 		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder* mb;
 			mb = mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
-			mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, mb->cattrs);
-			params_add_cattrs (assembly, mb->pinfo);
+			if (!mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, mb->cattrs, error) ||
+			    !params_add_cattrs (assembly, mb->pinfo, error))
+				return FALSE;
 		}
 	}
 
 	if (tb->subtypes) {
-		for (i = 0; i < mono_array_length (tb->subtypes); ++i)
-			type_add_cattrs (assembly, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i));
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
+			if (!type_add_cattrs (assembly, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i), error))
+				return FALSE;
+		}
 	}
+
+	return TRUE;
 }
 
-static void
-module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *moduleb)
+static gboolean
+module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *moduleb, MonoError *error)
 {
 	int i;
 	
-	mono_image_add_cattrs (assembly, moduleb->table_idx, MONO_CUSTOM_ATTR_MODULE, moduleb->cattrs);
+	mono_error_init (error);
+
+	if (!mono_image_add_cattrs (assembly, moduleb->table_idx, MONO_CUSTOM_ATTR_MODULE, moduleb->cattrs, error))
+		return FALSE;
 
 	if (moduleb->global_methods) {
 		for (i = 0; i < mono_array_length (moduleb->global_methods); ++i) {
 			MonoReflectionMethodBuilder* mb = mono_array_get (moduleb->global_methods, MonoReflectionMethodBuilder*, i);
-			mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, mb->cattrs);
-			params_add_cattrs (assembly, mb->pinfo);
+			if (!mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, mb->cattrs, error) ||
+			    !params_add_cattrs (assembly, mb->pinfo, error))
+				return FALSE;
 		}
 	}
 
 	if (moduleb->global_fields) {
 		for (i = 0; i < mono_array_length (moduleb->global_fields); ++i) {
 			MonoReflectionFieldBuilder *fb = mono_array_get (moduleb->global_fields, MonoReflectionFieldBuilder*, i);
-			mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs);
+			if (!mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
+				return FALSE;
 		}
 	}
 	
 	if (moduleb->types) {
-		for (i = 0; i < moduleb->num_types; ++i)
-			type_add_cattrs (assembly, mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i));
+		for (i = 0; i < moduleb->num_types; ++i) {
+			if (!type_add_cattrs (assembly, mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i), error))
+				return FALSE;
+		}
 	}
+
+	return TRUE;
 }
 
 static void
@@ -4848,11 +4885,11 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
  * for the modulebuilder @moduleb.
  * At the end of the process, method and field tokens are fixed up and the 
  * on-disk compressed metadata representation is created.
+ * Return TRUE on success, or FALSE on failure and sets @error
  */
-void
-mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
+gboolean
+mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 {
-	MonoError error;
 	MonoDynamicTable *table;
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
@@ -4861,14 +4898,14 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	guint32 *values;
 	int i, j;
 
-	mono_error_init (&error);
-	
+	mono_error_init (error);
+
 	assemblyb = moduleb->assemblyb;
 	assembly = moduleb->dynamic_image;
 	domain = mono_object_domain (assemblyb);
 
 	if (assembly->text_rva)
-		return;
+		return TRUE;
 
 	assembly->text_rva = START_TEXT_RVA;
 
@@ -4952,7 +4989,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	 * table->rows is already set above and in mono_image_fill_module_table.
 	 */
 	/* add all the custom attributes at the end, once all the indexes are stable */
-	mono_image_add_cattrs (assembly, 1, MONO_CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
+	if (!mono_image_add_cattrs (assembly, 1, MONO_CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs, error))
+		goto leave_types;
 
 	/* CAS assembly permissions */
 	if (assemblyb->permissions_minimum)
@@ -4962,7 +5000,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	if (assemblyb->permissions_refused)
 		mono_image_add_decl_security (assembly, mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1), assemblyb->permissions_refused);
 
-	module_add_cattrs (assembly, moduleb);
+	if (!module_add_cattrs (assembly, moduleb, error))
+		goto leave_types;
 
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
@@ -4974,8 +5013,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		for (i = 0; i < mono_array_length (moduleb->global_methods); ++i) {
 			MonoReflectionMethodBuilder *mb = mono_array_get (
 				moduleb->global_methods, MonoReflectionMethodBuilder*, i);
-			if (!mono_image_add_methodimpl (assembly, mb, &error))
-				goto leave;
+			if (!mono_image_add_methodimpl (assembly, mb, error))
+				goto leave_types;
 		}
 	}
 
@@ -4986,23 +5025,25 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 				MonoReflectionMethodBuilder *mb = mono_array_get (
 					type->methods, MonoReflectionMethodBuilder*, j);
 
-				if (!mono_image_add_methodimpl (assembly, mb, &error))
-					goto leave;
+				if (!mono_image_add_methodimpl (assembly, mb, error))
+					goto leave_types;
 			}
 		}
 	}
 
 	fixup_cattrs (assembly);
-leave:
-	mono_ptr_array_destroy (types);
 
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+leave_types:
+	mono_ptr_array_destroy (types);
+leave:
+
+	return mono_error_ok (error);
 }
 
 #else /* DISABLE_REFLECTION_EMIT_SAVE */
 
-void
-mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
+gboolean
+mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 {
 	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit_save, so saving of dynamic assemblies is not supported.");
 }
@@ -5944,6 +5985,7 @@ checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
 void
 mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
+	MonoError error;
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
 	MonoSectionTable *section;
@@ -5978,7 +6020,9 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->pe_kind = assemblyb->pe_kind;
 	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->machine = assemblyb->machine;
 	
-	mono_image_build_metadata (mb);
+	if (!mono_image_build_metadata (mb, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	
 
 	if (mb->is_main && assemblyb->resources) {
 		int len = mono_array_length (assemblyb->resources);

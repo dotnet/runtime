@@ -1180,7 +1180,9 @@ ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE fil
 ICALL_EXPORT void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 {
-	mono_image_build_metadata (mb);
+	MonoError error;
+	if (!mono_image_build_metadata (mb, &error))
+		mono_error_raise_exception (&error);
 }
 
 ICALL_EXPORT void
