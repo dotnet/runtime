@@ -3005,6 +3005,7 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type);
+void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
 
 gboolean mini_type_is_reference (MonoType *type);
 gboolean mini_type_is_vtype (MonoType *t) MONO_LLVM_INTERNAL;

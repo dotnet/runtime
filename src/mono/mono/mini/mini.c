@@ -1256,8 +1256,17 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
 				if (fail_compile) {
 					char *method_name = mono_method_full_name (method, TRUE);
-					cfg->exception_type = info->exception_type;
-					cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+
+					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS) {
+						if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
+							mono_error_set_generic_error (&cfg->error, "System", "MethodAccessException", "Error verifying %s: %s", method_name, info->info.message);
+						else
+							mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "Error verifying %s: %s", method_name, info->info.message);
+						cfg->exception_type = MONO_EXCEPTION_MONO_ERROR;
+					} else {
+						cfg->exception_type = info->exception_type;
+						cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+					}
 					g_free (method_name);
 				}
 				mono_free_verify_list (res);
@@ -3477,8 +3486,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if ((error = mono_loader_get_last_error ())) {
 			cfg->exception_type = error->exception_type;
 		} else {
-			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
+			mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name));
 		}
 		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
@@ -4135,6 +4143,14 @@ mono_cfg_set_exception (MonoCompile *cfg, int type)
 	cfg->exception_type = type;
 }
 
+/* Assumes ownership of the MSG argument */
+void
+mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
+{
+	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+	mono_error_set_generic_error (&cfg->error, "System", "InvalidProgramException", msg);
+}
+
 #endif /* DISABLE_JIT */
 
 static MonoJitInfo*
@@ -4335,27 +4351,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 		break;
 	}
-	case MONO_EXCEPTION_INVALID_PROGRAM:
-		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", cfg->exception_message);
-		break;
 	case MONO_EXCEPTION_UNVERIFIABLE_IL:
 		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", cfg->exception_message);
-		break;
-	case MONO_EXCEPTION_METHOD_ACCESS:
-		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", cfg->exception_message);
-		break;
-	case MONO_EXCEPTION_FIELD_ACCESS:
-		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
-		break;
-	case MONO_EXCEPTION_OBJECT_SUPPLIED: {
-		MonoException *exp = (MonoException *)cfg->exception_ptr;
-		MONO_GC_UNREGISTER_ROOT (cfg->exception_ptr);
-
-		ex = exp;
-		break;
-	}
-	case MONO_EXCEPTION_OUT_OF_MEMORY:
-		ex = mono_domain_get ()->out_of_memory_ex;
 		break;
 	case MONO_EXCEPTION_MONO_ERROR:
 		g_assert (!mono_error_ok (&cfg->error));

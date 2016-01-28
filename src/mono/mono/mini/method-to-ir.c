@@ -108,7 +108,8 @@
 	}																	\
 	} while (0)
 #define OUT_OF_MEMORY_FAILURE do {	\
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_OUT_OF_MEMORY);		\
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);		\
+		mono_error_set_out_of_memory (&cfg->error, "");					\
 		goto exception_exit;	\
 	} while (0)
 #define DISABLE_AOT(cfg) do { \
@@ -373,8 +374,8 @@ method_access_failure (MonoCompile *cfg, MonoMethod *method, MonoMethod *cil_met
 {
 	char *method_fname = mono_method_full_name (method, TRUE);
 	char *cil_method_fname = mono_method_full_name (cil_method, TRUE);
-	mono_cfg_set_exception (cfg, MONO_EXCEPTION_METHOD_ACCESS);
-	cfg->exception_message = g_strdup_printf ("Method `%s' is inaccessible from method `%s'\n", cil_method_fname, method_fname);
+	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+	mono_error_set_generic_error (&cfg->error, "System", "MethodAccessException", "Method `%s' is inaccessible from method `%s'\n", cil_method_fname, method_fname);
 	g_free (method_fname);
 	g_free (cil_method_fname);
 }
@@ -384,8 +385,8 @@ field_access_failure (MonoCompile *cfg, MonoMethod *method, MonoClassField *fiel
 {
 	char *method_fname = mono_method_full_name (method, TRUE);
 	char *field_fname = mono_field_full_name (field);
-	mono_cfg_set_exception (cfg, MONO_EXCEPTION_FIELD_ACCESS);
-	cfg->exception_message = g_strdup_printf ("Field `%s' is inaccessible from method `%s'\n", field_fname, method_fname);
+	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+	mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "Field `%s' is inaccessible from method `%s'\n", field_fname, method_fname);
 	g_free (method_fname);
 	g_free (field_fname);
 }
@@ -7601,19 +7602,10 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 		method_code = g_strdup ("method body is empty.");
 	else
 		method_code = mono_disasm_code_one (NULL, method, ip, NULL);
- 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
- 	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code);
+	mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code));
  	g_free (method_fname);
  	g_free (method_code);
 	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
-}
-
-static void
-set_exception_object (MonoCompile *cfg, MonoException *exception)
-{
-	mono_cfg_set_exception (cfg, MONO_EXCEPTION_OBJECT_SUPPLIED);
-	MONO_GC_REGISTER_ROOT_SINGLE (cfg->exception_ptr, MONO_ROOT_SOURCE_JIT, "jit exception");
-	cfg->exception_ptr = exception;
 }
 
 static void
@@ -8165,8 +8157,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if ((error = mono_loader_get_last_error ())) {
 			mono_cfg_set_exception (cfg, error->exception_type);
 		} else {
-			mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
-			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
+			mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name));
 		}
 		goto exception_exit;
 	}
@@ -11649,7 +11640,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								INLINE_FAILURE ("class init");
 							ex = mono_runtime_class_init_full (vtable, FALSE);
 							if (ex) {
-								set_exception_object (cfg, ex);
+								mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+								mono_error_set_exception_instance (&cfg->error, ex);
+								g_assert_not_reached ();
 								goto exception_exit;
 							}
 						}
@@ -13636,8 +13629,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		/* Method is too large */
 		mname = mono_method_full_name (method, TRUE);
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
-		cfg->exception_message = g_strdup_printf ("Method %s is too complex.", mname);
+		mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Method %s is too complex.", mname));
 		g_free (mname);
 	}
 

@@ -439,8 +439,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_OVF_U8_UN:
 	case OP_FCONV_TO_OVF_I_UN:
 	case OP_FCONV_TO_OVF_U_UN:
-		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-		cfg->exception_message = g_strdup_printf ("float conv.ovf.un opcodes not supported.");
+		mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("float conv.ovf.un opcodes not supported."));
 		break;
 
 	case OP_IDIV:
