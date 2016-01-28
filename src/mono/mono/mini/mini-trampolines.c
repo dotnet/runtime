@@ -827,8 +827,10 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	trampoline_calls ++;
 
 	res = common_call_trampoline (regs, code, (MonoMethod *)arg, NULL, NULL, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	return res;
 }
 
@@ -900,8 +902,10 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	}
 
 	res = common_call_trampoline (regs, code, m, vt, vtable_slot, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	return res;
 }
 
@@ -936,8 +940,10 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	m = mono_marshal_get_remoting_invoke_with_check (m);
 
 	addr = mono_jit_compile_method (m, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	g_assert (addr);
 
 	return addr;
@@ -1010,7 +1016,8 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 
 			mono_error_init (&error);
 			mono_error_set_from_loader_error (&error);
-			mono_error_raise_exception (&error);
+			mono_error_set_pending_exception (&error);
+			return NULL;
 		}
 		// FIXME: Error handling (how ?)
 		g_assert (res);
@@ -1135,8 +1142,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			if (!(sig && method == tramp_info->method)) {
 				mono_error_init (&err);
 				sig = mono_method_signature_checked (method, &err);
-				if (!sig)
-					mono_error_raise_exception (&err);
+				if (!sig) {
+					mono_error_set_pending_exception (&err);
+					return NULL;
+				}
 			}
 
 			if (sig->hasthis && method->klass->valuetype) {
@@ -1167,8 +1176,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		if (!(sig && method == tramp_info->method)) {
 			mono_error_init (&err);
 			sig = mono_method_signature_checked (method, &err);
-			if (!sig)
-				mono_error_raise_exception (&err);
+			if (!sig) {
+				mono_error_set_pending_exception (&err);
+				return NULL;
+			}
 		}
 
 		callvirt = !delegate->target && sig->hasthis;
@@ -1218,8 +1229,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			delegate->method_ptr = *delegate->method_code;
 		} else {
 			compiled_method = addr = mono_jit_compile_method (method, &error);
-			if (!mono_error_ok (&error))
-				mono_error_raise_exception (&error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
 			addr = mini_add_method_trampoline (method, compiled_method, need_rgctx_tramp, need_unbox_tramp);
 			delegate->method_ptr = addr;
 			if (enable_caching && delegate->method_code)
@@ -1246,8 +1259,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		/* The general, unoptimized case */
 		m = mono_marshal_get_delegate_invoke (invoke, delegate);
 		code = (guint8 *)mono_jit_compile_method (m, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error);
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		code = (guint8 *)mini_add_method_trampoline (m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	}
 
