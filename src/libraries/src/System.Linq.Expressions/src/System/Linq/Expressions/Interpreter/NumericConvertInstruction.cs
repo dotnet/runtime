@@ -77,6 +77,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 switch (_from)
                 {
+                    case TypeCode.Boolean: return ConvertInt32((Boolean)obj ? 1 : 0);
                     case TypeCode.Byte: return ConvertInt32((Byte)obj);
                     case TypeCode.SByte: return ConvertInt32((SByte)obj);
                     case TypeCode.Int16: return ConvertInt32((Int16)obj);
@@ -195,6 +196,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 switch (_from)
                 {
+                    case TypeCode.Boolean: return ConvertInt32((Boolean)obj ? 1 : 0);
                     case TypeCode.Byte: return ConvertInt32((Byte)obj);
                     case TypeCode.SByte: return ConvertInt32((SByte)obj);
                     case TypeCode.Int16: return ConvertInt32((Int16)obj);
