@@ -15,6 +15,12 @@
       <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Tracing.builds" />
+
+    <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 -->
+    <ProjectReference Include="..\src\System.Diagnostics.Tracing.csproj">
+      <PackageTargetFramework>dnxcore50</PackageTargetFramework>
+    </ProjectReference>
+
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
