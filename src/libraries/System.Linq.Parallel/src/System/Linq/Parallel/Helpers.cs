@@ -30,8 +30,6 @@ namespace System.Linq.Parallel
         private const int InitialSize = 7;
         private const int HashCodeMask = 0x7FFFFFFF;
 
-        public Set() : this(null) { }
-
         public Set(IEqualityComparer<TElement> comparer)
         {
             if (comparer == null) comparer = EqualityComparer<TElement>.Default;
