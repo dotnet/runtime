@@ -377,6 +377,7 @@ static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly 
 
 static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 {
+	MonoError error;
 	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
@@ -387,14 +388,16 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	item = mono_object_new (domain, proc_class);
+	item = mono_object_new_checked (domain, proc_class, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (!filever_class)
 		filever_class = mono_class_from_name (system_assembly,
 					    "System.Diagnostics",
 					    "FileVersionInfo");
 
-	filever = mono_object_new (domain, filever_class);
+	filever = mono_object_new_checked (domain, filever_class, &error);
+	if (!mono_error_ok (&error)) goto leave;
 
 	process_get_assembly_fileversion (filever, assembly);
 	process_set_field_string_char (filever, "filename", filename);
@@ -405,13 +408,16 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	process_set_field_string_char (item, "filename", filename);
 	process_set_field_string_char (item, "modulename", modulename);
 
+leave:
 	g_free (filename);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return item;
 }
 
 static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
+	MonoError error;
 	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
@@ -420,14 +426,16 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	item=mono_object_new (domain, proc_class);
+	item=mono_object_new_checked (domain, proc_class, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (!filever_class)
 		filever_class=mono_class_from_name (system_assembly,
 					    "System.Diagnostics",
 					    "FileVersionInfo");
 
-	filever=mono_object_new (domain, filever_class);
+	filever=mono_object_new_checked (domain, filever_class, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	process_get_fileversion (filever, filename);
 

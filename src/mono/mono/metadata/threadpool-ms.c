@@ -1320,6 +1320,7 @@ MonoAsyncResult *
 mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params)
 {
 	static MonoClass *async_call_klass = NULL;
+	MonoError error;
 	MonoMethodMessage *message;
 	MonoAsyncResult *async_result;
 	MonoAsyncCall *async_call;
@@ -1334,7 +1335,9 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 
 	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL);
 
-	async_call = (MonoAsyncCall*) mono_object_new (domain, async_call_klass);
+	async_call = (MonoAsyncCall*) mono_object_new_checked (domain, async_call_klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	MONO_OBJECT_SETREF (async_call, msg, message);
 	MONO_OBJECT_SETREF (async_call, state, state);
 

@@ -1624,6 +1624,9 @@ MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 
 MonoObject *
+ves_icall_object_new (MonoDomain *domain, MonoClass *klass);
+	
+MonoObject *
 ves_icall_object_new_specific (MonoVTable *vtable);
 
 MonoObject *

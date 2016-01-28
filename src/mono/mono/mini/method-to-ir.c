@@ -4195,7 +4195,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		if (cfg->opt & MONO_OPT_SHARED) {
 			EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
 			iargs [1] = data;
-			alloc_ftn = mono_object_new;
+			alloc_ftn = ves_icall_object_new;
 		} else {
 			iargs [0] = data;
 			alloc_ftn = ves_icall_object_new_specific;
@@ -4219,7 +4219,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
 		EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 
-		alloc_ftn = mono_object_new;
+		alloc_ftn = ves_icall_object_new;
 	} else if (cfg->compile_aot && cfg->cbb->out_of_line && klass->type_token && klass->image == mono_defaults.corlib && !klass->generic_class) {
 		/* This happens often in argument checking code, eg. throw new FooException... */
 		/* Avoid relocations and save some space by calling a helper function specialized to mscorlib */
@@ -12586,7 +12586,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (cfg->cbb, iargs [0]);
 				NEW_CLASSCONST (cfg, iargs [1], klass);
 				MONO_ADD_INS (cfg->cbb, iargs [1]);
-				*sp++ = mono_emit_jit_icall (cfg, mono_object_new, iargs);
+				*sp++ = mono_emit_jit_icall (cfg, ves_icall_object_new, iargs);
 				ip += 6;
 				inline_costs += 10 * num_calls++;
 				break;

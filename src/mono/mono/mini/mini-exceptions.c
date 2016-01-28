@@ -657,6 +657,7 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
@@ -674,7 +675,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
+		mono_error_raise_exception (&error);
 		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
 		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
 		MonoMethod *method;
