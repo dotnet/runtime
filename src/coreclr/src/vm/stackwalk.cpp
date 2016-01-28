@@ -1563,8 +1563,8 @@ BOOL StackFrameIterator::IsValid(void)
         // we started?
         //DevDiv 168789: In GCStress >= 4 two threads could race on triggering GC;
         //  if the one that just made p/invoke call is second and hits the trap instruction
-        //  before call to syncronize with GC, it will push RedirectedThreadFrame concurrently 
-        //  with GC stackwalking.
+        //  before call to syncronize with GC, it will push a frame [ResumableFrame on Unix 
+        //  and RedirectedThreadFrame on Windows] concurrently with GC stackwalking.
         //  In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and syncronize.
         BOOL bRedirectedPinvoke = FALSE;
 
@@ -1575,7 +1575,8 @@ BOOL StackFrameIterator::IsValid(void)
                               (m_pRealStartFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()) && 
                               (m_pThread->GetFrame() != NULL) &&
                               (m_pThread->GetFrame() != FRAME_TOP) &&
-                              (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr()));
+                              ((m_pThread->GetFrame()->GetVTablePtr() == ResumableFrame::GetMethodFrameVPtr()) ||
+                               (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr())));
 #endif // FEATURE_HIJACK
 
         _ASSERTE( (m_pStartFrame != NULL) ||
