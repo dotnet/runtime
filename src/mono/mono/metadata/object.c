@@ -4492,16 +4492,37 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
+
+	MonoObject * result = mono_object_new_checked (domain, klass, &error);
+
+	mono_error_raise_exception (&error);
+	return result;
+}
+
+/**
+ * mono_object_new_checked:
+ * @klass: the class of the object that we want to create
+ * @error: set on error
+ *
+ * Returns: a newly created object whose definition is
+ * looked up using @klass.   This will not invoke any constructors,
+ * so the consumer of this routine has to invoke any constructors on
+ * its own to initialize the object.
+ *
+ * It returns NULL on failure and sets @error.
+ */
+MonoObject *
+mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoVTable *vtable;
 
 	vtable = mono_class_vtable (domain, klass);
-	if (!vtable)
-		return NULL;
+	g_assert (vtable); /* FIXME don't swallow the error */
 
-	MonoError error;
-	MonoObject *o = mono_object_new_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+	MonoObject *o = mono_object_new_specific_checked (vtable, error);
 	return o;
 }
 
