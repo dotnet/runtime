@@ -52,7 +52,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return BootTimeToDateTime(GetStat().starttime);
+                return BootTimeToDateTime(TicksToTimeSpan(GetStat().starttime));
             }
         }
 
@@ -187,22 +187,6 @@ namespace System.Diagnostics
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
-
-        /// <summary>Computes a time based on a number of ticks since boot.</summary>
-        /// <param name="ticksAfterBoot">The number of ticks since boot.</param>
-        /// <returns>The converted time.</returns>
-        internal static DateTime BootTimeToDateTime(ulong ticksAfterBoot)
-        {
-            // Use the uptime and the current time to determine the absolute boot time
-            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
-
-            // And use that to determine the absolute time for ticksStartedAfterBoot
-            DateTime dt = bootTime + TicksToTimeSpan(ticksAfterBoot);
-
-            // The return value is expected to be in the local time zone.
-            // It is converted here (rather than starting with DateTime.Now) to avoid DST issues.
-            return dt.ToLocalTime();
-        }
 
         /// <summary>Reads the stats information for this process from the procfs file system.</summary>
         private Interop.procfs.ParsedStat GetStat()

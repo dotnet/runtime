@@ -347,10 +347,7 @@ namespace System.Diagnostics.Tests
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // resident memory can be 0 on OSX. From apple documentation: 
-                // Wired: Information in RAM that can't be moved to the Mac's drive.
-                // The amount of Wired memory depends on the applications you are using.
-                // Does not specify if there is a significant wired memory for each app.
+                // resident memory can be 0 on OSX.
                 Assert.True(_process.WorkingSet64 >= 0);
                 return;
             }

@@ -53,12 +53,12 @@ namespace System.Diagnostics
             get
             {
                 // Get the RUsage data and convert the process start time (which is the number of
-                // nanoseconds elapse from boot to that the process started) to a DateTime.
+                // nanoseconds elapse from boot to that the process started) to seconds.
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                double milliseconds = info.ri_proc_start_abstime / MillisecondFactor;
-                TimeSpan ts = TimeSpan.FromMilliseconds(milliseconds);
-                DateTime uptime = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(Environment.TickCount));
-                return uptime.Add(ts).ToLocalTime();
+                double seconds = info.ri_proc_start_abstime / NanoSecondToSecondFactor;
+                
+                // Convert timespan from boot to process start datetime.
+                return BootTimeToDateTime(TimeSpan.FromSeconds(seconds));
             }
         }
 
@@ -184,9 +184,9 @@ namespace System.Diagnostics
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
 
-        // The ri_proc_start_abstime needs to be converted to milliseconds to determine
+        // The ri_proc_start_abstime needs to be converted to seconds to determine
         // the actual start time of the process.
-        private const int MillisecondFactor = 1000000;
+        private const int NanoSecondToSecondFactor = 1000000000;
 
         private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {

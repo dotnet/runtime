@@ -1,31 +1,37 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Linq;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     public class ProcessThreadTests : ProcessTestBase
     {
-        [ActiveIssue(3202, PlatformID.OSX)]
         [Fact]
         public void TestCommonPriorityAndTimeProperties()
         {
             ProcessThreadCollection threadCollection = _process.Threads;
             Assert.True(threadCollection.Count > 0);
-
             ProcessThread thread = threadCollection[0];
-
-            if (ThreadState.Terminated != thread.ThreadState)
+            try
             {
-                Assert.True(thread.Id >= 0);
-                Assert.Equal(_process.BasePriority, thread.BasePriority);
-                Assert.True(thread.CurrentPriority >= 0);
-                Assert.True(thread.PrivilegedProcessorTime.TotalSeconds >= 0);
-                Assert.True(thread.UserProcessorTime.TotalSeconds >= 0);
-                Assert.True(thread.TotalProcessorTime.TotalSeconds >= 0);
+                if (ThreadState.Terminated != thread.ThreadState)
+                {
+                    Assert.True(thread.Id >= 0);
+                    Assert.Equal(_process.BasePriority, thread.BasePriority);
+                    Assert.True(thread.CurrentPriority >= 0);
+                    Assert.True(thread.PrivilegedProcessorTime.TotalSeconds >= 0);
+                    Assert.True(thread.UserProcessorTime.TotalSeconds >= 0);
+                    Assert.True(thread.TotalProcessorTime.TotalSeconds >= 0);
+                }
+            }
+            catch (Win32Exception)
+            {
+                // Win32Exception is thrown when getting threadinfo fails. 
             }
         }
 
@@ -77,7 +83,7 @@ namespace System.Diagnostics.Tests
                     // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
                     // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
                     // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                    // Allowing for error in 10 ms, on windows 15ms.
+                    // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
                     long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
                     long beforeTicks = timeBeforeCreatingProcess.Ticks - intervalTicks;
                     long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
