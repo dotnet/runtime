@@ -143,7 +143,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	MonoMethod* method;
 	guint32 entry;
 	gchar* file_name;
-	gchar* error;
+	gchar* corlib_version_error;
 	int argc;
 	gunichar2** argvw;
 	gchar** argv;
@@ -153,9 +153,9 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	init_from_coree = TRUE;
 	domain = mono_runtime_load (file_name, NULL);
 
-	error = (gchar*) mono_check_corlib_version ();
-	if (error) {
-		g_free (error);
+	corlib_version_error = (gchar*) mono_check_corlib_version ();
+	if (corlib_version_error) {
+		g_free (corlib_version_error);
 		g_free (file_name);
 		MessageBox (NULL, L"Corlib not in sync with this runtime.", NULL, MB_ICONERROR);
 		mono_runtime_quit ();
