@@ -8,14 +8,14 @@ MONO_BEGIN_DECLS
 
 typedef mono_bool (*MonoStackWalk)     (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data);
 
-MONO_API MonoMethod *
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
 mono_get_method             (MonoImage *image, uint32_t token, MonoClass *klass);
 
-MONO_API MonoMethod *
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
 mono_get_method_full        (MonoImage *image, uint32_t token, MonoClass *klass,
 			     MonoGenericContext *context);
 
-MONO_API MonoMethod *
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
 mono_get_method_constrained (MonoImage *image, uint32_t token, MonoClass *constrained_class,
 			     MonoGenericContext *context, MonoMethod **cil_method);
 

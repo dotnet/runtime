@@ -3651,6 +3651,9 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
+#This must always be defined when building the runtime
+AC_DEFINE(MONO_INSIDE_RUNTIME,1, [Disable banned functions from being used by the runtime])
+
 mono_build_root=`pwd`
 AC_SUBST(mono_build_root)
 
