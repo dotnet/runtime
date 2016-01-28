@@ -5,8 +5,6 @@
 //
 // clr_std/algorithm
 //
-// <owner>simonhal</owner>
-//
 // Copy of some key Standard Template Library functionality
 
 #ifdef _MSC_VER
@@ -66,7 +64,7 @@ namespace std
     template <class iter, class comp>
     void sort_worker ( iter first, iter last, comp compare )
     {
-        iter::difference_type RangeSize = last - first;
+        typename iter::difference_type RangeSize = last - first;
 
         // When down to a list of size 1, be done
         if (RangeSize < 2)
@@ -100,9 +98,20 @@ namespace std
             }
         }
     }
+
+    template<class InIter, class OutIter, class Fn1>
+    OutIter transform( InIter first, InIter last, OutIter dest, Fn1 func )
+    {
+        for ( ; first!=last ; ++first, ++dest )
+            *dest = func(*first);
+        return dest;
+    }
+
 } // namespace std
 
 #endif /* __clr_std_algorithm_h__ */
 
 #endif // !USE_STL
 
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp
