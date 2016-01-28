@@ -70,7 +70,8 @@ add_library(corguids ${CORGUIDS_SOURCES})
 
 # Binplace the inc files for packaging later.
 
-install (FILES cor.h
+install (FILES cfi.h
+               cor.h
                corhdr.h
                corinfo.h
                corjit.h

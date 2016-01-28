@@ -7,6 +7,7 @@
 #define CLRNT_H_
 
 #include "staticcontract.h"
+#include "cfi.h"
 
 //
 // This file is the result of some changes to the SDK header files.
