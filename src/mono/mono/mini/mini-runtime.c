@@ -2417,10 +2417,11 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
  * @method: the method to invoke
  * @obj: this pointer
  * @params: array of parameter values.
+ * @error: error
  * @exc: used to catch exceptions objects
  */
 static MonoObject*
-mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoError *error, MonoObject **exc)
 {
 	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
@@ -2429,7 +2430,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
-	MonoError error;
+
+	mono_error_init (error);
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
@@ -2480,16 +2482,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (callee) {
-			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), &error);
+			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), error);
 			if (!compiled_method) {
-				g_assert (!mono_error_ok (&error));
-				if (exc) {
-					*exc = (MonoObject*)mono_error_convert_to_exception (&error);
-					return NULL;
-				} else {
-					mono_error_raise_exception (&error);
-					/* coverity[unreachable] */
-				}
+				g_assert (!mono_error_ok (error));
+				return NULL;
 			}
 
 			if (mono_llvm_only) {
@@ -2505,15 +2501,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			compiled_method = NULL;
 		}
 
-		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, &error);
-		if (!mono_error_ok (&error)) {
-			if (exc) {
-				*exc = (MonoObject*)mono_error_convert_to_exception (&error);
-				return NULL;
-			} else {
-				mono_error_raise_exception (&error);
-			}
-		}
+		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, error);
+		if (!mono_error_ok (error))
+			return NULL;
 
 		mono_domain_lock (domain);
 		info2 = (RuntimeInvokeInfo *)mono_conc_hashtable_insert (domain_info->runtime_invoke_hash, method, info);
@@ -2551,16 +2541,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		if (!dyn_runtime_invoke) {
 			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method (invoke, &error);
-			if (!mono_error_ok (&error)) {
-				if (exc) {
-					*exc = (MonoObject*)mono_error_convert_to_exception (&error);
-					return NULL;
-				} else {
-					mono_error_raise_exception (&error);
-					/* coverity[unreachable] */
-				}
-			}
+			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method (invoke, error);
+			if (!mono_error_ok (error))
+				return NULL;
 		}
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
@@ -3528,6 +3511,10 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.get_imt_trampoline = mini_get_imt_trampoline;
 	callbacks.imt_entry_inited = mini_imt_entry_inited;
 	callbacks.init_delegate = mini_init_delegate;
+#define JIT_INVOKE_WORKS
+#ifdef JIT_INVOKE_WORKS
+	callbacks.runtime_invoke = mono_jit_runtime_invoke;
+#endif
 
 	mono_install_callbacks (&callbacks);
 
@@ -3609,10 +3596,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
 	mono_install_create_domain_hook (mini_create_jit_domain_info);
 	mono_install_free_domain_hook (mini_free_jit_domain_info);
-#endif
-#define JIT_INVOKE_WORKS
-#ifdef JIT_INVOKE_WORKS
-	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 #endif
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);

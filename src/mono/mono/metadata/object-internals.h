@@ -618,6 +618,7 @@ typedef struct {
 	gboolean (*debug_log_is_enabled) (void);
 	gboolean (*tls_key_supported) (MonoTlsKey key);
 	void     (*init_delegate) (MonoDelegate *del);
+	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoError *error, MonoObject **exc);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -682,9 +683,6 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
-
-void	    
-mono_install_runtime_invoke (MonoInvokeFunc func);
 
 void	    
 mono_install_compile_method (MonoCompileFunc func);
