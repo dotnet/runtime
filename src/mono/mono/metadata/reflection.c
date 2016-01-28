@@ -155,8 +155,8 @@ static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method);
 static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
-static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
-static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
+static gboolean reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb, MonoError *error);
+static gboolean reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb, MonoError *error);
 static guint32 create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb);
 #endif
 
@@ -1651,17 +1651,17 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
-static void
-reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb)
+static gboolean
+reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb, MonoError *error)
 {
-	MonoError error;
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	mono_error_init (error);
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
-	rmb->rtype = mono_reflection_type_resolve_user_types ((MonoReflectionType*)mb->rtype, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	rmb->rtype = mono_reflection_type_resolve_user_types ((MonoReflectionType*)mb->rtype, error);
+	return_val_if_nok (error, FALSE);
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = mb->generic_params;
 	rmb->generic_container = mb->generic_container;
@@ -1692,21 +1692,24 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 		rmb->dllentry = mb->dllentry;
 		rmb->dll = mb->dll;
 	}
+
+	return TRUE;
 }
 
-static void
-reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb)
+static gboolean
+reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	const char *name = mb->attrs & METHOD_ATTRIBUTE_STATIC ? ".cctor": ".ctor";
+
+	mono_error_init (error);
 
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
-	rmb->rtype = mono_type_get_object_checked (mono_domain_get (), &mono_defaults.void_class->byval_arg, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	rmb->rtype = mono_type_get_object_checked (mono_domain_get (), &mono_defaults.void_class->byval_arg, error);
+	return_val_if_nok (error, FALSE);
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = NULL;
 	rmb->generic_container = NULL;
@@ -1729,6 +1732,8 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
+
+	return TRUE;
 }
 
 static void
@@ -1824,7 +1829,8 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 	ReflectionMethodBuilder rmb;
 	int i;
 
-	reflection_methodbuilder_from_method_builder (&rmb, mb);
+	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	mono_image_basic_method (&rmb, assembly, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -1877,7 +1883,8 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 
 	ReflectionMethodBuilder rmb;
 
-	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
+	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
+		return FALSE;
 
 	if (!mono_image_basic_method (&rmb, assembly, error))
 		return FALSE;
@@ -2809,6 +2816,7 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 static guint32
 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method)
 {
+	MonoError error;
 	guint32 token, parent, sig;
 	ReflectionMethodBuilder rmb;
 	char *name;
@@ -2819,7 +2827,8 @@ mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, Mo
 		return token;
 
 	name = mono_string_to_utf8 (method->name);
-	reflection_methodbuilder_from_method_builder (&rmb, method);
+	if (!reflection_methodbuilder_from_method_builder (&rmb, method, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	/*
 	 * A methodref signature can't contain an unmanaged calling convention.
@@ -2951,6 +2960,7 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 static guint32
 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *mb)
 {
+	MonoError error;
 	guint32 token, parent, sig;
 	ReflectionMethodBuilder rmb;
 	char *name;
@@ -2960,7 +2970,8 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	if (token)
 		return token;
 
-	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
+	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (tb->generic_params)
 		parent = create_generic_typespec (assembly, tb);
@@ -3089,6 +3100,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 static guint32
 mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCtorOnTypeBuilderInst *c, gboolean create_methodspec)
 {
+	MonoError error;
 	guint32 sig, token;
 	MonoClass *klass;
 	MonoGenericClass *gclass;
@@ -3111,7 +3123,8 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 		gclass = type->data.generic_class;
 		g_assert (gclass->is_dynamic);
 
-		reflection_methodbuilder_from_ctor_builder (&rmb, cb);
+		if (!reflection_methodbuilder_from_ctor_builder (&rmb, cb, &error))
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		name = mono_string_to_utf8 (rmb.name);
 
@@ -3181,6 +3194,8 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 static guint32
 mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionMethodOnTypeBuilderInst *m, gboolean create_methodspec)
 {
+	MonoError error;
+
 	guint32 sig, token = 0;
 	MonoType *type;
 	MonoClass *klass;
@@ -3211,7 +3226,8 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 		gclass = type->data.generic_class;
 		g_assert (gclass->is_dynamic);
 
-		reflection_methodbuilder_from_method_builder (&rmb, mb);
+		if (!reflection_methodbuilder_from_method_builder (&rmb, mb, &error))
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		name = mono_string_to_utf8 (rmb.name);
 
@@ -5164,7 +5180,9 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 		guint32 parent, sig_token;
 		int nopt_args, nparams, ngparams, i;
 
-		reflection_methodbuilder_from_method_builder (&rmb, mb);
+		if (!reflection_methodbuilder_from_method_builder (&rmb, mb, error))
+			goto fail;
+		
 		rmb.opt_types = opt_param_types;
 		nopt_args = mono_array_length (opt_param_types);
 
@@ -11182,6 +11200,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 static MonoMethod*
 ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 {
+	MonoError error;
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 
@@ -11189,7 +11208,8 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	sig = ctor_builder_to_signature (klass->image, mb);
 	mono_loader_unlock ();
 
-	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
+	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here*/
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
@@ -11206,6 +11226,7 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 static MonoMethod*
 methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 {
+	MonoError error;
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 
@@ -11213,7 +11234,8 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	sig = method_builder_to_signature (klass->image, mb);
 	mono_loader_unlock ();
 
-	reflection_methodbuilder_from_method_builder (&rmb, mb);
+	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, &error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
