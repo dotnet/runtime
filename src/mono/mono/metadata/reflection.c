@@ -6875,7 +6875,8 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	if (!verify_safe_for_managed_space (type)) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		mono_raise_exception (mono_get_exception_invalid_operation ("This type cannot be propagated to managed space"));
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "This type cannot be propagated to managed space");
+		return NULL;
 	}
 
 	if (mono_class_get_ref_info (klass) && !klass->wastypebuilder) {
