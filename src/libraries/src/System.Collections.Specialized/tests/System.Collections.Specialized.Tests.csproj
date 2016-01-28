@@ -50,6 +50,7 @@
     <Compile Include="NameObjectCollectionBase\KeysCollectionTests.cs" />
     <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.cs" />
     <Compile Include="NameObjectCollectionBase\RemoveAtTests.cs" />
+    <Compile Include="NameObjectCollectionBase\SetObjectTests.cs" />
     <Compile Include="NameValueCollection\AddNVCTests.cs" />
     <Compile Include="NameValueCollection\AddStrStrTests.cs" />
     <Compile Include="NameValueCollection\ClearTests.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="NameValueCollection\GetValuesIntTests.cs" />
     <Compile Include="NameValueCollection\GetValuesStrTests.cs" />
     <Compile Include="NameValueCollection\HasKeysTests.cs" />
+    <Compile Include="NameValueCollection\PropertyReadOnlyTests.cs" />
     <Compile Include="NameValueCollection\RemoveStrTests.cs" />
     <Compile Include="NameValueCollection\SetItemStrStrTests.cs" />
     <Compile Include="NameValueCollection\SetStrStrTests.cs" />

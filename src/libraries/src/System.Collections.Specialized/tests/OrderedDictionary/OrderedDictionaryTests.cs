@@ -43,6 +43,17 @@ namespace System.Collections.Specialized.Tests
             var d1 = new OrderedDictionary(eqComp);
             d1.Add("foo", "bar");
             Assert.Throws<ArgumentException>(() => d1.Add("FOO", "bar"));
+
+            // The equality comparer should also test for a non-existent key 
+            d1.Remove("foofoo");
+            Assert.True(d1.Contains("foo"));
+
+            // Make sure we can change an existent key that passes the equality comparer
+            d1["FOO"] = "barbar";
+            Assert.Equal("barbar", d1["foo"]);
+
+            d1.Remove("FOO");
+            Assert.False(d1.Contains("foo"));
         }
 
         // public OrderedDictionary(int capacity, IEqualityComparer comparer);
@@ -104,6 +115,21 @@ namespace System.Collections.Specialized.Tests
             Assert.True(d2.IsReadOnly);
         }
 
+        [Fact]
+        public void AsReadOnly_AttemptingToModifyDictionary_Throws()
+        {
+            OrderedDictionary orderedDictionary = new OrderedDictionary().AsReadOnly();
+            Assert.Throws<NotSupportedException>(() => orderedDictionary[0] = "value");
+            Assert.Throws<NotSupportedException>(() => orderedDictionary["key"] = "value");
+ 
+            Assert.Throws<NotSupportedException>(() => orderedDictionary.Add("key", "value"));
+            Assert.Throws<NotSupportedException>(() => orderedDictionary.Insert(0, "key", "value"));
+ 
+            Assert.Throws<NotSupportedException>(() => orderedDictionary.Remove("key"));
+            Assert.Throws<NotSupportedException>(() => orderedDictionary.RemoveAt(0));
+            Assert.Throws<NotSupportedException>(() => orderedDictionary.Clear());
+        }
+
         // public ICollection Keys { get; }
         [Fact]
         public void KeysPropertyContainsAllKeys()
@@ -115,6 +141,11 @@ namespace System.Collections.Specialized.Tests
                 d["test_" + i] = i;
                 alreadyChecked[i] = false;
             }
+            ICollection keys = d.Keys;
+
+            Assert.False(keys.IsSynchronized);
+            Assert.NotEqual(d, keys.SyncRoot);
+            Assert.Equal(d.Count, keys.Count);
 
             foreach (var key in d.Keys)
             {
@@ -126,6 +157,16 @@ namespace System.Collections.Specialized.Tests
                 Assert.True(number >= 0 && number < 1000);
                 alreadyChecked[number] = true;
             }
+
+            object[] array = new object[keys.Count + 50];
+            keys.CopyTo(array, 50);
+            for (int i = 50; i < array.Length; i++)
+            {
+                Assert.True(d.Contains(array[i]));
+            }
+            
+            Assert.Throws<ArgumentNullException>("array", () => keys.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => keys.CopyTo(new object[keys.Count], -1));
         }
 
         // bool System.Collections.ICollection.IsSynchronized { get; }
@@ -134,6 +175,27 @@ namespace System.Collections.Specialized.Tests
         {
             ICollection c = new OrderedDictionary();
             Assert.False(c.IsSynchronized);
+        }
+
+        [Fact]
+        public void SyncRootTests()
+        {
+            ICollection orderedDictionary1 = new OrderedDictionary();
+            ICollection orderedDictionary2 = new OrderedDictionary();
+
+            object sync1 = orderedDictionary1.SyncRoot;
+            object sync2 = orderedDictionary2.SyncRoot;
+
+            // Sync root does not refer to the dictionary
+            Assert.NotEqual(sync1, orderedDictionary1);
+            Assert.NotEqual(sync2, orderedDictionary2);
+
+            // Sync root objects for the same dictionaries are equivilent
+            Assert.Equal(orderedDictionary1.SyncRoot, orderedDictionary1.SyncRoot);
+            Assert.Equal(orderedDictionary2.SyncRoot, orderedDictionary2.SyncRoot);
+
+            // Sync root objects for different dictionaries are not equivilent
+            Assert.NotEqual(sync1, sync2);
         }
 
         // bool System.Collections.IDictionary.IsFixedSize { get; }
@@ -209,7 +271,13 @@ namespace System.Collections.Specialized.Tests
                 alreadyChecked[i] = false;
             }
 
-            foreach (var val in d.Values)
+            ICollection values = d.Values;
+
+            Assert.False(values.IsSynchronized);
+            Assert.NotEqual(d, values.SyncRoot);
+            Assert.Equal(d.Count, values.Count);
+
+            foreach (var val in values)
             {
                 string sval = (string)val;
                 var p = sval.Split(new char[] { '_' });
@@ -219,6 +287,16 @@ namespace System.Collections.Specialized.Tests
                 Assert.True(number >= 0 && number < 1000);
                 alreadyChecked[number] = true;
             }
+
+            object[] array = new object[values.Count + 50];
+            values.CopyTo(array, 50);
+            for (int i = 50; i < array.Length; i++)
+            {
+                Assert.Equal(array[i], "bar_" + (i - 50));
+            }
+            
+            Assert.Throws<ArgumentNullException>("array", () => values.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => values.CopyTo(new object[values.Count], -1));
         }
 
         // public void Add(object key, object value);
@@ -344,21 +422,67 @@ namespace System.Collections.Specialized.Tests
             Assert.NotEqual(arr[1].Key, arr[2].Key);
         }
 
-        // public virtual IDictionaryEnumerator GetEnumerator();
-        // IEnumerator System.Collections.IEnumerable.GetEnumerator();
+        [Fact]
+        public void GetDictionaryEnumeratorTests()
+        {
+            var d = new OrderedDictionary();
+            for (int i = 0; i < 10; i++)
+            {
+                d.Add("Key_" + i, "Value_" + i);
+            }
+
+            IDictionaryEnumerator e = d.GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int count = 0;
+                while (e.MoveNext())
+                {
+                    DictionaryEntry entry1 = (DictionaryEntry)e.Current;
+                    DictionaryEntry entry2 = e.Entry;
+
+                    Assert.Equal(entry1.Key, entry2.Key);
+                    Assert.Equal(entry1.Value, entry1.Value);
+
+                    Assert.Equal(e.Key, entry1.Key);
+                    Assert.Equal(e.Value, entry1.Value);
+
+                    Assert.Equal(e.Value, d[e.Key]);
+                    count++;
+                }
+                Assert.Equal(count, d.Count);
+                Assert.False(e.MoveNext());
+                e.Reset();
+            }
+
+            e = d.GetEnumerator();
+            d["foo"] = "bar";
+            Assert.Throws<InvalidOperationException>(() => e.MoveNext());
+        }
+        
         [Fact]
         public void GetEnumeratorTests()
         {
             var d = new OrderedDictionary();
-            IEnumerator e = d.GetEnumerator();
-            d["foo"] = "bar";
-            Assert.Throws<InvalidOperationException>(() => e.MoveNext());
-            e = d.GetEnumerator();
-            Assert.True(e.MoveNext());
-            var c = (DictionaryEntry)e.Current;
-            Assert.Equal("foo", c.Key);
-            Assert.Equal("bar", c.Value);
-            Assert.False(e.MoveNext());
+            for (int i = 0; i < 10; i++)
+            {
+                d.Add("Key_" + i, "Value_" + i);
+            }
+
+            IEnumerator e = ((ICollection)d).GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int count = 0;
+                while (e.MoveNext())
+                {
+                    DictionaryEntry entry = (DictionaryEntry)e.Current;
+
+                    Assert.Equal(entry.Value, d[entry.Key]);
+                    count++;
+                }
+                Assert.Equal(count, d.Count);
+                Assert.False(e.MoveNext());
+                e.Reset();
+            }
         }
 
         // public void Insert(int index, object key, object value);

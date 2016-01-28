@@ -648,5 +648,19 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, failed to set to null"));
             }
         }
+
+        [Fact]
+        public void SetItem_CaseInsensitiveDictionary_IgnoresCaseOfKey()
+        {
+            var hybridDictionary = new HybridDictionary(false);
+            hybridDictionary["key"] = "value";
+            Assert.Equal("value", hybridDictionary["key"]);
+            Assert.False(hybridDictionary.Contains("KEY"));
+ 
+            hybridDictionary = new HybridDictionary(true);
+            hybridDictionary["key"] = "value";
+            Assert.Equal("value", hybridDictionary["key"]);
+            Assert.Equal("value", hybridDictionary["KEY"]);
+        }
     }
 }

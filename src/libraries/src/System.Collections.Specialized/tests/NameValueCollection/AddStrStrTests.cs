@@ -305,5 +305,16 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, "Error, returned wrong value at null key");
             }
         }
+
+        [Fact]
+        public void Add_AddingValueToExistingName_AppendsValueToOriginalValue()
+        {
+            var nameValueCollection = new NameValueCollection();
+            nameValueCollection.Add("name", "value1");
+            nameValueCollection.Add("name", "value2");
+            nameValueCollection.Add("name", null);
+ 
+            Assert.Equal("value1,value2", nameValueCollection["name"]);
+        }
     }
 }
