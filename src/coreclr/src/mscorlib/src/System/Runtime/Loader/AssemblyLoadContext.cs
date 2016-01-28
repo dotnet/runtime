@@ -66,8 +66,14 @@ namespace System.Runtime.Loader
             IntPtr ptrALC = GCHandle.ToIntPtr(gchALC);
             m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(ptrALC, fRepresentsTPALoadContext);
 
-            // Initialize the resolve event handler to be null by default
+            // Initialize event handlers to be null by default
             Resolving = null;
+            Unloading = null;
+
+            // Since unloading an AssemblyLoadContext is not yet implemented, this is a temporary solution to raise the
+            // Unloading event on process exit. Register for the current AppDomain's ProcessExit event, and the handler will in
+            // turn raise the Unloading event.
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -387,8 +393,18 @@ namespace System.Runtime.Loader
             InternalStartProfile(profile, m_pNativeAssemblyLoadContext);
 #endif // FEATURE_MULTICOREJI
         }
-        
+
+        private void OnProcessExit(object sender, EventArgs e)
+        {
+            var unloading = Unloading;
+            if (unloading != null)
+            {
+                unloading(this);
+            }
+        }
+
         public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
+        public event Action<AssemblyLoadContext> Unloading;
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private IntPtr m_pNativeAssemblyLoadContext;
