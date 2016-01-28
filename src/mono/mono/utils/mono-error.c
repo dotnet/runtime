@@ -347,6 +347,7 @@ mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 
+	mono_error_prepare (error);
 	error->error_code = MONO_ERROR_EXCEPTION_INSTANCE;
 	error->exn.instance_handle = mono_gchandle_new (exc ? &exc->object : NULL, FALSE);
 }
