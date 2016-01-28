@@ -9,8 +9,6 @@
  *
  */
 
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Collections.Specialized
@@ -339,12 +337,12 @@ namespace System.Collections.Specialized
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_MultiRank);
+                throw new ArgumentException(SR.Arg_MultiRank, "array");
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index.ToString(CultureInfo.CurrentCulture)));
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < _entriesArray.Count)
@@ -587,12 +585,12 @@ namespace System.Collections.Specialized
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_MultiRank);
+                    throw new ArgumentException(SR.Arg_MultiRank, "array");
                 }
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index.ToString(CultureInfo.CurrentCulture)));
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < _coll.Count)
