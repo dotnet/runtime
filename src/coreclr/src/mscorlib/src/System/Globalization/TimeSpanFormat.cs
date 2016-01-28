@@ -232,9 +232,7 @@ namespace System.Globalization {
                         break;
                     case '\'':
                     case '\"':
-                        StringBuilder enquotedString = new StringBuilder();
-                        tokenLen = DateTimeFormat.ParseQuoteString(format, i, enquotedString); 
-                        result.Append(enquotedString);
+                        tokenLen = DateTimeFormat.ParseQuoteString(format, i, result); 
                         break;
                     case '%':
                         // Optional format character.
