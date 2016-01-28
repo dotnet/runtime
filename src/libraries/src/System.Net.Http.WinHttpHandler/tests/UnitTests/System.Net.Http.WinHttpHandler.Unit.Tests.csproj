@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler.Unit.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   
