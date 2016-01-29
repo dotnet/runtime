@@ -5569,28 +5569,71 @@ GenTreePtr          Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* ma
 
 
 /*****************************************************************************
- *  Returns the inlined call
- *  Returns nullptr if the call could not be inlined.
+ *  Attempt to inline a call
+ *  Returns true if the inline was successful
+ *
+ *  Reports inline result to the jit (unless suppressed).
+ *  Unmarks call as candidate if inline failed.
  */
 
-GenTreePtr          Compiler::fgMorphCallInline(GenTreePtr node)
+bool        Compiler::fgMorphCallInline(GenTreePtr node)
 {
     GenTreeCall* call = node->AsCall();
 
-    GenTreePtr ret = nullptr;
-    JitInlineResult result;
-    const char * inlineFailReason;
+    // Prepare to record information about this inline
+    CORINFO_METHOD_HANDLE callerHandle = call->gtCall.gtInlineCandidateInfo->ilCallerHandle;
+    CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
+    COMP_HANDLE comp = info.compCompHnd;
+    JitInlineResult inlineResult(comp, callerHandle, calleeHandle);
 
+    // Attempt the inline
+    fgMorphCallInlineHelper(call, &inlineResult);
+
+    // We should have made up our minds one way or another....
+    assert(inlineResult.isDecided());
+
+    // If we failed to inline, we have a bit of work to do to cleanup
+    if (inlineResult.isFailure())
+    {
+        // It was an inline candidate, but we haven't expanded it.
+        if (call->gtCall.gtReturnType != TYP_VOID)
+        {
+            // Detach the GT_CALL tree from the original statement by
+            // hanging a "nothing" node to it. Later the "nothing" node will be removed
+            // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
+
+            noway_assert(fgMorphStmt->gtStmt.gtStmtExpr == call);
+            fgMorphStmt->gtStmt.gtStmtExpr = gtNewNothingNode();
+        }
+
+        // Clear the Inline Candidate flag so we can ensure later we tried
+        // inlining all candidates.
+        //
+        call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+    }
+
+    return inlineResult.isSuccess();
+}
+
+/*****************************************************************************
+ *  Helper to attempt to inline a call
+ *  Sets success/failure in inline result
+ *  If success, modifies current method's IR with inlinee's IR
+ *  If failed, undoes any speculative modifications to current method
+ */
+
+void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, JitInlineResult* result)
+{
     if  (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
-        inlineFailReason = "Too many local variables in the inliner";
-        goto InlineFailed;
+        result->setFailure("Too many local variables in the inliner");
+        return;
     }
 
     if (call->IsVirtual())
     {
-        inlineFailReason = "Virtual call";
-        goto InlineFailed;
+       result->setFailure("Virtual call");
+       return;
     }
 
     // impMarkInlineCandidate() is expected not to mark tail prefixed calls
@@ -5607,131 +5650,85 @@ GenTreePtr          Compiler::fgMorphCallInline(GenTreePtr node)
     {
         JITLOG((LL_INFO100000, INLINER_FAILED "Caller (%s) needs security check.\n",
                 info.compFullName));
-        inlineFailReason = "Caller needs security check.";
-        goto InlineFailed;
+        result->setFailure("Caller needs security check");
+        return;
     }
 
-    if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
+    if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0)
     {
+       result->setFailure("Not an inline candidate");
+       return;
+    }
+    
+    //
+    // Calling inlinee's compiler to inline the method.
+    //
 
-        //
-        // Calling inlinee's compiler to inline the method.
-        //
-
-        unsigned    startVars = lvaCount;
+    unsigned    startVars = lvaCount;
 
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("Expanding INLINE_CANDIDATE in statement ");
-            printTreeID(fgMorphStmt);
-            printf(" in BB%02u:\n", compCurBB->bbNum);
-            gtDispTree(fgMorphStmt);
-
-            // printf("startVars=%d.\n", startVars);
-        }
-#endif
-
-        //
-        // Invoke the compiler to inline the call.
-        //
-
-        result = fgInvokeInlineeCompiler(call);
-
-        if (!dontInline(result))
-        {
-#ifdef DEBUG
-            if  (verbose)
-            {
-                // printf("After inlining lvaCount=%d.\n", lvaCount);
-            }
-#endif
-
-            ret = (GenTreePtr)(~0); // Any non-zero value should work.
-        }
-        else
-        {
-            if (result.result() == INLINE_NEVER)
-            {
-                info.compCompHnd->setMethodAttribs(call->gtCall.gtCallMethHnd, CORINFO_FLG_BAD_INLINEE);
-            }
-
-            // Zero out the used locals
-            memset(lvaTable + startVars, 0, (lvaCount  - startVars) * sizeof(*lvaTable));
-            for (unsigned i = startVars; i < lvaCount; i++)
-            {
-                new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
-            }
-
-            lvaCount = startVars;
-
-#ifdef DEBUG
-            if  (verbose)
-            {
-                // printf("Inlining failed. Restore lvaCount to %d.\n", lvaCount);
-            }
-#endif
-
-        }
-    }
-    else
+    if (verbose)
     {
-        inlineFailReason = "Not an inline candidate.";
-        goto InlineFailed;
+       printf("Expanding INLINE_CANDIDATE in statement ");
+       printTreeID(fgMorphStmt);
+       printf(" in BB%02u:\n", compCurBB->bbNum);
+       gtDispTree(fgMorphStmt);
+       
+       // printf("startVars=%d.\n", startVars);
     }
-
-_exit:
-
-    //Report the inlining result.
-    result.report(info.compCompHnd);
-
-    if (!ret && (call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
-    {
-        // It was an inline candidate, but we haven't expanded it.
-
-        if (call->gtCall.gtReturnType != TYP_VOID)
-        {
-            // Detach the GT_CALL tree from the original statement by
-            // hanging a "nothing" node to it. Later the "nothing" node will be removed
-            // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
-
-            noway_assert(fgMorphStmt->gtStmt.gtStmtExpr == call);
-            fgMorphStmt->gtStmt.gtStmtExpr = gtNewNothingNode();
-        }
-        else
-        {
-            // Do nothing and leave the GT_CALL statement alone.
-            noway_assert(dontInline(result)); //We must have failed to inline.
-        }
-    }
+#endif
 
     //
-    // This may no longer be a GT_CALL anymore if inlining was successful
+    // Invoke the compiler to inline the call.
     //
-    if (call->gtOper == GT_CALL)
+    
+    fgInvokeInlineeCompiler(call, result);
+
+    if (result->isFailure()) 
     {
-        // Now we need to clear the Inline Candidate flag
-        //
-        call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+       // Presumably this is one of the first times we've realized
+       // this inlinee can't be inlined, otherwise we would have
+       // filtered it out earlier.
+       if (result->isNever()) 
+       {
+          info.compCompHnd->setMethodAttribs(call->gtCall.gtCallMethHnd, CORINFO_FLG_BAD_INLINEE);
+       }
+
+       // Undo some changes made in anticipation of inlining...
+
+       // Zero out the used locals
+       memset(lvaTable + startVars, 0, (lvaCount  - startVars) * sizeof(*lvaTable));
+       for (unsigned i = startVars; i < lvaCount; i++)
+       {
+          new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
+       }
+
+       lvaCount = startVars;
+
+#ifdef DEBUG
+       if  (verbose)
+       {
+          // printf("Inlining failed. Restore lvaCount to %d.\n", lvaCount);
+       }
+#endif
+
+       return;
     }
+
+    // Success!
+
+#ifdef DEBUG
+    if  (verbose)
+    {
+       // printf("After inlining lvaCount=%d.\n", lvaCount);
+    }
+#endif
 
 
 #if defined(DEBUG) || MEASURE_INLINING
-    if (ret)
-    {
-        ++Compiler::jitTotalMethodInlined;
-    }
+    ++Compiler::jitTotalMethodInlined;
 #endif
-
-    return ret;
-
-InlineFailed:
-    result = JitInlineResult(INLINE_FAIL, call->gtCall.gtInlineCandidateInfo->ilCallerHandle,
-                             call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr,
-                             inlineFailReason);
-    goto _exit;
 }
-
 
 /*****************************************************************************
  *
