@@ -939,11 +939,19 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            bool yielding = false;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!yielding && !predicate(element)) yielding = true;
-                if (yielding) yield return element;
+                while (e.MoveNext())
+                {
+                    TSource element = e.Current;
+                    if (!predicate(element))
+                    {
+                        yield return element;
+                        while (e.MoveNext())
+                            yield return e.Current;
+                        yield break;
+                    }
+                }
             }
         }
 
@@ -956,13 +964,21 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            int index = -1;
-            bool yielding = false;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                checked { index++; }
-                if (!yielding && !predicate(element, index)) yielding = true;
-                if (yielding) yield return element;
+                int index = -1;
+                while (e.MoveNext())
+                {
+                    checked { index++; }
+                    TSource element = e.Current;
+                    if (!predicate(element, index))
+                    {
+                        yield return element;
+                        while (e.MoveNext())
+                            yield return e.Current;
+                        yield break;
+                    }
+                }
             }
         }
 
@@ -2422,7 +2438,7 @@ namespace System.Linq
             {
                 if (!e.MoveNext()) throw Error.NoElements();
                 value = e.Current;
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
                     float x = e.Current;
                     if (x < value) value = x;
@@ -2478,7 +2494,7 @@ namespace System.Linq
             {
                 if (!e.MoveNext()) throw Error.NoElements();
                 value = e.Current;
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
                     double x = e.Current;
                     if (x < value) value = x;
