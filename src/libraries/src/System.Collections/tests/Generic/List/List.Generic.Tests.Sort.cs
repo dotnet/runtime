@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -16,8 +15,8 @@ namespace System.Collections.Tests
     {
         public static IEnumerable<object[]> ValidCollectionSizes_GreaterThanOne()
         {
-            yield return new object[] {2};
-            yield return new object[] {255};
+            yield return new object[] { 2 };
+            yield return new object[] { 20 };
         }
 
         #region Sort
@@ -48,13 +47,6 @@ namespace System.Collections.Tests
                 Assert.True(comparer.Compare(list[i], list[i + 1]) <= 0);
             });
         }
-
-        //[Fact]
-        //public void Sort_NullComparer()
-        //{
-        //    List<SimpleRef<T>> list = new List<SimpleRef<T>>();
-        //    Assert.Throws<InvalidOperationException>(() => list.Sort((Comparison<T>)null))
-        //}
 
         #endregion
 
@@ -136,18 +128,7 @@ namespace System.Collections.Tests
                     List<T> list = new List<T>(unsortedList);
                     list.Sort(startIndex, sortCount + 1, comparer);
                     for (int i = startIndex; i < sortCount; i++)
-                    {
-                        if (comparer.Compare(list[i], list[i + 1]) == 1)
-                        {
-                            Console.WriteLine(list.ToArray().ToString());
-                            Console.WriteLine(i);
-                            Console.WriteLine(startIndex);
-                            Console.WriteLine(sortCount);
-                            Console.WriteLine(list[i]);
-                            Console.WriteLine(list[i + 1]);
-                        }
                         Assert.InRange(comparer.Compare(list[i], list[i + 1]), int.MinValue, 0);
-                    }
                 }
         }
 

@@ -182,7 +182,7 @@ namespace System.Collections.Tests
         public void IndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
-            T element = TFactory(234);
+            T element = CreateT(234);
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, count + 1)); //"Expect ArgumentOutOfRangeException for index greater than length of list.."
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, count + 10)); //"Expect ArgumentOutOfRangeException for index greater than length of list.."
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, -1)); //"Expect ArgumentOutOfRangeException for negative index."
@@ -194,7 +194,7 @@ namespace System.Collections.Tests
         public void IndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
-            T element = TFactory(234);
+            T element = CreateT(234);
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, count, 1)); //"ArgumentOutOfRangeException expected on index larger than array."
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, count + 1, 1)); //"ArgumentOutOfRangeException expected  on index larger than array."
             Assert.Throws<ArgumentOutOfRangeException>(() => list.IndexOf(element, 0, count + 1)); //"ArgumentOutOfRangeException expected  on count larger than array."
@@ -209,7 +209,7 @@ namespace System.Collections.Tests
         public void LastIndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
-            T element = TFactory(234);
+            T element = CreateT(234);
             Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf(element, count)); //"ArgumentOutOfRangeException expected."
             if (count == 0)  // IndexOf with a 0 count List is special cased to return -1.
                 Assert.Equal(-1, list.LastIndexOf(element, -1));
@@ -222,7 +222,7 @@ namespace System.Collections.Tests
         public void LastIndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
-            T element = TFactory(234);
+            T element = CreateT(234);
 
             if (count > 0)
             {

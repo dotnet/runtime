@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Collections.Tests
 {
     public class HashSet_Generic_Tests_string : HashSet_Generic_Tests<string>
     {
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -20,127 +21,13 @@ namespace System.Collections.Tests
 
     public class HashSet_Generic_Tests_int : HashSet_Generic_Tests<int>
     {
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
         }
 
         protected override bool DefaultValueAllowed { get { return true; } }
-    }
-
-    public class HashSet_Generic_Tests_EquatableBackwardsOrder : HashSet_Generic_Tests<EquatableBackwardsOrder>
-    {
-        protected override EquatableBackwardsOrder TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return new EquatableBackwardsOrder(rand.Next());
-        }
-
-        protected override ISet<EquatableBackwardsOrder> GenericISetFactory()
-        {
-            return new HashSet<EquatableBackwardsOrder>();
-        }
-    }
-
-    public class HashSet_Generic_Tests_int_With_Comparer_SameAsDefaultComparer : HashSet_Generic_Tests<int>
-    {
-        protected override IEqualityComparer<int> GetIEqualityComparer()
-        {
-            return new Comparer_SameAsDefaultComparer();
-        }
-
-        protected override int TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return rand.Next();
-        }
-
-        protected override ISet<int> GenericISetFactory()
-        {
-            return new HashSet<int>(new Comparer_SameAsDefaultComparer());
-        }
-    }
-
-    public class HashSet_Generic_Tests_int_With_Comparer_HashCodeAlwaysReturnsZero : HashSet_Generic_Tests<int>
-    {
-        protected override IEqualityComparer<int> GetIEqualityComparer()
-        {
-            return new Comparer_HashCodeAlwaysReturnsZero();
-        }
-
-        protected override int TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return rand.Next();
-        }
-
-        protected override ISet<int> GenericISetFactory()
-        {
-            return new HashSet<int>(new Comparer_HashCodeAlwaysReturnsZero());
-        }
-    }
-
-    public class HashSet_Generic_Tests_int_With_Comparer_ModOfInt : HashSet_Generic_Tests<int>
-    {
-        protected override IEqualityComparer<int> GetIEqualityComparer()
-        {
-            return new Comparer_ModOfInt(15000);
-        }
-
-        protected override IComparer<int> GetIComparer()
-        {
-            return new Comparer_ModOfInt(15000);
-        }
-
-        protected override int TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return rand.Next();
-        }
-
-        protected override ISet<int> GenericISetFactory()
-        {
-            return new HashSet<int>(new Comparer_ModOfInt(15000));
-        }
-    }
-
-    public class HashSet_Generic_Tests_int_With_Comparer_AbsOfInt : HashSet_Generic_Tests<int>
-    {
-        protected override IEqualityComparer<int> GetIEqualityComparer()
-        {
-            return new Comparer_AbsOfInt();
-        }
-
-        protected override int TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return rand.Next();
-        }
-
-        protected override ISet<int> GenericISetFactory()
-        {
-            return new HashSet<int>(new Comparer_AbsOfInt());
-        }
-    }
-
-    public class HashSet_Generic_Tests_int_With_Comparer_BadIntEqualityComparer : HashSet_Generic_Tests<int>
-    {
-        protected override IEqualityComparer<int> GetIEqualityComparer()
-        {
-            return new BadIntEqualityComparer();
-        }
-
-        protected override int TFactory(int seed)
-        {
-            Random rand = new Random(seed);
-            return rand.Next();
-        }
-
-        protected override ISet<int> GenericISetFactory()
-        {
-            return new HashSet<int>(new BadIntEqualityComparer());
-        }
     }
 
     public class HashSet_Generic_Tests_int_With_Comparer_WrapStructural_Int : HashSet_Generic_Tests<int>
@@ -155,7 +42,7 @@ namespace System.Collections.Tests
             return new WrapStructural_Int();
         }
 
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -179,7 +66,7 @@ namespace System.Collections.Tests
             return new WrapStructural_SimpleInt();
         }
 
-        protected override SimpleInt TFactory(int seed)
+        protected override SimpleInt CreateT(int seed)
         {
             Random rand = new Random(seed);
             return new SimpleInt(rand.Next());
@@ -188,6 +75,126 @@ namespace System.Collections.Tests
         protected override ISet<SimpleInt> GenericISetFactory()
         {
             return new HashSet<SimpleInt>(new WrapStructural_SimpleInt());
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_EquatableBackwardsOrder : HashSet_Generic_Tests<EquatableBackwardsOrder>
+    {
+        protected override EquatableBackwardsOrder CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return new EquatableBackwardsOrder(rand.Next());
+        }
+
+        protected override ISet<EquatableBackwardsOrder> GenericISetFactory()
+        {
+            return new HashSet<EquatableBackwardsOrder>();
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_int_With_Comparer_SameAsDefaultComparer : HashSet_Generic_Tests<int>
+    {
+        protected override IEqualityComparer<int> GetIEqualityComparer()
+        {
+            return new Comparer_SameAsDefaultComparer();
+        }
+
+        protected override int CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return rand.Next();
+        }
+
+        protected override ISet<int> GenericISetFactory()
+        {
+            return new HashSet<int>(new Comparer_SameAsDefaultComparer());
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_int_With_Comparer_HashCodeAlwaysReturnsZero : HashSet_Generic_Tests<int>
+    {
+        protected override IEqualityComparer<int> GetIEqualityComparer()
+        {
+            return new Comparer_HashCodeAlwaysReturnsZero();
+        }
+
+        protected override int CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return rand.Next();
+        }
+
+        protected override ISet<int> GenericISetFactory()
+        {
+            return new HashSet<int>(new Comparer_HashCodeAlwaysReturnsZero());
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_int_With_Comparer_ModOfInt : HashSet_Generic_Tests<int>
+    {
+        protected override IEqualityComparer<int> GetIEqualityComparer()
+        {
+            return new Comparer_ModOfInt(15000);
+        }
+
+        protected override IComparer<int> GetIComparer()
+        {
+            return new Comparer_ModOfInt(15000);
+        }
+
+        protected override int CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return rand.Next();
+        }
+
+        protected override ISet<int> GenericISetFactory()
+        {
+            return new HashSet<int>(new Comparer_ModOfInt(15000));
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_int_With_Comparer_AbsOfInt : HashSet_Generic_Tests<int>
+    {
+        protected override IEqualityComparer<int> GetIEqualityComparer()
+        {
+            return new Comparer_AbsOfInt();
+        }
+
+        protected override int CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return rand.Next();
+        }
+
+        protected override ISet<int> GenericISetFactory()
+        {
+            return new HashSet<int>(new Comparer_AbsOfInt());
+        }
+    }
+
+    [OuterLoop]
+    public class HashSet_Generic_Tests_int_With_Comparer_BadIntEqualityComparer : HashSet_Generic_Tests<int>
+    {
+        protected override IEqualityComparer<int> GetIEqualityComparer()
+        {
+            return new BadIntEqualityComparer();
+        }
+
+        protected override int CreateT(int seed)
+        {
+            Random rand = new Random(seed);
+            return rand.Next();
+        }
+
+        protected override ISet<int> GenericISetFactory()
+        {
+            return new HashSet<int>(new BadIntEqualityComparer());
         }
     }
 }

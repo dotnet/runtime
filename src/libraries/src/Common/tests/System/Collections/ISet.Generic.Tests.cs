@@ -47,12 +47,14 @@ namespace System.Collections.Tests
             ISet<T> set = (ISet<T>)collection;
             while (set.Count < numberOfItemsToAdd)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (set.Contains(toAdd) || (InvalidValues != Array.Empty<T>() && InvalidValues.Contains(toAdd, GetIEqualityComparer())))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 set.Add(toAdd);
             }
         }
+
+        protected virtual int ISet_Large_Capacity { get { return 4000; } }
 
         #endregion
 
@@ -83,9 +85,9 @@ namespace System.Collections.Tests
             {
                 ISet<T> set = GenericISetFactory(count);
                 int seed = 92834;
-                T newValue = TFactory(seed++);
+                T newValue = CreateT(seed++);
                 while (set.Contains(newValue))
-                    newValue = TFactory(seed++);
+                    newValue = CreateT(seed++);
                 Assert.True(set.Add(newValue));
                 if (!DuplicateValuesAllowed)
                     Assert.False(set.Add(newValue));
@@ -104,9 +106,9 @@ namespace System.Collections.Tests
                 {
                     ICollection<T> collection = GenericICollectionFactory(count);
                     int seed = 800;
-                    T duplicateValue = TFactory(seed++);
+                    T duplicateValue = CreateT(seed++);
                     while (collection.Contains(duplicateValue))
-                        duplicateValue = TFactory(seed++);
+                        duplicateValue = CreateT(seed++);
                     collection.Add(duplicateValue);
                     collection.Add(duplicateValue);
                     Assert.Equal(count + 1, collection.Count);
@@ -116,7 +118,191 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Set Functions
+        #region Set Function Validation
+
+        private void Validate_ExceptWith(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            if (set.Count == 0 || enumerable == set)
+            {
+                set.ExceptWith(enumerable);
+                Assert.Equal(0, set.Count);
+            }
+            else
+            {
+                HashSet<T> expected = new HashSet<T>(set, GetIEqualityComparer());
+                foreach (T element in enumerable)
+                    expected.Remove(element);
+                set.ExceptWith(enumerable);
+                Assert.Equal(expected.Count, set.Count);
+                Assert.True(expected.SetEquals(set));
+            }
+        }
+
+        private void Validate_IntersectWith(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            if (set.Count == 0 || Enumerable.Count(enumerable) == 0)
+            {
+                set.IntersectWith(enumerable);
+                Assert.Equal(0, set.Count);
+            }
+            else if (set == enumerable)
+            {
+                HashSet<T> beforeOperation = new HashSet<T>(set, GetIEqualityComparer());
+                set.IntersectWith(enumerable);
+                Assert.True(beforeOperation.SetEquals(set));
+            }
+            else
+            {
+                IEqualityComparer<T> comparer = GetIEqualityComparer();
+                HashSet<T> expected = new HashSet<T>(comparer);
+                foreach (T value in set)
+                    if (enumerable.Contains(value, comparer))
+                        expected.Add(value);
+                set.IntersectWith(enumerable);
+                Assert.Equal(expected.Count, set.Count);
+                Assert.True(expected.SetEquals(set));
+            }
+        }
+
+        private void Validate_IsProperSubsetOf(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            bool setContainsValueNotInEnumerable = false;
+            bool enumerableContainsValueNotInSet = false;
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in set) // Every value in Set must be in Enumerable
+            {
+                if (!enumerable.Contains(value, comparer))
+                {
+                    setContainsValueNotInEnumerable = true;
+                    break;
+                }
+            }
+            foreach (T value in enumerable) // Enumerable must contain at least one value not in Set
+            {
+                if (!set.Contains(value, comparer))
+                {
+                    enumerableContainsValueNotInSet = true;
+                    break;
+                }
+            }
+            Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, set.IsProperSubsetOf(enumerable));
+        }
+
+        private void Validate_IsProperSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            bool isProperSuperset = true;
+            bool setContainsElementsNotInEnumerable = false;
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in enumerable)
+            {
+                if (!set.Contains(value, comparer))
+                {
+                    isProperSuperset = false;
+                    break;
+                }
+            }
+            foreach (T value in set)
+            {
+                if (!enumerable.Contains(value, comparer))
+                {
+                    setContainsElementsNotInEnumerable = true;
+                    break;
+                }
+            }
+            isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
+            Assert.Equal(isProperSuperset, set.IsProperSupersetOf(enumerable));
+        }
+
+        private void Validate_IsSubsetOf(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in set)
+                if (!enumerable.Contains(value, comparer))
+                {
+                    Assert.False(set.IsSubsetOf(enumerable));
+                    return;
+                }
+            Assert.True(set.IsSubsetOf(enumerable));
+        }
+
+        private void Validate_IsSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in enumerable)
+                if (!set.Contains(value, comparer))
+                {
+                    Assert.False(set.IsSupersetOf(enumerable));
+                    return;
+                }
+            Assert.True(set.IsSupersetOf(enumerable));
+        }
+
+        private void Validate_Overlaps(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in enumerable)
+            {
+                if (set.Contains(value, comparer))
+                {
+                    Assert.True(set.Overlaps(enumerable));
+                    return;
+                }
+            }
+            Assert.False(set.Overlaps(enumerable));
+        }
+
+        private void Validate_SetEquals(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            foreach (T value in set)
+            {
+                if (!enumerable.Contains(value, comparer))
+                {
+                    Assert.False(set.SetEquals(enumerable));
+                    return;
+                }
+            }
+            foreach (T value in enumerable)
+            {
+                if (!set.Contains(value, comparer))
+                {
+                    Assert.False(set.SetEquals(enumerable));
+                    return;
+                }
+            }
+            Assert.True(set.SetEquals(enumerable));
+        }
+
+        private void Validate_SymmetricExceptWith(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            HashSet<T> expected = new HashSet<T>(comparer);
+            foreach (T element in enumerable)
+                if (!set.Contains(element, comparer))
+                    expected.Add(element);
+            foreach (T element in set)
+                if (!enumerable.Contains(element, comparer))
+                    expected.Add(element);
+            set.SymmetricExceptWith(enumerable);
+            Assert.Equal(expected.Count, set.Count);
+            Assert.True(expected.SetEquals(set));
+        }
+
+        private void Validate_UnionWith(ISet<T> set, IEnumerable<T> enumerable)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            HashSet<T> expected = new HashSet<T>(set, comparer);
+            foreach (T element in enumerable)
+                if (!set.Contains(element, comparer))
+                    expected.Add(element);
+            set.UnionWith(enumerable);
+            Assert.Equal(expected.Count, set.Count);
+            Assert.True(expected.SetEquals(set));
+        }
+
+        #endregion
+
+        #region Set Function tests
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
@@ -141,22 +327,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            if (set.Count == 0 || enumerable == set)
-            {
-                set.ExceptWith(enumerable);
-                Assert.Equal(0, set.Count);
-            }
-            else
-            {
-                HashSet<T> expected = new HashSet<T>(set, GetIEqualityComparer());
-                foreach (T element in enumerable)
-                    expected.Remove(element);
-                set.ExceptWith(enumerable);
-                Assert.Equal(expected.Count, set.Count);
-                Assert.True(expected.SetEquals(set));
-            }
+            Validate_ExceptWith(set, enumerable);
         }
 
         [Theory]
@@ -165,30 +336,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            if (set.Count == 0 || Enumerable.Count(enumerable) == 0)
-            {
-                set.IntersectWith(enumerable);
-                Assert.Equal(0, set.Count);
-            }
-            else if (set == enumerable)
-            {
-                HashSet<T> beforeOperation = new HashSet<T>(set, GetIEqualityComparer());
-                set.IntersectWith(enumerable);
-                Assert.True(beforeOperation.SetEquals(set));
-            }
-            else
-            {
-                IEqualityComparer<T> comparer = GetIEqualityComparer();
-                HashSet<T> expected = new HashSet<T>(comparer);
-                foreach (T value in set)
-                    if (enumerable.Contains(value, comparer))
-                        expected.Add(value);
-                set.IntersectWith(enumerable);
-                Assert.Equal(expected.Count, set.Count);
-                Assert.True(expected.SetEquals(set));
-            }
+            Validate_IntersectWith(set, enumerable);
         }
 
         [Theory]
@@ -197,28 +345,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            bool setContainsValueNotInEnumerable = false;
-            bool enumerableContainsValueNotInSet = false;
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in set) // Every value in Set must be in Enumerable
-            {
-                if (!enumerable.Contains(value, comparer))
-                {
-                    setContainsValueNotInEnumerable = true;
-                    break;
-                }
-            }
-            foreach (T value in enumerable) // Enumerable must contain at least one value not in Set
-            {
-                if (!set.Contains(value, comparer))
-                {
-                    enumerableContainsValueNotInSet = true;
-                    break;
-                }
-            }
-            Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, set.IsProperSubsetOf(enumerable));
+            Validate_IsProperSubsetOf(set, enumerable);
         }
 
         [Theory]
@@ -227,29 +354,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            bool isProperSuperset = true;
-            bool setContainsElementsNotInEnumerable = false;
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-            {
-                if (!set.Contains(value, comparer))
-                {
-                    isProperSuperset = false;
-                    break;
-                }
-            }
-            foreach (T value in set)
-            {
-                if (!enumerable.Contains(value, comparer))
-                {
-                    setContainsElementsNotInEnumerable = true;
-                    break;
-                }
-            }
-            isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
-            Assert.Equal(isProperSuperset, set.IsProperSupersetOf(enumerable));
+            Validate_IsProperSupersetOf(set, enumerable);
         }
 
         [Theory]
@@ -258,16 +363,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in set)
-                if (!enumerable.Contains(value, comparer))
-                {
-                    Assert.False(set.IsSubsetOf(enumerable));
-                    return;
-                }
-            Assert.True(set.IsSubsetOf(enumerable));
+            Validate_IsSubsetOf(set, enumerable);
         }
 
         [Theory]
@@ -276,16 +372,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-                if (!set.Contains(value, comparer))
-                {
-                    Assert.False(set.IsSupersetOf(enumerable));
-                    return;
-                }
-            Assert.True(set.IsSupersetOf(enumerable));
+            Validate_IsSupersetOf(set, enumerable);
         }
 
         [Theory]
@@ -294,18 +381,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-            {
-                if (set.Contains(value, comparer))
-                {
-                    Assert.True(set.Overlaps(enumerable));
-                    return;
-                }
-            }
-            Assert.False(set.Overlaps(enumerable));
+            Validate_Overlaps(set, enumerable);
         }
 
         [Theory]
@@ -314,32 +390,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in set)
-            {
-                if (!enumerable.Contains(value, comparer))
-                {
-                    Assert.False(set.SetEquals(enumerable));
-                    return;
-                }
-            }
-            foreach (T value in enumerable)
-            {
-                if (!set.Contains(value, comparer))
-                {
-                    Assert.False(set.SetEquals(enumerable));
-                    return;
-                }
-            }
-            if (setLength == 255 && enumerableLength == 256 && numberOfMatchingElements == 255)
-            {
-                Console.WriteLine("Set:" + string.Join(", ", set.ToArray()));
-                Console.WriteLine("enumerable:" + string.Join(", ", enumerable.ToArray()));
-                Console.WriteLine();
-            }
-            Assert.True(set.SetEquals(enumerable));
+            Validate_SetEquals(set, enumerable);
         }
 
         [Theory]
@@ -348,19 +399,7 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            HashSet<T> expected = new HashSet<T>(comparer);
-            foreach (T element in enumerable)
-                if (!set.Contains(element, comparer))
-                    expected.Add(element);
-            foreach (T element in set)
-                if (!enumerable.Contains(element, comparer))
-                    expected.Add(element);
-            set.SymmetricExceptWith(enumerable);
-            Assert.Equal(expected.Count, set.Count);
-            Assert.True(expected.SetEquals(set));
+            Validate_SymmetricExceptWith(set, enumerable);
         }
 
         [Theory]
@@ -369,43 +408,19 @@ namespace System.Collections.Tests
         {
             ISet<T> set = GenericISetFactory(setLength);
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, set, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements);
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            HashSet<T> expected = new HashSet<T>(set, comparer);
-            foreach (T element in enumerable)
-                if (!set.Contains(element, comparer))
-                    expected.Add(element);
-            set.UnionWith(enumerable);
-            Assert.Equal(expected.Count, set.Count);
-            Assert.True(expected.SetEquals(set));
+            Validate_UnionWith(set, enumerable);
         }
 
         #endregion
 
-        #region Set Functions on itself
+        #region Set Function tests on itself
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
         public void ISet_Generic_ExceptWith_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            if (set.Count == 0 || enumerable == set)
-            {
-                set.ExceptWith(enumerable);
-                Assert.Equal(0, set.Count);
-            }
-            else
-            {
-                HashSet<T> expected = new HashSet<T>(set, GetIEqualityComparer());
-                foreach (T element in enumerable)
-                    expected.Remove(element);
-                set.ExceptWith(enumerable);
-                Assert.Equal(expected.Count, set.Count);
-                Assert.True(expected.SetEquals(set));
-            }
+            Validate_ExceptWith(set, set);
         }
 
         [Theory]
@@ -413,30 +428,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_IntersectWith_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            if (set.Count == 0 || Enumerable.Count(enumerable) == 0)
-            {
-                set.IntersectWith(enumerable);
-                Assert.Equal(0, set.Count);
-            }
-            else if (set == enumerable)
-            {
-                HashSet<T> beforeOperation = new HashSet<T>(set, GetIEqualityComparer());
-                set.IntersectWith(enumerable);
-                Assert.True(beforeOperation.SetEquals(set));
-            }
-            else
-            {
-                IEqualityComparer<T> comparer = GetIEqualityComparer();
-                HashSet<T> expected = new HashSet<T>(comparer);
-                foreach (T value in set)
-                    if (enumerable.Contains(value, comparer))
-                        expected.Add(value);
-                set.IntersectWith(enumerable);
-                Assert.Equal(expected.Count, set.Count);
-                Assert.True(expected.SetEquals(set));
-            }
+            Validate_IntersectWith(set, set);
         }
 
         [Theory]
@@ -444,28 +436,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_IsProperSubsetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            bool setContainsValueNotInEnumerable = false;
-            bool enumerableContainsValueNotInSet = false;
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in set) // Every value in Set must be in Enumerable
-            {
-                if (!enumerable.Contains(value, comparer))
-                {
-                    setContainsValueNotInEnumerable = true;
-                    break;
-                }
-            }
-            foreach (T value in enumerable) // Enumerable must contain at least one value not in Set
-            {
-                if (!set.Contains(value, comparer))
-                {
-                    enumerableContainsValueNotInSet = true;
-                    break;
-                }
-            }
-            Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, set.IsProperSubsetOf(enumerable));
+            Validate_IsProperSubsetOf(set, set);
         }
 
         [Theory]
@@ -473,29 +444,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_IsProperSupersetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            bool isProperSuperset = true;
-            bool setContainsElementsNotInEnumerable = false;
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-            {
-                if (!set.Contains(value, comparer))
-                {
-                    isProperSuperset = false;
-                    break;
-                }
-            }
-            foreach (T value in set)
-            {
-                if (!enumerable.Contains(value, comparer))
-                {
-                    setContainsElementsNotInEnumerable = true;
-                    break;
-                }
-            }
-            isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
-            Assert.Equal(isProperSuperset, set.IsProperSupersetOf(enumerable));
+            Validate_IsProperSupersetOf(set, set);
         }
 
         [Theory]
@@ -503,16 +452,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_IsSubsetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in set)
-                if (!enumerable.Contains(value, comparer))
-                {
-                    Assert.False(set.IsSubsetOf(enumerable));
-                    return;
-                }
-            Assert.True(set.IsSubsetOf(enumerable));
+            Validate_IsSubsetOf(set, set);
         }
 
         [Theory]
@@ -520,16 +460,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_IsSupersetOf_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-                if (!set.Contains(value, comparer))
-                {
-                    Assert.False(set.IsSupersetOf(enumerable));
-                    return;
-                }
-            Assert.True(set.IsSupersetOf(enumerable));
+            Validate_IsSupersetOf(set, set);
         }
 
         [Theory]
@@ -537,19 +468,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_Overlaps_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-            Debug.Assert(enumerable != null);
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            foreach (T value in enumerable)
-            {
-                if (set.Contains(value, comparer))
-                {
-                    Assert.True(set.Overlaps(enumerable));
-                    return;
-                }
-            }
-            Assert.False(set.Overlaps(enumerable));
+            Validate_Overlaps(set, set);
         }
 
         [Theory]
@@ -557,8 +476,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_SetEquals_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-            Assert.True(set.SetEquals(enumerable));
+            Assert.True(set.SetEquals(set));
         }
 
         [Theory]
@@ -566,19 +484,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_SymmetricExceptWith_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            HashSet<T> expected = new HashSet<T>(comparer);
-            foreach (T element in enumerable)
-                if (!set.Contains(element, comparer))
-                    expected.Add(element);
-            foreach (T element in set)
-                if (!enumerable.Contains(element, comparer))
-                    expected.Add(element);
-            set.SymmetricExceptWith(enumerable);
-            Assert.Equal(expected.Count, set.Count);
-            Assert.True(expected.SetEquals(set));
+            Validate_SymmetricExceptWith(set, set);
         }
 
         [Theory]
@@ -586,28 +492,113 @@ namespace System.Collections.Tests
         public void ISet_Generic_UnionWith_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            IEnumerable<T> enumerable = set;
-
-            IEqualityComparer<T> comparer = GetIEqualityComparer();
-            HashSet<T> expected = new HashSet<T>(set, comparer);
-            foreach (T element in enumerable)
-                if (!set.Contains(element, comparer))
-                    expected.Add(element);
-            set.UnionWith(enumerable);
-            Assert.Equal(expected.Count, set.Count);
-            Assert.True(expected.SetEquals(set));
+            Validate_UnionWith(set, set);
         }
 
         #endregion
 
-        #region Other misc ISet Scenarios
+        #region Set Function tests on a very large Set
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_ExceptWith_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_ExceptWith(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_IntersectWith_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_IntersectWith(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_IsProperSubsetOf_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_IsProperSubsetOf(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_IsProperSupersetOf_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_IsProperSupersetOf(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_IsSubsetOf_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_IsSubsetOf(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_IsSupersetOf_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_IsSupersetOf(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_Overlaps_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_Overlaps(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_SetEquals_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_SetEquals(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_SymmetricExceptWith_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_SymmetricExceptWith(set, enumerable);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void ISet_Generic_UnionWith_LargeSet()
+        {
+            ISet<T> set = GenericISetFactory(ISet_Large_Capacity);
+            IEnumerable<T> enumerable = CreateEnumerable(EnumerableType.List, set, 150, 0, 0);
+            Validate_UnionWith(set, enumerable);
+        }
+
+        #endregion
+
+        #region Other misc ISet test Scenarios
 
         [Theory]
         [MemberData("EnumerableTestData")]
         public void ISet_Generic_SymmetricExceptWith_AfterRemovingElements(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            T value = TFactory(532);
+            T value = CreateT(532);
             if (!set.Contains(value))
                 set.Add(value);
             set.Remove(value);

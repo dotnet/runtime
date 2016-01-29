@@ -23,7 +23,7 @@ namespace System.Collections.Tests
         /// is dependent only on the seed passed as input and will return the same value on repeated
         /// calls with the same seed.
         /// </summary>
-        protected virtual object TKeyFactory(int seed)
+        protected virtual object CreateTKey(int seed)
         {
             if (seed % 2 == 0)
             {
@@ -45,9 +45,9 @@ namespace System.Collections.Tests
         /// is dependent only on the seed passed as input and will return the same value on repeated
         /// calls with the same seed.
         /// </summary>
-        protected virtual object TValueFactory(int seed)
+        protected virtual object CreateTValue(int seed)
         {
-            return TKeyFactory(seed);
+            return CreateTKey(seed);
         }
 
         /// <summary>
@@ -75,9 +75,9 @@ namespace System.Collections.Tests
         protected object GetNewKey(IDictionary dictionary)
         {
             int seed = 840;
-            object missingKey = TKeyFactory(seed++);
+            object missingKey = CreateTKey(seed++);
             while (dictionary.Contains(missingKey) || missingKey.Equals(null))
-                missingKey = TKeyFactory(seed++);
+                missingKey = CreateTKey(seed++);
             return missingKey;
         }
 
@@ -93,51 +93,59 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed { get { return false; } }
         protected override bool NullAllowed { get { return false; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
-        protected override int WaysToModify { get { return 4; } }
-
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
-            Debug.Assert(!IsReadOnly);
+            Assert.False(IsReadOnly);
             int seed = 12353;
             IDictionary casted = (IDictionary)collection;
             int initialCount = casted.Count;
             while ((casted.Count - initialCount) < numberOfItemsToAdd)
             {
-                object key = TKeyFactory(seed++);
-                object value = TValueFactory(seed++);
+                object key = CreateTKey(seed++);
+                object value = CreateTValue(seed++);
                 while (casted.Contains(key) || Enumerable.Contains(InvalidValues, key))
-                    key = TKeyFactory(seed++);
+                    key = CreateTKey(seed++);
                 casted.Add(key, value);
             }
         }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            IDictionary casted = ((IDictionary)enumerable);
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    casted.Add(TKeyFactory(12), TValueFactory(5123));
-                    break;
-                case 1: // Item_Set
-                    casted[TKeyFactory(541)] = TValueFactory(12);
-                    break;
-                case 2: // Remove
+                yield return (IEnumerable enumerable) => {
+                    IDictionary casted = ((IDictionary)enumerable);
+                    casted.Add(CreateTKey(12), CreateTValue(5123));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IDictionary casted = ((IDictionary)enumerable);
+                    casted[CreateTKey(541)] = CreateTValue(12);
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
                     {
                         var keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
-                        casted.Remove(keys.Current);
+                        casted.Remove(keys.Current); return true;
                     }
-                    else
-                        casted.Add(TKeyFactory(12), TValueFactory(5123));
-                    break;
-                case 3: // Clear
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.Clear();
-                    else
-                        casted.Add(TKeyFactory(12), TValueFactory(5123));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
@@ -180,7 +188,7 @@ namespace System.Collections.Tests
             }
             else
             {
-                object value = TValueFactory(3452);
+                object value = CreateTValue(3452);
                 dictionary[null] = value;
                 Assert.Equal(value, dictionary[null]);
             }
@@ -203,7 +211,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = null;
-                while (dictionary.Contains(missingKey))
+                if (dictionary.Contains(missingKey))
                     dictionary.Remove(missingKey);
                 Assert.Equal(null, dictionary[missingKey]);
             }
@@ -231,11 +239,11 @@ namespace System.Collections.Tests
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             if (!NullAllowed)
             {
-                Assert.Throws<ArgumentNullException>(() => dictionary[null] = TValueFactory(3));
+                Assert.Throws<ArgumentNullException>(() => dictionary[null] = CreateTValue(3));
             }
             else
             {
-                object value = TValueFactory(3452);
+                object value = CreateTValue(3452);
                 dictionary[null] = value;
                 Assert.Equal(value, dictionary[null]);
             }
@@ -249,7 +257,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = GetNewKey(dictionary);
-                Assert.Throws<NotSupportedException>(() => dictionary[missingKey] = TValueFactory(5312));
+                Assert.Throws<NotSupportedException>(() => dictionary[missingKey] = CreateTValue(5312));
             }
         }
 
@@ -259,7 +267,7 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             object missingKey = GetNewKey(dictionary);
-            dictionary[missingKey] = TValueFactory(543);
+            dictionary[missingKey] = CreateTValue(543);
             Assert.Equal(count + 1, dictionary.Count);
         }
 
@@ -269,8 +277,8 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             object existingKey = GetNewKey(dictionary);
-            dictionary.Add(existingKey, TValueFactory(5342));
-            object newValue = TValueFactory(1234);
+            dictionary.Add(existingKey, CreateTValue(5342));
+            object newValue = CreateTValue(1234);
             dictionary[existingKey] = newValue;
             Assert.Equal(count + 1, dictionary.Count);
             Assert.Equal(newValue, dictionary[existingKey]);
@@ -304,19 +312,15 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
-        public virtual void IDictionary_NonGeneric_Keys_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator(int count)
+        public void IDictionary_NonGeneric_Keys_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             ICollection keys = dictionary.Keys;
             IEnumerator keysEnum = keys.GetEnumerator();
-            dictionary.Clear();
-            // Undefined behavior
-            try { keysEnum.MoveNext(); }
-            catch (InvalidOperationException) { }
-            try { object current = keysEnum.Current; }
-            catch (InvalidOperationException) { }
-            try { keysEnum.Reset(); }
-            catch (InvalidOperationException) { }
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+            Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
+            Assert.Throws<InvalidOperationException>(() => keysEnum.Current);
         }
 
         [Theory]
@@ -380,14 +384,10 @@ namespace System.Collections.Tests
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             ICollection values = dictionary.Values;
             IEnumerator valuesEnum = values.GetEnumerator();
-            dictionary.Clear();
-            // Undefined behavior.
-            try { valuesEnum.MoveNext(); }
-            catch (InvalidOperationException) { }
-            try { object current = valuesEnum.Current; }
-            catch (InvalidOperationException) { }
-            try { valuesEnum.Reset(); }
-            catch (InvalidOperationException) { }
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+            Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
+            Assert.Throws<InvalidOperationException>(() => valuesEnum.Current);
         }
 
         [Theory]
@@ -412,7 +412,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
-                Assert.Throws<NotSupportedException>(() => dictionary.Add(TKeyFactory(0), TValueFactory(0)));
+                Assert.Throws<NotSupportedException>(() => dictionary.Add(CreateTKey(0), CreateTValue(0)));
             }
         }
 
@@ -441,7 +441,7 @@ namespace System.Collections.Tests
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
             object missingKey = null;
-            object value = TValueFactory(1456);
+            object value = CreateTValue(1456);
             if (NullAllowed && !IsReadOnly)
             {
                 dictionary.Add(missingKey, value);
@@ -477,7 +477,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = GetNewKey(dictionary);
-                object value = TValueFactory(1342);
+                object value = CreateTValue(1342);
                 dictionary.Add(missingKey, value);
                 Assert.Equal(count + 1, dictionary.Count);
                 Assert.Equal(value, dictionary[missingKey]);
@@ -492,8 +492,8 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = GetNewKey(dictionary);
-                dictionary.Add(missingKey, TValueFactory(34251));
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, TValueFactory(134)));
+                dictionary.Add(missingKey, CreateTValue(34251));
+                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(134)));
             }
         }
 
@@ -542,7 +542,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = GetNewKey(dictionary);
-                dictionary.Add(missingKey, TValueFactory(34251));
+                dictionary.Add(missingKey, CreateTValue(34251));
                 Assert.True(dictionary.Contains(missingKey));
             }
         }
@@ -576,7 +576,7 @@ namespace System.Collections.Tests
                 IDictionary dictionary = NonGenericIDictionaryFactory(count);
                 object missingKey = null;
                 if (!dictionary.Contains(missingKey))
-                    dictionary.Add(missingKey, TValueFactory(5341));
+                    dictionary.Add(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.Contains(missingKey));
             }
         }
@@ -663,25 +663,27 @@ namespace System.Collections.Tests
         [MemberData("ValidCollectionSizes")]
         public virtual void IDictionary_NonGeneric_IDictionaryEnumerator_Current_ModifiedDuringEnumeration_UndefinedBehavior(int count)
         {
-            Assert.All(Enumerable.Range(0, WaysToModify), modificationCode =>
+            Assert.All(ModifyEnumerables, ModifyEnumerable =>
             {
                 object current, key, value, entry;
                 IDictionary enumerable = NonGenericIDictionaryFactory(count);
                 IDictionaryEnumerator enumerator = enumerable.GetEnumerator();
-                ModifyEnumerable(enumerable, modificationCode);
-                if (Enumerator_Current_UndefinedOperation_Throws)
+                if (ModifyEnumerable(enumerable))
                 {
-                    Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-                    Assert.Throws<InvalidOperationException>(() => enumerator.Key);
-                    Assert.Throws<InvalidOperationException>(() => enumerator.Value);
-                    Assert.Throws<InvalidOperationException>(() => enumerator.Entry);
-                }
-                else
-                {
-                    current = enumerator.Current;
-                    key = enumerator.Key;
-                    value = enumerator.Value;
-                    entry = enumerator.Entry;
+                    if (Enumerator_Current_UndefinedOperation_Throws)
+                    {
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Key);
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Value);
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Entry);
+                    }
+                    else
+                    {
+                        current = enumerator.Current;
+                        key = enumerator.Key;
+                        value = enumerator.Value;
+                        entry = enumerator.Entry;
+                    }
                 }
             });
         }

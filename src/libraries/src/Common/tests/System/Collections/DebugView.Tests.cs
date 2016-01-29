@@ -45,33 +45,7 @@ namespace System.Collections.Tests
         [MemberData("TestDebuggerAttributes_Inputs")]
         public static void TestDebuggerAttributes_Null(object obj)
         {
-            // Get the DebuggerTypeProxyAttibute for obj
-            var attrs =
-                obj.GetType().GetTypeInfo().CustomAttributes
-                .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))
-                .ToArray();
-            if (attrs.Length != 1)
-            {
-                throw new InvalidOperationException(
-                    string.Format("Expected one DebuggerTypeProxyAttribute on {0}.", obj));
-            }
-            var cad = (CustomAttributeData)attrs[0];
-
-            // Get the proxy type.  As written, this only works if the proxy and the target type
-            // have the same generic parameters, e.g. Dictionary<TKey,TValue> and Proxy<TKey,TValue>.
-            // It will not work with, for example, Dictionary<TKey,TValue>.Keys and Proxy<TKey>,
-            // as the former has two generic parameters and the latter only one.
-            Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
-                (Type)cad.ConstructorArguments[0].Value :
-                Type.GetType((string)cad.ConstructorArguments[0].Value);
-            var genericArguments = obj.GetType().GenericTypeArguments;
-            if (genericArguments.Length > 0)
-            {
-                proxyType = proxyType.MakeGenericType(genericArguments);
-            }
-
-            // Create an instance of the proxy type, and make sure we can access all of the instance properties 
-            // on the type without exception
+            Type proxyType = DebuggerAttributes.GetProxyType(obj);
             Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
         }
     }

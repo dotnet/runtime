@@ -24,7 +24,7 @@ namespace System.Collections.Tests
         /// Creates an object that is dependent on the seed given. The object may be either
         /// a value type or a reference type, chosen based on the value of the seed.
         /// </summary>
-        protected override object TKeyFactory(int seed)
+        protected override object CreateTKey(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -37,9 +37,9 @@ namespace System.Collections.Tests
         /// Creates an object that is dependent on the seed given. The object may be either
         /// a value type or a reference type, chosen based on the value of the seed.
         /// </summary>
-        protected override object TValueFactory(int seed)
+        protected override object CreateTValue(int seed)
         {
-            return TKeyFactory(seed);
+            return CreateTKey(seed);
         }
 
         #endregion
@@ -61,7 +61,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
-                Assert.Throws<ArgumentException>(() => dictionary[23] = TValueFactory(12345));
+                Assert.Throws<ArgumentException>(() => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }
@@ -87,7 +87,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
                 object missingKey = 23;
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, TValueFactory(12345)));
+                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(12345)));
                 Assert.Empty(dictionary);
             }
         }

@@ -17,8 +17,21 @@ namespace System.Diagnostics
 
         internal static void ValidateDebuggerTypeProxyProperties(object obj)
         {
+            Type proxyType = GetProxyType(obj);
+
+            // Create an instance of the proxy type, and make sure we can access all of the instance properties 
+            // on the type without exception
+            object proxyInstance = Activator.CreateInstance(proxyType, obj);
+            foreach (var pi in proxyInstance.GetType().GetTypeInfo().DeclaredProperties)
+            {
+                pi.GetValue(proxyInstance, null);
+            }
+        }
+
+        internal static Type GetProxyType(object obj)
+        {
             // Get the DebuggerTypeProxyAttibute for obj
-            var attrs = 
+            var attrs =
                 obj.GetType().GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))
                 .ToArray();
@@ -42,13 +55,7 @@ namespace System.Diagnostics
                 proxyType = proxyType.MakeGenericType(genericArguments);
             }
 
-            // Create an instance of the proxy type, and make sure we can access all of the instance properties 
-            // on the type without exception
-            object proxyInstance = Activator.CreateInstance(proxyType, obj);
-            foreach (var pi in proxyInstance.GetType().GetTypeInfo().DeclaredProperties)
-            {
-                pi.GetValue(proxyInstance, null);
-            }
+            return proxyType;
         }
 
         internal static void ValidateDebuggerDisplayReferences(object obj)
@@ -137,5 +144,6 @@ namespace System.Diagnostics
             }
             return null;
         }
+
     }
 }

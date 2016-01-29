@@ -26,7 +26,7 @@ namespace System.Collections.Tests
             Queue<T> queue = new Queue<T>(count);
             int seed = count * 34;
             for (int i = 0; i < count; i++)
-                queue.Enqueue(TFactory(seed++));
+                queue.Enqueue(CreateT(seed++));
             return queue;
         }
 
@@ -143,7 +143,7 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => q.Dequeue());
 
             // But can still be used after a failure and after bouncing at empty
-            T itemToAdd = TFactory(seed++);
+            T itemToAdd = CreateT(seed++);
             q.Enqueue(itemToAdd);
             Assert.Equal(itemToAdd, q.Dequeue());
         }

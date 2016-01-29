@@ -39,11 +39,11 @@ namespace System.Collections.Tests
             var list = GenericListFactory();
             int seed = 5321;
             while (list.Count < count)
-                list.Add((string)TFactory(seed++));
+                list.Add((string)CreateT(seed++));
             return list;
         }
 
-        protected override object TFactory(int seed)
+        protected override object CreateT(int seed)
         {
             if (seed % 2 == 0)
             {

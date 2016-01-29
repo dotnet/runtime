@@ -3,19 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
 {
     public class LinkedList_ICollection_NonGeneric_Tests : ICollection_NonGeneric_Tests
     {
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
             int seed = numberOfItemsToAdd * 34;
             for (int i = 0; i < numberOfItemsToAdd; i++)
-                ((LinkedList<string>)collection).AddLast(TFactory(seed++));
+                ((LinkedList<string>)collection).AddLast(CreateT(seed++));
         }
 
         protected override ICollection NonGenericICollectionFactory()
@@ -23,42 +22,56 @@ namespace System.Collections.Tests
             return new LinkedList<string>();
         }
 
-        protected override int WaysToModify { get { return 5; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            LinkedList<string> casted = ((LinkedList<string>)enumerable);
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    casted.AddFirst(TFactory(4531));
-                    break;
-                case 1: // Add
-                    casted.AddLast(TFactory(4531));
-                    break;
-                case 2: // Remove
+                yield return (IEnumerable enumerable) => {
+                    LinkedList<string> casted = ((LinkedList<string>)enumerable);
+                    casted.AddFirst(CreateT(4531));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    LinkedList<string> casted = ((LinkedList<string>)enumerable);
+                    casted.AddLast(CreateT(4531));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.RemoveFirst();
-                    else
-                        casted.AddLast(TFactory(4531));
-                    break;
-                case 3: // Remove
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.RemoveLast();
-                    else
-                        casted.AddLast(TFactory(4531));
-                    break;
-                case 4: // Clear
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.Clear();
-                    else
-                        casted.AddLast(TFactory(4531));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
-        protected string TFactory(int seed)
+        protected string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);

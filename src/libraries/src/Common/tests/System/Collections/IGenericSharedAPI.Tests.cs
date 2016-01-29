@@ -31,9 +31,9 @@ namespace System.Collections.Tests
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             while (Count(collection) < numberOfItemsToAdd)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd, comparer) || InvalidValues.Contains(toAdd, comparer))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 Add(collection, toAdd);
             }
         }
@@ -60,31 +60,35 @@ namespace System.Collections.Tests
         }
 
         protected abstract IEnumerable<T> GenericIEnumerableFactory();
-
-        protected override int WaysToModify { get { return 3; } } // add, remove, clear
-
-        protected override void ModifyEnumerable(IEnumerable<T> enumerable, int enumerationCode)
+        
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    Add(enumerable, TFactory(12));
-                    break;
-                case 1: // Remove
+                yield return (IEnumerable<T> enumerable) => {
+                    Add(enumerable, CreateT(12));
+                    return true;
+                };
+                yield return (IEnumerable<T> enumerable) => {
                     if (Count(enumerable) > 0)
-                        Remove(enumerable);
-                    else
-                        Add(enumerable, TFactory(12));
-                    break;
-                case 2: // Clear
+                    { 
+                        return Remove(enumerable);
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<T> enumerable) => {
                     if (Count(enumerable) > 0)
+                    {
                         Clear(enumerable);
-                    else
-                        Add(enumerable, TFactory(12));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
-
         #endregion
 
         #region Count
@@ -124,7 +128,7 @@ namespace System.Collections.Tests
                     IEnumerable<T> collection = GenericIEnumerableFactory(count);
                     Add(collection, invalidValue);
                     for (int i = 0; i < count; i++)
-                        Add(collection, TFactory(i));
+                        Add(collection, CreateT(i));
                     Assert.Equal(count * 2, Count(collection));
                 });
             }
@@ -141,7 +145,7 @@ namespace System.Collections.Tests
                     IEnumerable<T> collection = GenericIEnumerableFactory(0);
                     Add(collection, invalidValue);
                     for (int i = 0; i < count; i++)
-                        Add(collection, TFactory(i));
+                        Add(collection, CreateT(i));
                     Assert.Equal(count, Count(collection));
                 });
             }
@@ -171,7 +175,7 @@ namespace System.Collections.Tests
                 if (DuplicateValuesAllowed)
                 {
                     IEnumerable<T> collection = GenericIEnumerableFactory(count);
-                    T duplicateValue = TFactory(700);
+                    T duplicateValue = CreateT(700);
                     Add(collection, duplicateValue);
                     Add(collection, duplicateValue);
                     Assert.Equal(count + 2, Count(collection));
@@ -201,15 +205,15 @@ namespace System.Collections.Tests
                 int seed = 840;
                 IEnumerable<T> collection = GenericIEnumerableFactory(count);
                 List<T> items = collection.ToList();
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (Contains(collection, toAdd))
-                   toAdd = TFactory(seed++);
+                   toAdd = CreateT(seed++);
                 Add(collection, toAdd);
                 Remove(collection);
 
-                toAdd = TFactory(seed++);
+                toAdd = CreateT(seed++);
                 while (Contains(collection, toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
 
                 Add(collection, toAdd);
             }
@@ -225,7 +229,7 @@ namespace System.Collections.Tests
                 List<T> itemsToRemove = collection.ToList();
                 for (int i = 0; i < count; i++)
                     Remove(collection);
-                Add(collection, TFactory(254));
+                Add(collection, CreateT(254));
                 Assert.Equal(1, Count(collection));
             }
         }
@@ -261,9 +265,9 @@ namespace System.Collections.Tests
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
             int seed = 4315;
-            T item = TFactory(seed++);
+            T item = CreateT(seed++);
             while (Contains(collection, item))
-                item = TFactory(seed++);
+                item = CreateT(seed++);
             Assert.False(Contains(collection, item));
         }
 
@@ -304,7 +308,7 @@ namespace System.Collections.Tests
             if (DuplicateValuesAllowed && !IsReadOnly)
             {
                 IEnumerable<T> collection = GenericIEnumerableFactory(count);
-                T item = TFactory(12);
+                T item = CreateT(12);
                 Add(collection, item);
                 Add(collection, item);
                 Assert.Equal(count + 2, Count(collection));

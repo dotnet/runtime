@@ -41,9 +41,9 @@ namespace System.Collections.Tests
             int seed = 9600;
             while (collection.Count < numberOfItemsToAdd)
             {
-                object toAdd = TFactory(seed++);
+                object toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd) || InvalidValues.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
             }
         }
@@ -52,7 +52,7 @@ namespace System.Collections.Tests
         /// Creates an object that is dependent on the seed given. The object may be either
         /// a value type or a reference type, chosen based on the value of the seed.
         /// </summary>
-        protected virtual object TFactory(int seed)
+        protected virtual object CreateT(int seed)
         {
             if (seed % 2 == 0)
             {
@@ -75,8 +75,6 @@ namespace System.Collections.Tests
 
         #region ICollection Helper Methods
 
-        protected override int WaysToModify { get { return 6; } }
-
         protected override ICollection NonGenericICollectionFactory()
         {
             return NonGenericIListFactory();
@@ -87,38 +85,55 @@ namespace System.Collections.Tests
             return NonGenericIListFactory(count);
         }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            IList casted = ((IList)enumerable);
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    casted.Add(TFactory(12));
-                    break;
-                case 1: // Insert
-                    casted.Insert(0, TFactory(12));
-                    break;
-                case 2: // Item_Set
-                    casted[0] = TFactory(12);
-                    break;
-                case 3: // Remove
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
+                    casted.Add(CreateT(2344));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
+                    casted.Insert(0, CreateT(12));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
+                    casted[0] = CreateT(12);
+                    return true;
+                };
+
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.Remove(casted[0]);
-                    else
-                        casted.Add(TFactory(12));
-                    break;
-                case 4: // RemoveAt
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.RemoveAt(0);
-                    else
-                        casted.Add(TFactory(12));
-                    break;
-                case 5: // Clear
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    IList casted = ((IList)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.Clear();
-                    else
-                        casted.Add(TFactory(12));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
@@ -188,7 +203,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(0);
+                object validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[-1] = validAdd);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue] = validAdd);
                 Assert.Equal(count, list.Count);
@@ -202,7 +217,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(0);
+                object validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[count] = validAdd);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1] = validAdd);
                 Assert.Equal(count, list.Count);
@@ -216,7 +231,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                Assert.Throws<NotSupportedException>(() => list[count / 2] = TFactory(321432));
+                Assert.Throws<NotSupportedException>(() => list[count / 2] = CreateT(321432));
                 Assert.Equal(count, list.Count);
             }
         }
@@ -228,7 +243,7 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 list[0] = value;
                 Assert.Equal(value, list[0]);
             }
@@ -254,7 +269,7 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list[lastIndex] = value;
                 Assert.Equal(value, list[lastIndex]);
@@ -282,7 +297,7 @@ namespace System.Collections.Tests
             if (count >= 2 && !IsReadOnly && DuplicateValuesAllowed)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 list[0] = value;
                 list[1] = value;
                 Assert.Equal(value, list[0]);
@@ -331,7 +346,7 @@ namespace System.Collections.Tests
                     IList collection = NonGenericIListFactory(count);
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
-                        collection.Add(TFactory(i));
+                        collection.Add(CreateT(i));
                     Assert.Equal(count * 2, collection.Count);
                 });
             }
@@ -348,7 +363,7 @@ namespace System.Collections.Tests
                     IList collection = NonGenericIListFactory(0);
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
-                        collection.Add(TFactory(i));
+                        collection.Add(CreateT(i));
                     Assert.Equal(count, collection.Count);
                 });
             }
@@ -378,7 +393,7 @@ namespace System.Collections.Tests
                 if (DuplicateValuesAllowed)
                 {
                     IList collection = NonGenericIListFactory(count);
-                    object duplicateValue = TFactory(700);
+                    object duplicateValue = CreateT(700);
                     collection.Add(duplicateValue);
                     collection.Add(duplicateValue);
                     Assert.Equal(count + 2, collection.Count);
@@ -409,15 +424,15 @@ namespace System.Collections.Tests
                 IList collection = NonGenericIListFactory(count);
                 object[] items = new object[count];
                 collection.CopyTo(items, 0);
-                object toAdd = TFactory(seed++);
+                object toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
                 collection.RemoveAt(0);
 
-                toAdd = TFactory(seed++);
+                toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
 
                 collection.Add(toAdd);
             }
@@ -434,7 +449,7 @@ namespace System.Collections.Tests
                 collection.CopyTo(arr, 0);
                 for (int i = 0; i < count; i++)
                     collection.Remove(arr[i]);
-                collection.Add(TFactory(254));
+                collection.Add(CreateT(254));
                 Assert.Equal(1, collection.Count);
             }
         }
@@ -446,7 +461,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IList collection = NonGenericIListFactory(count);
-                Assert.Throws<NotSupportedException>(() => collection.Add(TFactory(0)));
+                Assert.Throws<NotSupportedException>(() => collection.Add(CreateT(0)));
                 Assert.Equal(count, collection.Count);
             }
         }
@@ -459,9 +474,9 @@ namespace System.Collections.Tests
             {
                 int seed = 840;
                 IList collection = NonGenericIListFactory(count);
-                object toAdd = TFactory(seed++);
+                object toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
                 collection.Remove(toAdd);
                 collection.Add(toAdd);
@@ -499,9 +514,9 @@ namespace System.Collections.Tests
         {
             IList collection = NonGenericIListFactory(count);
             int seed = 4315;
-            object item = TFactory(seed++);
+            object item = CreateT(seed++);
             while (collection.Contains(item))
-                item = TFactory(seed++);
+                item = CreateT(seed++);
             Assert.False(collection.Contains(item));
         }
 
@@ -542,7 +557,7 @@ namespace System.Collections.Tests
             if (DuplicateValuesAllowed && !IsReadOnly)
             {
                 IList collection = NonGenericIListFactory(count);
-                object item = TFactory(12);
+                object item = CreateT(12);
                 collection.Add(item);
                 collection.Add(item);
                 Assert.Equal(count + 2, collection.Count);
@@ -607,7 +622,7 @@ namespace System.Collections.Tests
             {
                 // IndexOf should always return the lowest index for which a matching element is found
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(12345);
+                object value = CreateT(12345);
                 list[0] = value;
                 list[count / 2] = value;
                 Assert.Equal(0, list.IndexOf(value));
@@ -673,7 +688,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(0);
+                object validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, validAdd));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(int.MinValue, validAdd));
                 Assert.Equal(count, list.Count);
@@ -688,7 +703,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(12350);
+                object validAdd = CreateT(12350);
                 list.Insert(count, validAdd);
                 Assert.Equal(count + 1, list.Count);
                 Assert.Equal(validAdd, list[count]);
@@ -702,7 +717,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, TFactory(321432)));
+                Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, CreateT(321432)));
                 Assert.Equal(count, list.Count);
             }
         }
@@ -714,7 +729,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 list.Insert(0, value);
                 Assert.Equal(value, list[0]);
                 Assert.Equal(count + 1, list.Count);
@@ -742,7 +757,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
                 Assert.Equal(value, list[lastIndex]);
@@ -772,7 +787,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly && DuplicateValuesAllowed)
             {
                 IList list = NonGenericIListFactory(count);
-                object value = TFactory(123452);
+                object value = CreateT(123452);
                 list.Insert(0, value);
                 list.Insert(1, value);
                 Assert.Equal(value, list[0]);
@@ -806,7 +821,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IList collection = NonGenericIListFactory(count);
-                Assert.Throws<NotSupportedException>(() => collection.Remove(TFactory(34543)));
+                Assert.Throws<NotSupportedException>(() => collection.Remove(CreateT(34543)));
             }
         }
 
@@ -837,9 +852,9 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 IList collection = NonGenericIListFactory(count);
-                object value = TFactory(seed++);
+                object value = CreateT(seed++);
                 while (collection.Contains(value) || Enumerable.Contains(InvalidValues, value))
-                    value = TFactory(seed++);
+                    value = CreateT(seed++);
                 collection.Remove(value);
                 Assert.Equal(count, collection.Count);
             }
@@ -872,7 +887,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 IList collection = NonGenericIListFactory(count);
-                object value = TFactory(seed++);
+                object value = CreateT(seed++);
                 if (!collection.Contains(value))
                 {
                     collection.Add(value);
@@ -891,7 +906,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 90;
                 IList collection = NonGenericIListFactory(count);
-                object value = TFactory(seed++);
+                object value = CreateT(seed++);
                 collection.Add(value);
                 collection.Add(value);
                 count += 2;
@@ -941,7 +956,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(0);
+                object validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(int.MinValue));
                 Assert.Equal(count, list.Count);
@@ -955,7 +970,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
-                object validAdd = TFactory(0);
+                object validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count + 1));
                 Assert.Equal(count, list.Count);

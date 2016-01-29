@@ -21,7 +21,7 @@ namespace System.Collections.Tests
         /// is dependent only on the seed passed as input and will return the same value on repeated
         /// calls with the same seed.
         /// </summary>
-        protected abstract T TFactory(int seed);
+        protected abstract T CreateT(int seed);
 
         /// <summary>
         /// The EqualityComparer that can be used in the overriding class when creating test enumerables
@@ -82,7 +82,6 @@ namespace System.Collections.Tests
                     }
                 }
             }
-            yield return new object[] { EnumerableType.List, 4000, 150, 0, 0};                          // Enumerable that is over the StackAllocThreshold for Set testing
         }
 
         /// <summary>
@@ -142,9 +141,9 @@ namespace System.Collections.Tests
             // Enqueue elements to reach the desired count
             while (queue.Count < count)
             {
-                T toEnqueue = TFactory(seed++);
+                T toEnqueue = CreateT(seed++);
                 while (queue.Contains(toEnqueue) || (match != null && match.Contains(toEnqueue))) // Don't want any unexpectedly duplicate values
-                    toEnqueue = TFactory(seed++);
+                    toEnqueue = CreateT(seed++);
                 queue.Enqueue(toEnqueue);
                 while (duplicateAdded++ < numberOfDuplicateElements)
                     queue.Enqueue(toEnqueue);
@@ -191,9 +190,9 @@ namespace System.Collections.Tests
             // Add elements to reach the desired count
             while (list.Count < count)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (list.Contains(toAdd) || (match != null && match.Contains(toAdd))) // Don't want any unexpectedly duplicate values
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 list.Add(toAdd);
                 while (duplicateAdded++ < numberOfDuplicateElements)
                     list.Add(toAdd);
@@ -235,9 +234,9 @@ namespace System.Collections.Tests
             // Add elements to reach the desired count
             while (set.Count < count)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (set.Contains(toAdd) || (match != null && match.Contains(toAdd, GetIEqualityComparer()))) // Don't want any unexpectedly duplicate values
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 set.Add(toAdd);
             }
 
@@ -277,9 +276,9 @@ namespace System.Collections.Tests
             // Add elements to reach the desired count
             while (set.Count < count)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (set.Contains(toAdd) || (match != null && match.Contains(toAdd, GetIEqualityComparer()))) // Don't want any unexpectedly duplicate values
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 set.Add(toAdd);
             }
 

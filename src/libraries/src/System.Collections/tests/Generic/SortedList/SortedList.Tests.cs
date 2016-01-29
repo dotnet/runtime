@@ -17,7 +17,7 @@ namespace System.Collections.Tests
             return new SortedList<string, string>();
         }
 
-        protected override object TKeyFactory(int seed)
+        protected override object CreateTKey(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -26,9 +26,9 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes);
         }
 
-        protected override object TValueFactory(int seed)
+        protected override object CreateTValue(int seed)
         {
-            return TKeyFactory(seed);
+            return CreateTKey(seed);
         }
 
         #endregion
@@ -50,7 +50,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedList<string, string>();
-                Assert.Throws<ArgumentException>(() => dictionary[23] = TValueFactory(12345));
+                Assert.Throws<ArgumentException>(() => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }
@@ -76,7 +76,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new SortedList<string, string>();
                 object missingKey = 23;
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, TValueFactory(12345)));
+                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(12345)));
                 Assert.Empty(dictionary);
             }
         }

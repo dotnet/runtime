@@ -13,11 +13,12 @@ namespace System.Collections.Tests
     {
         #region ICollection Helper Methods
 
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
             int seed = numberOfItemsToAdd * 34;
             for (int i = 0; i < numberOfItemsToAdd; i++)
-                ((Queue<string>)collection).Enqueue(TFactory(seed++));
+                ((Queue<string>)collection).Enqueue(CreateT(seed++));
         }
 
         protected override ICollection NonGenericICollectionFactory()
@@ -25,32 +26,42 @@ namespace System.Collections.Tests
             return new Queue<string>();
         }
 
-        protected override int WaysToModify { get { return 3; } } // add, remove, clear
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    ((Queue<string>)enumerable).Enqueue(TFactory(4531));
-                    break;
-                case 1: // Remove
-                    if (((Queue<string>)enumerable).Count > 0)
-                        ((Queue<string>)enumerable).Dequeue();
-                    else
-                        ((Queue<string>)enumerable).Enqueue(TFactory(4531));
-                    break;
-                case 2: // Clear
-                    if (((Queue<string>)enumerable).Count > 0)
-                        ((Queue<string>)enumerable).Clear();
-                    else
-                        ((Queue<string>)enumerable).Enqueue(TFactory(4531));
-                    break;
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Queue<string>)enumerable;
+                    casted.Enqueue(CreateT(2344));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Queue<string>)enumerable;
+                    if (casted.Count > 0)
+                    {
+                        casted.Dequeue();
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Queue<string>)enumerable;
+                    if (casted.Count > 0)
+                    {
+                        casted.Clear();
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
-        protected string TFactory(int seed)
+        protected string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);

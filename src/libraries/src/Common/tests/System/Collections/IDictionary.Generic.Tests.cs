@@ -40,14 +40,14 @@ namespace System.Collections.Tests
         /// is dependent only on the seed passed as input and will return the same key on repeated
         /// calls with the same seed.
         /// </summary>
-        protected abstract TKey TKeyFactory(int seed);
+        protected abstract TKey CreateTKey(int seed);
 
         /// <summary>
         /// To be implemented in the concrete Dictionary test classes. Creates an instance of TValue that
         /// is dependent only on the seed passed as input and will return the same value on repeated
         /// calls with the same seed.
         /// </summary>
-        protected abstract TValue TValueFactory(int seed);
+        protected abstract TValue CreateTValue(int seed);
 
         /// <summary>
         /// Helper method to get a key that doesn't already exist within the dictionary given
@@ -55,9 +55,9 @@ namespace System.Collections.Tests
         protected TKey GetNewKey(IDictionary<TKey, TValue> dictionary)
         {
             int seed = 840;
-            TKey missingKey = TKeyFactory(seed++);
+            TKey missingKey = CreateTKey(seed++);
             while (dictionary.ContainsKey(missingKey) || missingKey.Equals(default(TKey)))
-                missingKey = TKeyFactory(seed++);
+                missingKey = CreateTKey(seed++);
             return missingKey;
         }
 
@@ -130,15 +130,15 @@ namespace System.Collections.Tests
 
         protected override void AddToCollection(ICollection<KeyValuePair<TKey, TValue>> collection, int numberOfItemsToAdd)
         {
-            Debug.Assert(!IsReadOnly);
+            Assert.False(IsReadOnly);
             int seed = 12353;
             IDictionary<TKey, TValue> casted = (IDictionary<TKey, TValue>)collection;
             int initialCount = casted.Count;
             while ((casted.Count - initialCount) < numberOfItemsToAdd)
             {
-                KeyValuePair<TKey, TValue> toAdd = TFactory(seed++);
+                KeyValuePair<TKey, TValue> toAdd = CreateT(seed++);
                 while (casted.ContainsKey(toAdd.Key) || Enumerable.Contains(InvalidValues, toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
             }
         }
@@ -153,6 +153,45 @@ namespace System.Collections.Tests
             return new KVPComparer(GetKeyIComparer(), GetKeyIEqualityComparer());
         }
 
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        {
+            get
+            {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                    casted.Add(CreateTKey(12), CreateTValue(5123));
+                    return true;
+                };
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                    casted[CreateTKey(541)] = CreateTValue(12);
+                    return true;
+                };
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                    if (casted.Count() > 0)
+                    {
+                        var keys = casted.Keys.GetEnumerator();
+                        keys.MoveNext();
+                        casted.Remove(keys.Current);
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                    if (casted.Count() > 0)
+                    {
+                        casted.Clear();
+                        return true;
+                    }
+                    return false;
+                };
+            }
+        }
 
         #endregion
 
@@ -169,7 +208,7 @@ namespace System.Collections.Tests
             }
             else
             {
-                TValue value = TValueFactory(3452);
+                TValue value = CreateTValue(3452);
                 dictionary[default(TKey)] = value;
                 Assert.Equal(value, dictionary[default(TKey)]);
             }
@@ -220,11 +259,11 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             if (!DefaultValueAllowed)
             {
-                Assert.Throws<ArgumentNullException>(() => dictionary[default(TKey)] = TValueFactory(3));
+                Assert.Throws<ArgumentNullException>(() => dictionary[default(TKey)] = CreateTValue(3));
             }
             else
             {
-                TValue value = TValueFactory(3452);
+                TValue value = CreateTValue(3452);
                 dictionary[default(TKey)] = value;
                 Assert.Equal(value, dictionary[default(TKey)]);
             }
@@ -238,7 +277,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                Assert.Throws<NotSupportedException>(() => dictionary[missingKey] = TValueFactory(5312));
+                Assert.Throws<NotSupportedException>(() => dictionary[missingKey] = CreateTValue(5312));
             }
         }
 
@@ -248,7 +287,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             TKey missingKey = GetNewKey(dictionary);
-            dictionary[missingKey] = TValueFactory(543);
+            dictionary[missingKey] = CreateTValue(543);
             Assert.Equal(count + 1, dictionary.Count);
         }
 
@@ -258,8 +297,8 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             TKey existingKey = GetNewKey(dictionary);
-            dictionary.Add(existingKey, TValueFactory(5342));
-            TValue newValue = TValueFactory(1234);
+            dictionary.Add(existingKey, CreateTValue(5342));
+            TValue newValue = CreateTValue(1234);
             dictionary[existingKey] = newValue;
             Assert.Equal(count + 1, dictionary.Count);
             Assert.Equal(newValue, dictionary[existingKey]);
@@ -284,25 +323,23 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
+            if (count > 0)
+                Assert.NotEmpty(keys);
             dictionary.Clear();
             Assert.Empty(keys);
         }
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
-        public virtual void IDictionary_Generic_Keys_Enumeration_ParentDictionaryModifiedInvalidates(int count)
+        public void IDictionary_Generic_Keys_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
             IEnumerator<TKey> keysEnum = keys.GetEnumerator();
-            dictionary.Clear();
-            // Undefined behavior
-            try { keysEnum.MoveNext(); }
-            catch (InvalidOperationException) { }
-            try { TKey current = keysEnum.Current; }
-            catch (InvalidOperationException) { }
-            try { keysEnum.Reset(); }
-            catch (InvalidOperationException) { }
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+            Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
+            var cur = keysEnum.Current;
         }
 
         [Theory]
@@ -312,9 +349,9 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
             Assert.True(keys.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => keys.Add(TKeyFactory(11)));
+            Assert.Throws<NotSupportedException>(() => keys.Add(CreateTKey(11)));
             Assert.Throws<NotSupportedException>(() => keys.Clear()); 
-            Assert.Throws<NotSupportedException>(() => keys.Remove(TKeyFactory(11)));
+            Assert.Throws<NotSupportedException>(() => keys.Remove(CreateTKey(11)));
         }
 
         [Theory]
@@ -351,9 +388,9 @@ namespace System.Collections.Tests
             int seed = 431;
             foreach (KeyValuePair<TKey, TValue> pair in dictionary.ToList())
             {
-                TKey missingKey = TKeyFactory(seed++);
+                TKey missingKey = CreateTKey(seed++);
                 while (dictionary.ContainsKey(missingKey))
-                    missingKey = TKeyFactory(seed++);
+                    missingKey = CreateTKey(seed++);
                 dictionary.Add(missingKey, pair.Value);
             }
             Assert.Equal(count * 2, dictionary.Values.Count);
@@ -365,25 +402,23 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
+            if (count > 0)
+                Assert.NotEmpty(values);
             dictionary.Clear();
             Assert.Empty(values);
         }
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
-        public virtual void IDictionary_Generic_Values_Enumeration_ParentDictionaryModifiedInvalidates(int count)
+        public void IDictionary_Generic_Values_Enumeration_ParentDictionaryModifiedInvalidates(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
             IEnumerator<TValue> valuesEnum = values.GetEnumerator();
-            dictionary.Clear();
-            // Undefined behavior.
-            try { valuesEnum.MoveNext(); }
-            catch (InvalidOperationException) { }
-            try { TValue current = valuesEnum.Current; }
-            catch (InvalidOperationException) { }
-            try { valuesEnum.Reset(); }
-            catch (InvalidOperationException) { }
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
+            Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
+            var cur = valuesEnum.Current;
         }
 
         [Theory]
@@ -393,9 +428,9 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
             Assert.True(values.IsReadOnly);
-            Assert.Throws<NotSupportedException>(() => values.Add(TValueFactory(11)));
+            Assert.Throws<NotSupportedException>(() => values.Add(CreateTValue(11)));
             Assert.Throws<NotSupportedException>(() => values.Clear());
-            Assert.Throws<NotSupportedException>(() => values.Remove(TValueFactory(11)));
+            Assert.Throws<NotSupportedException>(() => values.Remove(CreateTValue(11)));
         }
 
         [Theory]
@@ -422,7 +457,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-                Assert.Throws<NotSupportedException>(() => dictionary.Add(TKeyFactory(0), TValueFactory(0)));
+                Assert.Throws<NotSupportedException>(() => dictionary.Add(CreateTKey(0), CreateTValue(0)));
             }
         }
 
@@ -451,7 +486,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             TKey missingKey = default(TKey);
-            TValue value = TValueFactory(1456);
+            TValue value = CreateTValue(1456);
             if (DefaultValueAllowed && !IsReadOnly)
             {
                 dictionary.Add(missingKey, value);
@@ -487,7 +522,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                TValue value = TValueFactory(1342);
+                TValue value = CreateTValue(1342);
                 dictionary.Add(missingKey, value);
                 Assert.Equal(count + 1, dictionary.Count);
                 Assert.Equal(value, dictionary[missingKey]);
@@ -502,9 +537,9 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 int seed = 321;
-                TValue duplicate = TValueFactory(seed++);
+                TValue duplicate = CreateTValue(seed++);
                 while (dictionary.Values.Contains(duplicate))
-                    duplicate = TValueFactory(seed++);
+                    duplicate = CreateTValue(seed++);
                 dictionary.Add(GetNewKey(dictionary), duplicate);
                 dictionary.Add(GetNewKey(dictionary), duplicate);
                 Assert.Equal(2, dictionary.Values.Count((value) => value.Equals(duplicate)));
@@ -519,8 +554,8 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                dictionary.Add(missingKey, TValueFactory(34251));
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, TValueFactory(134)));
+                dictionary.Add(missingKey, CreateTValue(34251));
+                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(134)));
             }
         }
 
@@ -548,7 +583,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                dictionary.Add(missingKey, TValueFactory(34251));
+                dictionary.Add(missingKey, CreateTValue(34251));
                 Assert.True(dictionary.ContainsKey(missingKey));
             }
         }
@@ -582,7 +617,7 @@ namespace System.Collections.Tests
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
                 if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, TValueFactory(5341));
+                    dictionary.Add(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.ContainsKey(missingKey));
             }
         }
@@ -598,7 +633,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
-                Assert.Throws<NotSupportedException>(() => dictionary.Remove(TKeyFactory(0)));
+                Assert.Throws<NotSupportedException>(() => dictionary.Remove(CreateTKey(0)));
             }
         }
 
@@ -638,7 +673,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                dictionary.Add(missingKey, TValueFactory(34251));
+                dictionary.Add(missingKey, CreateTValue(34251));
                 Assert.True(dictionary.Remove(missingKey));
                 Assert.Equal(count, dictionary.Count);
             }
@@ -674,7 +709,7 @@ namespace System.Collections.Tests
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
                 if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, TValueFactory(5341));
+                    dictionary.Add(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.Remove(missingKey));
             }
         }
@@ -689,7 +724,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             TKey missingKey = GetNewKey(dictionary);
-            TValue value = TValueFactory(5123);
+            TValue value = CreateTValue(5123);
             TValue outValue;
             Assert.False(dictionary.TryGetValue(missingKey, out outValue));
         }
@@ -702,7 +737,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                TValue value = TValueFactory(5123);
+                TValue value = CreateTValue(5123);
                 TValue outValue;
                 if (!dictionary.ContainsKey(missingKey))
                     dictionary.Add(missingKey, value);
@@ -738,7 +773,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
-                TValue value = TValueFactory(5123);
+                TValue value = CreateTValue(5123);
                 TValue outValue;
                 if (!dictionary.ContainsKey(missingKey))
                     dictionary.Add(missingKey, value);
@@ -772,10 +807,10 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                TValue present = TValueFactory(324);
-                TValue missing = TValueFactory(5612);
+                TValue present = CreateTValue(324);
+                TValue missing = CreateTValue(5612);
                 while (present.Equals(missing))
-                    missing = TValueFactory(5612);
+                    missing = CreateTValue(5612);
                 dictionary.Add(missingKey, present);
                 Assert.False(dictionary.Remove(new KeyValuePair<TKey, TValue>(missingKey, missing)));
             }
@@ -789,10 +824,10 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = GetNewKey(dictionary);
-                TValue present = TValueFactory(324);
-                TValue missing = TValueFactory(5612);
+                TValue present = CreateTValue(324);
+                TValue missing = CreateTValue(5612);
                 while (present.Equals(missing))
-                    missing = TValueFactory(5612);
+                    missing = CreateTValue(5612);
                 dictionary.Add(missingKey, present);
                 Assert.False(dictionary.Contains(new KeyValuePair<TKey, TValue>(missingKey, missing)));
             }

@@ -1,22 +1,19 @@
 ﻿// Copyright(c) Microsoft.All rights reserved.
 // Licensed under the MIT license.See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
 {
     public class SortedDictionary_Generic_Tests_string_string : SortedDictionary_Generic_Tests<string, string>
     {
-        protected override KeyValuePair<string, string> TFactory(int seed)
+        protected override KeyValuePair<string, string> CreateT(int seed)
         {
-            return new KeyValuePair<string, string>(TKeyFactory(seed), TKeyFactory(seed + 500));
+            return new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
         }
 
-        protected override string TKeyFactory(int seed)
+        protected override string CreateTKey(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -25,48 +22,49 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes1);
         }
 
-        protected override string TValueFactory(int seed)
+        protected override string CreateTValue(int seed)
         {
-            return TKeyFactory(seed);
+            return CreateTKey(seed);
         }
     }
 
     public class SortedDictionary_Generic_Tests_int_int : SortedDictionary_Generic_Tests<int, int>
     {
         protected override bool DefaultValueAllowed { get { return true; } }
-        protected override KeyValuePair<int, int> TFactory(int seed)
+        protected override KeyValuePair<int, int> CreateT(int seed)
         {
             Random rand = new Random(seed);
             return new KeyValuePair<int, int>(rand.Next(), rand.Next());
         }
 
-        protected override int TKeyFactory(int seed)
+        protected override int CreateTKey(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
         }
 
-        protected override int TValueFactory(int seed)
+        protected override int CreateTValue(int seed)
         {
-            return TKeyFactory(seed);
+            return CreateTKey(seed);
         }
     }
 
+    [OuterLoop]
     public class SortedDictionary_Generic_Tests_EquatableBackwardsOrder_int : SortedDictionary_Generic_Tests<EquatableBackwardsOrder, int>
     {
-        protected override KeyValuePair<EquatableBackwardsOrder, int> TFactory(int seed)
+        protected override KeyValuePair<EquatableBackwardsOrder, int> CreateT(int seed)
         {
             Random rand = new Random(seed);
             return new KeyValuePair<EquatableBackwardsOrder, int>(new EquatableBackwardsOrder(rand.Next()), rand.Next());
         }
 
-        protected override EquatableBackwardsOrder TKeyFactory(int seed)
+        protected override EquatableBackwardsOrder CreateTKey(int seed)
         {
             Random rand = new Random(seed);
             return new EquatableBackwardsOrder(rand.Next());
         }
 
-        protected override int TValueFactory(int seed)
+        protected override int CreateTValue(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();

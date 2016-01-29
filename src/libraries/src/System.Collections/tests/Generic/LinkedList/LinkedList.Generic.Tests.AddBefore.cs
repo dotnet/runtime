@@ -28,8 +28,8 @@ namespace System.Collections.Tests
             for (int i = 0; i < arraySize; i++)
             {
                 int index = (arraySize - 1) - i;
-                T head = TFactory(seed++);
-                T tail = TFactory(seed++);
+                T head = CreateT(seed++);
+                T tail = CreateT(seed++);
                 headItems[i] = head;
                 headItemsReverse[index] = head;
                 tailItems[i] = tail;
@@ -190,27 +190,27 @@ namespace System.Collections.Tests
             T[] items;
 
             //[] Verify Null node
-            Assert.Throws<ArgumentNullException>(() => linkedList.AddBefore(null, TFactory(seed++))); //"Err_858ahia Expected null node to throws ArgumentNullException\n"
+            Assert.Throws<ArgumentNullException>(() => linkedList.AddBefore(null, CreateT(seed++))); //"Err_858ahia Expected null node to throws ArgumentNullException\n"
             InitialItems_Tests(linkedList, new T[0]);
 
             //[] Verify Node that is a new Node
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++) };
+            items = new T[] { CreateT(seed++) };
             linkedList.AddLast(items[0]);
-            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(new LinkedListNode<T>(TFactory(seed++)), TFactory(seed++))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
+            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(new LinkedListNode<T>(CreateT(seed++)), CreateT(seed++))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
 
             InitialItems_Tests(linkedList, items);
 
             //[] Verify Node that already exists in another collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
 
             tempLinkedList.Clear();
-            tempLinkedList.AddLast(TFactory(seed++));
-            tempLinkedList.AddLast(TFactory(seed++));
-            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(tempLinkedList.Last, TFactory(seed++))); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
+            tempLinkedList.AddLast(CreateT(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
+            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(tempLinkedList.Last, CreateT(seed++))); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
         }
 
@@ -229,8 +229,8 @@ namespace System.Collections.Tests
             for (int i = 0; i < arraySize; i++)
             {
                 int index = (arraySize - 1) - i;
-                T head = TFactory(seed++);
-                T tail = TFactory(seed++);
+                T head = CreateT(seed++);
+                T tail = CreateT(seed++);
                 headItems[i] = head;
                 headItemsReverse[index] = head;
                 tailItems[i] = tail;
@@ -389,40 +389,40 @@ namespace System.Collections.Tests
             T[] items;
 
             //[] Verify Null node
-            Assert.Throws<ArgumentNullException>(() => linkedList.AddBefore(null, new LinkedListNode<T>(TFactory(seed++)))); //"Err_858ahia Expected null node to throws ArgumentNullException\n"
+            Assert.Throws<ArgumentNullException>(() => linkedList.AddBefore(null, new LinkedListNode<T>(CreateT(seed++)))); //"Err_858ahia Expected null node to throws ArgumentNullException\n"
             InitialItems_Tests(linkedList, new T[0]);
 
             //[] Verify Node that is a new Node
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++) };
+            items = new T[] { CreateT(seed++) };
             linkedList.AddLast(items[0]);
-            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(new LinkedListNode<T>(TFactory(seed++)), new LinkedListNode<T>(TFactory(seed++)))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
+            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(new LinkedListNode<T>(CreateT(seed++)), new LinkedListNode<T>(CreateT(seed++)))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
 
             //[] Verify Node that already exists in another collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
 
             tempLinkedList.Clear();
-            tempLinkedList.AddLast(TFactory(seed++));
-            tempLinkedList.AddLast(TFactory(seed++));
-            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(tempLinkedList.Last, new LinkedListNode<T>(TFactory(seed++)))); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
+            tempLinkedList.AddLast(CreateT(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
+            Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(tempLinkedList.Last, new LinkedListNode<T>(CreateT(seed++)))); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
 
             // Tests for the NewNode
 
             //[] Verify Null newNode
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++) };
+            items = new T[] { CreateT(seed++) };
             linkedList.AddLast(items[0]);
             Assert.Throws<ArgumentNullException>(() => linkedList.AddBefore(linkedList.First, null)); //"Err_0808ajeoia Expected null newNode to throws ArgumentNullException\n"
             InitialItems_Tests(linkedList, items);
 
             //[] Verify newNode that already exists in this collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
             Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(linkedList.First, linkedList.Last)); //"Err_58808adjioe Verify newNode that already exists in this collection throws InvalidOperationException\n"
@@ -431,13 +431,13 @@ namespace System.Collections.Tests
 
             //[] Verify newNode that already exists in another collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
 
             tempLinkedList.Clear();
-            tempLinkedList.AddLast(TFactory(seed++));
-            tempLinkedList.AddLast(TFactory(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
             Assert.Throws<InvalidOperationException>(() => linkedList.AddBefore(linkedList.First, tempLinkedList.Last)); //"Err_54808ajied newNode that already exists in another collection throws InvalidOperationException\n"
 
             InitialItems_Tests(linkedList, items);

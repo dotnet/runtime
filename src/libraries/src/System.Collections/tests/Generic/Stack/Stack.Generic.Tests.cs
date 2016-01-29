@@ -28,7 +28,7 @@ namespace System.Collections.Tests
             Stack<T> stack = new Stack<T>(count);
             int seed = count * 34;
             for (int i = 0; i < count; i++)
-                stack.Push(TFactory(seed++));
+                stack.Push(CreateT(seed++));
             return stack;
         }
 
