@@ -87,6 +87,7 @@ namespace System.Collections
         {
             Init();
         }
+        
         private void Init()
         {
             _keys = Array.Empty<Object>();
@@ -397,8 +398,8 @@ namespace System.Collections
             int newCapacity = _keys.Length == 0 ? 16 : _keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > ArrayList.MaxArrayLength) newCapacity = ArrayList.MaxArrayLength;
-            if (newCapacity < min) newCapacity = min;
+            newCapacity = (int)Math.Min((uint)newCapacity, ArrayList.MaxArrayLength);
+            newCapacity = Math.Max(min, newCapacity);
             Capacity = newCapacity;
         }
 
