@@ -5,15 +5,6 @@
 #include "unicode/locid.h"
 
 /*
-PAL Function:
-GetLocaleName
-
-Obtains a canonical locale name given a user-specified locale name
-Returns 1 for success, 0 otherwise
-*/
-extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
-
-/*
 Function:
 UErrorCodeToBool
 
