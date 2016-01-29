@@ -19,10 +19,7 @@ namespace System.Net
             return new Interop.OpenSsl.SslException((int)status);
         }
 
-        public static bool StartMutualAuthAsAnonymous
-        {
-            get { return false; }
-        }
+        internal const bool StartMutualAuthAsAnonymous = false;
 
         public static void VerifyPackageInfo()
         {
