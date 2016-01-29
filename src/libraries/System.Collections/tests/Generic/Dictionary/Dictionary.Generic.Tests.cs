@@ -88,9 +88,9 @@ namespace System.Collections.Tests
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary < TKey, TValue> )GenericIDictionaryFactory(count);
             int seed = 4315;
-            TValue notPresent = TValueFactory(seed++);
+            TValue notPresent = CreateTValue(seed++);
             while (dictionary.Values.Contains(notPresent))
-                notPresent = TValueFactory(seed++);
+                notPresent = CreateTValue(seed++);
             Assert.False(dictionary.ContainsValue(notPresent));
         }
 
@@ -100,9 +100,9 @@ namespace System.Collections.Tests
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
-            KeyValuePair<TKey, TValue> notPresent = TFactory(seed++);
+            KeyValuePair<TKey, TValue> notPresent = CreateT(seed++);
             while (dictionary.Contains(notPresent))
-                notPresent = TFactory(seed++);
+                notPresent = CreateT(seed++);
             dictionary.Add(notPresent.Key, notPresent.Value);
             Assert.True(dictionary.ContainsValue(notPresent.Value));
         }
@@ -121,9 +121,9 @@ namespace System.Collections.Tests
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
-            TKey notPresent = TKeyFactory(seed++);
+            TKey notPresent = CreateTKey(seed++);
             while (dictionary.ContainsKey(notPresent))
-                notPresent = TKeyFactory(seed++);
+                notPresent = CreateTKey(seed++);
             dictionary.Add(notPresent, default(TValue));
             Assert.True(dictionary.ContainsValue(default(TValue)));
         }

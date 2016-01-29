@@ -219,9 +219,9 @@ namespace System.Collections.Tests
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
-            TValue notPresent = TValueFactory(seed++);
+            TValue notPresent = CreateTValue(seed++);
             while (dictionary.Values.Contains(notPresent))
-                notPresent = TValueFactory(seed++);
+                notPresent = CreateTValue(seed++);
             Assert.False(dictionary.ContainsValue(notPresent));
         }
 
@@ -231,9 +231,9 @@ namespace System.Collections.Tests
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
-            KeyValuePair<TKey, TValue> notPresent = TFactory(seed++);
+            KeyValuePair<TKey, TValue> notPresent = CreateT(seed++);
             while (dictionary.Contains(notPresent))
-                notPresent = TFactory(seed++);
+                notPresent = CreateT(seed++);
             dictionary.Add(notPresent.Key, notPresent.Value);
             Assert.True(dictionary.ContainsValue(notPresent.Value));
         }
@@ -252,9 +252,9 @@ namespace System.Collections.Tests
         {
             SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
-            TKey notPresent = TKeyFactory(seed++);
+            TKey notPresent = CreateTKey(seed++);
             while (dictionary.ContainsKey(notPresent))
-                notPresent = TKeyFactory(seed++);
+                notPresent = CreateTKey(seed++);
             dictionary.Add(notPresent, default(TValue));
             Assert.True(dictionary.ContainsValue(default(TValue)));
         }
@@ -342,13 +342,13 @@ namespace System.Collections.Tests
             {
                 int seed = 53214;
                 SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
-                TKey key1 = TKeyFactory(seed++);
-                TKey key2 = TKeyFactory(seed++);
-                TValue value = TValueFactory(seed++);
+                TKey key1 = CreateTKey(seed++);
+                TKey key2 = CreateTKey(seed++);
+                TValue value = CreateTValue(seed++);
                 while (dictionary.ContainsKey(key1))
-                    key1 = TKeyFactory(seed++);
+                    key1 = CreateTKey(seed++);
                 while (key1.Equals(key2) || dictionary.ContainsKey(key2))
-                    key2 = TKeyFactory(seed++);
+                    key2 = CreateTKey(seed++);
                 while (dictionary.ContainsValue(value))
                     dictionary.RemoveAt(dictionary.IndexOfValue(value));
 
@@ -393,7 +393,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
-                Assert.Throws<NotSupportedException>(() => RemoveAt(dictionary, TFactory(34543)));
+                Assert.Throws<NotSupportedException>(() => RemoveAt(dictionary, CreateT(34543)));
             }
         }
 
@@ -405,7 +405,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
-                KeyValuePair<TKey, TValue> pair = TFactory(seed++);
+                KeyValuePair<TKey, TValue> pair = CreateT(seed++);
                 if (!dictionary.ContainsKey(pair.Key))
                 {
                     dictionary.Add(pair.Key, pair.Value);

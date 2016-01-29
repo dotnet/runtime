@@ -12,7 +12,7 @@ namespace System.Collections.Tests
 {
     public class List_Generic_Tests_string : List_Generic_Tests<string>
     {
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -24,7 +24,7 @@ namespace System.Collections.Tests
 
     public class List_Generic_Tests_int : List_Generic_Tests<int>
     {
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -33,7 +33,7 @@ namespace System.Collections.Tests
 
     public class List_Generic_Tests_string_ReadOnly : List_Generic_Tests<string>
     {
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -60,12 +60,12 @@ namespace System.Collections.Tests
             return GenericListFactory().AsReadOnly();
         }
 
-        protected override int WaysToModify { get { return 0; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
     }
 
     public class List_Generic_Tests_int_ReadOnly : List_Generic_Tests<int>
     {
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -88,6 +88,6 @@ namespace System.Collections.Tests
         {
             return GenericListFactory().AsReadOnly();
         }
-        protected override int WaysToModify { get { return 0; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
     }
 }

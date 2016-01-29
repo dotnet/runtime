@@ -45,13 +45,13 @@ namespace System.Collections.Tests
             IEqualityComparer<T> comparer = GetIEqualityComparer();
             while (collection.Count < numberOfItemsToAdd)
             {
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd, comparer) || InvalidValues.Contains(toAdd, comparer))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
             }
         }
-        
+
         #endregion
 
         #region IEnumerable<T> Helper Methods
@@ -60,29 +60,37 @@ namespace System.Collections.Tests
         {
             return GenericICollectionFactory(count);
         }
-
-        protected override int WaysToModify { get { return 3; } } // add, remove, clear
-
-        protected override void ModifyEnumerable(IEnumerable<T> enumerable, int enumerationCode)
+        
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            ICollection<T> casted = (ICollection<T>)enumerable;
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    casted.Add(TFactory(12));
-                    break;
-                case 1: // Remove
+                yield return (IEnumerable<T> enumerable) => {
+                    var casted = (ICollection<T>)enumerable;
+                    casted.Add(CreateT(2344));
+                    return true;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    var casted = (ICollection <T>) enumerable;
                     if (casted.Count() > 0)
+                    { 
                         casted.Remove(casted.ElementAt(0));
-                    else
-                        casted.Add(TFactory(12));
-                    break;
-                case 2: // Clear
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    var casted = (ICollection<T>)enumerable;
                     if (casted.Count() > 0)
+                    {
                         casted.Clear();
-                    else
-                        casted.Add(TFactory(12));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
@@ -137,7 +145,7 @@ namespace System.Collections.Tests
                     ICollection<T> collection = GenericICollectionFactory(count);
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
-                        collection.Add(TFactory(i));
+                        collection.Add(CreateT(i));
                     Assert.Equal(count * 2, collection.Count);
                 });
             }
@@ -154,7 +162,7 @@ namespace System.Collections.Tests
                     ICollection<T> collection = GenericICollectionFactory(0);
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
-                        collection.Add(TFactory(i));
+                        collection.Add(CreateT(i));
                     Assert.Equal(count, collection.Count);
                 });
             }
@@ -182,7 +190,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly && DuplicateValuesAllowed)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T duplicateValue = TFactory(700);
+                T duplicateValue = CreateT(700);
                 collection.Add(duplicateValue);
                 collection.Add(duplicateValue);
                 Assert.Equal(count + 2, collection.Count);
@@ -211,17 +219,19 @@ namespace System.Collections.Tests
                 int seed = 840;
                 ICollection<T> collection = GenericICollectionFactory(count);
                 List<T> items = collection.ToList();
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
-                collection.Remove(collection.ElementAt(0));
+                collection.Remove(toAdd);
 
-                toAdd = TFactory(seed++);
+                toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
 
                 collection.Add(toAdd);
+                items.Add(toAdd);
+                CollectionAsserts.EqualUnordered(items, collection);
             }
         }
 
@@ -235,7 +245,7 @@ namespace System.Collections.Tests
                 List<T> itemsToRemove = collection.ToList();
                 for (int i = 0; i < count; i++)
                     collection.Remove(collection.ElementAt(0));
-                collection.Add(TFactory(254));
+                collection.Add(CreateT(254));
                 Assert.Equal(1, collection.Count);
             }
         }
@@ -247,7 +257,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                Assert.Throws<NotSupportedException>(() => collection.Add(TFactory(0)));
+                Assert.Throws<NotSupportedException>(() => collection.Add(CreateT(0)));
                 Assert.Equal(count, collection.Count);
             }
         }
@@ -260,9 +270,9 @@ namespace System.Collections.Tests
             {
                 int seed = 840;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T toAdd = TFactory(seed++);
+                T toAdd = CreateT(seed++);
                 while (collection.Contains(toAdd))
-                    toAdd = TFactory(seed++);
+                    toAdd = CreateT(seed++);
                 collection.Add(toAdd);
                 collection.Remove(toAdd);
                 collection.Add(toAdd);
@@ -321,9 +331,9 @@ namespace System.Collections.Tests
         {
             ICollection<T> collection = GenericICollectionFactory(count);
             int seed = 4315;
-            T item = TFactory(seed++);
+            T item = CreateT(seed++);
             while (collection.Contains(item))
-                item = TFactory(seed++);
+                item = CreateT(seed++);
             Assert.False(collection.Contains(item));
         }
 
@@ -364,7 +374,7 @@ namespace System.Collections.Tests
             if (DuplicateValuesAllowed && !IsReadOnly)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T item = TFactory(12);
+                T item = CreateT(12);
                 collection.Add(item);
                 collection.Add(item);
                 Assert.Equal(count + 2, collection.Count);
@@ -456,7 +466,7 @@ namespace System.Collections.Tests
         {
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count];
-           collection.CopyTo(array, 0);
+            collection.CopyTo(array, 0);
             Assert.True(Enumerable.SequenceEqual(collection, array));
         }
 
@@ -466,7 +476,7 @@ namespace System.Collections.Tests
         {
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count * 3 / 2];
-           collection.CopyTo(array, 0);
+            collection.CopyTo(array, 0);
             Assert.True(Enumerable.SequenceEqual(collection, array.Take(count)));
         }
 
@@ -481,7 +491,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
-                Assert.Throws<NotSupportedException>(() => collection.Remove(TFactory(34543)));
+                Assert.Throws<NotSupportedException>(() => collection.Remove(CreateT(34543)));
             }
         }
 
@@ -512,9 +522,9 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T value = TFactory(seed++);
+                T value = CreateT(seed++);
                 while (collection.Contains(value) || Enumerable.Contains(InvalidValues, value))
-                    value = TFactory(seed++);
+                    value = CreateT(seed++);
                 Assert.False(collection.Remove(value));
                 Assert.Equal(count, collection.Count);
             }
@@ -547,7 +557,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 251;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T value = TFactory(seed++);
+                T value = CreateT(seed++);
                 if (!collection.Contains(value))
                 {
                     collection.Add(value);
@@ -566,7 +576,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 90;
                 ICollection<T> collection = GenericICollectionFactory(count);
-                T value = TFactory(seed++);
+                T value = CreateT(seed++);
                 collection.Add(value);
                 collection.Add(value);
                 count += 2;

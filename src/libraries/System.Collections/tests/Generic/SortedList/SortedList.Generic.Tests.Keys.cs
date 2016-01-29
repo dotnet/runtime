@@ -14,7 +14,7 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed { get { return false; } }
         protected override bool IsReadOnly { get { return true; } }
         protected override bool DefaultValueWhenNotAllowed_Throws { get { return true; } }
-        protected override int WaysToModify { get { return 0; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
 
         protected override IList<string> GenericIListFactory()
         {
@@ -26,11 +26,11 @@ namespace System.Collections.Tests
             SortedList<string, string> list = new SortedList<string, string>();
             int seed = 13453;
             for (int i = 0; i < count; i++)
-                list.Add(TFactory(seed++), TFactory(seed++));
+                list.Add(CreateT(seed++), CreateT(seed++));
             return list.Keys;
         }
 
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -59,6 +59,7 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed { get { return false; } }
         protected override bool IsReadOnly { get { return true; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
 
         protected override ICollection NonGenericICollectionFactory()
         {
@@ -70,11 +71,11 @@ namespace System.Collections.Tests
             SortedList<string, string> list = new SortedList<string, string>();
             int seed = 13453;
             for (int i = 0; i < count; i++)
-                list.Add(TFactory(seed++), TFactory(seed++));
+                list.Add(CreateT(seed++), CreateT(seed++));
             return (ICollection)(list.Keys);
         }
 
-        private string TFactory(int seed)
+        private string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -88,9 +89,6 @@ namespace System.Collections.Tests
             Debug.Assert(false);
         }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int modificationCode)
-        {
-            Debug.Assert(false);
-        }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
     }
 }

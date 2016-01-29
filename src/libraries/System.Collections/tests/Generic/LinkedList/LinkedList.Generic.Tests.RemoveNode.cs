@@ -25,8 +25,8 @@ namespace System.Collections.Tests
             tailItems = new T[arraySize];
             for (int i = 0; i < arraySize; i++)
             {
-                headItems[i] = TFactory(seed++);
-                tailItems[i] = TFactory(seed++);
+                headItems[i] = CreateT(seed++);
+                tailItems[i] = CreateT(seed++);
             }
 
             //[] Call Remove with an item that exists in the collection size=1
@@ -205,7 +205,7 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < arraySize; i++)
             {
-                items[i] = TFactory(seed++);
+                items[i] = CreateT(seed++);
             }
 
             for (int i = 0; i < arraySize; ++i)
@@ -263,21 +263,21 @@ namespace System.Collections.Tests
 
             //[] Verify Node that is a new Node
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++) };
+            items = new T[] { CreateT(seed++) };
             linkedList.AddLast(items[0]);
-            Assert.Throws<InvalidOperationException>(() => linkedList.Remove(new LinkedListNode<T>(TFactory(seed++)))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
+            Assert.Throws<InvalidOperationException>(() => linkedList.Remove(new LinkedListNode<T>(CreateT(seed++)))); //"Err_0568ajods Expected Node that is a new Node throws InvalidOperationException\n"
 
             InitialItems_Tests(linkedList, items);
 
             //[] Verify Node that already exists in another collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
 
             tempLinkedList.Clear();
-            tempLinkedList.AddLast(TFactory(seed++));
-            tempLinkedList.AddLast(TFactory(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
             Assert.Throws<InvalidOperationException>(() => linkedList.Remove(tempLinkedList.Last)); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
 
             InitialItems_Tests(linkedList, items);

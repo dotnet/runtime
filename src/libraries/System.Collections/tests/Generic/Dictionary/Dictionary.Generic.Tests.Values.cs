@@ -13,7 +13,7 @@ namespace System.Collections.Tests
         protected override bool DefaultValueAllowed { get { return true; } }
         protected override bool DuplicateValuesAllowed { get { return true; } }
         protected override bool IsReadOnly { get { return true; } }
-        protected override int WaysToModify { get { return 0; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
 
         protected override ICollection<string> GenericICollectionFactory()
         {
@@ -25,11 +25,11 @@ namespace System.Collections.Tests
             Dictionary<string, string> list = new Dictionary<string, string>();
             int seed = 13453;
             for (int i = 0; i < count; i++)
-                list.Add(TFactory(seed++), TFactory(seed++));
+                list.Add(CreateT(seed++), CreateT(seed++));
             return list.Values;
         }
 
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -52,7 +52,7 @@ namespace System.Collections.Tests
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
             int seed = 13453;
             while (dictionary.Count < count)
-                dictionary.Add(TFactory(seed++), TFactory(seed++));
+                dictionary.Add(CreateT(seed++), CreateT(seed++));
             dictionary.Values.GetEnumerator();
         }
     }
@@ -63,7 +63,8 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed { get { return true; } }
         protected override bool IsReadOnly { get { return true; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
-
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
         protected override ICollection NonGenericICollectionFactory()
         {
             return (ICollection)(new Dictionary<string, string>().Values);
@@ -74,11 +75,11 @@ namespace System.Collections.Tests
             Dictionary<string, string> list = new Dictionary<string, string>();
             int seed = 13453;
             for (int i = 0; i < count; i++)
-                list.Add(TFactory(seed++), TFactory(seed++));
+                list.Add(CreateT(seed++), CreateT(seed++));
             return (ICollection)(list.Values);
         }
 
-        private string TFactory(int seed)
+        private string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -88,11 +89,6 @@ namespace System.Collections.Tests
         }
 
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
-        {
-            Debug.Assert(false);
-        }
-
-        protected override void ModifyEnumerable(IEnumerable enumerable, int modificationCode)
         {
             Debug.Assert(false);
         }

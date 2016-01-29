@@ -13,28 +13,32 @@ namespace System.Collections.Tests
             var set = new HashSet<string>();
             int seed = 12354;
             while (set.Count < count)
-                set.Add(TFactory(set, seed++));
+                set.Add(CreateT(set, seed++));
             return set;
         }
 
-        protected override int WaysToModify { get { return 1; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            HashSet<string> casted = ((HashSet<string>)enumerable);
-            switch (enumerationCode)
+            get
             {
-                case 0: // Clear
+                yield return (IEnumerable enumerable) => {
+                    HashSet<string> casted = ((HashSet<string>)enumerable);
                     if (casted.Count > 0)
+                    {
                         casted.Clear();
-                    else
-                        casted.Add(TFactory(casted, 4531));
-                    break;
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
-        protected string TFactory(HashSet<string> set, int seed)
+        protected string CreateT(HashSet<string> set, int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);

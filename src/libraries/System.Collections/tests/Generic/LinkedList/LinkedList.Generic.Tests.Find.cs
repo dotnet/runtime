@@ -24,8 +24,8 @@ namespace System.Collections.Tests
             tailItems = new T[arraySize];
             for (int i = 0; i < arraySize; i++)
             {
-                headItems[i] = TFactory(seed++);
-                tailItems[i] = TFactory(seed++);
+                headItems[i] = CreateT(seed++);
+                tailItems[i] = CreateT(seed++);
             }
 
             //[] Call Find an empty collection
@@ -103,7 +103,7 @@ namespace System.Collections.Tests
             for (int i = 0; i < headItems.Length; ++i)
                 linkedList.AddLast(tailItems[i]);
 
-            Assert.Null(linkedList.Find(TFactory(seed++))); //"Err_78585ajhed Expected Find to return false with an non null item not in the collection default(T) in the middle"
+            Assert.Null(linkedList.Find(CreateT(seed++))); //"Err_78585ajhed Expected Find to return false with an non null item not in the collection default(T) in the middle"
 
             // prepending tempitems2 to tailitems into tempitems
             tempItems = new T[tailItems.Length + 1];

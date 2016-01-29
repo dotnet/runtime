@@ -21,20 +21,20 @@ namespace System.Collections.Tests
             VerifyLinkedListNode(node, default(T), null, null, null);
 
             //[] Verify passing somthing other then default(T) into the constructor
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node = new LinkedListNode<T>(value);
             VerifyLinkedListNode(node, value, null, null, null);
 
             //[] Verify passing somthing other then default(T) into the constructor and set the value to something other then default(T)
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node = new LinkedListNode<T>(value);
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node.Value = value;
 
             VerifyLinkedListNode(node, value, null, null, null);
 
             //[] Verify passing somthing other then default(T) into the constructor and set the value to default(T)
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node = new LinkedListNode<T>(value);
             node.Value = default(T);
 
@@ -42,14 +42,14 @@ namespace System.Collections.Tests
 
             //[] Verify passing default(T) into the constructor and set the value to something other then default(T)
             node = new LinkedListNode<T>(default(T));
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node.Value = value;
 
             VerifyLinkedListNode(node, value, null, null, null);
 
             //[] Verify passing default(T) into the constructor and set the value to default(T)
             node = new LinkedListNode<T>(default(T));
-            value = TFactory(seed++);
+            value = CreateT(seed++);
             node.Value = default(T);
 
             VerifyLinkedListNode(node, default(T), null, null, null);

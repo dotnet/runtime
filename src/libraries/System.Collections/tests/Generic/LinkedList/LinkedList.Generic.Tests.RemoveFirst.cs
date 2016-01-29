@@ -25,8 +25,8 @@ namespace System.Collections.Tests
             tailItems = new T[arraySize];
             for (int i = 0; i < arraySize; i++)
             {
-                headItems[i] = TFactory(seed++);
-                tailItems[i] = TFactory(seed++);
+                headItems[i] = CreateT(seed++);
+                tailItems[i] = CreateT(seed++);
             }
 
             //[] Call RemoveHead on a collection with one item in it

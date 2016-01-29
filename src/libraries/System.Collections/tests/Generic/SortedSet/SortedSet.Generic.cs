@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Collections.Tests
 {
     public class SortedSet_Generic_Tests_string : SortedSet_Generic_Tests<string>
     {
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -20,7 +21,7 @@ namespace System.Collections.Tests
 
     public class SortedSet_Generic_Tests_int : SortedSet_Generic_Tests<int>
     {
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -35,9 +36,10 @@ namespace System.Collections.Tests
         }
     }
 
+    [OuterLoop]
     public class SortedSet_Generic_Tests_EquatableBackwardsOrder : SortedSet_Generic_Tests<EquatableBackwardsOrder>
     {
-        protected override EquatableBackwardsOrder TFactory(int seed)
+        protected override EquatableBackwardsOrder CreateT(int seed)
         {
             Random rand = new Random(seed);
             return new EquatableBackwardsOrder(rand.Next());
@@ -49,6 +51,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [OuterLoop]
     public class SortedSet_Generic_Tests_int_With_Comparer_SameAsDefaultComparer : SortedSet_Generic_Tests<int>
     {
         protected override IEqualityComparer<int> GetIEqualityComparer()
@@ -61,7 +64,7 @@ namespace System.Collections.Tests
             return new Comparer_SameAsDefaultComparer();
         }
 
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -73,6 +76,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [OuterLoop]
     public class SortedSet_Generic_Tests_int_With_Comparer_HashCodeAlwaysReturnsZero : SortedSet_Generic_Tests<int>
     {
         protected override IEqualityComparer<int> GetIEqualityComparer()
@@ -85,7 +89,7 @@ namespace System.Collections.Tests
             return new Comparer_HashCodeAlwaysReturnsZero();
         }
 
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -97,6 +101,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [OuterLoop]
     public class SortedSet_Generic_Tests_int_With_Comparer_ModOfInt : SortedSet_Generic_Tests<int>
     {
         protected override IEqualityComparer<int> GetIEqualityComparer()
@@ -109,7 +114,7 @@ namespace System.Collections.Tests
             return new Comparer_ModOfInt(15000);
         }
 
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();
@@ -121,6 +126,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [OuterLoop]
     public class SortedSet_Generic_Tests_int_With_Comparer_AbsOfInt : SortedSet_Generic_Tests<int>
     {
         protected override IEqualityComparer<int> GetIEqualityComparer()
@@ -133,7 +139,7 @@ namespace System.Collections.Tests
             return new Comparer_AbsOfInt();
         }
 
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();

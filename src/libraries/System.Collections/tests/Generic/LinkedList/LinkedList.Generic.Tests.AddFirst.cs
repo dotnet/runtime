@@ -28,8 +28,8 @@ namespace System.Collections.Tests
             for (int i = 0; i < arraySize; i++)
             {
                 int index = (arraySize - 1) - i;
-                T head = TFactory(seed++);
-                T tail = TFactory(seed++);
+                T head = CreateT(seed++);
+                T tail = CreateT(seed++);
                 headItems[i] = head;
                 headItemsReverse[index] = head;
                 tailItems[i] = tail;
@@ -128,8 +128,8 @@ namespace System.Collections.Tests
             for (int i = 0; i < arraySize; i++)
             {
                 int index = (arraySize - 1) - i;
-                T head = TFactory(seed++);
-                T tail = TFactory(seed++);
+                T head = CreateT(seed++);
+                T tail = CreateT(seed++);
                 headItems[i] = head;
                 headItemsReverse[index] = head;
                 tailItems[i] = tail;
@@ -214,14 +214,14 @@ namespace System.Collections.Tests
 
             //[] Verify Node that already exists in this collection that is the Head
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++) };
+            items = new T[] { CreateT(seed++) };
             linkedList.AddLast(items[0]);
             Assert.Throws<InvalidOperationException>(() => linkedList.AddFirst(linkedList.First)); //"Err_0568ajods Expected Node that already exists in this collection that is the Head throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
 
             //[] Verify Node that already exists in this collection that is the Tail
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
             Assert.Throws<InvalidOperationException>(() => linkedList.AddFirst(linkedList.Last)); //"Err_98809ahied Expected Node that already exists in this collection that is the Tail throws InvalidOperationException\n"
@@ -229,13 +229,13 @@ namespace System.Collections.Tests
 
             //[] Verify Node that already exists in another collection
             linkedList = new LinkedList<T>();
-            items = new T[] { TFactory(seed++), TFactory(seed++) };
+            items = new T[] { CreateT(seed++), CreateT(seed++) };
             linkedList.AddLast(items[0]);
             linkedList.AddLast(items[1]);
 
             tempLinkedList.Clear();
-            tempLinkedList.AddLast(TFactory(seed++));
-            tempLinkedList.AddLast(TFactory(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
+            tempLinkedList.AddLast(CreateT(seed++));
             Assert.Throws<InvalidOperationException>(() => linkedList.AddFirst(tempLinkedList.Last)); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
         }

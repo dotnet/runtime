@@ -34,6 +34,66 @@ namespace System.Collections.Tests
             return collection;
         }
 
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        {
+            get
+            {
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    casted.Add(CreateT(2344));
+                    return true;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    { 
+                        casted.Insert(0, CreateT(12));
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        casted[0] = CreateT(12);
+                        return true;
+                    }
+                    return false;
+                };
+
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        return casted.Remove(casted[0]);
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        casted.RemoveAt(0);
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable<T> enumerable) => {
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        casted.Clear();
+                        return true;
+                    }
+                    return false;
+                };
+            }
+        }
+
         #endregion
 
         #region ICollection<T> Helper Methods
@@ -92,7 +152,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(0);
+                T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[-1] = validAdd);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue] = validAdd);
                 Assert.Equal(count, list.Count);
@@ -106,7 +166,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(0);
+                T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[count] = validAdd);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1] = validAdd);
                 Assert.Equal(count, list.Count);
@@ -121,7 +181,7 @@ namespace System.Collections.Tests
             {
                 IList<T> list = GenericIListFactory(count);
                 T before = list[count / 2];
-                Assert.Throws<NotSupportedException>(() => list[count / 2] = TFactory(321432));
+                Assert.Throws<NotSupportedException>(() => list[count / 2] = CreateT(321432));
                 Assert.Equal(before, list[count / 2]);
             }
         }
@@ -133,7 +193,7 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 list[0] = value;
                 Assert.Equal(value, list[0]);
             }
@@ -166,7 +226,7 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list[lastIndex] = value;
                 Assert.Equal(value, list[lastIndex]);
@@ -201,7 +261,7 @@ namespace System.Collections.Tests
             if (count >= 2 && !IsReadOnly && DuplicateValuesAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 list[0] = value;
                 list[1] = value;
                 Assert.Equal(value, list[0]);
@@ -274,9 +334,9 @@ namespace System.Collections.Tests
         {
             IList<T> list = GenericIListFactory(count);
             int seed = 54321;
-            T value = TFactory(seed++);
+            T value = CreateT(seed++);
             while (list.Contains(value))
-                value = TFactory(seed++);
+                value = CreateT(seed++);
             Assert.Equal(-1, list.IndexOf(value));
         }
 
@@ -288,7 +348,7 @@ namespace System.Collections.Tests
             {
                 // IndexOf should always return the lowest index for which a matching element is found
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(12345);
+                T value = CreateT(12345);
                 list[0] = value;
                 list[count / 2] = value;
                 Assert.Equal(0, list.IndexOf(value));
@@ -349,7 +409,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(0);
+                T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, validAdd));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(int.MinValue, validAdd));
                 Assert.Equal(count, list.Count);
@@ -363,7 +423,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(12350);
+                T validAdd = CreateT(12350);
                 list.Insert(count, validAdd);
                 Assert.Equal(count + 1, list.Count);
                 Assert.Equal(validAdd, list[count]);
@@ -377,7 +437,7 @@ namespace System.Collections.Tests
             if (IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, TFactory(321432)));
+                Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, CreateT(321432)));
                 Assert.Equal(count, list.Count);
             }
         }
@@ -389,7 +449,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 list.Insert(0, value);
                 Assert.Equal(value, list[0]);
                 Assert.Equal(count + 1, list.Count);
@@ -417,7 +477,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
                 Assert.Equal(value, list[lastIndex]);
@@ -447,7 +507,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly && DuplicateValuesAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = TFactory(123452);
+                T value = CreateT(123452);
                 list.Insert(0, value);
                 list.Insert(1, value);
                 Assert.Equal(value, list[0]);
@@ -481,7 +541,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(0);
+                T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(int.MinValue));
                 Assert.Equal(count, list.Count);
@@ -495,7 +555,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T validAdd = TFactory(0);
+                T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count + 1));
                 Assert.Equal(count, list.Count);

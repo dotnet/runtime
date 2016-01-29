@@ -24,8 +24,8 @@ namespace System.Collections.Tests
             tailItems = new T[arraySize];
             for (int i = 0; i < arraySize; i++)
             {
-                headItems[i] = TFactory(seed++);
-                tailItems[i] = TFactory(seed++);
+                headItems[i] = CreateT(seed++);
+                tailItems[i] = CreateT(seed++);
             }
             prependDefaultHeadItems = new T[headItems.Length + 1];
             prependDefaultHeadItems[0] = default(T);
@@ -106,7 +106,7 @@ namespace System.Collections.Tests
             for (int i = 0; i < headItems.Length; ++i)
                 linkedList.AddLast(tailItems[i]);
 
-            Assert.Null(linkedList.FindLast(TFactory(seed++))); //"Err_78585ajhed Expected FindLast to return false with an non null item not in the collection default(T) in the middle"
+            Assert.Null(linkedList.FindLast(CreateT(seed++))); //"Err_78585ajhed Expected FindLast to return false with an non null item not in the collection default(T) in the middle"
 
             tempItems = new T[headItems.Length + prependDefaultTailItems.Length];
             Array.Copy(headItems, 0, tempItems, 0, headItems.Length);

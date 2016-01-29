@@ -634,12 +634,6 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    object[] objects = (object[])array;
-                    if (objects == null)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType);
-                    }
-
                     try
                     {
                         object[] objects = (object[])array;

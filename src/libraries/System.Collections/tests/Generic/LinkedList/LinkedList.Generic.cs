@@ -2,17 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Xunit;
-
 namespace System.Collections.Tests
 {
     public class LinkedList_Generic_Tests_string : LinkedList_Generic_Tests<string>
     {
-        protected override string TFactory(int seed)
+        protected override string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);
@@ -24,7 +18,7 @@ namespace System.Collections.Tests
 
     public class LinkedList_Generic_Tests_int : LinkedList_Generic_Tests<int>
     {
-        protected override int TFactory(int seed)
+        protected override int CreateT(int seed)
         {
             Random rand = new Random(seed);
             return rand.Next();

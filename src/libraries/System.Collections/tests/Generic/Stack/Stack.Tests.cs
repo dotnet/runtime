@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Xunit;
 
 namespace System.Collections.Tests
 {
@@ -13,11 +10,12 @@ namespace System.Collections.Tests
     {
         #region ICollection Helper Methods
 
+        protected override bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return true; } }
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd)
         {
             int seed = numberOfItemsToAdd * 34;
             for (int i = 0; i < numberOfItemsToAdd; i++)
-                ((Stack<string>)collection).Push(TFactory(seed++));
+                ((Stack<string>)collection).Push(CreateT(seed++));
         }
 
         protected override ICollection NonGenericICollectionFactory()
@@ -25,32 +23,42 @@ namespace System.Collections.Tests
             return new Stack<string>();
         }
 
-        protected override int WaysToModify { get { return 3; } } // add, remove, clear
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
 
-        protected override void ModifyEnumerable(IEnumerable enumerable, int enumerationCode)
+        /// <summary>
+        /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
+        /// </summary>
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
         {
-            switch (enumerationCode)
+            get
             {
-                case 0: // Add
-                    ((Stack<string>)enumerable).Push(TFactory(4531));
-                    break;
-                case 1: // Remove
-                    if (((Stack<string>)enumerable).Count > 0)
-                        ((Stack<string>)enumerable).Pop();
-                    else
-                        ((Stack<string>)enumerable).Push(TFactory(4531));
-                    break;
-                case 2: // Clear
-                    if (((Stack<string>)enumerable).Count > 0)
-                        ((Stack<string>)enumerable).Clear();
-                    else
-                        ((Stack<string>)enumerable).Push(TFactory(4531));
-                    break;
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Stack<string>)enumerable;
+                    casted.Push(CreateT(2344));
+                    return true;
+                };
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Stack<string>)enumerable;
+                    if (casted.Count > 0)
+                    {
+                        casted.Pop();
+                        return true;
+                    }
+                    return false;
+                };
+                yield return (IEnumerable enumerable) => {
+                    var casted = (Stack<string>)enumerable;
+                    if (casted.Count > 0)
+                    {
+                        casted.Clear();
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 
-        protected string TFactory(int seed)
+        protected string CreateT(int seed)
         {
             int stringLength = seed % 10 + 5;
             Random rand = new Random(seed);

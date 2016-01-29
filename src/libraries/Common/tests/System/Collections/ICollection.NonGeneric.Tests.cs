@@ -40,11 +40,18 @@ namespace System.Collections.Tests
         protected virtual IEnumerable<object> InvalidValues { get { return new object[] { }; } }
         protected abstract void AddToCollection(ICollection collection, int numberOfItemsToAdd);
 
+        /// <summary>
+        /// Used for the ICollection_NonGeneric_CopyTo_ArrayOfEnumType test where we try to call CopyTo
+        /// on an Array of Enum values. Some implementations special-case for this and throw an argumentexception,
+        /// while others just throw an InvalidCastExcepton.
+        /// </summary>
+        protected virtual bool ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException { get { return false; } }
+
         #endregion
 
         #region IEnumerable Helper Methods
 
-        protected override int WaysToModify { get { return 0; } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
 
         protected override IEnumerable NonGenericIEnumerableFactory(int count)
         {
@@ -81,43 +88,29 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
-        public void ICollection_NonGeneric_SyncRoot(int count)
+        public void ICollection_NonGeneric_SyncRoot_NonNull(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
-            var root = collection.SyncRoot; // doesnt throw
-        }
-
-        [Fact]
-        public void SyncRootNonNull()
-        {
-            ICollection collection = NonGenericICollectionFactory(16);
             Assert.NotNull(collection.SyncRoot);
         }
 
-        [Fact]
-        public void SyncRootConsistent()
+        [Theory]
+        [MemberData("ValidCollectionSizes")]
+        public void ICollection_NonGeneric_SyncRootConsistent(int count)
         {
-            ICollection collection = NonGenericICollectionFactory(16);
+            ICollection collection = NonGenericICollectionFactory(count);
             object syncRoot1 = collection.SyncRoot;
             object syncRoot2 = collection.SyncRoot;
-            Assert.Equal(syncRoot1, syncRoot2);
+            Assert.Same(syncRoot1, syncRoot2);
         }
 
-        [Fact]
-        public void SyncRootCanBeLocked()
+        [Theory]
+        [MemberData("ValidCollectionSizes")]
+        public void ICollection_NonGeneric_SyncRootUnique(int count)
         {
-            ICollection collection = NonGenericICollectionFactory(16);
-            lock (collection.SyncRoot)
-            {
-            }
-        }
-
-        [Fact]
-        public void SyncRootUnique()
-        {
-            ICollection collection1 = NonGenericICollectionFactory(16);
-            ICollection collection2 = NonGenericICollectionFactory(16);
-            Assert.NotEqual(collection1.SyncRoot, collection2.SyncRoot);
+            ICollection collection1 = NonGenericICollectionFactory(count);
+            ICollection collection2 = NonGenericICollectionFactory(count);
+            Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
         }
 
         #endregion
@@ -188,14 +181,10 @@ namespace System.Collections.Tests
             if (count > 0 && count < enumArr.Length)
             {
                 ICollection collection = NonGenericICollectionFactory(count);
-                // Implementations may throw either an InvalidCastExcepton or an ArgumentException.
-                try
-                {
-                    collection.CopyTo(enumArr, 0);
-                }
-                catch (InvalidCastException) { return; }
-                catch (ArgumentException) { return; }
-                Assert.False(true, "ICollection_NonGeneric_CopyTo_ArrayOfEnumType: CopyTo did not throw an InvalidCastException or ArgumentException");
+                if (ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowsArgumentException)
+                    Assert.Throws<ArgumentException>(() => collection.CopyTo(enumArr, 0));
+                else
+                    Assert.Throws<InvalidCastException>(() => collection.CopyTo(enumArr, 0));
             }
         }
 
