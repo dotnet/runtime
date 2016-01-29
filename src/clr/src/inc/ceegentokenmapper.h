@@ -65,7 +65,7 @@ public:
         SUPPORTS_DAC_HOST_ONLY;
 
         ULONG cRefs = --m_cRefs;
-        if (m_cRefs == 0)
+        if (cRefs == 0)
         {
             if (m_pIMapToken)
             {
