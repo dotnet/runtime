@@ -2,6 +2,9 @@ syntax: glob
 
 [Bb]inaries/
 
+# Build tools related files
+[Tt]ools/
+
 ### VisualStudio ###
 
 # User-specific files
