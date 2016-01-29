@@ -13,8 +13,7 @@
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
   </PropertyGroup>
-  <!--PropertyGroup Condition=" '$(TargetsWindows)' != 'true' "-->
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
@@ -22,7 +21,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="Interop\SNINativeMethodWrapper.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -119,7 +117,6 @@
     <Compile Include="System\Data\SqlClient\TdsParameterSetter.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserHelperClasses.cs" />
-    <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSessionPool.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObject.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStaticMethods.cs" />
@@ -148,14 +145,16 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="System\Data\Locale\Locale.cs" />
   </ItemGroup>
-  <!--ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Interop\LocaleMapper.Windows.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
+    <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' "-->
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
+    <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
