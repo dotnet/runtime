@@ -60,9 +60,13 @@ namespace System.IO
         private SafeFileHandle _handle;
         private long _pos;        // Cache current location in the file.
         private long _appendStart;// When appending, prevent overwriting file.
-        
-        private Task<int> _lastSynchronouslyCompletedTask = null;
-        private Task _activeBufferOperation = null;
+
+        private static unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
+
+        private Task<int> _lastSynchronouslyCompletedTask = null; // cached task for read ops that complete synchronously
+        private Task _activeBufferOperation = null;               // tracks in-progress async ops using the buffer
+        private PreAllocatedOverlapped _preallocatedOverlapped;   // optimization for async ops to avoid per-op allocations
+        private FileStreamCompletionSource _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         [System.Security.SecuritySafeCritical]
         public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent) : base(parent)
@@ -455,6 +459,9 @@ namespace System.IO
                 if (_handle != null && !_handle.IsClosed)
                     _handle.Dispose();
 
+                if (_preallocatedOverlapped != null)
+                    _preallocatedOverlapped.Dispose();
+
                 if (_handle.ThreadPoolBinding != null)
                     _handle.ThreadPoolBinding.Dispose();
 
@@ -689,7 +696,7 @@ namespace System.IO
                     _readLen = 0;
                     return n;
                 }
-                if (_buffer == null) _buffer = new byte[_bufferSize];
+                EnsureBufferAllocated();
                 n = ReadCore(_buffer, 0, _bufferSize);
                 if (n == 0) return 0;
                 isBlocked = n < _bufferSize;
@@ -885,6 +892,26 @@ namespace System.IO
             return ret;
         }
 
+        private void EnsureBufferAllocated()
+        {
+            if (_buffer == null)
+            {
+                AllocateBuffer();
+            }
+        }
+
+        private void AllocateBuffer()
+        {
+            Debug.Assert(_buffer == null);
+            Debug.Assert(_preallocatedOverlapped == null);
+
+            _buffer = new byte[_bufferSize]; // TODO: Issue #5598: Use ArrayPool.
+            if (_isAsync)
+            {
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
+            }
+        }
+
         // Checks the position of the OS's handle equals what we expect it to.
         // This will fail if someone else moved the Win32FileStream's handle or if
         // our position updating code is incorrect.
@@ -979,7 +1006,7 @@ namespace System.IO
             }
             else if (count == 0)
                 return;  // Don't allocate a buffer then call memcpy for 0 bytes.
-            if (_buffer == null) _buffer = new byte[_bufferSize];
+            EnsureBufferAllocated();
             // Copy remaining bytes into buffer, to write at a later date.
             Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
             _writePos = count;
@@ -1092,7 +1119,7 @@ namespace System.IO
 
                 if (numBytes < _bufferSize)
                 {
-                    if (_buffer == null) _buffer = new byte[_bufferSize];
+                    EnsureBufferAllocated();
                     Task<int> readTask = ReadInternalCoreAsync(_buffer, 0, _bufferSize, 0, cancellationToken);
                     _readLen = readTask.GetAwaiter().GetResult();
                     int n = _readLen;
@@ -1151,7 +1178,7 @@ namespace System.IO
 
             // Create and store async stream class library specific data in the async result
 
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle.ThreadPoolBinding, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(this, numBufferedBytesRead, bytes, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -1265,7 +1292,7 @@ namespace System.IO
             {
                 if (_writePos > 0) FlushWrite(false);
                 Debug.Assert(_bufferSize > 0, "_bufferSize > 0");
-                if (_buffer == null) _buffer = new byte[_bufferSize];
+                EnsureBufferAllocated();
                 _readLen = ReadCore(_buffer, 0, _bufferSize);
                 _readPos = 0;
             }
@@ -1312,8 +1339,7 @@ namespace System.IO
                 // In that case, just store it in the buffer.
                 if (numBytes < _bufferSize && !HasActiveBufferOperation && numBytes <= remainingBuffer)
                 {
-                    if (_buffer == null)
-                        _buffer = new byte[_bufferSize];
+                    EnsureBufferAllocated();
 
                     Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
                     _writePos += numBytes;
@@ -1400,7 +1426,7 @@ namespace System.IO
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle.ThreadPoolBinding, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(this, 0, bytes, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (_parent.CanSeek)
@@ -1508,7 +1534,7 @@ namespace System.IO
                 _readPos = 0;
                 _readLen = 0;
                 Debug.Assert(_bufferSize > 0, "_bufferSize > 0");
-                if (_buffer == null) _buffer = new byte[_bufferSize];
+                EnsureBufferAllocated();
             }
             if (_writePos == _bufferSize)
                 FlushWrite(false);
