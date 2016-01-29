@@ -170,6 +170,22 @@ mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpointer
 static void
 mono_marshal_safearray_free_indices (gpointer indices);
 
+MonoClass*
+mono_class_try_get_com_object_class (void)
+{
+	static MonoClass *tmp_class;
+	static gboolean inited;
+	MonoClass *klass;
+	if (!inited) {
+		klass = mono_class_from_name (mono_defaults.corlib, "System", "__ComObject");
+		mono_memory_barrier ();
+		tmp_class = klass;
+		mono_memory_barrier ();
+		inited = TRUE;
+	}
+	return tmp_class;
+}
+
 /**
  * cominterop_method_signature:
  * @method: a method
