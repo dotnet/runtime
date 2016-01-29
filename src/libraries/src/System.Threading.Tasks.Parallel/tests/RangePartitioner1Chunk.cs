@@ -21,12 +21,12 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-
-    public class Partitioner1Chunk
+    public static class Partitioner1Chunk
     {
         /// <summary>
         /// Test the fact that every call of the get*DynamicPartitions.GetEnumerator().MoveNext 

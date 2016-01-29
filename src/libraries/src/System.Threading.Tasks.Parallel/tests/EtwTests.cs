@@ -5,14 +5,15 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using System.Linq;
+
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    public class EtwTests
+    public static class EtwTests
     {
         [Fact]
-        public void TestEtw()
+        public static void TestEtw()
         {
             using (var listener = new TestEventListener("System.Threading.Tasks.Parallel.EventSource", EventLevel.Verbose))
             {

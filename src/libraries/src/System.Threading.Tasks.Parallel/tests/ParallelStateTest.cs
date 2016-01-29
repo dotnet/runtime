@@ -10,8 +10,9 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Threading.Tasks.Tests;
+
 using Xunit;
-using Logger = System.Threading.Tasks.Tests.Logger;
 
 namespace System.Threading.Tasks.Test
 {

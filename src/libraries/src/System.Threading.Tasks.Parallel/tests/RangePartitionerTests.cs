@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-
-    public class RangePartitionerTests
+    public static class RangePartitionerTests
     {
         [Fact]
         public static void RunPartitionerStaticTest_SingleChunking()

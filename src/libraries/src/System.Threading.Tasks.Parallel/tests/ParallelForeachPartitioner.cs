@@ -6,365 +6,47 @@ using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-
-    public sealed class ParallelForeachPartitioner
+    public static class ParallelForeachPartitionerTests
     {
-        [Fact]
-        public static void ParallelForeachPartitioner0()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 10,
-                ChunkSize = -1,
-                PartitionerType = PartitionerType.IListBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
+        [Theory]
         [OuterLoop]
-        public static void ParallelForeachPartitioner1()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 10,
-                ChunkSize = 10,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
+        [InlineData(10, 1, PartitionerType.ArrayBalancedOOB, WithParallelOption.None, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(1, -1, PartitionerType.ArrayBalancedOOB, WithParallelOption.None, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(97, 3, PartitionerType.ArrayBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        [InlineData(97, 97, PartitionerType.ArrayBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        [InlineData(2, 10, PartitionerType.ArrayBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.Stop)]
 
-        [Fact]
-        public static void ParallelForeachPartitioner2()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 10,
-                ChunkSize = 1,
-                PartitionerType = PartitionerType.ArrayBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
+        [InlineData(10, 10, PartitionerType.IEnumerableOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.Stop)]
+        [InlineData(1, 1, PartitionerType.IEnumerableOOB, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        [InlineData(1, 3, PartitionerType.IEnumerableOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(1, 97, PartitionerType.IEnumerableOOB, WithParallelOption.None, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(2, -1, PartitionerType.IEnumerableOOB, WithParallelOption.None, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(97, -1, PartitionerType.IEnumerableOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.None)]
 
-        [Fact]
-        public static void ParallelForeachPartitioner3()
+        [InlineData(10, -1, PartitionerType.IListBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.None)]
+        [InlineData(1, 10, PartitionerType.IListBalancedOOB, WithParallelOption.None, ActionWithLocal.None, ActionWithState.Stop)]
+        [InlineData(2, 3, PartitionerType.IListBalancedOOB, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.None)]
+        [InlineData(2, 97, PartitionerType.IListBalancedOOB, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.Stop)]
+        [InlineData(97, 1, PartitionerType.IListBalancedOOB, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        
+        [InlineData(10, 3, PartitionerType.RangePartitioner, WithParallelOption.WithDOP, ActionWithLocal.None, ActionWithState.None)]
+        [InlineData(10, 97, PartitionerType.RangePartitioner, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        [InlineData(1, -1, PartitionerType.RangePartitioner, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.Stop)]
+        [InlineData(2, 1, PartitionerType.RangePartitioner, WithParallelOption.WithDOP, ActionWithLocal.HasFinally, ActionWithState.None)]
+        [InlineData(97, 10, PartitionerType.RangePartitioner, WithParallelOption.None, ActionWithLocal.HasFinally, ActionWithState.None)]
+        public static void TestForeach_Partitioner(int count, int chunkSize, PartitionerType partitionerType, WithParallelOption parallelOption, ActionWithLocal localOption, ActionWithState stateOption)
         {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
+            var parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
             {
-                Count = 10,
-                ChunkSize = 3,
-                PartitionerType = PartitionerType.RangePartitioner,
+                Count = count,
+                ChunkSize = chunkSize,
+                PartitionerType = partitionerType,
                 ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
+                ParallelOption = parallelOption,
+                LocalOption = localOption,
+                StateOption = stateOption,
             };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner4()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 10,
-                ChunkSize = 97,
-                PartitionerType = PartitionerType.RangePartitioner,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner5()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = -1,
-                PartitionerType = PartitionerType.ArrayBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner6()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = -1,
-                PartitionerType = PartitionerType.RangePartitioner,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner7()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = 10,
-                PartitionerType = PartitionerType.IListBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner8()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = 1,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner9()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = 3,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void ParallelForeachPartitioner10()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 1,
-                ChunkSize = 97,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner11()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 2,
-                ChunkSize = -1,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner12()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 2,
-                ChunkSize = 10,
-                PartitionerType = PartitionerType.ArrayBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner13()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 2,
-                ChunkSize = 1,
-                PartitionerType = PartitionerType.RangePartitioner,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner14()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 2,
-                ChunkSize = 3,
-                PartitionerType = PartitionerType.IListBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner15()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 2,
-                ChunkSize = 97,
-                PartitionerType = PartitionerType.IListBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner16()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 97,
-                ChunkSize = -1,
-                PartitionerType = PartitionerType.IEnumerableOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.None,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner17()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 97,
-                ChunkSize = 10,
-                PartitionerType = PartitionerType.RangePartitioner,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.None,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner18()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 97,
-                ChunkSize = 1,
-                PartitionerType = PartitionerType.IListBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.None,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner19()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 97,
-                ChunkSize = 3,
-                PartitionerType = PartitionerType.ArrayBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
-            test.RealRun();
-        }
-
-        [Fact]
-        public static void ParallelForeachPartitioner20()
-        {
-            TestParameters parameters = new TestParameters(API.Foreach, StartIndexBase.Zero)
-            {
-                Count = 97,
-                ChunkSize = 97,
-                PartitionerType = PartitionerType.ArrayBalancedOOB,
-                ParallelForeachDataSourceType = DataSourceType.Partitioner,
-                ParallelOption = WithParallelOption.WithDOP,
-                LocalOption = ActionWithLocal.HasFinally,
-                StateOption = ActionWithState.Stop,
-            };
-            ParallelForTest test = new ParallelForTest(parameters);
+            var test = new ParallelForTest(parameters);
             test.RealRun();
         }
     }
