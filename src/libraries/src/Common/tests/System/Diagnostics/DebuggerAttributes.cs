@@ -61,7 +61,7 @@ namespace System.Diagnostics
         internal static void ValidateDebuggerDisplayReferences(object obj)
         {
             // Get the DebuggerDisplayAttribute for obj
-            var attrs = 
+            var attrs =
                 obj.GetType().GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
                 .ToArray();
@@ -115,7 +115,7 @@ namespace System.Diagnostics
                 }
 
                 throw new InvalidOperationException(
-                    string.Format("The DebuggerDisplayAttribute for {0} contains the expression \"{1}\".", obj, reference)); 
+                    string.Format("The DebuggerDisplayAttribute for {0} contains the expression \"{1}\".", obj, reference));
             }
         }
 
