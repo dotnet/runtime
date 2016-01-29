@@ -185,31 +185,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void MachineRootStore_NonEmpty()
         {
-            // On everything except OS X we're using the normal system default trust store.
-            // So, if we've read things right, there should be a respectable amount of
-            // certificates in the store.
-            //
-            // On OSX this devolves into a "can we open the store and load the collection
-            // without throwing" test, but eventually we'll have tighter guarantees there.
-            //
             // This test will fail on systems where the administrator has gone out of their
             // way to prune the trusted CA list down below this threshold.
             //
             // As of 2016-01-25, Ubuntu 14.04 has 169, and CentOS 7.1 has 175, so that'd be
             // quite a lot of pruning.
-            int minimumThreshold = 5;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                minimumThreshold = 0;
-            }
+            //
+            // And as of 2016-01-29 we understand the Homebrew-installed root store, with 180.
+            const int MinimumThreshold = 5;
 
             using (X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
             {
                 store.Open(OpenFlags.ReadOnly);
 
                 int certCount = store.Certificates.Count;
-                Assert.InRange(certCount, minimumThreshold, int.MaxValue);
+                Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
             }
         }
     }

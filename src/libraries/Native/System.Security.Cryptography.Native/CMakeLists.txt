@@ -34,6 +34,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ssl.cpp
     pal_x509.cpp
     pal_x509_name.cpp
+    pal_x509_root.cpp
     pal_x509ext.cpp
 )
 

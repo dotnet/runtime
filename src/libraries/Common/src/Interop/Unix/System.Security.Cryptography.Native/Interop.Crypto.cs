@@ -75,8 +75,16 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi(GetX509RootStorePath_private());
         }
 
+        internal static string GetX509RootStoreFile()
+        {
+            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private());
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
         private static extern IntPtr GetX509RootStorePath_private();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
+        private static extern IntPtr GetX509RootStoreFile_private();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetX509ChainVerifyTime")]
         private static extern int SetX509ChainVerifyTime(
