@@ -4978,25 +4978,35 @@ TOO_FAR:
             // Make an inlining decision based on the estimated native size.
             int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
 
-            JitInlineResult result = impCanInlineNative(callsiteNativeSizeEstimate,
-                                                        compNativeSizeEstimate,
-                                                        compInlineeHints,
-                                                        impInlineInfo);
+            impCanInlineNative(callsiteNativeSizeEstimate,
+                               compNativeSizeEstimate,
+                               compInlineeHints,
+                               impInlineInfo,
+                               compInlineResult);
 
-            if (dontInline(result.result()))
+            if (compInlineResult->isFailure())
             {
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\n\nInline expansion aborted because impCanInlineNative returns %s\n",
-                           (result.result()==INLINE_NEVER)?"INLINE_NEVER":"INLINE_FAIL");
+                    printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
+                       compInlineResult->isNever() ? "INLINE_NEVER" : "INLINE_FAIL",
+                       compInlineResult->reason());
                 }
 #endif
 
-                compSetInlineResult(result);
                 return;
             }
         }
+    }
+    else 
+    {
+       if (compIsForInlining()) 
+       {
+          // This method's IL was small enough that we didn't use the size model to estimate
+          // inlinability. Note that as the latest candidate reason.
+          compInlineResult->setCandidate("below ALWAYS_INLINE size");
+       }
     }
 
 
@@ -5038,10 +5048,10 @@ TOO_FAR:
 
     CorInfoInline failResult;
 InlineNever:
-    failResult = INLINE_NEVER;
+    compInlineResult->setNever(inlineFailReason);
     goto Report;
 InlineFailed:
-    failResult = INLINE_FAIL;
+    compInlineResult->setFailure(inlineFailReason);
 
 Report:
 #ifdef DEBUG
@@ -5055,8 +5065,7 @@ Report:
 
     noway_assert(compIsForInlining());
     noway_assert(impInlineInfo->fncHandle == info.compMethodHnd);
-    compSetInlineResult(JitInlineResult(failResult, impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                        info.compMethodHnd, inlineFailReason));
+
     return;
 }
 #ifdef _PREFAST_
@@ -21491,20 +21500,25 @@ void Compiler::fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt*
 
 bool          Compiler::fgIsUnboundedInlineRecursion(inlExpPtr               expLst,
                                                      BYTE*                   ilCode,
-                                                     DWORD&                  depth)
+                                                     DWORD*                  finalDepth)
 {
     const DWORD MAX_INLINING_RECURSION_DEPTH = 20;
+    DWORD depth = 0;
+    bool result = false;
 
-    depth = 0;
     for (; expLst != nullptr; expLst = expLst->ixlParent)
     {
         // Hard limit just to catch pathological cases
         depth++;
         if  ((expLst->ixlCode == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
-            return true;
+        {
+           result = true;
+           break;
+        }
     }
 
-    return false;
+    *finalDepth = depth;
+    return result;
 }
 
 /*****************************************************************************
@@ -21900,7 +21914,8 @@ Compiler::fgWalkResult      Compiler::fgDebugCheckInlineCandidates(GenTreePtr* p
 #endif // DEBUG
 
 
-JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
+void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
+                                             JitInlineResult* inlineResult)
 {
     noway_assert(call->gtOper == GT_CALL);
     noway_assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
@@ -21917,6 +21932,7 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
     inlineInfo.iciBlock              = compCurBB;
     inlineInfo.thisDereferencedFirst = false;
     inlineInfo.retExpr               = NULL;
+    inlineInfo.inlineResult          = inlineResult;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -21929,7 +21945,7 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
     DWORD inlineDepth = 0;
     BYTE * candidateIL = inlineCandidateInfo->methInfo.ILCode;
     inlExpPtr expList = inlineInfo.iciStmt->gtStmt.gtInlineExpList;
-    if (fgIsUnboundedInlineRecursion(expList, candidateIL, inlineDepth))
+    if (fgIsUnboundedInlineRecursion(expList, candidateIL, &inlineDepth))
     {
 #ifdef DEBUG
         if (verbose)
@@ -21937,9 +21953,8 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
             printf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
         }
 #endif // DEBUG
-        return JitInlineResult(INLINE_FAIL, inlineCandidateInfo->ilCallerHandle, fncHandle,
-                               "Recursive or deep inline recursion detected. "
-                               "Will not expand this INLINECANDIDATE");
+        inlineResult->setFailure("Recursive or deep inline");
+        return;
     }
 
     // Set the trap to catch all errors (including recoverable ones from the EE)
@@ -21950,7 +21965,6 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
         CORINFO_METHOD_HANDLE fncHandle;
         InlineCandidateInfo* inlineCandidateInfo;
         InlineInfo* inlineInfo;
-        JitInlineResult result;
     } param = {0};
 
     param.pThis = this;
@@ -21961,9 +21975,9 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
     setErrorTrap(info.compCompHnd, Param*, pParam, &param)
     {
         // Init the local var info of the inlinee
-        pParam->result = pParam->pThis->impInlineInitVars(pParam->inlineInfo);
+        pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 
-        if (!dontInline(pParam->result))
+        if (pParam->inlineInfo->inlineResult->isCandidate())
         {
             /* Clear the temp table */
             memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
@@ -22012,10 +22026,7 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
 
             if (result != CORJIT_OK)
             {
-                pParam->result = JitInlineResult(INLINE_FAIL,
-                                                  pParam->inlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                                  pParam->fncHandle,
-                                                  "Inlining failed due to an error during invoking the compiler for the inlinee");
+                pParam->inlineInfo->inlineResult->setFailure("Error invoking the compiler for the inlinee");
             }
         }
     }
@@ -22028,19 +22039,16 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
                     eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineInfo.inlineResult = JitInlineResult(INLINE_FAIL,
-                                                  inlineInfo.inlineCandidateInfo->ilCallerHandle,
-                                                  fncHandle, "Inlining failed due to an exception during invoking the compiler for the inlinee");
+        inlineResult->setFailure("Exception invoking the compiler for the inlinee");
     }
     endErrorTrap();
-    JitInlineResult result = param.result;
 
-    if (dontInline(result))
+    if (inlineResult->isFailure())
     {
 #if defined(DEBUG) || MEASURE_INLINING
         ++Compiler::jitInlineInitVarsFailureCount;
 #endif // defined(DEBUG) || MEASURE_INLINING
-        goto Exit;
+        return;
     }
 
 #ifdef DEBUG
@@ -22050,12 +22058,6 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
                 eeGetMethodFullName(fncHandle));
     }
 #endif // DEBUG
-
-    if (dontInline(inlineInfo.inlineResult))
-    {
-        result = inlineInfo.inlineResult;
-        goto Exit;
-    }
 
     // If there is non-NULL return, but we haven't set the pInlineInfo->retExpr,
     // That means we haven't imported any BB that contains CEE_RET opcode.
@@ -22071,9 +22073,8 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
                     eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        result = JitInlineResult(INLINE_NEVER, inlineCandidateInfo->ilCallerHandle, fncHandle,
-                                 "Inlining failed because inlinee did not contain a return expression.");
-        goto Exit;
+        inlineResult->setNever("inlinee did not contain a return expression");
+        return;
     }
 
     if (inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_SPECULATIVE)
@@ -22086,9 +22087,8 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
             JITLOG((LL_INFO100000, INLINER_FAILED "Could not complete class init side effect: "
                     "%s called by %s\n",
                     eeGetMethodFullName(fncHandle), info.compFullName));
-            result = JitInlineResult(INLINE_NEVER, inlineCandidateInfo->ilCallerHandle, fncHandle,
-                                     "Failed class init side-effect");
-            goto Exit;
+            inlineResult->setNever("Failed class init side-effect");
+            return;
         }
     }
 
@@ -22105,11 +22105,12 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
 
     if (verbose || fgPrintInlinedMethods)
     {
-        printf("Successfully inlined %s (%d IL bytes) (depth %d) into %s\n",
+        printf("Successfully inlined %s (%d IL bytes) (depth %d) into %s [%s]\n",
                eeGetMethodFullName(fncHandle),
                inlineCandidateInfo->methInfo.ILCodeSize,
                inlineDepth,
-               info.compFullName);
+               info.compFullName,
+               inlineResult->reason());
     }
 
     if (verbose)
@@ -22122,12 +22123,8 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
     impInlinedCodeSize += inlineCandidateInfo->methInfo.ILCodeSize;
 #endif
 
-    result = JitInlineResult(INLINE_PASS, inlineCandidateInfo->ilCallerHandle, fncHandle, NULL);
-
-Exit:
-
-    result.report(info.compCompHnd);
-    return result;
+    // We inlined...
+    inlineResult->setSuccess();
 }
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

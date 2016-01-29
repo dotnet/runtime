@@ -1204,7 +1204,8 @@ void                Compiler::compInit(norls_allocator * pAlloc, InlineInfo * in
     compDoAggressiveInlining = false;
 
     if (compIsForInlining())
-    { 
+    {
+        compInlineResult            = inlineInfo->inlineResult;
         compAsIAllocator            = nullptr;  // We shouldn't be using the compAsIAllocator for other than the root compiler.
 #if MEASURE_MEM_ALLOC
         compAsIAllocatorBitset      = nullptr;
@@ -1219,6 +1220,7 @@ void                Compiler::compInit(norls_allocator * pAlloc, InlineInfo * in
     }
     else
     {
+        compInlineResult            = nullptr;
         compAsIAllocator            = new (this, CMK_Unknown) CompAllocator(this, CMK_AsIAllocator);
 #if MEASURE_MEM_ALLOC
         compAsIAllocatorBitset      = new (this, CMK_Unknown) CompAllocator(this, CMK_bitset);
@@ -1342,8 +1344,6 @@ void                Compiler::compInit(norls_allocator * pAlloc, InlineInfo * in
 
     compNativeSizeEstimate = NATIVE_SIZE_INVALID;
     compInlineeHints = (InlInlineHints)0;
-
-    compInlineResult = JitInlineResult(INLINE_PASS, nullptr, nullptr, nullptr);
 
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
@@ -4279,12 +4279,8 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         if (compIsForInlining())
         {
-            // Too early to call compSetInlineResult, so update impInlineInfo directly
             JITLOG((LL_INFO1000000, INLINER_FAILED "Inlinee marked as skipped.\n"));
-            impInlineInfo->inlineResult = JitInlineResult(INLINE_NEVER,
-                                                          impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                                          methodHnd,
-                                                          "Inlinee marked as skipped");
+            compInlineResult->setNever("Inlinee marked as skipped");
         }
         return CORJIT_SKIPPED;
     }
@@ -4893,22 +4889,23 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             if (opts.eeFlags & CORJIT_FLG_PREJIT)
             {
                 // Cache inlining hint during NGen to avoid touching bodies of non-inlineable methods at runtime
-
-                JitInlineResult result = impCanInlineIL(methodHnd, methodInfo, forceInline);
-                if (dontInline(result))
+                JitInlineResult trialResult(info.compCompHnd, nullptr, methodHnd);
+                impCanInlineIL(methodHnd, methodInfo, forceInline, &trialResult);
+                if (trialResult.isFailure())
                 {
-                    // It is a bad inlinee according to impCanInlineIL. Mark it in the EE.
-                    assert(result.result() == INLINE_NEVER);
+                    // It is a bad inlinee according to impCanInlineIL.
+                    // This decision better not be context-dependent.
+                    assert(trialResult.isNever());
+
+                    // Mark it in the EE.
                     info.compCompHnd->setMethodAttribs(methodHnd, CORINFO_FLG_BAD_INLINEE);
 
                     hasBeenMarkedAsBadInlinee = true;
                 }
                 else
                 {
-                    //Don't bother reporting speculative successes.  We have to report errors because
-                    //otherwise we *never* see them.
-
-                    result.setReported(); //Do not report speculative inlining like this.
+                    // Since we're not actually inlining anything, don't report success.
+                    trialResult.setReported();
                 }
             }
         }
@@ -4937,18 +4934,28 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             // We must have run the CodeSeq state machine and got the native size estimate.
             assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID); 
 
-            int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);          
+            int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);
+            JitInlineResult trialResult(info.compCompHnd, nullptr, methodHnd);
             
-            JitInlineResult result = impCanInlineNative(callsiteNativeSizeEstimate, 
-                                                        compNativeSizeEstimate,
-                                                        compInlineeHints,
-                                                        NULL); // Calculate static inlining hint.
+            impCanInlineNative(callsiteNativeSizeEstimate, 
+                               compNativeSizeEstimate,
+                               compInlineeHints,
+                               nullptr, // Calculate static inlining hint.
+                               &trialResult);
 
-            if (dontInline(result))
+            if (trialResult.isFailure())
             {
-                // Bingo! It is a bad inlinee according to impCanInlineNative. Mark it in the EE.
-                assert(result.result() == INLINE_NEVER);
+                // Bingo! It is a bad inlinee according to impCanInlineNative.
+                // This decision better not be context-dependent.
+                assert(trialResult.isNever());
+                
+                // Mark it in the EE.
                 info.compCompHnd->setMethodAttribs(methodHnd, CORINFO_FLG_BAD_INLINEE);
+            }
+            else 
+            {
+               // Since we're not actually inlining, don't report success.
+               trialResult.setReported();
             }
         }
 
@@ -4992,9 +4999,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             !forceInline)
         {
             JITLOG((LL_INFO1000000, INLINER_FAILED "Too many basic blocks in the inlinee.\n"));
-            compSetInlineResult(JitInlineResult(INLINE_NEVER,
-                                                impInlineInfo->inlineCandidateInfo->ilCallerHandle,
-                                                methodHnd, "Too many basic blocks in the inlinee."));
+            compInlineResult->setNever("Too many basic blocks in the inlinee");
             goto _Next;
         }
 
@@ -5028,8 +5033,9 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 _Next:
     
         if (compDonotInline())
-        {        
-            impInlineInfo->inlineResult = compInlineResult;
+        {
+            // Verify we have only one inline result in play.
+            assert(impInlineInfo->inlineResult == compInlineResult);
         }
 
         if (!compIsForInlining())
@@ -5669,9 +5675,12 @@ START:
     }
     impJitErrorTrap()
     {
-        if (inlineInfo)
+        // If we were looking at an inlinee....
+        if (inlineInfo != nullptr)
         {
-            inlineInfo->inlineResult = JitInlineResult(INLINE_NEVER, NULL, methodHnd, "Error compiling inlinee");
+            // Note that we failed to compile the inlinee, and that
+            // there's no point trying to inline it again anywhere else.
+            inlineInfo->inlineResult->setNever("Error compiling inlinee");
         }
         param.result = __errc;       
     }
