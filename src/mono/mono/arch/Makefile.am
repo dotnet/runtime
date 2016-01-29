@@ -7,5 +7,4 @@ if ARM
 SUBDIRS = $(arch_target)
 endif
 
-EXTRA_DIST = ChangeLog
 
