@@ -2609,7 +2609,7 @@ mono_codegen (MonoCompile *cfg)
 #endif
  
 	if (cfg->verbose_level > 0) {
-		char* nm = mono_method_full_name (cfg->method, TRUE);
+		char* nm = mono_method_get_full_name (cfg->method);
 		char *opt_descr = mono_opt_descr (cfg->opt);
 		g_print ("Method %s emitted at %p to %p (code length %d) [%s] with opts %s\n", 
 				 nm, 
@@ -3600,7 +3600,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (cfg->verbose_level > 0) {
 		char *method_name;
 
-		method_name = mono_method_full_name (method, TRUE);
+		method_name = mono_method_get_full_name (method);
 		g_print ("converting %s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", method_name);
 		/*
 		if (COMPILE_LLVM (cfg))
