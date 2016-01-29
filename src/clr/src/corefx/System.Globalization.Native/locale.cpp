@@ -110,7 +110,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     return i;
 }
 
-extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+extern "C" int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
 
@@ -130,7 +130,7 @@ extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t 
     return UErrorCodeToBool(status);
 }
 
-extern "C" int32_t GetDefaultLocaleName(UChar* value, int32_t valueLength)
+extern "C" int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength)
 {
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
     UErrorCode status = U_ZERO_ERROR;

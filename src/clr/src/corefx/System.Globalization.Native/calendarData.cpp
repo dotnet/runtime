@@ -202,7 +202,8 @@ GetCalendars
 
 Returns the list of CalendarIds that are available for the specified locale.
 */
-extern "C" int32_t GetCalendars(const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
+extern "C" int32_t GlobalizationNative_GetCalendars(
+    const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
@@ -285,7 +286,7 @@ GetCalendarInfo
 Gets a single string of calendar information by filling the result parameter
 with the requested value.
 */
-extern "C" CalendarDataResult GetCalendarInfo(
+extern "C" CalendarDataResult GlobalizationNative_GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -539,11 +540,12 @@ Allows for a collection of calendar string data to be retrieved by invoking
 the callback for each value in the collection.
 The context parameter is passed through to the callback along with each string.
 */
-extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
-                                    const UChar* localeName,
-                                    CalendarId calendarId,
-                                    CalendarDataType dataType,
-                                    const void* context)
+extern "C" int32_t GlobalizationNative_EnumCalendarInfo(
+                        EnumCalendarInfoCallback callback, 
+                        const UChar* localeName, 
+                        CalendarId calendarId, 
+                        CalendarDataType dataType, 
+                        const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
@@ -602,7 +604,7 @@ GetLatestJapaneseEra
 
 Gets the latest era in the Japanese calendar.
 */
-extern "C" int32_t GetLatestJapaneseEra()
+extern "C" int32_t GlobalizationNative_GetLatestJapaneseEra()
 {
     UErrorCode err = U_ZERO_ERROR;
     UCalendar* pCal = ucal_open(nullptr, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
@@ -622,7 +624,8 @@ GetJapaneseEraInfo
 
 Gets the starting Gregorian date of the specified Japanese Era.
 */
-extern "C" int32_t GetJapaneseEraStartDate(int32_t era, int32_t* startYear, int32_t* startMonth, int32_t* startDay)
+extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
+    int32_t era, int32_t* startYear, int32_t* startMonth, int32_t* startDay)
 {
     *startYear = -1;
     *startMonth = -1;
