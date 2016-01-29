@@ -121,9 +121,9 @@ namespace System.Data.SqlClient.SNI
                     combinedBuffer[6] = 0;
                     combinedBuffer[7] = 0;
 
-                    for(int i = 8; i < combinedBuffer.Length; i++)
+                    for(int i = TdsEnums.HEADER_LEN; i < combinedBuffer.Length; i++)
                     {
-                        combinedBuffer[i] = buffer[currentOffset + i - 8];
+                        combinedBuffer[i] = buffer[currentOffset + (i - TdsEnums.HEADER_LEN)];
                     }
 
                     _stream.Write(combinedBuffer, 0, combinedBuffer.Length);
