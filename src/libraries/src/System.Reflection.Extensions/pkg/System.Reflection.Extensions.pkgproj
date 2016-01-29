@@ -6,7 +6,8 @@
     <ProjectReference Include="..\ref\System.Reflection.Extensions.csproj">
       <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Reflection.Extensions.builds" />
+    <ProjectReference Include="any\System.Reflection.Extensions.pkgproj" />
+    <ProjectReference Include="aot\System.Reflection.Extensions.pkgproj" />
 
     <InboxOnTargetFramework Include="MonoAndroid10"/>
     <InboxOnTargetFramework Include="MonoTouch10"/>
