@@ -1937,11 +1937,6 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 	}
 #endif
 
-	if (!code)
-		code = mono_jit_compile_method_inner (method, target_domain, opt, error);
-	if (!mono_error_ok (error))
-		return NULL;
-
 	if (!code && mono_llvm_only) {
 		if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
 			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
@@ -1955,7 +1950,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 				return no_gsharedvt_in_wrapper;
 			}
 		}
+	}
 
+	if (!code)
+		code = mono_jit_compile_method_inner (method, target_domain, opt, error);
+	if (!mono_error_ok (error))
+		return NULL;
+
+	if (!code && mono_llvm_only) {
 		printf ("AOT method not found in llvmonly mode: %s\n", mono_method_full_name (method, 1));
 		g_assert_not_reached ();
 	}
