@@ -32,10 +32,7 @@ namespace System.Net
             return new Win32Exception(win32Code);
         }
 
-        public static bool StartMutualAuthAsAnonymous
-        {
-            get { return true; }
-        }
+        internal const bool StartMutualAuthAsAnonymous = true;
 
         public static void VerifyPackageInfo()
         {
