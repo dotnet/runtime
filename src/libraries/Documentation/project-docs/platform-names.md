@@ -48,7 +48,7 @@ Pretty much at the same time the .NET Framework was released, Microsoft also pub
 
 While parts of the source were identical with the .NET Framework, many pieces had prototypic implementations instead: the purpose of Rotor wasn't to provide a production ready .NET implementation but to provide a platform for research, academia, and validation that the ECMA 335 specification itself can be implemented.
 
-It's also worth pointing out that the source code of Rotor was not an open source license (i.e. not approved by OSI) and has not been offically updated since .NET Framework 2.0.
+It's also worth pointing out that the source code of Rotor was not released under an open source license (i.e. not approved by OSI) and has not been offically updated since .NET Framework 2.0.
 
 ## Mono
 
