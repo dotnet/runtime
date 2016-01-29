@@ -69,6 +69,8 @@ namespace System.Collections.Tests
             }
         }
 
+        protected virtual bool ExpectedFixedSize { get { return false; } }
+
         #endregion
 
         #region ICollection Helper Methods
@@ -129,7 +131,7 @@ namespace System.Collections.Tests
         public void ICollection_NonGeneric_IsFixedSize_Validity(int count)
         {
             IList collection = NonGenericIListFactory(count);
-            Assert.False(collection.IsFixedSize);
+            Assert.Equal(ExpectedFixedSize, collection.IsFixedSize);
         }
 
         #endregion
