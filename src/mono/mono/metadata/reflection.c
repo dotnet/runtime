@@ -3106,13 +3106,14 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 }
 
 static guint32
-mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCtorOnTypeBuilderInst *c, gboolean create_methodspec)
+mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCtorOnTypeBuilderInst *c, gboolean create_methodspec, MonoError *error)
 {
-	MonoError error;
 	guint32 sig, token;
 	MonoClass *klass;
 	MonoGenericClass *gclass;
 	MonoType *type;
+
+	mono_error_init (error);
 
 	/* A ctor cannot be a generic method, so we can ignore create_methodspec */
 
@@ -3131,8 +3132,8 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 		gclass = type->data.generic_class;
 		g_assert (gclass->is_dynamic);
 
-		if (!reflection_methodbuilder_from_ctor_builder (&rmb, cb, &error))
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!reflection_methodbuilder_from_ctor_builder (&rmb, cb, error))
+			return 0;
 
 		name = mono_string_to_utf8 (rmb.name);
 
@@ -3200,13 +3201,13 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 }
 
 static guint32
-mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionMethodOnTypeBuilderInst *m, gboolean create_methodspec)
+mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionMethodOnTypeBuilderInst *m, gboolean create_methodspec, MonoError *error)
 {
-	MonoError error;
-
 	guint32 sig, token = 0;
 	MonoType *type;
 	MonoClass *klass;
+
+	mono_error_init (error);
 
 	if (m->method_args) {
 		MonoMethod *inflated;
@@ -3234,8 +3235,8 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 		gclass = type->data.generic_class;
 		g_assert (gclass->is_dynamic);
 
-		if (!reflection_methodbuilder_from_method_builder (&rmb, mb, &error))
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!reflection_methodbuilder_from_method_builder (&rmb, mb, error))
+			return 0;
 
 		name = mono_string_to_utf8 (rmb.name);
 
@@ -5406,10 +5407,14 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		token = mono_image_get_field_on_inst_token (assembly, f);
 	} else if (strcmp (klass->name, "ConstructorOnTypeBuilderInst") == 0) {
 		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)obj;
-		token = mono_image_get_ctor_on_inst_token (assembly, c, create_open_instance);
+		token = mono_image_get_ctor_on_inst_token (assembly, c, create_open_instance, error);
+		if (!mono_error_ok (error))
+			return 0;
 	} else if (strcmp (klass->name, "MethodOnTypeBuilderInst") == 0) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)obj;
-		token = mono_image_get_method_on_inst_token (assembly, m, create_open_instance);
+		token = mono_image_get_method_on_inst_token (assembly, m, create_open_instance, error);
+		if (!mono_error_ok (error))
+			return 0;
 	} else if (is_sre_array (klass) || is_sre_byref (klass) || is_sre_pointer (klass)) {
 		MonoReflectionType *type = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
