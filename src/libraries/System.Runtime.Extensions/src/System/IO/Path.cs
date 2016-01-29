@@ -76,8 +76,6 @@ namespace System.IO
                 int i = path.Length;
                 if (i > root)
                 {
-                    i = path.Length;
-                    if (i == root) return null;
                     while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
                     return path.Substring(0, i);
                 }
