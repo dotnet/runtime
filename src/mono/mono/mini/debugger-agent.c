@@ -7648,7 +7648,10 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_assembly_get_object (domain, ass);
+		MonoError error;
+		MonoObject *o = (MonoObject*)mono_assembly_get_object_checked (domain, ass, &error);
+		if (!o)
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		buffer_add_objid (buf, o);
 		break;
 	}

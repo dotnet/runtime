@@ -6658,9 +6658,27 @@ MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
 	MonoError error;
+	MonoReflectionAssembly *result;
+	result = mono_assembly_get_object_checked (domain, assembly, &error);
+	if (!result)
+		mono_error_set_pending_exception (&error);
+	return result;
+}
+/*
+ * mono_assembly_get_object:
+ * @domain: an app domain
+ * @assembly: an assembly
+ *
+ * Return an System.Reflection.Assembly object representing the MonoAssembly @assembly.
+ */
+MonoReflectionAssembly*
+mono_assembly_get_object_checked (MonoDomain *domain, MonoAssembly *assembly, MonoError *error)
+{
 	static MonoClass *assembly_type;
 	MonoReflectionAssembly *res;
 	
+	mono_error_init (error);
+
 	CHECK_OBJECT (MonoReflectionAssembly *, assembly, NULL);
 	if (!assembly_type) {
 		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoAssembly");
@@ -6669,8 +6687,9 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 		g_assert (klass);
 		assembly_type = klass;
 	}
-	res = (MonoReflectionAssembly *)mono_object_new_checked (domain, assembly_type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = (MonoReflectionAssembly *)mono_object_new_checked (domain, assembly_type, error);
+	if (!res)
+		return NULL;
 	res->assembly = assembly;
 
 	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
@@ -6709,7 +6728,10 @@ mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError 
 		return NULL;
 
 	res->image = image;
-	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
+	MonoReflectionAssembly *assm_obj = mono_assembly_get_object_checked (domain, image->assembly, error);
+	if (!assm_obj)
+		return NULL;
+	MONO_OBJECT_SETREF (res, assembly, assm_obj);
 
 	MONO_OBJECT_SETREF (res, fqname, mono_string_new (domain, image->name));
 	basename = g_path_get_basename (image->name);
@@ -6774,7 +6796,10 @@ mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int t
 	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
 
 	res->image = NULL;
-	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
+	MonoReflectionAssembly *assm_obj = mono_assembly_get_object_checked (domain, image->assembly, error);
+	if (!assm_obj)
+		return NULL;
+	MONO_OBJECT_SETREF (res, assembly, assm_obj);
 	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
@@ -8152,15 +8177,20 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 	return type;
 }
 
+/**
+ * mono_reflection_get_type_internal:
+ *
+ * Returns: may return NULL on success, sets error on failure.
+ */
 static MonoType*
-mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
+mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
 {
-	MonoError error;
 	MonoClass *klass;
 	GList *mod;
 	int modval;
 	gboolean bounded = FALSE;
 	
+	mono_error_init (error);
 	if (!image)
 		image = mono_defaults.corlib;
 
@@ -8168,14 +8198,14 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		rootimage = mono_defaults.corlib;
 
 	if (ignorecase) {
-		MonoError error;
-		klass = mono_class_from_name_case_checked (image, info->name_space, info->name, &error);
-		g_assert (mono_error_ok (&error)); /* FIXME Don't swallow the error */
+		klass = mono_class_from_name_case_checked (image, info->name_space, info->name, error);
+		g_assert (mono_error_ok (error)); /* FIXME Don't swallow the error */
 	} else {
 		klass = mono_class_from_name (image, info->name_space, info->name);
 	}
 	if (!klass)
 		return NULL;
+
 	for (mod = info->nested; mod; mod = mod->next) {
 		gpointer iter = NULL;
 		MonoClass *parent;
@@ -8252,8 +8282,9 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			}
 		}
 
-		the_type = mono_type_get_object_checked (mono_domain_get (), &klass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		the_type = mono_type_get_object_checked (mono_domain_get (), &klass->byval_arg, error);
+		if (!the_type)
+			return NULL;
 
 		instance = mono_reflection_bind_generic_parameters (
 			the_type, info->type_arguments->len, type_args);
@@ -8298,14 +8329,17 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 }
 
 static MonoType*
-mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase)
+mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
 {
 	MonoReflectionAssemblyBuilder *abuilder;
 	MonoType *type;
 	int i;
 
+	mono_error_init (error);
 	g_assert (assembly_is_dynamic (assembly));
-	abuilder = (MonoReflectionAssemblyBuilder*)mono_assembly_get_object (((MonoDynamicAssembly*)assembly)->domain, assembly);
+	abuilder = (MonoReflectionAssemblyBuilder*)mono_assembly_get_object_checked (((MonoDynamicAssembly*)assembly)->domain, assembly, error);
+	if (!abuilder)
+		return NULL;
 
 	/* Enumerate all modules */
 
@@ -8313,18 +8347,22 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 	if (abuilder->modules) {
 		for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
 			MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-			type = mono_reflection_get_type_internal (rootimage, &mb->dynamic_image->image, info, ignorecase);
+			type = mono_reflection_get_type_internal (rootimage, &mb->dynamic_image->image, info, ignorecase, error);
 			if (type)
 				break;
+			if (!mono_error_ok (error))
+				return NULL;
 		}
 	}
 
 	if (!type && abuilder->loaded_modules) {
 		for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
 			MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-			type = mono_reflection_get_type_internal (rootimage, mod->image, info, ignorecase);
+			type = mono_reflection_get_type_internal (rootimage, mod->image, info, ignorecase, error);
 			if (type)
 				break;
+			if (!mono_error_ok (error))
+				return NULL;
 		}
 	}
 
@@ -8334,15 +8372,20 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 MonoType*
 mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
 {
+	MonoError error;
 	MonoType *type;
 	MonoReflectionAssembly *assembly;
 	GString *fullName;
 	GList *mod;
 
 	if (image && image_is_dynamic (image))
-		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase);
-	else
-		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase);
+		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase, &error);
+	else {
+		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase, &error);
+	}
+	if (!mono_error_ok(&error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	if (type)
 		return type;
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
@@ -8367,12 +8410,15 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	assembly = mono_domain_try_type_resolve ( mono_domain_get (), fullName->str, NULL);
 	if (assembly) {
 		if (assembly_is_dynamic (assembly->assembly))
-			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly, info, ignorecase);
+			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly,
+									  info, ignorecase, &error);
 		else
 			type = mono_reflection_get_type_internal (rootimage, assembly->assembly->image, 
-													  info, ignorecase);
+								  info, ignorecase, &error);
 	}
 	g_string_free (fullName, TRUE);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return type;
 }
 
@@ -9338,7 +9384,8 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	params [0] = mono_method_get_object_checked (domain, cattr->ctor, NULL, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	params [1] = mono_assembly_get_object (domain, image->assembly);
+	params [1] = mono_assembly_get_object_checked (domain, image->assembly, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	params [2] = (gpointer)&cattr->data;
 	params [3] = &cattr->data_size;
 	mono_runtime_invoke (ctor, attr, params, NULL);
