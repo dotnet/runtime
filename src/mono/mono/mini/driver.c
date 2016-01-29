@@ -1019,7 +1019,20 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		return 1;
 	}
 	
-	return mono_runtime_run_main (method, argc, argv, NULL);
+	if (mono_llvm_only) {
+		MonoObject *exc;
+		int res;
+
+		res = mono_runtime_run_main (method, argc, argv, &exc);
+		if (exc) {
+			mono_unhandled_exception (exc);
+			mono_invoke_unhandled_exception_hook (exc);
+			return 1;
+		}
+		return res;
+	} else {
+		return mono_runtime_run_main (method, argc, argv, NULL);
+	}
 }
 
 typedef struct 
