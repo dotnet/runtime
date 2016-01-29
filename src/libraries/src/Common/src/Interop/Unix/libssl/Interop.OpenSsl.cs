@@ -345,9 +345,10 @@ internal static partial class Interop
         {
             // Full validation is handled after the handshake in VerifyCertificateProperties and the
             // user callback.  It's also up to those handlers to decide if a null certificate
-            // is appropriate.  So just return 1 and tell OpenSSL that the cert is acceptable,
+            // is appropriate.  So just return success to tell OpenSSL that the cert is acceptable,
             // we'll process it after the handshake finishes.
-            return 1;
+            const int OpenSslSuccess = 1;
+            return OpenSslSuccess;
         }
 
         private static void UpdateCAListFromRootStore(SafeSslContextHandle context)
