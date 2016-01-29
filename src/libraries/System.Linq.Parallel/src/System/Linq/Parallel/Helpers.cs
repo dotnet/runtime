@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -24,13 +25,13 @@ namespace System.Linq.Parallel
         private int[] _buckets;
         private Slot[] _slots;
         private int _count;
-        private int _freeList;
-        private IEqualityComparer<TElement> _comparer;
+        private readonly IEqualityComparer<TElement> _comparer;
+#if DEBUG
+        private bool _haveRemoved;
+#endif
 
         private const int InitialSize = 7;
         private const int HashCodeMask = 0x7FFFFFFF;
-
-        public Set() : this(null) { }
 
         public Set(IEqualityComparer<TElement> comparer)
         {
@@ -38,12 +39,14 @@ namespace System.Linq.Parallel
             _comparer = comparer;
             _buckets = new int[InitialSize];
             _slots = new Slot[InitialSize];
-            _freeList = -1;
         }
 
         // If value is not in set, add it and return true; otherwise return false
         public bool Add(TElement value)
         {
+#if DEBUG
+            Debug.Assert(!_haveRemoved, "This class is optimised for never calling Add after Remove. If your changes need to do so, undo that optimization.");
+#endif
             return !Find(value, true);
         }
 
@@ -56,6 +59,9 @@ namespace System.Linq.Parallel
         // If value is in set, remove it and return true; otherwise return false
         public bool Remove(TElement value)
         {
+#if DEBUG
+            _haveRemoved = true;
+#endif
             int hashCode = InternalGetHashCode(value);
             int bucket = hashCode % _buckets.Length;
             int last = -1;
@@ -73,8 +79,7 @@ namespace System.Linq.Parallel
                     }
                     _slots[i].hashCode = -1;
                     _slots[i].value = default(TElement);
-                    _slots[i].next = _freeList;
-                    _freeList = i;
+                    _slots[i].next = -1;
                     return true;
                 }
             }
@@ -90,18 +95,9 @@ namespace System.Linq.Parallel
             }
             if (add)
             {
-                int index;
-                if (_freeList >= 0)
-                {
-                    index = _freeList;
-                    _freeList = _slots[index].next;
-                }
-                else
-                {
-                    if (_count == _slots.Length) Resize();
-                    index = _count;
-                    _count++;
-                }
+                if (_count == _slots.Length) Resize();
+                int index = _count;
+                _count++;
                 int bucket = hashCode % _buckets.Length;
                 _slots[index].hashCode = hashCode;
                 _slots[index].value = value;
