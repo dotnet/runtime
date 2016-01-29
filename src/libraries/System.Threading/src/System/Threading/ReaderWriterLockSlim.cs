@@ -390,7 +390,7 @@ namespace System.Threading
                     continue;   // since we left the lock, start over. 
                 }
 
-                retVal = WaitOnEvent(_readEvent, ref _numReadWaiters, timeout);
+                retVal = WaitOnEvent(_readEvent, ref _numReadWaiters, timeout, isWriteWaiter: false);
                 if (!retVal)
                 {
                     return false;
@@ -548,7 +548,7 @@ namespace System.Threading
 
                     Debug.Assert(_numWriteUpgradeWaiters == 0, "There can be at most one thread with the upgrade lock held.");
 
-                    retVal = WaitOnEvent(_waitUpgradeEvent, ref _numWriteUpgradeWaiters, timeout);
+                    retVal = WaitOnEvent(_waitUpgradeEvent, ref _numWriteUpgradeWaiters, timeout, isWriteWaiter: true);
 
                     //The lock is not held in case of failure.
                     if (!retVal)
@@ -563,7 +563,7 @@ namespace System.Threading
                         continue;   // since we left the lock, start over. 
                     }
 
-                    retVal = WaitOnEvent(_writeEvent, ref _numWriteWaiters, timeout);
+                    retVal = WaitOnEvent(_writeEvent, ref _numWriteWaiters, timeout, isWriteWaiter: true);
                     //The lock is not held in case of failure.
                     if (!retVal)
                         return false;
@@ -704,7 +704,7 @@ namespace System.Threading
                 }
 
                 //Only one thread with the upgrade lock held can proceed.
-                retVal = WaitOnEvent(_upgradeEvent, ref _numUpgradeWaiters, timeout);
+                retVal = WaitOnEvent(_upgradeEvent, ref _numUpgradeWaiters, timeout, isWriteWaiter: false);
                 if (!retVal)
                     return false;
             }
@@ -885,7 +885,11 @@ namespace System.Threading
         /// Waits on 'waitEvent' with a timeout  
         /// Before the wait 'numWaiters' is incremented and is restored before leaving this routine.
         /// </summary>
-        private bool WaitOnEvent(EventWaitHandle waitEvent, ref uint numWaiters, TimeoutTracker timeout)
+        private bool WaitOnEvent(
+            EventWaitHandle waitEvent,
+            ref uint numWaiters,
+            TimeoutTracker timeout,
+            bool isWriteWaiter)
         {
 #if DEBUG
             Debug.Assert(MyLockHeld);
@@ -920,8 +924,17 @@ namespace System.Threading
                 if (_numWriteUpgradeWaiters == 0)
                     ClearUpgraderWaiting();
 
-                if (!waitSuccessful)        // We may also be about to throw for some reason.  Exit myLock. 
-                    ExitMyLock();
+                if (!waitSuccessful)        // We may also be about to throw for some reason.  Exit myLock.
+                {
+                    if (isWriteWaiter && _numWriteWaiters == 0 && _numWriteUpgradeWaiters == 0 && !_fNoWaiters)
+                    {
+                        // Write waiters block read waiters from acquiring the lock. Since this was the last write waiter and
+                        // there is a read waiter, wake up the appropriate read waiters.
+                        ExitAndWakeUpAppropriateReadWaiters();
+                    }
+                    else
+                        ExitMyLock();
+                }
             }
             return waitSuccessful;
         }
@@ -945,8 +958,6 @@ namespace System.Threading
 
         private void ExitAndWakeUpAppropriateWaitersPreferringWriters()
         {
-            bool setUpgradeEvent = false;
-            bool setReadEvent = false;
             uint readercount = GetNumReaders();
 
             //We need this case for EU->ER->EW case, as the read count will be 2 in
@@ -978,26 +989,32 @@ namespace System.Threading
             else
             {
                 if (_numReadWaiters != 0 || _numUpgradeWaiters != 0)
-                {
-                    if (_numReadWaiters != 0)
-                        setReadEvent = true;
-
-                    if (_numUpgradeWaiters != 0 && _upgradeLockOwnerId == -1)
-                    {
-                        setUpgradeEvent = true;
-                    }
-
-                    ExitMyLock();    // Exit before signaling to improve efficiency (wakee will need the lock)
-
-                    if (setReadEvent)
-                        _readEvent.Set();  // release all readers. 
-
-                    if (setUpgradeEvent)
-                        _upgradeEvent.Set(); //release one upgrader.
-                }
+                    ExitAndWakeUpAppropriateReadWaiters();
                 else
                     ExitMyLock();
             }
+        }
+
+        private void ExitAndWakeUpAppropriateReadWaiters()
+        {
+#if DEBUG
+            Debug.Assert(MyLockHeld);
+#endif
+            Debug.Assert(_numWriteWaiters == 0);
+            Debug.Assert(_numWriteUpgradeWaiters == 0);
+            Debug.Assert(_numReadWaiters != 0 || _numUpgradeWaiters != 0);
+            Debug.Assert(!_fNoWaiters);
+
+            bool setReadEvent = _numReadWaiters != 0;
+            bool setUpgradeEvent = _numUpgradeWaiters != 0 && _upgradeLockOwnerId == -1;
+
+            ExitMyLock();    // Exit before signaling to improve efficiency (wakee will need the lock)
+
+            if (setReadEvent)
+                _readEvent.Set();  // release all readers. 
+
+            if (setUpgradeEvent)
+                _upgradeEvent.Set(); //release one upgrader.
         }
 
         private bool IsWriterAcquired()
