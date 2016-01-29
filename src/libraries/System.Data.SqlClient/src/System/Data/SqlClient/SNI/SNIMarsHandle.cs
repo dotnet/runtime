@@ -317,9 +317,7 @@ namespace System.Data.SqlClient.SNI
                 _packetEvent.Set();
             }
 
-#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
             ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(null, 1);
-#endif
         }
 
         /// <summary>
@@ -333,9 +331,7 @@ namespace System.Data.SqlClient.SNI
             {
                 Debug.Assert(_callbackObject != null);
 
-#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
                 ((TdsParserStateObject)_callbackObject).WriteAsyncCallback(packet, sniErrorCode);
-#endif
             }
         }
 
@@ -381,9 +377,7 @@ namespace System.Data.SqlClient.SNI
                     _asyncReceives--;
                     Debug.Assert(_callbackObject != null);
 
-#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
                     ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(packet, 0);
-#endif
                 }
             }
 
