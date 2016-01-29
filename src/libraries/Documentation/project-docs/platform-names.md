@@ -58,4 +58,4 @@ When .NET Core was released under the MIT license, Microsoft also released large
 
 ## Xamarin
 
-Xamarin is a commercial offering for building mobile applications targeting iOS and Android. It's based on Mono, but it uses a subset called Mono.Mobile. The subsetting was necessary in order to reduce the footprint and make the code better suited for Xamarin's AOT tool chain, which is a required for iOS as Apple's policy doesn't allow JITing.
+Xamarin is a commercial offering for building mobile applications targeting Android, iOS and MacOS . It's based on Mono, and surfaces a different API profile, called the mobile profile. The subsetting was necessary to reduce the footprint, both by shipping smaller versions of the system libraries as well as making them more linker friendly.   Xamarin ships a full static compiler on iOS and PlayStation4, as the platform does not support dynamic code generation.
