@@ -1616,6 +1616,7 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 ICALL_EXPORT MonoReflectionField*
 ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField *handle, MonoType *type)
 {
+	MonoError error;
 	gboolean found = FALSE;
 	MonoClass *klass;
 	MonoClass *k;
@@ -1640,7 +1641,9 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 			return NULL;
 	}
 
-	return mono_field_get_object (mono_domain_get (), klass, handle);
+	MonoReflectionField *result = mono_field_get_object_checked (mono_domain_get (), klass, handle, &error);
+	mono_error_raise_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoArray*
@@ -3414,6 +3417,7 @@ enum {
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetFields_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
 {
+	MonoError error;
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
@@ -3480,7 +3484,9 @@ handle_parent:
 				continue;
 		}
 
-		member = (MonoObject*)mono_field_get_object (domain, refklass, field);
+		member = (MonoObject*)mono_field_get_object_checked (domain, refklass, field, &error);
+		if (!mono_error_ok (&error))
+		    goto fail;
 		mono_ptr_array_append (tmp_array, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
@@ -3497,6 +3503,10 @@ handle_parent:
 		g_free (utf8_name);
 
 	return res;
+fail:
+	mono_ptr_array_destroy (tmp_array);
+	mono_error_raise_exception (&error);
+	g_assert_not_reached ();
 }
 
 static gboolean
@@ -5673,8 +5683,11 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 	}		
 	case MONO_TABLE_FIELD: {
 		MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, type_args, method_args, error);
-		if (f)
-			return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
+		if (f) {
+			ret =(MonoObject*)mono_field_get_object_checked (mono_domain_get (), f->parent, f, &merror);
+			mono_error_raise_exception (&merror);
+			return ret;
+		}
 		else
 			return NULL;
 	}
@@ -5688,8 +5701,11 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 		}
 		else {
 			MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, type_args, method_args, error);
-			if (f)
-				return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
+			if (f) {
+				ret = (MonoObject*)mono_field_get_object_checked (mono_domain_get (), f->parent, f, &merror);
+				mono_error_raise_exception (&merror);
+				return ret;
+			}
 			else
 				return NULL;
 		}
