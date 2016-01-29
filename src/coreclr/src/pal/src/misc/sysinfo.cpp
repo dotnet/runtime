@@ -76,7 +76,7 @@ Revision History:
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
-#if defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) )
+#if defined(_HPUX_) && ( defined (_IA64_) || defined (__hppa__) )
 #include <sys/pstat.h>
 #include <sys/vmparam.h>
 #endif
@@ -135,7 +135,7 @@ GetSystemInfo(
     lpSystemInfo->dwActiveProcessorMask_PAL_Undefined = 0;
 
 #if HAVE_SYSCONF
-#if defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) )
+#if defined(_HPUX_) && ( defined (_IA64_) || defined (__hppa__) )
     struct pst_dynamic psd;
     if (pstat_getdynamic(&psd, sizeof(psd), (size_t)1, 0) != -1) {
         nrcpus = psd.psd_proc_cnt;
