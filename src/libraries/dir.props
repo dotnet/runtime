@@ -52,20 +52,11 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/bin/</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
-
-    <!-- Packaging configuration -->
-    <PreReleaseLabel>rc3</PreReleaseLabel>
-    <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
-    <!-- Add a condition for this when we are able to run on .NET Core -->
-    <PackagingTaskDir>$(ToolsDir)net45/</PackagingTaskDir>
-    <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">$(RevisionNumber)</BuildNumberMajor>
-    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
-    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
-    <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
   </PropertyGroup>
 
+  <!-- Import packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)packaging.props"/>
+  
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" />
 
@@ -198,13 +189,6 @@
       Fixed in https://github.com/mono/mono/pull/1726.
     -->
     <IncludeVbProjects>false</IncludeVbProjects>
-
-    <!--
-      Building packages fails for two reasons.
-      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
-      Second, we aren't yet building pdbs, which the nuspecs specify.
-    -->
-    <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
 
   <PropertyGroup>
