@@ -120,8 +120,8 @@ Cette limitation concerne :
 
 -         les reclamations au titre de violation de contrat ou de garantie, ou au titre de responsabilite stricte, de negligence ou d'une autre faute dans la limite autorisee par la loi en vigueur.
 
-Elle s'applique egalement, meme si Microsoft connaissait ou devrait connaître l'eventualite d'un tel dommage. Si votre pays n'autorise pas l'exclusion ou la limitation de responsabilite pour les dommages indirects, accessoires ou de quelque nature que ce soit, il se peut que la limitation ou l'exclusion ci-dessus ne s'appliquera pas a votre egard.
+Elle s'applique egalement, meme si Microsoft connaissait ou devrait connaitre l'eventualite d'un tel dommage. Si votre pays n'autorise pas l'exclusion ou la limitation de responsabilite pour les dommages indirects, accessoires ou de quelque nature que ce soit, il se peut que la limitation ou l'exclusion ci-dessus ne s'appliquera pas a votre egard.
 
-EFFET JURIDIQUE. Le present contrat decrit certains droits juridiques. Vous pourriez avoir d'autres droits prevus par les lois de votre pays. Le present contrat ne modifie pas les droits que vous confèrent les lois de votre pays si celles-ci ne le permettent pas.
+EFFET JURIDIQUE. Le present contrat decrit certains droits juridiques. Vous pourriez avoir d'autres droits prevus par les lois de votre pays. Le present contrat ne modifie pas les droits que vous conferent les lois de votre pays si celles-ci ne le permettent pas.
 
  
