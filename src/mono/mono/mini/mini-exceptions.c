@@ -2779,11 +2779,10 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		GList *trace;
 
 		_Unwind_Backtrace (build_stack_trace, &ips);
-		/* The list contains gshared info-ip pairs */
+		/* The list contains ip-gshared info pairs */
 		trace = NULL;
 		ips = g_list_reverse (ips);
 		for (l = ips; l; l = l->next) {
-			// FIXME:
 			trace = g_list_append (trace, l->data);
 			trace = g_list_append (trace, NULL);
 		}
@@ -2854,9 +2853,11 @@ mono_llvm_load_exception (void)
 
 		size_t upper = mono_array_length (mono_ex->trace_ips);
 
-		for (int i = 0; i < upper; i++) {
+		for (int i = 0; i < upper; i+= 2) {
 			gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
-			trace_ips = g_list_prepend (trace_ips, curr_ip);
+			gpointer curr_info = mono_array_get (mono_ex->trace_ips, gpointer, i + 1);
+			trace_ips = g_list_append (trace_ips, curr_ip);
+			trace_ips = g_list_append (trace_ips, curr_info);
 
 			if (ip == curr_ip)
 				break;
