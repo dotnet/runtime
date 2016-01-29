@@ -471,47 +471,6 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		}
 		break;
 
-#if SIZEOF_REGISTER == 8
-	case OP_LREM_IMM:
-#endif
-	case OP_IREM_IMM: {
-		int power = mono_is_power_of_two (ins->inst_imm);
-		if (ins->inst_imm == 1) {
-			ins->opcode = OP_ICONST;
-			MONO_INST_NULLIFY_SREGS (ins);
-			ins->inst_c0 = 0;
-#if __s390__
-		}
-#else
-		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) && (power != -1)) {
-			gboolean is_long = ins->opcode == OP_LREM_IMM;
-			int compensator_reg = alloc_ireg (cfg);
-			int intermediate_reg;
-
-			/* Based on gcc code */
-
-			/* Add compensation for negative numerators */
-
-			if (power > 1) {
-				intermediate_reg = compensator_reg;
-				MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_IMM : OP_ISHR_IMM, intermediate_reg, ins->sreg1, is_long ? 63 : 31);
-			} else {
-				intermediate_reg = ins->sreg1;
-			}
-
-			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_UN_IMM : OP_ISHR_UN_IMM, compensator_reg, intermediate_reg, (is_long ? 64 : 32) - power);
-			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LADD : OP_IADD, ins->dreg, ins->sreg1, compensator_reg);
-			/* Compute remainder */
-			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LAND_IMM : OP_AND_IMM, ins->dreg, ins->dreg, (1 << power) - 1);
-			/* Remove compensation */
-			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LSUB : OP_ISUB, ins->dreg, ins->dreg, compensator_reg);
-
-			NULLIFY_INS (ins);
-		}
-#endif
-		break;
-	}
-
 	default:
 		emulate = TRUE;
 		break;
