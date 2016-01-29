@@ -1126,7 +1126,7 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
 
 #else // WIN64EXCEPTIONS
 
-FORCEINLINE PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
+PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
 {
     *pSize = 0;
     return dac_cast<PTR_VOID>(pRuntimeFunction->UnwindData + moduleBase);
