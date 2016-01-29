@@ -4,6 +4,7 @@
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
   <PropertyGroup>
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' and '$(OS)'=='OSX'">Unix</OsEnvironment>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
   
