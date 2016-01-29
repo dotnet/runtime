@@ -30,8 +30,6 @@
 
   <ItemGroup>
     <Compile Include="DummyTcpServer.cs" />
-    <Compile Include="FakeNetworkStream.cs" />
-    <Compile Include="MockNetwork.cs" />
     <Compile Include="TestConfiguration.cs" />
 
     <!-- SslStream Tests -->
@@ -72,8 +70,17 @@
     <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\VirtualNetwork\VirtualNetwork.cs">
+      <Link>Common\System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\VirtualNetwork\VirtualNetworkStream.cs">
+      <Link>Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskAPMExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskAPMExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
   </ItemGroup>
   
