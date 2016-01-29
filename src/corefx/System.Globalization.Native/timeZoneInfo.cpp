@@ -12,7 +12,7 @@ ReadLink
 
 Gets the symlink value for the path.
 */
-extern "C" int32_t ReadLink(const char* path, char* result, size_t resultCapacity)
+extern "C" int32_t GlobalizationNative_ReadLink(const char* path, char* result, size_t resultCapacity)
 {
     ssize_t r = readlink(path, result, resultCapacity - 1); // subtract one to make room for the NULL character
 
