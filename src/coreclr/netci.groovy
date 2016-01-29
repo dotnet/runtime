@@ -756,9 +756,9 @@ combinedScenarios.each { scenario ->
                             Utilities.getFullJobName(project, getJobName(configuration, architecture, 'windows_nt', scenario, true, branchName), isPR)
                     }
                     // Enable Server GC for Ubuntu PR builds
-                    def serverGCString = ""
+                    def serverGCString = ''
                     if (os == 'Ubuntu' && isPR){
-                        serverGCString = "--useServerGC"
+                        serverGCString = '--useServerGC'
                     }
 
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
