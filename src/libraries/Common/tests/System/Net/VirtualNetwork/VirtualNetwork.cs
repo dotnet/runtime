@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 
-namespace System.Net.Security.Tests
+namespace System.Net.Test.Common
 {
-    internal class MockNetwork
+    public class VirtualNetwork
     {
-        private readonly Queue<byte[]> _clientWriteQueue = new Queue<byte[]>();
-        private readonly Queue<byte[]> _serverWriteQueue = new Queue<byte[]>();
+        private readonly int WaitForReadDataTimeoutMilliseconds = 10 * 1000;
+        
+        private readonly ConcurrentQueue<byte[]> _clientWriteQueue = new ConcurrentQueue<byte[]>();
+        private readonly ConcurrentQueue<byte[]> _serverWriteQueue = new ConcurrentQueue<byte[]>();
 
         private readonly SemaphoreSlim _clientDataAvailable = new SemaphoreSlim(0);
         private readonly SemaphoreSlim _serverDataAvailable = new SemaphoreSlim(0);
@@ -18,7 +21,7 @@ namespace System.Net.Security.Tests
         public void ReadFrame(bool server, out byte[] buffer)
         {
             SemaphoreSlim semaphore;
-            Queue<byte[]> packetQueue;
+            ConcurrentQueue<byte[]> packetQueue;
 
             if (server)
             {
@@ -31,14 +34,16 @@ namespace System.Net.Security.Tests
                 packetQueue = _serverWriteQueue;
             }
 
-            semaphore.Wait(TestConfiguration.PassingTestTimeoutMilliseconds);
-            buffer = packetQueue.Dequeue();
+            semaphore.Wait(WaitForReadDataTimeoutMilliseconds);
+
+            bool dequeueSucceeded = packetQueue.TryDequeue(out buffer);
+            Debug.Assert(dequeueSucceeded, "Packet queue: TryDequeue failed.");
         }
 
         public void WriteFrame(bool server, byte[] buffer)
         {
             SemaphoreSlim semaphore;
-            Queue<byte[]> packetQueue;
+            ConcurrentQueue<byte[]> packetQueue;
 
             if (server)
             {
