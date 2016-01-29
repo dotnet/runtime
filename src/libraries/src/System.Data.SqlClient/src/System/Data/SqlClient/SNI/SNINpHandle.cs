@@ -1,6 +1,7 @@
 using System.IO;
 using System.IO.Pipes;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -12,16 +13,12 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNINpHandle : SNIHandle
     {
-        private const int BUFFER_SIZE = 4096;
         private const int MAX_PIPE_INSTANCES = 255;
 
         private readonly string _targetServer;
         private readonly object _callbackObject;
-        private readonly uint _status = TdsEnums.SNI_UNINITIALIZED;
-        private readonly Guid _connectionId = Guid.NewGuid();
         private readonly TaskScheduler _writeScheduler;
         private readonly TaskFactory _writeTaskFactory;
-        private bool _validateCert = true;
 
         private Stream _stream;
         private NamedPipeClientStream _pipeStream;
@@ -29,6 +26,11 @@ namespace System.Data.SqlClient.SNI
         private SslStream _sslStream;
         private SNIAsyncCallback _receiveCallback;
         private SNIAsyncCallback _sendCallback;
+
+        private bool _validateCert = true;
+        private readonly uint _status = TdsEnums.SNI_UNINITIALIZED;
+        private int _bufferSize = TdsEnums.DEFAULT_LOGIN_PACKET_SIZE;
+        private readonly Guid _connectionId = Guid.NewGuid();
 
         public SNINpHandle(string serverName, string pipeName, long timerExpire, object callbackObject)
         {
@@ -56,20 +58,20 @@ namespace System.Data.SqlClient.SNI
             }
             catch(TimeoutException te)
             {
-                SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, te.Message);
+                SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnTimeoutError, te);
                 _status = TdsEnums.SNI_WAIT_TIMEOUT;
                 return;
             }
             catch(IOException ioe)
             {
-                SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, ioe.Message);
+                SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnOpenFailedError, ioe);
                 _status = TdsEnums.SNI_ERROR;
                 return;
             }
 
             if (!_pipeStream.IsConnected || !_pipeStream.CanWrite || !_pipeStream.CanRead)
             {
-                SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipe connection failed to open.");
+                SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.ConnOpenFailedError, string.Empty);
                 _status = TdsEnums.SNI_ERROR;
                 return;
             }
@@ -141,24 +143,21 @@ namespace System.Data.SqlClient.SNI
                 try
                 {
                     packet = new SNIPacket(null);
-                    packet.Allocate(BUFFER_SIZE);
+                    packet.Allocate(_bufferSize);
                     packet.ReadFromStream(_stream);
 
                     if (packet.Length == 0)
                     {
-                        packet.Release();
-                        return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipe connection was terminated");
+                        return ReportErrorAndReleasePacket(packet, 0, SNICommon.ConnTerminatedError, string.Empty);
                     }
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    packet.Release();
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
                 catch (IOException ioe)
                 {
-                    packet.Release();
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ioe.Message);
+                    return ReportErrorAndReleasePacket(packet, ioe);
                 }
 
                 return TdsEnums.SNI_SUCCESS;
@@ -170,7 +169,7 @@ namespace System.Data.SqlClient.SNI
             lock (this)
             {
                 packet = new SNIPacket(null);
-                packet.Allocate(BUFFER_SIZE);
+                packet.Allocate(_bufferSize);
 
                 try
                 {
@@ -179,13 +178,11 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    packet.Release();
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
                 catch (IOException ioe)
                 {
-                    packet.Release();
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ioe.Message);
+                    return ReportErrorAndReleasePacket(packet, ioe);
                 }
             }
         }
@@ -201,11 +198,11 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
                 catch (IOException ioe)
                 {
-                    return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, "Named Pipes: " + ioe.Message);
+                    return ReportErrorAndReleasePacket(packet, ioe);
                 }
             }
         }
@@ -225,7 +222,7 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (Exception e)
                 {
-                    SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, 0, "Named Pipes: " + e.Message);
+                    SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.InternalExceptionError, e);
 
                     if (callback != null)
                     {
@@ -269,11 +266,11 @@ namespace System.Data.SqlClient.SNI
             }
             catch (AuthenticationException aue)
             {
-                return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, aue.Message);
+                return SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.InternalExceptionError, aue);
             }
             catch (InvalidOperationException ioe)
             {
-                return SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.InternalExceptionError, ioe.Message);
+                return SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.InternalExceptionError, ioe);
             }
 
             _stream = _sslStream;
@@ -314,6 +311,25 @@ namespace System.Data.SqlClient.SNI
         /// <param name="bufferSize">Buffer size</param>
         public override void SetBufferSize(int bufferSize)
         {
+            _bufferSize = bufferSize;
+        }
+
+        private uint ReportErrorAndReleasePacket(SNIPacket packet, Exception sniException)
+        {
+            if (packet != null)
+            {
+                packet.Release();
+            }
+            return SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.InternalExceptionError, sniException);
+        }
+
+        private uint ReportErrorAndReleasePacket(SNIPacket packet, uint nativeError, uint sniError, string errorMessage)
+        {
+            if (packet != null)
+            {
+                packet.Release();
+            }
+            return SNICommon.ReportSNIError(SNIProviders.NP_PROV, nativeError, sniError, errorMessage);
         }
 
 #if DEBUG

@@ -214,13 +214,13 @@ namespace System.Data.SqlClient.SNI
                     string pipePath = serverNameParts[1].Trim();
                     if (pipePath.Length < minPipeLength)
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path is malformed A");
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                         return null;
                     }
 
                     if (pipePath[0] != '\\' || pipePath[1] != '\\')
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path is malformed B");
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                         return null;
                     }
 
@@ -229,7 +229,7 @@ namespace System.Data.SqlClient.SNI
                     string pipeToken = @"\pipe\";
                     if (0 != string.Compare(pipeToken, 0, pipePath, endofServerName, pipeToken.Length))
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, 0, "Named pipe path must contain \'pipe\' after server name.");
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                         return null;
                     }
 
