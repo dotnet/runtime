@@ -154,8 +154,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     case 'x64':
                     case 'x86':
                         if (isFlowJob || os == 'Windows_NT' || !(os in Constants.crossList)) {
-                            // default gets a push trigger for everything
-                            Utilities.addGithubPushTrigger(job)
+                            // default gets a push trigger for everything, except for x64 Release - 
+                            // we use Pri 1 for that situation
+                            if (architecture != 'x64' && configuration != 'Release') {
+                                Utilities.addGithubPushTrigger(job)
+                            }
                         }
                         break
                     case 'arm':
@@ -174,7 +177,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     // We don't expect to see a job generated except in these scenarios
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     if (isFlowJob || os == 'Windows_NT') {
-                        Utilities.addPeriodicTrigger(job, '@daily')
+                        Utilities.addGithubPushTrigger(job)
                     }
                 }
                 break
@@ -238,7 +241,8 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     }
                     switch (scenario) {
                         case 'default':
-                            if (configuration == 'Release') {
+                            // Ubuntu uses checked for default PR tests
+                            if (configuration == 'Checked') {
                                 // Default trigger
                                 Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test")
                             }
@@ -317,7 +321,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'OpenSUSE13.2':
                     assert !isFlowJob
                     assert scenario == 'default'
-                    if (configuration != 'Checked') {
+                    if (configuration == 'Checked') {
                         Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
                     }
                     break
@@ -402,7 +406,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     break
                 case 'FreeBSD':
                     assert scenario == 'default'
-                    if (configuration != 'Checked') {
+                    if (configuration == 'Checked') {
                         Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
                     }
                     break
