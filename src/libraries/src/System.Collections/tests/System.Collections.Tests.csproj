@@ -37,22 +37,53 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs" >
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs" >
+      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs" >
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs" >
+      <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs" >
+      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs" >
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs" >
+      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs" >
+      <Link>Common\System\Collections\IGenericSharedAPI.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs" >
+      <Link>Common\System\Collections\ISet.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs" >
+      <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs" >
+      <Link>Common\System\Collections\TestBase.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs" >
+      <Link>Common\System\Collections\DebugView.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs" >
+      <Link>Common\System\Collections\TestingTypes.cs</Link>
+    </Compile>
+    <!-- Generic tests -->
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
-    <Compile Include="Generic\Common\ICollection.NonGeneric.Tests.cs" />
-    <Compile Include="Generic\Common\ICollection.Generic.Tests.cs" />
-    <Compile Include="Generic\Common\IDictionary.NonGeneric.Tests.cs" />
-    <Compile Include="Generic\Common\IDictionary.Generic.Tests.cs" />
-    <Compile Include="Generic\Common\IEnumerable.NonGeneric.Tests.cs" />
-    <Compile Include="Generic\Common\IList.NonGeneric.Tests.cs" />
-    <Compile Include="Generic\Common\IList.Generic.Tests.cs" />
-    <Compile Include="Generic\Common\IGenericSharedAPI_Tests.cs" />
-    <Compile Include="Generic\Common\ISet.Generic.Tests.cs" />
-    <Compile Include="Generic\Common\TestBase.NonGeneric.cs" />
-    <Compile Include="Generic\Common\TestBase.Generic.cs" />
-    <Compile Include="Generic\Common\DebugView.Tests.cs" />
-    <Compile Include="Generic\Common\TestingTypes.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Tests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
@@ -122,7 +153,6 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Generic\Common\IEnumerable.Generic.Tests.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

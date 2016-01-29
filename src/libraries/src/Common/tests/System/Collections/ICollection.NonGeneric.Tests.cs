@@ -36,6 +36,7 @@ namespace System.Collections.Tests
         protected virtual bool DuplicateValuesAllowed { get { return true; } }
         protected virtual bool IsReadOnly { get { return false; } }
         protected virtual bool NullAllowed { get { return true; } }
+        protected virtual bool ExpectedIsSynchronized { get { return false; } }
         protected virtual IEnumerable<object> InvalidValues { get { return new object[] { }; } }
         protected abstract void AddToCollection(ICollection collection, int numberOfItemsToAdd);
 
@@ -71,7 +72,7 @@ namespace System.Collections.Tests
         public void ICollection_NonGeneric_IsSynchronized(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
-            Assert.False(collection.IsSynchronized);
+            Assert.Equal(ExpectedIsSynchronized, collection.IsSynchronized);
         }
 
         #endregion
@@ -84,6 +85,39 @@ namespace System.Collections.Tests
         {
             ICollection collection = NonGenericICollectionFactory(count);
             var root = collection.SyncRoot; // doesnt throw
+        }
+
+        [Fact]
+        public void SyncRootNonNull()
+        {
+            ICollection collection = NonGenericICollectionFactory(16);
+            Assert.NotNull(collection.SyncRoot);
+        }
+
+        [Fact]
+        public void SyncRootConsistent()
+        {
+            ICollection collection = NonGenericICollectionFactory(16);
+            object syncRoot1 = collection.SyncRoot;
+            object syncRoot2 = collection.SyncRoot;
+            Assert.Equal(syncRoot1, syncRoot2);
+        }
+
+        [Fact]
+        public void SyncRootCanBeLocked()
+        {
+            ICollection collection = NonGenericICollectionFactory(16);
+            lock (collection.SyncRoot)
+            {
+            }
+        }
+
+        [Fact]
+        public void SyncRootUnique()
+        {
+            ICollection collection1 = NonGenericICollectionFactory(16);
+            ICollection collection2 = NonGenericICollectionFactory(16);
+            Assert.NotEqual(collection1.SyncRoot, collection2.SyncRoot);
         }
 
         #endregion

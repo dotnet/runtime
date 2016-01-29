@@ -117,11 +117,12 @@ namespace System.Collections.Tests
         [MemberData("ValidCollectionSizes")]
         public void IList_Generic_ItemSet_OnReadOnlyList(int count)
         {
-            if (IsReadOnly)
+            if (IsReadOnly && count > 0)
             {
                 IList<T> list = GenericIListFactory(count);
+                T before = list[count / 2];
                 Assert.Throws<NotSupportedException>(() => list[count / 2] = TFactory(321432));
-                Assert.Equal(count, list.Count);
+                Assert.Equal(before, list[count / 2]);
             }
         }
 
@@ -142,12 +143,19 @@ namespace System.Collections.Tests
         [MemberData("ValidCollectionSizes")]
         public void IList_Generic_ItemSet_FirstItemToDefaultValue(int count)
         {
-            if (count > 0 && !IsReadOnly && DefaultValueAllowed)
+            if (count > 0 && !IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = default(T);
-                list[0] = value;
-                Assert.Equal(value, list[0]);
+                if (DefaultValueAllowed)
+                {
+                    list[0] = default(T);
+                    Assert.Equal(default(T), list[0]);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentNullException>(() => list[0] = default(T));
+                    Assert.NotEqual(default(T), list[0]);
+                }
             }
         }
 
@@ -172,10 +180,17 @@ namespace System.Collections.Tests
             if (count > 0 && !IsReadOnly && DefaultValueAllowed)
             {
                 IList<T> list = GenericIListFactory(count);
-                T value = default(T);
                 int lastIndex = count > 0 ? count - 1 : 0;
-                list[lastIndex] = value;
-                Assert.Equal(value, list[lastIndex]);
+                if (DefaultValueAllowed)
+                {
+                    list[lastIndex] = default(T);
+                    Assert.Equal(default(T), list[lastIndex]);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentNullException>(() => list[lastIndex] = default(T));
+                    Assert.NotEqual(default(T), list[lastIndex]);
+                }
             }
         }
 

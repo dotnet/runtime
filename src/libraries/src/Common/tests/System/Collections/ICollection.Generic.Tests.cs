@@ -51,7 +51,7 @@ namespace System.Collections.Tests
                 collection.Add(toAdd);
             }
         }
-
+        
         #endregion
 
         #region IEnumerable<T> Helper Methods
@@ -179,16 +179,13 @@ namespace System.Collections.Tests
         [MemberData("ValidCollectionSizes")]
         public void ICollection_Generic_Add_DuplicateValue(int count)
         {
-            if (!IsReadOnly)
+            if (!IsReadOnly && DuplicateValuesAllowed)
             {
-                if (DuplicateValuesAllowed)
-                {
-                    ICollection<T> collection = GenericICollectionFactory(count);
-                    T duplicateValue = TFactory(700);
-                    collection.Add(duplicateValue);
-                    collection.Add(duplicateValue);
-                    Assert.Equal(count + 2, collection.Count);
-                }
+                ICollection<T> collection = GenericICollectionFactory(count);
+                T duplicateValue = TFactory(700);
+                collection.Add(duplicateValue);
+                collection.Add(duplicateValue);
+                Assert.Equal(count + 2, collection.Count);
             }
         }
 
@@ -288,6 +285,27 @@ namespace System.Collections.Tests
             }
             else
             {
+                collection.Clear();
+                Assert.Equal(0, collection.Count);
+            }
+        }
+
+        [Theory]
+        [MemberData("ValidCollectionSizes")]
+        public void ICollection_Generic_Clear_Repeatedly(int count)
+        {
+            ICollection<T> collection = GenericICollectionFactory(count);
+            if (IsReadOnly)
+            {
+                Assert.Throws<NotSupportedException>(() => collection.Clear());
+                Assert.Throws<NotSupportedException>(() => collection.Clear());
+                Assert.Throws<NotSupportedException>(() => collection.Clear());
+                Assert.Equal(count, collection.Count);
+            }
+            else
+            {
+                collection.Clear();
+                collection.Clear();
                 collection.Clear();
                 Assert.Equal(0, collection.Count);
             }

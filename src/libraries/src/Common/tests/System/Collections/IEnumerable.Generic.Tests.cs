@@ -67,6 +67,231 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool Enumerator_Current_UndefinedOperation_Throws { get { return false; } }
 
+        /// <summary>
+        /// The behavior of MoveNext at the end of the enumerable after modification is undefined for the generic
+        /// IEnumerable. It may either throw an InvalidOperationException or do nothing.
+        /// </summary>
+        protected bool MoveNextAtEndThrowsOnModifiedCollection { get { return true; } }
+
+        /// <summary>
+        /// Specifies whether this IEnumerable follows some sort of ordering pattern.
+        /// </summary>
+        protected virtual EnumerableOrder Order { get { return EnumerableOrder.Sequential; } }
+
+        /// <summary>
+        /// An enum to allow specification of the order of the Enumerable. Used in validation for enumerables.
+        /// </summary>
+        protected enum EnumerableOrder
+        {
+            Unspecified,
+            Sequential
+        }
+
+        #endregion
+
+        #region Validation
+
+        private void RepeatTest(
+            Action<IEnumerator, T[], int> testCode,
+            int iters = 3)
+        {
+            IEnumerable<T> enumerable = GenericIEnumerableFactory(32);
+            T[] items = enumerable.ToArray();
+            IEnumerator enumerator = enumerable.GetEnumerator();
+            for (var i = 0; i < iters; i++)
+            {
+                testCode(enumerator, items, i);
+                if (!ResetImplemented)
+                {
+                    enumerator = enumerable.GetEnumerator();
+                }
+                else
+                {
+                    enumerator.Reset();
+                }
+            }
+        }
+
+        private void RepeatTest(
+            Action<IEnumerator, T[]> testCode,
+            int iters = 3)
+        {
+            RepeatTest((e, i, it) => testCode(e, i), iters);
+        }
+
+        private void VerifyModifiedEnumerator(
+            IEnumerator enumerator,
+            object expectedCurrent,
+            bool expectCurrentThrow,
+            bool atEnd)
+        {
+            if (expectCurrentThrow)
+            {
+                Assert.Throws<InvalidOperationException>(
+                    () => enumerator.Current);
+            }
+            else
+            {
+                object current = enumerator.Current;
+                for (var i = 0; i < 3; i++)
+                {
+                    Assert.Equal(expectedCurrent, current);
+                    current = enumerator.Current;
+                }
+            }
+
+            if (!atEnd || MoveNextAtEndThrowsOnModifiedCollection)
+            {
+                Assert.Throws<InvalidOperationException>(
+                    () => enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.False(enumerator.MoveNext());
+            }
+
+            if (!!ResetImplemented)
+            {
+                Assert.Throws<InvalidOperationException>(
+                    () => enumerator.Reset());
+            }
+        }
+
+        private void VerifyEnumerator(
+            IEnumerator enumerator,
+            T[] expectedItems)
+        {
+            VerifyEnumerator(
+                enumerator,
+                expectedItems,
+                0,
+                expectedItems.Length,
+                true,
+                true);
+        }
+
+        private void VerifyEnumerator(
+            IEnumerator enumerator,
+            T[] expectedItems,
+            int startIndex,
+            int count,
+            bool validateStart,
+            bool validateEnd)
+        {
+            bool needToMatchAllExpectedItems = count - startIndex
+                                               == expectedItems.Length;
+            if (validateStart)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Assert.Throws<InvalidOperationException>(
+                        () => enumerator.Current);
+                }
+            }
+
+            int iterations;
+            if (Order == EnumerableOrder.Unspecified)
+            {
+                var itemsVisited =
+                    new BitArray(
+                        needToMatchAllExpectedItems
+                            ? count
+                            : expectedItems.Length,
+                        false);
+                for (iterations = 0;
+                     iterations < count && enumerator.MoveNext();
+                     iterations++)
+                {
+                    object currentItem = enumerator.Current;
+                    var itemFound = false;
+                    for (var i = 0; i < itemsVisited.Length; ++i)
+                    {
+                        if (!itemsVisited[i]
+                            && Equals(
+                                currentItem,
+                                expectedItems[
+                                    i
+                                    + (needToMatchAllExpectedItems
+                                           ? startIndex
+                                           : 0)]))
+                        {
+                            itemsVisited[i] = true;
+                            itemFound = true;
+                            break;
+                        }
+                    }
+                    Assert.True(itemFound, "itemFound");
+
+                    for (var i = 0; i < 3; i++)
+                    {
+                        object tempItem = enumerator.Current;
+                        Assert.Equal(currentItem, tempItem);
+                    }
+                }
+                if (needToMatchAllExpectedItems)
+                {
+                    for (var i = 0; i < itemsVisited.Length; i++)
+                    {
+                        Assert.True(itemsVisited[i]);
+                    }
+                }
+                else
+                {
+                    var visitedItemCount = 0;
+                    for (var i = 0; i < itemsVisited.Length; i++)
+                    {
+                        if (itemsVisited[i])
+                        {
+                            ++visitedItemCount;
+                        }
+                    }
+                    Assert.Equal(count, visitedItemCount);
+                }
+            }
+            else if (Order == EnumerableOrder.Sequential)
+            {
+                for (iterations = 0;
+                     iterations < count && enumerator.MoveNext();
+                     iterations++)
+                {
+                    object currentItem = enumerator.Current;
+                    Assert.Equal(expectedItems[iterations], currentItem);
+                    for (var i = 0; i < 3; i++)
+                    {
+                        object tempItem = enumerator.Current;
+                        Assert.Equal(currentItem, tempItem);
+                    }
+                }
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "EnumerableOrder is invalid.");
+            }
+            Assert.Equal(count, iterations);
+
+            if (validateEnd)
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    Assert.False(
+                        enumerator.MoveNext(),
+                        "enumerator.MoveNext() returned true past the expected end.");
+                }
+
+                if (!Enumerator_Current_UndefinedOperation_Throws)
+                {
+                    return;
+                }
+                // apparently it is okay if enumerator.Current doesn't throw when the collection is generic.
+                for (var i = 0; i < 3; i++)
+                {
+                }
+                Assert.Throws<InvalidOperationException>(
+                    () => enumerator.Current);
+            }
+        }
+
         #endregion
 
         #region GetEnumerator()
@@ -187,9 +412,79 @@ namespace System.Collections.Tests
             });
         }
 
+        [Fact]
+        public void IEnumerable_Generic_Enumerator_MoveNextHitsAllItems()
+        {
+            RepeatTest(
+                (enumerator, items) =>
+                {
+                    var iterations = 0;
+                    while (enumerator.MoveNext())
+                    {
+                        iterations++;
+                    }
+                    Assert.Equal(items.Length, iterations);
+                });
+        }
+
+        [Fact]
+        public void IEnumerable_Generic_Enumerator_MoveNextFalseAfterEndOfCollection()
+        {
+            RepeatTest(
+                (enumerator, items) =>
+                {
+                    while (enumerator.MoveNext())
+                    {
+                    }
+
+                    Assert.False(enumerator.MoveNext());
+                });
+        }
+
         #endregion
 
         #region Enumerator.Current
+
+        [Fact]
+        public void IEnumerable_Generic_Enumerator_CurrentThrowsAfterEndOfCollection()
+        {
+            if (Enumerator_Current_UndefinedOperation_Throws)
+            {
+                RepeatTest(
+                    (enumerator, items) =>
+                    {
+                        while (enumerator.MoveNext())
+                        {
+                        }
+                        Assert.Throws<InvalidOperationException>(
+                            () => enumerator.Current);
+                    });
+            }
+        }
+
+        [Fact]
+        public void IEnumerable_Generic_Enumerator_Current()
+        {
+            // Verify that current returns proper result.
+            RepeatTest(
+                (enumerator, items, iteration) =>
+                {
+                    if (iteration == 1)
+                    {
+                        VerifyEnumerator(
+                            enumerator,
+                            items,
+                            0,
+                            items.Length / 2,
+                            true,
+                            false);
+                    }
+                    else
+                    {
+                        VerifyEnumerator(enumerator, items);
+                    }
+                });
+        }
 
         [Theory]
         [MemberData("ValidCollectionSizes")]
@@ -350,6 +645,96 @@ namespace System.Collections.Tests
                     Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
                 }
             });
+        }
+
+        [Fact]
+        public void IEnumerable_Generic_Enumerator_Reset()
+        {
+            if (!ResetImplemented)
+            {
+                RepeatTest(
+                    (enumerator, items) =>
+                    {
+                        Assert.Throws<NotSupportedException>(
+                            () => enumerator.Reset());
+                    });
+                RepeatTest(
+                    (enumerator, items, iter) =>
+                    {
+                        if (iter == 1)
+                        {
+                            VerifyEnumerator(
+                                enumerator,
+                                items,
+                                0,
+                                items.Length / 2,
+                                true,
+                                false);
+                            for (var i = 0; i < 3; i++)
+                            {
+                                Assert.Throws<NotSupportedException>(
+                                    () => enumerator.Reset());
+                            }
+                            VerifyEnumerator(
+                                enumerator,
+                                items,
+                                items.Length / 2,
+                                items.Length - (items.Length / 2),
+                                false,
+                                true);
+                        }
+                        else if (iter == 2)
+                        {
+                            VerifyEnumerator(enumerator, items);
+                            for (var i = 0; i < 3; i++)
+                            {
+                                Assert.Throws<NotSupportedException>(
+                                    () => enumerator.Reset());
+                            }
+                            VerifyEnumerator(
+                                enumerator,
+                                items,
+                                0,
+                                0,
+                                false,
+                                true);
+                        }
+                        else
+                        {
+                            VerifyEnumerator(enumerator, items);
+                        }
+                    });
+            }
+            else
+            {
+                RepeatTest(
+                    (enumerator, items, iter) =>
+                    {
+                        if (iter == 1)
+                        {
+                            VerifyEnumerator(
+                                enumerator,
+                                items,
+                                0,
+                                items.Length / 2,
+                                true,
+                                false);
+                            enumerator.Reset();
+                            enumerator.Reset();
+                        }
+                        else if (iter == 3)
+                        {
+                            VerifyEnumerator(enumerator, items);
+                            enumerator.Reset();
+                            enumerator.Reset();
+                        }
+                        else
+                        {
+                            VerifyEnumerator(enumerator, items);
+                        }
+                    },
+                    5);
+            }
         }
 
         #endregion
