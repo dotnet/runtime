@@ -379,8 +379,8 @@ namespace System.Collections
                 int newCapacity = _items.Length == 0 ? _defaultCapacity : _items.Length * 2;
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > ArrayList.MaxArrayLength) newCapacity = ArrayList.MaxArrayLength;
-                if (newCapacity < min) newCapacity = min;
+                newCapacity = (int)Math.Min((uint)newCapacity, ArrayList.MaxArrayLength);
+                newCapacity = Math.Max(min, newCapacity);
                 Capacity = newCapacity;
             }
         }
@@ -1270,10 +1270,6 @@ namespace System.Collections
                 private int _initialStartIndex; // for reset
                 private int _initialCount;      // for reset
                 private bool _firstCall;        // firstCall to MoveNext
-
-                private IListWrapperEnumWrapper()
-                {
-                }
 
                 internal IListWrapperEnumWrapper(IListWrapper listWrapper, int startIndex, int count)
                 {
