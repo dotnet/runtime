@@ -6,7 +6,11 @@
     <ProjectReference Include="..\ref\System.Reflection.TypeExtensions.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Reflection.TypeExtensions.builds" />
+    <ProjectReference Include="..\src\System.Reflection.TypeExtensions.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="any\System.Reflection.TypeExtensions.pkgproj" />
+    <ProjectReference Include="aot\System.Reflection.TypeExtensions.pkgproj" />
   </ItemGroup>
 
   <ItemGroup>
