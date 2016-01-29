@@ -9010,6 +9010,8 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 	MonoError error;
 	int i;
 
+	mono_error_init (&error);
+
 	*ctor_args = NULL;
 	*named_args = NULL;
 
@@ -9024,19 +9026,16 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 		mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
 
 	mono_reflection_create_custom_attr_data_args (image, method, (const guchar *)data, len, &typedargs, &namedargs, &arginfo, &error);
-	if (!mono_error_ok (&error)) {
-		g_free (arginfo);
-		mono_error_raise_exception (&error);
-	}
+	if (!mono_error_ok (&error))
+		goto leave;
+
 	if (mono_loader_get_last_error ()) {
-		g_free (arginfo);
-		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+		mono_error_set_from_loader_error (&error);
+		goto leave;
 	}
 
-	if (!typedargs || !namedargs) {
-		g_free (arginfo);
-		return;
-	}
+	if (!typedargs || !namedargs)
+		goto leave;
 
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		MonoObject *obj = mono_array_get (typedargs, MonoObject*, i);
@@ -9054,10 +9053,8 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 			minfo = (MonoObject*)mono_property_get_object (domain, NULL, arginfo [i].prop);
 		else {
 			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, &error);
-			if (!mono_error_ok (&error)) {
-				g_free (arginfo);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
-			}
+			if (!mono_error_ok (&error))
+				goto leave;
 		}
 
 		typedarg = create_cattr_typed_arg (arginfo [i].type, obj);
@@ -9068,7 +9065,10 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 
 	*ctor_args = typedargs;
 	*named_args = namedargs;
+leave:
 	g_free (arginfo);
+	mono_error_raise_exception (&error);
+
 }
 
 static MonoObject*
