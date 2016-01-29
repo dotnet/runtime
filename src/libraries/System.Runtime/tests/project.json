@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0025",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
     "System.Console": "4.0.0-rc3-23727",
     "System.Globalization": "4.0.10",
     "System.Reflection": "4.0.10",
