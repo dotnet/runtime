@@ -1751,16 +1751,75 @@ mono_llvmonly_set_calling_assembly (MonoImage *image)
 	jit_tls->calling_image = image;
 }
 
+
+static gboolean
+get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = (MonoMethod **)data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (!(*dest)) {
+		if (!strcmp (m->klass->name_space, "System.Reflection"))
+			return FALSE;
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+get_caller_no_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = (MonoMethod **)data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (m->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (m->klass->image == mono_defaults.corlib && !strcmp (m->klass->name_space, "System.Reflection"))
+		return FALSE;
+
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+	if (!(*dest)) {
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 MonoObject*
 mono_llvmonly_get_calling_assembly (void)
 {
 	MonoJitTlsData *jit_tls = NULL;
+	MonoMethod *m;
+	MonoMethod *dest;
+	MonoAssembly *assembly;
 
-	jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
-	g_assert (jit_tls);
-	if (!jit_tls->calling_image) {
-		mono_set_pending_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
-		return NULL;
+	dest = NULL;
+	mono_stack_walk_no_il (get_executing, &dest);
+	m = dest;
+	mono_stack_walk_no_il (get_caller_no_reflection, &dest);
+
+	if (!dest) {
+		/* Fall back to TLS */
+		jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
+		g_assert (jit_tls);
+		if (!jit_tls->calling_image) {
+			mono_set_pending_exception (mono_get_exception_not_supported ("Stack walks are not supported on this platform."));
+			return NULL;
+		}
+		assembly = jit_tls->calling_image->assembly;
+	} else {
+		assembly = dest->klass->image->assembly;
 	}
 	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), jit_tls->calling_image->assembly);
 }
