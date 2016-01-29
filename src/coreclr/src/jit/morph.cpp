@@ -4354,7 +4354,7 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
     }
 #ifdef _TARGET_ARM_
     // Either we don't have a struct now or if struct, then it is HFA returned in regs.
-    assert(varTypeIsStruct(call) || (IsHfa(call) && !callHasRetBuffArg));
+    assert(!varTypeIsStruct(call) || (IsHfa(call) && !callHasRetBuffArg));
 #else
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // Either we don't have a struct now or if struct, then it is a struct returned in regs or in return buffer.
