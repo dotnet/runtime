@@ -4,44 +4,21 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-
     public static class BreakTests
     {
-
-        [Fact]
-        public static void TestForBreak()
+        [Theory]
+        [InlineData(100, 10)]
+        [InlineData(100, 20)]
+        [InlineData(1000, 100)]
+        [InlineData(1000, 200)]
+        public static void TestFor_Break_Basic(int loopsize, int breakpoint)
         {
-            TestForBreak(100, 10);
-            TestForBreak(100, 20);
-            TestForBreak(1000, 100);
-            TestForBreak(1000, 200);
-        }
-
-        [Fact]
-        public static void TestFor64Break()
-        {
-            TestFor64Break(100, 10);
-            TestFor64Break(100, 20);
-            TestFor64Break(1000, 100);
-            TestFor64Break(1000, 200);
-        }
-
-        [Fact]
-        public static void TestForEachBreak()
-        {
-            TestForEachBreak(500, 10);
-            TestForEachBreak(500, 20);
-            TestForEachBreak(1000, 100);
-            TestForEachBreak(1000, 200);
-        }
-
-        private static void TestForBreak(int loopsize, int breakpoint)
-        {
-            bool[] complete = new bool[loopsize];
+            var complete = new bool[loopsize];
 
             Parallel.For(0, loopsize, delegate(int i, ParallelLoopState ps)
             {
@@ -54,7 +31,7 @@ namespace System.Threading.Tasks.Tests
             // to break, and there should be some after.
             for (int i = 0; i <= breakpoint; i++)
             {
-                Assert.True(complete[i], String.Format("TestForBreak:  Failed: incomplete at {0}, loopsize {1}, breakpoint {2}", i, loopsize, breakpoint));
+                Assert.True(complete[i], string.Format("TestForBreak:  Failed: incomplete at {0}, loopsize {1}, breakpoint {2}", i, loopsize, breakpoint));
             }
 
             bool result = true;
@@ -70,11 +47,15 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestForBreak:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        // .. and a 64-bit version
-        private static void TestFor64Break(long loopsize, long breakpoint)
+        [Theory]
+        [InlineData(100, 10)]
+        [InlineData(100, 20)]
+        [InlineData(1000, 100)]
+        [InlineData(1000, 200)]
+        public static void TestFor_Break_64Bits(int loopsize, int breakpoint)
         {
             Logger.LogInformation("* TestFor64Break(loopsize={0},breakpoint={1})", loopsize, breakpoint);
-            bool[] complete = new bool[loopsize];
+            var complete = new bool[loopsize];
 
             // Throw a curveball here and loop from just-under-Int32.MaxValue to 
             // just-over-Int32.MaxValue.  Make sure that 64-bit indices are being
@@ -91,7 +72,7 @@ namespace System.Threading.Tasks.Tests
             // to break, and there should be some after.
             for (long i = 0; i <= breakpoint; i++)
             {
-                Assert.True(complete[i], String.Format("TestFor64Break: Failed: incomplete at {0}, loopsize {1}, breakpoint {2}", i, loopsize, breakpoint));
+                Assert.True(complete[i], string.Format("TestFor64Break: Failed: incomplete at {0}, loopsize {1}, breakpoint {2}", i, loopsize, breakpoint));
             }
 
             bool result = false;
@@ -107,15 +88,20 @@ namespace System.Threading.Tasks.Tests
             Assert.True(result, "TestFor64Break:  Failed: Could not detect any interruption of For-loop.");
         }
 
-        private static void TestForEachBreak(int loopsize, int breakpoint)
+        [Theory]
+        [InlineData(500, 10)]
+        [InlineData(500, 20)]
+        [InlineData(1000, 100)]
+        [InlineData(1000, 200)]
+        public static void TestForEach_Break(int loopsize, int breakpoint)
         {
             Logger.LogInformation("* TestForEachBreak(loopsize={0},breakpoint={1})", loopsize, breakpoint);
-            bool[] complete = new bool[loopsize];
+            var complete = new bool[loopsize];
 
             // NOTE: Make sure and use some collection that is NOT a list or an
             // array.  Lists/arrays will be essentially be passed through
             // Parallel.For() logic, which will make this test fail.
-            Queue<int> iqueue = new Queue<int>();
+            var iqueue = new Queue<int>();
             for (int i = 0; i < loopsize; i++) iqueue.Enqueue(i);
 
             Parallel.ForEach(iqueue, delegate(int i, ParallelLoopState ps)
@@ -129,7 +115,7 @@ namespace System.Threading.Tasks.Tests
             // to break, and there should be some after.
             for (int i = 0; i <= breakpoint; i++)
             {
-                Assert.True(complete[i], String.Format("TestForEachBreak(loopsize={0},breakpoint={1}):  Failed: incomplete at {2}", loopsize, breakpoint, i));
+                Assert.True(complete[i], string.Format("TestForEachBreak(loopsize={0},breakpoint={1}):  Failed: incomplete at {2}", loopsize, breakpoint, i));
             }
 
             bool result = false;
@@ -142,12 +128,12 @@ namespace System.Threading.Tasks.Tests
                 }
             }
             
-            Assert.True(result, String.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
+            Assert.True(result, string.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
 
             // 
             // Now try it for OrderablePartitioner
             //
-            List<int> ilist = new List<int>();
+            var ilist = new List<int>();
             for (int i = 0; i < loopsize; i++)
             {
                 ilist.Add(i);
@@ -164,10 +150,9 @@ namespace System.Threading.Tasks.Tests
                 //Thread.Sleep(2);
             });
 
-            result = true;
             for (int i = 0; i <= breakpoint; i++)
             {
-                Assert.True(complete[i], String.Format("TestForEachBreak(loopsize={0},breakpoint={1}):  Failed: incomplete at {2}", loopsize, breakpoint, i));
+                Assert.True(complete[i], string.Format("TestForEachBreak(loopsize={0},breakpoint={1}):  Failed: incomplete at {2}", loopsize, breakpoint, i));
             }
 
             result = false;
@@ -180,7 +165,7 @@ namespace System.Threading.Tasks.Tests
                 }
             }
             
-            Assert.True(result, String.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
+            Assert.True(result, string.Format("TestForEachBreak(loopsize={0},breakpoint={1}): Failed: Could not detect any interruption of For-loop.", loopsize, breakpoint));
         }
     }
 }

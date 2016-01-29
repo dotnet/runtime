@@ -15,12 +15,12 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-
-    public class RangePartitionerThreadSafetyTests
+    public static class RangePartitionerThreadSafetyTests
     {
         /// <summary>
         /// Make sure that range Partitioner.Create can be called from multiple threads
