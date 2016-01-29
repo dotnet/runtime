@@ -73,11 +73,7 @@
 
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
 
-#ifdef UNICODE
-#define _istspace(x)    isspace( ( char )( x & 0x00FF ) )
-#else
-#define _istspace(x)    isspace(x)
-#endif
+#define _istspace(x)    isspace((unsigned char)x)
 
 #define _malloc_crt PAL_malloc
 #define _realloc_crt PAL_realloc
@@ -1316,4 +1312,3 @@ static int __cdecl _whiteout(int* counter, miniFILE* fileptr)
 }
 
 #endif  /* CPRFLAG */
-
