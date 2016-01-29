@@ -18,7 +18,7 @@ The .NET Framework was designed to run on Windows only. Some versions of the .NE
 
 Originally, .NET Core was the identifier we used to describe the .NET APIs Windows 8 store applications could use. When we designed the API set, we wanted to create a foundation for .NET where portability is a first class concern for the layering and componentization. For more details, read [this blog post](http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx).
 
-Today, .NET Core no longer just for store applications. .NET Core is the name for the open source, cross-platform stack that ASP.NET Core and UWP applications are built on. The stack includes a set of framework libraries (CoreFX), a JIT based runtime (CoreCLR), an AOT based runtime (CoreRT), and a set of tooling (such as the dotnet CLI).
+Today, .NET Core is no longer just for store applications. .NET Core is the name for the open source, cross-platform stack that ASP.NET Core and UWP applications are built on. The stack includes a set of framework libraries (CoreFX), a JIT based runtime (CoreCLR), an AOT based runtime (CoreRT), and a set of tooling (such as the dotnet CLI).
 
 That's why referring to .NET Core as 'Store' is no longer correct. But you can think of today's .NET Core as an evolution of the original APIs available for store applications. Many of the original design goals are still relevant, especially around layering and portability.
 
