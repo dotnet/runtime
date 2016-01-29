@@ -85,6 +85,13 @@ static void CloseIfOpen(int fd)
     }
 }
 
+static int Dup2WithInterruptedRetry(int oldfd, int newfd)
+{
+    int result;
+    while (CheckInterrupted(result = dup2(oldfd, newfd)));
+    return result;
+}
+
 extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -155,9 +162,9 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
         // For any redirections that should happen, dup the pipe descriptors onto stdin/out/err.
         // Then close out the old pipe descriptrs, which we no longer need.
-        if ((redirectStdin && dup2(stdinFds[READ_END_OF_PIPE], STDIN_FILENO) == -1) ||
-            (redirectStdout && dup2(stdoutFds[WRITE_END_OF_PIPE], STDOUT_FILENO) == -1) ||
-            (redirectStderr && dup2(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
+        if ((redirectStdin && Dup2WithInterruptedRetry(stdinFds[READ_END_OF_PIPE], STDIN_FILENO) == -1) ||
+            (redirectStdout && Dup2WithInterruptedRetry(stdoutFds[WRITE_END_OF_PIPE], STDOUT_FILENO) == -1) ||
+            (redirectStderr && Dup2WithInterruptedRetry(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
         {
             _exit(errno != 0 ? errno : EXIT_FAILURE);
         }
@@ -166,9 +173,14 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
         CloseIfOpen(stderrFds[WRITE_END_OF_PIPE]);
 
         // Change to the designated working directory, if one was specified
-        if (nullptr != cwd && chdir(cwd) == -1)
+        if (nullptr != cwd)
         {
-            _exit(errno != 0 ? errno : EXIT_FAILURE);
+            int result;
+            while (CheckInterrupted(result = chdir(cwd)));
+            if (result == -1)
+            {
+                _exit(errno != 0 ? errno : EXIT_FAILURE);
+            }
         }
 
         // Finally, execute the new process.  execve will not return if it's successful.
