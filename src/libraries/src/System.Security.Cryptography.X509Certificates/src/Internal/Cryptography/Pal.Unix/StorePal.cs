@@ -205,30 +205,49 @@ namespace Internal.Cryptography.Pal
 
             X509Certificate2Collection rootStore = new X509Certificate2Collection();
 
-            DirectoryInfo directoryInfo;
+            DirectoryInfo rootStorePath = null;
+            IEnumerable<FileInfo> trustedCertFiles;
 
             try
             {
-                directoryInfo = new DirectoryInfo(Interop.Crypto.GetX509RootStorePath());
+                rootStorePath = new DirectoryInfo(Interop.Crypto.GetX509RootStorePath());
             }
             catch (ArgumentException)
             {
                 // If SSL_CERT_DIR is set to the empty string, or anything else which gives
-                // "The path is not of a legal form", then just call it a day.
-                s_machineRootStore = rootStore;
-                return;
+                // "The path is not of a legal form", then the GetX509RootStorePath value is ignored.
             }
 
-            if (!directoryInfo.Exists)
+            if (rootStorePath != null && rootStorePath.Exists)
             {
-                s_machineRootStore = rootStore;
-                return;
+                trustedCertFiles = rootStorePath.EnumerateFiles();
+            }
+            else
+            {
+                trustedCertFiles = Array.Empty<FileInfo>();
+            }
+
+            FileInfo rootStoreFile = null;
+
+            try
+            {
+                rootStoreFile = new FileInfo(Interop.Crypto.GetX509RootStoreFile());
+            }
+            catch (ArgumentException)
+            {
+                // If SSL_CERT_FILE is set to the empty string, or anything else which gives
+                // "The path is not of a legal form", then the GetX509RootStoreFile value is ignored.
+            }
+
+            if (rootStoreFile != null && rootStoreFile.Exists)
+            {
+                trustedCertFiles = Append(trustedCertFiles, rootStoreFile);
             }
 
             HashSet<X509Certificate2> uniqueRootCerts = new HashSet<X509Certificate2>();
             HashSet<X509Certificate2> uniqueIntermediateCerts = new HashSet<X509Certificate2>();
 
-            foreach (FileInfo file in directoryInfo.EnumerateFiles())
+            foreach (FileInfo file in trustedCertFiles)
             {
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file.FullName, "rb"))
                 {
@@ -259,6 +278,14 @@ namespace Internal.Cryptography.Pal
             }
 
             s_machineRootStore = rootStore;
+        }
+
+        private static IEnumerable<T> Append<T>(IEnumerable<T> current, T addition)
+        {
+            foreach (T element in current)
+                yield return element;
+
+            yield return addition;
         }
     }
 }
