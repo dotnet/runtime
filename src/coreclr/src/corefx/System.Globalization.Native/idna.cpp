@@ -38,7 +38,8 @@ Return values:
 0: internal error during conversion.
 >0: the length of the converted string (not including the null terminator).
 */
-extern "C" int32_t ToAscii(uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+extern "C" int32_t GlobalizationNative_ToAscii(
+    uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     UIDNAInfo info = UIDNA_INFO_INITIALIZER;
@@ -52,6 +53,15 @@ extern "C" int32_t ToAscii(uint32_t flags, const UChar* lpSrc, int32_t cwSrcLeng
     return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? asciiStrLen : 0;
 }
 
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the corefx managed assemblies
+// are synced up with the native assemblies.
+extern "C" int32_t ToAscii(
+    uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+{
+    return GlobalizationNative_ToAscii(flags, lpSrc, cwSrcLength, lpDst, cwDstLength);
+}
+
 /*
 Function:
 ToUnicode
@@ -63,7 +73,8 @@ Return values:
 0: internal error during conversion.
 >0: the length of the converted string (not including the null terminator).
 */
-extern "C" int32_t ToUnicode(int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+extern "C" int32_t GlobalizationNative_ToUnicode(
+    int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     UIDNAInfo info = UIDNA_INFO_INITIALIZER;
@@ -75,4 +86,13 @@ extern "C" int32_t ToUnicode(int32_t flags, const UChar* lpSrc, int32_t cwSrcLen
     uidna_close(pIdna);
 
     return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? unicodeStrLen : 0;
+}
+
+// TODO: temporarily keeping the un-prefixed signature of this method
+// to keep tests running in CI. This will be removed once the corefx managed assemblies
+// are synced up with the native assemblies.
+extern "C" int32_t ToUnicode(
+    int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+{
+    return GlobalizationNative_ToUnicode(flags, lpSrc, cwSrcLength, lpDst, cwDstLength);
 }
