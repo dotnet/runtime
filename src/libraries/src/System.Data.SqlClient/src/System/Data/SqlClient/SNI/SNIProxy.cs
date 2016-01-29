@@ -209,6 +209,12 @@ namespace System.Data.SqlClient.SNI
                     return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
 
                 case TdsEnums.NP:
+                    if (parallel)
+                    {
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
+                        return null;
+                    }
+
                     // Named Pipe Format: np:\\<host name>\pipe\<pipe name>
                     const int minPipeLength = 10; // eg: //./pipe/a
                     string pipePath = serverNameParts[1].Trim();
@@ -241,7 +247,7 @@ namespace System.Data.SqlClient.SNI
                 default:
                     if (parallel)
                     {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
                     }
                     else
                     {
