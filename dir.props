@@ -10,16 +10,16 @@
   
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00121</BuildToolsVersion>
-    <BuildToolsCoreCLRVersion>1.0.3-prerelease</BuildToolsCoreCLRVersion>
-    <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-rc2-16128</DnxVersion>
-    <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-rc2-16128</DnxVersion>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
-    <BuildToolsCoreCLRPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsCoreCLRPackageName>
-    <BuildToolsCoreCLRLocation>$(ToolsDir)$(BuildToolsCoreCLRPackageName).$(BuildToolsCoreCLRVersion)</BuildToolsCoreCLRLocation>
+  </PropertyGroup>
+
+    <!-- 
+     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer 
+     as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks. 
+     --> 
+  <PropertyGroup>
+    <BuildToolsTargets45>true</BuildToolsTargets45> 
   </PropertyGroup>
   
   <!-- Common properties -->
@@ -61,14 +61,19 @@
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget</PackagesBinDir>
     
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir> 
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/bin/</DotnetCliPath> 
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
-    <!-- Directory for the CoreCLR tools (BCLRewriter, etc.) -->
-    <CoreCLRToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.CoreCLR.$(BuildToolsCoreCLRVersion)/</CoreCLRToolsDir>
     
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+
   </PropertyGroup>
+
+  <!-- Import Build tools common props file where repo-independent properties are found -->  
+  <Import Project="$(ToolsDir)Build.Common.props" />  
+
   
   <!-- Common nuget properties -->
   <PropertyGroup>
@@ -87,23 +92,15 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>  
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>  
 
-    <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
+    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand> 
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
   
-  <!-- Common build tool properties -->
-  <!-- <PropertyGroup>
-    <BuildToolsCoreCLRPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsCoreCLRPackageName>
-    <BuildToolsCoreCLRVersion>1.0.2-prerelease</BuildToolsCoreCLRVersion>
-    <BuildToolsCoreCLRLocation>$(ToolsDir)$(BuildToolsCoreCLRPackageName).$(BuildToolsCoreCLRVersion)</BuildToolsCoreCLRLocation>
-  </PropertyGroup> -->
-
   <!-- Setup Nuget properties -->
   <ItemGroup>
     <NuSpecSrcs Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.nuspec" />
