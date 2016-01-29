@@ -1305,7 +1305,7 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IArrayProvider<TSource> arrayProvider = source as IArrayProvider<TSource>;
-            return arrayProvider != null ? arrayProvider.ToArray() : new Buffer<TSource>(source).ToArray();
+            return arrayProvider != null ? arrayProvider.ToArray() : EnumerableHelpers.ToArray(source);
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
@@ -4695,15 +4695,6 @@ namespace System.Linq
             {
                 items = EnumerableHelpers.ToArray(source, out count);
             }
-        }
-
-        internal TElement[] ToArray()
-        {
-            if (items.Length == count) return items;
-
-            var arr = new TElement[count];
-            Array.Copy(items, 0, arr, 0, count);
-            return arr;
         }
     }
 
