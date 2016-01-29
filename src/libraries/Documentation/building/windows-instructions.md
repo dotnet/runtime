@@ -48,7 +48,7 @@ msbuild /t:BuildAndTest (or /t:Test to just run the tests if the binaries are al
 
 It is possible to pass parameters to the underlying xunit runner via the `XunitOptions` parameter, e.g.:
 ```cmd
-msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests -notrait category=outerloop"
+msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 ```
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
@@ -61,7 +61,7 @@ _**`OuterLoop`:**_
 This attribute applies the 'outerloop' category; to run outerloop tests, use the following commandline
 ```cmd
 xunit.console.netcore.exe *.dll -trait category=outerloop
-build.cmd *.csproj /p:RunTestsWithCategories=OuterLoop
+build.cmd *.csproj /p:WithCategories=OuterLoop
 ```
 
 _**`PlatformSpecific(Xunit.PlatformID platforms)`:**_
