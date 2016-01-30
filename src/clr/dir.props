@@ -72,7 +72,7 @@
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->  
-  <Import Project="$(ToolsDir)Build.Common.props" />  
+  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />  
 
   
   <!-- Common nuget properties -->
