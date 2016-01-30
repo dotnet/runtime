@@ -55,7 +55,7 @@
   </PropertyGroup>
 
   <!-- Import packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)packaging.props"/>
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
   
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" />
