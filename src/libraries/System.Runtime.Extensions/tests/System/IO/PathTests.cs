@@ -53,7 +53,9 @@ public static class PathTests
         InlineData(@"dir\\baz", @"dir"),
         InlineData(@" dir\baz", @" dir"),
         InlineData(@" C:\dir\baz", @"C:\dir"),
-        InlineData(@"..\..\files.txt", @"..\..")
+        InlineData(@"..\..\files.txt", @"..\.."),
+        InlineData(@"C:\", null),
+        InlineData(@"C:", null)
         ]
     [PlatformSpecific(PlatformID.Windows)]
     public static void GetDirectoryName_Windows(string path, string expected)
@@ -66,7 +68,8 @@ public static class PathTests
         InlineData(@"dir//baz", @"dir"),
         InlineData(@"dir\baz", @""),
         InlineData(@"dir/baz/bar", @"dir/baz"),
-        InlineData(@"../../files.txt", @"../..")
+        InlineData(@"../../files.txt", @"../.."),
+        InlineData(@"/", null)
         ]
     [PlatformSpecific(PlatformID.AnyUnix)]
     public static void GetDirectoryName_Unix(string path, string expected)
