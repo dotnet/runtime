@@ -17,9 +17,9 @@ namespace System
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        #region Private Static Data Members
-        private static readonly char [] enumSeperatorCharArray = new char [] {','};
-        private const String enumSeperator = ", ";
+        #region Private Constants
+        private const char enumSeparatorChar = ',';
+        private const String enumSeparatorString = ", ";
         #endregion
 
         #region Private Static Methods
@@ -180,7 +180,7 @@ namespace System
                 {
                     result -= values[index];
                     if (!firstTime)
-                        retval.Insert(0, enumSeperator);
+                        retval.Insert(0, enumSeparatorString);
 
                     retval.Insert(0, names[index]);
                     firstTime = false;
@@ -277,11 +277,6 @@ namespace System
             internal object m_failureMessageFormatArgument;
             internal Exception m_innerException;
 
-            internal void Init(bool canMethodThrow)
-            {
-                parsedEnum = 0;
-                canThrow = canMethodThrow;
-            }
             internal void SetFailure(Exception unhandledException)
             {
                 m_failure = ParseFailureKind.UnhandledException;
@@ -334,7 +329,6 @@ namespace System
         {
             result = default(TEnum);
             EnumResult parseResult = new EnumResult();
-            parseResult.Init(false);
             bool retValue;
 
             if (retValue = TryParseEnum(typeof(TEnum), value, ignoreCase, ref parseResult))
@@ -351,8 +345,7 @@ namespace System
         [System.Runtime.InteropServices.ComVisible(true)]
         public static Object Parse(Type enumType, String value, bool ignoreCase)
         {
-            EnumResult parseResult = new EnumResult();
-            parseResult.Init(true);
+            EnumResult parseResult = new EnumResult() { canThrow = true };
             if (TryParseEnum(enumType, value, ignoreCase, ref parseResult))
                 return parseResult.parsedEnum;
             else
@@ -377,8 +370,16 @@ namespace System
                 return false;
             }
 
-            value = value.Trim();
-            if (value.Length == 0) {
+            int firstNonWhitespaceIndex = -1;
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (!Char.IsWhiteSpace(value[i]))
+                {
+                    firstNonWhitespaceIndex = i;
+                    break;
+                }
+            }
+            if (firstNonWhitespaceIndex == -1) {
                 parseResult.SetFailure(ParseFailureKind.Argument, "Arg_MustContainEnumInfo", null);
                 return false;
             }
@@ -387,13 +388,15 @@ namespace System
             // values will have the first character as as number or a sign.
             ulong result = 0;
 
-            if (Char.IsDigit(value[0]) || value[0] == '-' || value[0] == '+')
+            char firstNonWhitespaceChar = value[firstNonWhitespaceIndex];
+            if (Char.IsDigit(firstNonWhitespaceChar) || firstNonWhitespaceChar == '-' || firstNonWhitespaceChar == '+')
             {
                 Type underlyingType = GetUnderlyingType(enumType);
                 Object temp;
 
                 try
                 {
+                    value = value.Trim();
                     temp = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
                     parseResult.parsedEnum = ToObject(enumType, temp);
                     return true;
@@ -415,47 +418,55 @@ namespace System
                 }
             }
 
-            String[] values = value.Split(enumSeperatorCharArray);
-
-            // Find the field.Lets assume that these are always static classes because the class is
-            //  an enum.
+            // Find the field. Let's assume that these are always static classes 
+            // because the class is an enum.
             ValuesAndNames entry = GetCachedValuesAndNames(rtType, true);
-
             String[] enumNames = entry.Names;
             ulong[] enumValues = entry.Values;
-            
-            for (int i = 0; i < values.Length; i++)
+
+            StringComparison comparison = ignoreCase ? 
+                StringComparison.OrdinalIgnoreCase : 
+                StringComparison.Ordinal;
+
+            int valueIndex = 0;
+            while (valueIndex <= value.Length) // '=' is to handle invalid case of an ending comma
             {
-                values[i] = values[i].Trim(); // We need to remove whitespace characters
-
-                bool success = false;
-
-                for (int j = 0; j < enumNames.Length; j++)
+                // Find the next separator, if there is one, otherwise the end of the string.
+                int endIndex = value.IndexOf(enumSeparatorChar, valueIndex);
+                if (endIndex == -1)
                 {
-                    if (ignoreCase)
-                    {
-                        if (String.Compare(enumNames[j], values[i], StringComparison.OrdinalIgnoreCase) != 0)
-                            continue;
-                    }
-                    else
-                    {
-                        if (!enumNames[j].Equals(values[i]))
-                            continue;
-                    }
-
-                    ulong item = enumValues[j];
-
-                    result |= item;
-                    success = true;
-                    break;
+                    endIndex = value.Length;
                 }
 
+                // Shift the starting and ending indices to eliminate whitespace
+                int endIndexNoWhitespace = endIndex;
+                while (valueIndex < endIndex && Char.IsWhiteSpace(value[valueIndex])) valueIndex++;
+                while (endIndexNoWhitespace > valueIndex && Char.IsWhiteSpace(value[endIndexNoWhitespace - 1])) endIndexNoWhitespace--;
+                int valueSubstringLength = endIndexNoWhitespace - valueIndex;
+
+                // Try to match this substring against each enum name
+                bool success = false;
+                for (int i = 0; i < enumNames.Length; i++)
+                {
+                    if (enumNames[i].Length == valueSubstringLength && 
+                        string.Compare(enumNames[i], 0, value, valueIndex, valueSubstringLength, comparison) == 0)
+                    {
+                        result |= enumValues[i];
+                        success = true;
+                        break;
+                    }
+                }
+
+                // If we couldn't find a match, throw an argument exception.
                 if (!success)
                 {
                     // Not found, throw an argument exception.
                     parseResult.SetFailure(ParseFailureKind.ArgumentWithParameter, "Arg_EnumValueNotFound", value);
                     return false;
                 }
+
+                // Move our pointer to the ending index to go again.
+                valueIndex = endIndex + 1;
             }
 
             try
