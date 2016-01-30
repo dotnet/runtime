@@ -82,8 +82,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
       <Link>Common\Interop\Windows\mincore\Interop.SetLastError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.Globalization.Extensions.manual.cs">
-      <Link>Common\Interop\Interop.Globalization.Extensions.manual.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Normalization.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Idna.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.Idna.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
