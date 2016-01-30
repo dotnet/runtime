@@ -129,9 +129,6 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="InvalidOperation_CannotSetStreamSizeCannotWrite" xml:space="preserve">
-    <value>Cannot set the size of this stream because it cannot be written to.</value>
-  </data>
   <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
     <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
   </data>
