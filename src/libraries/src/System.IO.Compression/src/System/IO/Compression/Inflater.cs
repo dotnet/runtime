@@ -50,29 +50,56 @@ namespace System.IO.Compression
             return _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
         }
 
-        public int Inflate(byte[] bytes, int offset, int length)
+        public unsafe bool Inflate(out byte b)
         {
-            Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
+            if (NeedsInput() || _inputBufferHandle == null || !_inputBufferHandle.IsAllocated)
+            {
+                b = 0;
+                return false;
+            }
 
-            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes
-            // have been read
+            fixed (byte* bufPtr = &b)
+            {
+                int bytesRead = InflateVerified(bufPtr, 1);
+                Debug.Assert(bytesRead == 0 || bytesRead == 1);
+                return bytesRead != 0;
+            }
+        }
+
+        public unsafe int Inflate(byte[] bytes, int offset, int length)
+        {
+            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
             if (NeedsInput() || _inputBufferHandle == null || !_inputBufferHandle.IsAllocated || length == 0)
                 return 0;
 
+            Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+            fixed (byte* bufPtr = bytes)
+            {
+                return InflateVerified(bufPtr + offset, length);
+            }
+        }
+
+        public unsafe int InflateVerified(byte* bufPtr, int length)
+        {
             // State is valid; attempt inflation
+            Debug.Assert(!NeedsInput() && _inputBufferHandle != null && _inputBufferHandle.IsAllocated && length != 0);
             try
             {
                 int bytesRead;
-                ZLibNative.ErrorCode errc = ReadInflateOutput(bytes, offset, length, ZLibNative.FlushCode.NoFlush, out bytesRead);
-                if (errc == ZLibNative.ErrorCode.StreamEnd)
+                if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+                {
                     _finished = true;
+                }
                 return bytesRead;
             }
             finally
             {
                 // Before returning, make sure to release input buffer if necesary:
                 if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
+                {
                     DeallocateInputBufferHandle();
+                }
             }
         }
 
@@ -166,23 +193,19 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Translates the given byte array to a GCHandle so that it can be passed to the ZLib
-        /// Inflate function, then returns the result of that call.
+        /// Wrapper around the ZLib inflate function, configuring the stream appropriately.
         /// </summary>
-        private unsafe ZLibNative.ErrorCode ReadInflateOutput(byte[] outputBuffer, int offset, int length, ZLibNative.FlushCode flushCode, out int bytesRead)
+        private unsafe ZLibNative.ErrorCode ReadInflateOutput(byte* bufPtr, int length, ZLibNative.FlushCode flushCode, out int bytesRead)
         {
             lock (_syncLock)
             {
-                fixed (byte* bufPtr = outputBuffer)
-                {
-                    _zlibStream.NextOut = (IntPtr)bufPtr + offset;
-                    _zlibStream.AvailOut = (uint)length;
+                _zlibStream.NextOut = (IntPtr)bufPtr;
+                _zlibStream.AvailOut = (uint)length;
 
-                    ZLibNative.ErrorCode errC = Inflate(flushCode);
-                    bytesRead = length - (int)_zlibStream.AvailOut;
+                ZLibNative.ErrorCode errC = Inflate(flushCode);
+                bytesRead = length - (int)_zlibStream.AvailOut;
 
-                    return errC;
-                }
+                return errC;
             }
         }
 
