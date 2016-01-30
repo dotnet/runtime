@@ -11,7 +11,7 @@ usage()
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
-    echo "platform can be: Windows, Linux, OSX, FreeBSD"
+    echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows"
 
     exit 1
 }
@@ -166,6 +166,8 @@ build_native_corefx()
     # processors available to a single process.
     if [ `uname` = "FreeBSD" ]; then
         NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+    elif [ `uname` = "NetBSD" ]; then
+        NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     else
         NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
@@ -202,11 +204,6 @@ __TestNugetRuntimeId=win7-x64
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
-    Linux)
-        __HostOS=Linux
-        __TestNugetRuntimeId=ubuntu.14.04-x64
-        ;;
-
     Darwin)
         __HostOS=OSX
         __TestNugetRuntimeId=osx.10.10-x64
@@ -214,6 +211,18 @@ case $OSName in
 
     FreeBSD)
         __HostOS=FreeBSD
+        # TODO: Add native version
+        __TestNugetRuntimeId=osx.10.10-x64
+        ;;
+
+    Linux)
+        __HostOS=Linux
+        __TestNugetRuntimeId=ubuntu.14.04-x64
+        ;;
+
+    NetBSD)
+        __HostOS=NetBSD
+        # TODO: Add native version
         __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
@@ -296,19 +305,22 @@ for i in "$@"
             __ClangMajorVersion=3
             __ClangMinorVersion=7
             ;;
-        windows)
-            __BuildOS=Windows_NT
+        freebsd)
+            __BuildOS=FreeBSD
             ;;
         linux)
             __BuildOS=Linux
             __TestNugetRuntimeId=ubuntu.14.04-x64
             ;;
+        netbsd)
+            __BuildOS=NetBSD
+            ;;
         osx)
             __BuildOS=OSX
             __TestNugetRuntimeId=osx.10.10-x64
             ;;
-        freebsd)
-            __BuildOS=FreeBSD
+        windows)
+            __BuildOS=Windows_NT
             ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
