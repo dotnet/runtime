@@ -376,6 +376,7 @@ namespace System.Diagnostics.Tests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
+        [ActiveIssue(5805)]
         [Fact]
         public void TestProcessStartTime()
         {
