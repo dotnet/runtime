@@ -10,7 +10,7 @@
     <ProjectGuid>{DCBB8805-4658-44BF-B5E8-B6714EC8936B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ResourcesSourceOutputDirectory>..\..\src\Resources\</ResourcesSourceOutputDirectory>
+    <ResourcesSourceOutputDirectory>../../src/Resources/</ResourcesSourceOutputDirectory>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -76,7 +76,6 @@
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
       <Project>{1714448C-211E-48C1-8B7E-4EE667D336A1}</Project>

@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -938,11 +939,19 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            bool yielding = false;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!yielding && !predicate(element)) yielding = true;
-                if (yielding) yield return element;
+                while (e.MoveNext())
+                {
+                    TSource element = e.Current;
+                    if (!predicate(element))
+                    {
+                        yield return element;
+                        while (e.MoveNext())
+                            yield return e.Current;
+                        yield break;
+                    }
+                }
             }
         }
 
@@ -955,13 +964,21 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            int index = -1;
-            bool yielding = false;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                checked { index++; }
-                if (!yielding && !predicate(element, index)) yielding = true;
-                if (yielding) yield return element;
+                int index = -1;
+                while (e.MoveNext())
+                {
+                    checked { index++; }
+                    TSource element = e.Current;
+                    if (!predicate(element, index))
+                    {
+                        yield return element;
+                        while (e.MoveNext())
+                            yield return e.Current;
+                        yield break;
+                    }
+                }
             }
         }
 
@@ -1288,7 +1305,7 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IArrayProvider<TSource> arrayProvider = source as IArrayProvider<TSource>;
-            return arrayProvider != null ? arrayProvider.ToArray() : new Buffer<TSource>(source).ToArray();
+            return arrayProvider != null ? arrayProvider.ToArray() : EnumerableHelpers.ToArray(source);
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
@@ -2421,7 +2438,7 @@ namespace System.Linq
             {
                 if (!e.MoveNext()) throw Error.NoElements();
                 value = e.Current;
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
                     float x = e.Current;
                     if (x < value) value = x;
@@ -2477,7 +2494,7 @@ namespace System.Linq
             {
                 if (!e.MoveNext()) throw Error.NoElements();
                 value = e.Current;
-                while(e.MoveNext())
+                while (e.MoveNext())
                 {
                     double x = e.Current;
                     if (x < value) value = x;
@@ -3666,8 +3683,10 @@ namespace System.Linq
         private int[] _buckets;
         private Slot[] _slots;
         private int _count;
-        private int _freeList;
-        private IEqualityComparer<TElement> _comparer;
+        private readonly IEqualityComparer<TElement> _comparer;
+#if DEBUG
+        private bool _haveRemoved;
+#endif
 
         public Set(IEqualityComparer<TElement> comparer)
         {
@@ -3675,18 +3694,36 @@ namespace System.Linq
             _comparer = comparer;
             _buckets = new int[7];
             _slots = new Slot[7];
-            _freeList = -1;
         }
 
         // If value is not in set, add it and return true; otherwise return false
         public bool Add(TElement value)
         {
-            return !Find(value, true);
+#if DEBUG
+            Debug.Assert(!_haveRemoved, "This class is optimised for never calling Add after Remove. If your changes need to do so, undo that optimization.");
+#endif
+            int hashCode = InternalGetHashCode(value);
+            for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
+            {
+                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value)) return false;
+            }
+            if (_count == _slots.Length) Resize();
+            int index = _count;
+            _count++;
+            int bucket = hashCode % _buckets.Length;
+            _slots[index].hashCode = hashCode;
+            _slots[index].value = value;
+            _slots[index].next = _buckets[bucket] - 1;
+            _buckets[bucket] = index + 1;
+            return true;
         }
 
         // If value is in set, remove it and return true; otherwise return false
         public bool Remove(TElement value)
         {
+#if DEBUG
+            _haveRemoved = true;
+#endif
             int hashCode = InternalGetHashCode(value);
             int bucket = hashCode % _buckets.Length;
             int last = -1;
@@ -3704,40 +3741,9 @@ namespace System.Linq
                     }
                     _slots[i].hashCode = -1;
                     _slots[i].value = default(TElement);
-                    _slots[i].next = _freeList;
-                    _freeList = i;
+                    _slots[i].next = -1;
                     return true;
                 }
-            }
-            return false;
-        }
-
-        private bool Find(TElement value, bool add)
-        {
-            int hashCode = InternalGetHashCode(value);
-            for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
-            {
-                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value)) return true;
-            }
-            if (add)
-            {
-                int index;
-                if (_freeList >= 0)
-                {
-                    index = _freeList;
-                    _freeList = _slots[index].next;
-                }
-                else
-                {
-                    if (_count == _slots.Length) Resize();
-                    index = _count;
-                    _count++;
-                }
-                int bucket = hashCode % _buckets.Length;
-                _slots[index].hashCode = hashCode;
-                _slots[index].value = value;
-                _slots[index].next = _buckets[bucket] - 1;
-                _buckets[bucket] = index + 1;
             }
             return false;
         }
@@ -4555,7 +4561,7 @@ namespace System.Linq
         }
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
-        // Time complexity: O(n + k log k) best and average case. O(n²) worse case.  
+        // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.  
         private void PartialQuickSort(int[] map, int left, int right, int minIdx, int maxIdx)
         {
             do
@@ -4593,7 +4599,7 @@ namespace System.Linq
         }
 
         // Finds the element that would be at idx if the collection was sorted.
-        // Time complexity: O(n) best and average case. O(n²) worse case.
+        // Time complexity: O(n) best and average case. O(n^2) worse case.
         private int QuickSelect(int[] map, int right, int idx)
         {
             int left = 0;
@@ -4689,15 +4695,6 @@ namespace System.Linq
             {
                 items = EnumerableHelpers.ToArray(source, out count);
             }
-        }
-
-        internal TElement[] ToArray()
-        {
-            if (items.Length == count) return items;
-
-            var arr = new TElement[count];
-            Array.Copy(items, 0, arr, 0, count);
-            return arr;
         }
     }
 

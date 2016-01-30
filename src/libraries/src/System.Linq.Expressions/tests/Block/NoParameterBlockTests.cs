@@ -1,5 +1,6 @@
-﻿// Copyright (c) Jon Hanna. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -271,38 +272,11 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[blockSize]);
         }
 
-        // See https://github.com/dotnet/corefx/issues/3043
-        [Fact]
-        public void EmptyBlockNotAllowed()
-        {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block());
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void)));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(Enumerable.Empty<Expression>()));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), Enumerable.Empty<Expression>()));
-        }
-
-        [Fact]
-        public void EmptyBlockWithParametersNotAllowed()
-        {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1)));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1), Enumerable.Empty<Expression>()));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1)));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(void), Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1), Enumerable.Empty<Expression>()));
-        }
-
-        // If https://github.com/dotnet/corefx/issues/3043 is ever actioned, this case would still be prohibited.
         [Fact]
         public void EmptyBlockWithNonVoidTypeNotAllowed()
         {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int)));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), Enumerable.Empty<Expression>()));
-        }
-
-        [Fact]
-        public void EmptyBlockWithParametersAndNonVoidTypeNotAllowed()
-        {
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1)));
-            Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1), Enumerable.Empty<Expression>()));
+            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int)));
+            Assert.Throws<ArgumentException>(() => Expression.Block(typeof(int), Enumerable.Empty<Expression>()));
         }
 
         [Theory]

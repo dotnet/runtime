@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -16,9 +17,11 @@ namespace System.Net.Test.Common
             | SslProtocols.Tls11
             | SslProtocols.Tls12;
 
+#pragma warning disable 0618
         public const SslProtocols UnsupportedSslProtocols =
             SslProtocols.Ssl2
             | SslProtocols.Ssl3;
+#pragma warning restore 0618
 
         public class SupportedSslProtocolsTestData : IEnumerable<object[]>
         {

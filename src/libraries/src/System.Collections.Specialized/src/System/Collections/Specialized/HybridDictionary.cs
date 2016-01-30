@@ -1,8 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using System.Collections;
-using System.Globalization;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace System.Collections.Specialized
 {
@@ -75,19 +73,16 @@ namespace System.Collections.Specialized
                 {
                     return cachedList[key];
                 }
-                else
+                // cachedList can be null in too cases:
+                //   (1) The dictionary is empty, we will return null in this case
+                //   (2) There is writer which is doing ChangeOver. However in that case
+                //       we should see the change to hashtable as well.
+                //       So it should work just fine.
+                else if (key == null)
                 {
-                    // cachedList can be null in too cases:
-                    //   (1) The dictionary is empty, we will return null in this case
-                    //   (2) There is writer which is doing ChangeOver. However in that case
-                    //       we should see the change to hashtable as well.
-                    //       So it should work just fine.
-                    if (key == null)
-                    {
-                        throw new ArgumentNullException("key", SR.ArgumentNull_Key);
-                    }
-                    return null;
+                    throw new ArgumentNullException("key");
                 }
+                return null;
             }
             set
             {
@@ -246,17 +241,14 @@ namespace System.Collections.Specialized
                     _list = new ListDictionary(_caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
                     _list.Add(key, value);
                 }
+                else if (_list.Count + 1 >= CutoverPoint)
+                {
+                    ChangeOver();
+                    _hashtable.Add(key, value);
+                }
                 else
                 {
-                    if (_list.Count + 1 >= CutoverPoint)
-                    {
-                        ChangeOver();
-                        _hashtable.Add(key, value);
-                    }
-                    else
-                    {
-                        _list.Add(key, value);
-                    }
+                    _list.Add(key, value);
                 }
             }
         }
@@ -289,14 +281,11 @@ namespace System.Collections.Specialized
             {
                 return cachedList.Contains(key);
             }
-            else
+            else if (key == null)
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException("key", SR.ArgumentNull_Key);
-                }
-                return false;
+                throw new ArgumentNullException("key");
             }
+            return false;
         }
 
         public void CopyTo(Array array, int index)
@@ -347,12 +336,9 @@ namespace System.Collections.Specialized
             {
                 _list.Remove(key);
             }
-            else
+            else if (key == null)
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException("key", SR.ArgumentNull_Key);
-                }
+                throw new ArgumentNullException("key");
             }
         }
     }

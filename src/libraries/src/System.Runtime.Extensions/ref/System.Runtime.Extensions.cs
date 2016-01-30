@@ -1,8 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
-// ------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
 namespace System
@@ -432,6 +430,7 @@ namespace System
     {
         public static int CurrentManagedThreadId { get { return default(int); } }
         public static bool HasShutdownStarted { get { return default(bool); } }
+        public static string MachineName { get { return default(string); } }
         public static string NewLine { get { return default(string); } }
         public static int ProcessorCount { get { return default(int); } }
         public static string StackTrace { get { return default(string); } }

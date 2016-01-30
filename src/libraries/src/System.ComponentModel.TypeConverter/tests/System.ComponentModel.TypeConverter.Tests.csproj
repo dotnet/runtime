@@ -8,6 +8,7 @@
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
@@ -47,6 +48,11 @@
     <Compile Include="UInt16ConverterTests.cs" />
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
+    <!-- Performance Tests -->
+    <Compile Include="Performance\Perf.TypeDescriptorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.ComponentModel.TypeConverter.csproj">

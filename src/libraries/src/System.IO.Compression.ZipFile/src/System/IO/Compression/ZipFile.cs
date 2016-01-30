@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -158,7 +159,7 @@ namespace System.IO.Compression
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]  // See comment in the body.
         public static ZipArchive Open(String archiveFileName, ZipArchiveMode mode, Encoding entryNameEncoding)
         {
-            // Relies on File.Open for checking of archiveFileName
+            // Relies on FileStream's ctor for checking of archiveFileName
 
             FileMode fileMode;
             FileAccess access;
@@ -193,7 +194,7 @@ namespace System.IO.Compression
             // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
             // If the ctor throws, we need to close it here.
 
-            FileStream fs = File.Open(archiveFileName, fileMode, access, fileShare);
+            FileStream fs = new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: 0x1000, useAsync: false);
 
             try
             {

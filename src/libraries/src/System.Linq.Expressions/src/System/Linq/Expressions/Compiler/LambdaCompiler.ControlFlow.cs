@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -267,6 +268,10 @@ namespace System.Linq.Expressions.Compiler
                         var body = (BlockExpression)expression;
                         // omit empty and debuginfo at the end of the block since they
                         // are not going to emit any IL
+                        if (body.ExpressionCount == 0)
+                        {
+                            return;
+                        }
                         for (int i = body.ExpressionCount - 1; i >= 0; i--)
                         {
                             expression = body.GetExpression(i);

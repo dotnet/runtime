@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -342,34 +343,12 @@ internal static partial class Interop
 
         private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
         {
-            using (SafeX509StoreCtxHandle storeHandle = new SafeX509StoreCtxHandle(x509_ctx_ptr, false))
-            {
-                using (var chain = new X509Chain())
-                {
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                    using (SafeX509StackHandle chainStack = Crypto.X509StoreCtxGetChain(storeHandle))
-                    {
-                        if (chainStack.IsInvalid)
-                        {
-                            Debug.Fail("Invalid chain stack handle");
-                            return 0;
-                        }
-
-                        IntPtr certPtr = Crypto.GetX509StackField(chainStack, 0);
-                        if (IntPtr.Zero == certPtr)
-                        {
-                            return 0;
-                        }
-
-                        using (X509Certificate2 cert = new X509Certificate2(certPtr))
-                        {
-                            return chain.Build(cert) ? 1 : 0;
-                        }
-                    }
-                }
-            }
+            // Full validation is handled after the handshake in VerifyCertificateProperties and the
+            // user callback.  It's also up to those handlers to decide if a null certificate
+            // is appropriate.  So just return success to tell OpenSSL that the cert is acceptable,
+            // we'll process it after the handshake finishes.
+            const int OpenSslSuccess = 1;
+            return OpenSslSuccess;
         }
 
         private static void UpdateCAListFromRootStore(SafeSslContextHandle context)

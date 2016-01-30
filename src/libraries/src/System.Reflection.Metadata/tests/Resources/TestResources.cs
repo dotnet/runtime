@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -31,6 +32,11 @@ namespace System.Reflection.Metadata.Tests
     internal static class Namespace
     {
         public static readonly byte[] NamespaceTests = ResourceHelper.GetResource("Namespace.NamespaceTests.dll");
+    }
+
+    internal static class WinRT
+    {
+        public static readonly byte[] Lib = ResourceHelper.GetResource("WinRT.Lib.winmd");
     }
 
     internal static class ResourceHelper

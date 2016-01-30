@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using Encoding = System.Text.Encoding;
 
@@ -124,29 +128,17 @@ namespace System.Diagnostics.Tracing
             {
                 if (coreType == (int)TraceLoggingDataType.Nil)
                 {
-#if PROJECTN
-                    throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedArrayOfNil", null));
-#else
-                    throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedArrayOfNil"));
-#endif
+                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfNil"));
                 }
                 if (coreType == (int)TraceLoggingDataType.Binary)
                 {
-#if PROJECTN
-                    throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedArrayOfBinary", null));
-#else
-                    throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedArrayOfBinary"));
-#endif
+                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfBinary"));
                 }
 #if !BROKEN_UNTIL_M3
                 if (coreType == (int)TraceLoggingDataType.Utf16String ||
                     coreType == (int)TraceLoggingDataType.MbcsString)
                 {
-#if PROJECTN
-                    throw new NotSupportedException(SR.GetResourceString("EventSource_NotSupportedArrayOfNullTerminatedString", null));
-#else
-                    throw new NotSupportedException(Environment.GetResourceString("EventSource_NotSupportedArrayOfNullTerminatedString"));
-#endif
+                    throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedArrayOfNullTerminatedString"));
                 }
 #endif
             }
@@ -168,11 +160,7 @@ namespace System.Diagnostics.Tracing
             this.outType++;
             if ((this.outType & Statics.OutTypeMask) == 0)
             {
-#if PROJECTN
-                throw new NotSupportedException(SR.GetResourceString("EventSource_TooManyFields", null));
-#else
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_TooManyFields"));
-#endif
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_TooManyFields"));
             }
         }
 

@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -206,7 +207,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335
             return MetadataTokens.GetHeapOffset(handle);
         }
 
-        public int GetUserStringToken(string str)
+        public int GetHeapOffset(UserStringHandle handle)
+        {
+            return MetadataTokens.GetHeapOffset(handle);
+        }
+
+        public UserStringHandle GetUserString(string str)
         {
             int index;
             if (!_userStrings.TryGetValue(str, out index))
@@ -215,7 +221,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
 
                 index = _userStringWriter.Position + _userStringHeapStartOffset;
                 _userStrings.Add(str, index);
-                _userStringWriter.WriteCompressedInteger((uint)str.Length * 2 + 1);
+                _userStringWriter.WriteCompressedInteger(str.Length * 2 + 1);
 
                 _userStringWriter.WriteUTF16(str);
 
@@ -272,7 +278,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 _userStringWriter.WriteByte(stringKind);
             }
 
-            return 0x70000000 | index;
+            return MetadataTokens.UserStringHandle(index);
         }
 
         internal void CompleteHeaps()
@@ -388,7 +394,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
                 var blob = entry.Key;
 
                 writer.Offset = heapOffset;
-                writer.WriteCompressedInteger((uint)blob.Length);
+                writer.WriteCompressedInteger(blob.Length);
                 writer.WriteBytes(blob);
             }
 

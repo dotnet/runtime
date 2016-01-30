@@ -5,12 +5,15 @@
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <ProjectGuid>{EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>4.0.21.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.6</PackageTargetFramework>
+    <!-- The following line needs to be removed once we have a targeting pack for 4.6.2 -->
+    <TargetingPackNugetPackageId Condition="'$(TargetGroup)'=='net462'">Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)'!='netcore50'">
+  <PropertyGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)'=='netcore50'">
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <DefineConstants>$(DefineConstants);PROJECTN</DefineConstants>
     <!-- Need to remove reference to System.Reflection.TypeExtensions
     which is included transitively via System.Reflection -->
@@ -19,22 +22,24 @@
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventActivityOptions.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventProvider.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSource_ProjectN.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSourceException.cs" />
     <Compile Include="System\Diagnostics\Tracing\StubEnvironment.cs" />
+    <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Diagnostics\Tracing\TraceLogging\PropertyValue.cs" />
     <Compile Include="System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
@@ -99,7 +104,7 @@
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50'" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

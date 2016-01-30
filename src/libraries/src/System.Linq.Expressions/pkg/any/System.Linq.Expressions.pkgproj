@@ -6,13 +6,11 @@
     <PackageTargetRuntime>any</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
-  
+
   <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Linq.Expressions.csproj" />
     <ProjectReference Include="..\..\src\System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties> 
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties> 
+      <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->

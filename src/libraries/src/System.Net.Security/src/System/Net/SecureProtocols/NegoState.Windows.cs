@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -755,12 +756,13 @@ namespace System.Net.Security
 
         private static void WriteCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult))
+            if (!(transportResult.AsyncState is LazyAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("WriteCallback|State type is wrong, expected LazyAsyncResult.");
                 }
+
                 Debug.Fail("WriteCallback|State type is wrong, expected LazyAsyncResult.");
             }
 
@@ -800,12 +802,13 @@ namespace System.Net.Security
 
         private static void ReadCallback(IAsyncResult transportResult)
         {
-            if ((transportResult.AsyncState is LazyAsyncResult))
+            if (!(transportResult.AsyncState is LazyAsyncResult))
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("ReadCallback|State type is wrong, expected LazyAsyncResult.");
                 }
+
                 Debug.Fail("ReadCallback|State type is wrong, expected LazyAsyncResult.");
             }
 

@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -163,6 +164,7 @@ namespace System.Net
                                 {
                                     GlobalLog.Assert("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
                                 }
+
                                 Debug.Fail("SecureChannel::GetIssuers()", "Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: " + pIL2->cbSize.ToString());
                             }
 
@@ -254,6 +256,7 @@ namespace System.Net
                                 {
                                     GlobalLog.Assert("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
                                 }
+
                                 Debug.Fail("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
                                 return null;
                             }

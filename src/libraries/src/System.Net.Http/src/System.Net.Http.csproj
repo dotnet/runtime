@@ -99,7 +99,7 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <!-- TODO: Must be moved to the Common/System/Net folder -->
+    <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
     <Compile Include="Internal\ICloneable.cs" />
     <Compile Include="Internal\HttpStatusDescription.cs" />
     <Compile Include="Internal\MailAddress.cs" />

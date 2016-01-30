@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -413,6 +414,7 @@ namespace System.Net
                             {
                                 GlobalLog.Assert("SSPIWrapper::EncryptDecryptHelper", "Unknown OP: " + op);
                             }
+
                             Debug.Fail("SSPIWrapper::EncryptDecryptHelper", "Unknown OP: " + op);
                             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
                     }
@@ -458,6 +460,7 @@ namespace System.Net
                                     {
                                         GlobalLog.Assert("SSPIWrapper::EncryptDecryptHelper", "Output buffer out of range.");
                                     }
+
                                     Debug.Fail("SSPIWrapper::EncryptDecryptHelper", "Output buffer out of range.");
                                     iBuffer.size = 0;
                                     iBuffer.offset = 0;
@@ -473,14 +476,17 @@ namespace System.Net
                             {
                                 GlobalLog.AssertFormat("SSPIWrapper::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
                             }
+
                             Debug.Fail("SSPIWrapper::EncryptDecryptHelper|'offset' out of range.  [" + iBuffer.offset + "]");
                         }
+
                         if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
                         {
                             if (GlobalLog.IsEnabled)
                             {
                                 GlobalLog.AssertFormat("SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
                             }
+
                             Debug.Fail("SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [" + iBuffer.size + "]");
                         }
                     }

@@ -12,6 +12,9 @@
     <ProjectReference Include="centos\runtime.native.System.Security.Cryptography.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="debian\runtime.native.System.Security.Cryptography.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="osx\runtime.native.System.Security.Cryptography.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>

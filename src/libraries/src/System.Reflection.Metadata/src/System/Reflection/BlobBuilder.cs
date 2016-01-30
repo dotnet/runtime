@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Immutable;
@@ -831,14 +832,26 @@ namespace Roslyn.Reflection
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteUInt16BE(ushort value)
+        public void WriteInt16BE(short value)
+        {
+            WriteUInt16BE(unchecked((ushort)value));
+        }
+
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteUInt16BE(ushort value)
         {
             int start = ReserveBytesPrimitive(sizeof(ushort));
             _buffer.WriteUInt16BE(start, value);
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteUInt32BE(uint value)
+        public void WriteInt32BE(int value)
+        {
+            WriteUInt32BE(unchecked((uint)value));
+        }
+
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteUInt32BE(uint value)
         {
             int start = ReserveBytesPrimitive(sizeof(uint));
             _buffer.WriteUInt32BE(start, value);
@@ -1010,7 +1023,7 @@ namespace Roslyn.Reflection
 
                 if (prependSize)
                 {
-                    WriteCompressedInteger((uint)(bytesToCurrent + bytesToNext));
+                    WriteCompressedInteger(bytesToCurrent + bytesToNext);
                 }
 
                 _buffer.WriteUTF8(Length, currentPtr, charsToCurrent, bytesToCurrent, allowUnpairedSurrogates);
@@ -1041,7 +1054,7 @@ namespace Roslyn.Reflection
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed signed integer.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteCompressedSignedInteger(int value)
+        public void WriteCompressedSignedInteger(int value)
         {
             BlobWriterImpl.WriteCompressedSignedInteger(this, value);
         }
@@ -1054,13 +1067,13 @@ namespace Roslyn.Reflection
         /// encode as a one-byte integer (bit 7 is clear, value held in bits 6 through 0).
         /// 
         /// If the value lies between 28 (0x80) and 214 – 1 (0x3FFF), inclusive, 
-        /// encode as a 2-byte integer with bit 15 set, bit 14 clear(value held in bits 13 through 0).
+        /// encode as a 2-byte integer with bit 15 set, bit 14 clear (value held in bits 13 through 0).
         /// 
         /// Otherwise, encode as a 4-byte integer, with bit 31 set, bit 30 set, bit 29 clear (value held in bits 28 through 0).
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> can't be represented as a compressed integer.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        internal void WriteCompressedInteger(uint value)
+        public void WriteCompressedInteger(int value)
         {
             BlobWriterImpl.WriteCompressedInteger(this, value);
         }

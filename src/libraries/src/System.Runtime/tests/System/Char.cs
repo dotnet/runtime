@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -228,6 +229,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsDigit()
     {
@@ -239,6 +241,7 @@ public static class CharTests
             Assert.False(char.IsDigit(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsDigitStrInt()
     {
@@ -256,6 +259,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsDigit("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetter()
     {
@@ -275,6 +279,7 @@ public static class CharTests
             Assert.False(char.IsLetter(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterStrInt()
     {
@@ -300,6 +305,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetter("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterOrDigit()
     {
@@ -321,6 +327,7 @@ public static class CharTests
             Assert.False(char.IsLetterOrDigit(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLetterOrDigitStrInt()
     {
@@ -348,6 +355,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLetterOrDigit("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLower()
     {
@@ -359,6 +367,7 @@ public static class CharTests
             Assert.False(char.IsLower(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsLowerStrInt()
     {
@@ -376,6 +385,7 @@ public static class CharTests
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsLower("abc", 4));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsNumber()
     {
@@ -389,6 +399,7 @@ public static class CharTests
             Assert.False(char.IsNumber(c));
     }
 
+    [ActiveIssue(5645, PlatformID.Windows)]
     [Fact]
     public static void TestIsNumberStrInt()
     {

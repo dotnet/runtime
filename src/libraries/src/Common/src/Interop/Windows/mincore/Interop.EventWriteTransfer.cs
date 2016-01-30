@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -8,16 +9,6 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        /// <summary>
-        /// Make sure to keep in sync with EventProvider.EventData.
-        /// </summary>
-        public struct EventData
-        {
-            internal unsafe ulong Ptr;
-            internal uint Size;
-            internal uint Reserved;
-        }
-
         [DllImport(Interop.Libraries.Eventing)]
         internal unsafe static extern int EventWriteTransfer(
                 ulong registrationHandle,
@@ -25,7 +16,7 @@ internal static partial class Interop
                 Guid* activityId,
                 Guid* relatedActivityId,
                 int userDataCount,
-                EventData* userData
+                void* userData
                 );
     }
 }

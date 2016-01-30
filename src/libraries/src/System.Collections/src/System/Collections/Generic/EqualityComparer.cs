@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -281,7 +282,8 @@ namespace System.Collections.Generic
     {
         public override bool Equals(Single x, Single y)
         {
-            return x == y;
+            // == has the wrong semantic for NaN for Single
+            return x.Equals(y);
         }
 
         public override int GetHashCode(Single x)
@@ -295,7 +297,8 @@ namespace System.Collections.Generic
     {
         public override bool Equals(Double x, Double y)
         {
-            return x == y;
+            // == has the wrong semantic for NaN for Double
+            return x.Equals(y);
         }
 
         public override int GetHashCode(Double x)

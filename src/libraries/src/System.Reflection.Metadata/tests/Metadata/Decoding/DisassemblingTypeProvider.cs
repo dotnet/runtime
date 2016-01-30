@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -123,6 +124,11 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
+        public virtual string GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeHandleCode code = SignatureTypeHandleCode.Unresolved)
+        {
+            return reader.GetTypeSpecification(handle).DecodeSignature(this);
+        }
+
         public virtual string GetSZArrayType(string elementType)
         {
             return elementType + "[]";
@@ -203,16 +209,16 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     return GetTypeFromReference(reader, (TypeReferenceHandle)handle);
 
                 case HandleKind.TypeSpecification:
-                    return reader.GetTypeSpecification((TypeSpecificationHandle)handle).DecodeSignature(this);
+                    return GetTypeFromSpecification(reader, (TypeSpecificationHandle)handle);
 
                 default:
                     throw new ArgumentOutOfRangeException("handle");
             }
         }
 
-        public virtual string GetModifiedType(MetadataReader reader, bool isRequired, EntityHandle modifierTypeHandle, string unmodifiedType)
+        public virtual string GetModifiedType(MetadataReader reader, bool isRequired, string modifierType, string unmodifiedType)
         {
-            return unmodifiedType + (isRequired ? " modreq(" : " modopt(") + GetTypeFromHandle(reader, modifierTypeHandle) + ")";
+            return unmodifiedType + (isRequired ? " modreq(" : " modopt(") + modifierType + ")";
         }
 
         public virtual string GetFunctionPointerType(MethodSignature<string> signature)

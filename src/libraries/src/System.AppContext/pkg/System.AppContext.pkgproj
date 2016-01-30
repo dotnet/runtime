@@ -10,6 +10,11 @@
       <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.AppContext.builds" />
+
+    <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 -->
+    <ProjectReference Include="..\src\System.AppContext.csproj">
+      <PackageTargetFramework>dnxcore50</PackageTargetFramework>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

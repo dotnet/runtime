@@ -9,16 +9,15 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <UnsupportedPlatforms>OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>win\project.json</ProjectJson>
-    <ProjectLockJson>win\project.lock.json</ProjectLockJson>
+    <ProjectJson>win/project.json</ProjectJson>
+    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>unix\project.json</ProjectJson>
-    <ProjectLockJson>unix\project.lock.json</ProjectLockJson>
+    <ProjectJson>unix/project.json</ProjectJson>
+    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -86,7 +85,6 @@
     <Compile Include="IdentityValidator.Unix.cs" />
   </ItemGroup>
   
-  <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Security.csproj">
       <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>

@@ -4,10 +4,10 @@
   <ItemGroup>
     <Project Include="System.Diagnostics.Tracing.csproj" />
     <Project Include="System.Diagnostics.Tracing.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </Project>
     <Project Include="System.Diagnostics.Tracing.csproj">
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

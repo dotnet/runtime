@@ -5,6 +5,7 @@
     <AssemblyName>System.Reflection</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -18,8 +19,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <ProjectJson>netcore50aot\project.json</ProjectJson>
-    <ProjectLockJson>netcore50aot\project.lock.json</ProjectLockJson>
+    <ProjectJson>netcore50aot/project.json</ProjectJson>
+    <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
   </PropertyGroup>
 
   <ItemGroup>

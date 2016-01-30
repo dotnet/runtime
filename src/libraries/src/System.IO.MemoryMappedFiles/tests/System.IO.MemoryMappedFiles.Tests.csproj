@@ -51,14 +51,6 @@
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.IO.MemoryMappedFiles</Name>
     </ProjectReference>
-    <!-- TODO: Temporary workaround.  This PR introduces a change in System.IO.FileSystem to enable SafeFileHandles
-         to be returned from a P/Invoke. Due to how tests are run in CI, this results in a MissingMethodException 
-         when the System.IO.MemoryMappedFiles.Tests are run. The following is a temporary work around and will be removed as 
-         soon as the dlls get in sync. -->
-    <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj">
-      <Name>System.IO.FileSystem</Name>
-      <Project>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

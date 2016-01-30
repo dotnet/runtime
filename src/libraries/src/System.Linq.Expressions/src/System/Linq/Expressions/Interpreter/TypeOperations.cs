@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -2210,24 +2211,29 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 var value = frame.Pop();
-                if (value != null)
-                {
-                    frame.Push((T)value);
-                }
-                else
-                {
-                    frame.Push(null);
-                }
+                frame.Push((T)value);
                 return +1;
             }
         }
 
-        private class CastInstructionNoT : CastInstruction
+        private abstract class CastInstructionNoT : CastInstruction
         {
             private readonly Type _t;
-            public CastInstructionNoT(Type t)
+            protected CastInstructionNoT(Type t)
             {
                 _t = t;
+            }
+
+            public new static CastInstruction Create(Type t)
+            {
+                if (t.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(t))
+                {
+                    return new Value(t);
+                }
+                else
+                {
+                    return new Ref(t);
+                }
             }
 
             public override int Run(InterpretedFrame frame)
@@ -2235,18 +2241,54 @@ namespace System.Linq.Expressions.Interpreter
                 var value = frame.Pop();
                 if (value != null)
                 {
-                    if (!TypeUtils.HasReferenceConversion(value.GetType(), _t) &&
-                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(value.GetType(), _t))
+                    var valueType = value.GetType();
+
+                    if (!TypeUtils.HasReferenceConversion(valueType, _t) &&
+                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(valueType, _t))
                     {
                         throw new InvalidCastException();
                     }
+
+                    if (!_t.IsAssignableFrom(valueType))
+                    {
+                        throw new InvalidCastException();
+                    }
+
                     frame.Push(value);
                 }
                 else
                 {
-                    frame.Push(null);
+                    ConvertNull(frame);
                 }
                 return +1;
+            }
+
+            protected abstract void ConvertNull(InterpretedFrame frame);
+
+            class Ref : CastInstructionNoT
+            {
+                public Ref(Type t)
+                    : base(t)
+                {
+                }
+
+                protected override void ConvertNull(InterpretedFrame frame)
+                {
+                    frame.Push(null);
+                }
+            }
+
+            class Value : CastInstructionNoT
+            {
+                public Value(Type t)
+                    : base(t)
+                {
+                }
+
+                protected override void ConvertNull(InterpretedFrame frame)
+                {
+                    throw new NullReferenceException();
+                }
             }
         }
 
@@ -2274,7 +2316,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            return new CastInstructionNoT(t);
+            return CastInstructionNoT.Create(t);
         }
     }
 

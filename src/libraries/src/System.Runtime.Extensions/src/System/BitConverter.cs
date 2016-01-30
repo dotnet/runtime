@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -424,24 +425,12 @@ namespace System
         [SecuritySafeCritical]
         public static unsafe long DoubleToInt64Bits(double value)
         {
-            // If we're on a big endian machine, what should this method do?  You could argue for
-            // either big endian or little endian, depending on whether you are writing to a file that
-            // should be used by other programs on that processor, or for compatibility across multiple
-            // formats.  Because this is ambiguous, we're excluding this from the Portable Library & Win8 Profile.
-            // If we ever run on big endian machines, produce two versions where endianness is specified.
-            Debug.Assert(IsLittleEndian, "This method is implemented assuming little endian with an ambiguous spec.");
             return *((long*)&value);
         }
 
         [SecuritySafeCritical]
         public static unsafe double Int64BitsToDouble(long value)
         {
-            // If we're on a big endian machine, what should this method do?  You could argue for
-            // either big endian or little endian, depending on whether you are writing to a file that
-            // should be used by other programs on that processor, or for compatibility across multiple
-            // formats.  Because this is ambiguous, we're excluding this from the Portable Library & Win8 Profile.
-            // If we ever run on big endian machines, produce two versions where endianness is specified.
-            Debug.Assert(IsLittleEndian, "This method is implemented assuming little endian with an ambiguous spec.");
             return *((double*)&value);
         }
 

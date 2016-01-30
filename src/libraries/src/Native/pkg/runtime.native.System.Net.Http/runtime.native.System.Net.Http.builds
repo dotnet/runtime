@@ -11,6 +11,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="debian\runtime.native.System.Net.Http.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="ubuntu\runtime.native.System.Net.Http.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>

@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -1057,6 +1058,7 @@ namespace System.Net.Security
                     {
                         GlobalLog.Assert("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
                     }
+
                     Debug.Fail("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
                 }
 
@@ -1576,13 +1578,14 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if ((bytes == null || bytes.Length == 0))
+            if ((bytes == null || bytes.Length <= 0))
             {
                 if (GlobalLog.IsEnabled)
                 {
-                    GlobalLog.Assert("SslState::DetectFraming()|Header buffer is not allocated will boom shortly.");
+                    GlobalLog.Assert("SslState::DetectFraming()|Header buffer is not allocated.");
                 }
-                Debug.Fail("SslState::DetectFraming()|Header buffer is not allocated will boom shortly.");
+
+                Debug.Fail("SslState::DetectFraming()|Header buffer is not allocated.");
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
@@ -1807,14 +1810,17 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is null!");
                 }
+
                 Debug.Fail("SslState::RehandshakeCompleteCallback()|result is null!");
             }
+
             if (!lazyAsyncResult.InternalPeekCompleted)
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is not completed!");
                 }
+
                 Debug.Fail("SslState::RehandshakeCompleteCallback()|result is not completed!");
             }
 

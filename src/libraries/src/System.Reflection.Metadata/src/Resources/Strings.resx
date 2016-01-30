@@ -351,4 +351,7 @@
   <data name="SignatureTypeSequenceMustHaveAtLeastOneElement" xml:space="preserve">
     <value>Signature type sequence must have at least one element.</value>
   </data>
+  <data name="NotTypeDefOrRefOrSpecHandle" xml:space="preserve">
+    <value>Specified handle is not a TypeDefinitionHandle, TypeRefererenceHandle, or TypeSpecificationHandle.</value>
+  </data>
 </root>

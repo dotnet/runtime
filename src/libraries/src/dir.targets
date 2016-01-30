@@ -17,8 +17,8 @@
 
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
 
-  <Target Name="DumpTargets">
-    <Message Text="$(MSBuildProjectName), OS=$(OSGroup), Target=$(TargetGroup)" Importance="High"/>
+  <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
+    <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
   </Target>
 
 </Project>

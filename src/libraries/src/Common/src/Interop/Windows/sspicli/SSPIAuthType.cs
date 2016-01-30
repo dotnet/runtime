@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -105,13 +106,13 @@ namespace System.Net
                 context.DangerousRelease();
             }
 
-
             if (status == 0 && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
             {
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Assert("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
                 }
+
                 Debug.Fail("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
                 throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
             }

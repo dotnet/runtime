@@ -9,9 +9,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1CA59C
 		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CoreCLR", "src\System.Runtime.CoreCLR.csproj", "{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime", "ref\System.Runtime.csproj", "{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Uri.CoreCLR", "..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj", "{4AC5343E-6E31-4BA5-A795-0493AE7E9008}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime", "src\System.Runtime.csproj", "{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Uri", "..\System.Private.Uri\src\System.Private.Uri.csproj", "{4AC5343E-6E31-4BA5-A795-0493AE7E9008}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{CABF1020-B981-4D9C-AB79-409123D746CC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{91A9BE2D-F9A5-4C5C-8F12-C34F34967BA8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{49386B8A-1FEC-4FFD-8565-E7372925961C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -238,5 +246,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68} = {49386B8A-1FEC-4FFD-8565-E7372925961C}
+		{ADBCF120-3454-4A3C-9D1D-AC4293E795D6} = {CABF1020-B981-4D9C-AB79-409123D746CC}
+		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {91A9BE2D-F9A5-4C5C-8F12-C34F34967BA8}
+		{4AC5343E-6E31-4BA5-A795-0493AE7E9008} = {91A9BE2D-F9A5-4C5C-8F12-C34F34967BA8}
 	EndGlobalSection
 EndGlobal
