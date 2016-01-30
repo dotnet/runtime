@@ -1,8 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// Ported from RegistryKey.cs and made extension methods (or renamed statics, where necessary) to allow 
-// extending the class without Microsoft.Win32.Registry needing to rely on System.Security.AccessControl
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Security;

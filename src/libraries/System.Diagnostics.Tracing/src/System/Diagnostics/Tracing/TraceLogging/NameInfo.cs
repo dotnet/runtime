@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using Interlocked = System.Threading.Interlocked;
@@ -21,7 +25,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal static void ReserveEventIDsBelow(int eventId)
         {
-            for (; ; )
+            for(;;)
             {
                 int snapshot = lastIdentity;
                 int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;

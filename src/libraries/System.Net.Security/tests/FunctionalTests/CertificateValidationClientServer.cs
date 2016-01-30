@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -28,9 +29,12 @@ namespace System.Net.Security.Tests
             _clientCertificate = TestConfiguration.GetClientCertificate();
         }
 
-        [Fact]
-        [ActiveIssue(4467)]
-        public async Task CertificateValidationClientServer_EndToEnd_Ok()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue(4467, PlatformID.Windows)]
+        public async Task CertificateValidationClientServer_EndToEnd_Ok(
+            bool useClientSelectionCallback)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);
             var server = new TcpListener(endPoint);
@@ -49,11 +53,19 @@ namespace System.Net.Security.Tests
                         TestConfiguration.PassingTestTimeoutMilliseconds),
                     "Client/Server TCP Connect timed out.");
 
+                LocalCertificateSelectionCallback clientCertCallback = null;
+
+                if (useClientSelectionCallback)
+                {
+                    clientCertCallback = ClientCertSelectionCallback;
+                }
+
                 using (TcpClient serverConnection = await serverAccept)
                 using (SslStream sslClientStream = new SslStream(
                     clientConnection.GetStream(),
                     false,
-                    ClientSideRemoteServerCertificateValidation))
+                    ClientSideRemoteServerCertificateValidation,
+                    clientCertCallback))
                 using (SslStream sslServerStream = new SslStream(
                     serverConnection.GetStream(),
                     false,
@@ -61,10 +73,12 @@ namespace System.Net.Security.Tests
 
                 {
                     string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
-                    string clientName = _clientCertificate.GetNameInfo(X509NameType.SimpleName, false);
-
                     var clientCerts = new X509CertificateCollection();
-                    clientCerts.Add(_clientCertificate);
+
+                    if (!useClientSelectionCallback)
+                    {
+                        clientCerts.Add(_clientCertificate);
+                    }
 
                     Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
                         serverName,
@@ -83,8 +97,24 @@ namespace System.Net.Security.Tests
                             new Task[] { clientAuthentication, serverAuthentication },
                             TestConfiguration.PassingTestTimeoutMilliseconds),
                         "Client/Server Authentication timed out.");
+
+                    Assert.True(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
+                    Assert.True(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
+
+                    Assert.Equal(sslClientStream.RemoteCertificate.Subject, _serverCertificate.Subject);
+                    Assert.Equal(sslServerStream.RemoteCertificate.Subject, _clientCertificate.Subject);
                 }
             }
+        }
+
+        private X509Certificate ClientCertSelectionCallback(
+            object sender,
+            string targetHost,
+            X509CertificateCollection localCertificates,
+            X509Certificate remoteCertificate,
+            string[] acceptableIssuers)
+        {
+            return _clientCertificate;
         }
 
         private bool ServerSideRemoteClientCertificateValidation(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)

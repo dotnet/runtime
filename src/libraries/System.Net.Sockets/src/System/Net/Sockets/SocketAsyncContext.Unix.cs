@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -615,7 +616,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new AcceptOperation {
                     Event = @event,
@@ -710,7 +711,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ConnectOperation {
                     Event = @event,
@@ -798,7 +799,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveOperation {
                     Event = @event,
@@ -908,7 +909,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveOperation {
                     Event = @event,
@@ -1004,7 +1005,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new ReceiveMessageFromOperation {
                     Event = @event,
@@ -1124,7 +1125,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new SendOperation {
                     Event = @event,
@@ -1227,7 +1228,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            using (var @event = new ManualResetEventSlim())
+            using (var @event = new ManualResetEventSlim(false, 0))
             {
                 var operation = new SendOperation {
                     Event = @event,

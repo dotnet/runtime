@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Reflection.Metadata.Ecma335;
 
@@ -37,6 +38,7 @@ namespace System.Reflection.Metadata
         Document = (byte)HandleType.Document,
         MethodDebugInformation = (byte)HandleType.MethodDebugInformation,
         LocalScope = (byte)HandleType.LocalScope,
+        LocalVariable = (byte)HandleType.LocalVariable,
         LocalConstant = (byte)HandleType.LocalConstant,
         ImportScope = (byte)HandleType.ImportScope,
         CustomDebugInformation = (byte)HandleType.CustomDebugInformation,

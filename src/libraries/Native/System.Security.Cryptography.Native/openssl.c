@@ -1,7 +1,6 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
 
@@ -1049,29 +1048,6 @@ extern int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
 
     X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
     return 1;
-}
-
-/*
-Function:
-GetX509RootStorePath
-
-Used by System.Security.Cryptography.X509Certificates' Unix StorePal to determine the path to use
-for the LocalMachine\Root X509 store.
-
-Return values:
-The directory which would be applied for X509_LOOKUP_add_dir(ctx, NULL). That is, the value of the
-SSL_CERT_DIR environment variable, or the value of the X509_CERT_DIR compile-time constant.
-*/
-extern const char* CryptoNative_GetX509RootStorePath()
-{
-    const char* dir = getenv(X509_get_default_cert_dir_env());
-
-    if (!dir)
-    {
-        dir = X509_get_default_cert_dir();
-    }
-
-    return dir;
 }
 
 /*

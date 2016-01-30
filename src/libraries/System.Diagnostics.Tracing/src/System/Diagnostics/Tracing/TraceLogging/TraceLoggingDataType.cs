@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 
 #if ES_BUILD_STANDALONE
@@ -33,7 +37,6 @@ namespace System.Diagnostics.Tracing
         /// Core type.
         /// Encoding assumes null-terminated Char16 string.
         /// Decoding treats as UTF-16LE string.
-        /// NOTE: arrays of Utf16String will not be supported until M3.
         /// </summary>
         Utf16String = 1,
 
@@ -41,7 +44,6 @@ namespace System.Diagnostics.Tracing
         /// Core type.
         /// Encoding assumes null-terminated Char8 string.
         /// Decoding treats as MBCS string.
-        /// NOTE: arrays of MbcsString will not be supported until M3.
         /// </summary>
         MbcsString = 2,
 
@@ -126,7 +128,6 @@ namespace System.Diagnostics.Tracing
         /// Core type.
         /// Encoding assumes 16-bit bytecount followed by binary data.
         /// Decoding treats as binary data.
-        /// NOTE: arrays of Binary will not be supported until M3.
         /// </summary>
         Binary = 14,
 
@@ -258,7 +259,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes 16-bit bytecount followed by binary data.
         /// Decoding treats as IPv6 address.
-        /// NOTE: arrays of Ipv6Address will not be supported until M3.
         /// </summary>
         Ipv6Address = Binary + (EventSourceFieldFormat.Ipv6Address << 8),
 
@@ -266,7 +266,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes 16-bit bytecount followed by binary data.
         /// Decoding treats as SOCKADDR.
-        /// NOTE: arrays of SocketAddress will not be supported until M3.
         /// </summary>
         SocketAddress = Binary + (EventSourceFieldFormat.SocketAddress << 8),
 #endif
@@ -274,7 +273,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes null-terminated Char16 string.
         /// Decoding treats as UTF-16LE XML string.
-        /// NOTE: arrays of Utf16Xml will not be supported until M3.
         /// </summary>
         Utf16Xml = Utf16String + (EventFieldFormat.Xml << 8),
 
@@ -282,7 +280,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes null-terminated Char8 string.
         /// Decoding treats as MBCS XML string.
-        /// NOTE: arrays of MbcsXml will not be supported until M3.
         /// </summary>
         MbcsXml = MbcsString + (EventFieldFormat.Xml << 8),
 
@@ -304,7 +301,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes null-terminated Char16 string.
         /// Decoding treats as UTF-16LE JSON string.
-        /// NOTE: arrays of Utf16Json will not be supported until M3.
         /// </summary>
         Utf16Json = Utf16String + (EventFieldFormat.Json << 8),
 
@@ -312,7 +308,6 @@ namespace System.Diagnostics.Tracing
         /// Formatted type.
         /// Encoding assumes null-terminated Char8 string.
         /// Decoding treats as MBCS JSON string.
-        /// NOTE: arrays of MbcsJson will not be supported until M3.
         /// </summary>
         MbcsJson = MbcsString + (EventFieldFormat.Json << 8),
 

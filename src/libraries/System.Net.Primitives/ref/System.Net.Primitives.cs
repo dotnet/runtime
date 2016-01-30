@@ -1,8 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
-// ------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
 namespace System.Net
@@ -413,7 +411,9 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl2 = 12,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl3 = 48,
         Tls = 192,
         Tls11 = 768,

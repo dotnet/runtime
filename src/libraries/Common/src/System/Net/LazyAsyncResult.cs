@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Diagnostics;
@@ -79,6 +80,7 @@ namespace System.Net
                 {
                     GlobalLog.AssertFormat("LazyAsyncResult#{0}::.ctor()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
                 }
+
                 Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::.ctor()|Result can't be set to DBNull - it's a special internal value.");
             }
 
@@ -335,14 +337,17 @@ namespace System.Net
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Result can't be set to DBNull - it's a special internal value.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Result can't be set to DBNull - it's a special internal value.");
                 }
+
                 if (InternalPeekCompleted)
                 {
                     if (GlobalLog.IsEnabled)
                     {
                         GlobalLog.AssertFormat("LazyAsyncResult#{0}::set_Result()|Called on completed result.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("LazyAsyncResult#" + LoggingHash.HashString(this) + "::set_Result()|Called on completed result.");
                 }
                 _result = value;

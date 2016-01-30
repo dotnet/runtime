@@ -9,7 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -37,16 +37,6 @@
     <ProjectReference Include="..\src\System.Net.Requests.csproj">
       <Name>System.Net.Requests</Name>
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
-    </ProjectReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- TODO: Temporary workaround.  This PR introduces a backward-incompatible change in System.Net.Http.Native. 
-         Due to how tests are run in CI, this results in a crash when the System.Net.Requests.Tests are run. The 
-         following is a temporary work around and will be removed as soon as the dlls and native libraries get in sync. -->	
-    <ProjectReference Include="..\..\System.Net.Http\src\System.Net.Http.csproj">		
-        <Name>System.Net.Http</Name>		
-        <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>		
     </ProjectReference>
   </ItemGroup>
 

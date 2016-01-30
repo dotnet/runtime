@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Security;
@@ -31,6 +32,7 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Called on completed result.", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Called on completed result.");
                     }
 
@@ -49,6 +51,7 @@ namespace System.Net
                     {
                         GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
                     }
+
                     Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |No identity captured - specify captureIdentity.");
                 }
 
@@ -62,8 +65,10 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).");
                     }
+
                     lock (_lock) { }
                 }
 
@@ -75,6 +80,7 @@ namespace System.Net
                         {
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Result became completed during call.", LoggingHash.HashString(this));
                         }
+
                         Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Result became completed during call.");
                     }
 

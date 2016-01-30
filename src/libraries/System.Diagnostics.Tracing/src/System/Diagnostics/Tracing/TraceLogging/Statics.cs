@@ -1,8 +1,14 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Encoding = System.Text.Encoding;
+
+using Microsoft.Reflection;
 
 #if ES_BUILD_STANDALONE
 using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
@@ -363,45 +369,25 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsValueType(Type type)
         {
-            bool result;
-#if (ES_BUILD_PCL || PROJECTN)
-            result = type.GetTypeInfo().IsValueType;
-#else
-            result = type.IsValueType;
-#endif
+            bool result = type.IsValueType();
             return result;
         }
 
         public static bool IsEnum(Type type)
         {
-            bool result;
-#if (ES_BUILD_PCL || PROJECTN)
-            result = type.GetTypeInfo().IsEnum;
-#else
-            result = type.IsEnum;
-#endif
+            bool result = type.IsEnum();
             return result;
         }
 
         public static IEnumerable<PropertyInfo> GetProperties(Type type)
         {
-            IEnumerable<PropertyInfo> result;
-#if (ES_BUILD_PCL || PROJECTN)
-            result = type.GetTypeInfo().DeclaredProperties;
-#else
-            result = type.GetProperties();
-#endif
+            IEnumerable<PropertyInfo> result = type.GetProperties();
             return result;
         }
 
         public static MethodInfo GetGetMethod(PropertyInfo propInfo)
         {
-            MethodInfo result;
-#if (ES_BUILD_PCL || PROJECTN)
-            result = propInfo.GetMethod;
-#else
-            result = propInfo.GetGetMethod();
-#endif
+            MethodInfo result = propInfo.GetGetMethod();
             return result;
         }
 
@@ -476,11 +462,7 @@ namespace System.Diagnostics.Tracing
 
         public static Type[] GetGenericArguments(Type type)
         {
-#if (ES_BUILD_PCL || PROJECTN)
-            return type.GenericTypeArguments;
-#else
             return type.GetGenericArguments();
-#endif
         }
 
         public static Type FindEnumerableElementType(Type type)
@@ -524,13 +506,7 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsGenericMatch(Type type, object openType)
         {
-            bool isGeneric;
-#if (ES_BUILD_PCL || PROJECTN)
-            isGeneric = type.IsConstructedGenericType;
-#else
-            isGeneric = type.IsGenericType;
-#endif
-            return isGeneric && type.GetGenericTypeDefinition() == (Type)openType;
+            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type)openType;
         }
 
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
@@ -555,11 +531,7 @@ namespace System.Diagnostics.Tracing
 
             if (recursionCheck.Contains(dataType))
             {
-#if PROJECTN
-                throw new NotSupportedException(SR.GetResourceString("EventSource_RecursiveTypeDefinition", null));
-#else
-                throw new NotSupportedException(Environment.GetResourceString("EventSource_RecursiveTypeDefinition"));
-#endif
+                throw new NotSupportedException(Resources.GetResourceString("EventSource_RecursiveTypeDefinition"));
             }
 
             recursionCheck.Add(dataType);
@@ -742,11 +714,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-#if PROJECTN
-                        throw new ArgumentException(SR.Format("EventSource_NonCompliantTypeError", dataType.Name));
-#else
-                    throw new ArgumentException(Environment.GetResourceString("EventSource_NonCompliantTypeError", dataType.Name));
-#endif
+                        throw new ArgumentException(Resources.GetResourceString("EventSource_NonCompliantTypeError", dataType.Name));
                     }
                 }
             }

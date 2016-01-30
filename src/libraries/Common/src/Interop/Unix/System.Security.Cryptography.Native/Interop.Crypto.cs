@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -74,8 +75,16 @@ internal static partial class Interop
             return Marshal.PtrToStringAnsi(GetX509RootStorePath_private());
         }
 
+        internal static string GetX509RootStoreFile()
+        {
+            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private());
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
         private static extern IntPtr GetX509RootStorePath_private();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
+        private static extern IntPtr GetX509RootStoreFile_private();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetX509ChainVerifyTime")]
         private static extern int SetX509ChainVerifyTime(

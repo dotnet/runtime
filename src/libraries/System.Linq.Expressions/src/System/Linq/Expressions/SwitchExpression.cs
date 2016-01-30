@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -202,11 +203,18 @@ namespace System.Linq.Expressions
             if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
 
             var caseList = cases.ToReadOnly();
-            ContractUtils.RequiresNotEmpty(caseList, "cases");
             ContractUtils.RequiresNotNullItems(caseList, "cases");
 
             // Type of the result. Either provided, or it is type of the branches.
-            Type resultType = type ?? caseList[0].Body.Type;
+            Type resultType;
+            if (type != null)
+                resultType = type;
+            else if (caseList.Count != 0)
+                resultType = caseList[0].Body.Type;
+            else if (defaultBody != null)
+                resultType = defaultBody.Type;
+            else
+                resultType = typeof(void);
             bool customType = type != null;
 
             if (comparison != null)
@@ -254,7 +262,7 @@ namespace System.Linq.Expressions
                     }
                 }
             }
-            else
+            else if (caseList.Count != 0)
             {
                 // When comparison method is not present, all the test values must have
                 // the same type. Use the first test value's type as the baseline.

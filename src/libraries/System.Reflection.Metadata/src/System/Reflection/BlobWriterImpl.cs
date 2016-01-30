@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -41,7 +42,7 @@ namespace Roslyn.Reflection
             throw new ArgumentOutOfRangeException("value");
         }
 
-        internal static void WriteCompressedInteger(ref BlobWriter writer, uint value)
+        internal static void WriteCompressedInteger(ref BlobWriter writer, int value)
         {
             unchecked
             {
@@ -55,7 +56,7 @@ namespace Roslyn.Reflection
                 }
                 else if (value <= MaxCompressedIntegerValue)
                 {
-                    writer.WriteUInt32BE(0xc0000000 | value);
+                    writer.WriteUInt32BE(0xc0000000 | (uint)value);
                 }
                 else
                 {
@@ -64,7 +65,7 @@ namespace Roslyn.Reflection
             }
         }
 
-        internal static void WriteCompressedInteger(BlobBuilder writer, uint value)
+        internal static void WriteCompressedInteger(BlobBuilder writer, int value)
         {
             unchecked
             {
@@ -78,7 +79,7 @@ namespace Roslyn.Reflection
                 }
                 else if (value <= MaxCompressedIntegerValue)
                 {
-                    writer.WriteUInt32BE(0xc0000000 | value);
+                    writer.WriteUInt32BE(0xc0000000 | (uint)value);
                 }
                 else
                 {

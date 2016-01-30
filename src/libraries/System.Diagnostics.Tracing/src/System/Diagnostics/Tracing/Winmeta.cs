@@ -1,11 +1,9 @@
-// ==++==
-// 
-//   Copyright (c) Microsoft Corporation.  All rights reserved.
-// 
-// ==--==
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*============================================================
 **
-** File: winmeta.cs
 **
 ** Purpose: 
 ** Contains eventing constants defined by the Windows 
@@ -162,6 +160,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         All = ~0,
         /// <summary>
+        /// Telemetry events
+        /// </summary>
+        MicrosoftTelemetry = 0x02000000000000,
+        /// <summary>
         /// WDI context events
         /// </summary>
         WdiContext = 0x02000000000000,
@@ -183,7 +185,7 @@ namespace System.Diagnostics.Tracing
         AuditSuccess = 0x20000000000000,
         /// <summary>
         /// Transfer events where the related Activity ID is a computed value and not a GUID
-        /// TODO: this is the same as AuditFailure, should it be 0x40000000000000?
+        /// N.B. The correct value for this field is 0x40000000000000.
         /// </summary>
         CorrelationHint = 0x10000000000000,
         /// <summary>

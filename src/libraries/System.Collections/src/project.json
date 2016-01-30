@@ -2,7 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23520"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23727"
       }
     },
     "net46": {
@@ -12,13 +12,13 @@
     },
     "netcore50": {
       "dependencies": {
-        "System.Diagnostics.Contracts": "4.0.1-rc2-23713",
-        "System.Diagnostics.Debug": "4.0.11-rc2-23713",
-        "System.Diagnostics.Tools": "4.0.1-rc2-23713",
-        "System.Threading": "4.0.11-rc2-23713",
-        "System.Resources.ResourceManager": "4.0.1-rc2-23713",
-        "System.Runtime": "4.0.21-rc2-23713",
-        "System.Runtime.Extensions": "4.0.11-rc2-23713"
+        "System.Diagnostics.Contracts": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.0",
+        "System.Diagnostics.Tools": "4.0.0",
+        "System.Threading": "4.0.0",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.0"
       }
     }
   }

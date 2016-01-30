@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -190,9 +191,8 @@ namespace System.Linq.Parallel
                     // If we found the element in our set, and if we haven't returned it yet,
                     // we can yield it to the caller. We also mark it so we know we've returned
                     // it once already and never will again.
-                    if (_hashLookup.Contains((TInputOutput)leftElement.First))
+                    if (_hashLookup.Remove((TInputOutput)leftElement.First))
                     {
-                        _hashLookup.Remove((TInputOutput)leftElement.First);
                         currentElement = (TInputOutput)leftElement.First;
 #if DEBUG
                         currentKey = unchecked((int)0xdeadbeef);

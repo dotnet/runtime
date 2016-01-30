@@ -11,10 +11,12 @@
     <Project Include="System.Diagnostics.Process.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Diagnostics.Process.csproj">
+    <Project Include="System.Diagnostics.Process.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Diagnostics.Process.csproj">
+      <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

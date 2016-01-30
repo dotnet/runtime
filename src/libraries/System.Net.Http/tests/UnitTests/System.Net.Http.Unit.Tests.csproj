@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Net.Http.Unit.Tests</RootNamespace>
     <AssemblyName>System.Net.Http.Unit.Tests</AssemblyName>
-    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   

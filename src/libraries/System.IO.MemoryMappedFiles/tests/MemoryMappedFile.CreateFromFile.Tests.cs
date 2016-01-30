@@ -1,8 +1,10 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -616,14 +618,15 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Test the behavior of various access levels when working with a read-only file.
+        /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
+        /// If the test is being run under the superuser, however, modification of a ReadOnly
+        /// file is allowed.
         /// </summary>
-        [ActiveIssue(4605, PlatformID.OSX)]
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         [InlineData(MemoryMappedFileAccess.CopyOnWrite)]
-        public void ReadOnlyFile(MemoryMappedFileAccess access)
+        public void WriteToReadOnlyFile(MemoryMappedFileAccess access)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
@@ -632,26 +635,22 @@ namespace System.IO.MemoryMappedFiles.Tests
                 File.SetAttributes(file.Path, FileAttributes.ReadOnly);
                 try
                 {
-                    if (access == MemoryMappedFileAccess.Read)
-                    {
-                        // The only access requested is Read; this should work with a read-only file.
+                    if (access == MemoryMappedFileAccess.Read || (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0))
                         using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access))
-                        {
                             ValidateMemoryMappedFile(mmf, Capacity, MemoryMappedFileAccess.Read);
-                        }
-                    }
                     else
-                    {
-                        // All write-access is denied with a read-only file.
                         Assert.Throws<UnauthorizedAccessException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access));
-                    }
                 }
                 finally
                 {
                     File.SetAttributes(file.Path, original);
                 }
             }
+
         }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int geteuid();
 
         /// <summary>
         /// Test to ensure that leaveOpen is appropriately respected, either leaving the FileStream open

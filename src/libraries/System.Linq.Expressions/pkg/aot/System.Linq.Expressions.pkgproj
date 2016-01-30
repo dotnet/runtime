@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties> 
+      <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
 
     <InboxOnTargetFramework Include="MonoAndroid10" />

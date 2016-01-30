@@ -1,7 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// Test NameObjectCollectionBase.GetAllValues(),
-//      NameObjectCollectionBase.GetAllValues(Type)
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -58,6 +57,13 @@ namespace System.Collections.Specialized.Tests
             }
 
             Assert.Throws<ArrayTypeMismatchException>(() => { Array array = noc.GetAllValues(typeof(String)); });
+        }
+
+        [Fact]
+        public static void TestGetAllValues_NullType_Throws()
+        {
+            var nameObjectCollection = new MyNameObjectCollection();
+            Assert.Throws<ArgumentNullException>("type", () => nameObjectCollection.GetAllValues(null));
         }
 
         void CheckObjArray(Object[] array, MyNameObjectCollection expected)

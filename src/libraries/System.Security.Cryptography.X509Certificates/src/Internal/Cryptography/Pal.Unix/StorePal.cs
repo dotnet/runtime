@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -204,86 +205,87 @@ namespace Internal.Cryptography.Pal
 
             X509Certificate2Collection rootStore = new X509Certificate2Collection();
 
-            DirectoryInfo directoryInfo;
+            DirectoryInfo rootStorePath = null;
+            IEnumerable<FileInfo> trustedCertFiles;
 
             try
             {
-                directoryInfo = new DirectoryInfo(Interop.Crypto.GetX509RootStorePath());
+                rootStorePath = new DirectoryInfo(Interop.Crypto.GetX509RootStorePath());
             }
             catch (ArgumentException)
             {
                 // If SSL_CERT_DIR is set to the empty string, or anything else which gives
-                // "The path is not of a legal form", then just call it a day.
-                s_machineRootStore = rootStore;
-                return;
+                // "The path is not of a legal form", then the GetX509RootStorePath value is ignored.
             }
 
-            if (!directoryInfo.Exists)
+            if (rootStorePath != null && rootStorePath.Exists)
             {
-                s_machineRootStore = rootStore;
-                return;
+                trustedCertFiles = rootStorePath.EnumerateFiles();
+            }
+            else
+            {
+                trustedCertFiles = Array.Empty<FileInfo>();
+            }
+
+            FileInfo rootStoreFile = null;
+
+            try
+            {
+                rootStoreFile = new FileInfo(Interop.Crypto.GetX509RootStoreFile());
+            }
+            catch (ArgumentException)
+            {
+                // If SSL_CERT_FILE is set to the empty string, or anything else which gives
+                // "The path is not of a legal form", then the GetX509RootStoreFile value is ignored.
+            }
+
+            if (rootStoreFile != null && rootStoreFile.Exists)
+            {
+                trustedCertFiles = Append(trustedCertFiles, rootStoreFile);
             }
 
             HashSet<X509Certificate2> uniqueRootCerts = new HashSet<X509Certificate2>();
             HashSet<X509Certificate2> uniqueIntermediateCerts = new HashSet<X509Certificate2>();
 
-            foreach (FileInfo file in directoryInfo.EnumerateFiles())
+            foreach (FileInfo file in trustedCertFiles)
             {
-                byte[] bytes;
+                using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file.FullName, "rb"))
+                {
+                    ICertificatePal pal;
 
-                try
-                {
-                    bytes = File.ReadAllBytes(file.FullName);
-                }
-                catch (IOException)
-                {
-                    // Broken symlink, symlink to a network file share that's timing out,
-                    // file was deleted since being enumerated, etc.
-                    //
-                    // Skip anything that we can't read, we'll just be a bit restrictive
-                    // on our trust model, that's all.
-                    continue;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // If, for some reason, one of the files is not world-readable,
-                    // and this user doesn't have access to read it, just pretend it
-                    // isn't there.
-                    continue;
-                }
-
-                X509Certificate2 cert;
-
-                try
-                {
-                    cert = new X509Certificate2(bytes);
-                }
-                catch (CryptographicException)
-                {
-                    // The data was in a format we didn't understand. Maybe it was a text file,
-                    // or just a certificate type we don't know how to read. Either way, let's load
-                    // what we can.
-                    continue;
-                }
-
-                // The HashSets are just used for uniqueness filters, they do not survive this method.
-                if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
-                {
-                    if (uniqueRootCerts.Add(cert))
+                    while (CertificatePal.TryReadX509Pem(fileBio, out pal) ||
+                        CertificatePal.TryReadX509Der(fileBio, out pal))
                     {
-                        rootStore.Add(cert);
-                    }
-                }
-                else
-                {
-                    if (uniqueIntermediateCerts.Add(cert))
-                    {
-                        s_machineIntermediateStore.Add(cert);
+                        X509Certificate2 cert = new X509Certificate2(pal);
+
+                        // The HashSets are just used for uniqueness filters, they do not survive this method.
+                        if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
+                        {
+                            if (uniqueRootCerts.Add(cert))
+                            {
+                                rootStore.Add(cert);
+                            }
+                        }
+                        else
+                        {
+                            if (uniqueIntermediateCerts.Add(cert))
+                            {
+                                s_machineIntermediateStore.Add(cert);
+                            }
+                        }
                     }
                 }
             }
 
             s_machineRootStore = rootStore;
+        }
+
+        private static IEnumerable<T> Append<T>(IEnumerable<T> current, T addition)
+        {
+            foreach (T element in current)
+                yield return element;
+
+            yield return addition;
         }
     }
 }

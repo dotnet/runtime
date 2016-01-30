@@ -1,9 +1,7 @@
-//------------------------------------------------------------------------------
-// <copyright file="etwprovider.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-// <OWNER>matell</OWNER>
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -24,10 +22,8 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [StructLayout(LayoutKind.Explicit, Size = 16)]
-#if !PROJECTN
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif
-    public struct EventDescriptor
+    internal struct EventDescriptor
     {
         # region private
         [FieldOffset(0)]
@@ -77,20 +73,12 @@ namespace System.Diagnostics.Tracing
         {
             if (id < 0)
             {
-#if PROJECTN
-                throw new ArgumentOutOfRangeException("id", SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum", "ArgumentOutOfRange_NeedNonNegNum"));
-#else
-                throw new ArgumentOutOfRangeException("id", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-#endif
+                throw new ArgumentOutOfRangeException("id", Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (id > ushort.MaxValue)
             {
-#if PROJECTN
-                throw new ArgumentOutOfRangeException("id", SR.Format("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
-#else
-                throw new ArgumentOutOfRangeException("id", Environment.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
-#endif
+                throw new ArgumentOutOfRangeException("id", Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
             }
 
             m_traceloggingId = 0;
@@ -103,20 +91,12 @@ namespace System.Diagnostics.Tracing
 
             if (task < 0)
             {
-#if PROJECTN
-                throw new ArgumentOutOfRangeException("task", SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum", "ArgumentOutOfRange_NeedNonNegNum"));
-#else
-                throw new ArgumentOutOfRangeException("task", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-#endif
+                throw new ArgumentOutOfRangeException("task", Resources.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (task > ushort.MaxValue)
             {
-#if PROJECTN
-                throw new ArgumentOutOfRangeException("task", SR.Format(SR.GetResourceString("ArgumentOutOfRange_NeedValidId", "ArgumentOutOfRange_NeedValidId"), 1, ushort.MaxValue));
-#else
-                throw new ArgumentOutOfRangeException("task", Environment.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
-#endif
+                throw new ArgumentOutOfRangeException("task", Resources.GetResourceString("ArgumentOutOfRange_NeedValidId", 1, ushort.MaxValue));
             }
 
             m_task = (ushort)task;
@@ -177,7 +157,7 @@ namespace System.Diagnostics.Tracing
             if (!(obj is EventDescriptor))
                 return false;
 
-            return Equals((EventDescriptor)obj);
+            return Equals((EventDescriptor) obj);
         }
 
         public override int GetHashCode()

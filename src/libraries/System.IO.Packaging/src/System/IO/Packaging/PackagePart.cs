@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 //-----------------------------------------------------------------------------
 //
@@ -189,7 +190,7 @@ namespace System.IO.Packaging
                     if (contentType == null)
                     {
                         // We have seen this bug in the past and have said that this should be
-                        // treated as exception. If we get a null content type, it’s an error.
+                        // treated as exception. If we get a null content type, it's an error.
                         // We want to throw this exception so that anyone sub-classing this class
                         // should not be setting the content type to null. Its like any other
                         // parameter validation. This is the only place we can validate it. We

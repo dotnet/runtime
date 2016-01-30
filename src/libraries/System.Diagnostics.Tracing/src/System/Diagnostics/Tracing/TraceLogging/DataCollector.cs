@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -82,11 +86,7 @@ namespace System.Diagnostics.Tracing
                 var scratchNew = scratchOld + size;
                 if (this.scratchEnd < scratchNew)
                 {
-#if PROJECTN
-                    throw new IndexOutOfRangeException(SR.GetResourceString("EventSource_AddScalarOutOfRange", null));
-#else
-                    throw new IndexOutOfRangeException(Environment.GetResourceString("EventSource_AddScalarOutOfRange"));
-#endif
+                    throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_AddScalarOutOfRange"));
                 }
 
                 this.ScalarsBegin();
@@ -273,21 +273,13 @@ namespace System.Diagnostics.Tracing
             var pinsTemp = this.pins;
             if (this.pinsEnd <= pinsTemp)
             {
-#if PROJECTN
-                throw new IndexOutOfRangeException(SR.GetResourceString("EventSource_PinArrayOutOfRange", null));
-#else
-                throw new IndexOutOfRangeException(Environment.GetResourceString("EventSource_PinArrayOutOfRange"));
-#endif
+                throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_PinArrayOutOfRange"));
             }
 
             var datasTemp = this.datas;
             if (this.datasEnd <= datasTemp)
             {
-#if PROJECTN
-                throw new IndexOutOfRangeException(SR.GetResourceString("EventSource_DataDescriptorsOutOfRange", null));
-#else
-                throw new IndexOutOfRangeException(Environment.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
-#endif
+                throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
             }
 
             this.pins = pinsTemp + 1;
@@ -305,11 +297,7 @@ namespace System.Diagnostics.Tracing
                 var datasTemp = this.datas;
                 if (this.datasEnd <= datasTemp)
                 {
-#if PROJECTN
-                    throw new IndexOutOfRangeException(SR.GetResourceString("EventSource_DataDescriptorsOutOfRange", null));
-#else
-                    throw new IndexOutOfRangeException(Environment.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
-#endif
+                    throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
                 }
 
                 datasTemp->m_Ptr = (long)(ulong)(UIntPtr)this.scratch;

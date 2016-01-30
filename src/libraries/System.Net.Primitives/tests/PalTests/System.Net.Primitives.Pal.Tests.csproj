@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{7860A11A-1841-4416-8A30-28EEEB42C6BB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

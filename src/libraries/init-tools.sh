@@ -6,8 +6,8 @@ __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
 __DOTNET_CMD=$__DOTNET_PATH/bin/dotnet
 if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/; fi
-__BUILD_TOOLS_PACKAGE_VERSION=$(cat BuildToolsVersion.txt)
-__DOTNET_TOOLS_VERSION=$(cat DotnetCLIVersion.txt)
+__BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
+__DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
@@ -36,8 +36,14 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
  if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
 
  if [ ! -e $__DOTNET_PATH ]; then
-    mkdir -p "$__DOTNET_PATH"
-    wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
+    which curl > /dev/null 2> /dev/null
+    if [ $? -ne 0 ]; then
+      mkdir -p "$__DOTNET_PATH"
+      wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    else
+      curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+    fi
     cd $__DOTNET_PATH
     tar -xf $__DOTNET_PATH/dotnet.tar
     if [ -n "$BUILDTOOLS_OVERRIDE_RUNTIME" ]; then
@@ -58,4 +64,5 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
  fi
 
  sh $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+ chmod a+x $__TOOLRUNTIME_DIR/corerun
 fi

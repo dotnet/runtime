@@ -11,8 +11,8 @@
 
     <!-- not yet needed
     <ProjectReference Include="..\src\Facade\System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties> 
-    </ProjectReference>  
+      <TargetGroup>net46</TargetGroup>
+    </ProjectReference>
     -->
 
     <ProjectReference Include="any\System.Linq.Expressions.pkgproj" />

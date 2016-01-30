@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -62,28 +63,6 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync(expectedException, () => ClientAsyncSslHelper(serverProtocol, clientProtocol));
         }
 
-        [Theory]
-        [MemberData("ProtocolMismatchData_Tls11_Tls12_Windows_Linux")]
-        [PlatformSpecific(PlatformID.Windows | PlatformID.Linux)]
-        public async Task ClientAsyncAuthenticate_MismatchProtocols_Tls11_Tls12_Fails_Linux_Windows(
-            SslProtocols serverProtocol,
-            SslProtocols clientProtocol,
-            Type expectedException)
-        {
-            await Assert.ThrowsAsync(expectedException, () => ClientAsyncSslHelper(serverProtocol, clientProtocol));
-        }
-
-        [Theory]
-        [MemberData("ProtocolMismatchData_Tls11_Tls12_OSX")]
-        [PlatformSpecific(PlatformID.OSX)]
-        public async Task ClientAsyncAuthenticate_MismatchProtocols_Tls11_Tls12_Fails_OSX(
-            SslProtocols serverProtocols,
-            SslProtocols clientProtocols,
-            Type expectedException)
-        {
-            await Assert.ThrowsAsync(expectedException, () => ClientAsyncSslHelper(serverProtocols, clientProtocols));
-        }
-
         [Fact]
         public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
@@ -128,16 +107,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-        }
-
-        private static IEnumerable<object[]> ProtocolMismatchData_Tls11_Tls12_Windows_Linux()
-        {
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(IOException) };
-        }
-
-        private static IEnumerable<object[]> ProtocolMismatchData_Tls11_Tls12_OSX()
-        {
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
         }
 
         #region Helpers

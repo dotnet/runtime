@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #if FEATURE_INTERPRET
 using System.Collections.Generic;
@@ -112,7 +113,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_Call()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -180,7 +180,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact(Skip = "4019")]
+        [Fact]
         public static void CompileInterpretCrossCheck_Convert()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact(Skip = "4022")]
+        [Fact]
         public static void CompileInterpretCrossCheck_ConvertChecked()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -402,7 +402,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(5067, PlatformID.Windows)]
         public static void CompileInterpretCrossCheck_MemberAccess()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -1218,8 +1217,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void CompileInterpretCrossCheck_PowerAssign()
+        [Fact]        public static void CompileInterpretCrossCheck_PowerAssign()
         {
             var exprs = default(IEnumerable<Expression>);
             if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PowerAssign, out exprs))

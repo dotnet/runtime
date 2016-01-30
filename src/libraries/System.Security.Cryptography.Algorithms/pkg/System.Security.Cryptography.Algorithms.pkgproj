@@ -6,7 +6,8 @@
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
-      <AdditionalProperties>TargetGroup=net46;OSGroup=Windows_NT</AdditionalProperties>
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.Security.Cryptography.Algorithms.pkgproj" />
     <ProjectReference Include="unix\System.Security.Cryptography.Algorithms.pkgproj" />

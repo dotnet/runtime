@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #pragma warning disable RS0008 // Implement IEquatable<T> when overriding Object.Equals
 
@@ -20,9 +21,8 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 {
     // TODO: arg validation
     // TODO: can we hide useless inherited methods?
-    // TODO: MethodBody
     // TODO: debug metadata blobs
-    // TODO: MethodBodyTokenRewriter
+    // TODO: revisit ctors (public vs internal)?
     // TODO: Skip- for each Add- method of all enumerators that count elements (see local vars)
 
     //[EditorBrowsable(EditorBrowsableState.Never)]
@@ -52,11 +52,10 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             Builder = builder;
         }
 
-        public CustomModifiersEncoder<SignatureTypeEncoder<BlobEncoder>> FieldSignature()
+        public SignatureTypeEncoder<BlobEncoder> FieldSignature()
         {
             Builder.WriteByte((byte)SignatureKind.Field);
-            return new CustomModifiersEncoder<SignatureTypeEncoder<BlobEncoder>>(
-                new SignatureTypeEncoder<BlobEncoder>(this));
+            return new SignatureTypeEncoder<BlobEncoder>(this);
         }
 
         public GenericTypeArgumentsEncoder<BlobEncoder> MethodSpecificationSignature(int genericArgumentCount)
@@ -64,12 +63,15 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             // TODO: arg validation
 
             Builder.WriteByte((byte)SignatureKind.MethodSpecification);
-            Builder.WriteCompressedInteger((uint)genericArgumentCount);
+            Builder.WriteCompressedInteger(genericArgumentCount);
 
             return new GenericTypeArgumentsEncoder<BlobEncoder>(this, genericArgumentCount);
         }
 
-        public MethodSignatureEncoder<BlobEncoder> MethodSignature(SignatureCallingConvention convention, int genericParameterCount, bool isInstanceMethod)
+        public MethodSignatureEncoder<BlobEncoder> MethodSignature(
+            SignatureCallingConvention convention = SignatureCallingConvention.Default,
+            int genericParameterCount = 0, 
+            bool isInstanceMethod = false)
         {
             // TODO: arg validation
 
@@ -81,13 +83,13 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
             if (genericParameterCount != 0)
             {
-                Builder.WriteCompressedInteger((uint)genericParameterCount);
+                Builder.WriteCompressedInteger(genericParameterCount);
             }
 
             return new MethodSignatureEncoder<BlobEncoder>(this, isVarArg: convention == SignatureCallingConvention.VarArgs);
         }
 
-        public MethodSignatureEncoder<BlobEncoder> PropertySignature(bool isInstanceProperty)
+        public MethodSignatureEncoder<BlobEncoder> PropertySignature(bool isInstanceProperty = false)
         {
             Builder.WriteByte(SignatureHeader(SignatureKind.Property, SignatureCallingConvention.Default, (isInstanceProperty ? SignatureAttributes.Instance : 0)).RawValue);
             return new MethodSignatureEncoder<BlobEncoder>(this, isVarArg: false);
@@ -109,11 +111,11 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         public LocalVariablesEncoder<BlobEncoder> LocalVariableSignature(int count)
         {
             Builder.WriteByte((byte)SignatureKind.LocalVariables);
-            Builder.WriteCompressedInteger((uint)count);
+            Builder.WriteCompressedInteger(count);
             return new LocalVariablesEncoder<BlobEncoder>(this, count);
         }
 
-        // TODO: TypeSpec is limited to structured types (doesn't have primitive types, TypeDefRefSpec)
+        // TODO: TypeSpec is limited to structured types (doesn't have primitive types, TypeDefRefSpec, custom modifiers)
         public SignatureTypeEncoder<BlobEncoder> TypeSpecificationSignature()
         {
             return new SignatureTypeEncoder<BlobEncoder>(this);
@@ -122,7 +124,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         public PermissionSetEncoder<BlobEncoder> PermissionSetBlob(int attributeCount)
         {
             Builder.WriteByte((byte)'.');
-            Builder.WriteCompressedInteger((uint)attributeCount);
+            Builder.WriteCompressedInteger(attributeCount);
 
             return new PermissionSetEncoder<BlobEncoder>(this, attributeCount);
         }
@@ -134,7 +136,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
                 throw new ArgumentOutOfRangeException(nameof(argumentCount));
             }
 
-            Builder.WriteCompressedInteger((uint)argumentCount);
+            Builder.WriteCompressedInteger(argumentCount);
             return new NamedArgumentsEncoder<BlobEncoder>(this, (ushort)argumentCount, writeCount: false);
         }
 
@@ -161,13 +163,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _isVarArg = isVarArg;
         }
 
-        public CustomModifiersEncoder<ReturnTypeEncoder<ParametersEncoder<T>>> Parameters(int parameterCount)
+        public ReturnTypeEncoder<ParametersEncoder<T>> Parameters(int parameterCount)
         {
-            Builder.WriteCompressedInteger((uint)parameterCount);
+            Builder.WriteCompressedInteger(parameterCount);
 
-            return new CustomModifiersEncoder<ReturnTypeEncoder<ParametersEncoder<T>>>(
-                new ReturnTypeEncoder<ParametersEncoder<T>>(
-                    new ParametersEncoder<T>(_continuation, parameterCount, allowOptional: _isVarArg)));
+            return new ReturnTypeEncoder<ParametersEncoder<T>>(
+                new ParametersEncoder<T>(_continuation, parameterCount, allowOptional: _isVarArg));
         }
     }
 
@@ -192,9 +193,9 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _continuation = continuation;
         }
 
-        public LocalVariableEncoder<LocalVariablesEncoder<T>> AddVariable()
+        public LocalVariableTypeEncoder<LocalVariablesEncoder<T>> AddVariable()
         {
-            return new LocalVariableEncoder<LocalVariablesEncoder<T>>(
+            return new LocalVariableTypeEncoder<LocalVariablesEncoder<T>>(
                 new LocalVariablesEncoder<T>(_continuation, _count - 1));
         }
 
@@ -220,27 +221,6 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 #if SRM
     public
 #endif
-    struct LocalVariableEncoder<T> : IBlobEncoder
-        where T : IBlobEncoder
-    {
-        public BlobBuilder Builder => _continuation.Builder;
-        private readonly T _continuation;
-
-        public LocalVariableEncoder(T continuation)
-        {
-            _continuation = continuation;
-        }
-
-        public CustomModifiersEncoder<LocalVariableTypeEncoder<T>> ModifiedType()
-        {
-            return new CustomModifiersEncoder<LocalVariableTypeEncoder<T>>(
-                new LocalVariableTypeEncoder<T>(_continuation));
-        }
-    }
-
-#if SRM
-    public
-#endif
     struct LocalVariableTypeEncoder<T> : IBlobEncoder
         where T : IBlobEncoder
     {
@@ -252,7 +232,13 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _continuation = continuation;
         }
 
-        public SignatureTypeEncoder<T> Type(bool isPinned, bool isByRef)
+        public CustomModifiersEncoder<LocalVariableTypeEncoder<T>> ModifiedType()
+        {
+            return new CustomModifiersEncoder<LocalVariableTypeEncoder<T>>(
+                new LocalVariableTypeEncoder<T>(_continuation));
+        }
+
+        public SignatureTypeEncoder<T> Type(bool isByRef = false, bool isPinned = false)
         {
             if (isPinned)
             {
@@ -288,7 +274,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _continuation = continuation;
         }
 
-        public SignatureTypeEncoder<T> Type(bool isByRef)
+        public CustomModifiersEncoder<ParameterTypeEncoder<T>> ModifiedType()
+        {
+            return new CustomModifiersEncoder<ParameterTypeEncoder<T>>(this);
+        }
+
+        public SignatureTypeEncoder<T> Type(bool isByRef = false)
         {
             if (isByRef)
             {
@@ -296,23 +287,6 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             }
 
             return new SignatureTypeEncoder<T>(_continuation);
-        }
-
-        /// <summary>
-        /// ECMA-335 specification only allows custom modifiers preceding BYREF marker, 
-        /// however the C++ compiler emits signatures with modifiers following BYREF as well.
-        /// Use this method only when such signatures need to be supported.
-        /// </summary>
-        [Obsolete("Not compliant with ECMA-335 specification", error: false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public CustomModifiersEncoder<SignatureTypeEncoder<T>> ModifiedType(bool isByRef)
-        {
-            if (isByRef)
-            {
-                Builder.WriteByte((byte)SignatureTypeCode.ByReference);
-            }
-
-            return new CustomModifiersEncoder<SignatureTypeEncoder<T>>(new SignatureTypeEncoder<T>(_continuation));
         }
 
         public T TypedReference()
@@ -347,7 +321,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         {
             Builder.WriteSerializedString(typeName);
             //return new NamedArgumentsBuilder<T>(_continuation, propertyCount, CountFormat.Compressed);
-            Builder.WriteCompressedInteger((uint)arguments.Count);
+            Builder.WriteCompressedInteger(arguments.Count);
             arguments.WriteContentTo(Builder);
             return new PermissionSetEncoder<T>(_continuation, _count - 1);
         }
@@ -384,11 +358,10 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _count = count;
         }
 
-        public CustomModifiersEncoder<SignatureTypeEncoder<GenericTypeArgumentsEncoder<T>>> AddArgument()
+        public SignatureTypeEncoder<GenericTypeArgumentsEncoder<T>> AddArgument()
         {
-            return new CustomModifiersEncoder<SignatureTypeEncoder<GenericTypeArgumentsEncoder<T>>>(
-                new SignatureTypeEncoder<GenericTypeArgumentsEncoder<T>>(
-                    new GenericTypeArgumentsEncoder<T>(_continuation, _count - 1)));
+            return new SignatureTypeEncoder<GenericTypeArgumentsEncoder<T>>(
+                new GenericTypeArgumentsEncoder<T>(_continuation, _count - 1));
         }
 
         public T EndArguments()
@@ -819,7 +792,6 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             Builder.WriteByte(isValueType ? (byte)0x11 : (byte)0x12); // CLASS|VALUETYPE
         }
 
-        public T Void() => WriteTypeCode(SignatureTypeCode.Void);
         public T Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);
         public T Char() => WriteTypeCode(SignatureTypeCode.Char);
         public T Int8() => WriteTypeCode(SignatureTypeCode.SByte);
@@ -841,7 +813,6 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         {
             switch (type)
             {
-                case PrimitiveTypeCode.Void: return Void();
                 case PrimitiveTypeCode.Boolean: return Boolean();
                 case PrimitiveTypeCode.Char: return Char();
                 case PrimitiveTypeCode.Int8: return Int8();
@@ -864,19 +835,17 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 #endif
         public T Object() => WriteTypeCode(SignatureTypeCode.Object);
 
-        public CustomModifiersEncoder<SignatureTypeEncoder<ArrayShapeEncoder<T>>> Array()
+        public SignatureTypeEncoder<ArrayShapeEncoder<T>> Array()
         {
             Builder.WriteByte((byte)SignatureTypeCode.Array);
 
-            return new CustomModifiersEncoder<SignatureTypeEncoder<ArrayShapeEncoder<T>>>(
-                new SignatureTypeEncoder<ArrayShapeEncoder<T>>(
-                    new ArrayShapeEncoder<T>(_continuation)));
+            return new SignatureTypeEncoder<ArrayShapeEncoder<T>>(new ArrayShapeEncoder<T>(_continuation));
         }
 
         public T TypeDefOrRefOrSpec(bool isValueType, EntityHandle typeRefDefSpec)
         {
             ClassOrValue(isValueType);
-            Builder.WriteCompressedInteger((uint)CodedIndex.ToTypeDefOrRef(typeRefDefSpec));
+            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeRefDefSpec));
             return _continuation;
         }
 
@@ -898,7 +867,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
             if (genericParameterCount != 0)
             {
-                Builder.WriteCompressedInteger((uint)genericParameterCount);
+                Builder.WriteCompressedInteger(genericParameterCount);
             }
 
             return new MethodSignatureEncoder<T>(_continuation, isVarArg: convention == SignatureCallingConvention.VarArgs);
@@ -908,34 +877,46 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         {
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
             ClassOrValue(isValueType);
-            Builder.WriteCompressedInteger((uint)CodedIndex.ToTypeDefOrRef(typeRefDefSpec));
-            Builder.WriteCompressedInteger((uint)genericArgumentCount);
+            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeRefDefSpec));
+            Builder.WriteCompressedInteger(genericArgumentCount);
             return new GenericTypeArgumentsEncoder<T>(_continuation, genericArgumentCount);
         }
 
         public T GenericMethodTypeParameter(int parameterIndex)
         {
             Builder.WriteByte((byte)SignatureTypeCode.GenericMethodParameter);
-            Builder.WriteCompressedInteger((uint)parameterIndex);
+            Builder.WriteCompressedInteger(parameterIndex);
             return _continuation;
         }
 
-        public T GenericTypeParameter(uint parameterIndex)
+        public T GenericTypeParameter(int parameterIndex)
         {
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeParameter);
             Builder.WriteCompressedInteger(parameterIndex);
             return _continuation;
         }
 
-        public CustomModifiersEncoder<SignatureTypeEncoder<T>> Pointer()
+        public SignatureTypeEncoder<T> Pointer()
         {
             Builder.WriteByte((byte)SignatureTypeCode.Pointer);
-            return new CustomModifiersEncoder<SignatureTypeEncoder<T>>(this);
+            return this;
         }
 
-        public CustomModifiersEncoder<SignatureTypeEncoder<T>> SZArray()
+        public T VoidPointer()
+        {
+            Builder.WriteByte((byte)SignatureTypeCode.Pointer);
+            Builder.WriteByte((byte)SignatureTypeCode.Void);
+            return _continuation;
+        }
+
+        public SignatureTypeEncoder<T> SZArray()
         {
             Builder.WriteByte((byte)SignatureTypeCode.SZArray);
+            return this;
+        }
+
+        public CustomModifiersEncoder<SignatureTypeEncoder<T>> ModifiedType()
+        {
             return new CustomModifiersEncoder<SignatureTypeEncoder<T>>(this);
         }
     }
@@ -965,7 +946,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
                 Builder.WriteByte((byte)SignatureTypeCode.RequiredModifier);
             }
 
-            Builder.WriteCompressedInteger((uint)CodedIndex.ToTypeDefOrRef(typeDefRefSpec));
+            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeDefRefSpec));
             return this;
         }
 
@@ -988,16 +969,16 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 
         public T Shape(int rank, ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
         {
-            Builder.WriteCompressedInteger((uint)rank);
-            Builder.WriteCompressedInteger((uint)sizes.Length);
+            Builder.WriteCompressedInteger(rank);
+            Builder.WriteCompressedInteger(sizes.Length);
             foreach (int size in sizes)
             {
-                Builder.WriteCompressedInteger((uint)size);
+                Builder.WriteCompressedInteger(size);
             }
 
             if (lowerBounds.IsDefault)
             {
-                Builder.WriteCompressedInteger((uint)rank);
+                Builder.WriteCompressedInteger(rank);
                 for (int i = 0; i < rank; i++)
                 {
                     Builder.WriteCompressedSignedInteger(0);
@@ -1005,7 +986,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             }
             else
             {
-                Builder.WriteCompressedInteger((uint)lowerBounds.Length);
+                Builder.WriteCompressedInteger(lowerBounds.Length);
                 foreach (int lowerBound in lowerBounds)
                 {
                     Builder.WriteCompressedSignedInteger(lowerBound);
@@ -1030,7 +1011,12 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _continuation = continuation;
         }
 
-        public SignatureTypeEncoder<T> Type(bool isByRef)
+        public CustomModifiersEncoder<ReturnTypeEncoder<T>> ModifiedType()
+        {
+            return new CustomModifiersEncoder<ReturnTypeEncoder<T>>(this);
+        }
+
+        public SignatureTypeEncoder<T> Type(bool isByRef = false)
         {
             if (isByRef)
             {
@@ -1050,26 +1036,6 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         {
             Builder.WriteByte((byte)SignatureTypeCode.Void);
             return _continuation;
-        }
-    }
-
-#if SRM
-    public
-#endif
-    struct ParameterEncoder<T> : IBlobEncoder
-        where T : IBlobEncoder
-    {
-        public BlobBuilder Builder => _continuation.Builder;
-        private readonly T _continuation;
-
-        public ParameterEncoder(T continuation)
-        {
-            _continuation = continuation;
-        }
-
-        public CustomModifiersEncoder<ParameterTypeEncoder<T>> ModifiedType()
-        {
-            return new CustomModifiersEncoder<ParameterTypeEncoder<T>>(new ParameterTypeEncoder<T>(_continuation));
         }
     }
 
@@ -1096,9 +1062,9 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
             _allowOptional = allowOptional;
         }
 
-        public ParameterEncoder<ParametersEncoder<T>> AddParameter()
+        public ParameterTypeEncoder<ParametersEncoder<T>> AddParameter()
         {
-            return new ParameterEncoder<ParametersEncoder<T>>(
+            return new ParameterTypeEncoder<ParametersEncoder<T>>(
                 new ParametersEncoder<T>(_continuation, _count - 1, _allowOptional));
         }
 

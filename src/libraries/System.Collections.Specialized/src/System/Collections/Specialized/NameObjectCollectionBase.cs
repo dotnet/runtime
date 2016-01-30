@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*
  * Ordered String/Object collection of name/value pairs with support for null key
@@ -8,8 +9,6 @@
  *
  */
 
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Collections.Specialized
@@ -338,12 +337,12 @@ namespace System.Collections.Specialized
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_MultiRank);
+                throw new ArgumentException(SR.Arg_MultiRank, "array");
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index.ToString(CultureInfo.CurrentCulture)));
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < _entriesArray.Count)
@@ -586,12 +585,12 @@ namespace System.Collections.Specialized
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_MultiRank);
+                    throw new ArgumentException(SR.Arg_MultiRank, "array");
                 }
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index.ToString(CultureInfo.CurrentCulture)));
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < _coll.Count)

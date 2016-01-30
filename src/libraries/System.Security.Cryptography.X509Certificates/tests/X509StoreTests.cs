@@ -1,3 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -174,6 +179,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Assert.DoesNotThrow
                     store.Open(permissions);
                 }
+            }
+        }
+
+        [Fact]
+        public static void MachineRootStore_NonEmpty()
+        {
+            // This test will fail on systems where the administrator has gone out of their
+            // way to prune the trusted CA list down below this threshold.
+            //
+            // As of 2016-01-25, Ubuntu 14.04 has 169, and CentOS 7.1 has 175, so that'd be
+            // quite a lot of pruning.
+            //
+            // And as of 2016-01-29 we understand the Homebrew-installed root store, with 180.
+            const int MinimumThreshold = 5;
+
+            using (X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+            {
+                store.Open(OpenFlags.ReadOnly);
+
+                int certCount = store.Certificates.Count;
+                Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
             }
         }
     }
