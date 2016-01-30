@@ -1,3 +1,22 @@
+CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
+CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
+CoreMangLib/cti/system/datetime/DateTimeKind/DateTimeKind.sh
+CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh
+CoreMangLib/cti/system/datetime/DateTimeParseExact2/DateTimeParseExact2.sh
+CoreMangLib/cti/system/datetime/DateTimeParseExact3/DateTimeParseExact3.sh
+CoreMangLib/cti/system/decimal/DecimalToInt32/DecimalToInt32.sh
+CoreMangLib/cti/system/double/DoubleToString3/DoubleToString3.sh
+CoreMangLib/cti/system/double/DoubleToString4/DoubleToString4.sh
+CoreMangLib/cti/system/globalization/datetimeformatinfo/DateTimeFormatInfoGetAbbreviatedDayName/DateTimeFormatInfoGetAbbreviatedDayName.sh
+CoreMangLib/cti/system/globalization/datetimeformatinfo/DateTimeFormatInfoGetDayName/DateTimeFormatInfoGetDayName.sh
+CoreMangLib/cti/system/int64/Int64ToString3/Int64ToString3.sh
+CoreMangLib/cti/system/int/Int32ToString3/Int32ToString3.sh
+CoreMangLib/cti/system/string/StringCompare15/StringCompare15.sh
+CoreMangLib/cti/system/string/StringCompare1/StringCompare1.sh
+CoreMangLib/cti/system/string/StringCompare2/StringCompare2.sh
+CoreMangLib/cti/system/uint16/UInt16ToString3/UInt16ToString3.sh
+CoreMangLib/cti/system/uint16/UInt16ToString4/UInt16ToString4.sh
+CoreMangLib/cti/system/uint32/UInt32ToString2/UInt32ToString2.sh
 Interop/NativeCallable/NativeCallableTest/NativeCallableTest.sh
 JIT/Directed/IL/PInvokeTail/PInvokeTail/PInvokeTail.sh
 JIT/Directed/IL/PInvokeTail/TailWinApi/TailWinApi.sh
@@ -170,3 +189,4 @@ JIT/opt/Inline/tests/xmodb/xmodb.sh
 managed/Compilation/Compilation/Compilation.sh
 readytorun/mainv1/mainv1.sh
 readytorun/mainv2/mainv2.sh
+Regressions/coreclr/0584/Test584/Test584.sh
