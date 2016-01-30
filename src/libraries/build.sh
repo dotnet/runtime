@@ -11,7 +11,7 @@ usage()
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
-    echo "platform can be: Windows, Linux, OSX, FreeBSD"
+    echo "platform can be: Windows, Linux, OSX, FreeBSD, NetBSD"
 
     exit 1
 }
@@ -166,6 +166,8 @@ build_native_corefx()
     # processors available to a single process.
     if [ `uname` = "FreeBSD" ]; then
         NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+    elif [ `uname` = "NetBSD" ]; then
+        NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     else
         NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
@@ -214,6 +216,13 @@ case $OSName in
 
     FreeBSD)
         __HostOS=FreeBSD
+        # TODO: Add native version
+        __TestNugetRuntimeId=osx.10.10-x64
+        ;;
+
+    NetBSD)
+        __HostOS=NetBSD
+        # TODO: Add native version
         __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
@@ -309,6 +318,9 @@ for i in "$@"
             ;;
         freebsd)
             __BuildOS=FreeBSD
+            ;;
+        netbsd)
+            __BuildOS=NetBSD
             ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
