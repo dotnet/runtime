@@ -378,7 +378,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessStartTime()
         {
-            DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
+            DateTime systemBootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
             Process p = CreateProcessLong();
 
             Assert.Throws<InvalidOperationException>(() => p.StartTime);
@@ -392,7 +392,7 @@ namespace System.Diagnostics.Tests
                 // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
 
                 long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
-                long beforeTicks = timeBeforeCreatingProcess.Ticks - intervalTicks;
+                long beforeTicks = systemBootTime.Ticks;
 
                 try
                 {
