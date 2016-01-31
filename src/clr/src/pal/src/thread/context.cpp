@@ -50,10 +50,13 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#if HAVE_BSD_REGS_T
+#if HAVE_MACHINE_REG_H
 #include <machine/reg.h>
+#endif  // HAVE_MACHINE_REG_H
+#if HAVE_MACHINE_NPX_H
 #include <machine/npx.h>
-#endif  // HAVE_BSD_REGS_T
+#endif  // HAVE_MACHINE_NPX_H
+
 #if HAVE_PT_REGS
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
