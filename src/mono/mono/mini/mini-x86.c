@@ -5130,9 +5130,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_BB:
 	case MONO_PATCH_INFO_LABEL:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 #if defined(__native_client_codegen__) && defined(__native_client__)
 		if (nacl_is_code_address (code)) {

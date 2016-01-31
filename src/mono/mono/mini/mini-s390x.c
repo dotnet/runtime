@@ -5407,9 +5407,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
 			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 			case MONO_PATCH_INFO_RGCTX_FETCH:
-			case MONO_PATCH_INFO_MONITOR_ENTER:
-			case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-			case MONO_PATCH_INFO_MONITOR_EXIT:
 			case MONO_PATCH_INFO_ABS: {
 				S390_EMIT_CALL (ip, target);
 				continue;
