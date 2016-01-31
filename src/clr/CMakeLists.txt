@@ -625,6 +625,7 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_definitions(-D_BLD_CLR)
 add_definitions(-DDEBUGGING_SUPPORTED)
+add_definitions(-DPROFILING_SUPPORTED)
 
 if(WIN32)
   add_definitions(-DWIN32)
@@ -636,8 +637,7 @@ if(WIN32)
     # Only enable edit and continue on windows x86 and x64
     # exclude Linux, arm & arm64
     add_definitions(-DEnC_SUPPORTED)
-  endif(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
-  add_definitions(-DPROFILING_SUPPORTED)
+  endif(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)  
 endif(WIN32)
 
 # Features - please keep them alphabetically sorted

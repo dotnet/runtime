@@ -23776,13 +23776,11 @@ void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, w
 
     STRESS_LOG_PLUG_MOVE(plug, (plug + size), -last_plug_relocation);
 
-#ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::MovedReference(plug,
                                (plug + size),
                                reloc,
                                profiling_context,
                                settings.compaction);
-#endif
 
     if (check_last_object_p)
     {
