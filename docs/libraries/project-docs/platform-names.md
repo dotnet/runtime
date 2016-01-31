@@ -36,7 +36,7 @@ UWP provides many services, such as a centralized app store, an execution enviro
 
 .NET Native is a compiler tool chain that will produce native code ahead-of-time (AOT), as opposed to just-in-time (JIT). The compilation can happen on the developer machine as well as on the store side, which allows blending AOT with the benefits of servicing.
 
-You can think of .NET Native as an evolution of NGEN: NGEN basically simply runs the JIT up front, the code quality and behavior is identical to the JITed version. Another downside of NGEN is that it happens on the user's machine, rather than the developer's machine. NGEN is also at the module level, i.e. for each MSIL assembly there is a corresponding NGEN'ed assembly that contains the native code. .NET Native on the other hand is a C++ like compiler and linker. It will remove unused code, spend more time optimizing it, and produce a single, merged module that represents the closure of the application.
+You can think of .NET Native as an evolution of NGEN (Native Image Generator): NGEN basically simply runs the JIT up front, the code quality and behavior is identical to the JITed version. Another downside of NGEN is that it happens on the user's machine, rather than the developer's machine. NGEN is also at the module level, i.e. for each MSIL assembly there is a corresponding NGEN'ed assembly that contains the native code. .NET Native on the other hand is a C++ like compiler and linker. It will remove unused code, spend more time optimizing it, and produce a single, merged module that represents the closure of the application.
 
 UWP was the first application model that was supported by .NET Native. We now also support building native console applications for Windows, Mac and Linux.
 
