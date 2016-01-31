@@ -58,6 +58,7 @@
 #cmakedefine01 HAVE_BSD_REGS_T
 #cmakedefine01 HAVE_PT_REGS
 #cmakedefine01 HAVE_GREGSET_T
+#cmakedefine01 HAVE___GREGSET_T
 #cmakedefine01 HAVE_SIGINFO_T
 #cmakedefine01 HAVE_UCONTEXT_T
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T
