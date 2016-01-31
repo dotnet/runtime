@@ -487,7 +487,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private int[] ReadMetadataTableRowCounts(ref BlobReader memReader, ulong presentTableMask)
+        private static int[] ReadMetadataTableRowCounts(ref BlobReader memReader, ulong presentTableMask)
         {
             ulong currentTableBit = 1;
 
@@ -516,7 +516,8 @@ namespace System.Reflection.Metadata
             return rowCounts;
         }
 
-        private void ReadStandalonePortablePdbStream(MemoryBlock block, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
+        // internal for testing
+        internal static void ReadStandalonePortablePdbStream(MemoryBlock block, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
         {
             var reader = new BlobReader(block);
 
@@ -530,7 +531,8 @@ namespace System.Reflection.Metadata
             // The return type of the entry point method shall be void, int32, or unsigned int32. 
             // The entry point method cannot be defined in a generic class.
             uint entryPointToken = reader.ReadUInt32();
-            if (entryPointToken != 0 && (entryPointToken & TokenTypeIds.TypeMask) != TokenTypeIds.MethodDef)
+            int entryPointRowId = (int)(entryPointToken & TokenTypeIds.RIDMask);
+            if (entryPointToken != 0 && ((entryPointToken & TokenTypeIds.TypeMask) != TokenTypeIds.MethodDef || entryPointRowId == 0))
             {
                 throw new BadImageFormatException(string.Format(SR.InvalidEntryPointToken, entryPointToken));
             }
@@ -549,7 +551,7 @@ namespace System.Reflection.Metadata
 
             debugMetadataHeader = new DebugMetadataHeader(
                 ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref pdbId),
-                MethodDefinitionHandle.FromRowId((int)(entryPointToken & TokenTypeIds.RIDMask)));
+                MethodDefinitionHandle.FromRowId(entryPointRowId));
         }
 
         private const int SmallIndexSize = 2;
