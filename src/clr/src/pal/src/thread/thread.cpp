@@ -51,12 +51,17 @@ Abstract:
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 #include <limits.h>
+
 #if HAVE_SYS_LWP_H
 #include <sys/lwp.h>
+#endif
+#if HAVE_LWP_H
+#include <lwp.h>
+#endif
 // If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings
-#elif HAVE__LWP_SELF
+#if HAVE__LWP_SELF && !HAVE_SYS_LWP_H && !HAVE_LWP_H
 extern "C" int _lwp_self ();
-#endif // HAVE_LWP_H
+#endif
 
 using namespace CorUnix;
 
