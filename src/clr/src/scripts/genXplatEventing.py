@@ -495,7 +495,7 @@ def generateSanityTest(sClrEtwAllMan,testDir):
                    )
     set(EVENT_PROVIDER_DEPENDENCIES "")
     set(EVENT_PROVIDER_LINKER_OTPTIONS "")
-    if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    if(FEATURE_EVENT_TRACE)
         add_definitions(-DFEATURE_EVENT_TRACE=1)
             list(APPEND EVENT_PROVIDER_DEPENDENCIES
                  coreclrtraceptprovider
@@ -505,7 +505,7 @@ def generateSanityTest(sClrEtwAllMan,testDir):
                  ${EVENT_PROVIDER_DEPENDENCIES}
                  )
 
-    endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    endif(FEATURE_EVENT_TRACE)
 
     add_dependencies(eventprovidertest  ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
     target_link_libraries(eventprovidertest
