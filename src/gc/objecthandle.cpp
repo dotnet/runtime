@@ -516,6 +516,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     }
 #endif // GC_PROFILING
 
+#if defined(FEATURE_EVENT_TRACE)
     // Notify ETW of the handle
     if (ETW::GCLog::ShouldWalkHeapRootsForEtw())
     {
@@ -534,6 +535,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
             0,              // dwGCFlags,
             rootFlags);     // ETW handle flags
     }
+#endif // defined(FEATURE_EVENT_TRACE) 
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
