@@ -268,11 +268,11 @@ set(VM_SOURCES_WKS
     weakreferencenative.cpp
 )
 
-if(CLR_CMAKE_PLATFORM_LINUX OR WIN32)
+if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS
         eventtrace.cpp
         )
-endif(CLR_CMAKE_PLATFORM_LINUX OR WIN32)
+endif(FEATURE_EVENT_TRACE)
 
 if(WIN32)
 
