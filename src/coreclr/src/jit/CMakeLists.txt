@@ -80,6 +80,8 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     lowerarm.cpp
     codegenarm.cpp
     unwindarm.cpp
+    codegenlegacy.cpp
+    registerfp.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
   set( ARCH_SOURCES
