@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "internal_securecrt.h"
 
 #include "mbusafecrt_internal.h"
@@ -55,4 +56,3 @@ typedef wchar_t     TCHAR;
 #define _T(x)       L##x
 
 #include "output.inl"
-
