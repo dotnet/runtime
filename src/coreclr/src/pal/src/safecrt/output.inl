@@ -1738,4 +1738,3 @@ __inline __int64 __cdecl get_int64_arg (
 #endif  /* _UNICODE */
 
 #endif // __GNUC_VA_LIST
-
