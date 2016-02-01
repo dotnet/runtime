@@ -12,30 +12,67 @@ public static class EnumTests
     [Theory]
     [InlineData("Red", false, true, SimpleEnum.Red)]
     [InlineData(" Red", false, true, SimpleEnum.Red)]
+    [InlineData("Red ", false, true, SimpleEnum.Red)]
     [InlineData(" red ", true, true, SimpleEnum.Red)]
-    [InlineData(" Red , Blue ", false, true, (SimpleEnum)3)]
+    [InlineData(" Red , Blue ", false, true, SimpleEnum.Red | SimpleEnum.Blue)]
+    [InlineData("Blue,Red,Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("Blue,Red,Red,Red,Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("Red,Blue,   Green", false, true, SimpleEnum.Red | SimpleEnum.Blue | SimpleEnum.Green)]
+    [InlineData("B", false, true, SimpleEnum.B)]
+    [InlineData("B,B", false, true, SimpleEnum.B)]
 
     [InlineData("1", false, true, SimpleEnum.Red)]
     [InlineData(" 1 ", false, true, SimpleEnum.Red)]
     [InlineData("2", false, true, SimpleEnum.Blue)]
     [InlineData("99", false, true, (SimpleEnum)99)]
+    [InlineData("-42", false, true, (SimpleEnum)(-42))]
+    [InlineData("   -42", false, true, (SimpleEnum)(-42))]
+    [InlineData("   -42 ", false, true, (SimpleEnum)(-42))]
 
-    [InlineData(" red ", false, false, default(SimpleEnum))] // No actual expected result
+    [InlineData(" red ", false, false, default(SimpleEnum))] // Expect default result due to parse failure
     [InlineData("Purple", false, false, default(SimpleEnum))]
+    [InlineData("", false, false, default(SimpleEnum))]
+    [InlineData(",Red", false, false, default(SimpleEnum))]
+    [InlineData("Red,", false, false, default(SimpleEnum))]
+    [InlineData("B,", false, false, default(SimpleEnum))]
+    [InlineData(" , , ,", false, false, default(SimpleEnum))]
+    [InlineData("Red,Blue,", false, false, default(SimpleEnum))]
+    [InlineData("Red,,Blue", false, false, default(SimpleEnum))]
+    [InlineData("Red,Blue, ", false, false, default(SimpleEnum))]
+    [InlineData("Red Blue", false, false, default(SimpleEnum))]
+    [InlineData("1,Blue", false, false, default(SimpleEnum))]
+    [InlineData("Blue,1", false, false, default(SimpleEnum))]
+    [InlineData("Blue, 1", false, false, default(SimpleEnum))]
     public static void TestParse(string value, bool ignoreCase, bool expectedCanParse, Enum expectedParseResult)
     {
-        bool b;
         SimpleEnum e;
+
         if (!ignoreCase)
         {
-            b = Enum.TryParse(value, out e);
-            Assert.Equal(expectedCanParse, b);
+            Assert.Equal(expectedCanParse, Enum.TryParse(value, out e));
             Assert.Equal(expectedParseResult, e);
+
+            if (expectedCanParse)
+            {
+                Assert.Equal(expectedParseResult, Enum.Parse(typeof(SimpleEnum), value));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value));
+            }
         }
 
-        b = Enum.TryParse(value, ignoreCase, out e);
-        Assert.Equal(expectedCanParse, b);
+        Assert.Equal(expectedCanParse, Enum.TryParse(value, ignoreCase, out e));
         Assert.Equal(expectedParseResult, e);
+
+        if (expectedCanParse)
+        {
+            Assert.Equal(expectedParseResult, Enum.Parse(typeof(SimpleEnum), value, ignoreCase));
+        }
+        else
+        {
+            Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value, ignoreCase));
+        }
     }
 
     [Theory]
@@ -255,8 +292,8 @@ public static class EnumTests
 
     [Theory]
     [InlineData(typeof(SimpleEnum), 
-        new[] { "Red", "Blue", "Green", "Green_a", "Green_b" },
-        new object[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b })]
+        new[] { "Red", "Blue", "Green", "Green_a", "Green_b", "B" },
+        new object[] { SimpleEnum.Red, SimpleEnum.Blue, SimpleEnum.Green, SimpleEnum.Green_a, SimpleEnum.Green_b, SimpleEnum.B })]
 
     [InlineData(typeof(ByteEnum),
         new[] { "Min", "One", "Two", "Max" },
@@ -474,7 +511,8 @@ public static class EnumTests
         Blue = 2,
         Green = 3,
         Green_a = 3,
-        Green_b = 3
+        Green_b = 3,
+        B = 4
     }
 
     private enum ByteEnum : byte
