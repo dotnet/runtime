@@ -56,7 +56,7 @@ Mono is an open source alternative to the .NET Framework. Mono started around th
 
 When .NET Core was released under the MIT license, Microsoft also released large chunks of the .NET Framework under the MIT license as well, which can be found [here](https://github.com/microsoft/referencesource). This enabled the Mono community to use the same code the .NET Framework uses in order to close gaps and avoid behavioral differences.
 
-Mono is primarily used to run .NET applications on Linux and Mac OS X (though to get into the Mac App Store you need Xamarin, see below). There are ports of Mono to other platforms including PlayStation and Blackberry.
+Mono is primarily used to run .NET applications on Linux and Mac OS X (though to get into the Mac App Store you need Xamarin, see below). There are ports of Mono to other platforms, see [Mono's Supported Platforms](http://www.mono-project.com/docs/about-mono/supported-platforms/)
 
 Mono has implementations (though not necessarily complete) of WinForms, ASP.NET, and System.Drawing.
 
