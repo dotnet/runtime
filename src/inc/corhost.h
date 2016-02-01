@@ -653,7 +653,7 @@ class CCLRErrorReportingManager :
     
     BucketParamsCache* m_pBucketParamsCache;
     
-    HRESULT CopyToDataCache(WCHAR** pTarget, WCHAR const* pSource);
+    HRESULT CopyToDataCache(_In_ WCHAR** pTarget, WCHAR const* pSource);
 #endif // FEATURE_WINDOWSPHONE
 
 public:
