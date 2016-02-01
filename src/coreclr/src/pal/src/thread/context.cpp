@@ -634,6 +634,8 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 case SEGV_MAPERR:   // Address not mapped to object
                 case SEGV_ACCERR:   // Invalid permissions for mapped object
                     return EXCEPTION_ACCESS_VIOLATION;
+
+#ifdef SI_KERNEL
                 case SI_KERNEL:
                 {
                     // Identify privileged instructions that are not identified as such by the system
@@ -647,6 +649,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                     }
                     // fall through
                 }
+#endif
                 default:
                     break;
             }
@@ -665,7 +668,9 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
         case SIGTRAP:
             switch (siginfo->si_code)
             {
+#ifdef SI_KERNEL
                 case SI_KERNEL:
+#endif
                 case SI_USER:
                 case TRAP_BRKPT:    // Process breakpoint
                     return EXCEPTION_BREAKPOINT;
