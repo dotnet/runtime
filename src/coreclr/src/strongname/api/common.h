@@ -380,12 +380,6 @@ extern DummyGlobalContract ___contract;
 
 #endif // defined(_DEBUG)
 
-// For down level platform compiles.
-#if !defined(_WIN64) && (_WIN32_WINNT < 0x0500) 
-typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOL);
-#endif
-
-
 
 // All files get to see all of these .inl files to make sure all files
 // get the benefit of inlining.
