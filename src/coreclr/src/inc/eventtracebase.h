@@ -644,8 +644,8 @@ namespace ETW
                                                        BOOL fIsTreatAsSafe);
 #else
     public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags,LPWSTR strFullyQualifiedAssemblyName) {};
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, LPWSTR strFullyQualifiedAssemblyName) {};
+        static VOID StrongNameVerificationStart(DWORD dwInFlags, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
+        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
