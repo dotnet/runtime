@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (stream == null)
             {
-                throw new InvalidOperationException("Entry assembly was compiled without `preserveCompilationContext` enabled");
+                return null;
             }
 
             using (stream)
