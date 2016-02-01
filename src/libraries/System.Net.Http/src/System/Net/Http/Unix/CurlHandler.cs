@@ -60,6 +60,8 @@ namespace System.Net.Http
         private readonly static bool s_supportsSSL;
         private readonly static bool s_supportsHttp2Multiplexing;
 
+        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
+
         private readonly MultiAgent _agent = new MultiAgent();
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
@@ -331,6 +333,8 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
 
+            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
+
             CheckDisposed();
             SetOperationStarted();
 
@@ -361,6 +365,9 @@ namespace System.Net.Http
                 easy.FailRequest(exc);
                 easy.Cleanup(); // no active processing remains, so we can cleanup
             }
+
+            s_diagnosticListener.LogHttpResponse(easy.Task, loggingRequestId);
+
             return easy.Task;
         }
 
