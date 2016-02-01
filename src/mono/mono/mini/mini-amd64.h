@@ -249,6 +249,8 @@ typedef struct {
 	mgreg_t regs [PARAM_REGS];
 	mgreg_t res;
 	guint8 *ret;
+	double fregs [8];
+	mgreg_t has_fp;
 	guint8 buffer [256];
 } DynCallArgs;
 

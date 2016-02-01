@@ -2699,6 +2699,8 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	switch (cinfo->ret.storage) {
 	case ArgNone:
 	case ArgInIReg:
+	case ArgInFloatSSEReg:
+	case ArgInDoubleSSEReg:
 		break;
 	case ArgValuetypeInReg: {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -2717,6 +2719,8 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 		ArgInfo *ainfo = &cinfo->args [i];
 		switch (ainfo->storage) {
 		case ArgInIReg:
+		case ArgInFloatSSEReg:
+		case ArgInDoubleSSEReg:
 			break;
 		case ArgValuetypeInReg:
 			if (ainfo->pair_storage [0] != ArgNone && ainfo->pair_storage [0] != ArgInIReg)
@@ -2803,7 +2807,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 {
 	ArchDynCallInfo *dinfo = (ArchDynCallInfo*)info;
 	DynCallArgs *p = (DynCallArgs*)buf;
-	int arg_index, greg, i, pindex;
+	int arg_index, greg, freg, i, pindex;
 	MonoMethodSignature *sig = dinfo->sig;
 	int buffer_offset = 0;
 
@@ -2814,6 +2818,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	arg_index = 0;
 	greg = 0;
+	freg = 0;
 	pindex = 0;
 
 	if (sig->hasthis || dinfo->cinfo->vret_arg_index == 1) {
@@ -2875,6 +2880,18 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_U4:
 			p->regs [greg ++] = *(guint32*)(arg);
 			break;
+		case MONO_TYPE_R4: {
+			double d;
+
+			*(float*)&d = *(float*)(arg);
+			p->has_fp = 1;
+			p->fregs [freg ++] = d;
+			break;
+		}
+		case MONO_TYPE_R8:
+			p->has_fp = 1;
+			p->fregs [freg ++] = *(double*)(arg);
+			break;
 		case MONO_TYPE_GENERICINST:
 		    if (MONO_TYPE_IS_REFERENCE (t)) {
 				p->regs [greg ++] = PTR_TO_GREG(*(arg));
@@ -2934,8 +2951,9 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
 	ArchDynCallInfo *dinfo = (ArchDynCallInfo*)info;
 	MonoMethodSignature *sig = dinfo->sig;
-	guint8 *ret = ((DynCallArgs*)buf)->ret;
-	mgreg_t res = ((DynCallArgs*)buf)->res;
+	DynCallArgs *dargs = (DynCallArgs*)buf;
+	guint8 *ret = dargs->ret;
+	mgreg_t res = dargs->res;
 	MonoType *sig_ret = mini_get_underlying_type (sig->ret);
 
 	switch (sig_ret->type) {
@@ -2975,6 +2993,12 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		break;
 	case MONO_TYPE_U8:
 		*(guint64*)ret = res;
+		break;
+	case MONO_TYPE_R4:
+		*(float*)ret = *(float*)&(dargs->fregs [0]);
+		break;
+	case MONO_TYPE_R8:
+		*(double*)ret = dargs->fregs [0];
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_IS_REFERENCE (sig_ret)) {
@@ -5014,6 +5038,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_DYN_CALL: {
 			int i;
 			MonoInst *var = cfg->dyn_call_var;
+			guint8 *label;
 
 			g_assert (var->opcode == OP_REGOFFSET);
 
@@ -5024,6 +5049,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Save args buffer */
 			amd64_mov_membase_reg (code, var->inst_basereg, var->inst_offset, AMD64_R11, 8);
+
+			/* Set fp arg regs */
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, has_fp), sizeof (mgreg_t));
+			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+			label = code;
+			amd64_branch8 (code, X86_CC_Z, -1, 1);
+			for (i = 0; i < FLOAT_PARAM_REGS; ++i)
+				amd64_sse_movsd_reg_membase (code, i, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + (i * sizeof (double)));
+			amd64_patch (label, code);
 
 			/* Set argument registers */
 			for (i = 0; i < PARAM_REGS; ++i)
@@ -5038,6 +5072,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save result */
 			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
 			amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
+			amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs), AMD64_XMM0);
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {
