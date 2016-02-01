@@ -8,7 +8,7 @@ This will also list some aliases. As you'll see the aliases aren't always correc
 
 **Also referred to as**: Desktop, full framework, in-box framework
 
-This refers to the .NET Framework that first shipped in 2002 and is now up to version 4.6.1. It's the main framework folks target today and allows you to build a wide variety of applications, such as WinForms, WPF, ASP.NET, and command line tools.
+This refers to the .NET Framework that first shipped in 2002 and has been updated on a regular basis since then. It's the main framework folks target today and allows you to build a wide variety of applications, such as WinForms, WPF, ASP.NET, and command line tools.
 
 The .NET Framework was designed to run on Windows only. Some versions of the .NET Framework come pre-installed with Windows, some require to be installed. However, in both cases the .NET Framework is a system-wide component. Application do not include .NET Framework DLLs when deploying; the correct .NET version must be on the machine.
 
