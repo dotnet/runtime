@@ -7095,11 +7095,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* Stack alignment check */
 #if 0
 	{
+		guint8 *buf;
+
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RSP, 8);
 		amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, 0xf);
 		amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, 0);
-		x86_branch8 (code, X86_CC_EQ, 2, FALSE);
+		buf = code;
+		x86_branch8 (code, X86_CC_EQ, 1, FALSE);
 		amd64_breakpoint (code);
+		amd64_patch (buf, code);
 	}
 #endif
 
