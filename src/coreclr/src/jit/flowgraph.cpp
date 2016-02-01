@@ -8220,7 +8220,7 @@ void                Compiler::fgAddInternal()
                 lvaTable[genReturnLocal].lvVerTypeInfo = typeInfo(TI_STRUCT, info.compMethodInfo->args.retTypeClass);
             }
 
-            lvaTable[genReturnLocal].lvDontPromote = true;
+            lvaTable[genReturnLocal].lvIsMultiRegArgOrRet = true;
         }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 

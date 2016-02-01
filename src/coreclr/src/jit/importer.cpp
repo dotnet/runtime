@@ -1210,7 +1210,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
                 assert(!src->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
 
                 // Make the struct non promotable. The eightbytes could contain multiple fields.
-                lvaTable[lcl->gtLclVarCommon.gtLclNum].lvDontPromote = true;
+                lvaTable[lcl->gtLclVarCommon.gtLclNum].lvIsMultiRegArgOrRet = true;
 #endif
             }
             else
@@ -6964,7 +6964,7 @@ bool  Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo)
     }
 #endif
 
-#if FEATURE_MULTIREG_STRUCT_RET
+#if FEATURE_MULTIREG_RET
 
     // Support for any additional cases that don't use a Return Buffer Argument
     //  on targets that support multi-reg return valuetypes.
@@ -6977,7 +6977,7 @@ bool  Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo)
     }
   #endif
 
-#endif
+#endif // FEATURE_MULTIREG_RET
 
     // Otherwise we require that a RetBuffArg be used
     return true;
@@ -7169,7 +7169,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
                 // This LCL_VAR is a register return value, it stays as a TYP_STRUCT
                 unsigned lclNum = op->gtLclVarCommon.gtLclNum;
                 // Make sure this struct type stays as struct so that we can return it in registers.
-                lvaTable[lclNum].lvDontPromote = true;
+                lvaTable[lclNum].lvIsMultiRegArgOrRet = true;
                 return op;
             }
 
@@ -7190,12 +7190,12 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     {
         if (op->gtOper == GT_LCL_VAR)
         {
-#if FEATURE_MULTIREG_STRUCT_RET
+#if FEATURE_MULTIREG_RET
             // This LCL_VAR is an HFA return value, it stays as a TYP_STRUCT
             unsigned lclNum = op->gtLclVarCommon.gtLclNum;
             // Make sure this struct type stays as struct so that we can return it as an HFA
-            lvaTable[lclNum].lvDontPromote = true;
-#endif // FEATURE_MULTIREG_STRUCT_RET
+            lvaTable[lclNum].lvIsMultiRegArgOrRet = true;
+#endif // FEATURE_MULTIREG_RET
             return op;
         }
          
@@ -12791,7 +12791,7 @@ FIELD_DONE:
                         // rdi/rsi (depending whether there is a "this").
 
                         unsigned   tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a register returnable nullable"));
-                        lvaTable[tmp].lvDontPromote = true;
+                        lvaTable[tmp].lvIsMultiRegArgOrRet = true;
                         lvaSetStruct(tmp, resolvedToken.hClass, true  /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -13651,16 +13651,16 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
             (hfaType == TYP_FLOAT && hfaSlots == sizeof(float) / REGSIZE_BYTES))
         {
             // Make sure this struct type stays as struct so we can receive the call in a struct.
-            lvaTable[tmpNum].lvDontPromote = true;
+            lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
         }
     }
 }
 #endif
 
-#if FEATURE_MULTIREG_STRUCT_RET
+#if FEATURE_MULTIREG_RET
 GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg structs."));
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -13674,11 +13674,11 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
     // Mark the var to store the eightbytes on stack non promotable.
     // The return value is based on eightbytes, so all the fields need 
     // to be on stack before loading the eightbyte in the corresponding return register.
-    lvaTable[tmpNum].lvDontPromote = true;
+    lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     return ret;
 }
-#endif // FEATURE_MULTIREG_STRUCT_RET
+#endif // FEATURE_MULTIREG_RET
 
 // do import for a return
 // returns false if inlining was aborted
