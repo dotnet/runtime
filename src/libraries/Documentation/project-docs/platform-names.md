@@ -28,7 +28,7 @@ That's why referring to .NET Core as 'Store' is no longer correct. But you can t
 
 The Universal Windows Platform (UWP) is the platform that is used for building modern, touch-enabled Windows applications as well as headless devices for Internet of Things (IoT). It's designed to unify the different types of devices that you may want to target, including PCs, tablets, phablets, phones, and even the Xbox.
 
-UWP provides many services, such as a centralized app store, an execution environment (AppContainer), and a set of Windows APIs to use instead of Win32 (WinRT). UWP has no dependancy on .NET; apps can be written in C++, C#, VB.NET, and JavaScript. When using C# and VB.NET the ".NET" APIs are provided by .NET Core.
+UWP provides many services, such as a centralized app store, an execution environment (AppContainer), and a set of Windows APIs to use instead of Win32 (WinRT). UWP has no dependancy on .NET; apps can be written in C++, C#, VB.NET, and JavaScript. When using C# and VB.NET the .NET APIs are provided by .NET Core.
 
 ## .NET Native
 
