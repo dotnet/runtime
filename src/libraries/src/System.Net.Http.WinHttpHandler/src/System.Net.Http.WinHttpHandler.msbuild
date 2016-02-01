@@ -19,6 +19,8 @@
     <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\SecurityProtocol.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDiagnosticListenerExtensions.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
