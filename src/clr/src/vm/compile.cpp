@@ -879,7 +879,13 @@ HRESULT CEECompileInfo::SetCachedSigningLevel(HANDLE hNI, HANDLE *pModules, COUN
         handles.Append(hFile);
     }
 
-    IfFailGo(SetCachedSigningLevel(handles.GetElements(), handles.GetCount(), 0, hNI));
+    if (!SetCachedSigningLevel(handles.GetElements(), handles.GetCount(), 0, hNI))
+    {
+        hr = HRESULT_FROM_WIN32(GetLastError());
+        _ASSERTE(FAILED(hr));
+        goto ErrExit;
+    }
+
     for (COUNT_T i = 0; i < nModules; i++)
     {
         if (!SetCachedSigningLevel(handles.GetElements(), handles.GetCount(), 0, pModules[i]))
