@@ -2904,7 +2904,11 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_start_invoke (method);
 
+	MONO_PREPARE_RESET_BLOCKING;
+
 	result = do_runtime_invoke (method, obj, params, exc);
+
+	MONO_FINISH_RESET_BLOCKING;
 
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_end_invoke (method);
