@@ -13,55 +13,64 @@ using Xunit;
 
 public static class SqMtx
 {
-
 #if DEBUG
     public const int Iterations = 1;
 #else
     public const int Iterations = 4000;
 #endif
 
-    const int MatrixSize = 40;
+    private const int MatrixSize = 40;
 
-    static T[][] AllocArray<T>(int n1, int n2) {
+    private static T[][] AllocArray<T>(int n1, int n2)
+    {
         T[][] a = new T[n1][];
-        for (int i = 0; i < n1; ++i) {
+        for (int i = 0; i < n1; ++i)
+        {
             a[i] = new T[n2];
         }
         return a;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Bench()
+    private static bool Bench()
     {
         double[][] a = AllocArray<double>(41, 41);
         double[][] c = AllocArray<double>(41, 41);
-            
+
         int i, j;
 
-        for (i = 1; i <= MatrixSize; i++) {
-            for (j = 1; j <= MatrixSize; j++) {
-               a[i][j] = i + j;
+        for (i = 1; i <= MatrixSize; i++)
+        {
+            for (j = 1; j <= MatrixSize; j++)
+            {
+                a[i][j] = i + j;
             }
         }
 
-        for (i = 1; i <= Iterations; i++) {
+        for (i = 1; i <= Iterations; i++)
+        {
             Inner(a, c, MatrixSize);
         }
 
-        if (c[1][1] == 23820.0) {
+        if (c[1][1] == 23820.0)
+        {
             return true;
         }
-        else {
+        else
+        {
             return false;
         }
     }
 
-    static void Inner(double[][] a, double[][] c, int n)
+    private static void Inner(double[][] a, double[][] c, int n)
     {
-        for (int i = 1; i <= n; i++) {
-            for (int j = 1; j <= n; j++) {
+        for (int i = 1; i <= n; i++)
+        {
+            for (int j = 1; j <= n; j++)
+            {
                 c[i][j] = 0.0;
-                for (int k = 1; k <= n; k++) {
+                for (int k = 1; k <= n; k++)
+                {
                     c[i][j] = c[i][j] + a[i][k] * a[k][j];
                 }
             }
@@ -69,22 +78,26 @@ public static class SqMtx
     }
 
     [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
+    public static void Test()
+    {
+        foreach (var iteration in Benchmark.Iterations)
+        {
+            using (iteration.StartMeasurement())
+            {
                 Bench();
             }
         }
     }
 
-    static bool TestBase() {
+    private static bool TestBase()
+    {
         bool result = Bench();
         return result;
     }
 
-    public static int Main() {
+    public static int Main()
+    {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
-
 }
