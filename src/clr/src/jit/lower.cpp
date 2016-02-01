@@ -146,9 +146,10 @@ genTreeOps getHiOper(genTreeOps oper)
     case GT_OR:  return GT_OR;      break;
     case GT_AND: return GT_AND;     break;
     case GT_XOR: return GT_XOR;     break;
+    default:
+        assert(!"getHiOper called for invalid oper");
+        return GT_NONE;
     }
-    assert(!"getHiOper called for invalid oper");
-    return GT_NONE;
 }
 #endif // !defined(_TARGET_64BIT_)
 
