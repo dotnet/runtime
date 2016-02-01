@@ -7183,11 +7183,17 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 		if ((ebblock->in_count == 1) && ebblock->in_bb [0]->out_count == 1) {
 			MonoBasicBlock *prev = ebblock->in_bb [0];
-			mono_merge_basic_blocks (cfg, prev, ebblock);
-			cfg->cbb = prev;
-			if ((prev_cbb->out_count == 1) && (prev_cbb->out_bb [0]->in_count == 1) && (prev_cbb->out_bb [0] == prev)) {
-				mono_merge_basic_blocks (cfg, prev_cbb, prev);
-				cfg->cbb = prev_cbb;
+
+			if (prev->next_bb == ebblock) {
+				mono_merge_basic_blocks (cfg, prev, ebblock);
+				cfg->cbb = prev;
+				if ((prev_cbb->out_count == 1) && (prev_cbb->out_bb [0]->in_count == 1) && (prev_cbb->out_bb [0] == prev)) {
+					mono_merge_basic_blocks (cfg, prev_cbb, prev);
+					cfg->cbb = prev_cbb;
+				}
+			} else {
+				/* There could be a bblock after 'prev', and making 'prev' the current bb could cause problems */
+				cfg->cbb = ebblock;
 			}
 		} else {
 			/* 
