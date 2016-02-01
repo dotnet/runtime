@@ -17,13 +17,14 @@ public:
         return m_nRefCount;
     }
     ULONG STDMETHODCALLTYPE Release() {
-        if ( (--m_nRefCount) == 0 )
+        ULONG newRefCount = --m_nRefCount;
+        if ( newRefCount == 0 )
             delete this;
-        return m_nRefCount;
+        return newRefCount;
     }
     HRESULT STDMETHODCALLTYPE QueryInterface( REFIID rid, void **ppUnk ) {
         if ( ppUnk == NULL ) {
-            return E_INVALIDARG;
+            return E_POINTER;
         }
         if (rid == __uuidof( IDiaLoadCallback2 ) )
             *ppUnk = (IDiaLoadCallback2 *)this;
