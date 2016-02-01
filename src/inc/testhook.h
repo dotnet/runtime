@@ -143,7 +143,7 @@ public:
 			|| IsEqualIID(riid, IID_ICLRTestHook3))
         {
             AddRef();
-            *ppv = (ICLRTestHook*) (this);
+            *ppv = static_cast<ICLRTestHook3*>(this);
             return S_OK;
         }
         else
