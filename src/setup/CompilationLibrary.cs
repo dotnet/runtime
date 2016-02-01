@@ -28,7 +28,6 @@ namespace Microsoft.Extensions.DependencyModel
         public IEnumerable<string> ResolveReferencePaths()
         {
             var entryAssembly = _entryAssembly.Value;
-            var entryAssemblyName = entryAssembly.GetName().Name;
 
             string basePath;
             string fullName;
