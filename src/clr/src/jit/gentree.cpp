@@ -4525,7 +4525,7 @@ void            GenTree::InsertAfterSelf(GenTree* node, GenTreeStmt* stmt /* = n
 //    'parent' must be non-null
 //
 // Notes:
-//    When FEATURE_MULTIREG_STRUCT_ARGS is defined we can get here with GT_LDOBJ tree. 
+//    When FEATURE_MULTIREG__ARGS is defined we can get here with GT_LDOBJ tree. 
 //    This happens when we have a struct that is passed in multiple registers.
 //
 //    Also note that when FEATURE_UNIX_AMD64_STRUCT_PASSING is defined the GT_LDOBJ 
@@ -4543,14 +4543,14 @@ GenTreePtr*         GenTree::gtGetChildPointer(GenTreePtr parent)
         if (this == parent->gtOp.gtOp2)                    return &(parent->gtOp.gtOp2);
         break;
 
-#if !FEATURE_MULTIREG_STRUCT_ARGS
-        // Note that when FEATURE_MULTIREG_STRUCT_ARGS==1 
+#if !FEATURE_MULTIREG_ARGS
+        // Note that when FEATURE_MULTIREG__ARGS==1 
         //  a GT_LDOBJ node is handled above by the default case
     case GT_LDOBJ:
         // Any GT_LDOBJ with a field must be lowered before this point.
         noway_assert(!"GT_LDOBJ encountered in GenTree::gtGetChildPointer");
         break;
-#endif // !FEATURE_MULTIREG_STRUCT_ARGS
+#endif // !FEATURE_MULTIREG_ARGS
 
     case GT_CMPXCHG:
         if (this == parent->gtCmpXchg.gtOpLocation)        return &(parent->gtCmpXchg.gtOpLocation);

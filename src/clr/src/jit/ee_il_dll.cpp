@@ -320,7 +320,7 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
         // make certain the EE passes us back the right thing for refanys
         assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2*sizeof(void*));
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {
@@ -328,7 +328,7 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
             return TARGET_POINTER_SIZE;
         }
 #endif // _TARGET_ARM64_
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
         return (unsigned)roundUp(structSize, TARGET_POINTER_SIZE);
     }
