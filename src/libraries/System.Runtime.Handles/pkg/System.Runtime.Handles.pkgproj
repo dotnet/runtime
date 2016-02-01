@@ -6,7 +6,8 @@
     <ProjectReference Include="..\ref\System.Runtime.Handles.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.Handles.builds" />
+    <ProjectReference Include="any\System.Runtime.Handles.pkgproj" />
+    <ProjectReference Include="aot\System.Runtime.Handles.pkgproj" />
 
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
