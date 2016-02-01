@@ -3109,8 +3109,7 @@ STDMETHODIMP CorHost2::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
             else
             {
                 _ASSERTE(!"Not reachable");
-#pragma prefast(suppress:33021, "This code is not reacheble so this assignment is fine.")
-                hr = FALSE;
+                hr = S_FALSE;
             }
         }
         END_ENTRYPOINT_NOTHROW;
