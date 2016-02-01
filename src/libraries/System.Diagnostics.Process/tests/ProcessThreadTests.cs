@@ -59,6 +59,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(5805)]
         [Fact]
         public void TestStartTimeProperty()
         {
