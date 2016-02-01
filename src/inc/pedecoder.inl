@@ -63,6 +63,11 @@ inline BOOL PEDecoder::IsRelocated() const
     return (m_flags & FLAG_RELOCATED) != 0;
 }
 
+inline void PEDecoder::SetRelocated()
+{
+    m_flags |= FLAG_RELOCATED;
+}
+
 inline BOOL PEDecoder::IsFlat() const
 {
     LIMITED_METHOD_CONTRACT;
