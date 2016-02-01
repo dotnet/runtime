@@ -99,6 +99,9 @@ binary_protocol_open_file (void)
 			break; /* Failed */
 	} while (binary_protocol_file == -1);
 
+	if (binary_protocol_file == -1)
+		g_error ("sgen binary protocol: failed to open file");
+
 	if (file_size_limit > 0)
 		free_filename (filename);
 }
@@ -114,6 +117,8 @@ binary_protocol_init (const char *filename, long long limit)
 	file_size_limit = limit;
 
 	binary_protocol_open_file ();
+#else
+	g_error ("sgen binary protocol: not supported");
 #endif
 }
 

@@ -2382,7 +2382,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 		if (!precise) {
 #ifdef USE_MONO_CTX
-			sgen_conservatively_pin_objects_from ((void**)&info->client_info.ctx, (void**)&info->client_info.ctx + ARCH_NUM_REGS,
+			sgen_conservatively_pin_objects_from ((void**)&info->client_info.ctx, (void**)(&info->client_info.ctx + 1),
 				start_nursery, end_nursery, PIN_TYPE_STACK);
 #else
 			sgen_conservatively_pin_objects_from ((void**)&info->client_info.regs, (void**)&info->client_info.regs + ARCH_NUM_REGS,
