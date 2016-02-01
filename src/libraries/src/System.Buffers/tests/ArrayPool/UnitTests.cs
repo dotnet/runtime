@@ -97,7 +97,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
-        public static void RentingAnArrayWithLengthGreaterThanSpecifiedInCreateSillSucceeds()
+        public static void RentingAnArrayWithLengthGreaterThanSpecifiedInCreateStillSucceeds()
         {
             Assert.NotNull(ArrayPool<byte>.Create(maxArrayLength: 100, numberOfArrays: 1).Rent(200));
         }
