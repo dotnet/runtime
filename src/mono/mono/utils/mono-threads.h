@@ -636,7 +636,7 @@ int mono_thread_info_current_state (THREAD_INFO_TYPE *info);
 const char* mono_thread_state_name (int state);
 
 gboolean mono_thread_info_in_critical_location (THREAD_INFO_TYPE *info);
-gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
 
 gboolean

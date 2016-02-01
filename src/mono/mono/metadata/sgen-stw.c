@@ -397,7 +397,7 @@ sgen_unified_suspend_stop_world (void)
 		info->client_info.skip = FALSE;
 		info->client_info.suspend_done = FALSE;
 		if (sgen_is_thread_in_current_stw (info)) {
-			info->client_info.skip = !mono_thread_info_begin_suspend (info, FALSE);
+			info->client_info.skip = !mono_thread_info_begin_suspend (info);
 			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), info->client_info.skip);
 		} else {
 			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] IGNORE thread %p skip %d\n", mono_thread_info_get_tid (info), info->client_info.skip);
@@ -458,7 +458,7 @@ sgen_unified_suspend_stop_world (void)
 
 		FOREACH_THREAD_SAFE (info) {
 			if (sgen_is_thread_in_current_stw (info) && mono_thread_info_is_running (info)) {
-				gboolean res = mono_thread_info_begin_suspend (info, FALSE);
+				gboolean res = mono_thread_info_begin_suspend (info);
 				THREADS_STW_DEBUG ("[GC-STW-RESTART] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), res);
 				if (!res)
 					info->client_info.skip = TRUE;

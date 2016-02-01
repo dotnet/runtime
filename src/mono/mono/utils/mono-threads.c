@@ -772,7 +772,7 @@ cleanup:
 }
 
 gboolean
-mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+mono_thread_info_begin_suspend (MonoThreadInfo *info)
 {
 	switch (mono_threads_transition_request_async_suspension (info)) {
 	case AsyncSuspendAlreadySuspended:
@@ -782,7 +782,7 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 		mono_threads_add_to_pending_operation_set (info);
 		return TRUE;
 	case AsyncSuspendInitSuspend:
-		return begin_async_suspend (info, interrupt_kernel);
+		return begin_async_suspend (info, FALSE);
 	default:
 		g_assert_not_reached ();
 	}
