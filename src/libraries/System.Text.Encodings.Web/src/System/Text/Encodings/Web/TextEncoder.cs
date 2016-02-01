@@ -9,7 +9,14 @@ using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
 namespace System.Text.Encodings.Web
-{    
+{
+    /// <summary>
+    /// An abstraction representing various text encoders. 
+    /// </summary>
+    /// <remarks>
+    /// TextEncoder subclasses can be used to do HTML encoding, URI encoding, and JavaScript encoding. 
+    /// Instances of such subclasses can be accessed using <see cref="HtmlEncoder.Default"/>, <see cref="UrlEncoder.Default"/>, and <see cref="JavaScriptEncoder.Default"/>.
+    /// </remarks>
     public abstract class TextEncoder
     {
         // The following pragma disables a warning complaining about non-CLS compliant members being abstract, 
@@ -19,25 +26,59 @@ namespace System.Text.Encodings.Web
         // yet consumption of concrete encoders is totally CLS compliant, 
         // as it’s mainly to be done by calling helper methods in TextEncoderExtensions class, 
         // and so I think the warning is a bit too aggressive.  
-        #pragma warning disable 3011
+
+        /// <summary>
+        /// Encodes a unicode scalar into a buffer.
+        /// </summary>
+        /// <param name="unicodeScalar">Unicode scalar.</param>
+        /// <param name="buffer">The destination of the encoded text.</param>
+        /// <param name="bufferLength">Length of the destination <paramref name="buffer"/> in chars.</param>
+        /// <param name="numberOfCharactersWritten">Number of characters written to the <paramref name="buffer"/>.</param>
+        /// <returns>Returns false if <paramref name="bufferLength"/> is too small to fit the encoded text, otherwise returns true.</returns>
+        /// <remarks>This method is seldom called directly. One of the TextEncoder.Encode overloads should be used instead.
+        /// Implementations of <see cref="TextEncoder"/> need to be thread safe and stateless.
+        /// </remarks>
+#pragma warning disable 3011
         [CLSCompliant(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public unsafe abstract bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten);
 
         // all subclasses have the same implementation of this method.
         // but this cannot be made virtual, because it will cause a virtual call to Encodes, and it destroys perf, i.e. makes common scenario 2x slower 
+
+        /// <summary>
+        /// Finds index of the first character that needs to be encoded.
+        /// </summary>
+        /// <param name="text">The text buffer to search.</param>
+        /// <param name="textLength">The number of characters in the <paramref name="text"/>.</param>
+        /// <returns></returns>
+        /// <remarks>This method is seldom called directly. It's used by highe level helper APIs.</remarks>
         [CLSCompliant(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public unsafe abstract int FindFirstCharacterToEncode(char* text, int textLength);
-        #pragma warning restore
+#pragma warning restore
 
+        /// <summary>
+        /// Determines if a given unicode scalar will be encoded.
+        /// </summary>
+        /// <param name="unicodeScalar">Unicode scalar.</param>
+        /// <returns>Returns true if the <paramref name="unicodeScalar"/> will be encoded by this encoder, otherwise returns false.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract bool WillEncode(int unicodeScalar);
 
         // this could be a field, but I am trying to make the abstraction pure.
+
+        /// <summary>
+        /// Maximum nuber of characters that this encoder can generate for each imput character.
+        /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract int MaxOutputCharactersPerInputCharacter { get; }
 
+        /// <summary>
+        /// Encodes the supplied string and returns the encoded text as a new string.
+        /// </summary>
+        /// <param name="value">String to endode.</param>
+        /// <returns>Encoded string.</returns>
         public virtual string Encode(string value)
         {
             if (value == null)
@@ -160,11 +201,23 @@ namespace System.Text.Encodings.Web
             return totalWritten;
         }
 
+        /// <summary>
+        /// Encodes the supplied string into a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="output">Endoded text is written to this output.</param>
+        /// <param name="value">String to be encoded.</param>
         public void Encode(TextWriter output, string value)
         {
             Encode(output, value, 0, value.Length);
         }
 
+        /// <summary>
+        ///  Encodes a substring into a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="output">Endoded text is written to this output.</param>
+        /// <param name="value">String whose substing is to be encoded.</param>
+        /// <param name="startIndex">The index where the substring starts.</param>
+        /// <param name="characterCount">Number of characters in the substring.</param>
         public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
         {
             if (value == null)
@@ -211,6 +264,13 @@ namespace System.Text.Encodings.Web
             }
         }
 
+        /// <summary>
+        ///  Encodes characters from an array into a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="output">Endoded text is written to the output.</param>
+        /// <param name="value">Array of characters to be encoded.</param>
+        /// <param name="startIndex">The index where the substring starts.</param>
+        /// <param name="characterCount">Number of characters in the substring.</param>
         public virtual void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
         {
             if (value == null)
