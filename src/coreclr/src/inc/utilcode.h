@@ -512,7 +512,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 void * __cdecl
 operator new(size_t n);
 
-_Ret_bytecap_(_Size) void * __cdecl
+_Ret_bytecap_(n) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl

@@ -3109,6 +3109,7 @@ STDMETHODIMP CorHost2::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
             else
             {
                 _ASSERTE(!"Not reachable");
+#pragma prefast(suppress:33021, "This code is not reacheble so this assignment is fine.")
                 hr = FALSE;
             }
         }
@@ -6723,7 +6724,7 @@ HRESULT CCLRErrorReportingManager::EndCustomDump()
 }
 
 #ifdef FEATURE_WINDOWSPHONE
-HRESULT CopyStringWorker(WCHAR** pTarget, WCHAR const* pSource)
+HRESULT CopyStringWorker(_Out_ WCHAR** pTarget, WCHAR const* pSource)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6812,7 +6813,7 @@ HRESULT CCLRErrorReportingManager::BucketParamsCache::SetAt(BucketParameterIndex
     return CopyStringWorker(&m_pParams[index], val);
 }
 
-HRESULT CCLRErrorReportingManager::CopyToDataCache(WCHAR** pTarget, WCHAR const* pSource)
+HRESULT CCLRErrorReportingManager::CopyToDataCache(_Out_ WCHAR** pTarget, WCHAR const* pSource)
 {
     LIMITED_METHOD_CONTRACT;
 

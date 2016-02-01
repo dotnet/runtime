@@ -1100,7 +1100,7 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
     }
 }
 
-void SafeVariantClearHelper(VARIANT* pVar)
+void SafeVariantClearHelper(_Inout_ VARIANT* pVar)
 {
     STATIC_CONTRACT_SO_INTOLERANT;
     WRAPPER_NO_CONTRACT;
