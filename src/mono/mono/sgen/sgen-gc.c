@@ -1549,11 +1549,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %ld usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
-	/*
-	 * FIXME: When we finish a concurrent collection we do a nursery collection first,
-	 * as part of which we scan the card table.  Then, later, we scan the mod union
-	 * cardtable.  We should only have to do one.
-	 */
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
 	sj->ops = object_ops;
 	sgen_workers_enqueue_job (&sj->job, FALSE);
