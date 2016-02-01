@@ -14,8 +14,6 @@ namespace System.Net
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.
 
-        private readonly byte[] _emptyBytes = new byte[0];
-
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
         private Uri _requestUri;
@@ -409,7 +407,7 @@ namespace System.Net
                     if (request.Content == null)
                     {
                         // Create empty content so that we can send the entity-body header.
-                        request.Content = new ByteArrayContent(_emptyBytes);
+                        request.Content = new ByteArrayContent(Array.Empty<byte>());
                     }
 
                     request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName]);
