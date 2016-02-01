@@ -680,6 +680,16 @@ sgen_client_binary_protocol_los_card_table_scan_end (long long timestamp, gboole
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_finish_gray_stack_start (long long timestamp, int generation)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_finish_gray_stack_end (long long timestamp, int generation)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);

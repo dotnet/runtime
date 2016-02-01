@@ -1056,6 +1056,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	char *end_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_end () : (char*)-1;
 	SgenGrayQueue *queue = ctx.queue;
 
+	binary_protocol_finish_gray_stack_start (sgen_timestamp (), generation);
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
 	 * the objects that were not referenced by the roots, but by the copied objects.
@@ -1189,6 +1190,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 
 	sgen_gray_object_queue_trim_free_list (queue);
+	binary_protocol_finish_gray_stack_end (sgen_timestamp (), generation);
 }
 
 void
