@@ -24,6 +24,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-threads-api.h>
 
 #ifdef TARGET_OSX
 #include <mono/utils/mach-support.h>
@@ -263,8 +264,8 @@ mono_threads_coop_end_global_suspend (void)
 		mono_polling_required = 0;
 }
 
-void*
-mono_threads_enter_gc_unsafe_region (void* stackdata)
+gpointer
+mono_threads_enter_gc_unsafe_region (gpointer* stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
@@ -273,10 +274,40 @@ mono_threads_enter_gc_unsafe_region (void* stackdata)
 }
 
 void
-mono_threads_exit_gc_unsafe_region (void *regions_cookie, void* stackdata)
+mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;
 
-	mono_threads_reset_blocking_end (regions_cookie, stackdata);
+	mono_threads_reset_blocking_end (cookie, stackdata);
+}
+
+void
+mono_threads_assert_gc_unsafe_region (void)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+}
+
+gpointer
+mono_threads_enter_gc_safe_region (gpointer *stackdata)
+{
+	if (!mono_threads_is_coop_enabled ())
+		return NULL;
+
+	return mono_threads_prepare_blocking (stackdata);
+}
+
+void
+mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
+{
+	if (!mono_threads_is_coop_enabled ())
+		return;
+
+	mono_threads_finish_blocking (cookie, stackdata);
+}
+
+void
+mono_threads_assert_gc_safe_region (void)
+{
+	MONO_REQ_GC_SAFE_MODE;
 }
