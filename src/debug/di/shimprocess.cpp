@@ -678,10 +678,8 @@ CorDebugRecordFormat GetHostExceptionRecordFormat()
 {
 #if defined(_WIN64)
     return FORMAT_WINDOWS_EXCEPTIONRECORD64;
-#elif defined(_WIN32)
-    return FORMAT_WINDOWS_EXCEPTIONRECORD32;
 #else
-    C_ASSERTE(!"CorDebugRecordFormat not implemented for this platform");
+    return FORMAT_WINDOWS_EXCEPTIONRECORD32;
 #endif
 }
 
