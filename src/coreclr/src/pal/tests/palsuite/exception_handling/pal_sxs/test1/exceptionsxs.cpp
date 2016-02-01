@@ -18,7 +18,7 @@ extern "C" int InitializeDllTest2();
 extern "C" int DllTest1();
 extern "C" int DllTest2();
 
-int __cdecl main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 #ifndef __FreeBSD__
     if (0 != InitializeDllTest1())
