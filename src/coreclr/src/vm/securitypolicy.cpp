@@ -724,16 +724,16 @@ size_t SecurityPolicy::GetLongPathNameHelper( const WCHAR* wszShortPath, __inout
             if (index == 0)
                 break;
 
-			#ifdef _PREFAST_
+            #ifdef _PREFAST_
             #pragma prefast(push)
             #pragma prefast(disable:26001, "suppress prefast warning about underflow by doing index-1 which is checked above.")
-			#endif // _PREFAST_
-			
+            #endif // _PREFAST_
+            
             wszIntermediateBuffer[index-1] = W('\0');
 
-			#ifdef _PREFAST_
+            #ifdef _PREFAST_
             #pragma prefast(pop)
-			#endif
+            #endif
 
             size = WszGetLongPathName(wszIntermediateBuffer, wszBuffer, MAX_LONGPATH);
 
