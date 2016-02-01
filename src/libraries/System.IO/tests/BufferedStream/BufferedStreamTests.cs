@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -14,6 +15,43 @@ namespace System.IO.Tests
         protected override Stream CreateStream()
         {
             return new BufferedStream(new MemoryStream());
+        }
+
+        [Fact]
+        public async Task ConcurrentOperationsAreSerialized()
+        {
+            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)i).ToArray();
+            var mcaos = new ManuallyReleaseAsyncOperationsStream();
+            var stream = new BufferedStream(mcaos, 1);
+
+            var tasks = new Task[4];
+            for (int i = 0; i < 4; i++)
+            {
+                tasks[i] = stream.WriteAsync(data, 250 * i, 250);
+            }
+            Assert.False(tasks.All(t => t.IsCompleted));
+
+            mcaos.Release();
+            await Task.WhenAll(tasks);
+
+            stream.Position = 0;
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                Assert.Equal(i, stream.ReadByte());
+            }
+        }
+
+        [Fact]
+        public void UnderlyingStreamThrowsExceptions()
+        {
+            var stream = new BufferedStream(new ThrowsExceptionFromAsyncOperationsStream());
+
+            Assert.Equal(TaskStatus.Faulted, stream.ReadAsync(new byte[1], 0, 1).Status);
+
+            Assert.Equal(TaskStatus.Faulted, stream.WriteAsync(new byte[10000], 0, 10000).Status);
+
+            stream.WriteByte(1);
+            Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
     }
 
@@ -51,6 +89,16 @@ namespace System.IO.Tests
         protected override Stream CreateStream()
         {
             return new BufferedStream(new MemoryStream());
+        }
+
+        [Fact]
+        public void WriteAfterRead_NonSeekableStream_Throws()
+        {
+            var wrapped = new WrappedMemoryStream(canRead: true, canWrite: true, canSeek: false, data: new byte[] { 1, 2, 3, 4, 5 });
+            var s = new BufferedStream(wrapped);
+
+            s.Read(new byte[3], 0, 3);
+            Assert.Throws<NotSupportedException>(() => s.Write(new byte[10], 0, 10));
         }
     }
 
@@ -133,6 +181,49 @@ namespace System.IO.Tests
         protected override Stream CreateStream()
         {
             return new BufferedStream(new MemoryStream());
+        }
+    }
+
+    internal sealed class ManuallyReleaseAsyncOperationsStream : MemoryStream
+    {
+        private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Release() { _tcs.SetResult(true); }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            await _tcs.Task;
+            return await base.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            await _tcs.Task;
+            await base.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            await _tcs.Task;
+            await base.FlushAsync(cancellationToken);
+        }
+    }
+
+    internal sealed class ThrowsExceptionFromAsyncOperationsStream : MemoryStream
+    {
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("Exception from ReadAsync");
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("Exception from WriteAsync");
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("Exception from FlushAsync");
         }
     }
 }
