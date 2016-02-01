@@ -690,6 +690,11 @@ sgen_client_binary_protocol_finish_gray_stack_end (long long timestamp, int gene
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_worker_finish (long long timestamp, gboolean forced)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);
