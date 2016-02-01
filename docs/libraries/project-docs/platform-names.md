@@ -4,6 +4,26 @@ Over the years, we've accumulated quite a few names, platforms, and components t
 
 This will also list some aliases. As you'll see the aliases aren't always correct -- they are merely listed to help you find the better and less confusing terminology.
 
+In this document, the following terms are used:
+
+* **IL**. Intermediate language. Higher level .NET languages, such as C#, compile down to a hardware agnostic instruction set, which is called Intermediate Language (IL). IL is sometimes referred to as MSIL (Microsoft IL) or CIL (Common IL).
+
+* **GC**. Garbage collector. Garbage collection is an implementation of automatic memory management. .NET Framework and .NET Core currently uses a generational garbage collector, i.e. it groups objects into generations to limit the number of nodes it has to walk for determining which objects are alive. This speeds up collection times.
+
+* **JIT**. Just in time compiler. This technology compiles IL to machine code that the processor understands. It's called JIT because compilation happens on demand and is performed on the same machine the code needs to run on. Since JIT compilation occurs during execution of the application, compile time is part of the run time. Thus, JIT compilers have to trade spending more time optimizing code with the savings the resulting code can produce. But a JIT knows the actual hardware and can free developers from having to ship different implementations. For instance, our vector library relies on the JIT to use the highest available SIMD instruction set.
+
+* **AOT**. Ahead of time compiler. Similar to JIT, this compiler also translates IL to machine code. In contrast to JIT compilation, AOT compilation happens before the application is executed and is usually performed on a different machine. AOT tool chains don't trade runtime for compile time and thus can spend more time optimizing. Since the context of AOT is the entire application, the AOT compiler can also perform cross module linking and whole program analysis, which means that all references are followed and a single executable is produced.
+
+* **NGEN**. Native (image) generation. You can think of this technology as a persistent JIT compiler. It usually compiles code on the machine where the code will be executed, but compilation typically occurs at install time.
+
+* **CLR**. Common language runtime. The exact meaning depends on context, but it usually refers to the runtime of the .NET Framework and includes several components. The CLR is a virtual machine, i.e. it includes the facilities to generate and compile code on-the-fly using a JIT compiler. The existing Microsoft CLR implementation is Windows only.
+
+* **CoreCLR**. Core common language runtime. It's built from the same code base as the CLR. Originally, CoreCLR was the runtime of Silverlight and was designed to run on multiple platforms, specifically Windows and OS X. CoreCLR is now part of .NET Core and represents a simplified version of the CLR. It's still a [cross platform](https://github.com/dotnet/coreclr#build-status) runtime. CoreCLR is also a virtual machine with a JIT.
+
+* **CoreRT**. Core runtime. In contrast to the CLR/CoreCLR, CoreRT is not a virtual machine, i.e. it doesn't include the facilities to generate and run code on-the-fly because it doesn't include a JIT. It does, however, include the GC and the ability for runtime type identification (RTTI) as well as reflection. However, its type system is designed so that metadata for reflection can be omitted. This enables having an AOT tool chain that can link away superfluous metadata and (more importantly) identify code that the application doesn't use.
+
+* **CoreFX**. Core framework. Conceptually a set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. It's what most people would think of as the Base Class Library (BCL). The BCL is a general purpose, lower level set of functionality that higher-level frameworks, such as WCF and ASP.NET, build on. The source code of the .NET Core library stack is contained in the [CoreFX repo](http://github.com/dotnet/corefx). However, the majority of the .NET Core APIs are also available in the .NET Framework, so you can think of CoreFX as a fork of the .NET Framework library stack.
+
 ## .NET Framework
 
 **Also referred to as**: Desktop, full framework, in-box framework
@@ -38,7 +58,7 @@ UWP provides many services, such as a centralized app store, an execution enviro
 
 You can think of .NET Native as an evolution of NGEN (Native Image Generator): NGEN basically simply runs the JIT up front, the code quality and behavior is identical to the JITed version. Another downside of NGEN is that it happens on the user's machine, rather than the developer's machine. NGEN is also at the module level, i.e. for each MSIL assembly there is a corresponding NGEN'ed assembly that contains the native code. .NET Native on the other hand is a C++ like compiler and linker. It will remove unused code, spend more time optimizing it, and produce a single, merged module that represents the closure of the application.
 
-UWP was the first application model that was supported by .NET Native. We now also support building native console applications for Windows, Mac and Linux.
+UWP was the first application model that was supported by .NET Native. We now also support building native console applications for Windows, OS X and Linux.
 
 ## Rotor
 
