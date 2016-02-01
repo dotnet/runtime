@@ -675,7 +675,7 @@ regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *ar
 
     regState->rsCalleeRegArgMaskLiveIn |= genRegMask(inArgReg);
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
     if ((argDsc->lvOtherArgReg != REG_STK) && (argDsc->lvOtherArgReg != REG_NA))
     {
@@ -687,7 +687,7 @@ regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *ar
         regState->rsCalleeRegArgMaskLiveIn |= genRegMask(secondArgReg);
     }
 #endif // TARGET_ARM64_
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
 #ifdef _TARGET_ARM_
     if (argDsc->lvType == TYP_DOUBLE)
