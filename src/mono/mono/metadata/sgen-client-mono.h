@@ -695,6 +695,11 @@ sgen_client_binary_protocol_worker_finish (long long timestamp, gboolean forced)
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_evacuating_blocks (size_t block_size)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);

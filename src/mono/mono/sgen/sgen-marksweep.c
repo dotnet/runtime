@@ -1807,6 +1807,8 @@ major_start_major_collection (void)
 		if (!evacuate_block_obj_sizes [i])
 			continue;
 
+		binary_protocol_evacuating_blocks (block_obj_sizes [i]);
+
 		free_block_lists [0][i] = NULL;
 		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
 	}
