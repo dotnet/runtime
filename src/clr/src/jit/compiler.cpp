@@ -4838,7 +4838,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         {
         case CORINFO_CALLCONV_VARARG:
         case CORINFO_CALLCONV_NATIVEVARARG:
-            NYI_ARM64("Varargs method");
             info.compIsVarArgs    = true;
             break;
         case CORINFO_CALLCONV_DEFAULT:
