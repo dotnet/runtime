@@ -2572,8 +2572,7 @@ namespace System.Net.Sockets.Tests
                 catch (SocketException ex)
                 {
                     Task.Delay(Configuration.FailingTestTimeout).Wait(); // Give the other end a chance to call Accept().
-                    _serverSocket.Shutdown(SocketShutdown.Both);  // Cancels the test
-                    _serverSocket.Dispose();
+                    _serverSocket.Dispose(); // Cancels the test
                     Error = ex.SocketErrorCode;
                 }
                 finally
