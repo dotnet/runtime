@@ -660,6 +660,26 @@ sgen_client_binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpoin
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_major_card_table_scan_start (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_major_card_table_scan_end (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_los_card_table_scan_start (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_los_card_table_scan_end (long long timestamp, gboolean mod_union)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);
