@@ -616,11 +616,13 @@ CorUnix::InternalCreateThread(
         dwStackSize = CPalThread::s_dwDefaultThreadStackSize;
     }
 
+#ifdef PTHREAD_STACK_MIN
     if (PTHREAD_STACK_MIN > pthreadStackSize)
     {
         WARN("default stack size is reported as %d, but PTHREAD_STACK_MIN is "
              "%d\n", pthreadStackSize, PTHREAD_STACK_MIN);
     }
+#endif
     
     if (pthreadStackSize < dwStackSize)
     {
