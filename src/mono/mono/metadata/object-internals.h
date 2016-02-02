@@ -1624,6 +1624,9 @@ MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 
 MonoObject *
+ves_icall_object_new (MonoDomain *domain, MonoClass *klass);
+	
+MonoObject *
 ves_icall_object_new_specific (MonoVTable *vtable);
 
 MonoObject *
@@ -1668,6 +1671,9 @@ mono_error_set_pending_exception (MonoError *error);
 
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass);
+
+MonoObject *
+mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable, MonoError *error);

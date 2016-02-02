@@ -3873,7 +3873,7 @@ register_icalls (void)
 	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
 	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
 	register_icall (mono_helper_stelem_ref_check, "mono_helper_stelem_ref_check", "void object object", FALSE);
-	register_icall (mono_object_new, "mono_object_new", "object ptr ptr", FALSE);
+	register_icall (ves_icall_object_new, "ves_icall_object_new", "object ptr ptr", FALSE);
 	register_icall (ves_icall_object_new_specific, "ves_icall_object_new_specific", "object ptr", FALSE);
 	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
 	register_icall (ves_icall_array_new_specific, "ves_icall_array_new_specific", "object ptr int32", FALSE);

@@ -1846,7 +1846,11 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 				 * This is complicated by the fact that Nullables have
 				 * a variable structure.
 				 */
-				nullable = mono_object_new (mono_domain_get (), nklass);
+				nullable = mono_object_new_checked (mono_domain_get (), nklass, &error);
+				if (!mono_error_ok (&error)) {
+					mono_error_set_pending_exception (&error);
+					return;
+				}
 
 				mono_nullable_init ((guint8 *)mono_object_unbox (nullable), value, nklass);
 
@@ -1966,7 +1970,11 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 		t->type = def_type;
 		klass = mono_class_from_mono_type (t);
 		g_free (t);
-		o = mono_object_new (domain, klass);
+		o = mono_object_new_checked (domain, klass, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		v = ((gchar *) o) + sizeof (MonoObject);
 		mono_get_constant_value_from_blob (domain, def_type, def_value, v);
 		break;
@@ -3175,6 +3183,7 @@ write_enum_value (char *mem, int type, guint64 value)
 ICALL_EXPORT MonoObject *
 ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, guint64 value)
 {
+	MonoError error;
 	MonoDomain *domain; 
 	MonoClass *enumc;
 	MonoObject *res;
@@ -3187,7 +3196,8 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, guint64 value)
 
 	etype = mono_class_enum_basetype (enumc);
 
-	res = mono_object_new (domain, enumc);
+	res = mono_object_new_checked (domain, enumc, &error);
+	mono_error_raise_exception (&error);
 	write_enum_value ((char *)res + sizeof (MonoObject), etype->type, value);
 
 	return res;
@@ -3208,6 +3218,7 @@ ves_icall_System_Enum_InternalHasFlag (MonoObject *a, MonoObject *b)
 ICALL_EXPORT MonoObject *
 ves_icall_System_Enum_get_value (MonoObject *eobj)
 {
+	MonoError error;
 	MonoObject *res;
 	MonoClass *enumc;
 	gpointer dst;
@@ -3220,7 +3231,8 @@ ves_icall_System_Enum_get_value (MonoObject *eobj)
 	g_assert (eobj->vtable->klass->enumtype);
 	
 	enumc = mono_class_from_mono_type (mono_class_enum_basetype (eobj->vtable->klass));
-	res = mono_object_new (mono_object_domain (eobj), enumc);
+	res = mono_object_new_checked (mono_object_domain (eobj), enumc, &error);
+	mono_error_raise_exception (&error);
 	dst = (char *)res + sizeof (MonoObject);
 	src = (char *)eobj + sizeof (MonoObject);
 	size = mono_class_value_size (enumc, NULL);
@@ -4432,6 +4444,7 @@ create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build,
 {
 	static MonoClass *System_Version = NULL;
 	static MonoMethod *create_version = NULL;
+	MonoError error;
 	MonoObject *result;
 	gpointer args [4];
 	
@@ -4451,7 +4464,8 @@ create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build,
 	args [1] = &minor;
 	args [2] = &build;
 	args [3] = &revision;
-	result = mono_object_new (domain, System_Version);
+	result = mono_object_new_checked (domain, System_Version, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	mono_runtime_invoke (create_version, result, args, NULL);
 
 	return result;
@@ -4461,6 +4475,7 @@ ICALL_EXPORT MonoArray*
 ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAssembly *assembly) 
 {
 	static MonoClass *System_Reflection_AssemblyName;
+	MonoError error;
 	MonoArray *result;
 	MonoDomain *domain = mono_object_domain (assembly);
 	int i, count = 0;
@@ -4491,8 +4506,9 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 
 		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 
-		aname = (MonoReflectionAssemblyName *) mono_object_new (
-			domain, System_Reflection_AssemblyName);
+		aname = (MonoReflectionAssemblyName *) mono_object_new_checked (
+			domain, System_Reflection_AssemblyName, &error);
+		mono_error_raise_exception (&error);
 
 		MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME])));
 
@@ -5890,6 +5906,7 @@ ICALL_EXPORT MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
 						   MonoReflectionMethod *info, MonoBoolean throwOnBindFailure)
 {
+	MonoError error;
 	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
 	MonoObject *delegate;
 	gpointer func;
@@ -5904,7 +5921,8 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 			return NULL;
 	}
 
-	delegate = mono_object_new (mono_object_domain (type), delegate_class);
+	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
+	mono_error_raise_exception (&error);
 
 	if (method_is_dynamic (method)) {
 		/* Creating a trampoline would leak memory */
@@ -5924,11 +5942,13 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 ICALL_EXPORT MonoMulticastDelegate *
 ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
 {
+	MonoError error;
 	MonoMulticastDelegate *ret;
 
 	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
 
-	ret = (MonoMulticastDelegate*) mono_object_new (mono_object_domain (delegate), mono_object_class (delegate));
+	ret = (MonoMulticastDelegate*) mono_object_new_checked (mono_object_domain (delegate), mono_object_class (delegate), &error);
+	mono_error_raise_exception (&error);
 	ret->delegate.invoke_impl = mono_runtime_create_delegate_trampoline (mono_object_class (delegate));
 
 	return ret;
@@ -6037,6 +6057,7 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 ICALL_EXPORT MonoObject *
 ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoString *class_name)
 {
+	MonoError error;
 	MonoDomain *domain = mono_object_domain (this_obj); 
 	MonoObject *res;
 	MonoRealProxy *rp = ((MonoRealProxy *)this_obj);
@@ -6044,7 +6065,8 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoStri
 	MonoType *type;
 	MonoClass *klass;
 
-	res = mono_object_new (domain, mono_defaults.transparent_proxy_class);
+	res = mono_object_new_checked (domain, mono_defaults.transparent_proxy_class, &error);
+	mono_error_raise_exception (&error);
 	tp = (MonoTransparentProxy*) res;
 	
 	MONO_OBJECT_SETREF (tp, rp, rp);
@@ -6918,6 +6940,8 @@ ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoS
 ICALL_EXPORT MonoObject *
 ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionType *type)
 {
+	MonoError error;
+	MonoObject *result;
 	MonoClass *klass;
 	MonoDomain *domain;
 	
@@ -6929,7 +6953,9 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionType *type)
 		/* No arguments -> null */
 		return NULL;
 
-	return mono_object_new (domain, klass);
+	result = mono_object_new_checked (domain, klass, &error);
+	mono_error_raise_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionMethod *

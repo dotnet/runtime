@@ -1127,7 +1127,10 @@ mono_helper_newobj_mscorlib (guint32 idx)
 		return NULL;
 	}
 
-	return mono_object_new (mono_domain_get (), klass);
+	MonoObject *obj = mono_object_new_checked (mono_domain_get (), klass, &error);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
+	return obj;
 }
 
 /*

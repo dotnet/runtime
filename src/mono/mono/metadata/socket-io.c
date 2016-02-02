@@ -824,6 +824,7 @@ is_ipv4_mapped_any (const struct in6_addr *addr)
 static MonoObject*
 create_object_from_sockaddr(struct sockaddr *saddr, int sa_size, gint32 *error)
 {
+	MonoError merror;
 	MonoDomain *domain = mono_domain_get ();
 	MonoObject *sockaddr_obj;
 	MonoArray *data;
@@ -834,7 +835,8 @@ create_object_from_sockaddr(struct sockaddr *saddr, int sa_size, gint32 *error)
 		domain->sockaddr_class=mono_class_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
 		g_assert (domain->sockaddr_class);
 	}
-	sockaddr_obj=mono_object_new(domain, domain->sockaddr_class);
+	sockaddr_obj=mono_object_new_checked(domain, domain->sockaddr_class, &merror);
+	mono_error_raise_exception (&merror); /* FIXME don't raise here */
 	
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
@@ -1910,6 +1912,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 #  endif
 	socklen_t credsize = sizeof(cred);
 #endif
+	MonoError merror;
 	MonoDomain *domain=mono_domain_get();
 	MonoObject *obj;
 	MonoClass *obj_class;
@@ -1978,8 +1981,9 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		obj_class=mono_class_from_name(get_socket_assembly (),
 					       "System.Net.Sockets",
 					       "LingerOption");
-		obj=mono_object_new(domain, obj_class);
-		
+		obj=mono_object_new_checked(domain, obj_class, &merror);
+		mono_error_raise_exception (&merror); /* FIXME don't raise here */
+
 		/* Locate and set the fields "bool enabled" and "int
 		 * lingerTime"
 		 */
@@ -2026,7 +2030,8 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		obj_class = mono_class_from_name(mono_posix_image,
 						 "Mono.Posix",
 						 "PeerCredData");
-		obj = mono_object_new(domain, obj_class);
+		obj = mono_object_new_checked(domain, obj_class, &merror);
+		mono_error_raise_exception (&merror); /* FIXME don't raise here */
 		cred_data = (MonoPeerCredData *)obj;
 		cred_data->pid = cred.pid;
 		cred_data->uid = cred.uid;

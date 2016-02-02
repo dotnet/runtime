@@ -69,7 +69,7 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 MONO_API mono_unichar2 *mono_string_chars  (MonoString *s);
 MONO_API int            mono_string_length (MonoString *s);
 
-MONO_API MonoObject *
+MONO_RT_EXTERNAL_ONLY MONO_API MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
 
 MONO_API MonoObject *

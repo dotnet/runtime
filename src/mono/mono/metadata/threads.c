@@ -3492,12 +3492,15 @@ mono_threads_perform_thread_dump (void)
 static void
 mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_frames)
 {
+	MonoError error;
 	ThreadDumpUserData ud;
 	MonoInternalThread *thread_array [128];
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
 	int tindex, nthreads;
 
+	mono_error_init (&error);
+	
 	*out_threads = NULL;
 	*out_stack_frames = NULL;
 
@@ -3534,7 +3537,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 		for (i = 0; i < ud.nframes; ++i) {
 			MonoStackFrameInfo *frame = &ud.frames [i];
 			MonoMethod *method = NULL;
-			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
+			if (!mono_error_ok (&error))
+				goto leave;
 
 			sf->native_offset = frame->native_offset;
 
@@ -3564,7 +3569,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 		}
 	}
 
+leave:
 	g_free (ud.frames);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }
 
 /**

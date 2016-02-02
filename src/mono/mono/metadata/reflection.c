@@ -6500,6 +6500,7 @@ mono_image_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflecti
 MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
+	MonoError error;
 	static MonoClass *assembly_type;
 	MonoReflectionAssembly *res;
 	
@@ -6511,7 +6512,8 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 		g_assert (klass);
 		assembly_type = klass;
 	}
-	res = (MonoReflectionAssembly *)mono_object_new (domain, assembly_type);
+	res = (MonoReflectionAssembly *)mono_object_new_checked (domain, assembly_type, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	res->assembly = assembly;
 
 	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
@@ -6522,6 +6524,7 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 MonoReflectionModule*   
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
+	MonoError error;
 	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	char* basename;
@@ -6534,7 +6537,8 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 		g_assert (klass);
 		module_type = klass;
 	}
-	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
+	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	res->image = image;
 	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
@@ -6566,6 +6570,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 MonoReflectionModule*   
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
+	MonoError error;
 	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	MonoTableInfo *table;
@@ -6581,7 +6586,8 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 		g_assert (klass);
 		module_type = klass;
 	}
-	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
+	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	table = &image->tables [MONO_TABLE_FILE];
 	g_assert (table_index < table->rows);
@@ -6856,7 +6862,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 				System_Reflection_MonoGenericMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoGenericMethod");
 			klass = System_Reflection_MonoGenericMethod;
 		}
-		gret = (MonoReflectionGenericMethod*)mono_object_new (domain, klass);
+		gret = (MonoReflectionGenericMethod*)mono_object_new_checked (domain, klass, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		gret->method.method = method;
 
 		MONO_OBJECT_SETREF (gret, method.name, mono_string_new (domain, method->name));
@@ -6883,7 +6890,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 			System_Reflection_MonoMethod = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoMethod");
 		klass = System_Reflection_MonoMethod;
 	}
-	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
+	ret = (MonoReflectionMethod*)mono_object_new_checked (domain, klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	ret->method = method;
 
 	rt = mono_type_get_object_checked (domain, &refclass->byval_arg, &error);
@@ -6939,7 +6947,8 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	CHECK_OBJECT (MonoReflectionField *, field, klass);
 	if (!monofield_klass)
 		monofield_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
-	res = (MonoReflectionField *)mono_object_new (domain, monofield_klass);
+	res = (MonoReflectionField *)mono_object_new_checked (domain, monofield_klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	res->klass = klass;
 	res->field = field;
 	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, mono_field_get_name (field)));
@@ -6975,13 +6984,15 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
+	MonoError error;
 	MonoReflectionProperty *res;
 	static MonoClass *monoproperty_klass;
 
 	CHECK_OBJECT (MonoReflectionProperty *, property, klass);
 	if (!monoproperty_klass)
 		monoproperty_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
-	res = (MonoReflectionProperty *)mono_object_new (domain, monoproperty_klass);
+	res = (MonoReflectionProperty *)mono_object_new_checked (domain, monoproperty_klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	res->klass = klass;
 	res->property = property;
 	CACHE_OBJECT (MonoReflectionProperty *, property, res, klass);
@@ -6999,6 +7010,7 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
+	MonoError error;
 	MonoReflectionEvent *res;
 	MonoReflectionMonoEvent *mono_event;
 	static MonoClass *monoevent_klass;
@@ -7006,7 +7018,8 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
 	if (!monoevent_klass)
 		monoevent_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
-	mono_event = (MonoReflectionMonoEvent *)mono_object_new (domain, monoevent_klass);
+	mono_event = (MonoReflectionMonoEvent *)mono_object_new_checked (domain, monoevent_klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	mono_event->klass = klass;
 	mono_event->event = event;
 	res = (MonoReflectionEvent*)mono_event;
@@ -7276,7 +7289,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	} else
 		local_var_sig_token = 0; //FIXME
 
-	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
+	ret = (MonoReflectionMethodBody*)mono_object_new_checked (domain, System_Reflection_MethodBody, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
@@ -7287,7 +7301,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	/* Locals */
 	MONO_OBJECT_SETREF (ret, locals, mono_array_new_cached (domain, System_Reflection_LocalVariableInfo, header->num_locals));
 	for (i = 0; i < header->num_locals; ++i) {
-		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new (domain, System_Reflection_LocalVariableInfo);
+		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new_checked (domain, System_Reflection_LocalVariableInfo, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		rt = mono_type_get_object_checked (domain, header->locals [i], &error);
 		mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -7302,7 +7317,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	/* Exceptions */
 	MONO_OBJECT_SETREF (ret, clauses, mono_array_new_cached (domain, System_Reflection_ExceptionHandlingClause, header->num_clauses));
 	for (i = 0; i < header->num_clauses; ++i) {
-		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new (domain, System_Reflection_ExceptionHandlingClause);
+		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new_checked (domain, System_Reflection_ExceptionHandlingClause, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		MonoExceptionClause *clause = &header->clauses [i];
 
 		info->flags = clause->flags;
@@ -7423,6 +7439,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 MonoObject *
 mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
 {
+	MonoError error;
 	void *retval;
 	MonoClass *klass;
 	MonoObject *object;
@@ -7433,7 +7450,8 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
 	
 	klass = mono_class_from_mono_type (type);
 	if (klass->valuetype) {
-		object = mono_object_new (domain, klass);
+		object = mono_object_new_checked (domain, klass, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		retval = ((gchar *) object + sizeof (MonoObject));
 		if (klass->enumtype)
 			basetype = mono_class_enum_basetype (klass);
@@ -8445,9 +8463,10 @@ handle_type:
 		val = load_cattr_value (image, &subc->byval_arg, p, end, error);
 		obj = NULL;
 		if (mono_error_ok (error)) {
-			obj = mono_object_new (mono_domain_get (), subc);
+			obj = mono_object_new_checked (mono_domain_get (), subc, error);
 			g_assert (!subc->has_references);
-			mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
+			if (mono_error_ok (error))
+				mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
 		}
 
 		g_free (val);
@@ -8551,7 +8570,8 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val)
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	params [1] = val;
-	retval = mono_object_new (mono_domain_get (), klass);
+	retval = mono_object_new_checked (mono_domain_get (), klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	unboxed = mono_object_unbox (retval);
 	mono_runtime_invoke (ctor, unboxed, params, NULL);
 
@@ -8563,6 +8583,7 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg)
 {
 	static MonoClass *klass;
 	static MonoMethod *ctor;
+	MonoError error;
 	MonoObject *retval;
 	void *unboxed, *params [2];
 
@@ -8573,7 +8594,8 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg)
 
 	params [0] = minfo;
 	params [1] = typedarg;
-	retval = mono_object_new (mono_domain_get (), klass);
+	retval = mono_object_new_checked (mono_domain_get (), klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	unboxed = mono_object_unbox (retval);
 	mono_runtime_invoke (ctor, unboxed, params, NULL);
 
@@ -8678,7 +8700,8 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	}
 
 	if (len == 0) {
-		attr = mono_object_new (mono_domain_get (), method->klass);
+		attr = mono_object_new_checked (mono_domain_get (), method->klass, error);
+		if (!mono_error_ok (error)) return NULL;
 		mono_runtime_invoke (method, attr, NULL, NULL);
 		return attr;
 	}
@@ -8706,7 +8729,8 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	}
 
 	named = p;
-	attr = mono_object_new (mono_domain_get (), method->klass);
+	attr = mono_object_new_checked (mono_domain_get (), method->klass, error);
+	if (!mono_error_ok (error)) goto fail;
 
 	mono_runtime_invoke (method, attr, params, &exc);
 	if (exc)
@@ -9043,6 +9067,7 @@ static MonoObject*
 create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 {
 	static MonoMethod *ctor;
+	MonoError error;
 	MonoDomain *domain;
 	MonoObject *attr;
 	void *params [4];
@@ -9053,7 +9078,8 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 		ctor = mono_class_get_method_from_name (mono_defaults.customattribute_data_class, ".ctor", 4);
 
 	domain = mono_domain_get ();
-	attr = mono_object_new (domain, mono_defaults.customattribute_data_class);
+	attr = mono_object_new_checked (domain, mono_defaults.customattribute_data_class, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	params [0] = mono_method_get_object (domain, cattr->ctor, NULL);
 	params [1] = mono_assembly_get_object (domain, image->assembly);
 	params [2] = (gpointer)&cattr->data;
@@ -10673,7 +10699,8 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 		g_assert (System_Reflection_Emit_MarshalAsAttribute);
 	}
 
-	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new (domain, System_Reflection_Emit_MarshalAsAttribute);
+	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new_checked (domain, System_Reflection_Emit_MarshalAsAttribute, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	minfo->utype = spec->native;
 
 	switch (minfo->utype) {
