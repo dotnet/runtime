@@ -671,16 +671,16 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 
                 for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
                 {
-                    switch (structDesc.eightByteClassifications[i])
+                    if (structDesc.IsIntegralSlot(i))
                     {
-                    case SystemVClassificationTypeInteger:
-                    case SystemVClassificationTypeIntegerReference:
                         intRegCount++;
-                        break;
-                    case SystemVClassificationTypeSSE:
+                    }
+                    else if (structDesc.IsSseSlot(i))
+                    {
                         floatRegCount++;
-                        break;
-                    default:
+                    }
+                    else
+                    {
                         assert(false && "Invalid eightbyte classification type.");
                         break;
                     }
