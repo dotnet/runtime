@@ -1807,6 +1807,8 @@ major_start_major_collection (void)
 		if (!evacuate_block_obj_sizes [i])
 			continue;
 
+		binary_protocol_evacuating_blocks (block_obj_sizes [i]);
+
 		free_block_lists [0][i] = NULL;
 		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
 	}
@@ -2318,6 +2320,7 @@ major_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 		g_assert (!mod_union);
 
 	major_finish_sweep_checking ();
+	binary_protocol_major_card_table_scan_start (sgen_timestamp (), mod_union);
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 #ifdef PREFETCH_CARDS
 		int prefetch_index = __index + 6;
@@ -2335,6 +2338,7 @@ major_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 
 		scan_card_table_for_block (block, mod_union, ctx);
 	} END_FOREACH_BLOCK_NO_LOCK;
+	binary_protocol_major_card_table_scan_end (sgen_timestamp (), mod_union);
 }
 
 static void

@@ -1056,6 +1056,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	char *end_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_end () : (char*)-1;
 	SgenGrayQueue *queue = ctx.queue;
 
+	binary_protocol_finish_gray_stack_start (sgen_timestamp (), generation);
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
 	 * the objects that were not referenced by the roots, but by the copied objects.
@@ -1189,6 +1190,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 
 	sgen_gray_object_queue_trim_free_list (queue);
+	binary_protocol_finish_gray_stack_end (sgen_timestamp (), generation);
 }
 
 void
@@ -1547,11 +1549,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %ld usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
-	/*
-	 * FIXME: When we finish a concurrent collection we do a nursery collection first,
-	 * as part of which we scan the card table.  Then, later, we scan the mod union
-	 * cardtable.  We should only have to do one.
-	 */
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
 	sj->ops = object_ops;
 	sgen_workers_enqueue_job (&sj->job, FALSE);

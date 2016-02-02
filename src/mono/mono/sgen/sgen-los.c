@@ -621,6 +621,7 @@ sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 {
 	LOSObject *obj;
 
+	binary_protocol_los_card_table_scan_start (sgen_timestamp (), mod_union);
 	for (obj = los_object_list; obj; obj = obj->next) {
 		guint8 *cards;
 
@@ -639,6 +640,7 @@ sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 
 		sgen_cardtable_scan_object (obj->data, sgen_los_object_size (obj), cards, mod_union, ctx);
 	}
+	binary_protocol_los_card_table_scan_end (sgen_timestamp (), mod_union);
 }
 
 void
