@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.Test.Assembly", "tests\System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A56}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.DefaultContext.Tests", "tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,6 +18,10 @@ Global
 		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
