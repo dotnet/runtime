@@ -1560,8 +1560,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_pin_stats_print_class_stats ();
 
-	sgen_drain_gray_stack (ctx);
-
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
 	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
 
