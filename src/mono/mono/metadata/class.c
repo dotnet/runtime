@@ -217,8 +217,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		}
 
 		enclosing = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | idx, error); 
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
 
 		if (enclosing->nested_classes_inited && enclosing->ext) {
 			/* Micro-optimization: don't scan the metadata tables if enclosing is already inited */
@@ -756,8 +755,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 
 		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
+
 		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
 
@@ -781,8 +780,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 
 		/* We can't use context->class_inst directly, since it can have more elements */
 		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
+
 		if (inst == container->context.class_inst)
 			return NULL;
 
@@ -858,8 +857,7 @@ mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, 
 
 	if (context)
 		inflated = inflate_generic_type (image, type, context, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	if (!inflated) {
 		MonoType *shared = mono_metadata_get_shared_type (type);
@@ -934,8 +932,7 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 	mono_error_init (error);
 	if (context) {
 		inflated = inflate_generic_type (image, type, context, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
 	}
 
 	if (!inflated)
@@ -952,8 +949,7 @@ mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext 
 	MonoType *inflated;
 
 	inflated = mono_class_inflate_generic_type_checked (&gklass->byval_arg, context, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	res = mono_class_from_mono_type (inflated);
 	mono_metadata_free_type (inflated);
@@ -1066,8 +1062,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		tmp_context = inflate_generic_context (method_context, context, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
+
 		context = &tmp_context;
 
 		if (mono_metadata_generic_context_equal (method_context, context))
@@ -2845,8 +2841,7 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 	MonoClass *ic;
 
 	mono_class_setup_interfaces (klass, error);
-	if (!mono_error_ok (error))
-		return;
+	return_if_nok (error);
 
 	for (i = 0; i < klass->interface_count; i++) {
 		ic = klass->interfaces [i];
@@ -2861,8 +2856,7 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 		}
 
 		collect_implemented_interfaces_aux (ic, res, error);
-		if (!mono_error_ok (error))
-			return;
+		return_if_nok (error);
 	}
 }
 
@@ -6663,8 +6657,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGeneri
 	MonoClass *ret;
 	gboolean inflated = FALSE;
 	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context, &inflated, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	ret = mono_class_from_mono_type (t);
 	if (inflated)
 		mono_metadata_free_type (t);
