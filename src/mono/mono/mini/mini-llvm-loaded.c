@@ -69,7 +69,9 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 void
 mono_llvm_free_domain_info (MonoDomain *domain)
 {
-	backend.free_domain_info (domain);
+	/* This is called even when llvm is not enabled */
+	if (mono_llvm_free_domain_info_fptr)
+		backend.free_domain_info (domain);
 }
 
 void
