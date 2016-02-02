@@ -51,12 +51,17 @@ Abstract:
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 #include <limits.h>
+
 #if HAVE_SYS_LWP_H
 #include <sys/lwp.h>
+#endif
+#if HAVE_LWP_H
+#include <lwp.h>
+#endif
 // If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings
-#elif HAVE__LWP_SELF
+#if HAVE__LWP_SELF && !HAVE_SYS_LWP_H && !HAVE_LWP_H
 extern "C" int _lwp_self ();
-#endif // HAVE_LWP_H
+#endif
 
 using namespace CorUnix;
 
@@ -616,11 +621,13 @@ CorUnix::InternalCreateThread(
         dwStackSize = CPalThread::s_dwDefaultThreadStackSize;
     }
 
+#ifdef PTHREAD_STACK_MIN
     if (PTHREAD_STACK_MIN > pthreadStackSize)
     {
         WARN("default stack size is reported as %d, but PTHREAD_STACK_MIN is "
              "%d\n", pthreadStackSize, PTHREAD_STACK_MIN);
     }
+#endif
     
     if (pthreadStackSize < dwStackSize)
     {
@@ -1406,7 +1413,9 @@ CorUnix::GetThreadTimesInternal(
 
     pTargetThread->Lock(pThread);
 
+#if HAVE_PTHREAD_GETCPUCLOCKID
     if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
+#endif
     {
         ASSERT("Unable to get clock from thread\n", hThread);
         SetLastError(ERROR_INTERNAL_ERROR);

@@ -297,23 +297,31 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 #endif // !defined(_TARGET_64BIT_)
             {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                if (varTypeIsStruct(tree) &&
-                    tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
+                if (varTypeIsStruct(tree))
                 {
-#ifdef DEBUG
-                    GenTreeLclVarCommon* lclVarPtr = tree->gtOp.gtOp1->AsLclVarCommon();
-                    LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-                    assert(varDsc->lvIsMultiRegArgOrRet);
-#endif // DEBUG
-                    // If this is a two eightbyte return, make the var
-                    // contained by the return expression. The code gen will put
-                    // the values in the right registers for return.
-                    info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
-                    info->dstCount = 0;
-                    MakeSrcContained(tree, tree->gtOp.gtOp1);
-                    break;
+                    noway_assert((tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR) ||
+                                 (tree->gtOp.gtOp1->OperGet() == GT_CALL));
+
+                    if (tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
+                    {
+                        GenTreeLclVarCommon* lclVarPtr = tree->gtOp.gtOp1->AsLclVarCommon();
+                        LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
+                        assert(varDsc->lvIsMultiRegArgOrRet);
+
+                        // If this is a two eightbyte return, make the var
+                        // contained by the return expression. The code gen will put
+                        // the values in the right registers for return.
+                        info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+                        info->dstCount = 0;
+                        MakeSrcContained(tree, tree->gtOp.gtOp1);
+                        break;
+                    }
+
+                    // If the return gtOp1 is GT_CALL, just fallthrough. The return registers should already be set properly by the GT_CALL.
                 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+                // TODO-AMD64-Unix: When the GT_CALL for multi-register return structs is changed to use 2 destinations,
+                // change the code below to use 2 src for such op1s (this is the case of op1 being a GT_CALL).
                 info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
                 info->dstCount = 0;
 

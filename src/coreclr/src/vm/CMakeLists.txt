@@ -14,12 +14,10 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     add_definitions(-D_TARGET_X86_=1)
     add_definitions(-DDBG_TARGET_32BIT=1)
     add_definitions(-DDBG_TARGET_X86=1)
-    add_definitions(-DDBG_TARGET_WIN32=1)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_definitions(-D_TARGET_ARM_=1)
     add_definitions(-DDBG_TARGET_32BIT=1)
     add_definitions(-DDBG_TARGET_ARM=1)
-    add_definitions(-DDBG_TARGET_WIN32=1)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     add_definitions(-D_TARGET_ARM64_=1)
     add_definitions(-DDBG_TARGET_64BIT=1)
@@ -231,6 +229,7 @@ set(VM_SOURCES_WKS
     profattachclient.cpp
     profattachserver.cpp
     profdetach.cpp
+    profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
@@ -268,11 +267,11 @@ set(VM_SOURCES_WKS
     weakreferencenative.cpp
 )
 
-if(CLR_CMAKE_PLATFORM_LINUX OR WIN32)
+if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS
         eventtrace.cpp
         )
-endif(CLR_CMAKE_PLATFORM_LINUX OR WIN32)
+endif(FEATURE_EVENT_TRACE)
 
 if(WIN32)
 
@@ -305,8 +304,7 @@ list(APPEND VM_SOURCES_WKS
     microsoft.comservices_i.c
     mngstdinterfaces.cpp
     notifyexternals.cpp
-    olecontexthelpers.cpp
-    profilermetadataemitvalidator.cpp
+    olecontexthelpers.cpp    
     rcwrefcache.cpp
     rtlfunctions.cpp
     runtimecallablewrapper.cpp

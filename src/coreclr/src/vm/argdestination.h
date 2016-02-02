@@ -143,7 +143,8 @@ public:
                 if (eightByteSize == 8)
                 {
                     _ASSERTE((eightByteClassification == SystemVClassificationTypeInteger) ||
-                             (eightByteClassification == SystemVClassificationTypeIntegerReference));
+                             (eightByteClassification == SystemVClassificationTypeIntegerReference) ||
+                             (eightByteClassification == SystemVClassificationTypeIntegerByRef));
 
                     _ASSERTE(IS_ALIGNED((SIZE_T)genRegDest, 8));
                     *(UINT64*)genRegDest = *(UINT64*)src;
@@ -192,7 +193,8 @@ public:
 
             if (eightByteClassification != SystemVClassificationTypeSSE)
             {
-                if (eightByteClassification == SystemVClassificationTypeIntegerReference)
+                if ((eightByteClassification == SystemVClassificationTypeIntegerReference) ||
+                    (eightByteClassification == SystemVClassificationTypeIntegerByRef))
                 {
                     _ASSERTE(eightByteSize == 8);
                     _ASSERTE(IS_ALIGNED((SIZE_T)genRegDest, 8));

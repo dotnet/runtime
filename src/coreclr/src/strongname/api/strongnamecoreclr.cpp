@@ -47,7 +47,7 @@ IExecutionEngine * __stdcall SnIEE()
     return ApiShim<IEEFn_t>("IEE")();
 }
 
-STDAPI SnGetCorSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer, DWORD* dwLength)
+STDAPI SnGetCorSystemDirectory(_In_z_ LPWSTR pbuffer, DWORD cchBuffer, DWORD* dwLength)
 {
     typedef HRESULT (__stdcall *GetCorSystemDirectoryFn_t)(LPWSTR, DWORD, DWORD *);
     return ApiShim<GetCorSystemDirectoryFn_t>("GetCORSystemDirectory")(pbuffer, cchBuffer, dwLength);

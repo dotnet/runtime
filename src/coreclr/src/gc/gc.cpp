@@ -467,7 +467,7 @@ void log_va_msg_config(const char *fmt, va_list args)
     pBuffer[0] = '\r';
     pBuffer[1] = '\n';
     int buffer_start = 2;
-    int msg_len = _vsnprintf (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, fmt, args );
+    int msg_len = _vsnprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, _TRUNCATE, fmt, args );
     assert (msg_len != -1);
     msg_len += buffer_start;
 
@@ -23776,13 +23776,11 @@ void gc_heap::walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, w
 
     STRESS_LOG_PLUG_MOVE(plug, (plug + size), -last_plug_relocation);
 
-#ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::MovedReference(plug,
                                (plug + size),
                                reloc,
                                profiling_context,
                                settings.compaction);
-#endif
 
     if (check_last_object_p)
     {

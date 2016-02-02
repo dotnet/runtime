@@ -6,12 +6,15 @@
 #cmakedefine01 HAVE_SYS_VMPARAM_H
 #cmakedefine01 HAVE_MACH_VM_TYPES_H
 #cmakedefine01 HAVE_MACH_VM_PARAM_H
+#cmakedefine01 HAVE_MACHINE_NPX_H
+#cmakedefine01 HAVE_MACHINE_REG_H
 #cmakedefine01 HAVE_MACHINE_VMPARAM_H
 #cmakedefine01 HAVE_PROCFS_H
 #cmakedefine01 HAVE_CRT_EXTERNS_H
 #cmakedefine01 HAVE_SYS_TIME_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_SYS_LWP_H
+#cmakedefine01 HAVE_LWP_H
 #cmakedefine01 HAVE_LIBUNWIND_H
 #cmakedefine01 HAVE_LIBUUID_H
 #cmakedefine01 HAVE_BSD_UUID_H
@@ -26,6 +29,7 @@
 #cmakedefine01 HAVE_PTHREAD_CONTINUE_NP
 #cmakedefine01 HAVE_PTHREAD_ATTR_GET_NP
 #cmakedefine01 HAVE_PTHREAD_GETATTR_NP
+#cmakedefine01 HAVE_PTHREAD_GETCPUCLOCKID
 #cmakedefine01 HAVE_PTHREAD_SIGQUEUE
 #cmakedefine01 HAVE_SIGRETURN
 #cmakedefine01 HAVE__THREAD_SYS_SIGRETURN
@@ -58,6 +62,7 @@
 #cmakedefine01 HAVE_BSD_REGS_T
 #cmakedefine01 HAVE_PT_REGS
 #cmakedefine01 HAVE_GREGSET_T
+#cmakedefine01 HAVE___GREGSET_T
 #cmakedefine01 HAVE_SIGINFO_T
 #cmakedefine01 HAVE_UCONTEXT_T
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T

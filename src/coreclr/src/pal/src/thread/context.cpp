@@ -50,10 +50,13 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#if HAVE_BSD_REGS_T
+#if HAVE_MACHINE_REG_H
 #include <machine/reg.h>
+#endif  // HAVE_MACHINE_REG_H
+#if HAVE_MACHINE_NPX_H
 #include <machine/npx.h>
-#endif  // HAVE_BSD_REGS_T
+#endif  // HAVE_MACHINE_NPX_H
+
 #if HAVE_PT_REGS
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
@@ -197,7 +200,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
         if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         struct reg ptrace_registers;
-        if (ptrace(PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
+        if (PAL_PTRACE(PT_GETREGS, processId, &ptrace_registers, 0) == -1)
 #endif
         {
             ASSERT("Failed ptrace(PT_GETREGS, processId:%d) errno:%d (%s)\n",
@@ -346,7 +349,7 @@ CONTEXT_SetThreadContext(
 #if HAVE_PT_REGS
         if (ptrace((__ptrace_request)PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
-        if (ptrace(PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (PAL_PTRACE(PT_GETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
         {
             ASSERT("Failed ptrace(PT_GETREGS, processId:%d) errno:%d (%s)\n",
@@ -377,7 +380,7 @@ CONTEXT_SetThreadContext(
 #if HAVE_PT_REGS        
         if (ptrace((__ptrace_request)PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
-        if (ptrace(PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (PAL_PTRACE(PT_SETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
         {
             ASSERT("Failed ptrace(PT_SETREGS, processId:%d) errno:%d (%s)\n",
@@ -631,6 +634,8 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 case SEGV_MAPERR:   // Address not mapped to object
                 case SEGV_ACCERR:   // Invalid permissions for mapped object
                     return EXCEPTION_ACCESS_VIOLATION;
+
+#ifdef SI_KERNEL
                 case SI_KERNEL:
                 {
                     // Identify privileged instructions that are not identified as such by the system
@@ -644,6 +649,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                     }
                     // fall through
                 }
+#endif
                 default:
                     break;
             }
@@ -662,7 +668,9 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
         case SIGTRAP:
             switch (siginfo->si_code)
             {
+#ifdef SI_KERNEL
                 case SI_KERNEL:
+#endif
                 case SI_USER:
                 case TRAP_BRKPT:    // Process breakpoint
                     return EXCEPTION_BREAKPOINT;

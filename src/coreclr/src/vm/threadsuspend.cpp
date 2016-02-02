@@ -7347,7 +7347,8 @@ void STDCALL OnHijackStructInRegsWorker(HijackArgs * pArgs)
     int orefCount = 0;
     for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
     {
-        if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference)
+        if ((eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference) ||
+            (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerByRef))
         {
             oref[orefCount++] = ObjectToOBJECTREF(*(Object **) &pArgs->ReturnValue[i]);
         }
@@ -7395,7 +7396,8 @@ void STDCALL OnHijackStructInRegsWorker(HijackArgs * pArgs)
         orefCount = 0;
         for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
         {
-            if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference)
+            if ((eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference) ||
+                (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerByRef))
             {
                 *((OBJECTREF *) &pArgs->ReturnValue[i]) = oref[orefCount++];
             }
