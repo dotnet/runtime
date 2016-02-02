@@ -192,9 +192,6 @@ static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 /* function called at thread cleanup */
 static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
-/* function called to notify the runtime about a pending exception on the current thread */
-static MonoThreadNotifyPendingExcFunc mono_thread_notify_pending_exc_fn = NULL;
-
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
 #define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
@@ -2845,11 +2842,6 @@ mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback fu
 	thread->internal_thread->manage_callback = func;
 }
 
-void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func)
-{
-	mono_thread_notify_pending_exc_fn = func;
-}
-
 G_GNUC_UNUSED
 static void print_tids (gpointer key, gpointer value, gpointer user)
 {
@@ -4408,11 +4400,6 @@ mono_thread_request_interruption (gboolean running_managed)
 		   request count. When exiting the unmanaged method the count will be
 		   checked and the thread will be interrupted. */
 
-		if (mono_thread_notify_pending_exc_fn && !running_managed)
-			/* The JIT will notify the thread about the interruption */
-			/* This shouldn't take any locks */
-			mono_thread_notify_pending_exc_fn (NULL);
-
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
 		/* Our implementation of this function ignores the func argument */
@@ -4717,10 +4704,6 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
 		return MonoResumeThread;
 	} else {
-		if (mono_thread_notify_pending_exc_fn)
-			/* The JIT will notify the thread about the interruption */
-			mono_thread_notify_pending_exc_fn (info);
-
 		/* 
 		 * This will cause waits to be broken.
 		 * It will also prevent the thread from entering a wait, so if the thread returns
@@ -4790,10 +4773,7 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 			InterlockedIncrement (&thread_interruption_requested);
 		if (data->interrupt)
 			data->interrupt_token = mono_thread_info_prepare_interrupt ((MonoThreadInfo *)thread->thread_info);
-		
-		if (mono_thread_notify_pending_exc_fn && !running_managed)
-			/* The JIT will notify the thread about the interruption */
-			mono_thread_notify_pending_exc_fn (info);
+
 		return MonoResumeThread;
 	}
 }

@@ -219,8 +219,6 @@ MonoException* mono_thread_get_and_clear_pending_exception (void);
 
 void mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed);
 
-void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func);
-
 void mono_runtime_set_has_tls_get (gboolean val);
 gboolean mono_runtime_has_tls_get (void);
 
