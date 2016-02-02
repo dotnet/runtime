@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- there is no "jit" rid, so we use any and "aot" will override -->
     <PackageTargetRuntime>any</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>

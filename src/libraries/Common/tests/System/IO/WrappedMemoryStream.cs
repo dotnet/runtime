@@ -14,9 +14,14 @@ namespace System.IO.Tests
         private bool _canRead;
         private bool _canSeek;
 
-        public WrappedMemoryStream(bool canRead, bool canWrite, bool canSeek)
+        public WrappedMemoryStream(bool canRead, bool canWrite, bool canSeek) : 
+            this(canRead, canWrite, canSeek, null)
         {
-            wrapped = new MemoryStream();
+        }
+
+        public WrappedMemoryStream(bool canRead, bool canWrite, bool canSeek, byte[] data)
+        {
+            wrapped = data != null ? new MemoryStream(data) : new MemoryStream();
             _canWrite = canWrite;
             _canRead = canRead;
             _canSeek = canSeek;

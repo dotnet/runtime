@@ -8,7 +8,8 @@
     <ProjectReference Include="..\ref\System.Text.Encoding.Extensions.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Text.Encoding.Extensions.builds" />
+    <ProjectReference Include="any\System.Text.Encoding.Extensions.pkgproj" />
+    <ProjectReference Include="aot\System.Text.Encoding.Extensions.pkgproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

@@ -9,12 +9,13 @@
     <ProjectReference Include="..\ref\System.AppContext.csproj">
       <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.AppContext.builds" />
-
-    <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 -->
-    <ProjectReference Include="..\src\System.AppContext.csproj">
-      <PackageTargetFramework>dnxcore50</PackageTargetFramework>
+    <ProjectReference Include="..\src\redist\System.AppContext.depproj">
+      <TargetGroup>net46</TargetGroup>
     </ProjectReference>
+    <ProjectReference Include="..\src\System.AppContext.csproj">
+      <TargetGroup>net462</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="any\System.AppContext.pkgproj" />
   </ItemGroup>
 
   <ItemGroup>

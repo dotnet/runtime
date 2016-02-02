@@ -8,7 +8,8 @@
     <ProjectReference Include="..\ref\System.Threading.Tasks.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Threading.Tasks.builds" />
+    <ProjectReference Include="any\System.Threading.Tasks.pkgproj" />
+    <ProjectReference Include="aot\System.Threading.Tasks.pkgproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
