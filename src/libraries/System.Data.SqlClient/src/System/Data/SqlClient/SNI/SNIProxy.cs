@@ -201,49 +201,16 @@ namespace System.Data.SqlClient.SNI
             // Default to using tcp if no protocol is provided
             if (serverNameParts.Length == 1)
             {
-                return ConstructTcpHandle(serverNameParts[0], timerExpire, callbackObject, parallel);
+                return CreateTcpHandle(serverNameParts[0], timerExpire, callbackObject, parallel);
             }
 
             switch (serverNameParts[0])
             {
                 case TdsEnums.TCP:
-                    return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
+                    return CreateTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
 
                 case TdsEnums.NP:
-                    if (parallel)
-                    {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
-                        return null;
-                    }
-
-                    // Named Pipe Format: np:\\<host name>\pipe\<pipe name>
-                    const int minPipeLength = 10; // eg: //./pipe/a
-                    string pipePath = serverNameParts[1].Trim();
-                    if (pipePath.Length < minPipeLength)
-                    {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                        return null;
-                    }
-
-                    if (pipePath[0] != '\\' || pipePath[1] != '\\')
-                    {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                        return null;
-                    }
-
-                    int endofServerName = pipePath.IndexOf('\\', 2);
-
-                    string pipeToken = @"\pipe\";
-                    if (0 != string.Compare(pipeToken, 0, pipePath, endofServerName, pipeToken.Length))
-                    {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                        return null;
-                    }
-
-                    string serverName = pipePath.Substring(2, endofServerName - 2);
-                    string pipeName = pipePath.Substring(endofServerName + pipeToken.Length);
-
-                    return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject);
+                    return CreateNpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
 
                 default:
                     if (parallel)
@@ -259,13 +226,14 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Helper function to construct an SNITCPHandle object
+        /// Creates an SNITCPHandle object
         /// </summary>
         /// <param name="fullServerName">Server string. May contain a comma delimited port number.</param>
         /// <param name="timerExpire">Timer expiration</param>
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
-        /// <returns></returns>
-        private SNITCPHandle ConstructTcpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel)
+        /// <param name="parallel">Should MultiSubnetFailover be used</param>
+        /// <returns>SNITCPHandle</returns>
+        private SNITCPHandle CreateTcpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel)
         {
             // TCP Format: 
             // tcp:<host name>\<instance name>
@@ -292,6 +260,52 @@ namespace System.Data.SqlClient.SNI
             }
 
             return new SNITCPHandle(serverAndPortParts[0], portNumber, timerExpire, callbackObject, parallel);
+        }
+
+        /// <summary>
+        /// Creates an SNINpHandle object
+        /// </summary>
+        /// <param name="fullServerName">Server string representing a UNC pipe path.</param>
+        /// <param name="timerExpire">Timer expiration</param>
+        /// <param name="callbackObject">Asynchronous I/O callback object</param>
+        /// <param name="parallel">Should MultiSubnetFailover be used. Only returns an error for named pipes.</param>
+        /// <returns>SNINpHandle</returns>
+        private SNINpHandle CreateNpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel)
+        {
+            if (parallel)
+            {
+                SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
+                return null;
+            }
+
+            // Named Pipe Format: np:\\<host name>\pipe\<pipe name>
+            const int minPipeLength = 10; // eg: //./pipe/a
+            string pipePath = fullServerName.Trim();
+            if (pipePath.Length < minPipeLength)
+            {
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                return null;
+            }
+
+            if (pipePath[0] != '\\' || pipePath[1] != '\\')
+            {
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                return null;
+            }
+
+            int endofServerName = pipePath.IndexOf('\\', 2);
+
+            string pipeToken = @"\pipe\";
+            if (0 != string.Compare(pipeToken, 0, pipePath, endofServerName, pipeToken.Length))
+            {
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                return null;
+            }
+
+            string serverName = pipePath.Substring(2, endofServerName - 2);
+            string pipeName = pipePath.Substring(endofServerName + pipeToken.Length);
+
+            return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject);
         }
 
         /// <summary>
