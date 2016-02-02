@@ -13,27 +13,29 @@ using Xunit;
 
 public static class InProd
 {
-
 #if DEBUG
     public const int Iterations = 1;
 #else
     public const int Iterations = 70;
 #endif
 
-    const int RowSize = 10 * Iterations;
+    private const int RowSize = 10 * Iterations;
 
-    static int s_seed;
+    private static int s_seed;
 
-    static T[][] AllocArray<T>(int n1, int n2) {
+    private static T[][] AllocArray<T>(int n1, int n2)
+    {
         T[][] a = new T[n1][];
-        for (int i = 0; i < n1; ++i) {
+        for (int i = 0; i < n1; ++i)
+        {
             a[i] = new T[n2];
         }
         return a;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Bench() {
+    private static bool Bench()
+    {
         double[][] rma = AllocArray<double>(RowSize, RowSize);
         double[][] rmb = AllocArray<double>(RowSize, RowSize);
         double[][] rmr = AllocArray<double>(RowSize, RowSize);
@@ -55,23 +57,25 @@ public static class InProd
                 {
                     return false;
                 }
-           }
+            }
         }
 
         return true;
     }
 
-    static void InitRand()
+    private static void InitRand()
     {
         s_seed = 7774755;
     }
 
-    static int Rand() {
+    private static int Rand()
+    {
         s_seed = (s_seed * 77 + 13218009) % 3687091;
         return s_seed;
     }
 
-    static void InitMatrix(double[][] m) {
+    private static void InitMatrix(double[][] m)
+    {
         for (int i = 1; i < RowSize; i++)
         {
             for (int j = 1; j < RowSize; j++)
@@ -81,7 +85,8 @@ public static class InProd
         }
     }
 
-    static void InnerProduct(out double result, double[][] a, double[][] b, int row, int col) {
+    private static void InnerProduct(out double result, double[][] a, double[][] b, int row, int col)
+    {
         result = 0.0;
         for (int i = 1; i < RowSize; i++)
         {
@@ -89,7 +94,8 @@ public static class InProd
         }
     }
 
-    static void Inner(double[][] rma, double[][] rmb, double[][] rmr) {
+    private static void Inner(double[][] rma, double[][] rmb, double[][] rmr)
+    {
         InitRand();
         InitMatrix(rma);
         InitMatrix(rmb);
@@ -103,20 +109,25 @@ public static class InProd
     }
 
     [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
+    public static void Test()
+    {
+        foreach (var iteration in Benchmark.Iterations)
+        {
+            using (iteration.StartMeasurement())
+            {
                 Bench();
             }
         }
     }
 
-    static bool TestBase() {
+    private static bool TestBase()
+    {
         bool result = Bench();
         return result;
     }
 
-    public static int Main() {
+    public static int Main()
+    {
         bool result = TestBase();
         return (result ? 100 : -1);
     }
