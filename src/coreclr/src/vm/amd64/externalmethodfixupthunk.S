@@ -30,7 +30,7 @@ NESTED_END ExternalMethodFixupStub, _TEXT
 
 NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 10h, rdx, rcx, 0
+        PROLOG_WITH_TRANSITION_BLOCK 0, 0x10, rdx, rcx, 0
 
         lea     rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
         mov     rsi, rax                            // pIndirection
@@ -50,7 +50,7 @@ NESTED_END DelayLoad_MethodCall, _TEXT
 
 NESTED_ENTRY DelayLoad_Helper\suffix, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 10h, rdx, rcx, 0
+        PROLOG_WITH_TRANSITION_BLOCK 0, 0x10, rdx, rcx, 0
 
         mov     r8, \frameFlags
         lea     rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
