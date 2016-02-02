@@ -249,7 +249,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     {
                       pAsm->m_dwIncludeDebugInfo = 0x101;
 #ifdef FEATURE_CORECLR
-                      printf("Warning: PDB is ignored under 'DEB' option for ilasm on CoreCLR.\n");
+                      // PDB is ignored under 'DEB' option for ilasm on CoreCLR.
+                      // https://github.com/dotnet/coreclr/issues/2982
 #else
                       pAsm->m_fGeneratePDB = TRUE;
 #endif
@@ -281,7 +282,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     else if (!_stricmp(szOpt, "PDB"))
                     {
 #ifdef FEATURE_CORECLR
-                      printf("Warning: 'PDB' option is ignored for ilasm on CoreCLR.\n");
+                      // 'PDB' option is ignored for ilasm on CoreCLR.
+                      // https://github.com/dotnet/coreclr/issues/2982
 #else
                       pAsm->m_fGeneratePDB = TRUE;
 #endif
