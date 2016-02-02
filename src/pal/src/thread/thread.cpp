@@ -1413,7 +1413,9 @@ CorUnix::GetThreadTimesInternal(
 
     pTargetThread->Lock(pThread);
 
+#if HAVE_PTHREAD_GETCPUCLOCKID
     if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
+#endif
     {
         ASSERT("Unable to get clock from thread\n", hThread);
         SetLastError(ERROR_INTERNAL_ERROR);
