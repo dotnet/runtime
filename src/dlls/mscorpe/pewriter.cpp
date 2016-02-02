@@ -1544,7 +1544,6 @@ void PEWriter::setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex) 
             h->SectionIndex = VAL32(m_iSeedSections + DWORD(s - SpecialNames));
             break;
         }
-        s++;
     }
 
 }

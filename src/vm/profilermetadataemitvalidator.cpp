@@ -34,6 +34,11 @@ m_cRefCount(0)
     maxInitialGenericParam = TokenFromRid(m_pInnerInternalImport->GetCountWithTokenKind(mdtGenericParam), mdtGenericParam);
 }
 
+ProfilerMetadataEmitValidator::~ProfilerMetadataEmitValidator()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
   //IUnknown
 HRESULT ProfilerMetadataEmitValidator::QueryInterface(REFIID riid, void** ppInterface)
 {
