@@ -45,13 +45,16 @@ namespace System.Security.Cryptography.Cng.Tests
                + "183e9ae8b6d5308a78da207c6e556af2053983321a5f8ac057b787089ee783c99093b9f2afb2f9a1e9a560ad3095b9667aa6"
                + "99fa").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
 
+        internal static readonly byte[] s_ecdsa521KeyBlob =
+             ("454353364200000001f9f06ea4e00fd3fecc1753af7983b43cb9b692941ee6364616c9c4168845fce804beca7aa23d0a5049"
+            + "910db45dfb61112f4cb02e93ff62af1be203ad248dd70952015ddc31d1ad7411ca5996b8b76a40ea65f286c665225114bec8"
+            + "557365aa4bc79358f8c68b873cb76a1c86a5a394185d8eeb9602b8b968db1e4ac49b7cc51f83c7170055ad9b0b2d0d5d2306"
+            + "a66bf87a256a3739696121eb131e64ae61991ea23db99b397c32df95efb0cb284147a929c65e9f671073ca3c7a084cb9211d"
+            + "ceb06c987277").HexToByteArray();
+
         public static readonly CngKey s_ECDsa521Key =
             CngKey.Import(
-                ("454353364200000001f9f06ea4e00fd3fecc1753af7983b43cb9b692941ee6364616c9c4168845fce804beca7aa23d0a5049"
-               + "910db45dfb61112f4cb02e93ff62af1be203ad248dd70952015ddc31d1ad7411ca5996b8b76a40ea65f286c665225114bec8"
-               + "557365aa4bc79358f8c68b873cb76a1c86a5a394185d8eeb9602b8b968db1e4ac49b7cc51f83c7170055ad9b0b2d0d5d2306"
-               + "a66bf87a256a3739696121eb131e64ae61991ea23db99b397c32df95efb0cb284147a929c65e9f671073ca3c7a084cb9211d"
-               + "ceb06c987277").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+                s_ecdsa521KeyBlob, CngKeyBlobFormat.GenericPrivateBlob);
 
         public static readonly byte[] s_hashSha1 = ("77dbd8b3ef3084e1cc475c8bf955a972214b5f36").HexToByteArray();
         public static readonly byte[] s_hashSha512 = 

@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             {
                 CngKey key = value;
                 Debug.Assert(key != null, "key != null");
-                if (key.AlgorithmGroup != CngAlgorithmGroup.ECDsa)
+                if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
                     throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, "value");
                 _core.SetKey(key);
                 KeySize = key.KeySize;
