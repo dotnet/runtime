@@ -4978,8 +4978,12 @@ BOOL InstallUnhandledExceptionFilter() {
     // We will be here only for CoreCLR on WLC since we dont
     // register UEF for SL.
     if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
-        g_pOriginalUnhandledExceptionFilter =
-            SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
+
+        #pragma prefast(push)
+        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
+        g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
+        #pragma prefast(pop)
+
         // make sure is set (ie. is not our special value to indicate unset)
         LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
     }
@@ -5013,7 +5017,12 @@ void UninstallUnhandledExceptionFilter() {
 #else // !FEATURE_UEF_CHAINMANAGER
     // We will be here only for CoreCLR on WLC or on Mac SL.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED) {
+
+        #pragma prefast(push)
+        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
         SetUnhandledExceptionFilter(g_pOriginalUnhandledExceptionFilter);
+        #pragma prefast(pop)
+
         g_pOriginalUnhandledExceptionFilter = FILTER_NOT_INSTALLED;
         LOG((LF_EH, LL_INFO10, "UninstallUnhandledExceptionFilter unregistered UEF from OS for CoreCLR!\n"));
     }
