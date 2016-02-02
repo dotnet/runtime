@@ -1342,8 +1342,8 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 	setup = domain->setup;
 	if (setup->cache_path != NULL && setup->application_name != NULL) {
 		cache_path = mono_string_to_utf8_checked (setup->cache_path, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
+
 #ifndef TARGET_WIN32
 		{
 			gint i;
