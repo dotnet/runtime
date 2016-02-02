@@ -4525,7 +4525,7 @@ void            GenTree::InsertAfterSelf(GenTree* node, GenTreeStmt* stmt /* = n
 //    'parent' must be non-null
 //
 // Notes:
-//    When FEATURE_MULTIREG__ARGS is defined we can get here with GT_LDOBJ tree. 
+//    When FEATURE_MULTIREG_ARGS is defined we can get here with GT_LDOBJ tree. 
 //    This happens when we have a struct that is passed in multiple registers.
 //
 //    Also note that when FEATURE_UNIX_AMD64_STRUCT_PASSING is defined the GT_LDOBJ 

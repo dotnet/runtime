@@ -187,6 +187,4 @@ JIT/jit64/regress/vsw/286991/test/test.sh
 JIT/opt/Inline/tests/security/security.sh
 JIT/opt/Inline/tests/xmodb/xmodb.sh
 managed/Compilation/Compilation/Compilation.sh
-readytorun/mainv1/mainv1.sh
-readytorun/mainv2/mainv2.sh
 Regressions/coreclr/0584/Test584/Test584.sh

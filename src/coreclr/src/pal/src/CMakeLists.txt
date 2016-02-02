@@ -60,7 +60,6 @@ if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-D_WIN64=1)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   add_definitions(-DBIT32=1)
-  add_definitions(-D_WIN32=1)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DBIT64=1)
   add_definitions(-D_WIN64=1)
@@ -203,6 +202,30 @@ add_library(coreclrpal
   ${PLATFORM_SOURCES}
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  find_library(COREFOUNDATION CoreFoundation)
+  find_library(CORESERVICES CoreServices)
+  find_library(SECURITY Security)
+  find_library(SYSTEM System)
+  target_link_libraries(coreclrpal
+    ${COREFOUNDATION}
+    ${CORESERVICES}
+    ${SECURITY}
+    ${SYSTEM}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  find_library(UNWIND unwind)
+  find_library(INTL intl)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+    ${UNWIND}
+    ${INTL}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   if(PAL_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(coreclrpal
@@ -227,7 +250,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   find_library(UNWIND unwind)
   find_library(INTL intl)
   target_link_libraries(coreclrpal
@@ -236,26 +259,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     ${UNWIND}
     ${INTL}
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_library(COREFOUNDATION CoreFoundation)
-  find_library(CORESERVICES CoreServices)
-  find_library(SECURITY Security)
-  find_library(SYSTEM System)
-  target_link_libraries(coreclrpal
-    ${COREFOUNDATION}
-    ${CORESERVICES}
-    ${SECURITY}
-    ${SYSTEM}
-  )
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 
 add_subdirectory(examples)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(FEATURE_EVENT_TRACE)
     add_subdirectory($ENV{__IntermediatesDir}/Generated/eventprovider ${CMAKE_CURRENT_BINARY_DIR}/eventprovider)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install (TARGETS coreclrpal DESTINATION lib)

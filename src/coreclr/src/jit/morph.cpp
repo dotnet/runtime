@@ -3490,12 +3490,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 {
                     for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
                     {
-                        if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeInteger ||
-                            structDesc.eightByteClassifications[i] == SystemVClassificationTypeIntegerReference)
+                        if (structDesc.IsIntegralSlot(i))
                         {
                             structIntRegs++;
                         }
-                        else if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE)
+                        else if (structDesc.IsSseSlot(i))
                         {
                             structFloatRegs++;
                         }
@@ -3587,8 +3586,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 unsigned int curFloatReg = nextFltArgRegNum;
                 for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
                 {
-                    if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeInteger ||
-                        structDesc.eightByteClassifications[i] == SystemVClassificationTypeIntegerReference)
+                    if (structDesc.IsIntegralSlot(i))
                     {
                         if (i == 0)
                         {
@@ -3617,7 +3615,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
                         curIntReg++;
                     }
-                    else if (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE)
+                    else if (structDesc.IsSseSlot(i))
                     {
                         if (i == 0)
                         {
@@ -14152,35 +14150,52 @@ void                Compiler::fgMorphBlocks()
                     fgReturnCount--;
                 }
 
+                // Block is guaranteed to have last stmt as its jump kind is BBJ_RETURN
+                noway_assert(block->bbTreeList);
+                GenTreePtr last = block->bbTreeList->gtPrev;
+                noway_assert(last != nullptr);
+                noway_assert(last->gtNext == nullptr);
+                noway_assert(last->gtOper == GT_STMT);
+
+                // Block's last stmt must be GT_RETURN
+                GenTreePtr ret = last->gtStmt.gtStmtExpr;
+                noway_assert(ret != nullptr);
+                noway_assert(ret->OperGet() == GT_RETURN);
+                noway_assert(ret->gtGetOp2() == nullptr);
+
                 //replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
                 if (genReturnLocal != BAD_VAR_NUM)
                 {
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                     noway_assert(info.compRetType != TYP_VOID);
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else 
                     noway_assert(info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT);
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                    noway_assert(block->bbTreeList);
+#endif
 
-                    GenTreePtr last = block->bbTreeList->gtPrev;
-                    noway_assert(last && last->gtNext == NULL && last->gtOper == GT_STMT);
-                    GenTreePtr ret = last->gtStmt.gtStmtExpr;
-                    noway_assert(ret && ret->gtOper == GT_RETURN && ret->gtOp.gtOp1 && !(ret->gtOp.gtOp2));
-                    last->gtStmt.gtStmtExpr = gtNewTempAssign(genReturnLocal, ret->gtOp.gtOp1);
+                    // GT_RETURN must have non-null operand as the method is returning the value assigned to genReturnLocal
+                    noway_assert(ret->gtGetOp1() != nullptr);
+
+                    last->gtStmt.gtStmtExpr = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
 
                     //make sure that copy-prop ignores this assignment.
                     last->gtStmt.gtStmtExpr->gtFlags |= GTF_DONT_CSE;
-
-#ifdef DEBUG
-                    if  (verbose)
-                    {
-                        printf( "morph BB%02u to point at onereturn.  New block is\n",
-                                block->bbNum );
-                        fgTableDispBasicBlock(block);
-                    }
-#endif
+                }
+                else
+                {
+                    // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn block
+                    noway_assert(ret->gtGetOp1() == nullptr);
+                    noway_assert(ret->TypeGet() == TYP_VOID);
+                    fgRemoveStmt(block, last);
                 }
 
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("morph BB%02u to point at onereturn.  New block is\n",
+                        block->bbNum);
+                    fgTableDispBasicBlock(block);
+                }
+#endif
              }
         }
 

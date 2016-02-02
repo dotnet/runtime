@@ -132,7 +132,6 @@ enum EtwThreadFlags
 #endif // FEATURE_EVENT_TRACE
 
 #endif // FEATURE_REDHAWK
-#ifdef FEATURE_EVENT_TRACE
 
 // During a heap walk, this is the storage for keeping track of all the nodes and edges
 // being batched up by ETW, and for remembering whether we're also supposed to call into
@@ -150,6 +149,8 @@ public:
     BOOL fProfilerPinned;
     LPVOID pvEtwContext;
 };
+
+#ifdef FEATURE_EVENT_TRACE
 
 class Object;
 #if !defined(FEATURE_PAL)
@@ -643,8 +644,8 @@ namespace ETW
                                                        BOOL fIsTreatAsSafe);
 #else
     public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags,LPWSTR strFullyQualifiedAssemblyName) {};
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, LPWSTR strFullyQualifiedAssemblyName) {};
+        static VOID StrongNameVerificationStart(DWORD dwInFlags, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
+        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_z_ LPWSTR strFullyQualifiedAssemblyName) {};
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
@@ -1067,7 +1068,6 @@ McGenEventProviderEnabled(
 
 
 struct ProfilingScanContext;
-struct ProfilerWalkHeapContext;
 class Object;
 
 namespace ETW

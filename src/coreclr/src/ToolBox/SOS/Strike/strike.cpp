@@ -12698,11 +12698,11 @@ DECLARE_API(SaveModule)
 
     IMAGE_DOS_HEADER DosHeader;
     if (g_ExtData->ReadVirtual(TO_CDADDR(dllBase), &DosHeader, sizeof(DosHeader), NULL) != S_OK)
-        return FALSE;
+        return S_FALSE;
 
     IMAGE_NT_HEADERS Header;
     if (g_ExtData->ReadVirtual(TO_CDADDR(dllBase + DosHeader.e_lfanew), &Header, sizeof(Header), NULL) != S_OK)
-        return FALSE;
+        return S_FALSE;
 
     DWORD_PTR sectionAddr = dllBase + DosHeader.e_lfanew + offsetof(IMAGE_NT_HEADERS,OptionalHeader)
             + Header.FileHeader.SizeOfOptionalHeader;    

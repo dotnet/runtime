@@ -358,6 +358,7 @@ class ZapWriter : public IStream
             *ppv = static_cast<IStream *>(this);
         }
         else {
+            *ppv = NULL;
             hr = E_NOINTERFACE;
         }
         return hr;

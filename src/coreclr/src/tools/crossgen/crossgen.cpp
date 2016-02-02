@@ -282,11 +282,12 @@ bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
 // When using the Phone binding model (TrustedPlatformAssemblies), automatically
 // detect which path mscorlib.[ni.]dll lies in.
 //
-bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DWORD cbMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
+bool ComputeMscorlibPathFromTrustedPlatformAssemblies(_In_z_ LPWSTR pwzMscorlibPath, DWORD cbMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
-    LPWSTR wszSingleTrustedPath = wcstok(wszTrustedPathCopy, PATH_SEPARATOR_STR_W);
+    wchar_t *context;
+    LPWSTR wszSingleTrustedPath = wcstok_s(wszTrustedPathCopy, PATH_SEPARATOR_STR_W, &context);
     
     while (wszSingleTrustedPath != NULL)
     {
@@ -315,7 +316,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DW
             return true;
         }
         
-        wszSingleTrustedPath = wcstok(NULL, PATH_SEPARATOR_STR_W);
+        wszSingleTrustedPath = wcstok_s(NULL, PATH_SEPARATOR_STR_W, &context);
     }
     delete [] wszTrustedPathCopy;
 

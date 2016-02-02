@@ -1160,7 +1160,7 @@ typedef BOOL (WINAPI *WofShouldCompressBinaries_t) (
 
 typedef HRESULT (WINAPI *WofSetFileDataLocation_t) (
     __in HANDLE hFile,
-    __out ULONG Provider,
+    __in ULONG Provider,
     __in PVOID FileInfo,
     __in ULONG Length
     );

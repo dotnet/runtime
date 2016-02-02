@@ -5,7 +5,7 @@
 #include "native.h"
 
 
-MCC_API VType6 __cdecl sum(double count1, int count2, __int64 count3, float count4, short count5, double count6, ...) {
+MCC_API VType6 sum(double count1, int count2, __int64 count3, float count4, short count5, double count6, ...) {
     int count = (int)count1 + (int)count2 + (int)count3 + (int)count4 + (int)count5 + (int)count6;
     VType6 res;
     va_list args;

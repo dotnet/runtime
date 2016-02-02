@@ -483,6 +483,19 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23302": {
+        "type": "package",
+        "dependencies": {
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        }
+      },
       "System.Runtime.Loader/4.0.0-beta-23302": {
         "type": "package",
         "dependencies": {
@@ -1195,6 +1208,19 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23302": {
+        "type": "package",
+        "dependencies": {
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        }
+      },
       "System.Runtime.Loader/4.0.0-beta-23302": {
         "type": "package",
         "dependencies": {
@@ -1905,6 +1931,19 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
+        }
+      },
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23302": {
+        "type": "package",
+        "dependencies": {
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Runtime.Loader/4.0.0-beta-23302": {
@@ -3107,6 +3146,26 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23302": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "ExxuXkijSwiC8+VUYlI66bwCT+k1J3qd8mzrQ7yPOVfG/KzWd9948uaO/I2iYKXPAOAvjSJcjy9A/94GnkhcRg==",
+      "files": [
+        "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23302.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23302.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.nuspec"
+      ]
+    },
     "System.Runtime.Loader/4.0.0-beta-23302": {
       "type": "package",
       "serviceable": true,
@@ -3461,6 +3520,7 @@
       "System.Globalization >= 4.0.10-beta-23302",
       "System.Text.Encoding >= 4.0.10-beta-23302",
       "System.Runtime.InteropServices >= 4.0.20-beta-23302",
+      "System.Runtime.InteropServices.RuntimeInformation >= 4.0.0-beta-23302",
       "System.Collections >= 4.0.10-beta-23302",
       "System.Console >= 4.0.0-beta-23302",
       "System.Reflection >= 4.0.10-beta-23302",
