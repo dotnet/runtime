@@ -427,6 +427,11 @@ namespace System.Net.Security
             }
         }
 
+        public override int ReadByte()
+        {
+            return _sslState.SecureStream.ReadByte();
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             return _sslState.SecureStream.Read(buffer, offset, count);
