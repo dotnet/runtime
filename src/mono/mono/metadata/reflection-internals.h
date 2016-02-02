@@ -20,4 +20,7 @@ mono_find_dynamic_image_owner (void *ptr);
 MonoReflectionType*
 mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *error);
 
+MonoReflectionField*
+mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassField *field, MonoError *error);
+
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

@@ -52,6 +52,7 @@ MONO_API MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, M
 MONO_API MonoReflectionModule*   mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index);
 MONO_API MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
 MONO_API MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
 MONO_API MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
 MONO_API MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
