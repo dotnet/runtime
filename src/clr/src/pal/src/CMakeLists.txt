@@ -202,6 +202,30 @@ add_library(coreclrpal
   ${PLATFORM_SOURCES}
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  find_library(COREFOUNDATION CoreFoundation)
+  find_library(CORESERVICES CoreServices)
+  find_library(SECURITY Security)
+  find_library(SYSTEM System)
+  target_link_libraries(coreclrpal
+    ${COREFOUNDATION}
+    ${CORESERVICES}
+    ${SECURITY}
+    ${SYSTEM}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  find_library(UNWIND unwind)
+  find_library(INTL intl)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+    ${UNWIND}
+    ${INTL}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   if(PAL_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(coreclrpal
@@ -226,7 +250,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   find_library(UNWIND unwind)
   find_library(INTL intl)
   target_link_libraries(coreclrpal
@@ -235,20 +259,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     ${UNWIND}
     ${INTL}
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  find_library(COREFOUNDATION CoreFoundation)
-  find_library(CORESERVICES CoreServices)
-  find_library(SECURITY Security)
-  find_library(SYSTEM System)
-  target_link_libraries(coreclrpal
-    ${COREFOUNDATION}
-    ${CORESERVICES}
-    ${SECURITY}
-    ${SYSTEM}
-  )
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 
 add_subdirectory(examples)
 
