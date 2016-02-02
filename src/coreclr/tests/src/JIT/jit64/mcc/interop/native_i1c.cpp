@@ -9,7 +9,7 @@
 #pragma clang diagnostic ignored "-Wvarargs"
 #endif
 
-MCC_API VType1 __cdecl sum(float first, ...) {
+MCC_API VType1 sum(float first, ...) {
     VType1 result;
 
     int count = 0;
