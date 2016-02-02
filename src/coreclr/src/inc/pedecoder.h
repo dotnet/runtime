@@ -379,6 +379,8 @@ class PEDecoder
     IMAGE_SECTION_HEADER *RvaToSection(RVA rva) const;
     IMAGE_SECTION_HEADER *OffsetToSection(COUNT_T fileOffset) const;
 
+    void SetRelocated();
+
   private:
 
     // ------------------------------------------------------------
