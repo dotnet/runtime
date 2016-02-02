@@ -543,6 +543,7 @@ namespace System.Numerics.Tests
 
         // Covers more numeric rigions
         [Fact]
+        [ActiveIssue(4882, PlatformID.OSX)]
         public void Matrix4x4CreateFromYawPitchRollTest2()
         {
             const float step = 35.0f;
