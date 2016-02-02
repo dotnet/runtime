@@ -845,10 +845,8 @@ combinedScenarios.each { scenario ->
                 
                     setMachineAffinity(newJob, os, architecture)
                     Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
-                    //Pri 1 tests need longer timeout
-                    if (scenario == 'pri1') {
-                        Utilities.setJobTimeout(newJob, 240)
-                    }
+                    // Set timeouts to 240.
+                    Utilities.setJobTimeout(newJob, 240)
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                 
                     // Create a build flow to join together the build and tests required to run this
