@@ -192,7 +192,7 @@ private:
     static void GetRootDirInternal(DWORD dwFlags, __in_ecount(cPath) WCHAR *path, DWORD cPath);
     static void CreateDirectoryIfNotPresent(__in_z const WCHAR *path, LPSECURITY_ATTRIBUTES lpSecurityAttributes = NULL);
 #ifndef FEATURE_ISOSTORE_LIGHT      
-    static BOOL GetMachineStoreDirectory(__out_ecount(cchMachineStorageRoot) WCHAR *path, DWORD cPath);
+    static BOOL GetMachineStoreDirectory(__out_ecount(cchMachineStorageRoot) WCHAR *wszMachineStorageRoot, DWORD cchMachineStorageRoot);
     static HRESULT GetMachineStoreDacl(PACL *ppAcl);
 #endif // !FEATURE_ISOSTORE_LIGHT
 };

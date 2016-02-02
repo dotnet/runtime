@@ -161,6 +161,13 @@ set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildCleanBuildArgs% %__ms
 if not defined __BuildSequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
 )
+REM =========================================================================================
+REM ===
+REM === Restore Build Tools
+REM ===
+REM =========================================================================================
+call %__ProjectDir%\init-tools.cmd 
+
 
 REM =========================================================================================
 REM ===

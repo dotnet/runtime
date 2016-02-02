@@ -80,3 +80,4 @@ install (FILES cfi.h
                gcinfoencoder.h
                gcinfotypes.h
                DESTINATION inc)
+install (TARGETS corguids DESTINATION lib)

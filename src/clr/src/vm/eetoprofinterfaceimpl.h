@@ -487,7 +487,8 @@ private:
     {
     public:
         CHashTableImpl(ULONG iBuckets);
-
+        virtual ~CHashTableImpl();
+        
     protected:
         virtual BOOL Cmp(SIZE_T k1, const HASHENTRY * pc2);
     };

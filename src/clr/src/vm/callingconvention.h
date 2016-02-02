@@ -984,6 +984,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 {
                     case SystemVClassificationTypeInteger:
                     case SystemVClassificationTypeIntegerReference:
+                    case SystemVClassificationTypeIntegerByRef:
                         cGenRegs++;
                         break;
                     case SystemVClassificationTypeSSE:

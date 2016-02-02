@@ -99,6 +99,8 @@ void PEImageLayout::ApplyBaseRelocations()
 {
     STANDARD_VM_CONTRACT;
 
+    SetRelocated();
+
     //
     // Note that this is not a univeral routine for applying relocations. It handles only the subset
     // required by NGen images. Also, it assumes that the image format is valid.
@@ -540,23 +542,11 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
         TESTHOOKCALL(ImageMapped(GetPath(),m_FileView,IM_IMAGEMAP));            
         IfFailThrow(Init((void *) m_FileView));
 
-        // This should never happen in correctly setup system, but do a quick check right anyway to 
-        // avoid running too far with bogus data
-#ifdef MDIL
-        // In MDIL we need to be permissive of MSIL assemblies pretending to be native images,
-        // to support forced fall back to JIT
-        if ((HasNativeHeader() && !IsNativeMachineFormat()) || !HasCorHeader())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        if (HasNativeHeader()) 
-            ApplyBaseRelocations();
-#else
-        if (!IsNativeMachineFormat() || !HasCorHeader() || !HasNativeHeader())
+        if (!IsNativeMachineFormat() || !HasCorHeader() || (!HasNativeHeader() && !HasReadyToRunHeader()))
              ThrowHR(COR_E_BADIMAGEFORMAT);
 
         //Do base relocation for PE, if necessary.
         ApplyBaseRelocations();
-#endif // MDIL
     }
 #else //FEATURE_PREJIT
     //Do nothing.  The file cannot be mapped unless it is an ngen image.
