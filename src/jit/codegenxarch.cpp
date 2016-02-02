@@ -1411,6 +1411,259 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
+//------------------------------------------------------------------------
+// isStructReturn: Returns whether the 'treeNode' is returning a struct.
+//
+// Arguments:
+//    treeNode - The tree node to evaluate whether is a struct return.
+//
+// Return Value:
+//    For AMD64 *nix: returns true if the 'treeNode" is of type GT_RETURN and the
+//                    return type is a struct or it is an implicit retBuf struct return.
+//                    Otherwise returns false.
+//    For other platforms always returns false.
+//
+bool
+CodeGen::isStructReturn(GenTreePtr treeNode)
+{
+    // This method could be called for 'treeNode' of GT_RET_FILT or GT_RETURN.
+    // For the GT_RET_FILT, the return is always
+    // a bool or a void, for the end of a finally block.
+    noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    if (treeNode->OperGet() != GT_RETURN)
+    {
+        return false;
+    }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    return varTypeIsStruct(treeNode) ||
+           (treeNode->TypeGet() == TYP_VOID && compiler->info.compRetBuffArg != BAD_VAR_NUM);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(!varTypeIsStruct(treeNode));
+    return false;
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+}
+
+//------------------------------------------------------------------------
+// genStructReturn: Generates code for returning a struct.
+//
+// Arguments:
+//    treeNode - The GT_RETURN tree node.
+//
+// Return Value:
+//    None
+//
+void
+CodeGen::genStructReturn(GenTreePtr treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN);
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    var_types targetType = treeNode->TypeGet();
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (targetType == TYP_VOID)
+    {
+        assert(op1 == nullptr);
+        if (compiler->info.compRetBuffArg != BAD_VAR_NUM)
+        {
+            // System V AMD64 spec requires that when a struct is returned by a hidden
+            // argument the RAX should contain the value of the hidden retbuf arg.
+            getEmitter()->emitIns_R_S(INS_mov, EA_BYREF, REG_RAX, compiler->info.compRetBuffArg, 0);
+        }        
+    }
+    else
+    {
+        noway_assert((op1->OperGet() == GT_LCL_VAR) ||
+                     (op1->OperGet() == GT_CALL));
+
+        if (op1->OperGet() == GT_LCL_VAR)
+        {
+            assert(op1->isContained());
+
+            GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
+            LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
+            assert(varDsc->lvDontPromote);
+
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            assert(typeHnd != nullptr);
+
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+            assert(structDesc.passedInRegisters);
+            assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+            regNumber retReg0 = REG_NA;
+            unsigned __int8 offset0 = 0;
+            regNumber retReg1 = REG_NA;
+            unsigned __int8 offset1 = 0;
+
+            var_types type0 = TYP_UNKNOWN;
+            var_types type1 = TYP_UNKNOWN;
+
+            getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
+            getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
+
+            // Move the values into the return registers.
+            // 
+
+            assert(retReg0 != REG_NA && retReg1 != REG_NA);
+
+            getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
+            getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
+        }
+
+        // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
+        // registers in the proper return registers. 
+        // This assumes that registers never get spilled. There is an Issue 2966 created to track the need 
+        // for handling the GT_CALL case of two register returns and handle it properly for stress modes 
+        // and potential other changes that may break this assumption.
+    }
+#else
+    assert("!unreached");
+#endif   
+}
+
+//------------------------------------------------------------------------
+// genReturn: Generates code for return statement.
+//            In case of struct return, delegates to the genStructReturn method.
+//
+// Arguments:
+//    treeNode - The GT_RETURN or GT_RETFILT tree node.
+//
+// Return Value:
+//    None
+//
+void
+CodeGen::genReturn(GenTreePtr treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    var_types targetType = treeNode->TypeGet();
+
+#ifdef DEBUG
+    if (targetType == TYP_VOID)
+    {
+        assert(op1 == nullptr);
+    }
+#endif
+
+#ifdef _TARGET_X86_
+    if (treeNode->TypeGet() == TYP_LONG)
+    {
+        assert(op1 != nullptr);
+        noway_assert(op1->OperGet() == GT_LONG);
+        GenTree* loRetVal = op1->gtGetOp1();
+        GenTree* hiRetVal = op1->gtGetOp2();
+        noway_assert((loRetVal->gtRegNum != REG_NA) && (hiRetVal->gtRegNum != REG_NA));
+
+        genConsumeReg(loRetVal);
+        genConsumeReg(hiRetVal);
+        if (loRetVal->gtRegNum != REG_LNGRET_LO)
+        {
+            inst_RV_RV(ins_Copy(targetType), REG_LNGRET_LO, loRetVal->gtRegNum, TYP_INT);
+        }
+        if (hiRetVal->gtRegNum != REG_LNGRET_HI)
+        {
+            inst_RV_RV(ins_Copy(targetType), REG_LNGRET_HI, hiRetVal->gtRegNum, TYP_INT);
+        }
+    }
+    else
+#endif // !defined(_TARGET_X86_)
+    {
+        if (isStructReturn(treeNode))
+        {
+            genStructReturn(treeNode);
+        }
+        else if (targetType != TYP_VOID)
+        {
+            assert(op1 != nullptr);
+            noway_assert(op1->gtRegNum != REG_NA);
+
+            // !! NOTE !! genConsumeReg will clear op1 as GC ref after it has
+            // consumed a reg for the operand. This is because the variable
+            // is dead after return. But we are issuing more instructions
+            // like "profiler leave callback" after this consumption. So
+            // if you are issuing more instructions after this point,
+            // remember to keep the variable live up until the new method
+            // exit point where it is actually dead.
+            genConsumeReg(op1);
+
+            regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
+#ifdef _TARGET_X86_
+            if (varTypeIsFloating(treeNode))
+            {
+                if (genIsRegCandidateLocal(op1) && !compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvRegister)
+                {
+                    // Store local variable to its home location, if necessary.
+                    if ((op1->gtFlags & GTF_REG_VAL) != 0)
+                    {
+                        op1->gtFlags &= ~GTF_REG_VAL;
+                        inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->gtLclVarCommon.gtLclNum)), op1, op1->gtRegNum);
+                    }
+                    // Now, load it to the fp stack.
+                    getEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->gtLclNum, 0);
+                }
+                else
+                {
+                    // Spill the value, which should be in a register, then load it to the fp stack.
+                    // TODO-X86-CQ: Deal with things that are already in memory (don't call genConsumeReg yet).
+                    op1->gtFlags |= GTF_SPILL;
+                    regSet.rsSpillTree(op1->gtRegNum, op1);
+                    op1->gtFlags |= GTF_SPILLED;
+                    op1->gtFlags &= ~GTF_SPILL;
+
+                    TempDsc* t = regSet.rsUnspillInPlace(op1);
+                    inst_FS_ST(INS_fld, emitActualTypeSize(op1->gtType), t, 0);
+                    op1->gtFlags &= ~GTF_SPILLED;
+                    compiler->tmpRlsTemp(t);
+                }
+            }
+            else
+#endif // _TARGET_X86_
+            {
+                if (op1->gtRegNum != retReg)
+                {
+                    inst_RV_RV(ins_Copy(targetType), retReg, op1->gtRegNum, targetType);
+                }
+            }
+        }
+    }
+
+#ifdef PROFILING_SUPPORTED
+    // !! Note !!
+    // TODO-AMD64-Unix: If the profiler hook is implemented on *nix, make sure for 2 register returned structs
+    //                  the RAX and RDX needs to be kept alive. Make the necessary changes in lowerxarch.cpp
+    //                  in the handling of the GT_RETURN statement.
+    //                  Such structs containing GC pointers need to be handled by calling gcInfo.gcMarkRegSetNpt
+    //                  for the return registers containing GC refs.
+
+    // There will be a single return block while generating profiler ELT callbacks.
+    //
+    // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
+    // In flowgraph and other places assert that the last node of a block marked as
+    // GT_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
+    // maintain such an invariant irrespective of whether profiler hook needed or not.
+    // Also, there is not much to be gained by materializing it as an explicit node.
+    if (compiler->compCurBB == compiler->genReturnBB)
+    {
+        // !! NOTE !!
+        // Since we are invalidating the assumption that we would slip into the epilog
+        // right after the "return", we need to preserve the return reg's GC state
+        // across the call until actual method return.
+        if (varTypeIsGC(compiler->info.compRetType))
+        {
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
+        }
+
+        genProfilingLeaveCallback();
+
+        if (varTypeIsGC(compiler->info.compRetType))
+        {
+            gcInfo.gcMarkRegSetNpt(REG_INTRET);
+        }
+    }
+#endif
+}
 
 /*****************************************************************************
  *
@@ -1649,9 +1902,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     case GT_STORE_LCL_FLD:
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
             if (!genStoreRegisterReturnInLclVar(treeNode))
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
             {
                 noway_assert(targetType != TYP_STRUCT);
                 noway_assert(!treeNode->InReg());
@@ -1675,9 +1926,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     case GT_STORE_LCL_VAR:
         {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
             if (!genStoreRegisterReturnInLclVar(treeNode))
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
             {
                 noway_assert(targetType != TYP_STRUCT);
                 assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
@@ -1719,6 +1968,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         op1->ResetReuseRegVal();
                         containedOp1 = true;
                     }
+
                     if (containedOp1)
                     {
                         // Currently, we assume that the contained source of a GT_STORE_LCL_VAR writing to a register
@@ -1757,302 +2007,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         __fallthrough;
 
     case GT_RETURN:
-        {
-            GenTreePtr op1 = treeNode->gtOp.gtOp1;
-            if (targetType == TYP_VOID)
-            {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                if (compiler->info.compRetBuffArg != BAD_VAR_NUM)
-                {
-                    // System V AMD64 spec requires that when a struct is returned by a hidden
-                    // argument the RAX should contain the value of the hidden retbuf arg.
-                    emit->emitIns_R_S(INS_mov, EA_BYREF, REG_RAX, compiler->info.compRetBuffArg, 0);
-                }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-                assert(op1 == nullptr);
-            }
-#if !defined(_TARGET_64BIT_)
-            else if (treeNode->TypeGet() == TYP_LONG)
-            {
-                assert(op1 != nullptr);
-                noway_assert(op1->OperGet() == GT_LONG);
-                GenTree* loRetVal = op1->gtGetOp1();
-                GenTree* hiRetVal = op1->gtGetOp2();
-                noway_assert((loRetVal->gtRegNum != REG_NA) && (hiRetVal->gtRegNum != REG_NA));
-
-                genConsumeReg(loRetVal);
-                genConsumeReg(hiRetVal);
-                if (loRetVal->gtRegNum != REG_LNGRET_LO)
-                {
-                    inst_RV_RV(ins_Copy(targetType), REG_LNGRET_LO, loRetVal->gtRegNum, TYP_INT);
-                }
-                if (hiRetVal->gtRegNum != REG_LNGRET_HI)
-                {
-                    inst_RV_RV(ins_Copy(targetType), REG_LNGRET_HI, hiRetVal->gtRegNum, TYP_INT);
-                }
-            }
-#endif // !defined(_TARGET_64BIT_)
-            else
-            {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                if (varTypeIsStruct(treeNode) &&
-                    treeNode->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
-                {
-                    GenTreeLclVarCommon* lclVarPtr = treeNode->gtOp.gtOp1->AsLclVarCommon();
-                    LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-                    assert(varDsc->lvDontPromote);
-
-                    CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    assert(typeHnd != nullptr);
-
-                    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-                    compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-                    assert(structDesc.passedInRegisters);
-                    assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-                    regNumber retReg0 = REG_NA;
-                    emitAttr size0 = EA_UNKNOWN;
-                    unsigned offset0 = structDesc.eightByteOffsets[0];
-                    regNumber retReg1 = REG_NA;
-                    emitAttr size1 = EA_UNKNOWN;
-                    unsigned offset1 = structDesc.eightByteOffsets[1];
-
-                    bool firstIntUsed = false;
-                    bool firstFloatUsed = false;
-                    
-                    var_types type0 = TYP_UNKNOWN;
-                    var_types type1 = TYP_UNKNOWN;
-
-                    // Set the first eightbyte data
-                    switch (structDesc.eightByteClassifications[0])
-                    {
-                    case SystemVClassificationTypeInteger:
-                        if (structDesc.eightByteSizes[0] <= 4)
-                        {
-                            retReg0 = REG_INTRET;
-                            size0 = EA_4BYTE;
-                            type0 = TYP_INT;
-                            firstIntUsed = true;
-                        }
-                        else if (structDesc.eightByteSizes[0] <= 8)
-                        {
-                            retReg0 = REG_LNGRET;
-                            size0 = EA_8BYTE;
-                            type0 = TYP_LONG;
-                            firstIntUsed = true;
-                        }
-                        else
-                        {
-                            assert(false && "Bad int type.");
-                        }
-                        break;
-                    case SystemVClassificationTypeIntegerReference:
-                        assert(structDesc.eightByteSizes[0] == REGSIZE_BYTES);
-                        retReg0 = REG_LNGRET;
-                        size0 = EA_GCREF;
-                        type0 = TYP_REF;
-                        firstIntUsed = true;
-                        break;
-                    case SystemVClassificationTypeSSE:
-                        if (structDesc.eightByteSizes[0] <= 4)
-                        {
-                            retReg0 = REG_FLOATRET;
-                            size0 = EA_4BYTE;
-                            type0 = TYP_FLOAT;
-                            firstFloatUsed = true;
-                        }
-                        else if (structDesc.eightByteSizes[0] <= 8)
-                        {
-                            retReg0 = REG_DOUBLERET;
-                            size0 = EA_8BYTE;
-                            type0 = TYP_DOUBLE;
-                            firstFloatUsed = true;
-                        }
-                        else
-                        {
-                            assert(false && "Bat float type."); // Not possible.
-                        }
-                        break;
-                    default:
-                        assert(false && "Bad EightByte classification.");
-                        break;
-                    }
-
-                    // Set the second eight byte data
-                    switch (structDesc.eightByteClassifications[1])
-                    {
-                    case SystemVClassificationTypeInteger:
-                        if (structDesc.eightByteSizes[1] <= 4)
-                        {
-                            if (firstIntUsed)
-                            {
-                                retReg1 = REG_INTRET_1;
-                            }
-                            else
-                            {
-                                retReg1 = REG_INTRET;
-                            }
-                            type1 = TYP_INT;
-                            size1 = EA_4BYTE;
-                        }
-                        else if (structDesc.eightByteSizes[1] <= 8)
-                        {
-                            if (firstIntUsed)
-                            {
-                                retReg1 = REG_LNGRET_1;
-                            }
-                            else
-                            {
-                                retReg1 = REG_LNGRET;
-                            }
-                            type1 = TYP_LONG;
-                            size1 = EA_8BYTE;
-                        }
-                        else
-                        {
-                            assert(false && "Bad int type.");
-                        }
-                        break;
-                    case SystemVClassificationTypeIntegerReference:
-                        assert(structDesc.eightByteSizes[1] == REGSIZE_BYTES);
-                        if (firstIntUsed)
-                        {
-                            retReg1 = REG_LNGRET_1;
-                        }
-                        else
-                        {
-                            retReg1 = REG_LNGRET;
-                        }
-                        type1 = TYP_REF;
-                        size1 = EA_GCREF;
-                        break;
-                    case SystemVClassificationTypeSSE:
-                        if (structDesc.eightByteSizes[1] <= 4)
-                        {
-                            if (firstFloatUsed)
-                            {
-                                retReg1 = REG_FLOATRET_1;
-                            }
-                            else
-                            {
-                                retReg1 = REG_FLOATRET;
-                            }
-                            type1 = TYP_FLOAT;
-                            size1 = EA_4BYTE;
-                        }
-                        else if (structDesc.eightByteSizes[1] <= 8)
-                        {
-                            if (firstFloatUsed)
-                            {
-                                retReg1 = REG_DOUBLERET_1;
-                            }
-                            else
-                            {
-                                retReg1 = REG_DOUBLERET;
-                            }
-                            type1 = TYP_DOUBLE;
-                            size1 = EA_8BYTE;
-                        }
-                        else
-                        {
-                            assert(false && "Bat float type."); // Not possible.
-                        }
-                        break;
-                    default:
-                        assert(false && "Bad EightByte classification.");
-                        break;
-                    }
-
-                    // Move the values into the return registers.
-                    // 
-                    emit->emitIns_R_S(ins_Load(type0), size0, retReg0, lclVarPtr->gtLclNum, offset0);
-                    emit->emitIns_R_S(ins_Load(type1), size1, retReg1, lclVarPtr->gtLclNum, offset1);
-                }
-                else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-                {
-                    assert(op1 != nullptr);
-                    noway_assert(op1->gtRegNum != REG_NA);
-
-                    // !! NOTE !! genConsumeReg will clear op1 as GC ref after it has
-                    // consumed a reg for the operand. This is because the variable
-                    // is dead after return. But we are issuing more instructions
-                    // like "profiler leave callback" after this consumption. So
-                    // if you are issuing more instructions after this point,
-                    // remember to keep the variable live up until the new method
-                    // exit point where it is actually dead.
-                    genConsumeReg(op1);
-
-                    regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
-#ifdef _TARGET_X86_
-                    if (varTypeIsFloating(treeNode))
-                    {
-                        if (genIsRegCandidateLocal(op1) && !compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvRegister)
-                        {
-                            // Store local variable to its home location, if necessary.
-                            if ((op1->gtFlags & GTF_REG_VAL) != 0)
-                            {
-                                op1->gtFlags &= ~GTF_REG_VAL;
-                                inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->gtLclVarCommon.gtLclNum)), op1, op1->gtRegNum);
-                            }
-                            // Now, load it to the fp stack.
-                            getEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->gtLclNum, 0);
-                        }
-                        else
-                        {
-                            // Spill the value, which should be in a register, then load it to the fp stack.
-                            // TODO-X86-CQ: Deal with things that are already in memory (don't call genConsumeReg yet).
-                            op1->gtFlags |= GTF_SPILL;
-                            regSet.rsSpillTree(op1->gtRegNum, op1);
-                            op1->gtFlags |= GTF_SPILLED;
-                            op1->gtFlags &= ~GTF_SPILL;
-
-                            TempDsc* t = regSet.rsUnspillInPlace(op1);
-                            inst_FS_ST(INS_fld, emitActualTypeSize(op1->gtType), t, 0);
-                            op1->gtFlags &= ~GTF_SPILLED;
-                            compiler->tmpRlsTemp(t);
-                        }
-                    }
-                    else
-#endif // _TARGET_X86_
-                    {
-                        if (op1->gtRegNum != retReg)
-                        {
-                            inst_RV_RV(ins_Copy(targetType), retReg, op1->gtRegNum, targetType);
-                        }
-                    }
-                }
-            }
-
-#ifdef PROFILING_SUPPORTED
-            // There will be a single return block while generating profiler ELT callbacks.
-            //
-            // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
-            // In flowgraph and other places assert that the last node of a block marked as
-            // GT_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
-            // maintain such an invariant irrespective of whether profiler hook needed or not.
-            // Also, there is not much to be gained by materializing it as an explicit node.
-            if (compiler->compCurBB == compiler->genReturnBB)
-            {
-                // !! NOTE !!
-                // Since we are invalidating the assumption that we would slip into the epilog
-                // right after the "return", we need to preserve the return reg's GC state
-                // across the call until actual method return.
-                if (varTypeIsGC(compiler->info.compRetType))
-                {
-                    gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
-                }
-                
-                genProfilingLeaveCallback();
-
-                if (varTypeIsGC(compiler->info.compRetType))
-                {
-                    gcInfo.gcMarkRegSetNpt(REG_INTRET);
-                }
-            }
-#endif
-        }
+        genReturn(treeNode);
         break;
 
     case GT_LEA:
@@ -2628,7 +2583,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     }
 }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 //------------------------------------------------------------------------
 // genStoreRegisterReturnInLclVar: This method handles storing double register return struct value to a 
 // local homing stack location.
@@ -2637,15 +2591,14 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 //    treeNode  - the tree which should be homed in local frame stack location.
 //
 // Return Value:
-//    It returns true if this is a struct and storing of the returned
+//    For System V AMD64 sistems it returns true if this is a struct and storing of the returned
 //    register value is handled. It returns false otherwise.
-//
+//    For all other targets returns false.
 
 bool
 CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
 {
-
-
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (varTypeIsStruct(treeNode))
     {
         GenTreeLclVarCommon* lclVarPtr = treeNode->AsLclVarCommon();
@@ -2688,84 +2641,97 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
         regNumber retReg0 = REG_NA;
         regNumber retReg1 = REG_NA;
 
-        emitAttr size0 = EA_UNKNOWN;
-        emitAttr size1 = EA_UNKNOWN;
-
         unsigned __int8 offset0 = 0;
         unsigned __int8 offset1 = 0;
 
         var_types type0 = TYP_UNKNOWN;
         var_types type1 = TYP_UNKNOWN;
 
-        bool firstIntUsed = false;
-        bool firstFloatUsed = false;
+        getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
+        getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
 
-        genGetStructTypeSizeOffset(structDesc, &type0, &type1, &size0, &size1, &offset0, &offset1);
+        assert(retReg0 != REG_NA && retReg1 != REG_NA);
 
-        if (type0 != TYP_UNKNOWN)
-        {
-            if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeIntegerReference ||
-                structDesc.eightByteClassifications[0] == SystemVClassificationTypeInteger)
-            {
-                retReg0 = REG_INTRET;
-                firstIntUsed = true;
-            }
-            else if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
-            {
-                retReg0 = REG_FLOATRET;
-                firstFloatUsed = true;
-            }
-            else
-            {
-                assert(false && "Invalid eightbyte type");
-            }
-        }
-
-        if (type1 != TYP_UNKNOWN)
-        {
-            if (structDesc.eightByteClassifications[1] == SystemVClassificationTypeIntegerReference ||
-                structDesc.eightByteClassifications[1] == SystemVClassificationTypeInteger)
-            {
-                if (firstIntUsed)
-                {
-                    retReg1 = REG_INTRET_1;
-                }
-                else
-                {
-                    retReg1 = REG_INTRET;
-                }
-            }
-            else if (structDesc.eightByteClassifications[1] == SystemVClassificationTypeSSE)
-            {
-                if (firstFloatUsed)
-                {
-                    retReg1 = REG_FLOATRET_1;
-                }
-                else
-                {
-                    retReg1 = REG_FLOATRET;
-                }
-            }
-            else
-            {
-                assert(false && "Invalid eightbyte type");
-            }
-        }
-
-        if (retReg0 != REG_NA)
-        {
-            getEmitter()->emitIns_S_R(ins_Store(type0), size0, retReg0, lclVarPtr->gtLclNum, offset0);
-        }
-
-        if (retReg1 != REG_NA)
-        {
-            getEmitter()->emitIns_S_R(ins_Store(type1), size1, retReg1, lclVarPtr->gtLclNum, offset1);
-        }
+        getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
+        getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
 
         return true;
     }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     return false;
+}
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+//------------------------------------------------------------------------
+// getStructReturnRegisters: Returns the return registers for a specific struct types.
+//
+// Arguments:
+//    type0         - the type of the first eightbyte to be returned.
+//    type1         - the type of the second eightbyte to be returned.
+//    retRegPtr0    - returns the register for the first eightbyte.
+//    retRegPtr1    - returns the register for the second eightbyte.
+//
+
+void
+CodeGen::getStructReturnRegisters(var_types type0,
+                                  var_types type1,
+                                  regNumber* retRegPtr0,
+                                  regNumber* retRegPtr1)
+{
+    *retRegPtr0 = REG_NA;
+    *retRegPtr1 = REG_NA;
+
+    bool firstIntUsed = false;
+    bool firstFloatUsed = false;
+
+    if (type0 != TYP_UNKNOWN)
+    {
+        if (varTypeIsIntegralOrI(type0))
+        {
+            *retRegPtr0 = REG_INTRET;
+            firstIntUsed = true;
+        }
+        else if (varTypeIsFloating(type0))
+        {
+            *retRegPtr0 = REG_FLOATRET;
+            firstFloatUsed = true;
+        }
+        else
+        {
+            unreached();
+        }
+    }
+
+    if (type1 != TYP_UNKNOWN)
+    {
+        if (varTypeIsIntegralOrI(type1))
+        {
+            if (firstIntUsed)
+            {
+                *retRegPtr1 = REG_INTRET_1;
+            }
+            else
+            {
+                *retRegPtr1 = REG_INTRET;
+            }
+        }
+        else if (varTypeIsFloating(type1))
+        {
+            if (firstFloatUsed)
+            {
+                *retRegPtr1 = REG_FLOATRET_1;
+            }
+            else
+            {
+                *retRegPtr1 = REG_FLOATRET;
+            }
+        }
+        else
+        {
+            unreached();
+        }
+    }
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
@@ -5031,12 +4997,12 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
             GenTreeLclVarCommon* lclNode = src->AsLclVarCommon();
 
             // Generate LEA instruction to load the LclVar address in RSI.
-            getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, 0);
+            getEmitter()->emitIns_R_S(INS_lea, emitTypeSize(src), srcReg, lclNode->gtLclNum, 0);
         }
         else
         {
             assert(src->gtRegNum != REG_NA);
-            getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, srcReg, src->gtRegNum);
+            getEmitter()->emitIns_R_R(INS_mov, emitTypeSize(src), srcReg, src->gtRegNum);
         }
     }
 
@@ -5954,29 +5920,23 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 //------------------------------------------------------------------------
-// genGetStructTypeSizeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
+// getStructTypeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
 //
 // Arguments:
 //    'structDesc' struct description
 //    'type0'   returns the type of the first eightbyte.
 //    'type1'   returns the type of the second eightbyte.
-//    'size0'   returns the size of the first eightbyte.
-//    'size1'   returns the size of the second eightbyte.
 //    'offset0' returns the offset of the first eightbyte.
 //    'offset1' returns the offset of the second eightbyte.
 //
 
-void CodeGen::genGetStructTypeSizeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
+void CodeGen::getStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                          var_types* type0, 
                                          var_types* type1, 
-                                         emitAttr* size0, 
-                                         emitAttr* size1,
                                          unsigned __int8* offset0,
                                          unsigned __int8* offset1)
 {
-    *size0 = EA_UNKNOWN;
     *offset0 = structDesc.eightByteOffsets[0];
-    *size1 = EA_UNKNOWN;
     *offset1 = structDesc.eightByteOffsets[1];
 
     *type0 = TYP_UNKNOWN;
@@ -5985,97 +5945,13 @@ void CodeGen::genGetStructTypeSizeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_
     // Set the first eightbyte data
     if (structDesc.eightByteCount >= 1)
     {
-        switch (structDesc.eightByteClassifications[0])
-        {
-        case SystemVClassificationTypeInteger:
-            if (structDesc.eightByteSizes[0] <= 4)
-            {
-                *size0 = EA_4BYTE;
-                *type0 = TYP_INT;
-            }
-            else if (structDesc.eightByteSizes[0] <= 8)
-            {
-                *size0 = EA_8BYTE;
-                *type0 = TYP_LONG;
-            }
-            else
-            {
-                assert(false && "Bad int type.");
-            }
-            break;
-        case SystemVClassificationTypeIntegerReference:
-            assert(structDesc.eightByteSizes[0] == REGSIZE_BYTES);
-            *size0 = EA_GCREF;
-            *type0 = TYP_REF;
-            break;
-        case SystemVClassificationTypeSSE:
-            if (structDesc.eightByteSizes[0] <= 4)
-            {
-                *size0 = EA_4BYTE;
-                *type0 = TYP_FLOAT;
-            }
-            else if (structDesc.eightByteSizes[0] <= 8)
-            {
-                *size0 = EA_8BYTE;
-                *type0 = TYP_DOUBLE;
-            }
-            else
-            {
-                assert(false && "Bat float type."); // Not possible.
-            }
-            break;
-        default:
-            assert(false && "Bad EightByte classification.");
-            break;
-        }
+        *type0 = compiler->getEightByteType(structDesc, 0);
     }
 
     // Set the second eight byte data
     if (structDesc.eightByteCount == 2)
     {
-        switch (structDesc.eightByteClassifications[1])
-        {
-        case SystemVClassificationTypeInteger:
-            if (structDesc.eightByteSizes[1] <= 4)
-            {
-                *type1 = TYP_INT;
-                *size1 = EA_4BYTE;
-            }
-            else if (structDesc.eightByteSizes[1] <= 8)
-            {
-                *type1 = TYP_LONG;
-                *size1 = EA_8BYTE;
-            }
-            else
-            {
-                assert(false && "Bad int type.");
-            }
-            break;
-        case SystemVClassificationTypeIntegerReference:
-            assert(structDesc.eightByteSizes[1] == REGSIZE_BYTES);
-            *type1 = TYP_REF;
-            *size1 = EA_GCREF;
-            break;
-        case SystemVClassificationTypeSSE:
-            if (structDesc.eightByteSizes[1] <= 4)
-            {
-                *type1 = TYP_FLOAT;
-                *size1 = EA_4BYTE;
-            }
-            else if (structDesc.eightByteSizes[1] <= 8)
-            {
-                *type1 = TYP_DOUBLE;
-                *size1 = EA_8BYTE;
-            }
-            else
-            {
-                assert(false && "Bat float type."); // Not possible.
-            }
-            break;
-        default:
-            assert(false && "Bad EightByte classification.");
-            break;
-        }
+        *type1 = compiler->getEightByteType(structDesc, 1);
     }
 }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -6202,15 +6078,13 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
             assert(structDesc.passedInRegisters);
 
-            emitAttr size0 = EA_UNKNOWN;
-            emitAttr size1 = EA_UNKNOWN;
             unsigned __int8 offset0 = 0;
             unsigned __int8 offset1 = 0;
             var_types type0 = TYP_UNKNOWN;
             var_types type1 = TYP_UNKNOWN;
 
             // Get the eightbyte data
-            genGetStructTypeSizeOffset(structDesc, &type0, &type1, &size0, &size1, &offset0, &offset1);
+            getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
 
             // Move the values into the right registers.
             // 
@@ -6221,14 +6095,14 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
             if (type0 != TYP_UNKNOWN)
             {
-                getEmitter()->emitIns_R_S(ins_Load(type0), size0, varDsc->lvArgReg, varNum, offset0);
+                getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), varDsc->lvArgReg, varNum, offset0);
                 regSet.rsMaskVars |= genRegMask(varDsc->lvArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvArgReg, type0);
             }
             
             if (type1 != TYP_UNKNOWN)
             {
-                getEmitter()->emitIns_R_S(ins_Load(type1), size1, varDsc->lvOtherArgReg, varNum, offset1);
+                getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), varDsc->lvOtherArgReg, varNum, offset1);
                 regSet.rsMaskVars |= genRegMask(varDsc->lvOtherArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvOtherArgReg, type1);
             }
@@ -8112,6 +7986,7 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
 }
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
 //---------------------------------------------------------------------
 // genPutStructArgStk - generate code for copying a struct arg on the stack by value.
 //                In case there are references to heap object in the struct,
@@ -8171,9 +8046,11 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
         genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA, baseVarNum);
         GenTreePtr   dstAddr = putArgStk;
-        GenTreePtr   srcAddr = putArgStk->gtOp.gtOp1;
+        GenTreePtr   src = putArgStk->gtOp.gtOp1;
+        assert(src->OperGet() == GT_LDOBJ);
+        GenTreePtr   srcAddr = src->gtGetOp1();
+
         gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddr->TypeGet());
-        gcInfo.gcMarkRegPtrVal(REG_RDI, dstAddr->TypeGet());
 
         unsigned slots = putArgStk->gtNumSlots;
 
@@ -8218,28 +8095,38 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                     }
                 }
                 break;
-            default:
-                // We have a GC pointer
-                // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsq instruction,
-                // but the logic for emitting a GC info record is not available (it is internal for the emitter only.)
-                // See emitGCVarLiveUpd function. If we could call it separately, we could do instGen(INS_movsq); and emission of gc info.
 
-                getEmitter()->emitIns_R_AR(ins_Load(TYP_REF), EA_GCREF, REG_RCX, REG_RSI, 0);
-                getEmitter()->emitIns_S_R(ins_Store(TYP_REF),
-                                          EA_GCREF, 
-                                          REG_RCX, 
-                                          baseVarNum,
-                                          ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE)); 
-                getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RSI, TARGET_POINTER_SIZE);
-                getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RDI, TARGET_POINTER_SIZE);
-                copiedSlots++;
-                gcPtrCount--;
-                i++;
+            case TYPE_GC_REF:    // Is an object ref
+            case TYPE_GC_BYREF:  // Is an interior pointer - promote it but don't scan it
+                {
+                    // We have a GC (byref or ref) pointer
+                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsq instruction,
+                    // but the logic for emitting a GC info record is not available (it is internal for the emitter only.)
+                    // See emitGCVarLiveUpd function. If we could call it separately, we could do instGen(INS_movsq); and emission of gc info.
+
+                    getEmitter()->emitIns_R_AR(ins_Load(srcAddr->TypeGet()), emitTypeSize(srcAddr), REG_RCX, REG_RSI, 0);
+                    getEmitter()->emitIns_S_R(ins_Store(srcAddr->TypeGet()),
+                                                        emitTypeSize(srcAddr),
+                                                        REG_RCX,
+                                                        baseVarNum,
+                                                        ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE));
+
+                    getEmitter()->emitIns_R_I(INS_add, emitTypeSize(srcAddr), REG_RSI, TARGET_POINTER_SIZE);
+                    getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RDI, TARGET_POINTER_SIZE);
+                    copiedSlots++;
+                    gcPtrCount--;
+                    i++;
+                }
+                break;
+
+            default:
+                unreached();
+                break;
             }
         }
 
+        assert(gcPtrCount == 0);
         gcInfo.gcMarkRegSetNpt(RBM_RSI);
-        gcInfo.gcMarkRegSetNpt(RBM_RDI);
     }
 }
 #endif //defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
