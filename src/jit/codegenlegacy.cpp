@@ -5117,11 +5117,11 @@ void                CodeGen::genCodeForTreeLeaf(GenTreePtr tree,
         reg = REG_STK;
         break;
 
-#ifdef  DEBUG
     default:
+#ifdef DEBUG
         compiler->gtDispTree(tree);
-        noway_assert(!"unexpected leaf");
 #endif
+        noway_assert(!"unexpected leaf");
     }
 
     noway_assert(reg != DUMMY_INIT(REG_CORRUPT));
@@ -10430,11 +10430,11 @@ LockBinOpCommon:
             NYI("Handle GT_LDOBJ, or eliminate them earlier.");
             unreached();
 
-#ifdef  DEBUG
         default:
+#ifdef DEBUG
             compiler->gtDispTree(tree);
-            noway_assert(!"unexpected unary/binary operator");
 #endif
+            noway_assert(!"unexpected unary/binary operator");
     } // end switch (oper)
 
     unreached();
