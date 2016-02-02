@@ -269,9 +269,9 @@ namespace System.Runtime.InteropServices
 
             char* end = CharPointer + _length - 1;
 
-            while (Array.IndexOf(values, *end) >= 0)
+            while (_length > 0 && Array.IndexOf(values, *end) >= 0)
             {
-                Length--;
+                Length = _length - 1;
                 end--;
             }
         }
