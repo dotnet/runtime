@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -20,7 +21,7 @@
     <Compile Include="System\Text\Encodings\Web\BufferInternal.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\JavaScriptStringEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
     <Compile Include="System\Text\Encodings\Web\UnicodeHelpers.cs" />
