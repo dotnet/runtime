@@ -178,6 +178,40 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override int ReadByte()
+        {
+            // If we have enough bytes in the buffer such that reading 1 will still leave bytes
+            // in the buffer, then take the faster path of simply returning the first byte.
+            // (This unfortunately still involves shifting down the bytes in the buffer, as it
+            // does in Read.  If/when that's fixed for Read, it should be fixed here, too.)
+            if (_outputBufferIndex > 1)
+            {
+                byte b = _outputBuffer[0];
+                Buffer.BlockCopy(_outputBuffer, 1, _outputBuffer, 0, _outputBufferIndex - 1);
+                _outputBufferIndex -= 1;
+                return b;
+            }
+
+            // Otherwise, fall back to the more robust but expensive path of using the base 
+            // Stream.ReadByte to call Read.
+            return base.ReadByte();
+        }
+
+        public override void WriteByte(byte value)
+        {
+            // If there's room in the input buffer such that even with this byte we wouldn't
+            // complete a block, simply add the byte to the input buffer.
+            if (_inputBufferIndex + 1 < _inputBlockSize)
+            {
+                _inputBuffer[_inputBufferIndex++] = value;
+                return;
+            }
+
+            // Otherwise, the logic is complicated, so we simply fall back to the base 
+            // implementation that'll use Write.
+            base.WriteByte(value);
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             CheckReadArguments(buffer, offset, count);

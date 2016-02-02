@@ -131,6 +131,18 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Equal(
                     LoremText + LoremText + LoremText + LoremText,
                     reader.ReadToEndAsync().GetAwaiter().GetResult());
+            }            
+            
+            // Read/decrypt one byte at a time with ReadByte
+            stream = new MemoryStream(stream.ToArray()); // CryptoStream.Dispose disposes the stream
+            using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
+            {
+                string expectedStr = LoremText + LoremText + LoremText + LoremText;
+                foreach (char c in expectedStr)
+                {
+                    Assert.Equal(c, decryptStream.ReadByte()); // relies on LoremText being ASCII
+                }
+                Assert.Equal(-1, decryptStream.ReadByte());
             }
         }
 
