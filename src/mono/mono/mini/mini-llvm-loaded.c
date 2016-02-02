@@ -70,7 +70,7 @@ void
 mono_llvm_free_domain_info (MonoDomain *domain)
 {
 	/* This is called even when llvm is not enabled */
-	if (mono_llvm_free_domain_info_fptr)
+	if (backend.free_domain_info)
 		backend.free_domain_info (domain);
 }
 
