@@ -250,6 +250,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
+if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  find_library(UNWIND unwind)
+  find_library(INTL intl)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+    ${UNWIND}
+    ${INTL}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+
 add_subdirectory(examples)
 
 if(FEATURE_EVENT_TRACE)
