@@ -9,6 +9,7 @@
     "System.Globalization": "4.0.10",
     "System.Linq": "4.0.0",
     "System.IO": "4.0.10",
+    "System.IO.Pipes": "4.0.0-rc3-23729",
     "System.Net.NameResolution": "4.0.0-rc3-23729",
     "System.Net.Primitives": "4.0.10",
     "System.Net.Security": "4.0.0-rc3-23729",
