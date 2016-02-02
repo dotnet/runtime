@@ -11373,8 +11373,8 @@
       <Member Name="MarshalToManagedVaListInternal(System.IntPtr,System.IntPtr)" />
       <Member Name="MarshalToUnmanagedVaListInternal(System.IntPtr,System.UInt32,System.IntPtr)" />
       <Member Name="CalcVaListSize(System.IntPtr)" />
-      <Member Name="ProfilerBeginTransitionCallback(System.IntPtr,System.IntPtr,System.Object)" Platform="Win" /> <!-- EE -->
-      <Member Name="ProfilerEndTransitionCallback(System.IntPtr,System.IntPtr)" Platform="Win" /> <!-- EE -->
+      <Member Name="ProfilerBeginTransitionCallback(System.IntPtr,System.IntPtr,System.Object)" /> <!-- EE -->
+      <Member Name="ProfilerEndTransitionCallback(System.IntPtr,System.IntPtr)" /> <!-- EE -->
       <Member Name="SafeHandleAddRef(System.Runtime.InteropServices.SafeHandle,System.Boolean@)" />
       <Member Name="SafeHandleRelease(System.Runtime.InteropServices.SafeHandle)" />
       <Member Name="ValidateObject(System.Object,System.IntPtr,System.Object)" />
