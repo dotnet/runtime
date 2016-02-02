@@ -9,7 +9,7 @@ set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=AnyCPU
 set __VCBuildArch=x86_amd64
-set CMAKE_BUILD_TYPE=Debug
+set CMAKE_BUILD_TYPE=Release
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing

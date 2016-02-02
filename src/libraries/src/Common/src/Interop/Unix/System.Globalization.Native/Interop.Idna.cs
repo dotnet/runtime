@@ -12,10 +12,10 @@ internal static partial class Interop
         internal const int AllowUnassigned = 0x1;
         internal const int UseStd3AsciiRules = 0x2;
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ToAscii")]
         internal static extern int ToAscii(uint flags, string src, int srcLen, char[] dstBuffer, int dstBufferCapacity);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ToUnicode")]
         internal static extern int ToUnicode(uint flags, string src, int srcLen, char[] dstBuffer, int dstBufferCapacity);
     }
 }

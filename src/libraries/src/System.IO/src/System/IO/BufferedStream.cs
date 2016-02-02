@@ -70,8 +70,6 @@ namespace System.IO
             return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
         }
 
-        private BufferedStream() { }
-
         public BufferedStream(Stream stream)
             : this(stream, DefaultBufferSize)
         {

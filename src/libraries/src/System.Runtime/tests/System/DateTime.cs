@@ -247,6 +247,19 @@ public static unsafe class DateTimeTests
     }
 
     [Fact]
+    public static void TestParseExact_EscapedSingleQuotes()
+    {
+        var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+        const string format = @"dddd, d' ta\' 'MMMM yyyy";
+
+        DateTime expected = new DateTime(1999, 2, 28, 17, 00, 01);
+        string formatted = expected.ToString(format, formatInfo);
+        DateTime actual = DateTime.ParseExact(formatted, format, formatInfo);
+
+        Assert.Equal(expected.Date, actual.Date);
+    }
+
+    [Fact]
     public static void TestTryParse2()
     {
         DateTime src = DateTime.MaxValue;

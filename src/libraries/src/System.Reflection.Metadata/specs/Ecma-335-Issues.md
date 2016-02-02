@@ -313,4 +313,19 @@ modopt(int32))`, `modopt(void)`, and `modopt(typedref)` all work in
 practice. `CMOD_OPT` and `CMOD_REQ` at the root can also be otained by putting
 a modifier on the type used with `constrained.`.
 
+## Heap sizes
+
+The ECMA-335-II specification isn't clear on the maximum sizes of #String, #Blob and #GUID heaps.
+
+#### Proposed specification change
+
+We propose  the limit on #String and #Blob heap size is 2^29 (0.5 GB), that is any index to these heaps fits into 29 bits.
+
+#### Rationale of the proposal
+
+1)      2^29 is the maximum value representable by a compressed integer as defined elsewhere in the spec. Currently the metadata don't encode heap indices anywhere using compressed integers. However the Portable PDB specification uses compressed integers for efficient encoding of heap indices. We could extend the definition of compressed integer to cover all 32 bit integers, but it would be simpler if we could leave it as is.
+
+2)      0.5 GB is a very large heap. Having such a big PE file seems unreasonable and very rare scenario (if it exists at all).
+
+3)      Having 3 spare bits available is very beneficial for the implementation. It allows to represent WinRT projected strings, namespaces, etc. in very efficient way. If we had to represent heap indices with all 32 bits it would bloat various structures and increase memory pressure. PE files over 0.5 GB of size are very rare, but the overhead would affect all compilers and tools working with the metadata reader.
 
