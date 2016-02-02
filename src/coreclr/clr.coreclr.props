@@ -103,8 +103,6 @@
 
     <FeatureStubsAsIL>true</FeatureStubsAsIL>
 
-    <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
-
     <!-- Windows specific features -->
     <FeatureWin32Registry>false</FeatureWin32Registry>
     <FeatureAppX>false</FeatureAppX>
