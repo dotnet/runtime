@@ -7818,7 +7818,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         GenTree* retNode = block->lastStmt()->gtStmtExpr;
         GenTree* retExpr = retNode->gtOp.gtOp1;
         
-        if (retExpr)
+        if (retExpr != nullptr)
         {
             // have to insert this immediately before the GT_RETURN so we transform:
             // ret(...) ->
@@ -7839,7 +7839,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         }
         else
         {
-            fgInsertStmtAtEnd(block, tree);
+            // Insert this immediately before the GT_RETURN
+            fgInsertStmtNearEnd(block, tree);
         }
     }
     else
