@@ -232,6 +232,48 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 	return TRUE;
 }
 
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
+
+#if 0
+static gboolean show_native_addresses = TRUE;
+#else
+static gboolean show_native_addresses = FALSE;
+#endif
+
+static _Unwind_Reason_Code
+build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	uintptr_t ip = _Unwind_GetIP (frame_ctx);
+
+	if (show_native_addresses || mono_jit_info_table_find (domain, (char*)ip)) {
+		GList **trace_ips = (GList **)state;
+		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
+	}
+
+	return _URC_NO_REASON;
+}
+
+static GSList*
+get_unwind_backtrace (void)
+{
+	GSList *ips = NULL;
+
+	_Unwind_Backtrace (build_stack_trace, &ips);
+
+	return g_slist_reverse (ips);
+}
+
+#else
+
+static GSList*
+get_unwind_backtrace (void)
+{
+	return NULL;
+}
+
+#endif
+
 /*
  * find_jit_info:
  *
@@ -928,37 +970,68 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	MONO_ARCH_CONTEXT_DEF;
 
-	mono_arch_flush_register_windows ();
+	if (mono_llvm_only) {
+		GSList *l, *ips;
+		MonoDomain *frame_domain;
+		guint8 *frame_ip = NULL;
+
+		/* FIXME: Generalize this code with an interface which returns an array of StackFrame structures */
+		jmethod = NULL;
+		ips = get_unwind_backtrace ();
+		for (l = ips; l && skip >= 0; l = l->next) {
+			guint8 *ip = (guint8*)l->data;
+
+			frame_ip = ip;
+
+			ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &frame_domain);
+			if (!ji || ji->is_trampoline)
+				continue;
+
+			/* The skip count passed by the caller depends on us not filtering out MANAGED_TO_NATIVE */
+			jmethod = jinfo_get_method (ji);
+			if (jmethod->wrapper_type != MONO_WRAPPER_NONE && jmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && jmethod->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
+				continue;
+			skip--;
+		}
+		g_slist_free (ips);
+		if (!jmethod || !l)
+			return FALSE;
+		/* No way to resolve generic instances */
+		actual_method = jmethod;
+		*native_offset = frame_ip - (guint8*)ji->code_start;
+	} else {
+		mono_arch_flush_register_windows ();
 
 #ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+		MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
 #else
-	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
+		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
 #endif
 
-	new_ctx = ctx;
-	do {
-		ctx = new_ctx;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
-		if (!res)
-			return FALSE;
+		new_ctx = ctx;
+		do {
+			ctx = new_ctx;
+			res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
+			if (!res)
+				return FALSE;
 
-		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE ||
+			if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE ||
 				frame.type == FRAME_TYPE_DEBUGGER_INVOKE ||
 				frame.type == FRAME_TYPE_TRAMPOLINE)
-			continue;
+				continue;
 
-		ji = frame.ji;
-		*native_offset = frame.native_offset;
+			ji = frame.ji;
+			*native_offset = frame.native_offset;
 
-		/* The skip count passed by the caller depends on us not filtering out MANAGED_TO_NATIVE */
-		jmethod = jinfo_get_method (ji);
-		if (jmethod->wrapper_type != MONO_WRAPPER_NONE && jmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && jmethod->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
-			continue;
-		skip--;
-	} while (skip >= 0);
+			/* The skip count passed by the caller depends on us not filtering out MANAGED_TO_NATIVE */
+			jmethod = jinfo_get_method (ji);
+			if (jmethod->wrapper_type != MONO_WRAPPER_NONE && jmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && jmethod->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
+				continue;
+			skip--;
+		} while (skip >= 0);
 
-	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
+		actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
+	}
 
 	mono_gc_wbarrier_generic_store (method, (MonoObject*) mono_method_get_object (domain, actual_method, NULL));
 
@@ -2734,30 +2807,6 @@ mono_jinfo_get_epilog_size (MonoJitInfo *ji)
 /*
  * LLVM/Bitcode exception handling.
  */
-
-#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
-
-#if 0
-static gboolean show_native_addresses = TRUE;
-#else
-static gboolean show_native_addresses = FALSE;
-#endif
-
-static _Unwind_Reason_Code
-build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
-{
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t ip = _Unwind_GetIP (frame_ctx);
-
-	if (show_native_addresses || mono_jit_info_table_find (domain, (char*)ip)) {
-		GList **trace_ips = (GList **)state;
-		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
-	}
-
-	return _URC_NO_REASON;
-}
-
-#endif
 
 static void
 throw_exception (MonoObject *ex, gboolean rethrow)
