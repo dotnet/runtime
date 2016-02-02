@@ -208,7 +208,7 @@ public:
         }
     }
 
-    bool TPAListContainsFile(wchar_t* fileNameWithoutExtension, wchar_t** rgTPAExtensions, int countExtensions)
+    bool TPAListContainsFile(_In_z_ wchar_t* fileNameWithoutExtension, _In_reads_(countExtensions) wchar_t** rgTPAExtensions, int countExtensions)
     {
         if (!m_tpaList.CStr()) return false;
 
@@ -228,7 +228,7 @@ public:
         return false;
     }
 
-    void RemoveExtensionAndNi(wchar_t* fileName)
+    void RemoveExtensionAndNi(_In_z_ wchar_t* fileName)
     {
         // Remove extension, if it exists
         wchar_t* extension = wcsrchr(fileName, W('.')); 
@@ -248,7 +248,7 @@ public:
         }
     }
 
-    void AddFilesFromDirectoryToTPAList(wchar_t* targetPath, wchar_t** rgTPAExtensions, int countExtensions)
+    void AddFilesFromDirectoryToTPAList(_In_z_ wchar_t* targetPath, _In_reads_(countExtensions) wchar_t** rgTPAExtensions, int countExtensions)
     {
         *m_log << W("Adding assemblies from ") << targetPath << W(" to the TPA list") << Logger::endl;
         wchar_t assemblyPath[MAX_LONGPATH];

@@ -282,7 +282,7 @@ public:
         return hr;
     }
 
-    HRESULT InternalEnumerateCLRs(HANDLE** ppHandleArray, LPWSTR** ppStringArray, DWORD* pdwArrayLength)
+    HRESULT InternalEnumerateCLRs(HANDLE** ppHandleArray, _In_reads_(*pdwArrayLength) LPWSTR** ppStringArray, DWORD* pdwArrayLength)
     {
         int numTries = 0;
         HRESULT hr;
