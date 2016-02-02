@@ -776,6 +776,7 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	switch (mono_threads_transition_request_async_suspension (info)) {
 	case AsyncSuspendAlreadySuspended:
+	case AsyncSuspendBlocking:
 		return TRUE;
 	case AsyncSuspendWait:
 		mono_threads_add_to_pending_operation_set (info);
@@ -871,6 +872,14 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;
 		}
+		break;
+	case AsyncSuspendBlocking:
+		if (interrupt_kernel)
+			mono_threads_core_abort_syscall (info);
+
+		break;
+	default:
+		g_assert_not_reached ();
 	}
 
 	//Wait for the pending suspend to finish
