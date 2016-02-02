@@ -85,6 +85,40 @@ namespace System.Net.Security
             }
         }
 
+        internal int ReadByte()
+        {
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "ReadByte", "read"));
+            }
+
+            // If there's any data in the buffer, take one byte, and we're done.
+            try
+            {
+                if (InternalBufferCount > 0)
+                {
+                    int b = InternalBuffer[InternalOffset];
+                    SkipBytes(1);
+                    return b;
+                }
+            }
+            finally
+            {
+                // Regardless of whether we were able to read a byte from the buffer,
+                // reset the read tracking.  If we weren't able to read a byte, the
+                // subsequent call to Read will set the flag again.
+                _nestedRead = 0;
+            }
+
+            // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
+            // This allocation is unfortunate but should be relatively rare, as it'll only occur once
+            // per buffer fill internally by Read.
+            byte[] oneByte = new byte[1];
+            int bytesRead = Read(oneByte, 0, 1);
+            Debug.Assert(bytesRead == 0 || bytesRead == 1);
+            return bytesRead == 1 ? oneByte[0] : -1;
+        }
+
         internal int Read(byte[] buffer, int offset, int count)
         {
             return ProcessRead(buffer, offset, count, null);
