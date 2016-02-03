@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "System.Runtime.Extensions": "4.0.10"
+  },
+  "frameworks": {
+    "dnxcore50": {},
+    "netcore50": {}
+  },
+  "runtimes": {
+    "win8": {},
+    "win8-aot": {}
+  }
+}

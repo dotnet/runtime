@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- bump up the version since we are redisting the 4.0.0 bits in a new package -->
+    <Version>4.0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SourceDir)System.Linq\ref\4.0.0\System.Linq.depproj">
+      <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\System.Linq.builds"/>
+
+    <InboxOnTargetFramework Include="MonoAndroid10"/>
+    <InboxOnTargetFramework Include="MonoTouch10"/>
+    <InboxOnTargetFramework Include="net45"/>
+    <InboxOnTargetFramework Include="win8"/>
+    <InboxOnTargetFramework Include="wp80"/>
+    <InboxOnTargetFramework Include="wpa81"/>
+    <InboxOnTargetFramework Include="xamarinios10"/>
+    <InboxOnTargetFramework Include="xamarinmac20"/>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
