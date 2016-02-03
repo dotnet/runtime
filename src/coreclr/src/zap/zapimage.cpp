@@ -3752,12 +3752,14 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     if (m_zapper->m_pOpt->m_onlyOneMethod && (m_zapper->m_pOpt->m_onlyOneMethod != md))
         return NOT_COMPILED;
 
+    if (GetCompileInfo()->HasCustomAttribute(handle, "System.Runtime.BypassNGenAttribute"))
+        return NOT_COMPILED;
+
 #ifdef MDIL
     // This is a quick workaround to opt specific methods out of MDIL generation to work around bugs.
     if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
     {
-        HRESULT hr = m_pMDImport->GetCustomAttributeByName(md, "System.Runtime.BypassMdilAttribute", NULL, NULL);
-        if (hr == S_OK)
+        if (GetCompileInfo()->HasCustomAttribute(handle, "System.Runtime.BypassMdilAttribute"))
             return NOT_COMPILED;
     }
 #endif
@@ -3766,8 +3768,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
     if (IsReadyToRunCompilation())
     {
-        HRESULT hr = m_pMDImport->GetCustomAttributeByName(md, "System.Runtime.BypassReadyToRun", NULL, NULL);
-        if (hr == S_OK)
+        if (GetCompileInfo()->HasCustomAttribute(handle, "System.Runtime.BypassReadyToRunAttribute"))
             return NOT_COMPILED;
     }
 #endif
