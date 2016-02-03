@@ -12,6 +12,7 @@
 
 inline const SString &PEImageLayout::GetPath()
 {
+    LIMITED_METHOD_CONTRACT;
     return m_pOwner?m_pOwner->GetPath():SString::Empty();
 }
 

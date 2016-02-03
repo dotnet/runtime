@@ -23,7 +23,7 @@
 
 IJWNOADThunk::IJWNOADThunk(HMODULE pModulebase, DWORD dwIndex, mdToken Token)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     m_pModulebase=pModulebase;
     m_dwIndex=dwIndex;
     m_Token=Token;
