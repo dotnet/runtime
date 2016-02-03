@@ -5363,53 +5363,78 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
  * @text: a pointer to an utf8 string
  *
  * Returns: A newly created string object which contains @text.
+ *
+ * This function asserts if it cannot allocate a new string.
+ *
+ * @deprecated Use mono_string_new_checked in new code.
  */
 MonoString*
 mono_string_new (MonoDomain *domain, const char *text)
 {
+	MonoError error;
+	MonoString *res = NULL;
+	res = mono_string_new_checked (domain, text, &error);
+	mono_error_assert_ok (&error);
+	return res;
+}
+
+/**
+ * mono_string_new_checked:
+ * @text: a pointer to an utf8 string
+ * @merror: set on error
+ *
+ * Returns: A newly created string object which contains @text.
+ * On error returns NULL and sets @merror.
+ */
+MonoString*
+mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
     GError *eg_error = NULL;
     MonoString *o = NULL;
     guint16 *ut;
     glong items_written;
     int l;
 
-    mono_error_init (&error);
+    mono_error_init (error);
 
     l = strlen (text);
    
     ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &eg_error);
 
     if (!eg_error)
-	    o = mono_string_new_utf16_checked (domain, ut, items_written, &error);
+	    o = mono_string_new_utf16_checked (domain, ut, items_written, error);
     else
         g_error_free (eg_error);
 
     g_free (ut);
-    mono_error_raise_exception (&error);
+    mono_error_raise_exception (error);
     
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
 #if 0
-	MonoError error;
 	gunichar2 *str;
 	const gchar *end;
 	int len;
 	MonoString *o = NULL;
 
-	if (!g_utf8_validate (text, -1, &end))
-		return NULL;
+	if (!g_utf8_validate (text, -1, &end)) {
+		mono_error_set_argument (error, "text", "Not a valid utf8 string");
+		goto leave;
+	}
 
 	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size_checked (domain, len, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	o = mono_string_new_size_checked (domain, len, error);
+	if (!o)
+		goto leave;
 	str = mono_string_chars (o);
 
 	while (text < end) {
 		*str++ = g_utf8_get_char (text);
 		text = g_utf8_next_char (text);
 	}
+
+leave:
 #endif
 	return o;
 }
