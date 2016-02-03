@@ -2306,9 +2306,6 @@ mono_thread_suspend (MonoInternalThread *thread)
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
-
-	UNLOCK_THREAD (thread);
-
 	suspend_thread_internal (thread, FALSE);
 	return TRUE;
 }
@@ -3290,9 +3287,6 @@ void mono_thread_suspend_all_other_threads (void)
 				thread->state &= ~ThreadState_AbortRequested;
 			
 			thread->state |= ThreadState_SuspendRequested;
-
-			UNLOCK_THREAD (thread);
-
 			/* Signal the thread to suspend */
 			suspend_thread_internal (thread, TRUE);
 		}
@@ -4798,7 +4792,6 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 static void
 suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 {
-	LOCK_THREAD (thread);
 	if (thread == mono_thread_internal_current ()) {
 		mono_thread_info_begin_self_suspend ();
 		//XXX replace this with better named functions
