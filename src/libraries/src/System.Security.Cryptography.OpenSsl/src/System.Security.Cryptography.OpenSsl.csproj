@@ -12,7 +12,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <PackageTargetRuntime>unix</PackageTargetRuntime>
+    <!-- Temporarily remove the RID from this package until we have a
+         cross platform API to use RSA https://github.com/dotnet/corefx/issues/2953 -->
+    <!-- PackageTargetRuntime>unix</PackageTargetRuntime -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
