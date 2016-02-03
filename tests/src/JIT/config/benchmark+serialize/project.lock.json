@@ -129,15 +129,18 @@
           "lib/DNXCore50/System.Globalization.dll": {}
         }
       },
-      "System.IO/4.0.0-beta-23127": {
+      "System.IO/4.0.10": {
         "type": "package",
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127",
-          "System.Text.Encoding": "4.0.0-beta-23127",
-          "System.Threading.Tasks": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Text.Encoding": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.dll": {}
         }
       },
       "System.IO.FileSystem/4.0.0": {
@@ -876,15 +879,18 @@
           "lib/DNXCore50/System.Globalization.dll": {}
         }
       },
-      "System.IO/4.0.0-beta-23127": {
+      "System.IO/4.0.10": {
         "type": "package",
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127",
-          "System.Text.Encoding": "4.0.0-beta-23127",
-          "System.Threading.Tasks": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Text.Encoding": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.dll": {}
         }
       },
       "System.IO.FileSystem/4.0.0": {
@@ -1671,15 +1677,18 @@
           "lib/DNXCore50/System.Globalization.dll": {}
         }
       },
-      "System.IO/4.0.0-beta-23127": {
+      "System.IO/4.0.10": {
         "type": "package",
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127",
-          "System.Text.Encoding": "4.0.0-beta-23127",
-          "System.Threading.Tasks": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Text.Encoding": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.dll": {}
         }
       },
       "System.IO.FileSystem/4.0.0": {
@@ -2323,7 +2332,7 @@
   "libraries": {
     "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0027": {
       "type": "package",
-      "sha512": "Ic8LKByvYV0C/3/4G2mcQ7tigJyQb79c7eagSywTfSLGYJa0sBkzFyVDgXqCOQm/T0EUYOc6Oqj//avSqfHnLQ==",
+      "sha512": "4RmAI95/3mAPBUaSs4dgtHsrqrGfcjT1lGroO0p3m4L/lghd7q521sCGbEGpQmYZAptgO4EFQi3dZRTaKrsMzw==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -2343,7 +2352,7 @@
     "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0027": {
       "type": "package",
       "serviceable": true,
-      "sha512": "w/6R/4EBbESpNYyPgp7TDNISOvj8ucrv5FN9X3defsgD1ZAO+4Z+fu9DCZWd78+A0MEQPGIaCKssLgGlzQf6xw==",
+      "sha512": "lQwA/sr+nsffPK8A6ywPHKf5O+BC/75Z5pxb7twjatMVAmToXJVfkpYlVl+yaPFPKG/n9+V6qiDmflWc0DfZDg==",
       "files": [
         "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0027.nupkg",
         "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0027.nupkg.sha512",
@@ -2358,7 +2367,7 @@
     "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0027": {
       "type": "package",
       "serviceable": true,
-      "sha512": "CMFSRSg26B7Z1dB3IUppS2Ry1aLiCcwyVvK2+BjR0hEIYQ8+PcyhAmnSUxQhKMJ/80ho0HdXhxWbKFB/XmgTWg==",
+      "sha512": "UUrQxF4J7pqaxywnzbPc0LExnELGU80JlHZqsWJqRXPPxcGZFO/MGkkxABGqji6+x3VaSaVX223lAFBn3bSK2w==",
       "files": [
         "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0027.nupkg",
         "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0027.nupkg.sha512",
@@ -2619,19 +2628,18 @@
         "System.Globalization.nuspec"
       ]
     },
-    "System.IO/4.0.0-beta-23127": {
+    "System.IO/4.0.10": {
       "type": "package",
-      "sha512": "sfU0T3blg5xTQjMOL3aVzpRah8T/R3AqIIBnolPtg+ZVVVhHzHX1DM5xiyPMnC5cAQXj3HWn8eRoIFZ7O5gbbg==",
+      "serviceable": true,
+      "sha512": "kghf1CeYT+W2lw8a50/GxFz5HR9t6RkL4BvjxtTp1NxtEFWywnMA9W8FH/KYXiDNThcw9u/GOViDON4iJFGXIQ==",
       "files": [
+        "lib/DNXCore50/System.IO.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net45/_._",
-        "lib/win8/_._",
-        "lib/wp80/_._",
-        "lib/wpa81/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.IO.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "License.rtf",
         "ref/dotnet/de/System.IO.xml",
         "ref/dotnet/es/System.IO.xml",
         "ref/dotnet/fr/System.IO.xml",
@@ -2645,25 +2653,12 @@
         "ref/dotnet/zh-hant/System.IO.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net45/_._",
-        "ref/netcore50/de/System.IO.xml",
-        "ref/netcore50/es/System.IO.xml",
-        "ref/netcore50/fr/System.IO.xml",
-        "ref/netcore50/it/System.IO.xml",
-        "ref/netcore50/ja/System.IO.xml",
-        "ref/netcore50/ko/System.IO.xml",
-        "ref/netcore50/ru/System.IO.xml",
-        "ref/netcore50/System.IO.dll",
-        "ref/netcore50/System.IO.xml",
-        "ref/netcore50/zh-hans/System.IO.xml",
-        "ref/netcore50/zh-hant/System.IO.xml",
-        "ref/win8/_._",
-        "ref/wp80/_._",
-        "ref/wpa81/_._",
+        "ref/net46/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.IO.4.0.0-beta-23127.nupkg",
-        "System.IO.4.0.0-beta-23127.nupkg.sha512",
+        "runtimes/win8-aot/lib/netcore50/System.IO.dll",
+        "System.IO.4.0.10.nupkg",
+        "System.IO.4.0.10.nupkg.sha512",
         "System.IO.nuspec"
       ]
     },
@@ -3875,7 +3870,7 @@
       "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0027",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Console >= 4.0.0-beta-*",
-      "System.IO >= 4.0.0-beta-*",
+      "System.IO >= 4.0.10",
       "System.Runtime.Serialization.Json >= 4.0.0",
       "System.Runtime.Serialization.Primitives >= 4.0.10",
       "System.Runtime.Serialization.Xml >= 4.0.10",
