@@ -91,6 +91,28 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 ## Frameworks
 
+### LINQ
+
+### ADO.NET
+
+### Managed Extensibility Framework
+
+**Also referred to as**: MEF
+
+### Windows Communication Foundation
+
+**Also referred to as**: WCF, Indigo
+
+### Entity Framework
+
+**Also referred to as**: EF
+
+### Entity Framework Core
+
+**Also referred to as**: EF Core
+
+### JSON.NET
+
 ### Windows Forms
 
 **Also referred to as**: WinForms
@@ -98,3 +120,19 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Forms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono has an implementation of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
 
 Windows Forms is in maintenance mode currently. That means new features will generally not be added.
+
+### Windows Presentation Foundation
+
+**Also referred to as**: WPF, Avalon
+
+### DirectX
+
+**Also referred to as**: DX
+
+### ASP.NET
+
+### ASP.NET Core
+
+### ASP.NET MVC
+
+### SignalR
