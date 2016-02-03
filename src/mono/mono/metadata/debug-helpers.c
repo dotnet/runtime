@@ -419,8 +419,15 @@ mono_method_desc_free (MonoMethodDesc *desc)
 	g_free (desc);
 }
 
-/*
+/**
+ * mono_method_descr_match:
+ * @desc: MonoMethoDescription
+ * @method: MonoMethod to test
+ *
+ * Determines whether the specified @method matches the provided @desc description.
+ *
  * namespace and class are supposed to match already if this function is used.
+ * Returns: True if the method matches the description, false otherwise.
  */
 gboolean
 mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
@@ -767,6 +774,12 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	return result;
 }
 
+/**
+ * mono_field_full_name:
+ * @field: field to retrieve information for
+ *
+ * Returns: the full name for the field, made up of the namespace, type name and the field name.
+ */
 char *
 mono_field_full_name (MonoClassField *field)
 {
