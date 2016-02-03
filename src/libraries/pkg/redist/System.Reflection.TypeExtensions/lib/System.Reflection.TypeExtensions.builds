@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.Reflection.TypeExtensions.depproj"/>
+    <Project Include="System.Reflection.TypeExtensions.depproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+    <Project Include="System.Reflection.TypeExtensions.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="System.Reflection.TypeExtensions.depproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+

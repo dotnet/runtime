@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <PackageTargetRuntime>any</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\System.Dynamic.Runtime.depproj" />
+    <ProjectReference Include="..\..\lib\System.Dynamic.Runtime.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+
+    <!-- AOT implementation comes from AOT package -->
+    <ExternalOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>aot</PackageTargetRuntime>
+    </ExternalOnTargetFramework>
+
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wp80" />
+    <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

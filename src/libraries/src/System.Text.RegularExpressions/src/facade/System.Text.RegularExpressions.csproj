@@ -7,7 +7,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
