@@ -9027,9 +9027,9 @@ LclVarDsc::LclVarDsc(Compiler* comp)
     // The morph will do the right thing to change 
     // to the right register if passed in register.
     _lvArgReg(REG_STK),
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
     _lvOtherArgReg(REG_STK),
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 #if ASSERTION_PROP
     lvRefBlks(BlockSetOps::UninitVal()),
 #endif // ASSERTION_PROP

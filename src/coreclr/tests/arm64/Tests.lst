@@ -578,7 +578,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartShort_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [dblavg6.exe_2621]
 RelativePath=JIT\CodeGenBringUpTests\DblAvg6\DblAvg6.exe
 WorkingDir=JIT\CodeGenBringUpTests\DblAvg6
@@ -949,7 +949,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartULong_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [byteequals1.exe_397]
 RelativePath=CoreMangLib\cti\system\byte\ByteEquals1\ByteEquals1.exe
 WorkingDir=CoreMangLib\cti\system\byte\ByteEquals1
@@ -1250,7 +1250,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartFloat_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [short_cs_r.exe_4382]
 RelativePath=JIT\Methodical\MDArray\DataTypes\short_cs_r\short_cs_r.exe
 WorkingDir=JIT\Methodical\MDArray\DataTypes\short_cs_r
@@ -2433,7 +2433,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartFloat_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [struct03.exe_3295]
 RelativePath=JIT\Generics\Typeof\struct03\struct03.exe
 WorkingDir=JIT\Generics\Typeof\struct03
@@ -2559,7 +2559,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartInt_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b45270.exe_5134]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b45270\b45270\b45270.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b45270\b45270
@@ -3133,7 +3133,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartSByte_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [i4div_cs_ro.exe_3803]
 RelativePath=JIT\Methodical\divrem\div\i4div_cs_ro\i4div_cs_ro.exe
 WorkingDir=JIT\Methodical\divrem\div\i4div_cs_ro
@@ -3287,7 +3287,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartGenerics_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [ldc_sub_ovf_u1.exe_3351]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldc_sub_ovf_u1\ldc_sub_ovf_u1.exe
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldc_sub_ovf_u1
@@ -3308,7 +3308,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b40721\b40721
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
 [stringlength.exe_2227]
 RelativePath=CoreMangLib\cti\system\string\StringLength\StringLength.exe
 WorkingDir=CoreMangLib\cti\system\string\StringLength
@@ -3427,7 +3427,7 @@ WorkingDir=Loader\classloader\nesting\coreclr\VSW491577_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [arithm64_ro.exe_4451]
 RelativePath=JIT\Methodical\NaN\arithm64_ro\arithm64_ro.exe
 WorkingDir=JIT\Methodical\NaN\arithm64_ro
@@ -4449,7 +4449,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDelegate_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b610562.exe_5568]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\b610562\b610562\b610562.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\b610562\b610562
@@ -4673,7 +4673,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartSByte_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [ldc_neg_i8.exe_3339]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldc_neg_i8\ldc_neg_i8.exe
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldc_neg_i8
@@ -4939,7 +4939,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\33objref_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [uint16equals1.exe_2456]
 RelativePath=CoreMangLib\cti\system\uint16\UInt16Equals1\UInt16Equals1.exe
 WorkingDir=CoreMangLib\cti\system\uint16\UInt16Equals1
@@ -5618,7 +5618,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartObject_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [int16_cs_r.exe_3022]
 RelativePath=JIT\Directed\shift\int16_cs_r\int16_cs_r.exe
 WorkingDir=JIT\Directed\shift\int16_cs_r
@@ -5870,7 +5870,7 @@ WorkingDir=JIT\Directed\StructABI\StructABI
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [leave1.exe_2915]
 RelativePath=JIT\Directed\IL\leave\leave1\leave1.exe
 WorkingDir=JIT\Directed\IL\leave\leave1
@@ -6689,7 +6689,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartGenerics_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [r8nanrem_cs_do.exe_4493]
 RelativePath=JIT\Methodical\NaN\r8NaNrem_cs_do\r8NaNrem_cs_do.exe
 WorkingDir=JIT\Methodical\NaN\r8NaNrem_cs_do
@@ -6843,7 +6843,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b46867\b46867
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2989
 [opcodename.exe_1657]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeName\OpCodeName.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeName
@@ -8271,7 +8271,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUShort_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [_il_dbgisinst_ldlen.exe_3687]
 RelativePath=JIT\Methodical\casts\array\_il_dbgisinst_ldlen\_il_dbgisinst_ldlen.exe
 WorkingDir=JIT\Methodical\casts\array\_il_dbgisinst_ldlen
@@ -8698,7 +8698,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDecimal_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [r4nandiv_cs_r.exe_4466]
 RelativePath=JIT\Methodical\NaN\r4NaNdiv_cs_r\r4NaNdiv_cs_r.exe
 WorkingDir=JIT\Methodical\NaN\r4NaNdiv_cs_r
@@ -9356,7 +9356,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartObject_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [302680.exe_74]
 RelativePath=baseservices\exceptions\regressions\whidbeym3.3\302680\302680\302680.exe
 WorkingDir=baseservices\exceptions\regressions\whidbeym3.3\302680\302680
@@ -9993,7 +9993,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartShort_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [floatinfinitiestoint_ro.exe_4515]
 RelativePath=JIT\Methodical\Overflow\FloatInfinitiesToInt_ro\FloatInfinitiesToInt_ro.exe
 WorkingDir=JIT\Methodical\Overflow\FloatInfinitiesToInt_ro
@@ -11036,7 +11036,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartSByte_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [queuector3.exe_665]
 RelativePath=CoreMangLib\cti\system\collections\generic\queue\QueueCtor3\QueueCtor3.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\queue\QueueCtor3
@@ -12499,14 +12499,14 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartFloat_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [threadstartstring_3.exe_230]
 RelativePath=baseservices\threading\paramthreadstart\ThreadStartString_3\ThreadStartString_3.exe
 WorkingDir=baseservices\threading\paramthreadstart\ThreadStartString_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [converttouint166.exe_887]
 RelativePath=CoreMangLib\cti\system\convert\ConvertToUInt166\ConvertToUInt166.exe
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToUInt166
@@ -12632,7 +12632,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartShort_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [co1727ctor_oo.exe_5865]
 RelativePath=Regressions\coreclr\1386\Co1727ctor_OO\Co1727ctor_OO.exe
 WorkingDir=Regressions\coreclr\1386\Co1727ctor_OO
@@ -13318,7 +13318,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [r8nandiv_cs_r.exe_4486]
 RelativePath=JIT\Methodical\NaN\r8NaNdiv_cs_r\r8NaNdiv_cs_r.exe
 WorkingDir=JIT\Methodical\NaN\r8NaNdiv_cs_r
@@ -14487,7 +14487,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartGenerics_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b13466.exe_5036]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b13466\b13466\b13466.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b13466\b13466
@@ -15194,7 +15194,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartULong_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b32345.exe_4975]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32345\b32345\b32345.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32345\b32345
@@ -16251,7 +16251,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b50027\b50027
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
 [stringcompare5.exe_2184]
 RelativePath=CoreMangLib\cti\system\string\StringCompare5\StringCompare5.exe
 WorkingDir=CoreMangLib\cti\system\string\StringCompare5
@@ -17644,7 +17644,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41391\b41391
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2989
 [interlockedincrement2.exe_2380]
 RelativePath=CoreMangLib\cti\system\threading\interlocked\InterlockedIncrement2\InterlockedIncrement2.exe
 WorkingDir=CoreMangLib\cti\system\threading\interlocked\InterlockedIncrement2
@@ -18015,7 +18015,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUInt_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [uint16parse1.exe_2473]
 RelativePath=CoreMangLib\cti\system\uint16\UInt16Parse1\UInt16Parse1.exe
 WorkingDir=CoreMangLib\cti\system\uint16\UInt16Parse1
@@ -18127,7 +18127,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartLong_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [arithm64_d.exe_4448]
 RelativePath=JIT\Methodical\NaN\arithm64_d\arithm64_d.exe
 WorkingDir=JIT\Methodical\NaN\arithm64_d
@@ -18820,7 +18820,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16423\b16423
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2925
+Categories=JIT;EXPECTED_FAIL;ISSUE_2925;ISSUE_2989
 [doublearr_cs_r.exe_4418]
 RelativePath=JIT\Methodical\MDArray\InnerProd\doublearr_cs_r\doublearr_cs_r.exe
 WorkingDir=JIT\Methodical\MDArray\InnerProd\doublearr_cs_r
@@ -18988,7 +18988,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartInt_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [listilistremove.exe_645]
 RelativePath=CoreMangLib\cti\system\collections\generic\list\ListIListRemove\ListIListRemove.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\list\ListIListRemove
@@ -19177,7 +19177,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [_il_relconv_i8_i.exe_3892]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i\_il_relconv_i8_i.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i
@@ -19660,7 +19660,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUInt_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [binarysearch3.exe_616]
 RelativePath=CoreMangLib\cti\system\collections\generic\list\BinarySearch3\BinarySearch3.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\list\BinarySearch3
@@ -20654,7 +20654,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [weakreferenceisaliveb_psc.exe_2559]
 RelativePath=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC\WeakReferenceIsAliveb_PSC.exe
 WorkingDir=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC
@@ -21326,7 +21326,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b51420\b51420
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
 [b29343.exe_5723]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b29343\b29343\b29343.exe
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b29343\b29343
@@ -21949,7 +21949,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartOperations_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [callipinvoke.exe_2849]
 RelativePath=JIT\Directed\coverage\oldtests\callipinvoke\callipinvoke.exe
 WorkingDir=JIT\Directed\coverage\oldtests\callipinvoke
@@ -22327,7 +22327,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDecimal_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [platformnotsupportedexceptionctor3.exe_1597]
 RelativePath=CoreMangLib\cti\system\platformnotsupportedexception\PlatformNotSupportedExceptionCtor3\PlatformNotSupportedExceptionCtor3.exe
 WorkingDir=CoreMangLib\cti\system\platformnotsupportedexception\PlatformNotSupportedExceptionCtor3
@@ -22516,7 +22516,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartString_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [r8nanadd_cs_r.exe_4482]
 RelativePath=JIT\Methodical\NaN\r8NaNadd_cs_r\r8NaNadd_cs_r.exe
 WorkingDir=JIT\Methodical\NaN\r8NaNadd_cs_r
@@ -23167,7 +23167,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDouble_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [_opt_dbgexplicit2.exe_3978]
 RelativePath=JIT\Methodical\explicit\misc\_opt_dbgexplicit2\_opt_dbgexplicit2.exe
 WorkingDir=JIT\Methodical\explicit\misc\_opt_dbgexplicit2
@@ -23713,7 +23713,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41621\b41621
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2989
 [b30892.exe_4962]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30892\b30892\b30892.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30892\b30892
@@ -24616,7 +24616,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [_il_dbgu_native.exe_4533]
 RelativePath=JIT\Methodical\refany\_il_dbgu_native\_il_dbgu_native.exe
 WorkingDir=JIT\Methodical\refany\_il_dbgu_native
@@ -24784,7 +24784,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartULong_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [orref.exe_2718]
 RelativePath=JIT\CodeGenBringUpTests\OrRef\OrRef.exe
 WorkingDir=JIT\CodeGenBringUpTests\OrRef
@@ -25372,7 +25372,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartLong_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b88712.exe_5442]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b88712\b88712\b88712.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b88712\b88712
@@ -26114,7 +26114,7 @@ WorkingDir=JIT\jit64\opt\rngchk\RngchkStress2_o
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [b64026.exe_5343]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b64026\b64026\b64026.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b64026\b64026
@@ -28494,7 +28494,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_relhugedim
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [regression_dev10_624201.exe_2565]
 RelativePath=CoreMangLib\system\collections\generic\hashset\Regression_Dev10_624201\Regression_Dev10_624201.exe
 WorkingDir=CoreMangLib\system\collections\generic\hashset\Regression_Dev10_624201
@@ -28949,7 +28949,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartInt_3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [_il_rellengthm2.exe_3622]
 RelativePath=JIT\Methodical\Arrays\misc\_il_rellengthm2\_il_rellengthm2.exe
 WorkingDir=JIT\Methodical\Arrays\misc\_il_rellengthm2
@@ -29103,7 +29103,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartString_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [try-catch07.exe_44]
 RelativePath=baseservices\exceptions\generics\try-catch07\try-catch07.exe
 WorkingDir=baseservices\exceptions\generics\try-catch07
@@ -29579,7 +29579,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_dbghugedim
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [icomparercompare.exe_693]
 RelativePath=CoreMangLib\cti\system\collections\icomparer\IComparerCompare\IComparerCompare.exe
 WorkingDir=CoreMangLib\cti\system\collections\icomparer\IComparerCompare
@@ -30216,7 +30216,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartOperations_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b35344.exe_5210]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b35344\b35344\b35344.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b35344\b35344
@@ -31917,7 +31917,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUShort_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b55216.exe_5283]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b55216\b55216\b55216.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b55216\b55216
@@ -32113,7 +32113,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartString_4
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b19394.exe_5712]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b19394\b19394\b19394.exe
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b19394\b19394
@@ -32162,7 +32162,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDelegate_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b56066.exe_5286]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b56066\b56066\b56066.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b56066\b56066
@@ -32365,7 +32365,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUInt_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b31878.exe_5040]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b31878\b31878\b31878.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b31878\b31878
@@ -33247,7 +33247,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32374\b32374
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2989
 [structlayoutattributector.exe_2115]
 RelativePath=CoreMangLib\cti\system\runtime\interopservices\structlayoutattribute\StructLayoutAttributeCtor\StructLayoutAttributeCtor.exe
 WorkingDir=CoreMangLib\cti\system\runtime\interopservices\structlayoutattribute\StructLayoutAttributeCtor
@@ -34332,7 +34332,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartOperations_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [_speed_rellcsbox.exe_3610]
 RelativePath=JIT\Methodical\Arrays\lcs\_speed_rellcsbox\_speed_rellcsbox.exe
 WorkingDir=JIT\Methodical\Arrays\lcs\_speed_rellcsbox
@@ -35809,7 +35809,7 @@ WorkingDir=Loader\classloader\nesting\coreclr\VSW491577_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [jaggedarr_cs_r.exe_4402]
 RelativePath=JIT\Methodical\MDArray\GaussJordan\jaggedarr_cs_r\jaggedarr_cs_r.exe
 WorkingDir=JIT\Methodical\MDArray\GaussJordan\jaggedarr_cs_r
@@ -36698,7 +36698,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDouble_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [_relexplicit1.exe_3993]
 RelativePath=JIT\Methodical\explicit\misc\_relexplicit1\_relexplicit1.exe
 WorkingDir=JIT\Methodical\explicit\misc\_relexplicit1
@@ -37223,7 +37223,7 @@ WorkingDir=JIT\Methodical\Arrays\huge_struct
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [byte_cs_d.exe_4348]
 RelativePath=JIT\Methodical\MDArray\DataTypes\byte_cs_d\byte_cs_d.exe
 WorkingDir=JIT\Methodical\MDArray\DataTypes\byte_cs_d
@@ -37349,7 +37349,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\33objref_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [_il_dbgrefloc_o2.exe_3938]
 RelativePath=JIT\Methodical\explicit\basic\_il_dbgrefloc_o2\_il_dbgrefloc_o2.exe
 WorkingDir=JIT\Methodical\explicit\basic\_il_dbgrefloc_o2
@@ -38462,7 +38462,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartUShort_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [opcodesldc_i4_4.exe_1761]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_4\OpCodesLdc_I4_4.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_4
@@ -40170,7 +40170,7 @@ WorkingDir=JIT\Methodical\tailcall_v4\tailcall_AV
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS
+Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
 [compilation.exe_5808]
 RelativePath=managed\Compilation\Compilation\Compilation.exe
 WorkingDir=managed\Compilation\Compilation
@@ -40282,7 +40282,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDelegate_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b09495.exe_4822]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b09495\b09495\b09495.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b09495\b09495
@@ -40555,7 +40555,7 @@ WorkingDir=JIT\jit64\gc\misc\struct6_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988
 [interlockedaddint_4.exe_153]
 RelativePath=baseservices\threading\interlocked\add\InterlockedAddInt_4\InterlockedAddInt_4.exe
 WorkingDir=baseservices\threading\interlocked\add\InterlockedAddInt_4
@@ -40807,7 +40807,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartLong_1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [int32minvalue.exe_1310]
 RelativePath=CoreMangLib\cti\system\int\Int32MinValue\Int32MinValue.exe
 WorkingDir=CoreMangLib\cti\system\int\Int32MinValue
@@ -40856,7 +40856,7 @@ WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDouble_2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL
+Categories=RT;MISSING_EXE
 [b12624.exe_4837]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b12624\b12624\b12624.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b12624\b12624
