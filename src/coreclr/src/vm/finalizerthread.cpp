@@ -863,11 +863,7 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
             _ASSERTE(g_fEEShutDown);
             _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
 
-            bool finalizeOnShutdown = DEFAULT_FinalizeOnShutdown != 0;
-#ifdef _DEBUG
-            finalizeOnShutdown = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FinalizeOnShutdown) != 0;
-#endif
-            if (finalizeOnShutdown)
+            if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_FinalizeOnShutdown) != 0)
             {
                 // Finalize all registered objects during shutdown, even they are still reachable.
                 GCHeap::GetGCHeap()->SetFinalizeQueueForShutdown(FALSE);
@@ -1214,11 +1210,7 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
 
         _ASSERTE((g_fEEShutDown & ShutDown_Finalize1) || g_fFastExitProcess);
 
-        bool finalizeOnShutdown = DEFAULT_FinalizeOnShutdown != 0;
-#ifdef _DEBUG
-        finalizeOnShutdown = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FinalizeOnShutdown) != 0;
-#endif
-        if (finalizeOnShutdown)
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_FinalizeOnShutdown) != 0)
         {
             // When running finalizers on shutdown (including for reachable objects), suspend threads for shutdown before
             // running finalizers, so that the reachable objects will not be used after they are finalized.
