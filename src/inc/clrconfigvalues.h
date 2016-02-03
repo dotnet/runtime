@@ -130,7 +130,7 @@ RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_AppContextSwitchOverrides, W("AppContextSw
 #else
 #define DEFAULT_FinalizeOnShutdown (1)
 #endif
-CONFIG_DWORD_INFO(INTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), DEFAULT_FinalizeOnShutdown, "When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), DEFAULT_FinalizeOnShutdown, "When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects")
 
 //
 // ARM
