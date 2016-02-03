@@ -2063,7 +2063,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         // where we copied the struct to.
         if (type == varDsc->TypeGet())
         {
-#if FEATURE_MULTIREG_STRUCTS
+#if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
             assert(varTypeIsStruct(type));
             if (structSize <= MAX_PASS_MULTIREG_BYTES)
@@ -2080,7 +2080,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
             }
             else
 #endif // _TARGET_ARM64_
-#endif // FEATURE_MULTIREG_STRUCTS
+#endif // FEATURE_MULTIREG_ARGS
             {
                 arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
                 addrNode = arg;
@@ -2091,7 +2091,7 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
             arg->ChangeOper(GT_LCL_FLD);
             arg->gtType = type;
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #else // not (_TARGET_AMD64_ or _TARGET_ARM64_)
 
