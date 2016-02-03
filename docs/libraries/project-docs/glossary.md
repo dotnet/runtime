@@ -87,3 +87,14 @@ Mono has implementations (though not necessarily complete) of WinForms, ASP.NET,
 ### Xamarin
 
 Xamarin is a commercial offering for building mobile applications targeting Android, iOS and Mac OS X Store. It's based on Mono, and on iOS and Android surfaces a different API profile, called the mobile profile. The subsetting was necessary to reduce the footprint, both by shipping smaller versions of the system libraries as well as making them more linker friendly. While Mono runs on Mac OS X without Xamarin, their linker is required make the app package for the Mac App Store.  Xamarin ships a full static compiler on iOS, as the platform does not support dynamic code generation.
+
+
+## Frameworks
+
+### Windows Forms
+
+**Also referred to as**: WinForms
+
+Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Froms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono has an implementation of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
+
+Windows Forms is in maintenance mode currently. That means new features will generally not be added.
