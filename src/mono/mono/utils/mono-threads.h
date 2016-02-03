@@ -589,6 +589,7 @@ typedef enum {
 	AsyncSuspendAlreadySuspended,
 	AsyncSuspendWait,
 	AsyncSuspendInitSuspend,
+	AsyncSuspendBlocking,
 } MonoRequestAsyncSuspendResult;
 
 typedef enum {
