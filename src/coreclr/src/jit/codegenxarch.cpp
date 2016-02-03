@@ -1482,7 +1482,7 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
 
             GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
             LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-            assert(varDsc->lvDontPromote);
+            assert(varDsc->lvIsMultiRegArgOrRet);
 
             CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
             assert(typeHnd != nullptr);
@@ -3586,10 +3586,10 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         {
             // Load
             genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, src->gtGetOp1(), offset); // Load the address of the child of the LdObj node.
-            
+
             // Store
             emit->emitIns_S_R(INS_movdqu,
-                              EA_8BYTE, 
+                              EA_8BYTE,
                               xmmReg,
                               baseVarNum,
                               putArgOffset + offset);
@@ -7779,7 +7779,8 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 //
 // Note:
 //    On Windows the caller always creates slots (homing space) in its frame for the 
-//    first 4 arguments of a calee (register passed args). So, the baseVarNum is always 0.
+//    first 4 arguments of a calee (register passed args). So, the the variable number
+//    (lclNum) for the first argument with a stack slot is always 0.
 //    For System V systems there is no such calling convention requirement, and the code needs to find
 //    the first stack passed argument from the caller. This is done by iterating over 
 //    all the lvParam variables and finding the first with lvArgReg equals to REG_STK.
@@ -7799,9 +7800,10 @@ CodeGen::getFirstArgWithStackSlot()
         // Iterate over all the local variables in the lclvartable. 
         // They contain all the implicit argumets - thisPtr, retBuf, 
         // generic context, PInvoke cookie, var arg cookie,no-standard args, etc.
+        LclVarDsc* varDsc = nullptr;
         for (unsigned i = 0; i < compiler->lvaCount; i++)
         {
-            LclVarDsc* varDsc = &(compiler->lvaTable[i]);
+            varDsc = &(compiler->lvaTable[i]);
 
             // We are iterating over the arguments only.
             assert(varDsc->lvIsParam);
@@ -7812,6 +7814,7 @@ CodeGen::getFirstArgWithStackSlot()
                 break;
             }
         }
+        assert(varDsc != nullptr);
     }
 
     return baseVarNum;
@@ -8013,8 +8016,8 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
     {
         regNumber srcReg = genConsumeReg(treeNode->gtGetOp1());
         assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
-        getEmitter()->emitIns_S_R(ins_Store(targetType),
-                                  emitTypeSize(targetType), 
+        getEmitter()->emitIns_S_R(ins_Store(targetType), 
+                                  emitTypeSize(targetType),
                                   srcReg,
                                   baseVarNum,
                                   treeNode->AsPutArgStk()->getArgOffset());

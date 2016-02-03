@@ -1568,7 +1568,7 @@ void fgArgInfo::ArgsComplete()
                 curArgTabEntry->needTmp = true;
             }
 
-            // For all previous arguments they may need to be evaluated into a temps
+            // All previous arguments may need to be evaluated into temps
             for (unsigned prevInx = 0; prevInx < curInx; prevInx++)
             {
                 fgArgTabEntryPtr prevArgTabEntry  = argTable[prevInx];
@@ -2069,10 +2069,8 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
             if (structSize <= MAX_PASS_MULTIREG_BYTES)
             {
                 assert(structSize > TARGET_POINTER_SIZE);  // structSize must be 9..16
-
                 // ToDo-ARM64: Consider using:  arg->ChangeOper(GT_LCL_FLD);
                 // as that is how FEATURE_UNIX_AMD64_STRUCT_PASSING works.
-            
                 // Pass by value in two registers
                 arg = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
                 addrNode = arg;
@@ -2145,8 +2143,8 @@ void fgArgInfo::EvalArgsToTemps()
         assert(curArgTabEntry->needPlace == false);
 
         // On x86 and other archs that use push instructions to pass arguments:
-        //   Only the register arguments need to be replaced with placeholders node
-        //   stacked arguments are evaluated and pushed in order
+        //   Only the register arguments need to be replaced with placeholder nodes.
+        //   Stacked arguments are evaluated and pushed (or stored into the stack) in order.
         //
         if (curArgTabEntry->regNum == REG_STK) 
             continue;
@@ -2281,13 +2279,14 @@ void fgArgInfo::EvalArgsToTemps()
         else // curArgTabEntry->needTmp == false
         {
             //   On x86 -
-            //      Only register args are replaced with placeholders node
-            //      and the stack based arguments are evaluated and pushed in order
+            //      Only register args are replaced with placeholder nodes
+            //      and the stack based arguments are evaluated and pushed in order.
             //
-            //   On Arm/x64 - Only when needTmp is false and needPlace is false
-            //      The non-register arguments are evaluated and stored in order
+            //   On Arm/x64 - When needTmp is false and needPlace is false,
+            //      the non-register arguments are evaluated and stored in order.
             //      When needPlace is true we have a nested call that comes after
-            //      this argument so we have to replace it with a placeholder
+            //      this argument so we have to replace it in the gtCallArgs list
+            //      (the initial argument evaluation list) with a placeholder.
             //
             if ((curArgTabEntry->regNum == REG_STK) && (curArgTabEntry->needPlace == false))
                 continue;
@@ -2301,13 +2300,15 @@ void fgArgInfo::EvalArgsToTemps()
             // Create a placeholder node to put in its place in gtCallLateArgs.
 
             // For a struct type we also need to record the class handle of the arg.
-            CORINFO_CLASS_HANDLE clsHnd = NULL;
+            CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
 #if defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
+            // All structs are either passed (and retyped) as integral types, OR they
+            // are passed by reference.
             noway_assert(argx->gtType != TYP_STRUCT);
 
-#else // !(defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
+#else // !defined(_TARGET_AMD64_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
             if (varTypeIsStruct(defArg))
             {
@@ -2334,7 +2335,7 @@ void fgArgInfo::EvalArgsToTemps()
                 {
                     BADCODE("Unhandled TYP_STRUCT argument tree in fgMorphArgs");
                 }
-            }
+        }
 
 #endif // !(defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
 
@@ -2537,6 +2538,41 @@ GenTree*   Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDL
     return new (this, GT_LCL_VAR) GenTreeLclVar(subTree->TypeGet(), lclNum, BAD_IL_OFFSET);
 }
 
+
+//------------------------------------------------------------------------
+// fgMorphArgs: Walk and transform (morph) the arguments of a call
+//
+// Arguments:
+//    callNode - the call for which we are doing the argument morphing
+//
+// Return Value:
+//    Like most morph methods, this method returns the morphed node,
+//    though in this case there are currently no scenarios where the
+//    node itself is re-created.
+//
+// Notes:
+//    This method is even less idempotent than most morph methods.
+//    That is, it makes changes that should not be redone. It uses the existence
+//    of gtCallLateArgs (the late arguments list) to determine if it has
+//    already done that work.
+//
+//    The first time it is called (i.e. during global morphing), this method
+//    computes the "late arguments". This is when it determines which arguments
+//    need to be evaluated to temps prior to the main argument setup, and which
+//    can be directly evaluated into the argument location. It also creates a
+//    second argument list (gtCallLateArgs) that does the final placement of the
+//    arguments, e.g. into registers or onto the stack.
+//
+//    The "non-late arguments", aka the gtCallArgs, are doing the in-order
+//    evaluation of the arguments that might have side-effects, such as embedded
+//    assignments, calls or possible throws. In these cases, it and earlier
+//    arguments must be evaluated to temps.
+//
+//    On targets with a fixed outgoing argument area (FEATURE_FIXED_OUT_ARGS),
+//    if we have any nested calls, we need to defer the copying of the argument
+//    into the fixed argument area until after the call. If the argument did not
+//    otherwise need to be computed into a temp, it is moved to gtCallLateArgs and
+//    replaced in the "early" arg list (gtCallArgs) with a placeholder node.
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -2887,12 +2923,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     {
         GenTreePtr * parentArgx = &args->gtOp.gtOp1;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_ARGS
         if (!hasStructArgument)
         {
             hasStructArgument = varTypeIsStruct(args->gtOp.gtOp1);
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_MULTIREG_ARGS
         argx = fgMorphTree(*parentArgx);
         *parentArgx = argx;
         flagsSummary |= argx->gtFlags;
@@ -3132,7 +3168,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             else // struct type
             {
                 /* We handle two opcodes: GT_MKREFANY and GT_LDOBJ */
-                if (argx->gtOper == GT_MKREFANY) 
+                if (argx->gtOper == GT_MKREFANY)
                 {
                     if (varTypeIsStruct(argx))
                     {
@@ -3209,9 +3245,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         if (!structDesc.passedInRegisters)
                         {
                             passStructInRegisters = false;
-                            copyBlkClass = NULL;
+                            copyBlkClass = NO_CLASS_HANDLE;
                         }
-                        else 
+                        else
                         {
                             // The ldObjClass is used to materialize the struct on stack.
                             passStructInRegisters = true;
@@ -3301,9 +3337,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                                             // to a new type
                                             argLdobj->ChangeOper(GT_LCL_FLD);
                                             argLdobj->gtType = structBaseType;
-                                        }                                   
+                                        }
                                         assert(varTypeCanReg(argLdobj->TypeGet()));
-                                        assert(copyBlkClass == nullptr);
+                                        assert(copyBlkClass == NO_CLASS_HANDLE);
                                     }
                                     else
                                     {
@@ -3337,8 +3373,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                             // Not a GT_LCL_VAR, so we can just change the type on the node
                             argLdobj->gtType = structBaseType;
                         }
-                        assert( varTypeCanReg(argLdobj->TypeGet()) ||
-                               ((copyBlkClass != NULL) && varTypeIsIntegral(structBaseType)));
+                        assert(varTypeCanReg(argLdobj->TypeGet()) ||
+                               ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsIntegral(structBaseType)));
 
                         size = 1;
                     }
@@ -3375,12 +3411,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                                 // exception : no need to use CopyBlk if the valuetype is on the stack
                                 if (ldObjOp1->gtFlags & GTF_ADDR_ONSTACK)
                                 {
-                                    copyBlkClass = NULL;
+                                    copyBlkClass = NO_CLASS_HANDLE;
                                 }
                                 // exception : no need to use CopyBlk if the valuetype is already a struct local
                                 else if (ldObjOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
                                 {
-                                    copyBlkClass = NULL;
+                                    copyBlkClass = NO_CLASS_HANDLE;
                                 }
                             }
                         }
@@ -3617,7 +3653,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
 #ifdef _TARGET_AMD64_
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-       assert(size == 1);
+            assert(size == 1);
 #endif
 #endif
 
@@ -3762,7 +3798,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 call->fgArgInfo->RemorphStkArg(argIndex, argx, args, size, argAlign);
             }
         }
-        if (copyBlkClass != NULL)
+        if (copyBlkClass != NO_CLASS_HANDLE)
         {
             noway_assert(!lateArgsComputed);
             fgMakeOutgoingStructArgCopy(call, args, argIndex, copyBlkClass FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(&structDesc));
@@ -4043,8 +4079,8 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                         // Second eightbyte.
                         GenTreeLclFld* newLclField = new(this, GT_LCL_FLD) GenTreeLclFld(
                             GetTypeFromClassificationAndSizes(
-                            fgEntryPtr->structDesc.eightByteClassifications[1],
-                            fgEntryPtr->structDesc.eightByteSizes[1]),
+                                fgEntryPtr->structDesc.eightByteClassifications[1],
+                                fgEntryPtr->structDesc.eightByteSizes[1]),
                             lclCommon->gtLclNum,
                             fgEntryPtr->structDesc.eightByteOffsets[1]);
                         GenTreeArgList* secondNode = gtNewListNode(newLclField, nullptr);
@@ -4134,7 +4170,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
     // Update the flags
     call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
 }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // FEATURE_MULTIREG_ARGS
 
 // Make a copy of a struct variable if necessary, to pass to a callee.
 // returns: tree that computes address of the outgoing arg
@@ -15141,13 +15177,13 @@ void                Compiler::fgPromoteStructs()
             JITDUMP("Stopped promoting struct fields, due to too many locals.\n");
             break;
         }
-#if FEATURE_MULTIREG_STRUCTS
-        if (varDsc->lvDontPromote)
+#if FEATURE_MULTIREG_ARGS_OR_RET
+        if (varDsc->lvIsMultiRegArgOrRet)
         {
-            JITDUMP("Skipping V%02u: marked as lvDontPromote.\n", lclNum);
+            JITDUMP("Skipping V%02u: marked lvIsMultiRegArgOrRet.\n", lclNum);
             continue;
         }
-#endif // FEATURE_MULTIREG_STRUCTS
+#endif // FEATURE_MULTIREG_ARGS_OR_RET
 
 #ifdef FEATURE_SIMD
         if (varDsc->lvSIMDType && varDsc->lvUsedInSIMDIntrinsic)
@@ -15197,7 +15233,7 @@ void                Compiler::fgPromoteStructs()
                     continue;
                 }
 #endif // _TARGET_AMD64_ || _TARGET_ARM64_
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
 #if defined(_TARGET_ARM64_)
                 // TODO-PERF - Only do this when the LclVar is used in an argument context
                 //
@@ -15211,7 +15247,7 @@ void                Compiler::fgPromoteStructs()
                     continue;
                 }
 #endif // _TARGET_ARM64_
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
                 if (varDsc->lvIsParam)
                 {

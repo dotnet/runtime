@@ -304,11 +304,10 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
                     if (tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR)
                     {
-#ifdef DEBUG
                         GenTreeLclVarCommon* lclVarPtr = tree->gtOp.gtOp1->AsLclVarCommon();
                         LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-                        assert(varDsc->lvDontPromote);
-#endif // DEBUG
+                        assert(varDsc->lvIsMultiRegArgOrRet);
+
                         // If this is a two eightbyte return, make the var
                         // contained by the return expression. The code gen will put
                         // the values in the right registers for return.

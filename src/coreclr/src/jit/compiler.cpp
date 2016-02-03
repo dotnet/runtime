@@ -451,7 +451,7 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
     case 3:
         useType = TYP_INT;
         break;
-#endif // _TARGET_AMD64_
+#endif // _TARGET_XARCH_
 
 #ifdef _TARGET_64BIT_
     case 4:
@@ -490,7 +490,7 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
         break;
 
     default:
-#if FEATURE_MULTIREG_STRUCT_RET
+#if FEATURE_MULTIREG_RET
         if (forReturn)
         {
             if (size <= MAX_RET_MULTIREG_BYTES)
@@ -505,9 +505,9 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
 #endif // _TARGET_ARM64_
             }
         }
-#endif // FEATURE_MULTIREG_STRUCT_RET
+#endif // FEATURE_MULTIREG_RET
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
         if (!forReturn)
         {
             if (size <= MAX_PASS_MULTIREG_BYTES)
@@ -522,7 +522,7 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
 #endif // _TARGET_ARM64_
             }
         }
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
         break;
     }
     return useType;
@@ -5713,7 +5713,8 @@ START:
 // args:
 //   classType: classification type
 //   size: size of the eightbyte.
-//   
+//
+// static 
 var_types Compiler::GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size)
 {
     var_types type = TYP_UNKNOWN;
