@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\System.Net.Security.csproj">
       <SupportedFramework>net46;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\facade\System.Net.Security.csproj">
+    <ProjectReference Include="..\src\System.Net.Security.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
     

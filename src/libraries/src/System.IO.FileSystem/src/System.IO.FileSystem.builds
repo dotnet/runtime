@@ -14,7 +14,7 @@
     <Project Include="System.IO.FileSystem.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.IO.FileSystem.csproj">
+    <Project Include="System.IO.FileSystem.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.IO.FileSystem.csproj">

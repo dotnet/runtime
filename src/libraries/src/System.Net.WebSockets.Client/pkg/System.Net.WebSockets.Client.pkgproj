@@ -7,7 +7,7 @@
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     
-    <ProjectReference Include="..\src\facade\System.Net.WebSockets.Client.csproj">
+    <ProjectReference Include="..\src\System.Net.WebSockets.Client.csproj">
       <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.Net.WebSockets.Client.pkgproj" />

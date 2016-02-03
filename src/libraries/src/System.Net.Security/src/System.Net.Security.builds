@@ -11,7 +11,7 @@
     <Project Include="System.Net.Security.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Net.Security.csproj">
+    <Project Include="System.Net.Security.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

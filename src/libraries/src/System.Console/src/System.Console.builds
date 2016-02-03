@@ -14,7 +14,7 @@
     <Project Include="System.Console.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Console.csproj">
+    <Project Include="System.Console.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

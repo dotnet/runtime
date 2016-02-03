@@ -11,7 +11,7 @@
     <Project Include="Microsoft.Win32.Primitives.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\Microsoft.Win32.Primitives.csproj">
+    <Project Include="Microsoft.Win32.Primitives.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

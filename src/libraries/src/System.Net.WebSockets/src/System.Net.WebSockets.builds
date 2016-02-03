@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Net.WebSockets.csproj" />
-    <Project Include="facade\System.Net.WebSockets.csproj">
+    <Project Include="System.Net.WebSockets.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
