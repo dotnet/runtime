@@ -278,17 +278,42 @@ namespace System.Data.SqlClient.SNI
                 return null;
             }
 
-            Uri pipeURI = new Uri(fullServerName);
-            string resourcePath = pipeURI.AbsolutePath;
-
-            string pipeToken = @"/pipe/";
-            if (0 != string.Compare(resourcePath, 0, pipeToken, 0, pipeToken.Length))
+            if(fullServerName.Length == 0 || fullServerName.IndexOf('/') != -1) // Pipe paths only allow back slashes
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
 
-            return new SNINpHandle(pipeURI.Host, resourcePath.Substring(pipeToken.Length), timerExpire, callbackObject);
+            string serverName, pipeName;
+            if (fullServerName.IndexOf('\\') == -1)
+            {
+                serverName = fullServerName;
+                pipeName = SNINpHandle.DefaultPipePath;
+            }
+            else
+            {
+                try
+                {
+                    Uri pipeURI = new Uri(fullServerName);
+                    string resourcePath = pipeURI.AbsolutePath;
+
+                    string pipeToken = @"/pipe/";
+                    if (0 != string.Compare(resourcePath, 0, pipeToken, 0, pipeToken.Length))
+                    {
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                        return null;
+                    }
+                    pipeName = resourcePath.Substring(pipeToken.Length);
+                    serverName = pipeURI.Host;
+                }
+                catch(UriFormatException)
+                {
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                    return null;
+                }
+            }
+
+            return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject);
         }
 
         /// <summary>
