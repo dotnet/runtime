@@ -72,6 +72,7 @@ add_library(corguids ${CORGUIDS_SOURCES})
 
 install (FILES cfi.h
                cor.h
+               cordebuginfo.h
                corhdr.h
                corinfo.h
                corjit.h
