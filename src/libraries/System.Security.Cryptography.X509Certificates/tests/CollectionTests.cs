@@ -473,7 +473,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportStoreSavedAsCerData()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -495,8 +494,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void ImportStoreSavedAsSerializedCerData()
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void ImportStoreSavedAsSerializedCerData_Windows()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
@@ -517,8 +516,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void ImportStoreSavedAsSerializedStoreData()
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void ImportStoreSavedAsSerializedCerData_Unix()
+        {
+            X509Certificate2Collection cc2 = new X509Certificate2Collection();
+            Assert.ThrowsAny<CryptographicException>(() => cc2.Import(TestData.StoreSavedAsSerializedCerData));
+            Assert.Equal(0, cc2.Count);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void ImportStoreSavedAsSerializedStoreData_Windows()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -542,7 +550,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void ImportStoreSavedAsSerializedStoreData_Unix()
+        {
+            X509Certificate2Collection cc2 = new X509Certificate2Collection();
+            Assert.ThrowsAny<CryptographicException>(() => cc2.Import(TestData.StoreSavedAsSerializedStoreData));
+            Assert.Equal(0, cc2.Count);
+        }
+
+        [Fact]
         public static void ImportStoreSavedAsPfxData()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -562,6 +578,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(pfxCer, cs[1]);
                 Assert.Equal(pfxCer.Thumbprint, cs[1].Thumbprint);
             }
+        }
+
+        [Fact]
+        public static void ImportInvalidData()
+        {
+            X509Certificate2Collection cc2 = new X509Certificate2Collection();
+            Assert.ThrowsAny<CryptographicException>(() => cc2.Import(new byte[] { 0, 1, 1, 2, 3, 5, 8, 13, 21 }));
         }
 
         [Fact]
@@ -608,16 +631,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public static void ExportSerializedCert()
+        public static void ExportSerializedCert_Windows()
         {
             TestExportSingleCert(X509ContentType.SerializedCert);
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void ExportSerializedCert_Unix()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            using (var ecdsa256Cer = new X509Certificate2(TestData.ECDsa256Certificate))
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new[] { msCer, ecdsa256Cer });
+                Assert.Throws<PlatformNotSupportedException>(() => cc.Export(X509ContentType.SerializedCert));
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public static void ExportSerializedStore()
+        public static void ExportSerializedStore_Windows()
         {
             TestExportStore(X509ContentType.SerializedStore);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void ExportSerializedStore_Unix()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            using (var ecdsa256Cer = new X509Certificate2(TestData.ECDsa256Certificate))
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new[] { msCer, ecdsa256Cer });
+                Assert.Throws<PlatformNotSupportedException>(() => cc.Export(X509ContentType.SerializedStore));
+            }
         }
 
         [Fact]
@@ -654,7 +701,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.NotNull(exported);
         }
 
-        [ActiveIssue(2893, PlatformID.OSX)]
         [Fact]
         public static void ExportUnrelatedPfx()
         {

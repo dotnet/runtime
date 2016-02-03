@@ -9,7 +9,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class ExportTests
     {
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsCert()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -21,8 +20,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void ExportAsSerializedCert()
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void ExportAsSerializedCert_Windows()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
             {
@@ -39,7 +38,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void ExportAsSerializedCert_Unix()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => c1.Export(X509ContentType.SerializedCert));
+            }
+        }
+
+        [Fact]
         public static void ExportAsPfx()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -56,7 +64,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsPfxWithPassword()
         {
             const string password = "Cotton";
@@ -75,7 +82,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsPfxVerifyPassword()
         {
             const string password = "Cotton";
