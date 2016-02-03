@@ -1727,6 +1727,18 @@ ncells ) {
 		return f () == typeof(string) ? 0 : 1;
 	}
 
+	public enum ByteEnum2 : byte {
+		High = 142
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int enum_arg_zero_extend (ByteEnum2 b) {
+		return (int)b;
+	}
+
+	public static int test_142_byte_enum_arg_zero_extend () {
+		return enum_arg_zero_extend (ByteEnum2.High);
+	}
 }
 
 #if __MOBILE__

@@ -503,6 +503,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 static gboolean
 type_is_unsigned (EmitContext *ctx, MonoType *t)
 {
+	t = mini_get_underlying_type (t);
 	if (t->byref)
 		return FALSE;
 	switch (t->type) {
