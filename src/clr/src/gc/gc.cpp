@@ -39,6 +39,10 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
+#if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
+BOOL bgc_heap_walk_for_etw_p = FALSE;
+#endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
+
 #if defined(FEATURE_REDHAWK)
 #define MAYBE_UNUSED_VAR(v) v = v
 #else
@@ -15285,10 +15289,14 @@ void gc_heap::gc1()
 #if defined(VERIFY_HEAP) || (defined (FEATURE_EVENT_TRACE) && defined(BACKGROUND_GC))
     if (FALSE 
 #ifdef VERIFY_HEAP
+        // Note that right now g_pConfig->GetHeapVerifyLevel always returns the same
+        // value. If we ever allow randomly adjusting this as the process runs,
+        // we cannot call it this way as joins need to match - we must have the same
+        // value for all heaps like we do with bgc_heap_walk_for_etw_p.
         || (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
 #endif
 #if defined(FEATURE_EVENT_TRACE) && defined(BACKGROUND_GC)
-        || (ETW::GCLog::ShouldTrackMovementForEtw() && settings.concurrent)
+        || (bgc_heap_walk_for_etw_p && settings.concurrent)
 #endif
         )
     {
@@ -15331,7 +15339,7 @@ void gc_heap::gc1()
 #ifdef BACKGROUND_GC
         assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #ifdef FEATURE_EVENT_TRACE
-        if (ETW::GCLog::ShouldTrackMovementForEtw() && settings.concurrent)
+        if (bgc_heap_walk_for_etw_p && settings.concurrent)
         {
             make_free_lists_for_profiler_for_bgc();
         }
@@ -16402,8 +16410,7 @@ int gc_heap::garbage_collect (int n)
         }
 
         {
-            int gen_num_for_data = ((settings.condemned_generation < (max_generation - 1)) ? 
-                                    (settings.condemned_generation + 1) : (max_generation + 1));
+            int gen_num_for_data = max_generation + 1;
             for (int i = 0; i <= gen_num_for_data; i++)
             {
                 gc_data_per_heap.gen_data[i].size_before = generation_size (i);
@@ -31185,6 +31192,10 @@ void gc_heap::background_sweep()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
+#ifdef FEATURE_EVENT_TRACE
+        bgc_heap_walk_for_etw_p = ETW::GCLog::ShouldTrackMovementForEtw();
+#endif //FEATURE_EVENT_TRACE
+
         leave_spin_lock (&gc_lock);
 
 #ifdef MULTIPLE_HEAPS

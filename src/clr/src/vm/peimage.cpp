@@ -829,7 +829,14 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
 
 void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     EEFileLoadException::Throw(m_path, hrError);
 }
 
