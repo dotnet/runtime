@@ -895,6 +895,36 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 	gboolean async = mono_thread_info_is_async_context ();
 
+	if (mono_llvm_only) {
+		GSList *l, *ips;
+
+		if (async)
+			return;
+
+		ips = get_unwind_backtrace ();
+		for (l = ips; l; l = l->next) {
+			guint8 *ip = (guint8*)l->data;
+			memset (&frame, 0, sizeof (StackFrameInfo));
+			frame.ji = mini_jit_info_table_find (domain, (char*)ip, &frame.domain);
+			if (!frame.ji || frame.ji->is_trampoline)
+				continue;
+			frame.type = FRAME_TYPE_MANAGED;
+			frame.method = jinfo_get_method (frame.ji);
+			// FIXME: Cannot lookup the actual method
+			frame.actual_method = frame.method;
+			if (frame.type == FRAME_TYPE_MANAGED) {
+				if (!frame.method->wrapper_type || frame.method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+					frame.managed = TRUE;
+			}
+			frame.native_offset = ip - (guint8*)frame.ji->code_start;
+			frame.il_offset = -1;
+
+			if (func (&frame, NULL, user_data))
+				break;
+		}
+		g_free (ips);
+	}
+
 	g_assert (start_ctx);
 	g_assert (domain);
 	g_assert (jit_tls);
