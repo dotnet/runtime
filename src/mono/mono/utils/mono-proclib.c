@@ -187,7 +187,7 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 			*error = MONO_PROCESS_ERROR_NOT_FOUND;
 		return NULL;
 	}
-	while ((s = fgets (buf, blen, f))) {
+	while ((s = fgets (buf, sizeof (buf), f))) {
 		if (*item != *buf)
 			continue;
 		if (strncmp (buf, item, len))
