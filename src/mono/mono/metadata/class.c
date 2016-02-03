@@ -6549,6 +6549,12 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	return result;
 }
 
+/**
+ * mono_class_from_mono_type:
+ * @type: describes the type to return
+ *
+ * This returns a MonoClass for the specified MonoType, the value is never NULL.
+ */
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
@@ -6609,7 +6615,9 @@ mono_class_from_mono_type (MonoType *type)
 		g_warning ("mono_class_from_mono_type: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
 	}
-	
+
+	// Yes, this returns NULL, even if it is documented as not doing so, but there
+	// is no way for the code to make it this far, due to the assert above.
 	return NULL;
 }
 
@@ -7421,7 +7429,7 @@ mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_toke
  * @type_token: the token for the class
  * @error: error object to return any error
  *
- * Returns: the MonoClass that represents @type_token in @image
+ * Returns: the MonoClass that represents @type_token in @image, or NULL on error.
  */
 MonoClass *
 mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
@@ -7526,7 +7534,13 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 	return type;
 }
 
-
+/**
+ * mono_class_get:
+ * @image: image where the class token will be looked up.
+ * @type_token: a type token from the image
+ *
+ * Returns the MonoClass with the given @type_token on the @image
+ */
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
@@ -7680,7 +7694,7 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
  * @image: The MonoImage where the type is looked up in
  * @name_space: the type namespace
  * @name: the type short name.
- * @deprecated: use the _checked variant
+ * @deprecated: use the mono_class_from_name_case_checked variant instead.
  *
  * Obtains a MonoClass with a given namespace and a given name which
  * is located in the given MonoImage.   The namespace and name
@@ -7695,8 +7709,23 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 	return res;
 }
 
+/**
+ * mono_class_from_name_case:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ * @error: if 
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.   The namespace and name
+ * lookups are case insensitive.
+ *
+ * Returns: the MonoClass if the given namespace and name were found, or NULL if it
+ * was not found.   The @error object will contain information about the problem
+ * in that case.
+ */
 MonoClass *
-mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
+mono_class_from_name_case_checked (MonoImage *image, const char *name_space, const char *name, MonoError *error)
 {
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
