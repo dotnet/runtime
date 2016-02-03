@@ -226,6 +226,7 @@ struct EHContext {
 
     inline void Init()
     {
+        LIMITED_METHOD_CONTRACT;
         Eax = 0;
         Ebx = 0;
         Ecx = 0;

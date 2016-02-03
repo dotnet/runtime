@@ -423,6 +423,8 @@ class CEECompileInfo : public ICorCompileInfo
     BOOL AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle);
 #endif
 
+    BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName);
+
     //--------------------------------------------------------------------
     // ZapperLoaderModules and the ZapperLoaderModuleTable
     //
