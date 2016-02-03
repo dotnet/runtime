@@ -32,6 +32,9 @@ mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClas
 MonoReflectionProperty*
 mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
 
+MonoReflectionEvent*
+mono_event_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoEvent *event, MonoError *error);
+
 MonoReflectionModule*
 mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError *error);
 

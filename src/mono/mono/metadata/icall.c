@@ -4077,7 +4077,7 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
 {
-	MonoException *ex;
+	MonoError error;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_EventInfo;
 	MonoClass *startklass, *klass;
@@ -4091,6 +4091,8 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 	GHashTable *events = NULL;
 	MonoPtrArray tmp_array;
 
+	mono_error_init (&error);
+	
 	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection events list");
 
 	if (!System_Reflection_EventInfo)
@@ -4161,7 +4163,11 @@ handle_parent:
 		if (g_hash_table_lookup (events, event))
 			continue;
 
-		mono_ptr_array_append (tmp_array, mono_event_get_object (domain, startklass, event));
+		MonoReflectionEvent *ev_obj;
+		ev_obj = mono_event_get_object_checked (domain, startklass, event, &error);
+		if (!ev_obj)
+			goto failure;
+		mono_ptr_array_append (tmp_array, ev_obj);
 
 		g_hash_table_insert (events, event, event);
 	}
@@ -4183,14 +4189,23 @@ handle_parent:
 	return res;
 
 loader_error:
-	mono_ptr_array_destroy (tmp_array);
 	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		ex = mono_class_get_exception_for_failure (klass);
+		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
-		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_error_set_from_loader_error (&error);
 		mono_loader_clear_error ();
 	}
-	mono_set_pending_exception (ex);
+
+failure:
+	
+	if (events != NULL)
+		g_hash_table_destroy (events);
+	if (utf8_name != NULL)
+		g_free (utf8_name);
+
+	mono_ptr_array_destroy (tmp_array);
+
+	mono_error_set_pending_exception (&error);
 	return NULL;
 }
 

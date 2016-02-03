@@ -7305,6 +7305,25 @@ MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
 	MonoError error;
+	MonoReflectionEvent *result;
+	result = mono_event_get_object_checked (domain, klass, event, &error);
+	mono_error_raise_exception (&error);
+	return result;
+}
+
+/**
+ * mono_event_get_object_checked:
+ * @domain: an app domain
+ * @klass: a type
+ * @event: a event
+ * @error: set on error
+ *
+ * Return an System.Reflection.MonoEvent object representing the event @event
+ * in class @klass. On failure sets @error and returns NULL
+ */
+MonoReflectionEvent*
+mono_event_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoEvent *event, MonoError *error)
+{
 	MonoReflectionEvent *res;
 	MonoReflectionMonoEvent *mono_event;
 	static MonoClass *monoevent_klass;
@@ -7312,8 +7331,9 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
 	if (!monoevent_klass)
 		monoevent_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
-	mono_event = (MonoReflectionMonoEvent *)mono_object_new_checked (domain, monoevent_klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_event = (MonoReflectionMonoEvent *)mono_object_new_checked (domain, monoevent_klass, error);
+	if (!mono_event)
+		return NULL;
 	mono_event->klass = klass;
 	mono_event->event = event;
 	res = (MonoReflectionEvent*)mono_event;
@@ -12171,6 +12191,7 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 MonoReflectionEvent *
 mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb)
 {
+	MonoError error;
 	MonoEvent *event = g_new0 (MonoEvent, 1);
 	MonoClass *klass;
 
@@ -12199,7 +12220,9 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 	}
 #endif
 
-	return mono_event_get_object (mono_object_domain (tb), klass, event);
+	MonoReflectionEvent *ev_obj = mono_event_get_object_checked (mono_object_domain (tb), klass, event, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return ev_obj;
 }
 
 static void
