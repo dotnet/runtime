@@ -4,13 +4,13 @@
   
   <PropertyGroup>
     <Version>1.0.1</Version>
-    <PackageTargetRuntime>centos.7.1-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime>rhel.7-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(CentOSNativePath)\System.Security.Cryptography.Native.so">
+    <File Include="$(RHELNativePath)\System.Security.Cryptography.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
