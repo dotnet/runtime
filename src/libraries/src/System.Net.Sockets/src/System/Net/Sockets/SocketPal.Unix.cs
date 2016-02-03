@@ -2,16 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Collections;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -38,7 +32,6 @@ namespace System.Net.Sockets
             //       - SocketError.OperationNotSupported
             //       - SocketError.ProtocolFamilyNotSupported
             //       - SocketError.NoBufferSpaceAvailable
-            //       - SocketError.Shutdown
             //       - SocketError.HostDown
             //       - SocketError.ProcessLimit
             //
@@ -60,6 +53,7 @@ namespace System.Net.Sockets
                 case Interop.Error.EFAULT:
                     return SocketError.Fault;
 
+                case Interop.Error.EBADF:
                 case Interop.Error.EINVAL:
                     return SocketError.InvalidArgument;
 
@@ -133,6 +127,9 @@ namespace System.Net.Sockets
 
                 case Interop.Error.EHOSTUNREACH:
                     return SocketError.HostUnreachable;
+
+                case Interop.Error.EPIPE:
+                    return SocketError.Shutdown;
 
                 default:
                     return SocketError.SocketError;
