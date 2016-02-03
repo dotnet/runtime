@@ -5,20 +5,21 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.ServiceProcess.ServiceController</RootNamespace>
     <AssemblyName>System.ServiceProcess.ServiceController</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}</ProjectGuid>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -73,6 +74,10 @@
     <Compile Include="System\ServiceProcess\ServiceStartMode.cs" />
     <Compile Include="System\ServiceProcess\ServiceType.cs" />
     <Compile Include="System\ServiceProcess\TimeoutException.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

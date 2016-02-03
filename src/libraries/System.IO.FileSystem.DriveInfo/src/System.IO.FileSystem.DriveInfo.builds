@@ -14,7 +14,7 @@
     <Project Include="System.IO.FileSystem.DriveInfo.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.IO.FileSystem.DriveInfo.csproj">
+    <Project Include="System.IO.FileSystem.DriveInfo.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

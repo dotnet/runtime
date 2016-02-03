@@ -7,14 +7,16 @@
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <RootNamespace>System.Xml</RootNamespace>
     <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
@@ -51,8 +53,12 @@
     <Compile Include="System\Xml\Linq\XStreamingElement.cs" />
     <Compile Include="System\Xml\Linq\XText.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

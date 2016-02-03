@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.Encoding.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\facade\System.Security.Cryptography.Encoding.csproj">
+    <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
     

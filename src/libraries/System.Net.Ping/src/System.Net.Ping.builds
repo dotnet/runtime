@@ -14,7 +14,7 @@
     <Project Include="System.Net.Ping.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Net.Ping.csproj">
+    <Project Include="System.Net.Ping.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

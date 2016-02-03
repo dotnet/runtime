@@ -3,20 +3,21 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Threading.Tasks.Parallel</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Parallel</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <FileAlignment>512</FileAlignment>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Threading\PlatformHelper.cs" />
     <Compile Include="System\Threading\Tasks\Box.cs" />
     <Compile Include="System\Threading\Tasks\Parallel.cs" />
@@ -24,6 +25,9 @@
     <Compile Include="System\Threading\Tasks\ParallelLoopState.cs" />
     <Compile Include="System\Threading\Tasks\ParallelRangeManager.cs" />
     <Compile Include="System\Threading\Tasks\TaskReplicator.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

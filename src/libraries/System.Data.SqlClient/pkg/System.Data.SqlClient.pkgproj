@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
       <SupportedFramework>net45;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\facade\System.Data.SqlClient.csproj">
+    <ProjectReference Include="..\src\System.Data.SqlClient.csproj">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </ProjectReference>
 

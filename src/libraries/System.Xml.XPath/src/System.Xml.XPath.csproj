@@ -6,14 +6,16 @@
     <AssemblyName>System.Xml.XPath</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\Xml\Base64Decoder.cs">
       <Link>Common\System\Xml\Base64Decoder.cs</Link>
     </Compile>
@@ -72,7 +74,7 @@
       <Link>Common\System\Xml\XPathNavigatorEx.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Xml\Cache\XPathDocumentBuilder.cs" />
     <Compile Include="System\Xml\Cache\XPathDocumentNavigator.cs" />
     <Compile Include="System\Xml\Cache\XPathNode.cs" />
@@ -159,10 +161,14 @@
     <Compile Include="System\Xml\XPath\XPathNodeType.cs" />
     <Compile Include="System\Xml\Xsl\XsltContext.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

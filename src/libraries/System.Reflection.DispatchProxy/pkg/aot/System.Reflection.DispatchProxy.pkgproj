@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\facade\System.Reflection.DispatchProxy.csproj">
+    <ProjectReference Include="..\..\src\System.Reflection.DispatchProxy.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
