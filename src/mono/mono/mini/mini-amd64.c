@@ -501,11 +501,11 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
 	gint8 pair_regs [2];
-	/* The size of each pair */
+	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
 	/* Only if storage == ArgOnStack */
-	int arg_size;
+	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
 } ArgInfo;
 
 typedef struct {
