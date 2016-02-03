@@ -53,6 +53,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
@@ -741,8 +742,11 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			MONO_OBJECT_SETREF (sf, internal_method_name, mono_string_new (domain, s));
 			g_free (s);
 		}
-		else
-			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
+		else {
+			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, &error);
+			mono_error_raise_exception (&error);
+			MONO_OBJECT_SETREF (sf, method, rm);
+		}
 
 		sf->method_index = ji->from_aot ? mono_aot_find_method_index (method) : 0xffffff;
 		sf->method_address = (gsize) ji->code_start;
@@ -990,6 +994,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			  gint32 *iloffset, gint32 *native_offset,
 			  MonoString **file, gint32 *line, gint32 *column)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 	MonoLMF *lmf = mono_get_lmf ();
@@ -1065,7 +1070,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
 	}
 
-	mono_gc_wbarrier_generic_store (method, (MonoObject*) mono_method_get_object (domain, actual_method, NULL));
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, actual_method, NULL, &error);
+	mono_error_raise_exception (&error);
+	mono_gc_wbarrier_generic_store (method, (MonoObject*) rm);
 
 	location = mono_debug_lookup_source_location (jmethod, *native_offset, domain);
 	if (location)

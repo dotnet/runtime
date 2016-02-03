@@ -6769,6 +6769,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoMethodMessage *msg;
@@ -6778,10 +6779,14 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (invoke) {
-		mono_message_init (domain, msg, mono_method_get_object (domain, invoke, NULL), NULL);
+		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, invoke, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_message_init (domain, msg, rm, NULL);
 		count =  sig->param_count - 2;
 	} else {
-		mono_message_init (domain, msg, mono_method_get_object (domain, method, NULL), NULL);
+		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_message_init (domain, msg, rm, NULL);
 		count =  sig->param_count;
 	}
 
@@ -6889,6 +6894,7 @@ mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
@@ -6917,7 +6923,9 @@ mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_message_init (domain, msg, rm, out_args);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -6953,6 +6961,7 @@ mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFie
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
@@ -6989,7 +6998,9 @@ mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFie
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 
-	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_message_init (domain, msg, rm, out_args);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -7025,6 +7036,7 @@ mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField 
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
@@ -7059,7 +7071,9 @@ mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField 
 
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_message_init (domain, msg, rm, NULL);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
@@ -7087,6 +7101,7 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
@@ -7113,8 +7128,10 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	}
 
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error);
-	mono_error_raise_exception (&error);
-	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_message_init (domain, msg, rm, NULL);
 
 	full_name = mono_type_get_full_name (klass);
 	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));

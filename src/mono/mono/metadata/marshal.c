@@ -2795,7 +2795,9 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	if (!delegate->method_info) {
 		g_assert (delegate->method);
-		MONO_OBJECT_SETREF (delegate, method_info, mono_method_get_object (domain, delegate->method, NULL));
+		MonoReflectionMethod *rm = mono_method_get_object_checked (domain, delegate->method, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MONO_OBJECT_SETREF (delegate, method_info, rm);
 	}
 
 	if (!delegate->method_info || !delegate->method_info->method)

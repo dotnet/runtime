@@ -23,4 +23,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 MonoReflectionField*
 mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassField *field, MonoError *error);
 
+MonoReflectionMethod*
+mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
+
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

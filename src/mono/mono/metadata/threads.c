@@ -42,6 +42,7 @@
 #include <mono/utils/mono-memory-model.h>
 
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/reflection-internals.h>
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
@@ -3487,6 +3488,7 @@ static void
 mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_frames)
 {
 	MonoError error;
+
 	ThreadDumpUserData ud;
 	MonoInternalThread *thread_array [128];
 	MonoDomain *domain = mono_domain_get ();
@@ -3543,7 +3545,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 			if (method) {
 				sf->method_address = (gsize) frame->ji->code_start;
 
-				MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
+				MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				MONO_OBJECT_SETREF (sf, method, rm);
 
 				location = mono_debug_lookup_source_location (method, frame->native_offset, domain);
 				if (location) {
