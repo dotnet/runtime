@@ -3932,7 +3932,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
-	MonoException *ex;
+	MonoError error;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_PropertyInfo;
 	MonoClass *startklass, *klass;
@@ -3947,6 +3947,8 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	GHashTable *properties = NULL;
 	MonoPtrArray tmp_array;
 
+	mono_error_init (&error);
+	
 	mono_ptr_array_init (tmp_array, 8, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection properties list"); /*This the average for ASP.NET types*/
 
 	if (!System_Reflection_PropertyInfo)
@@ -4014,7 +4016,10 @@ handle_parent:
 		if (g_hash_table_lookup (properties, prop))
 			continue;
 
-		mono_ptr_array_append (tmp_array, mono_property_get_object (domain, startklass, prop));
+		MonoReflectionProperty *pr = mono_property_get_object_checked (domain, startklass, prop, &error);
+		if (!pr)
+			goto failure;
+		mono_ptr_array_append (tmp_array, pr);
 		
 		g_hash_table_insert (properties, prop, prop);
 	}
@@ -4032,20 +4037,25 @@ handle_parent:
 
 	return res;
 
+
+
 loader_error:
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
+	} else {
+		mono_error_set_from_loader_error (&error);
+		mono_loader_clear_error ();
+	}
+
+failure:
 	if (properties)
 		g_hash_table_destroy (properties);
 	if (name)
 		g_free (propname);
 	mono_ptr_array_destroy (tmp_array);
 
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		ex = mono_class_get_exception_for_failure (klass);
-	} else {
-		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-		mono_loader_clear_error ();
-	}
-	mono_set_pending_exception (ex);
+	mono_error_set_pending_exception (&error);
+
 	return NULL;
 }
 

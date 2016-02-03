@@ -7257,14 +7257,36 @@ MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
 	MonoError error;
+	MonoReflectionProperty *result;
+	result = mono_property_get_object_checked (domain, klass, property, &error);
+	mono_error_raise_exception (&error);
+	return result;
+}
+
+/**
+ * mono_property_get_object:
+ * @domain: an app domain
+ * @klass: a type
+ * @property: a property
+ * @error: set on error
+ *
+ * Return an System.Reflection.MonoProperty object representing the property @property
+ * in class @klass.  On error returns NULL and sets @error.
+ */
+MonoReflectionProperty*
+mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error)
+{
 	MonoReflectionProperty *res;
 	static MonoClass *monoproperty_klass;
+
+	mono_error_init (error);
 
 	CHECK_OBJECT (MonoReflectionProperty *, property, klass);
 	if (!monoproperty_klass)
 		monoproperty_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
-	res = (MonoReflectionProperty *)mono_object_new_checked (domain, monoproperty_klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = (MonoReflectionProperty *)mono_object_new_checked (domain, monoproperty_klass, error);
+	if (!res)
+		return NULL;
 	res->klass = klass;
 	res->property = property;
 	CACHE_OBJECT (MonoReflectionProperty *, property, res, klass);
@@ -9355,9 +9377,11 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 		MonoObject *obj = mono_array_get (namedargs, MonoObject*, i);
 		MonoObject *typedarg, *namedarg, *minfo;
 
-		if (arginfo [i].prop)
-			minfo = (MonoObject*)mono_property_get_object (domain, NULL, arginfo [i].prop);
-		else {
+		if (arginfo [i].prop) {
+			minfo = (MonoObject*)mono_property_get_object_checked (domain, NULL, arginfo [i].prop, &error);
+			if (!minfo)
+				goto leave;
+		} else {
 			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, &error);
 			if (!mono_error_ok (&error))
 				goto leave;

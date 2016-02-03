@@ -58,6 +58,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
 MONO_API MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
