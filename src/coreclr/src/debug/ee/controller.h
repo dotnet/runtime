@@ -540,6 +540,9 @@ class DebuggerPatchTable : private CHashTableAndData<CNewZeroData>
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerPatchTable);
 
+public:
+    virtual ~DebuggerPatchTable() = default;
+
     friend class DebuggerRCThread;
 private:
     //incremented so that we can get DPT-wide unique PIDs.
