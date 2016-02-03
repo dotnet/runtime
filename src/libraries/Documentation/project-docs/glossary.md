@@ -1,8 +1,10 @@
-# Platform Names
+# Glossary
 
-Over the years, we've accumulated quite a few names, platforms, and components that can make it hard for folks (including us) to understand what we're referring to. This document has a list that will help to qualify what we mean by what.
+Over the years, we've accumulated quite a few terms, platforms, and components that can make it hard for folks (including us) to understand what we're referring to. This document has a list that will help to qualify what we mean by what.
 
 This will also list some aliases. As you'll see the aliases aren't always correct -- they are merely listed to help you find the better and less confusing terminology.
+
+## Terms
 
 In this document, the following terms are used:
 
@@ -24,7 +26,9 @@ In this document, the following terms are used:
 
 * **CoreFX**. Core framework. Conceptually a set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. It's what most people would think of as the Base Class Library (BCL). The BCL is a general purpose, lower level set of functionality that higher-level frameworks, such as WCF and ASP.NET, build on. The source code of the .NET Core library stack is contained in the [CoreFX repo](http://github.com/dotnet/corefx). However, the majority of the .NET Core APIs are also available in the .NET Framework, so you can think of CoreFX as a fork of the .NET Framework library stack.
 
-## .NET Framework
+## Platforms
+
+### .NET Framework
 
 **Also referred to as**: Desktop, full framework, in-box framework
 
@@ -32,7 +36,7 @@ This refers to the .NET Framework that first shipped in 2002 and has been update
 
 The .NET Framework was designed to run on Windows only. Some versions of the .NET Framework come pre-installed with Windows, some require to be installed. However, in both cases the .NET Framework is a system-wide component. Applications do not include .NET Framework DLLs when deploying; the correct .NET version must be on the machine.
 
-## .NET Core
+### .NET Core
 
 **Also referred to as**: UWP, ~~Store~~
 
@@ -42,7 +46,7 @@ Today, .NET Core is no longer just for store applications. .NET Core is the name
 
 That's why referring to .NET Core as 'Store' is no longer correct. But you can think of today's .NET Core as an evolution of the original APIs available for store applications. Many of the original design goals are still relevant, especially around layering and portability.
 
-## Universal Windows Platform (UWP)
+### Universal Windows Platform (UWP)
 
 **Also referred to as**: Store, WinRT, Metro
 
@@ -50,7 +54,7 @@ The Universal Windows Platform (UWP) is the platform that is used for building m
 
 UWP provides many services, such as a centralized app store, an execution environment (AppContainer), and a set of Windows APIs to use instead of Win32 (WinRT). UWP has no dependency on .NET; apps can be written in C++, C#, VB.NET, and JavaScript. When using C# and VB.NET the .NET APIs are provided by .NET Core.
 
-## .NET Native
+### .NET Native
 
 **Also referred to as**: ahead-of-time (AOT), IL compiler (ILC)
 
@@ -60,7 +64,7 @@ You can think of .NET Native as an evolution of NGEN (Native Image Generator): N
 
 UWP was the first application model that was supported by .NET Native. We now also support building native console applications for Windows, OS X and Linux.
 
-## Rotor
+### Rotor
 
 **Also referred to as**: Shared Source Common Language Infrastructure (SSCLI)
 
@@ -70,7 +74,7 @@ While parts of the source were identical with the .NET Framework, many pieces ha
 
 It's also worth pointing out that the source code of Rotor was not released under an open source license (i.e. not approved by OSI) and has not been officially updated since .NET Framework 2.0.
 
-## Mono
+### Mono
 
 Mono is an open source alternative to the .NET Framework. Mono started around the same time the .NET Framework was first released. Since Microsoft didn't release Rotor as open source, Mono was forced to start from scratch and is thus a complete re-implementation of the .NET Framework with no shared code.
 
@@ -80,6 +84,6 @@ Mono is primarily used to run .NET applications on Linux and Mac OS X (though to
 
 Mono has implementations (though not necessarily complete) of WinForms, ASP.NET, and System.Drawing.
 
-## Xamarin
+### Xamarin
 
 Xamarin is a commercial offering for building mobile applications targeting Android, iOS and Mac OS X Store. It's based on Mono, and on iOS and Android surfaces a different API profile, called the mobile profile. The subsetting was necessary to reduce the footprint, both by shipping smaller versions of the system libraries as well as making them more linker friendly. While Mono runs on Mac OS X without Xamarin, their linker is required make the app package for the Mac App Store.  Xamarin ships a full static compiler on iOS, as the platform does not support dynamic code generation.
