@@ -1323,16 +1323,21 @@ mono_thread_get_managed_id (MonoThread *thread)
 MonoString* 
 ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj)
 {
+	MonoError error;
 	MonoString* str;
+
+	mono_error_init (&error);
 
 	LOCK_THREAD (this_obj);
 	
 	if (!this_obj->name)
 		str = NULL;
 	else
-		str = mono_string_new_utf16 (mono_domain_get (), this_obj->name, this_obj->name_len);
+		str = mono_string_new_utf16_checked (mono_domain_get (), this_obj->name, this_obj->name_len, &error);
 	
 	UNLOCK_THREAD (this_obj);
+
+	mono_error_raise_exception (&error);
 	
 	return str;
 }
