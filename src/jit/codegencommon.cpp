@@ -3988,7 +3988,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
             slots = 1;
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
             if (varDsc->TypeGet() == TYP_STRUCT)
             {
@@ -4011,7 +4011,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 }
             }
 #endif // _TARGET_ARM64_
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
         }
 
 #ifdef _TARGET_ARM_
@@ -4185,7 +4185,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 {
                     destRegNum = varDsc->lvRegNum;
                 }
-#if FEATURE_MULTIREG_STRUCT_ARGS && defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
+#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
                 else
                 {
                     assert(regArgTab[argNum].slot == 2);
@@ -4848,7 +4848,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             assert(!regArgTab[argNum].processed);
             regArgTab[argNum].processed = true;
             regArgMaskLive &= ~genRegMask(regNum);
-#ifdef FEATURE_MULTIREG_STRUCTS
+#if FEATURE_MULTIREG_ARGS
             int argRegCount = 1;
 #ifdef _TARGET_ARM_
             if (genActualType(destMemType) == TYP_DOUBLE)
@@ -4883,7 +4883,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
                 regArgMaskLive &= ~genRegMask(nextRegNum);               
             }
-#endif // FEATURE_MULTIREG_STRUCTS
+#endif // FEATURE_MULTIREG_ARGS
         }
     
         noway_assert(regArgMaskLiveSave != regArgMaskLive);   // if it doesn't change, we have an infinite loop
@@ -11164,7 +11164,7 @@ void                CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 
 
 //------------------------------------------------------------------------
-// Methods used to support FEATURE_MULTIREG_STRUCTS and HFA support for ARM32
+// Methods used to support FEATURE_MULTIREG_ARGS_OR_RET and HFA support for ARM32
 //------------------------------------------------------------------------
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING

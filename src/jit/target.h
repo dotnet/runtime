@@ -375,9 +375,11 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
-  #define FEATURE_MULTIREG_STRUCTS      0  // Support for passing and/or returning structs in more than one register
-  #define FEATURE_MULTIREG_STRUCT_ARGS  0  // Support for passing structs in more than one register  
-  #define FEATURE_MULTIREG_STRUCT_RET   0  // Support for returning structs in more than one register  
+  #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
+  #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
+  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -693,16 +695,20 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
 #ifdef    UNIX_AMD64_ABI
-  #define FEATURE_MULTIREG_STRUCTS      1  // Support for passing and/or returning structs in more than one register
-  #define FEATURE_MULTIREG_STRUCT_ARGS  1  // Support for passing structs in more than one register  
-  #define FEATURE_MULTIREG_STRUCT_RET   1  // Support for returning structs in more than one register
+  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
+  #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register  
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define FEATURE_STRUCT_CLASSIFIER     1  // Uses a classifier function to determine if structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register
+  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
+  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 #else // !UNIX_AMD64_ABI
-  #define FEATURE_MULTIREG_STRUCTS      0  // Support for passing and/or returning structs in more than one register
-  #define FEATURE_MULTIREG_STRUCT_ARGS  0  // Support for passing structs in more than one register  
-  #define FEATURE_MULTIREG_STRUCT_RET   0  // Support for returning structs in more than one register  
+  #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
+  #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+  #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass an argument.
+  #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 #endif // !UNIX_AMD64_ABI
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
@@ -1121,13 +1127,14 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
-  #define FEATURE_MULTIREG_STRUCTS      1  // Support for passing and/or returning structs in more than one register (including HFA support)
-  #define FEATURE_MULTIREG_STRUCT_ARGS  1  // Support for passing structs in more than one register (including passing HFAs)
-  #define FEATURE_MULTIREG_STRUCT_RET   1  // Support for returning structs in more than one register (including HFA returns)
+  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
+  #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (including HFA returns)
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is an HFA of 4 doubles)
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
-
+  #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass an argument.
+  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
 #else
@@ -1433,11 +1440,13 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
-  #define FEATURE_MULTIREG_STRUCTS      1  // Support for passing and/or returning structs in more than one register  
-  #define FEATURE_MULTIREG_STRUCT_ARGS  1  // Support for passing structs in more than one register  
-  #define FEATURE_MULTIREG_STRUCT_RET   0  // Support for returning structs in more than one register  
+  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register  
+  #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register  
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
   #define FEATURE_STRUCT_CLASSIFIER     0   // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      16   // Maximum size of a struct that could be passed in more than one register
+  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
+  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers

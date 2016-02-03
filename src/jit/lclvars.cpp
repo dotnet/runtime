@@ -428,7 +428,7 @@ void                Compiler::lvaInitThisPtr(InitVarDscInfo *       varDscInfo)
         noway_assert(varDscInfo->intRegArgNum == 0);
 
         varDsc->lvArgReg  = genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet());
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG__ARGS
         varDsc->lvOtherArgReg = REG_NA;
 #endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -473,7 +473,7 @@ void                Compiler::lvaInitRetBuffArg(InitVarDscInfo *    varDscInfo)
         varDsc->lvSingleDef = 1;
 #endif
         varDsc->lvArgReg  = genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet());
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG__ARGS
         varDsc->lvOtherArgReg = REG_NA;
 #endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -727,9 +727,9 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             // to the stack happens.
             unsigned firstAllocatedRegArgNum = 0;
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
             varDsc->lvOtherArgReg = REG_NA;
-#endif
+#endif // FEATURE_MULTIREG_ARGS
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             unsigned secondAllocatedRegArgNum = 0;
@@ -761,7 +761,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 
             varDsc->lvIsRegArg = 1;
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
             if (varTypeIsStruct(argType))
             {
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -791,7 +791,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             }
             else
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
             {
                 varDsc->lvArgReg = genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType);
             }
@@ -976,7 +976,7 @@ void                Compiler::lvaInitGenericsCtxt(InitVarDscInfo *  varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet());
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG__ARGS
             varDsc->lvOtherArgReg = REG_NA;
 #endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -1034,7 +1034,7 @@ void                Compiler::lvaInitVarArgsHandle(InitVarDscInfo * varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL);
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG__ARGS
             varDsc->lvOtherArgReg = REG_NA;
 #endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
