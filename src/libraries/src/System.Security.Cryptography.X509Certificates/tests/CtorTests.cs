@@ -77,6 +77,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestByteArrayConstructor_SerializedCert_Windows()
+        {
+            const string ExpectedThumbPrint = "71CB4E2B02738AD44F8B382C93BD17BA665F9914";
+
+            using (X509Certificate2 cert = new X509Certificate2(TestData.StoreSavedAsSerializedCerData))
+            {
+                IntPtr h = cert.Handle;
+                Assert.NotEqual(IntPtr.Zero, h);
+                Assert.Equal(ExpectedThumbPrint, cert.Thumbprint);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void TestByteArrayConstructor_SerializedCert_Unix()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.StoreSavedAsSerializedCerData));
+        }
+
+        [Fact]
         public static void TestNullConstructorArguments()
         {
             Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (String)null));
