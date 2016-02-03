@@ -13,15 +13,9 @@ Visual Studio
 
 Visual Studio must be installed. Supported versions:
 
-- [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
-- [Visual Studio 2013 Update 3](http://www.visualstudio.com/downloads/download-visual-studio-vs) or later (Pro, Premium, Ultimate)
 - [Visual Studio 2015](https://www.visualstudio.com/downloads/visual-studio-2015-downloads-vs) (Community, Professional, Enterprise)
 
 Visual Studio Express is not supported.
-
-**Known Issues**
-
-The DIA SDK gets incorrectly installed when VS 2013 is installed after VS 2012. To [workaround this issue](http://support.microsoft.com/kb/3035999), copy `%program files (x86)%\Microsoft Visual Studio 11.0\DIA SDK` to  `%program files (x86)%\Microsoft Visual Studio 12.0\DIA SDK`. You can then build CoreCLR.
 
 CMake
 -----
