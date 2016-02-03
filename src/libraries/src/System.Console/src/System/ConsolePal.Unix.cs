@@ -6,7 +6,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -741,8 +740,20 @@ namespace System
 
                 if (KeyFormatToConsoleKey.Count > 0)
                 {
-                    MaxKeyFormatLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
-                    MinKeyFormatLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
+                    MaxKeyFormatLength = int.MinValue;
+                    MinKeyFormatLength = int.MaxValue;
+
+                    foreach (KeyValuePair<StringOrCharArray, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
+                    {
+                        if (entry.Key.Length > MaxKeyFormatLength)
+                        {
+                            MaxKeyFormatLength = entry.Key.Length;
+                        }
+                        if (entry.Key.Length < MinKeyFormatLength)
+                        {
+                            MinKeyFormatLength = entry.Key.Length;
+                        }
+                    }
                 }
             }
 
