@@ -565,6 +565,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ImportInvalidData()
+        {
+            X509Certificate2Collection cc2 = new X509Certificate2Collection();
+            Assert.ThrowsAny<CryptographicException>(() => cc2.Import(new byte[] { 0, 1, 1, 2, 3, 5, 8, 13, 21 }));
+        }
+
+        [Fact]
         public static void ImportFromFileTests()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
