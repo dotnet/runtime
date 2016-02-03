@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Data.Common
+namespace System.Data.Common.Tests
 {
     public class DbExceptionTests
     {
