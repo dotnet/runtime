@@ -9,6 +9,7 @@
 #include "config.h"
 #include "locale.hpp"
 #include "holders.h"
+#include "errors.h"
 
 #define GREGORIAN_NAME "gregorian"
 #define JAPANESE_NAME "japanese"
@@ -82,40 +83,8 @@ enum CalendarDataType : int32_t
     AbbrevEraNames = 14,
 };
 
-/*
-* These values should be kept in sync with
-* System.Globalization.CalendarDataResult
-*/
-enum CalendarDataResult : int32_t
-{
-    Success = 0,
-    UnknownError = 1,
-    InsufficentBuffer = 2,
-};
-
 // the function pointer definition for the callback used in EnumCalendarInfo
 typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
-
-/*
-Function:
-GetCalendarDataResult
-
-Converts a UErrorCode to a CalendarDataResult.
-*/
-CalendarDataResult GetCalendarDataResult(UErrorCode err)
-{
-    if (U_SUCCESS(err))
-    {
-        return Success;
-    }
-
-    if (err == U_BUFFER_OVERFLOW_ERROR)
-    {
-        return InsufficentBuffer;
-    }
-
-    return UnknownError;
-}
 
 /*
 Function:
@@ -247,18 +216,18 @@ GetMonthDayPattern
 
 Gets the Month-Day DateTime pattern for the specified locale.
 */
-CalendarDataResult GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stringCapacity)
+ResultCode GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
     UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
 
     if (U_FAILURE(err))
-        return GetCalendarDataResult(err);
+        return GetResultCode(err);
 
     udatpg_getBestPattern(pGenerator, UDAT_MONTH_DAY_UCHAR, -1, sMonthDay, stringCapacity, &err);
 
-    return GetCalendarDataResult(err);
+    return GetResultCode(err);
 }
 
 /*
@@ -267,8 +236,7 @@ GetNativeCalendarName
 
 Gets the native calendar name.
 */
-CalendarDataResult
-GetNativeCalendarName(const char* locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
+ResultCode GetNativeCalendarName(const char* locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     ULocaleDisplayNames* pDisplayNames = uldn_open(locale, ULDN_STANDARD_NAMES, &err);
@@ -276,7 +244,7 @@ GetNativeCalendarName(const char* locale, CalendarId calendarId, UChar* nativeNa
 
     uldn_keyValueDisplayName(pDisplayNames, "calendar", GetCalendarName(calendarId), nativeName, stringCapacity, &err);
 
-    return GetCalendarDataResult(err);
+    return GetResultCode(err);
 }
 
 /*
@@ -286,7 +254,7 @@ GetCalendarInfo
 Gets a single string of calendar information by filling the result parameter
 with the requested value.
 */
-extern "C" CalendarDataResult GlobalizationNative_GetCalendarInfo(
+extern "C" ResultCode GlobalizationNative_GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -542,9 +510,9 @@ The context parameter is passed through to the callback along with each string.
 */
 extern "C" int32_t GlobalizationNative_EnumCalendarInfo(
                         EnumCalendarInfoCallback callback, 
-                        const UChar* localeName, 
-                        CalendarId calendarId, 
-                        CalendarDataType dataType, 
+                        const UChar* localeName,
+                        CalendarId calendarId,
+                        CalendarDataType dataType,
                         const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
