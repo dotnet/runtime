@@ -105,17 +105,26 @@ branchList.each { branchName ->
 // Define outerloop windows testing.  Run locally on each machine.
 // **************************
 
-def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt']
+def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu' : 'ubuntu', 'OSX' : 'osx']
 branchList.each { branchName ->
-    ['Windows 10', 'Windows 7', 'Windows_NT'].each { os ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu', 'OSX'].each { os ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def isPR = (branchName == 'pr')  
             def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
 
-            def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
-                steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+            def newJob
+            if (os != 'Ubuntu' && os != 'OSX') {
+                newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+                    steps {
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                    }
+                }
+            } else {
+                newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+                    steps {
+                        shell("./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                    }
                 }
             }
 
