@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
+        [ActiveIssue(2910, PlatformID.AnyUnix)]
         [ActiveIssue(2667, PlatformID.Windows)]
         public static void TestLoadSignedFile()
         {
