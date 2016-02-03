@@ -274,13 +274,14 @@ public:
     unsigned char       lvOverlappingFields :1;  // True when we have a struct with possibly overlapping fields
     unsigned char       lvContainsHoles     :1;  // True when we have a promoted struct that contains holes
     unsigned char       lvCustomLayout      :1;  // True when this struct has "CustomLayout"
-#if FEATURE_MULTIREG_STRUCTS
-    unsigned char       lvDontPromote:1;         // Should struct promotion consider this local variable for promotion?
+#if FEATURE_MULTIREG_ARGS_OR_RET
+    unsigned char       lvIsMultiRegArgOrRet:1; // Is this argument variable holding a value passed or returned in multiple registers?
 #endif
 #ifdef _TARGET_ARM_
+    // TODO-Cleanup: Can this be subsumed by the above?
     unsigned char       lvIsHfaRegArg:1;        // Is this argument variable holding a HFA register argument.
     unsigned char       lvHfaTypeIsFloat:1;     // Is the HFA type float or double?
-#endif
+#endif // _TARGET_ARM_
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -315,7 +316,7 @@ public:
     unsigned char       lvFldOffset;
     unsigned char       lvFldOrdinal;
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
     {
         if (slotNum == 0)
@@ -333,7 +334,7 @@ public:
 
         unreached();
     }
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
 private:
 
@@ -347,10 +348,10 @@ private:
 
     regNumberSmall      _lvArgReg;      // The register in which this argument is passed.
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
     regNumberSmall      _lvOtherArgReg;    // Used for the second part of the struct passed in a register.
                                            // Note this is defined but not used by ARM32
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
 #ifndef LEGACY_BACKEND
     union
@@ -429,7 +430,7 @@ public:
         assert(_lvArgReg == reg);
     }
 
-#if FEATURE_MULTIREG_STRUCT_ARGS
+#if FEATURE_MULTIREG_ARGS
     __declspec(property(get = GetOtherArgReg, put = SetOtherArgReg))
     regNumber           lvOtherArgReg;
 
@@ -443,7 +444,7 @@ public:
         _lvOtherArgReg = (regNumberSmall)reg;
         assert(_lvOtherArgReg == reg);
     }
-#endif // FEATURE_MULTIREG_STRUCT_ARGS
+#endif // FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_SIMD
     // Is this is a SIMD struct?
@@ -1382,7 +1383,7 @@ struct fgArgTabEntry
     unsigned       tmpNum;      // the LclVar number if we had to force evaluation of this arg
 
     bool           isSplit      :1; // True when this argument is split between the registers and OutArg area 
-    bool           needTmp      :1; // True when we force this arguments evaluation into a temp LclVar
+    bool           needTmp      :1; // True when we force this argument's evaluation into a temp LclVar
     bool           needPlace    :1; // True when we must replace this argument with a placeholder node
     bool           isTmp        :1; // True when we setup a temp LclVar for this argument due to size issues with the struct 
     bool           processed    :1; // True when we have decided the evaluation order for this argument in the gtCallLateArgs 
@@ -1391,8 +1392,9 @@ struct fgArgTabEntry
     bool           isNonStandard:1; // True if it is an arg that is passed in a reg other than a standard arg reg
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    bool           isStruct     :1; // True if this is a struct arg
+
     regNumber             otherRegNum;              // The (second) register to use when passing this argument.
-    bool                  isStruct;                 // is this a struct arg
 
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -1656,9 +1658,9 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-#if FEATURE_MULTIREG_STRUCT_RET
+#if FEATURE_MULTIREG_RET
     GenTreePtr               impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
-#endif
+#endif // FEATURE_MULTIREG_RET
 
 #ifdef _TARGET_ARM_
 
@@ -8991,7 +8993,7 @@ public:
     static HelperCallProperties s_helperCallProperties;
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
+    static var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
     var_types getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
