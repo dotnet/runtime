@@ -165,27 +165,60 @@
             "#import": [ "unix", "unix-x64" ]
         },
 
-        "centos": {
+        "rhel": {
             "#import": [ "linux" ]
         },
+        "rhel-x64": {
+            "#import": [ "rhel", "linux-x64" ]
+        },
+
+        "rhel.7": {
+            "#import": [ "rhel" ]
+        },
+        "rhel.7-x64": {
+            "#import": [ "rhel", "rhel-x64" ]
+        },
+
+        "rhel.7.0": {
+            "#import": [ "rhel.7" ]
+        },
+        "rhel.7.0-x64": {
+            "#import": [ "rhel.7", "rhel.7-x64" ]
+        },
+
+        "rhel.7.1": {
+            "#import": [ "rhel.7.0" ]
+        },
+        "rhel.7.1-x64": {
+            "#import": [ "rhel.7.0", "rhel.7.0-x64" ]
+        },
+
+        "rhel.7.2": {
+            "#import": [ "rhel.7.1" ]
+        },
+        "rhel.7.2-x64": {
+            "#import": [ "rhel.7.1", "rhel.7.1-x64" ]
+        },
+
+        "centos": {
+            "#import": [ "rhel" ]
+        },
         "centos-x64": {
-            "#import": [ "centos", "linux-x64" ]
-        },
-
-        "centos.7.1": {
-            "#import": [ "centos" ]
-        },
-
-        "centos.7.1-x64": {
-            "#import": [ "centos.7.1", "centos-x64" ]
+            "#import": [ "centos", "rhel-x64" ]
         },
 
         "centos.7": {
-            "#import": [ "centos.7.1" ]
+            "#import": [ "centos", "rhel.7" ]
+        },
+        "centos.7-x64": {
+            "#import": [ "centos.7", "centos-x64", "rhel.7-x64" ]
         },
 
-        "centos.7-x64": {
-            "#import": [ "centos.7", "centos.7.1-x64" ]
+        "centos.7.1": {
+            "#import": [ "centos.7" ]
+        },
+        "centos.7.1-x64": {
+            "#import": [ "centos.7", "centos.7-x64" ]
         },
 
         "debian": {
