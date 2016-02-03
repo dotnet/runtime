@@ -8159,71 +8159,40 @@ void                Compiler::fgAddInternal()
         //
         // We don't have a oneReturn block for this method
         //
-        genReturnBB = NULL;
+        genReturnBB = nullptr;
     }
 
     // If there is a return value, then create a temp for it.  Real returns will store the value in there and
-    // it'll be reloaded by the single return.
-    // TODO-ARM-Bug: Deal with multi-register genReturnLocaled structs?
-    // TODO-ARM64: Does this apply for ARM64 too?
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    // Create a local temp to store the return if the return type is not void and the
-    // native return type is not a struct or the native return type is a struct that is returned
-    // in registers (no RetBuffArg argument.)
-    // If we fold all returns into a single return statement, create a temp for struct type variables as well.
-    if (genReturnBB && ((info.compRetType != TYP_VOID && !varTypeIsStruct(info.compRetNativeType)) ||
-        (varTypeIsStruct(info.compRetNativeType) && info.compRetBuffArg == BAD_VAR_NUM)))
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    if (genReturnBB && (info.compRetType != TYP_VOID) && !varTypeIsStruct(info.compRetNativeType))
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // it'll be reloaded by the single return.                                    
+    if (genReturnBB && compMethodHasRetVal())
     {
         genReturnLocal = lvaGrabTemp(true DEBUGARG("Single return block return value"));
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        var_types retLocalType = TYP_STRUCT;
-        if (info.compRetNativeType == TYP_STRUCT)
-        {
-            // If the native ret type is a struct, make sure the right 
-            // normalized type is assigned to the local variable.
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            assert(info.compMethodInfo->args.retTypeClass != nullptr);
-            eeGetSystemVAmd64PassStructInRegisterDescriptor(info.compMethodInfo->args.retTypeClass, &structDesc);
-            if (structDesc.passedInRegisters && structDesc.eightByteCount <= 1)
-            {
-                retLocalType = lvaTable[genReturnLocal].lvType = getEightByteType(structDesc, 0);
-            }
-            else
-            {
-                lvaTable[genReturnLocal].lvType = TYP_STRUCT;
-            }
-        }
-        else
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+        if (compMethodReturnsNativeScalarType())
         {
             lvaTable[genReturnLocal].lvType = genActualType(info.compRetNativeType);
         }
-        
+        else if (compMethodReturnsRetBufAddr())
+        {
+            lvaTable[genReturnLocal].lvType = TYP_BYREF;
+        }
+        else if (compMethodReturnsMultiRegRetType())
+        {
+            lvaTable[genReturnLocal].lvType = TYP_STRUCT;
+            lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
+#if FEATURE_MULTIREG_ARGS_OR_RET
+            lvaTable[genReturnLocal].lvIsMultiRegArgOrRet = true;
+#endif
+        }
+        else
+        {
+            assert(!"unreached");
+        }
+
         if (varTypeIsFloating(lvaTable[genReturnLocal].lvType))
         {
             this->compFloatingPointUsed = true;
         }
-
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        // Handle a struct return type for System V Amd64 systems.
-        if (varTypeIsStruct(info.compRetNativeType))
-        {
-            // Handle the normalized return type.
-            if (varTypeIsStruct(retLocalType))
-            {
-                lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
-            }
-            else
-            {
-                lvaTable[genReturnLocal].lvVerTypeInfo = typeInfo(TI_STRUCT, info.compMethodInfo->args.retTypeClass);
-            }
-
-            lvaTable[genReturnLocal].lvIsMultiRegArgOrRet = true;
-        }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
         if (!varTypeIsFloating(info.compRetType))
             lvaTable[genReturnLocal].setPrefReg(REG_INTRET, this);
@@ -8498,20 +8467,17 @@ void                Compiler::fgAddInternal()
         //
 
         // spill any value that is currently in the oneReturnStmtNode
-        if (oneReturnStmtNode != NULL)
+        if (oneReturnStmtNode != nullptr)
         {
             fgInsertStmtAtEnd(genReturnBB, oneReturnStmtNode);
-            oneReturnStmtNode = NULL;
+            oneReturnStmtNode = nullptr;
         }
 
         //make sure to reload the return value as part of the return (it is saved by the "real return").
         if (genReturnLocal != BAD_VAR_NUM)
         {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            noway_assert(info.compRetType != TYP_VOID);
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            noway_assert(info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT);
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            noway_assert(compMethodHasRetVal());
+
             GenTreePtr retTemp = gtNewLclvNode(genReturnLocal, lvaTable[genReturnLocal].TypeGet());
 
             //make sure copy prop ignores this node (make sure it always does a reload from the temp).
