@@ -43,7 +43,8 @@ class Constants {
                'jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
-               'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80']]
+               'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
+               'corefx_jitstress1' : ['COMPlus_JitStress' : '1']]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -65,6 +66,10 @@ def static setMachineAffinity(def job, def os, def architecture) {
     }
 }
 
+def static isCorefxTesting(def scenario) {
+    return scenario.substring(0,6) == 'corefx'
+}
+    
 // Generates the string for creating a file that sets environment variables
 // that makes it possible to run stress modes.  Writes the script to a file called
 // SetStressModes.[sh/cmd]
@@ -201,7 +206,8 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'minopts':
             case 'forcerelocs':
             case 'jitstress1':
-            case 'jitstress2':          
+            case 'jitstress2':   
+            case 'corefx_jitstress1':	            
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 Utilities.addPeriodicTrigger(job, '@daily')
                 break
@@ -310,7 +316,10 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
-                            break                           
+                            break
+                        case 'corefx_jitstress1':
+                            // No Linux support is needed now
+                            break                          
                         default:
                             println("Unknown scenario: ${scenario}");
                             assert false
@@ -396,6 +405,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstressregs0x80':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break                       
+                        case 'corefx_jitstress1':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=1)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                       
                         default:
@@ -498,6 +512,7 @@ combinedScenarios.each { scenario ->
 
                     // Skip scenarios (blanket skipping for jit stress modes, which are good most everywhere
                     // with checked builds
+                    def enableCorefxTesting = false
                     if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                         if (configuration != 'Checked') {
                             return
@@ -511,6 +526,12 @@ combinedScenarios.each { scenario ->
                         
                         // No stress modes except on x64 right now (mainly because of bad test state on x86)
                         if (architecture != 'x64') {
+                            return
+                        }
+                        
+                        enableCorefxTesting = isCorefxTesting(scenario)
+                        // Only enable non-PR testing once PR testing works well.
+                        if (enableCorefxTesting && !isPR) {
                             return
                         }
                     }
@@ -595,15 +616,30 @@ combinedScenarios.each { scenario ->
                                     
                                     // If we are running a stress mode, we should write out the set of key
                                     // value env pairs to a file at this point and then we'll pass that to runtest.cmd
-                                    
+
                                     if (!isBuildOnly) {
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
-                                            def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
-                                            buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
-                                            
-                                            // Run tests with the 
-                                            
-                                            buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
+                                            if (enableCorefxTesting) {
+                                                // Sync to corefx repo
+                                                buildCommands += "git clone https://github.com/dotnet/corefx corefx"
+                                                
+                                                def setEnvVar = ''
+                                                def envVars = Constants.jitStressModeScenarios[scenario]
+                                                envVars.each{ VarName, Value   ->
+                                                   setEnvVar += "&& set ${VarName}=${Value} "
+                                                }
+                                                
+                                                // Run corefx testing
+                                                buildCommands += "cd corefx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 ${setEnvVar} && Build.cmd /p:ConfigurationGroup=Release /p:WithCategories=\"InnerLoop;OuterLoop\" /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\bin\\Product\\Windows_NT.x64.Checked /p:TestWithLocalLibraries=true"
+                                            }
+                                            else {
+                                                def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
+                                                buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
+                                                
+                                                // Run tests with the 
+                                                
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
+                                            }                                            
                                         }
                                         else if (architecture == 'x64' || !isPR) {
                                             buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
@@ -616,16 +652,28 @@ combinedScenarios.each { scenario ->
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
                                 
-                                    // Zip up the tests directory so that we don't use so much space/time copying
-                                    // 10s of thousands of files around.
-                                    buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
-                                    
-                                    // For windows, pull full test results and test drops for x86/x64
-                                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
-                                    
-                                    if (!isBuildOnly) {
+                                    if (!enableCorefxTesting) {
+                                        // Zip up the tests directory so that we don't use so much space/time copying
+                                        // 10s of thousands of files around.
+                                        buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                                        
+                                        // For windows, pull full test results and test drops for x86/x64
+                                        Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
+                                        
+                                        if (!isBuildOnly) {
+                                            if (architecture == 'x64' || !isPR) {
+                                                Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        // Archive only result xml files since corefx/bin/tests is very large around 10 GB.
+                                        
+                                        // For windows, pull full test results and test drops for x86/x64
+                                        Utilities.addArchival(newJob, "corefx/bin/test/**/testResults.xml")
+                                        
                                         if (architecture == 'x64' || !isPR) {
-                                            Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
+                                            Utilities.addXUnitDotNETResults(newJob, 'corefx/bin/tests/**/testResults.xml')
                                         }
                                     }
                                     
@@ -727,6 +775,9 @@ combinedScenarios.each { scenario ->
 
                     if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                         if (configuration != 'Checked') {
+                            return
+                        }
+                        if (isCorefxTesting(scenario)) {
                             return
                         }
                     }
