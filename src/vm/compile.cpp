@@ -2657,6 +2657,13 @@ BOOL CEECompileInfo::AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle
 
 #endif // FEATURE_READYTORUN_COMPILER
 
+BOOL CEECompileInfo::HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc * pMD = GetMethod(method);
+    return S_OK == pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMemberDef(), customAttributeName, NULL, NULL);
+}
 
 #define OMFConst_Read            0x0001
 #define OMFConst_Write           0x0002
