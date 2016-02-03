@@ -1175,7 +1175,9 @@ namespace System {
             m_displayName = c_localId;
             m_baseUtcOffset = TimeSpan.Zero;
          
-            // find the best matching baseUtcOffset and display strings based on the current utcNow value
+            // find the best matching baseUtcOffset and display strings based on the current utcNow value.
+            // NOTE: read the display strings from the the tzfile now in case they can't be loaded later
+            // from the globalization data.
             DateTime utcNow = DateTime.UtcNow;
             for (int i = 0; i < dts.Length && dts[i] <= utcNow; i++) {
                 int type = typeOfLocalTime[i];
@@ -1203,6 +1205,10 @@ namespace System {
             }
             m_displayName = m_standardDisplayName;
 
+            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.Generic, ref m_displayName);
+            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.Standard, ref m_standardDisplayName);
+            GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType.DaylightSavings, ref m_daylightDisplayName);
+
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
             if (m_baseUtcOffset.Ticks % TimeSpan.TicksPerMinute != 0) {
@@ -1216,6 +1222,30 @@ namespace System {
 
             ValidateTimeZoneInfo(m_id, m_baseUtcOffset, m_adjustmentRules, out m_supportsDaylightSavingTime);
         }
+
+        private void GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType nameType, ref string displayName)
+        {
+            string timeZoneDisplayName;
+            bool result = Interop.CallStringMethod(
+                (locale, id, type, stringBuilder) => Interop.GlobalizationInterop.GetTimeZoneDisplayName(
+                    locale,
+                    id,
+                    type,
+                    stringBuilder,
+                    stringBuilder.Capacity),
+                CultureInfo.CurrentUICulture.Name,
+                m_id,
+                nameType,
+                out timeZoneDisplayName);
+
+            // If there is an unknown error, don't set the displayName field.
+            // It will be set to the abbreviation that was read out of the tzfile.
+            if (result)
+            {
+                displayName = timeZoneDisplayName;
+            }
+        }
+
 #endif // PLATFORM_UNIX
 
         private TimeZoneInfo(
