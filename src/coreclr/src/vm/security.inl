@@ -520,6 +520,7 @@ inline BOOL Security::CheckCriticalAccess(AccessCheckContext* pContext,
     FieldDesc* pOptionalTargetField,
     MethodTable * pOptionalTargetType)
 {
+    WRAPPER_NO_CONTRACT;
     return SecurityTransparent::CheckCriticalAccess(pContext,
                 pOptionalTargetMethod, 
                 pOptionalTargetField, 

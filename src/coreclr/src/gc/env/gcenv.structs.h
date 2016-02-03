@@ -102,19 +102,6 @@ public:
 
 #ifndef _INC_WINDOWS
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
 #ifdef PLATFORM_UNIX
 
 typedef struct _RTL_CRITICAL_SECTION {

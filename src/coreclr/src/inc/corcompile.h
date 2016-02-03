@@ -1924,6 +1924,8 @@ class ICorCompileInfo
 
     virtual BOOL AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle) = 0;
 #endif
+
+    virtual BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName) = 0;
 };
 
 /*****************************************************************************/

@@ -640,7 +640,13 @@ const char* FormatSig(MethodDesc * pMD, LoaderHeap * pHeap, AllocMemTracker * pa
 /*******************************************************************/
 const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamTracker)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     return FormatSig(pMD,pDomain->GetLowFrequencyHeap(),pamTracker);
 }
 #endif
