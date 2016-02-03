@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [PlatformSpecific(PlatformID.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_Success()
         {
             Assert.True(Capability.IPv4Support());
@@ -59,6 +60,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [PlatformSpecific(PlatformID.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_HostNotFound()
         {
             Assert.True(Capability.IPv4Support());
@@ -86,6 +88,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [PlatformSpecific(PlatformID.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_ConnectionRefused()
         {
             Assert.True(Capability.IPv4Support());

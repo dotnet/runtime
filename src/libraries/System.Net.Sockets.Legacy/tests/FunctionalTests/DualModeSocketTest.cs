@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -249,6 +250,7 @@ namespace System.Net.Sockets.Tests
         #region Connect to IPAddress[]
 
         [Fact] // Base Case
+        [PlatformSpecific(PlatformID.Windows)]
         // "None of the discovered or specified addresses match the socket address family."
         public void Socket_ConnectV4IPAddressListToV4Host_Throws()
         {
@@ -265,126 +267,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact] // Base Case
-        public void ConnectMappedV4IPAddressListToV4Host_Success()
+        [Theory]
+        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Throws_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback.MapToIPv6() },
-                IPAddress.Loopback, false);
+            Assert.Throws<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
         }
 
-        [Fact]
-        public void ConnectMappedV4IPAddressListToAnyV6Host_Throws()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressListToHost_Helper(
-                    new IPAddress[] { IPAddress.Loopback.MapToIPv6() },
-                    IPAddress.IPv6Loopback, false);
-            });
-        }
-
-        [Fact]
-        public void ConnectV4IPAddressListToV4Host_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback },
-                IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectV4IPAddressListToSpecificV6Host_Throws()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressListToHost_Helper(
-                    new IPAddress[] { IPAddress.Loopback },
-                    IPAddress.IPv6Loopback, false);
-            });
-        }
-
-        [Fact]
-        public void ConnectV4IPAddressListToAnyV6Host_Throws()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressListToHost_Helper(
-                    new IPAddress[] { IPAddress.Loopback },
-                    IPAddress.IPv6Any, false);
-            });
-        }
-
-        [Fact]
-        public void ConnectV4IPAddressListToSpecificV6DualHost_Throws()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressListToHost_Helper(
-                    new IPAddress[] { IPAddress.Loopback },
-                    IPAddress.IPv6Loopback, true);
-            });
-        }
-
-        [Fact]
-        public void ConnectV4IPAddressListToAnyV6DualHost_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback },
-                IPAddress.IPv6Any, true);
-        }
-
-        [Fact]
-        public void ConnectV4V6IPAddressListToV4Host_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectV6V4IPAddressListToV4Host_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectV4V6IPAddressListToV6Host_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectV6V4IPAddressListToV6Host_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectV4V6IPAddressListToDualHost_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.IPv6Any, true);
-        }
-
-        [Fact]
-        public void ConnectV6V4IPAddressListToDualHost_Success()
-        {
-            DualModeConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
+        [Theory]
+        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Success_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeConnect_IPAddressListToHost_Success(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 socket.Connect(connectTo, port);
@@ -396,26 +293,10 @@ namespace System.Net.Sockets.Tests
 
         #region Connect to host string
 
-        [Fact]
-        public void ConnectLoopbackToV4Host_Success()
-        {
-            DualModeConnect_LoopbackDnsToHost_Helper(IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void ConnectLoopbackToV6Host_Success()
-        {
-            DualModeConnect_LoopbackDnsToHost_Helper(IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void ConnectLoopbackToDualHost_Success()
-        {
-            DualModeConnect_LoopbackDnsToHost_Helper(IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -430,32 +311,16 @@ namespace System.Net.Sockets.Tests
 
         #region Connect to DnsEndPoint
 
-        [Fact]
-        public void DualModeSocket_DnsEndPointToV4Host_Success()
-        {
-            DualModeConnect_DnsEndPointToHost_Helper(IPAddress.Loopback, false, AddressFamily.Unspecified);
-        }
-
-        [Fact]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void DualModeSocket_DnsEndPointToV6Host_Success()
-        {
-            DualModeConnect_DnsEndPointToHost_Helper(IPAddress.IPv6Loopback, false, AddressFamily.Unspecified);
-        }
-
-        [Fact]
-        public void DualModeSocket_DnsEndPointToDualHost_Success()
-        {
-            DualModeConnect_DnsEndPointToHost_Helper(IPAddress.IPv6Any, true, AddressFamily.Unspecified);
-        }
-
-        private void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer, AddressFamily addressFamily)
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        private void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
-                socket.Connect(new DnsEndPoint("localhost", port, addressFamily));
+                socket.Connect(new DnsEndPoint("localhost", port, AddressFamily.Unspecified));
                 Assert.True(socket.Connected);
             }
         }
@@ -608,54 +473,9 @@ namespace System.Net.Sockets.Tests
 
         #region BeginConnect to IPAddress[]
 
-        [Fact]
-        public void BeginConnectV4V6IPAddressListToV4Host_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void BeginConnectV6V4IPAddressListToV4Host_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void BeginConnectV4V6IPAddressListToV6Host_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void BeginConnectV6V4IPAddressListToV6Host_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void BeginConnectV4V6IPAddressListToDualHost_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
-                IPAddress.IPv6Any, true);
-        }
-
-        [Fact]
-        public void BeginConnectV6V4IPAddressListToDualHost_Success()
-        {
-            DualModeBeginConnect_IPAddressListToHost_Helper(
-                new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback },
-                IPAddress.IPv6Any, true);
-        }
-
+        [Theory]
+        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
         private void DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -672,26 +492,10 @@ namespace System.Net.Sockets.Tests
 
         #region BeginConnect to host string
 
-        [Fact]
-        public void BeginConnectLoopbackToV4Host_Success()
-        {
-            DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void BeginConnectLoopbackToV6Host_Success()
-        {
-            DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void BeginConnectLoopbackToDualHost_Success()
-        {
-            DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -707,26 +511,10 @@ namespace System.Net.Sockets.Tests
 
         #region BeginConnect to DnsEndPoint
 
-        [Fact]
-        public void DualModeSocket_BeginConnectDnsEndPointToV4Host_Success()
-        {
-            DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void DualModeSocket_BeginConnectDnsEndPointToV6Host_Success()
-        {
-            DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void DualModeSocket_BeginConnectDnsEndPointToDualHost_Success()
-        {
-            DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -830,29 +618,13 @@ namespace System.Net.Sockets.Tests
 
         #region ConnectAsync to DnsEndPoint
 
-        [Fact]
-        public void DualModeSocket_ConnectAsyncDnsEndPointToV4Host_Success()
-        {
-            DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void DualModeSocket_ConnectAsyncDnsEndPointToV6Host_Success()
-        {
-            DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void DualModeSocket_ConnectAsyncDnsEndPointToDualHost_Success()
-        {
-            DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DualModeConnectAsync_Instance_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
@@ -869,6 +641,32 @@ namespace System.Net.Sockets.Tests
                     throw new SocketException((int)args.SocketError);
                 }
                 Assert.True(socket.Connected);
+            }
+        }
+
+        [Theory]
+        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [ActiveIssue(4002, PlatformID.AnyUnix)]
+        public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        {
+            int port;
+            using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
+            {
+                ManualResetEvent waitHandle = new ManualResetEvent(false);
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncCompleted);
+                args.RemoteEndPoint = new DnsEndPoint("localhost", port);
+                args.UserToken = waitHandle;
+
+                Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+
+                Assert.True(waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
+                if (args.SocketError != SocketError.Success)
+                {
+                    throw new SocketException((int)args.SocketError);
+                }
+                Assert.True(args.ConnectSocket.Connected);
+                args.ConnectSocket.Dispose();
             }
         }
 
@@ -2491,6 +2289,40 @@ namespace System.Net.Sockets.Tests
         #endregion
 
         #region Helpers
+
+        public static readonly object[][] DualMode_Connect_IPAddress_DualMode_Data = {
+            new object[] { IPAddress.Loopback, false },
+            new object[] { IPAddress.IPv6Loopback, false },
+            new object[] { IPAddress.IPv6Any, true },
+        };
+
+        public static readonly object[][] DualMode_IPAddresses_ListenOn_DualMode_Data = {
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.IPv6Any, true },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.IPv6Any, true },
+        };
+
+        public static readonly object[][] DualMode_IPAddresses_ListenOn_DualMode_Throws_Data = {
+            new object[] { new IPAddress[] { IPAddress.Loopback.MapToIPv6() }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback }, IPAddress.IPv6Any, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback }, IPAddress.IPv6Loopback, true },
+        };
+
+        public static readonly object[][] DualMode_IPAddresses_ListenOn_DualMode_Success_Data = {
+            new object[] { new IPAddress[] { IPAddress.Loopback.MapToIPv6() }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback }, IPAddress.IPv6Any, true },
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.IPv6Loopback, false },
+            new object[] { new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, IPAddress.IPv6Any, true },
+            new object[] { new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, IPAddress.IPv6Any, true }
+        };
 
         private class SocketServer : IDisposable
         {
