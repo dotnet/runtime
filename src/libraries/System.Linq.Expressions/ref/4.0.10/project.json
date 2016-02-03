@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Linq.Expressions": "4.0.10"
+  },
+  "frameworks": {
+    "dotnet5.4": {}
+  }
+}

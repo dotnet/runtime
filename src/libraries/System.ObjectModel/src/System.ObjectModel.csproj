@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-A4461E5CAE50}</ProjectGuid>
     <AssemblyName>System.ObjectModel</AssemblyName>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
