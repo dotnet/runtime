@@ -8068,6 +8068,56 @@ public :
     }
     info;
 
+    // Returns true if the method being compiled returns a non-void and non-struct value.
+    // Note that lvaInitTypeRef() normalizes compRetNativeType for struct returns in a 
+    // single register as per target arch ABI (e.g on Amd64 Windows structs of size 1, 2,
+    // 4 or 8 gets normalized to TYP_BYTE/TYP_SHORT/TYP_INT/TYP_LONG; On Arm Hfa structs).
+    // Methods returning such structs are considered to return non-struct return value and
+    // this method returns true in that case.
+    bool                compMethodReturnsNativeScalarType() 
+    {
+        return (info.compRetType != TYP_VOID) && !varTypeIsStruct(info.compRetNativeType);
+    }
+
+    // Returns true if the method being compiled returns RetBuf addr as its return value
+    bool                compMethodReturnsRetBufAddr() 
+    {
+        // Profiler Leave calllback expects the address of retbuf as return value for 
+        // methods with hidden RetBuf argument.  impReturnInstruction() when profiler
+        // callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
+        // methods with hidden RetBufArg.
+        //
+        // TODO-AMD64-Unix - As per this ABI, addr of RetBuf needs to be returned by
+        // methods with hidden RetBufArg.  Right now we are special casing GT_RETURN
+        // of TYP_VOID in codegenxarch.cpp to generate "mov rax, addr of RetBuf".
+        // Instead we should consider explicitly materializing GT_RETURN of TYP_BYREF
+        // return addr of RetBuf in IR.
+        return compIsProfilerHookNeeded() && (info.compRetBuffArg != BAD_VAR_NUM);
+    }
+
+    // Returns true if the method returns a value in more than one return register
+    // TODO-ARM-Bug: Deal with multi-register genReturnLocaled structs?
+    // TODO-ARM64: Does this apply for ARM64 too?
+    bool                compMethodReturnsMultiRegRetType() 
+    {       
+#if FEATURE_MULTIREG_RET
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // Methods returning a struct in two registers is considered having a return value of TYP_STRUCT.
+        // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
+        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
+#endif 
+#endif
+        return false;
+    }
+
+    // Returns true if the method being compiled returns a value
+    bool                compMethodHasRetVal()
+    {
+        return compMethodReturnsNativeScalarType() ||
+               compMethodReturnsRetBufAddr() ||
+               compMethodReturnsMultiRegRetType();
+    }
+
 #if defined(DEBUG)
 
     void                compDispLocalVars();
