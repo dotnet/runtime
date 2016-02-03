@@ -6968,8 +6968,8 @@ mono_field_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoClassFi
 	CHECK_OBJECT (MonoReflectionField *, field, klass);
 	if (!monofield_klass)
 		monofield_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
-	res = (MonoReflectionField *)mono_object_new_checked (domain, monofield_klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = (MonoReflectionField *)mono_object_new_checked (domain, monofield_klass, error);
+	mono_error_raise_exception (error); /* FIXME don't raise here */
 	res->klass = klass;
 	res->field = field;
 	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, mono_field_get_name (field)));
