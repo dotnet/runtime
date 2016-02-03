@@ -839,7 +839,7 @@ combinedScenarios.each { scenario ->
             --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
             --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
             --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-            \${serverGCString}""")
+            ${serverGCString}""")
                         }
                     }
                 
