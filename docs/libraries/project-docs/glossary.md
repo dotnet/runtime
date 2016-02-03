@@ -95,6 +95,6 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 **Also referred to as**: WinForms
 
-Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Froms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono has an implementation of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
+Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Forms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono has an implementation of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
 
 Windows Forms is in maintenance mode currently. That means new features will generally not be added.
