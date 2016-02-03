@@ -1596,6 +1596,7 @@ ves_icall_get_attributes (MonoReflectionType *type)
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
 ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *field)
 {
+	MonoError error;
 	MonoClass *klass = field->field->parent;
 	MonoMarshalType *info;
 	MonoType *ftype;
@@ -1615,8 +1616,13 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 		if (info->fields [i].field == field->field) {
 			if (!info->fields [i].mspec)
 				return NULL;
-			else
-				return mono_reflection_marshal_as_attribute_from_marshal_spec (field->object.vtable->domain, klass, info->fields [i].mspec);
+			else {
+				MonoReflectionMarshalAsAttribute* obj;
+				obj = mono_reflection_marshal_as_attribute_from_marshal_spec (field->object.vtable->domain, klass, info->fields [i].mspec, &error);
+				if (!mono_error_ok (&error))
+					mono_error_set_pending_exception (&error);
+				return obj;
+			}
 		}
 	}
 
@@ -1729,6 +1735,7 @@ ves_icall_get_parameter_info (MonoMethod *method, MonoReflectionMethod *member)
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
 ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoReflectionMarshalAsAttribute* res = NULL;
 	MonoMarshalSpec **mspecs;
@@ -1737,8 +1744,13 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	if (mspecs [0])
-		res = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [0]);
+	if (mspecs [0]) {
+		res = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [0], &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
+	}
 		
 	for (i = mono_method_signature (method)->param_count; i >= 0; i--)
 		if (mspecs [i])

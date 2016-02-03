@@ -7401,17 +7401,19 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
-	char **names, **blobs = NULL;
+	char **names = NULL, **blobs = NULL;
 	guint32 *types = NULL;
 	MonoType *type = NULL;
 	MonoObject *dbnull = NULL;
 	MonoObject *missing = NULL;
-	MonoMarshalSpec **mspecs;
-	MonoMethodSignature *sig;
+	MonoMarshalSpec **mspecs = NULL;
+	MonoMethodSignature *sig = NULL;
 	MonoVTable *pinfo_vtable;
 	MonoReflectionType *rt;
 	int i;
 
+	mono_error_init (&error);
+	
 	if (!System_Reflection_ParameterInfo_array) {
 		MonoClass *klass;
 
@@ -7430,11 +7432,12 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 
 	sig = mono_method_signature_checked (method, &error);
 	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+		goto leave;
 
 	if (!sig->param_count) {
 		res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), 0, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!res)
+			goto leave;
 
 		return res;
 	}
@@ -7445,7 +7448,8 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	CHECK_OBJECT (MonoArray*, &(method->signature), refclass);
 
 	member = mono_method_get_object_checked (domain, method, refclass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!member)
+		goto leave;
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 
@@ -7453,15 +7457,18 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	mono_method_get_marshal_info (method, mspecs);
 
 	res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), sig->param_count, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!res)
+		goto leave;
 
 	pinfo_vtable = mono_class_vtable (domain, System_Reflection_ParameterInfo);
 	for (i = 0; i < sig->param_count; ++i) {
 		param = (MonoReflectionParameter *) mono_object_new_specific_checked (pinfo_vtable, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!param)
+			goto leave;
 
 		rt = mono_type_get_object_checked (domain, sig->params [i], &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!rt)
+			goto leave;
 
 		MONO_OBJECT_SETREF (param, ClassImpl, rt);
 
@@ -7512,20 +7519,32 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 			
 		}
 
-		if (mspecs [i + 1])
-			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [i + 1]));
+		if (mspecs [i + 1]) {
+			MonoReflectionMarshalAsAttribute* mobj;
+			mobj = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [i + 1], &error);
+			if (!mobj)
+				goto leave;
+			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mobj);
+		}
 		
 		mono_array_setref (res, i, param);
 	}
+
+leave:
 	g_free (names);
 	g_free (blobs);
 	g_free (types);
 	g_free (type);
 
-	for (i = mono_method_signature (method)->param_count; i >= 0; i--)
-		if (mspecs [i])
-			mono_metadata_free_marshal_spec (mspecs [i]);
+	if (sig) {
+		for (i = sig->param_count; i >= 0; i--) {
+			if (mspecs [i])
+				mono_metadata_free_marshal_spec (mspecs [i]);
+		}
+	}
 	g_free (mspecs);
+
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	
 	CACHE_OBJECT (MonoArray *, &(method->signature), res, refclass);
 }
@@ -11056,22 +11075,24 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 
 MonoReflectionMarshalAsAttribute*
 mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
-										   MonoMarshalSpec *spec)
+							MonoMarshalSpec *spec, MonoError *error)
 {
 	static MonoClass *System_Reflection_Emit_MarshalAsAttribute;
-	MonoError error;
 	MonoReflectionType *rt;
 	MonoReflectionMarshalAsAttribute *minfo;
 	MonoType *mtype;
 
+	mono_error_init (error);
+	
 	if (!System_Reflection_Emit_MarshalAsAttribute) {
 		System_Reflection_Emit_MarshalAsAttribute = mono_class_from_name (
 		   mono_defaults.corlib, "System.Runtime.InteropServices", "MarshalAsAttribute");
 		g_assert (System_Reflection_Emit_MarshalAsAttribute);
 	}
 
-	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new_checked (domain, System_Reflection_Emit_MarshalAsAttribute, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new_checked (domain, System_Reflection_Emit_MarshalAsAttribute, error);
+	if (!minfo)
+		return NULL;
 	minfo->utype = spec->native;
 
 	switch (minfo->utype) {
@@ -11091,8 +11112,9 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 		if (spec->data.custom_data.custom_name) {
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
 			if (mtype) {
-				rt = mono_type_get_object_checked (domain, mtype, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				rt = mono_type_get_object_checked (domain, mtype, error);
+				if (!rt)
+					return NULL;
 
 				MONO_OBJECT_SETREF (minfo, marshal_type_ref, rt);
 			}
