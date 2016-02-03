@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- bump up the version since we are redisting the 4.0.20 bits in a new package -->
+    <Version>4.0.21</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SourceDir)System.Diagnostics.Tracing\ref\4.0.0\System.Diagnostics.Tracing.depproj">
+      <SupportedFramework>net45;netcore45</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="$(SourceDir)System.Diagnostics.Tracing\ref\4.0.10\System.Diagnostics.Tracing.depproj">
+      <SupportedFramework>net451;netcore451;wpa81</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="$(SourceDir)System.Diagnostics.Tracing\ref\4.0.20\System.Diagnostics.Tracing.depproj">
+      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="any\System.Diagnostics.Tracing.pkgproj" />
+    <ProjectReference Include="aot\System.Diagnostics.Tracing.pkgproj" />
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
