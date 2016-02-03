@@ -36,6 +36,7 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 
 #define mono_hazard_pointer_clear(hp,i)	\
 	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
+		mono_memory_write_barrier (); \
 		(hp)->hazard_pointers [(i)] = NULL; \
 	} while (0)
 
