@@ -157,6 +157,7 @@ Make a `packages.config` file with the following text. These are the required de
 ```
 <?xml version="1.0" encoding="utf-8"?>
 <packages>
+  <package id="System.Collections" version="4.0.0-beta-22703" />
   <package id="System.Console" version="4.0.0-beta-22703" />
   <package id="System.Diagnostics.Contracts" version="4.0.0-beta-22703" />
   <package id="System.Diagnostics.Debug" version="4.0.10-beta-22703" />
