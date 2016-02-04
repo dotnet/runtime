@@ -2,18 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics.Tracing;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-
 namespace System.Buffers
 {
     internal sealed class DefaultArrayPool<T> : ArrayPool<T>
     {
-        private const int MinimiumArraySize = 16;
-        private DefaultArrayPoolBucket<T>[] _buckets;
+        /// <summary>The default maximum number of arrays per bucket that are available for rent.</summary>
+        private const int DefaultMaxNumberOfArraysPerBucket = 50;
+        /// <summary>The default maximum length of each array in the pool (2^20).</summary>
+        private const int DefaultMaxArrayLength = 1024 * 1024;
+        /// <summary>The minimum length of an array in the pool.</summary>
+        private const int MinimumArrayLength = 16;
+
+        private readonly DefaultArrayPoolBucket<T>[] _buckets;
+
+        internal DefaultArrayPool() : this(DefaultMaxArrayLength, DefaultMaxNumberOfArraysPerBucket)
+        {
+        }
 
         internal DefaultArrayPool(int maxLength, int arraysPerBucket)
         {
@@ -23,8 +27,8 @@ namespace System.Buffers
                 throw new ArgumentOutOfRangeException("arraysPerBucket");
 
             // Our bucketing algorithm has a minimum length of 16
-            if (maxLength < MinimiumArraySize)
-                maxLength = MinimiumArraySize;
+            if (maxLength < MinimumArrayLength)
+                maxLength = MinimumArrayLength;
 
             int maxBuckets = Utilities.SelectBucketIndex(maxLength);
             _buckets = new DefaultArrayPoolBucket<T>[maxBuckets + 1];
