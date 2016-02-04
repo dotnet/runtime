@@ -270,9 +270,12 @@ namespace System {
         // thread.  This isn't just about handles - it can happen with just 
         // about any finalizable resource.
         //
-        // Users should insert a call to this method near the end of a
-        // method where they must keep an object alive for the duration of that
-        // method, up until this method is called.  Here is an example:
+        // Users should insert a call to this method right after the last line
+        // of their code where their code still needs the object to be kept alive.
+        // The object which reference is passed into this method will not
+        // be eligible for collection until the call to this method happens.
+        // Once the call to this method has happened the object may immediately
+        // become eligible for collection. Here is an example:
         // 
         // "...all you really need is one object with a Finalize method, and a 
         // second object with a Close/Dispose/Done method.  Such as the following 
