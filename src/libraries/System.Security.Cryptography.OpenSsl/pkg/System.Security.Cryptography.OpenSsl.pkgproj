@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
+      <SupportedFramework>dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds">
+      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    </ProjectReference>
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
+
+    <!-- Opt desktop and netcore out of this package.  
+         This can be removed after we add back the RID to restict this to Unix.
+         https://github.com/dotnet/corefx/issues/2953 -->
+    <NotSupportedOnTargetFramework Include="netcore50" />
+    <NotSupportedOnTargetFramework Include="net46" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
