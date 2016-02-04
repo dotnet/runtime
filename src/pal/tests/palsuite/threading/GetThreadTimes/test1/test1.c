@@ -13,9 +13,7 @@
 **
 **=========================================================*/
 
-#define _GNU_SOURCE
 #include <palsuite.h>
-#include <sched.h>
 
 int __cdecl main(int argc, char *argv[]) {
     int ret = FAIL;
@@ -102,6 +100,3 @@ int __cdecl main(int argc, char *argv[]) {
 EXIT:
     return ret;
 }
-
-
-
