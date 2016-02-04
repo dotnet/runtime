@@ -20,8 +20,12 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)"/>
-      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)"/>
+      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
+        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+      </Project>
+      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
+        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+      </Project>
     </ItemGroup>
   </Target>
 
