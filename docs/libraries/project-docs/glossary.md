@@ -133,6 +133,8 @@ Windows Forms is in maintenance mode currently. That means new features will gen
 
 ### ASP.NET Core
 
+**Also referred to as**: ASP.NET 5
+
 ### ASP.NET MVC
 
 ### SignalR
