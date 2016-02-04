@@ -36,27 +36,6 @@ clean()
 
 # Check the system to ensure the right pre-reqs are in place
 
-check_managed_prereqs()
-{
-    __monoversion=$(mono --version | grep "version 4.[1-9]")
-
-    if [ $? -ne 0 ]; then
-        # if built from tarball, mono only identifies itself as 4.0.1
-        __monoversion=$(mono --version | egrep "version 4.0.[1-9]+(.[0-9]+)?")
-        if [ $? -ne 0 ]; then
-            echo "Mono 4.0.1.44 or later is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md for more details."
-            exit 1
-        else
-            echo "WARNING: Mono 4.0.1.44 or later is required to build corefx. Unable to assess if current version is supported."
-        fi
-    fi
-
-    if [ ! -e "$__referenceassemblyroot/.NETPortable" ]; then
-        echo "PCL reference assemblies not found. Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md for more details."
-        exit 1
-    fi
-}
-
 check_native_prereqs()
 {
     echo "Checking pre-requisites..."
@@ -92,16 +71,6 @@ prepare_managed_build()
 
         if [ $? -ne 0 ]; then
             echo "Failed to restore NuGet.exe."
-            exit 1
-        fi
-    fi
-
-    # Grab the MSBuild package if we don't have it already
-    if [ ! -e "$__msbuildpath" ]; then
-        echo "Restoring MSBuild..."
-        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://www.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
-        if [ $? -ne 0 ]; then
-            echo "Failed to restore MSBuild."
             exit 1
         fi
     fi
@@ -350,10 +319,6 @@ __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
 setup_dirs
 
 if $__buildmanaged; then
-
-    # Check prereqs.
-
-    check_managed_prereqs
 
     # Prepare the system
 
