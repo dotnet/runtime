@@ -28,6 +28,7 @@ namespace System.Linq.Expressions
 
         internal static NewArrayExpression Make(ExpressionType nodeType, Type type, ReadOnlyCollection<Expression> expressions)
         {
+            Debug.Assert(type.IsArray);
             if (nodeType == ExpressionType.NewArrayInit)
             {
                 return new NewArrayInitExpression(type, expressions);
