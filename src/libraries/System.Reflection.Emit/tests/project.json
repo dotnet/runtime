@@ -6,7 +6,7 @@
     "System.Reflection.Extensions": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",
     "System.Linq": "4.0.0",
-    "System.Console": "4.0.0-rc3-23729",
+    "System.Console": "4.0.0-rc3-23803",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
