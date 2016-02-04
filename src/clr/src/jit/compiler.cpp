@@ -4282,7 +4282,6 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         if (compIsForInlining())
         {
-            JITLOG((LL_INFO1000000, INLINER_FAILED "Inlinee marked as skipped.\n"));
             compInlineResult->setNever("Inlinee marked as skipped");
         }
         return CORJIT_SKIPPED;
@@ -4891,7 +4890,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             if (opts.eeFlags & CORJIT_FLG_PREJIT)
             {
                 // Cache inlining hint during NGen to avoid touching bodies of non-inlineable methods at runtime
-                JitInlineResult trialResult(info.compCompHnd, nullptr, methodHnd);
+                JitInlineResult trialResult(this, nullptr, methodHnd, "prejit1");
                 impCanInlineIL(methodHnd, methodInfo, forceInline, &trialResult);
                 if (trialResult.isFailure())
                 {
@@ -4937,7 +4936,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID); 
 
             int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);
-            JitInlineResult trialResult(info.compCompHnd, nullptr, methodHnd);
+            JitInlineResult trialResult(this, nullptr, methodHnd, "prejit2");
             
             impCanInlineNative(callsiteNativeSizeEstimate, 
                                compNativeSizeEstimate,
@@ -5000,7 +4999,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             (fgBBcount > 5) &&
             !forceInline)
         {
-            JITLOG((LL_INFO1000000, INLINER_FAILED "Too many basic blocks in the inlinee.\n"));
             compInlineResult->setNever("Too many basic blocks in the inlinee");
             goto _Next;
         }
@@ -9750,3 +9748,48 @@ HelperCallProperties Compiler::s_helperCallProperties;
 
 /*****************************************************************************/
 /*****************************************************************************/
+
+//------------------------------------------------------------------------
+// report: Dump, log, and report information about an inline decision.
+//
+// Notes:
+//    
+//    Called (automatically via the JitInlineResult dtor) when the inliner
+//    is done evaluating a candidate.
+//
+//    Dumps state of the inline candidate, and if a decision was reached
+//    sends it to the log and reports the decision back to the EE. 
+//    
+//    All this can be suppressed if desired by calling setReported() before 
+//    the JitInlineResult goes out of scope.
+
+void JitInlineResult::report() 
+{
+    // User may have suppressed reporting via setReported(). If so, do nothing.
+    if (inlReported)
+    {
+        return;
+    }
+
+    inlReported = true;
+
+#ifdef DEBUG
+
+    const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
+    const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
+    const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
+
+    JITDUMP(format, inlContext, resultString(), inlReason, caller, callee);
+
+#endif // DEBUG
+
+    if (isDecided()) 
+    {
+        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), inlReason, caller, callee));
+        COMP_HANDLE comp = inlCompiler->info.compCompHnd;
+        comp->reportInliningDecision(inlInliner, inlInlinee, result(), inlReason);
+    }
+}
+
+    
+
