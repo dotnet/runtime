@@ -93,6 +93,15 @@ namespace System.Diagnostics
         /// </devdoc>
         public Process()
         {
+            // This class once inherited a finalizer. For backward compatibility it has one so that 
+            // any derived class that depends on it will see the behaviour expected. Since it is
+            // not used by this class itself, suppress it immediately if this is not an instance
+            // of a derived class it doesn't suffer the GC burden of finalization.
+            if (GetType() == typeof(Process))
+            {
+                GC.SuppressFinalize(this);
+            }
+
             _machineName = ".";
             _outputStreamReadMode = StreamReadMode.Undefined;
             _errorStreamReadMode = StreamReadMode.Undefined;
@@ -100,6 +109,7 @@ namespace System.Diagnostics
 
         private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo processInfo)
         {
+            GC.SuppressFinalize(this);
             _processInfo = processInfo;
             _machineName = machineName;
             _isRemoteMachine = isRemoteMachine;
@@ -107,6 +117,11 @@ namespace System.Diagnostics
             _haveProcessId = true;
             _outputStreamReadMode = StreamReadMode.Undefined;
             _errorStreamReadMode = StreamReadMode.Undefined;
+        }
+
+        ~Process()
+        {
+            Dispose(false);
         }
 
         public SafeProcessHandle SafeHandle
@@ -1348,6 +1363,7 @@ namespace System.Diagnostics
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
