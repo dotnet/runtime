@@ -206,6 +206,8 @@ _StartOffset_ + _Length_ shall be in range (0..0x80000000).
 
 Each scope spans IL instructions in range [_StartOffset_, _StartOffset_ + _Length_).
 
+The first scope of each _Method_ shall span all IL instructions of the _Method_, i.e. _StartOffset_ shall be 0 and _Length_ shall be equal to the size of the IL stream of the _Method_.
+
 _StartOffset_ shall point to the starting byte of an instruction of the _Method_.
 
 _StartOffset_ + _Length_ shall point to the starting byte of an instruction of the _Method_ or be equal to the size of the IL stream of the _Method_.
