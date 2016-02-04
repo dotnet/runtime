@@ -1211,7 +1211,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		}
 	}
 	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: read %d bytes from pipe", __func__, ret);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: read %d bytes from pipe %p", __func__, ret, handle);
 
 	if(bytesread!=NULL) {
 		*bytesread=ret;
