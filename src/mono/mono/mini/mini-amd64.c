@@ -523,16 +523,6 @@ typedef struct {
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
-#ifdef TARGET_WIN32
-static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
-
-static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
-#else
-static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
-
- static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
-#endif
-
 static void inline
 add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 {
@@ -551,12 +541,6 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		(*gr) ++;
     }
 }
-
-#ifdef TARGET_WIN32
-#define FLOAT_PARAM_REGS 4
-#else
-#define FLOAT_PARAM_REGS 8
-#endif
 
 static void inline
 add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
