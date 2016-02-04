@@ -121,6 +121,30 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public void SslStream_StreamToStream_Write_ReadByte_Success()
+        {
+            MockNetwork network = new MockNetwork();
+
+            using (var clientStream = new FakeNetworkStream(false, network))
+            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                bool result = DoHandshake(clientSslStream, serverSslStream);
+                Assert.True(result, "Handshake completed.");
+
+                for (int i = 0; i < 3; i++)
+                {
+                    clientSslStream.Write(_sampleMsg);
+                    foreach (byte b in _sampleMsg)
+                    {
+                        Assert.Equal(b, serverSslStream.ReadByte());
+                    }
+                }
+            }
+        }
+
         private bool VerifyOutput(byte[] actualBuffer, byte[] expectedBuffer)
         {
             return expectedBuffer.SequenceEqual(actualBuffer);
