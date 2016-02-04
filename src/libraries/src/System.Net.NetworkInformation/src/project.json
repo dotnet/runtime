@@ -5,11 +5,11 @@
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Linq": "4.0.0",
         "System.Net.Primitives": "4.0.10",
-        "System.Net.Sockets": "4.1.0-rc3-23729",
-        "System.Security.Principal.Windows": "4.0.0-rc3-23729",
+        "System.Net.Sockets": "4.1.0-rc3-23803",
+        "System.Security.Principal.Windows": "4.0.0-rc3-23803",
         "System.Threading": "4.0.10",
-        "System.Threading.Thread": "4.0.0-rc3-23729",
-        "System.Threading.ThreadPool": "4.0.10-rc3-23729"
+        "System.Threading.Thread": "4.0.0-rc3-23803",
+        "System.Threading.ThreadPool": "4.0.10-rc3-23803"
       }
     },
     "net46": {
@@ -20,7 +20,7 @@
     "netcore50": {
       "dependencies": {
         "System.Linq": "4.0.0",
-        "System.Net.Sockets": "4.1.0-rc3-23729",
+        "System.Net.Sockets": "4.1.0-rc3-23803",
         "System.Runtime.InteropServices.WindowsRuntime": "4.0.0",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.0"
       }

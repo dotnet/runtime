@@ -12,7 +12,7 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.Runtime.Extensions": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
-    "System.Threading.Tasks.Extensions": "4.0.0-rc3-23729",
+    "System.Threading.Tasks.Extensions": "4.0.0-rc3-23803",
     "System.Text.Encoding": "4.0.10",
     "System.Text.Encoding.Extensions": "4.0.10",
     "System.Text.RegularExpressions": "4.0.0"
