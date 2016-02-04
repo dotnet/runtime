@@ -5617,8 +5617,7 @@ bool        Compiler::fgMorphCallInline(GenTreePtr node)
     // Prepare to record information about this inline
     CORINFO_METHOD_HANDLE callerHandle = call->gtCall.gtInlineCandidateInfo->ilCallerHandle;
     CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
-    COMP_HANDLE comp = info.compCompHnd;
-    JitInlineResult inlineResult(comp, callerHandle, calleeHandle);
+    JitInlineResult inlineResult(this, callerHandle, calleeHandle, "fgMorphCallInline");
 
     // Attempt the inline
     fgMorphCallInlineHelper(call, &inlineResult);
@@ -5682,8 +5681,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, JitInlineResult* resul
 
     if (opts.compNeedSecurityCheck)
     {
-        JITLOG((LL_INFO100000, INLINER_FAILED "Caller (%s) needs security check.\n",
-                info.compFullName));
         result->setFailure("Caller needs security check");
         return;
     }
