@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics.Tracing;
 using System.Threading;
 
 namespace System.Buffers
@@ -23,11 +21,6 @@ namespace System.Buffers
     /// </remarks>
     public abstract class ArrayPool<T>
     {
-        /// <summary>The default number of arrays that are available for rent.</summary>
-        private const int DefaultNumberOfArraysPerBucket = 50;
-        /// <summary>The default length of each Rent'able array; equal to 1MB in bytes</summary>
-        private const int DefaultArrayLength = 1024 * 1024;
-
         /// <summary>The lazily-initialized shared pool instance.</summary>
         private static ArrayPool<T> s_sharedInstance = null;
 
@@ -35,9 +28,12 @@ namespace System.Buffers
         /// Retrieves a shared <see cref="ArrayPool{T}"/> instance.
         /// </summary>
         /// <remarks>
-        /// With the <see cref="Shared"/> pool, renting a buffer with <see cref="Rent"/> 
-        /// will result in an existing buffer being taken from the pool if an appropriate buffer 
-        /// is available or in a new buffer being allocated if one is not available.
+        /// The shared pool provides a default implementation of <see cref="ArrayPool{T}"/>
+        /// that's intended for general applicability.  It maintains arrays of multiple sizes, and 
+        /// may hand back a larger array than was actually requested, but will never hand back a smaller 
+        /// array than was requested. Renting a buffer from it with <see cref="Rent"/> will result in an 
+        /// existing buffer being taken from the pool if an appropriate buffer is available or in a new 
+        /// buffer being allocated if one is not available.
         /// </remarks>
         public static ArrayPool<T> Shared
         {
@@ -46,7 +42,7 @@ namespace System.Buffers
                 ArrayPool<T> instance = Volatile.Read(ref s_sharedInstance);
                 if (instance == null)
                 {
-                    Interlocked.CompareExchange(ref s_sharedInstance, new DefaultArrayPool<T>(DefaultArrayLength, DefaultNumberOfArraysPerBucket), null);
+                    Interlocked.CompareExchange(ref s_sharedInstance, Create(), null);
                     instance = s_sharedInstance;
                 }
 
@@ -60,18 +56,25 @@ namespace System.Buffers
         /// <returns>A new <see cref="ArrayPool{T}"/> instance.</returns>
         public static ArrayPool<T> Create()
         {
-            return Create(DefaultArrayLength, DefaultNumberOfArraysPerBucket);
+            return new DefaultArrayPool<T>();
         }
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using custom configuration options.
         /// </summary>
         /// <param name="maxArrayLength">The maximum length of array instances that may be stored in the pool.</param>
-        /// <param name="numberOfArrays">The maximum number of array instances that may be stored in the pool.</param>
+        /// <param name="maxArraysPerBucket">
+        /// The maximum number of array instances that may be stored in each bucket in the pool.  The pool
+        /// groups arrays of similar lengths into buckets for faster access.
+        /// </param>
         /// <returns>A new <see cref="ArrayPool{T}"/> instance with the specified configuration options.</returns>
-        public static ArrayPool<T> Create(int maxArrayLength, int numberOfArrays)
+        /// <remarks>
+        /// The created pool will group arrays into buckets, with no more than <paramref name="maxArraysPerBucket"/>
+        /// in each bucket and with those arrays not exceeding <paramref name="maxArrayLength"/> in length.
+        /// </remarks>
+        public static ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket)
         {
-            return new DefaultArrayPool<T>(maxArrayLength, numberOfArrays);
+            return new DefaultArrayPool<T>(maxArrayLength, maxArraysPerBucket);
         }
 
         /// <summary>
