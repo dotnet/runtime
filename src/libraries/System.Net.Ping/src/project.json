@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.Diagnostics.Process": "4.1.0-rc3-23729",
+    "System.Diagnostics.Process": "4.1.0-rc3-23803",
     "System.Net.Primitives": "4.0.10",
-    "System.Net.NameResolution": "4.0.0-rc3-23729",
-    "System.Net.Sockets": "4.1.0-rc3-23729",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23729"
+    "System.Net.NameResolution": "4.0.0-rc3-23803",
+    "System.Net.Sockets": "4.1.0-rc3-23803",
+    "System.Threading.ThreadPool": "4.0.10-rc3-23803"
   },
   "frameworks": {
     "dnxcore50": {}
