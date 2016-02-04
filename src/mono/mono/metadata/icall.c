@@ -1154,7 +1154,10 @@ ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *o
 {
 	MONO_CHECK_ARG_NULL (obj, 0);
 	
-	return mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE);
+	MonoError error;
+	gint32 result = mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE, &error);
+	mono_error_raise_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT gint32
@@ -1164,20 +1167,27 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 {
 	MONO_CHECK_ARG_NULL (method, 0);
 	
-	return mono_image_create_method_token (
-		mb->dynamic_image, (MonoObject *) method, opt_param_types);
+	MonoError error;
+	gint32 result = mono_image_create_method_token (
+		mb->dynamic_image, (MonoObject *) method, opt_param_types, &error);
+	mono_error_raise_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT void
 ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
-	mono_image_create_pefile (mb, file);
+	MonoError error;
+	mono_image_create_pefile (mb, file, &error);
+	mono_error_raise_exception (&error);
 }
 
 ICALL_EXPORT void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 {
-	mono_image_build_metadata (mb);
+	MonoError error;
+	if (!mono_image_build_metadata (mb, &error))
+		mono_error_raise_exception (&error);
 }
 
 ICALL_EXPORT void
