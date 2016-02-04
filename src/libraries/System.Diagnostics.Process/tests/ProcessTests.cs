@@ -12,6 +12,26 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessTests : ProcessTestBase
     {
+        private class FinalizingProcess : Process
+        {
+            public static volatile bool WasFinalized;
+
+            public static void CreateAndRelease()
+            {
+                new FinalizingProcess();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposing)
+                {
+                    WasFinalized = true;
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+
         private void SetAndCheckBasePriority(ProcessPriorityClass exPriorityClass, int priority)
         {
             _process.PriorityClass = exPriorityClass;
@@ -678,6 +698,15 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine("{0} : \"{1}\" (Threads: {2})", p.Id, p.ProcessName, p.Threads.Count);
                 p.Dispose();
             }
+        }
+
+        [Fact]
+        public void CanBeFinalized()
+        {
+            FinalizingProcess.CreateAndRelease();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.True(FinalizingProcess.WasFinalized);
         }
     }
 }
