@@ -7,8 +7,8 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23729",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc3-23729",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23803",
+    "System.Security.Cryptography.Encoding": "4.0.0-rc3-23803",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
   },

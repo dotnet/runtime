@@ -3,8 +3,8 @@
     "System.Runtime": "4.0.0",
     "System.Runtime.Handles": "4.0.0",
     "System.IO": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23729",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc3-23729"
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23803",
+    "System.Security.Cryptography.Primitives": "4.0.0-rc3-23803"
   },
   "frameworks": {
     "dotnet5.4": {}

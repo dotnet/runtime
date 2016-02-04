@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Registry": "4.0.0-rc3-23729",
+    "Microsoft.Win32.Registry": "4.0.0-rc3-23803",
     "System.Runtime": "4.0.0",
-    "System.Security.AccessControl": "4.0.0-rc3-23729",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23729"
+    "System.Security.AccessControl": "4.0.0-rc3-23803",
+    "System.Security.Principal.Windows": "4.0.0-rc3-23803"
   },
   "frameworks": {
     "dotnet5.4": {}
