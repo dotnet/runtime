@@ -14131,7 +14131,7 @@ void                Compiler::fgMorphBlocks()
 
         if (block->bbJumpKind == BBJ_RETURN)
         {
-             if ((genReturnBB != NULL)  &&
+             if ((genReturnBB != nullptr)  &&
                  (genReturnBB != block) &&
                  ((block->bbFlags & BBF_HAS_JMP) == 0))
              {
@@ -14166,11 +14166,7 @@ void                Compiler::fgMorphBlocks()
                 //replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
                 if (genReturnLocal != BAD_VAR_NUM)
                 {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                    noway_assert(info.compRetType != TYP_VOID);
-#else 
-                    noway_assert(info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT);
-#endif
+                    noway_assert(compMethodHasRetVal());
 
                     // GT_RETURN must have non-null operand as the method is returning the value assigned to genReturnLocal
                     noway_assert(ret->gtGetOp1() != nullptr);
