@@ -95,7 +95,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact] // Base Case
         public void ConnectV4MappedIPAddressToV4Host_Success()
         {
@@ -225,7 +224,6 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
         }
 
-        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectV6IPEndPointToDualHost_Success()
         {
@@ -789,7 +787,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(3682, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectAsyncV4IPEndPointToDualHost_Success()
         {
