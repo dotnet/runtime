@@ -40,7 +40,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     add_definitions(-D__LINUX__)
-    target_link_libraries (corehost "dl")
+    target_link_libraries (corehost "dl" "pthread")
 endif()
 
 add_subdirectory(dll)
