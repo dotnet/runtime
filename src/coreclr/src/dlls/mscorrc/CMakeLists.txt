@@ -4,6 +4,9 @@ if(WIN32)
     # remove /ltcg from resource-only libraries
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO})
+
+    # remove /guard:cf from resource-only libraries
+    string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_UNIX)

@@ -430,6 +430,13 @@ if (WIN32)
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    # enable control-flow-guard support for native components for non-Arm64 builds
+    add_compile_options(/guard:cf) 
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
+  endif (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
   # Linker flags
   #
   # Disable the following line for UNIX altjit on Windows
