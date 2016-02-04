@@ -289,6 +289,5 @@ namespace System.Net.Sockets
         {
             return new Socket(_family, SocketType.Stream, ProtocolType.Tcp);
         }
-
     }
 }

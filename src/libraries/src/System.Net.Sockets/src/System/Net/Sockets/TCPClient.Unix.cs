@@ -41,29 +41,9 @@ namespace System.Net.Sockets
 
         // Shadow values for storing data set through TcpClient's properties.
         // We use a separate bool field to store whether the value has been set.
-        // We don't use nullables, due to one of the properties being a refernece type.
+        // We don't use nullables, due to one of the properties being a reference type.
 
-        private int _exclusiveAddressUse;
-        private bool _exclusiveAddressUseInitialized;
-
-        private int _receiveBufferSize;
-        private bool _receiveBufferSizeInitialized;
-
-        private int _sendBufferSize;
-        private bool _sendBufferSizeInitialized;
-
-        private int _receiveTimeout;
-        private bool _receiveTimeoutInitialized;
-
-        private int _sendTimeout;
-        private bool _sendTimeoutInitialized;
-
-        private LingerOption _lingerState;
-        private bool _lingerStateInitialized;
-
-        private int _noDelay;
-        private bool _noDelayInitialized;
-
+        private ShadowOptions _shadowOptions; // shadow state used in public properties before the socket is created
         private int _connectRunning; // tracks whether a connect operation that could set _clientSocket is currently running
 
         private void InitializeClientSocket()
@@ -84,7 +64,7 @@ namespace System.Net.Sockets
                     {
                         // Create the socket, and transfer to it any of our shadow properties.
                         _clientSocket = CreateSocket();
-                        TransferInitializedValuesToSocket(_clientSocket);
+                        ApplyInitializedOptionsToSocket(_clientSocket);
                     }
                     return _clientSocket;
                 }
@@ -108,57 +88,68 @@ namespace System.Net.Sockets
             }
         }
 
-        private void TransferInitializedValuesToSocket(Socket socket)
+        private void ApplyInitializedOptionsToSocket(Socket socket)
         {
+            ShadowOptions so = _shadowOptions;
+            if (so == null)
+            {
+                return;
+            }
+
             // For each shadow property where we have an initialized value,
             // transfer that value to the provided socket.
-
-            if (_exclusiveAddressUseInitialized)
+            if (so._exclusiveAddressUseInitialized)
             {
-                socket.ExclusiveAddressUse = _exclusiveAddressUse != 0;
+                socket.ExclusiveAddressUse = so._exclusiveAddressUse != 0;
             }
 
-            if (_receiveBufferSizeInitialized)
+            if (so._receiveBufferSizeInitialized)
             {
-                socket.ReceiveBufferSize = _receiveBufferSize;
+                socket.ReceiveBufferSize = so._receiveBufferSize;
             }
 
-            if (_sendBufferSizeInitialized)
+            if (so._sendBufferSizeInitialized)
             {
-                socket.SendBufferSize = _sendBufferSize;
+                socket.SendBufferSize = so._sendBufferSize;
             }
 
-            if (_receiveTimeoutInitialized)
+            if (so._receiveTimeoutInitialized)
             {
-                socket.ReceiveTimeout = _receiveTimeout;
+                socket.ReceiveTimeout = so._receiveTimeout;
             }
 
-            if (_sendTimeoutInitialized)
+            if (so._sendTimeoutInitialized)
             {
-                socket.SendTimeout = _sendTimeout;
+                socket.SendTimeout = so._sendTimeout;
             }
 
-            if (_lingerStateInitialized)
+            if (so._lingerStateInitialized)
             {
-                socket.LingerState = _lingerState;
+                socket.LingerState = so._lingerState;
             }
 
-            if (_noDelayInitialized)
+            if (so._noDelayInitialized)
             {
-                socket.NoDelay = _noDelay != 0;
+                socket.NoDelay = so._noDelay != 0;
             }
         }
 
         private void ClearInitializedValues()
         {
+            ShadowOptions so = _shadowOptions;
+            if (so == null)
+            {
+                return;
+            }
+
             // Clear the initialized fields for all of our shadow properties.
-            _exclusiveAddressUseInitialized =
-                _receiveBufferSizeInitialized =
-                _sendBufferSizeInitialized =
-                _receiveTimeoutInitialized =
-                _sendTimeoutInitialized =
-                _lingerStateInitialized =
-                _noDelayInitialized =
+            so._exclusiveAddressUseInitialized =
+                so._receiveBufferSizeInitialized =
+                so._sendBufferSizeInitialized =
+                so._receiveTimeoutInitialized =
+                so._sendTimeoutInitialized =
+                so._lingerStateInitialized =
+                so._noDelayInitialized =
                 false;
         }
 
@@ -178,7 +169,7 @@ namespace System.Net.Sockets
             {
                 // If we have a client socket, return whether it's connected.
                 // Otherwise as we don't have a socket, by definition it's not.
-                return _clientSocket != null ? _clientSocket.Connected : false;
+                return _clientSocket != null && _clientSocket.Connected;
             }
         }
 
@@ -261,7 +252,7 @@ namespace System.Net.Sockets
                     try
                     {
                         Socket s = CreateSocket();
-                        TransferInitializedValuesToSocket(s);
+                        ApplyInitializedOptionsToSocket(s);
                         await s.ConnectAsync(address, port).ConfigureAwait(false);
 
                         _clientSocket = s;
@@ -293,56 +284,111 @@ namespace System.Net.Sockets
 
         private int ReceiveBufferSizeCore
         {
-            get { return GetOption(ref _receiveBufferSize, ref _receiveBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer); }
-            set { SetOption(ref _receiveBufferSize, ref _receiveBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._receiveBufferSize, ref so._receiveBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer);
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._receiveBufferSize, ref so._receiveBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value);
+            }
         }
 
         private int SendBufferSizeCore
         {
-            get { return GetOption(ref _sendBufferSize, ref _sendBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.SendBuffer); }
-            set { SetOption(ref _sendBufferSize, ref _sendBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._sendBufferSize, ref so._sendBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.SendBuffer);
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._sendBufferSize, ref so._sendBufferSizeInitialized, SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value);
+            }
         }
 
         private int ReceiveTimeoutCore
         {
-            get { return GetOption(ref _receiveTimeout, ref _receiveTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout); }
-            set { SetOption(ref _receiveTimeout, ref _receiveTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._receiveTimeout, ref so._receiveTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout);
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._receiveTimeout, ref so._receiveTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value);
+            }
         }
 
         private int SendTimeoutCore
         {
-            get { return GetOption(ref _sendTimeout, ref _sendTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.SendTimeout); }
-            set { SetOption(ref _sendTimeout, ref _sendTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._sendTimeout, ref so._sendTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.SendTimeout);
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._sendTimeout, ref so._sendTimeoutInitialized, SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value);
+            }
         }
 
         private LingerOption LingerStateCore
         {
-            get { return GetOption(ref _lingerState, ref _lingerStateInitialized, SocketOptionLevel.Socket, SocketOptionName.Linger); }
-            set { SetOption(ref _lingerState, ref _lingerStateInitialized, SocketOptionLevel.Socket, SocketOptionName.Linger, value); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._lingerState, ref so._lingerStateInitialized, SocketOptionLevel.Socket, SocketOptionName.Linger);
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._lingerState, ref so._lingerStateInitialized, SocketOptionLevel.Socket, SocketOptionName.Linger, value);
+            }
         }
 
         private bool NoDelayCore
         {
-            get { return GetOption(ref _noDelay, ref _noDelayInitialized, SocketOptionLevel.Tcp, SocketOptionName.NoDelay) != 0; }
-            set { SetOption(ref _noDelay, ref _noDelayInitialized, SocketOptionLevel.Tcp, SocketOptionName.NoDelay, value ? 1 : 0); }
+            get
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._noDelay, ref so._noDelayInitialized, SocketOptionLevel.Tcp, SocketOptionName.NoDelay) != 0;
+            }
+            set
+            {
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                SetOption(ref so._noDelay, ref so._noDelayInitialized, SocketOptionLevel.Tcp, SocketOptionName.NoDelay, value ? 1 : 0);
+            }
         }
 
         private bool ExclusiveAddressUseCore
         {
             get
             {
-                return GetOption(ref _exclusiveAddressUse, ref _exclusiveAddressUseInitialized, SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse) != 0;
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                return GetOption(ref so._exclusiveAddressUse, ref so._exclusiveAddressUseInitialized, SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse) != 0;
             }
             set
             {
                 // Unlike the rest of the properties, we code this one explicitly, so as to take advantage of validation done by Socket's property.
-                _exclusiveAddressUse = value ? 1 : 0;
-                _exclusiveAddressUseInitialized = true;
+                ShadowOptions so = EnsureShadowValuesInitialized();
+                so._exclusiveAddressUse = value ? 1 : 0;
+                so._exclusiveAddressUseInitialized = true;
                 if (_clientSocket != null)
                 {
                     _clientSocket.ExclusiveAddressUse = value; // Use setter explicitly as it does additional validation beyond that done by SetOption
                 }
             }
+        }
+
+        private ShadowOptions EnsureShadowValuesInitialized()
+        {
+            return _shadowOptions ?? (_shadowOptions = new ShadowOptions());
         }
 
         private T GetOption<T>(ref T location, ref bool initialized, SocketOptionLevel level, SocketOptionName name)
@@ -374,11 +420,7 @@ namespace System.Net.Sockets
         {
             // Used in the setter for each shadow property.
 
-            // Store the value into our shadow
-            location = value;
-            initialized = true;
-
-            // Then store the option on to the client socket.  If the client socket isn't yet set, we still want to set
+            // Store the option on to the client socket.  If the client socket isn't yet set, we still want to set
             // the property onto a socket so we can get validation performed by the underlying system on the option being
             // set... so, albeit being a bit expensive, we create a temporary socket we can use for validation purposes.
             Socket s = _clientSocket ?? CreateSocket();
@@ -401,6 +443,10 @@ namespace System.Net.Sockets
                     s.Dispose();
                 }
             }
+
+            // Then if it was successful, store it into the shadow.
+            location = value;
+            initialized = true;
         }
 
         private void EnterClientLock()
@@ -420,5 +466,28 @@ namespace System.Net.Sockets
             Volatile.Write(ref _connectRunning, 0);
         }
 
+        private sealed class ShadowOptions
+        {
+            internal int _exclusiveAddressUse;
+            internal bool _exclusiveAddressUseInitialized;
+
+            internal int _receiveBufferSize;
+            internal bool _receiveBufferSizeInitialized;
+
+            internal int _sendBufferSize;
+            internal bool _sendBufferSizeInitialized;
+
+            internal int _receiveTimeout;
+            internal bool _receiveTimeoutInitialized;
+
+            internal int _sendTimeout;
+            internal bool _sendTimeoutInitialized;
+
+            internal LingerOption _lingerState;
+            internal bool _lingerStateInitialized;
+
+            internal int _noDelay;
+            internal bool _noDelayInitialized;
+        }
     }
 }
