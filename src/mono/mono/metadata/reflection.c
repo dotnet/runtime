@@ -6408,6 +6408,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 MonoReflectionModule *
 mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 {
+	MonoError error;
+	MonoReflectionModule *result = NULL;
 	char *name;
 	MonoImage *image;
 	MonoImageOpenStatus status;
@@ -6457,7 +6459,9 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 		mono_raise_exception (mono_get_exception_file_not_found (fileName));
 	}
 
-	return mono_module_get_object (mono_domain_get (), image);
+	result = mono_module_get_object_checked (mono_domain_get (), image, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return result;
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */
@@ -6678,10 +6682,20 @@ MonoReflectionModule*
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
 	MonoError error;
+	MonoReflectionModule *result;
+	result = mono_module_get_object_checked (domain, image, &error);
+	mono_error_raise_exception (&error);
+	return result;
+}
+
+MonoReflectionModule*
+mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError *error)
+{
 	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	char* basename;
 	
+	mono_error_init (error);
 	CHECK_OBJECT (MonoReflectionModule *, image, NULL);
 	if (!module_type) {
 		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
@@ -6690,8 +6704,9 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 		g_assert (klass);
 		module_type = klass;
 	}
-	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, error);
+	if (!res)
+		return NULL;
 
 	res->image = image;
 	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));

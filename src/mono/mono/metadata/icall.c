@@ -2406,8 +2406,13 @@ ves_icall_type_iscomobject (MonoReflectionType *type)
 ICALL_EXPORT MonoReflectionModule*
 ves_icall_MonoType_get_Module (MonoReflectionType *type)
 {
+	MonoError error;
+	MonoReflectionModule *result = NULL;
 	MonoClass *klass = mono_class_from_mono_type (type->type);
-	return mono_module_get_object (mono_object_domain (type), klass->image);
+	result = mono_module_get_object_checked (mono_object_domain (type), klass->image, &error);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionAssembly*
@@ -4520,7 +4525,12 @@ leave:
 ICALL_EXPORT MonoReflectionModule*
 ves_icall_System_Reflection_Assembly_GetManifestModuleInternal (MonoReflectionAssembly *assembly) 
 {
-	return mono_module_get_object (mono_object_domain (assembly), assembly->assembly->image);
+	MonoError error;
+	MonoReflectionModule *result = NULL;
+	result = mono_module_get_object_checked (mono_object_domain (assembly), assembly->assembly->image, &error);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoArray*
@@ -4673,6 +4683,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 ICALL_EXPORT void *
 ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size, MonoReflectionModule **ref_module) 
 {
+	MonoError error;
 	char *n = mono_string_to_utf8 (name);
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 i;
@@ -4707,7 +4718,10 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	else
 		module = assembly->assembly->image;
 
-	mono_gc_wbarrier_generic_store (ref_module, (MonoObject*) mono_module_get_object (mono_domain_get (), module));
+	
+	MonoReflectionModule *rm = mono_module_get_object_checked (mono_domain_get (), module, &error);
+	mono_error_raise_exception (&error);
+	mono_gc_wbarrier_generic_store (ref_module, (MonoObject*) rm);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
 }
@@ -4827,6 +4841,7 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 ICALL_EXPORT MonoArray*
 ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly *assembly)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get();
 	MonoArray *res;
 	MonoClass *klass;
@@ -4854,11 +4869,15 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
 	res = mono_array_new (domain, klass, 1 + real_module_count + file_count);
 
-	mono_array_setref (res, 0, mono_module_get_object (domain, image));
+	MonoReflectionModule *image_obj = mono_module_get_object_checked (domain, image, &error);
+	mono_error_raise_exception (&error);
+	mono_array_setref (res, 0, image_obj);
 	j = 1;
 	for (i = 0; i < module_count; ++i)
 		if (modules [i]) {
-			mono_array_setref (res, j, mono_module_get_object (domain, modules[i]));
+			MonoReflectionModule *rm = mono_module_get_object_checked (domain, modules[i], &error);
+			mono_error_raise_exception (&error);
+			mono_array_setref (res, j, rm);
 			++j;
 		}
 
@@ -4873,7 +4892,9 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 				mono_set_pending_exception (mono_get_exception_file_not_found2 (NULL, fname));
 				return NULL;
 			}
-			mono_array_setref (res, j, mono_module_get_object (domain, m));
+			MonoReflectionModule *rm = mono_module_get_object_checked (domain, m, &error);
+			mono_error_raise_exception (&error);
+			mono_array_setref (res, j, rm);
 		}
 	}
 
