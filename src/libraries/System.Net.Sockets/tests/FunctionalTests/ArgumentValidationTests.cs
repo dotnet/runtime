@@ -761,20 +761,22 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void TcpClient_ConnectAsync_StringHost_NotSupported()
+        public void TcpClient_ConnectAsync_StringHost_NotSupportedAfterClientAccess()
         {
             using (TcpClient client = new TcpClient())
             {
+                var tmp = client.Client;
                 Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync("localhost", 12345); });
             }
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void TcpClient_ConnectAsync_MultipleAddresses_NotSupported()
+        public void TcpClient_ConnectAsync_MultipleAddresses_NotSupportedAfterClientAccess()
         {
             using (TcpClient client = new TcpClient())
             {
+                var tmp = client.Client;
                 Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
             }
         }

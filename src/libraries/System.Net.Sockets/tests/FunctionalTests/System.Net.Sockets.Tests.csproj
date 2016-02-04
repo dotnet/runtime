@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -26,6 +26,7 @@
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="SendReceive.cs" />
+    <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
@@ -59,6 +60,9 @@
     </Compile>
 
     <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
+      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
     </Compile>
