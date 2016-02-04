@@ -2339,26 +2339,6 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-#if DEBUG
-    internal class LogInstruction : Instruction
-    {
-        private readonly string _message;
-        public LogInstruction(string message)
-        {
-            _message = message;
-        }
-        public override string InstructionName
-        {
-            get { return "Log"; }
-        }
-        public override int Run(InterpretedFrame frame)
-        {
-            //Console.WriteLine(_message);
-            return +1;
-        }
-    }
-#endif
-
     internal class QuoteInstruction : Instruction
     {
         private readonly Expression _operand;
