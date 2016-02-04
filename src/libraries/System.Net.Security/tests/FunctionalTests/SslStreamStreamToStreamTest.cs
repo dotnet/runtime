@@ -91,6 +91,42 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(5896, PlatformID.OSX)]
+        public void SslStream_StreamToStream_LargeWrites_Sync_Success()
+        {
+            MockNetwork network = new MockNetwork();
+
+            using (var clientStream = new FakeNetworkStream(false, network))
+            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                Assert.True(DoHandshake(clientSslStream, serverSslStream), "Handshake complete");
+
+                byte[] largeMsg = Enumerable.Range(0, 4096 * 5).Select(i => (byte)i).ToArray();
+                byte[] receivedLargeMsg = new byte[largeMsg.Length];
+
+                // First do a large write and read blocks at a time
+                clientSslStream.Write(largeMsg);
+                int bytesRead = 0, totalRead = 0;
+                while (totalRead < largeMsg.Length &&
+                    (bytesRead = serverSslStream.Read(receivedLargeMsg, totalRead, receivedLargeMsg.Length - totalRead)) != 0)
+                {
+                    totalRead += bytesRead;
+                }
+                Assert.Equal(receivedLargeMsg.Length, totalRead);
+                Assert.Equal(largeMsg, receivedLargeMsg);
+
+                // Then write again and read bytes at a time
+                clientSslStream.Write(largeMsg);
+                foreach (byte b in largeMsg)
+                {
+                    Assert.Equal(b, serverSslStream.ReadByte());
+                }
+            }
+        }
+
+        [Fact]
         public void SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
