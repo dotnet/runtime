@@ -381,6 +381,27 @@ static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static MonoGCDescriptor domain_gc_desc = MONO_GC_DESCRIPTOR_NULL;
 static guint32 domain_shadow_serial = 0L;
 
+/**
+ * mono_domain_create:
+ *
+ * Creates a new application domain, the unmanaged representation
+ * of the actual domain.   Usually you will want to create the
+ *
+ * Application domains provide an isolation facilty for assemblies.   You
+ * can load assemblies and execute code in them that will not be visible
+ * to other application domains.   This is a runtime-based virtualization
+ * technology.
+ *
+ * It is possible to unload domains, which unloads the assemblies and
+ * data that was allocated in that domain.
+ *
+ * When a domain is created a mempool is allocated for domain-specific
+ * structures, along a dedicated code manager to hold code that is
+ * associated with the domain.
+ *
+ * Returns: New initialized MonoDomain, with no configuration or assemblies
+ * loaded into it.
+ */
 MonoDomain *
 mono_domain_create (void)
 {
@@ -973,8 +994,11 @@ mono_get_root_domain (void)
 /**
  * mono_domain_get:
  *
- * Returns: the current domain, to obtain the root domain use
- * mono_get_root_domain().
+ * This method returns the value of the current MonoDomain that this thread
+ * and code are running under.   To obtain the root domain use
+ * mono_get_root_domain() API.
+ *
+ * Returns: the current domain
  */
 MonoDomain *
 mono_domain_get ()
@@ -1022,6 +1046,16 @@ mono_domain_set_internal (MonoDomain *domain)
 	mono_domain_set_internal_with_options (domain, TRUE);
 }
 
+/**
+ * mono_domain_foreach:
+ * @func: function to invoke with the domain data
+ * @user_data: user-defined pointer that is passed to the supplied @func fo reach domain
+ *
+ * Use this method to safely iterate over all the loaded application
+ * domains in the current runtime.   The provided @func is invoked with a
+ * pointer to the MonoDomain and is given the value of the @user_data
+ * parameter which can be used to pass state to your called routine.
+ */
 void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 {
@@ -1093,6 +1127,15 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
 }
 
+/**
+ * mono_domain_free:
+ * @domain: the domain to release
+ * @force: if true, it allows the root domain to be released (used at shutdown only).
+ *
+ * This releases the resources associated with the specific domain.
+ * This is a low-level function that is invoked by the AppDomain infrastructure
+ * when necessary.
+ */
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
@@ -1528,14 +1571,20 @@ mono_context_set (MonoAppContext * new_context)
 	SET_APPCONTEXT (new_context);
 }
 
+/**
+ * mono_context_get:
+ *
+ * Returns: the current Mono Application Context.
+ */
 MonoAppContext * 
 mono_context_get (void)
 {
 	return GET_APPCONTEXT ();
 }
 
-/*
+/**
  * mono_context_get_id:
+ * @context: the context to operate on.
  *
  * Context IDs are guaranteed to be unique for the duration of a Mono
  * process; they are never reused.
@@ -1548,8 +1597,9 @@ mono_context_get_id (MonoAppContext *context)
 	return context->context_id;
 }
 
-/*
+/**
  * mono_context_get_domain_id:
+ * @context: the context to operate on.
  *
  * Returns: The ID of the domain that @context was created in.
  */
