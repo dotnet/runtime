@@ -4,7 +4,6 @@
 
 using System.Composition.Convention;
 using System.Composition.Hosting;
-using System.Composition.Runtime;
 using System.Composition.TypedParts;
 using System.Composition.TypedParts.ActivationFeatures;
 using System.Composition.TypedParts.Util;
