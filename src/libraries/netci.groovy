@@ -122,8 +122,10 @@ branchList.each { branchName ->
                 }
             } else {
                 newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+                    // Jobs run as a service in unix, which means that HOME variable is not set, and it is required for restoring packages
+                    // so we set it first, and then call build.sh
                     steps {
-                        shell("./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                        shell('HOME=$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true')
                     }
                 }
             }
