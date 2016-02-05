@@ -10,7 +10,7 @@ namespace System.Reflection
 namespace Roslyn.Reflection
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct Blob

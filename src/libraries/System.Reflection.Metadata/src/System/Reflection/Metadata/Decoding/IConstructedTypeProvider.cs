@@ -4,9 +4,16 @@
 
 using System.Collections.Immutable;
 
+#if SRM
 namespace System.Reflection.Metadata.Decoding
+#else
+namespace Roslyn.Reflection.Metadata.Decoding
+#endif
 {
-    public interface IConstructedTypeProvider<TType> : ISZArrayTypeProvider<TType>
+#if SRM && FUTURE
+    public
+#endif
+    interface IConstructedTypeProvider<TType> : ISZArrayTypeProvider<TType>
     {
         /// <summary>
         /// Gets the type symbol for a generic instantiation of the given generic type with the given type arguments.
