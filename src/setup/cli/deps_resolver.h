@@ -43,6 +43,8 @@ class deps_resolver_t
 public:
     deps_resolver_t(const arguments_t& args)
         : m_svc(args.dotnet_servicing)
+        , m_runtime_svc(args.dotnet_runtime_servicing)
+        , m_coreclr_index(-1)
     {
         m_deps_valid = parse_deps_file(args);
     }
@@ -55,6 +57,11 @@ public:
       const pal::string_t& package_cache_dir,
       const pal::string_t& clr_dir,
       probe_paths_t* probe_paths);
+
+    pal::string_t resolve_coreclr_dir(
+        const pal::string_t& app_dir,
+        const pal::string_t& package_dir,
+        const pal::string_t& package_cache_dir);
 
 private:
 
@@ -85,12 +92,18 @@ private:
     // Servicing index to resolve serviced assembly paths.
     servicing_index_t m_svc;
 
+    // Runtime servicing directory.
+    pal::string_t m_runtime_svc;
+
     // Map of simple name -> full path of local assemblies populated in priority
     // order of their extensions.
     std::unordered_map<pal::string_t, pal::string_t> m_local_assemblies;
 
     // Entries in the dep file
     std::vector<deps_entry_t> m_deps_entries;
+
+    // Special entry for coreclr in the deps entries
+    int m_coreclr_index;
 
     // The dep file path
     pal::string_t m_deps_path;

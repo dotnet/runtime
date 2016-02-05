@@ -123,7 +123,7 @@ void add_mscorlib_to_tpa(const pal::string_t& clr_dir, std::set<pal::string_t>* 
     pal::string_t mscorlib_path = clr_dir + DIR_SEPARATOR + _X("mscorlib.dll");
     if (pal::file_exists(mscorlib_path))
     {
-        add_tpa_asset(_X("mscorlib"), mscorlib_ni_path, items, output);
+        add_tpa_asset(_X("mscorlib"), mscorlib_path, items, output);
         return;
     }
 }
@@ -346,6 +346,20 @@ bool deps_resolver_t::load()
         replace_char(&entry.relative_path, _X('\\'), _X('/'));
 
         m_deps_entries.push_back(entry);
+
+        trace::verbose(_X("Added deps entry [%d] [%s, %s, %s]"), m_deps_entries.size() - 1, entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
+        static_assert(std::is_same<std::vector<deps_entry_t>, decltype(m_deps_entries)>::value, "decltype(m_deps_entries) not a vector, took index based on size.");
+        if (entry.asset_type == _X("native") &&
+            entry.asset_name == LIBCORECLR_FILENAME)
+        {
+            m_coreclr_index = m_deps_entries.size() - 1;
+            trace::verbose(_X("Found coreclr from deps entry [%d] [%s, %s, %s]"),
+                    m_coreclr_index,
+                    entry.library_name.c_str(),
+                    entry.library_version.c_str(),
+                    entry.relative_path.c_str());
+        }
     }
     return true;
 }
@@ -379,9 +393,9 @@ void deps_resolver_t::get_local_assemblies(const pal::string_t& dir)
     std::vector<pal::string_t> files;
     pal::readdir(dir, &files);
 
-    for (const auto& file : files)
+    for (const auto& ext : managed_ext)
     {
-        for (const auto& ext : managed_ext)
+        for (const auto& file : files)
         {
             // Nothing to do if file length is smaller than expected ext.
             if (file.length() <= ext.length())
@@ -412,6 +426,67 @@ void deps_resolver_t::get_local_assemblies(const pal::string_t& dir)
             m_local_assemblies.emplace(file_name, file_path);
         }
     }
+}
+
+// -----------------------------------------------------------------------------
+// Resolve coreclr directory from the deps file.
+//
+// Description:
+//    Look for CoreCLR from the dependency list in the package cache and then
+//    the packages directory.
+//
+pal::string_t deps_resolver_t::resolve_coreclr_dir(
+    const pal::string_t& app_dir,
+    const pal::string_t& package_dir,
+    const pal::string_t& package_cache_dir)
+{
+    // Runtime servicing
+    trace::verbose(_X("Probing for CoreCLR in servicing dir=[%s]"), m_runtime_svc.c_str());
+    if (!m_runtime_svc.empty())
+    {
+        pal::string_t svc_clr = m_runtime_svc;
+        append_path(&svc_clr, _X("runtime"));
+        append_path(&svc_clr, _X("coreclr"));
+
+        if (coreclr_exists_in_dir(svc_clr))
+        {
+            return svc_clr;
+        }
+    }
+
+    // Package cache.
+    trace::verbose(_X("Probing for CoreCLR in package cache=[%s] deps index: [%d]"), package_cache_dir.c_str(), m_coreclr_index);
+    pal::string_t coreclr_cache;
+    if (m_coreclr_index >= 0 && !package_cache_dir.empty() &&
+            m_deps_entries[m_coreclr_index].to_hash_matched_path(package_cache_dir, &coreclr_cache))
+    {
+        return get_directory(coreclr_cache);
+    }
+
+    // App dir.
+    trace::verbose(_X("Probing for CoreCLR in app directory=[%s]"), app_dir.c_str());
+    if (coreclr_exists_in_dir(app_dir))
+    {
+        return app_dir;
+    }
+
+    // Packages dir
+    trace::verbose(_X("Probing for CoreCLR in packages=[%s] deps index: [%d]"), package_dir.c_str(), m_coreclr_index);
+    pal::string_t coreclr_package;
+    if (m_coreclr_index >= 0 && !package_dir.empty() &&
+            m_deps_entries[m_coreclr_index].to_full_path(package_dir, &coreclr_package))
+    {
+        return get_directory(coreclr_package);
+    }
+
+    // Use platform-specific search algorithm
+    pal::string_t install_dir;
+    if (pal::find_coreclr(&install_dir))
+    {
+        return install_dir;
+    }
+
+    return pal::string_t();
 }
 
 // -----------------------------------------------------------------------------
@@ -549,11 +624,14 @@ void deps_resolver_t::resolve_probe_dirs(
     pal::string_t candidate;
 
     // Take care of the secondary cache path
-    for (const deps_entry_t& entry : m_deps_entries)
+    if (!package_cache_dir.empty())
     {
-        if (entry.asset_type == asset_type && entry.to_hash_matched_path(package_cache_dir, &candidate))
+        for (const deps_entry_t& entry : m_deps_entries)
         {
-            add_unique_path(asset_type, action(candidate), &items, output);
+            if (entry.asset_type == asset_type && entry.to_hash_matched_path(package_cache_dir, &candidate))
+            {
+                add_unique_path(asset_type, action(candidate), &items, output);
+            }
         }
     }
 
@@ -561,11 +639,14 @@ void deps_resolver_t::resolve_probe_dirs(
     add_unique_path(asset_type, app_dir, &items, output);
 
     // Take care of the package restore path
-    for (const deps_entry_t& entry : m_deps_entries)
+    if (!package_dir.empty())
     {
-        if (entry.asset_type == asset_type && entry.to_full_path(package_dir, &candidate))
+        for (const deps_entry_t& entry : m_deps_entries)
         {
-            add_unique_path(asset_type, action(candidate), &items, output);
+            if (entry.asset_type == asset_type && entry.to_full_path(package_dir, &candidate))
+            {
+                add_unique_path(asset_type, action(candidate), &items, output);
+            }
         }
     }
 
