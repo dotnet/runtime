@@ -293,7 +293,7 @@ The numeric values of the type codes are defined by ECMA-335 §II.23.1.16.
 
 _EnumType_ must be an enum type as defined in ECMA-335 §II.14.3. The value of _EnumTypeCode_ must match the underlying type of the _EnumType_.
 
-The encoding of the _GeneralValue_ is determined based upon the type expressed by _TypeDefOrRefOrSpecEncoded_ specified in _GeneralConstant_. If the _GeneralValue_ is not present the value of the constant is the default value of the type. If the type is a reference type the value is a null reference, if the type is a pointer type the value is a null pointer, etc. 
+The encoding of the _GeneralValue_ is determined based upon the type expressed by _TypeDefOrRefOrSpecEncoded_ specified in _GeneralConstant_. _GeneralValue_ for special types listed in the table below has to be present and is encoded as specified. If the _GeneralValue_ is not present the value of the constant is the default value of the type. If the type is a reference type the value is a null reference, if the type is a pointer type the value is a null pointer, etc. 
 
 | Namespace     | Name     | _GeneralValue_ encoding  |
 |:--------------|:---------|:-------------------------|
