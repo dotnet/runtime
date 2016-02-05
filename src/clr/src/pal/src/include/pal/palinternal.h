@@ -324,7 +324,6 @@ function_name() to call the system's implementation
 #define uintptr_t PAL_uintptr_t
 #define timeval PAL_timeval
 #define FILE PAL_FILE
-#define fpos_t PAL_fpos_t
 
 #include "pal.h"
 
@@ -478,7 +477,6 @@ function_name() to call the system's implementation
 #undef intptr_t
 #undef uintptr_t
 #undef timeval
-#undef fpos_t
 
 
 #undef printf

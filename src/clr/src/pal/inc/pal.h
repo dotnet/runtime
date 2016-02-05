@@ -393,7 +393,6 @@ PAL_IsDebuggerPresent();
 #endif // defined(PAL_STDCPP_COMPAT) && !defined(__cplusplus)
 
 #ifndef PAL_STDCPP_COMPAT
-typedef ULONG64   fpos_t;
 
 #if _WIN64 || _MSC_VER >= 1400
 typedef __int64 time_t;
@@ -6433,8 +6432,6 @@ PALIMPORT int __cdecl PAL_putchar(int c);
 PALIMPORT int __cdecl PAL_fprintf(PAL_FILE *, const char *, ...);
 PALIMPORT int __cdecl PAL_vfprintf(PAL_FILE *, const char *, va_list);
 PALIMPORT int __cdecl PAL_fseek(PAL_FILE *, LONG, int);
-PALIMPORT int __cdecl PAL_fgetpos(PAL_FILE *, fpos_t *);
-PALIMPORT int __cdecl PAL_fsetpos(PAL_FILE *, const fpos_t *);
 PALIMPORT LONG __cdecl PAL_ftell(PAL_FILE *);
 PALIMPORT int __cdecl PAL_feof(PAL_FILE *);
 PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
