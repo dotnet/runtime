@@ -8522,7 +8522,7 @@ void                CodeGen::genFnProlog()
     {
         excludeMask |= RBM_PINVOKE_FRAME;
 
-        assert(!compiler->opts.ShouldUsePInvokeHelpers() || compiler->info.compLvFrameListRoot == BAD_VAR_NUM);
+        assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);

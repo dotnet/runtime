@@ -2477,7 +2477,10 @@ void Lowering::InsertPInvokeMethodProlog()
 
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
-        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME
+        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME:
+        //
+        // OpaqueFrame opaqueFrame;
+        // CORINFO_HELP_INIT_PINVOKE_FRAME(&opaqueFrame);
 
         GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
             GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
@@ -2844,6 +2847,55 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 {
     //------------------------------------------------------
     // Non-virtual/Indirect calls: PInvoke calls.
+
+    // PInvoke lowering varies depending on the flags passed in by the EE. By default,
+    // GC transitions are generated inline; if CORJIT_FLG2_USE_PINVOKE_HELPERS is specified,
+    // GC transitions are instead performed using helper calls. Examples of each case are given
+    // below. Note that the data structure that is used to store information about a call frame
+    // containing any P/Invoke calls is initialized in the method prolog (see
+    // InsertPInvokeMethod{Prolog,Epilog} for details).
+    //
+    // Inline transitions:
+    //     InlinedCallFrame inlinedCallFrame;
+    //
+    //     ...
+    //
+    //     // Set up frame information
+    //     inlinedCallFrame.callTarget = methodHandle;
+    //     inlinedCallFrame.callSiteTracker = SP; (x86 only)
+    //     inlinedCallFrame.callSiteReturnAddress = &label; (the address of the instruction immediately following the call)
+    //     thread->m_pFrame = &inlinedCallFrame; (non-IL-stub only)
+    //
+    //     // Switch the thread's GC mode to preemptive mode
+    //     thread->m_fPreemptiveGCDisabled = 0;
+    //
+    //     // Call the unmanged method
+    //     target();
+    //
+    //     // Switch the thread's GC mode back to cooperative mode
+    //     thread->m_fPreemptiveGCDisabled = 1;
+    //
+    //     // Rendezvous with a running collection if necessary
+    //     if (g_TrapReturningThreads)
+    //         RareDisablePreemptiveGC();
+    //
+    // Transistions using helpers:
+    //
+    //     OpaqueFrame opaqueFrame;
+    //
+    //     ...
+    //
+    //     // Call the JIT_PINVOKE_BEGIN helper
+    //     JIT_PINVOKE_BEGIN(&opaqueFrame);
+    //
+    //     // Call the unmanaged method
+    //     target();
+    //
+    //     // Call the JIT_PINVOKE_END helper
+    //     JIT_PINVOKE_END(&opaqueFrame);
+    //
+    // Note that the JIT_PINVOKE_{BEGIN.END} helpers currently use the default calling convention for the target platform.
+    // They may be changed in the near future s.t. they preserve all register values.
 
     GenTree* result = nullptr;
     void* addr = nullptr;

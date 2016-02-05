@@ -6438,21 +6438,18 @@ void               Compiler::rpPredictRegUse()
         // it must not be in a register trashed by the callee
         if (info.compCallUnmanaged != 0)
         {
-            assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
-            if (!opts.ShouldUsePInvokeHelpers())
+            assert(!opts.ShouldUsePInvokeHelpers());
+            noway_assert(info.compLvFrameListRoot < lvaCount);
+
+            LclVarDsc *     pinvokeVarDsc = &lvaTable[info.compLvFrameListRoot];
+
+            if (pinvokeVarDsc->lvTracked)
             {
-                noway_assert(info.compLvFrameListRoot < lvaCount);
+                rpRecordRegIntf(RBM_CALLEE_TRASH, VarSetOps::MakeSingleton(this, pinvokeVarDsc->lvVarIndex)
+                                DEBUGARG("compLvFrameListRoot"));
 
-                LclVarDsc *     pinvokeVarDsc = &lvaTable[info.compLvFrameListRoot];
-
-                if (pinvokeVarDsc->lvTracked)
-                {
-                    rpRecordRegIntf(RBM_CALLEE_TRASH, VarSetOps::MakeSingleton(this, pinvokeVarDsc->lvVarIndex)
-                                    DEBUGARG("compLvFrameListRoot"));
-
-                    // We would prefer to have this be enregister in the PINVOKE_TCB register
-                    pinvokeVarDsc->addPrefReg(RBM_PINVOKE_TCB, this);
-                }
+                // We would prefer to have this be enregister in the PINVOKE_TCB register
+                pinvokeVarDsc->addPrefReg(RBM_PINVOKE_TCB, this);
             }
 
             //If we're using a single return block, the p/invoke epilog code trashes ESI and EDI (in the
