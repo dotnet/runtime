@@ -18,6 +18,8 @@
 
 int __cdecl main(int argc, char *argv[])
 {
+    int n65535 = 65535; /* Walkaround compiler strictness */
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;
@@ -28,7 +30,7 @@ int __cdecl main(int argc, char *argv[])
     DoNumTest("-1", "%u", -1);
     DoNumTest("0x1234", "%u", 0);
     DoNumTest("012", "%u", 12);
-    DoShortNumTest("-1", "%hu", 65535);
+    DoShortNumTest("-1", "%hu", n65535);
     DoShortNumTest("65536", "%hu", 0);
     DoNumTest("-1", "%lu", -1);
     DoNumTest("65536", "%lu", 65536);
