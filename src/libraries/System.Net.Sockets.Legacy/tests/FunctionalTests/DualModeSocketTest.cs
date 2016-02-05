@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -95,7 +95,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact] // Base Case
         public void ConnectV4MappedIPAddressToV4Host_Success()
         {
@@ -177,7 +176,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(3744, PlatformID.AnyUnix)]
         [Fact] // Base case
         public void ConnectV4MappedIPEndPointToV4Host_Success()
         {
@@ -226,7 +224,6 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
         }
 
-        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectV6IPEndPointToDualHost_Success()
         {
@@ -790,7 +787,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(3682, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectAsyncV4IPEndPointToDualHost_Success()
         {
@@ -2499,6 +2495,7 @@ namespace System.Net.Sockets.Tests
         {
             private readonly ITestOutputHelper _log;
             private TcpListener _server;
+            private Socket _acceptedSocket;
 
             public SocketServer(ITestOutputHelper log, IPAddress address, bool dualMode, out int port)
             {
@@ -2519,8 +2516,8 @@ namespace System.Net.Sockets.Tests
             {
                 try
                 {
-                    Socket socket = _server.EndAcceptSocket(ar);
-                    _log.WriteLine("Accepted Socket: " + socket.RemoteEndPoint);
+                    _acceptedSocket = _server.EndAcceptSocket(ar);
+                    _log.WriteLine("Accepted Socket: " + _acceptedSocket.RemoteEndPoint);
                 }
                 catch (SocketException) { }
                 catch (ObjectDisposedException) { }
@@ -2531,6 +2528,8 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     _server.Stop();
+                    if (_acceptedSocket != null)
+                        _acceptedSocket.Dispose();
                 }
                 catch (Exception) { }
             }

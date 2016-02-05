@@ -68,7 +68,6 @@ namespace System.Net.Sockets.Tests
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
         }
 
-        [ActiveIssue(5291, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectAsyncV6IPEndPointToV6Host_Success()
         {
@@ -636,6 +635,7 @@ namespace System.Net.Sockets.Tests
         {
             private readonly ITestOutputHelper _output;
             private Socket _server;
+            private Socket _acceptedSocket;
             private EventWaitHandle _waitHandle = new AutoResetEvent(false);
 
             public EventWaitHandle WaitHandle
@@ -676,6 +676,8 @@ namespace System.Net.Sockets.Tests
                     "Accepted: " + e.GetHashCode() + " SocketAsyncEventArgs with manual event " +
                     handle.GetHashCode() + " error: " + e.SocketError);
 
+                _acceptedSocket = e.AcceptSocket;
+
                 handle.Set();
             }
 
@@ -684,6 +686,8 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     _server.Dispose();
+                    if (_acceptedSocket != null)
+                        _acceptedSocket.Dispose();
                 }
                 catch (Exception) { }
             }
