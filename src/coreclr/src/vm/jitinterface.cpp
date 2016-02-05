@@ -9981,6 +9981,18 @@ void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
     return result;
 }
 
+/*********************************************************************/
+    // return address of fixup area for late-bound N/Direct calls.
+void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
+                                        CORINFO_CONST_LOOKUP *pLookup)
+{
+    WRAPPER_NO_CONTRACT;
+
+    void *pIndirection;
+    pLookup->accessType = IAT_PVALUE;
+    pLookup->addr = getAddressOfPInvokeFixup(method, &pIndirection);
+    _ASSERTE(pIndirection == NULL);
+}
 
 /*********************************************************************/
 CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
@@ -10547,6 +10559,23 @@ CORINFO_METHOD_HANDLE CEEInfo::embedMethodHandle(CORINFO_METHOD_HANDLE handle,
     EE_TO_JIT_TRANSITION_LEAF();
 
     return handle;
+}
+
+/*********************************************************************/
+DWORD CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return 0;
 }
 
 /*********************************************************************/
