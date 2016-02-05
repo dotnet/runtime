@@ -59,7 +59,7 @@
          fails to write packages to it if the path contains the forward slash.
     -->
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
-    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget</PackagesBinDir>
+    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
     
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir> 
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/bin/</DotnetCliPath> 
@@ -103,17 +103,11 @@
   
   <!-- Setup Nuget properties -->
   <ItemGroup>
-    <NuSpecSrcs Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.nuspec" />
     <NuSpecSrcs Include="$(SourceDir)\.nuget\toolchain.win7-x64.Microsoft.DotNet.RyuJit.nuspec" />
-    <NuSpecSrcs Condition="'$(Configuration)'=='Release'" Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.Development.nuspec" />
-    <NuSpecSrcs Condition="'$(Configuration)'=='Debug'" Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
-    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec" />
     <NuSpecs Include="$(PackagesBinDir)\toolchain.win7-x64.Microsoft.DotNet.RyuJit.nuspec" />
-    <NuSpecs Condition="'$(Configuration)'=='Release'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
-    <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
 
   <!--
@@ -132,5 +126,31 @@
     <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
     
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+
+    <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
+    <DistroName Condition="'$(TargetsLinux)' == 'true'">$(__DistroName)</DistroName>
+
   </PropertyGroup>
+
+  <!-- Packaging properties -->
+  <PropertyGroup>
+    <PreReleaseLabel>rc3</PreReleaseLabel>
+    <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    
+    <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
+    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/Microsoft.NETCore.Platforms/1.0.1-rc2-23712/runtime.json</RuntimeIdGraphDefinitionFile>
+
+    <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
+         pulling in different packaging dependencies.
+     -->
+    <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net45/</PackagingTaskDir>
+    <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">00001</BuildNumberMajor>
+    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(BuildArch)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
+  </PropertyGroup>
+
 </Project>
