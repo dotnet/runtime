@@ -6,14 +6,10 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.Data;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Runtime.Versioning;
 
 namespace System.Data.Common
 {
@@ -70,16 +66,16 @@ namespace System.Data.Common
         };
 
         private readonly string _usersConnectionString;
-        private readonly Hashtable _parsetable;
+        private readonly Dictionary<string,string> _parsetable;
         internal readonly NameValuePair KeyChain;
         internal readonly bool HasPasswordKeyword;
 
 
         // synonyms hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
-        public DbConnectionOptions(string connectionString, Hashtable synonyms)
+        public DbConnectionOptions(string connectionString, Dictionary<string, string> synonyms)
         {
-            _parsetable = new Hashtable();
+            _parsetable = new Dictionary<string, string>();
             _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
@@ -405,9 +401,9 @@ namespace System.Data.Common
         }
 
 #if DEBUG
-        private static Hashtable SplitConnectionString(string connectionString, Hashtable synonyms, bool firstKey)
+        private static Dictionary<string,string> SplitConnectionString(string connectionString, Dictionary<string, string> synonyms, bool firstKey)
         {
-            Hashtable parsetable = new Hashtable();
+            Dictionary<string, string> parsetable = new Dictionary<string, string>();
             Debug.Assert(!firstKey, "ODBC rules are not supported in CoreCLR");
             Regex parser = s_connectionStringRegex;
 
@@ -450,7 +446,13 @@ namespace System.Data.Common
                         keyvalue = null;
                     }
 
-                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+                    string realkeyname = null;
+
+                    if (synonyms == null || !synonyms.TryGetValue(keyname, out realkeyname))
+                    {
+                        realkeyname = keyname;
+                    }
+                        
                     if (!IsKeyNameValid(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -464,17 +466,18 @@ namespace System.Data.Common
             return parsetable;
         }
 
-        private static void ParseComparison(Hashtable parsetable, string connectionString, Hashtable synonyms, bool firstKey, Exception e)
+        private static void ParseComparison(Dictionary<string, string> parsetable, string connectionString, Dictionary<string, string> synonyms, bool firstKey, Exception e)
         {
             try
             {
-                Hashtable parsedvalues = SplitConnectionString(connectionString, synonyms, firstKey);
-                foreach (DictionaryEntry entry in parsedvalues)
+                Dictionary<string, string> parsedvalues = SplitConnectionString(connectionString, synonyms, firstKey);
+                foreach (KeyValuePair<string, string> entry in parsedvalues)
                 {
-                    string keyname = (string)entry.Key;
-                    string value1 = (string)entry.Value;
-                    string value2 = (string)parsetable[keyname];
-                    Debug.Assert(parsetable.Contains(keyname), "ParseInternal code vs. regex mismatch keyname <" + keyname + ">");
+                    string keyname = entry.Key;
+                    string value1 = entry.Value;
+                    string value2 = null;
+                    parsetable.TryGetValue(keyname, out value2);
+                    Debug.Assert(parsetable.ContainsKey(keyname), "ParseInternal code vs. regex mismatch keyname <" + keyname + ">");
                     Debug.Assert(value1 == value2, "ParseInternal code vs. regex mismatch keyvalue <" + value1 + "> <" + value2 + ">");
                 }
             }
@@ -515,7 +518,7 @@ namespace System.Data.Common
         }
 #endif
 
-        private static NameValuePair ParseInternal(Hashtable parsetable, string connectionString, bool buildChain, Hashtable synonyms, bool firstKey)
+        private static NameValuePair ParseInternal(Dictionary<string, string> parsetable, string connectionString, bool buildChain, Dictionary<string, string> synonyms, bool firstKey)
         {
             Debug.Assert(null != connectionString, "null connectionstring");
             StringBuilder buffer = new StringBuilder();
@@ -546,7 +549,7 @@ namespace System.Data.Common
                     {
                         throw ADP.KeywordNotSupported(keyname);
                     }
-                    if (!firstKey || !parsetable.Contains(realkeyname))
+                    if (!firstKey || !parsetable.ContainsKey(realkeyname))
                     {
                         parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
                     }
