@@ -2,11 +2,17 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0\System.Security.Cryptography.Algorithms.csproj">
+      <SupportedFramework>net46</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Algorithms.csproj">
-      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
       <TargetGroup>net46</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
+      <TargetGroup>net461</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.Security.Cryptography.Algorithms.pkgproj" />
     <ProjectReference Include="unix\System.Security.Cryptography.Algorithms.pkgproj" />

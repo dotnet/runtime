@@ -16,7 +16,7 @@
   <!-- The runtime.native.System.Security.Cryptography package hasn't moved to open yet-->
   <ItemGroup>
     <_FilePackageReference Include="runtime.native.System.Security.Cryptography">
-      <TargetFramework>netstandard1.3</TargetFramework>
+      <TargetFramework>netstandard1.4</TargetFramework>
       <Version>4.0.0</Version>
     </_FilePackageReference>
   </ItemGroup>

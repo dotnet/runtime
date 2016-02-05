@@ -10,23 +10,19 @@
     <ProjectGuid>{6F8576C2-6CD0-4DF3-8394-00B002D82E40}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461'">win7</PackageTargetRuntime> 
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' != 'net461'">unix</PackageTargetRuntime> 
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">
     <ProjectJson>netcore50/project.json</ProjectJson>
     <ProjectLockJson>netcore50/project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetGroup)' == 'net461' and '$(ProjectJson)' == '' ">
-    <ProjectJson>net461\project.json</ProjectJson>
-    <ProjectLockJson>net461\project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(ProjectJson)' == '' ">
     <ProjectJson>win/project.json</ProjectJson>
     <ProjectLockJson>win/project.lock.json</ProjectLockJson>
   </PropertyGroup>
@@ -46,7 +42,7 @@
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
   
-  <ItemGroup Condition=" '$(TargetGroup)' != 'net461'">
+  <ItemGroup Condition=" '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
@@ -100,7 +96,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net461'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.CspParametersStub.cs" />
@@ -152,7 +148,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetGroup)' != 'net461'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
@@ -298,7 +294,7 @@
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>    
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)'=='net461'">
+  <ItemGroup Condition=" '$(IsPartialFacadeAssembly)'=='true'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />

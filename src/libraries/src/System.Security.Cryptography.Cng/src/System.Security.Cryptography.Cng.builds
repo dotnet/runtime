@@ -6,6 +6,9 @@
     <Project Include="System.Security.Cryptography.Cng.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
+    <Project Include="System.Security.Cryptography.Cng.csproj">
+      <TargetGroup>net461</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
