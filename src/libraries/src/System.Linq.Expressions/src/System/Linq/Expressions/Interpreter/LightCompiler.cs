@@ -2656,7 +2656,10 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     Compile(arg);
                 }
-                _instructions.EmitCall(initializers[i].AddMethod);
+                var add = initializers[i].AddMethod;
+                _instructions.EmitCall(add);
+                if (add.ReturnType != typeof(void))
+                    _instructions.EmitPop();
             }
         }
 
