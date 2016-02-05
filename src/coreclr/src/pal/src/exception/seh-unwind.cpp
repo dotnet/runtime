@@ -157,10 +157,7 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 
 static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, SIZE_T **contextPointer)
 {
-#if defined(__APPLE__)
-    // Returning NULL indicates that we don't have context pointers available
-    *contextPointer = NULL;
-#else
+#if defined(HAVE_UNW_GET_SAVE_LOC)
     unw_save_loc_t saveLoc;
     unw_get_save_loc(cursor, reg, &saveLoc);
     if (saveLoc.type == UNW_SLT_MEMORY)
@@ -170,6 +167,9 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
         if (unwContext == NULL || (pLoc < (SIZE_T *)unwContext) || ((SIZE_T *)(unwContext + 1) <= pLoc))
             *contextPointer = (SIZE_T *)saveLoc.u.addr;
     }
+#else
+    // Returning NULL indicates that we don't have context pointers available
+    *contextPointer = NULL;
 #endif
 }
 
@@ -302,7 +302,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
 // These methods are only used on the AMD64 build
 #ifdef _AMD64_
-#ifdef __LINUX__
+#ifdef HAVE_UNW_GET_ACCESSORS
 
 static struct LibunwindCallbacksInfoType
 {
@@ -528,7 +528,7 @@ Exit:
     }    
     return result;
 }
-#else // __LINUX__
+#else // HAVE_UNW_GET_ACCESSORS
 
 BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context, 
                                 KNONVOLATILE_CONTEXT_POINTERS *contextPointers, 
@@ -539,7 +539,7 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
     return FALSE;
 }
 
-#endif // !__LINUX__
+#endif // !HAVE_UNW_GET_ACCESSORS
 #endif // _AMD64_
 
 /*++
