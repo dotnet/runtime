@@ -178,7 +178,7 @@ FindFirstFileA(
              *      c:\temp\foo.txt\bar  - ERROR_DIRECTORY
              *
              */
-            LPSTR lpTemp = InternalStrdup((LPSTR)lpFileName);
+            LPSTR lpTemp = strdup((LPSTR)lpFileName);
             if ( !lpTemp )
             {
                 ERROR( "strdup failed!\n" );
