@@ -8,8 +8,6 @@ using System.Composition.Hosting.Providers.CurrentScope;
 using System.Composition.Hosting.Providers.ExportFactory;
 using System.Composition.Hosting.Providers.ImportMany;
 using System.Composition.Hosting.Providers.Lazy;
-using System.Composition.Hosting.Providers.Metadata;
-using System.Composition.Runtime;
 using System.Linq;
 
 using Microsoft.Internal;

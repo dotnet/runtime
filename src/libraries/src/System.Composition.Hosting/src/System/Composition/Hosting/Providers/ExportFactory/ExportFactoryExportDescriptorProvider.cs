@@ -5,10 +5,8 @@
 using System.Linq;
 using System.Reflection;
 using System.Composition.Hosting.Core;
-using System.Composition.Runtime;
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
-using System.Composition.Hosting.Properties;
 using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Providers.ExportFactory

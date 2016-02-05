@@ -4,10 +4,8 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
-using System.Composition.Runtime;
 using System.Threading;
 using Microsoft.Internal;
-using System.Composition.Hosting.Properties;
 
 namespace System.Composition.Hosting.Core
 {
