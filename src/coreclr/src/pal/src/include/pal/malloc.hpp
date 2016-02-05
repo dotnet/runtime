@@ -78,11 +78,6 @@ namespace CorUnix{
         void *pvMem
         );
 
-    char *
-    InternalStrdup(
-        const char *c_szStr
-        );  
-
     // Define common code for "new" style allocators below.
 #define INTERNAL_NEW_COMMON()                    \
         T *pMem = (T*)InternalMalloc(sizeof(T)); \
