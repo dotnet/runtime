@@ -1,17 +1,23 @@
 {
-  "dependencies": {
-    "System.Collections": "4.0.0",
-    "System.Collections.NonGeneric": "4.0.0",
-    "System.Globalization": "4.0.0",
-    "System.IO": "4.0.0",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Text.RegularExpressions": "4.0.0",
-    "System.Runtime": "4.0.0",
-    "System.Runtime.Extensions": "4.0.0",
-    "System.Threading.Tasks": "4.0.0",
-    "System.Diagnostics.Tools": "4.0.0"
-  },
   "frameworks": {
-    "dnxcore50": {}
+    "dotnet5.1": {
+      "dependencies": {
+        "System.Collections": "4.0.0",
+        "System.Diagnostics.Debug": "4.0.0",
+        "System.Diagnostics.Tools": "4.0.0",
+        "System.Globalization": "4.0.0",
+        "System.IO": "4.0.0",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.0",
+        "System.Runtime.Extensions": "4.0.0",
+        "System.Text.RegularExpressions": "4.0.0",
+        "System.Threading.Tasks": "4.0.0"
+      }
+    },
+    "net45": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.0"
+      }
+    }
   }
 }
