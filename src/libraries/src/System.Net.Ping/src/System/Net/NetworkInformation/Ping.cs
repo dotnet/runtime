@@ -25,6 +25,23 @@ namespace System.Net.NetworkInformation
         private const int Disposed = 2;
         private int _status = Free;
 
+        public Ping()
+        {
+            // This class once inherited a finalizer. For backward compatibility it has one so that 
+            // any derived class that depends on it will see the behaviour expected. Since it is
+            // not used by this class itself, suppress it immediately if this is not an instance
+            // of a derived class it doesn't suffer the GC burden of finalization.
+            if (GetType() == typeof(Ping))
+            {
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        ~Ping()
+        {
+            Dispose(false);
+        }
+
         private void CheckStart()
         {
             if (_disposeRequested)
@@ -71,6 +88,7 @@ namespace System.Net.NetworkInformation
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
