@@ -1603,7 +1603,8 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 
 	name = get_aotconst_name (type, data, got_offset);
 	if (llvm_type) {
-		load = convert (ctx, LLVMBuildLoad (builder, got_entry_addr, ""), llvm_type);
+		load = LLVMBuildLoad (builder, got_entry_addr, "");
+		load = convert (ctx, load, llvm_type);
 		LLVMSetValueName (load, name ? name : "");
 	} else {
 		load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
@@ -1638,6 +1639,10 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 
 				g_hash_table_insert (ctx->module->direct_callables, (char*)callee_name, callee);
 			} else {
+				/* LLVMTypeRef's are uniqued */
+				if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
+					return LLVMConstBitCast (callee, LLVMPointerType (llvm_sig, 0));
+
 				g_free (callee_name);
 			}
 			return callee;
@@ -2030,7 +2035,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 
 		if (!sig)
 			sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
-		callee = get_callee (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_llvm_throw_corlib_exception");
+		callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_llvm_throw_corlib_exception");
 
 		LLVMBuildBr (builder, ex2_bb);
 
@@ -3449,7 +3454,7 @@ emit_llvmonly_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLV
 		LLVMTypeRef fun_sig = LLVMFunctionType1 (LLVMVoidType (), exc_type, FALSE);
 
 		if (ctx->cfg->compile_aot) {
-			callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
+			callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
 		} else {
 			callee = LLVMAddFunction (ctx->lmodule, icall_name, fun_sig);
 			LLVMAddGlobalMapping (ctx->module->ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
@@ -5113,7 +5118,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, name);
 			g_free (name);
 			/* Can't use this in llvmonly mode since the got slots are initialized by the methods themselves */
-			if (!mono_llvm_only)
+			if (!cfg->llvm_only)
 				set_invariant_load_flag (values [ins->dreg]);
 			break;
 		}

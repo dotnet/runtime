@@ -1829,7 +1829,7 @@ mono_llvmonly_get_calling_assembly (void)
 	} else {
 		assembly = dest->klass->image->assembly;
 	}
-	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), jit_tls->calling_image->assembly);
+	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), assembly);
 }
 
 /*

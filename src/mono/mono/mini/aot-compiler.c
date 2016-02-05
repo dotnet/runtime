@@ -7758,6 +7758,8 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 				sym = mono_lookup_icall_symbol (method);
+			else if (llvm_acfg->aot_opts.direct_pinvoke)
+				sym = get_pinvoke_import (llvm_acfg, method);
 		}
 		if (sym)
 			return g_strdup (sym);

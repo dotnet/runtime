@@ -733,7 +733,11 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 		g_assert (ji != NULL);
 
-		method = get_method_from_stack_frame (ji, generic_info);
+		if (mono_llvm_only)
+			/* Can't resolve actual method */
+			method = jinfo_get_method (ji);
+		else
+			method = get_method_from_stack_frame (ji, generic_info);
 		if (jinfo_get_method (ji)->wrapper_type) {
 			char *s;
 
