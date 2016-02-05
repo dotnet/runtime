@@ -1,0 +1,32 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.targets))\dir.targets" />
+  <PropertyGroup>
+    <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50'">win8</NuGetRuntimeIdentifier>
+    <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</NuGetRuntimeIdentifier>
+    <!-- workaround typo in Dev14 RTM -->
+    <RuntimeIndentifier Condition="'$(NuGetRuntimeIdentifier)' != ''">$(NuGetRuntimeIdentifier)</RuntimeIndentifier>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(IsValidationOnlyPackage)' == 'true'">
+    <ShouldGenerateNuSpec>false</ShouldGenerateNuSpec>
+    <ShouldCreatePackage>false</ShouldCreatePackage>
+    <BuildDependsOn>ValidatePackage</BuildDependsOn>
+  </PropertyGroup>
+  
+  <Target Name="OmitTransitiveRuntimeAssets" AfterTargets="ResolveNuGetPackages">
+    <ItemGroup>
+      <!-- get all references from nuget packages as ID so that we can substract the direct ref IDs-->
+      <_ReferenceCopyLocalPathsAsPackageId Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' != ''">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_ReferenceCopyLocalPathsAsPackageId>
+      <!-- Indirect references are any references whose PackageId isn't in the direct reference set: ReferencedNuGetPackages -->
+      <_IndirectReferenceAsPackageId Include="@(_ReferenceCopyLocalPathsAsPackageId)" Exclude="@(ReferencedNuGetPackages)" />
+      <!-- Transform back to original -->
+      <IndirectReference Include="@(_IndirectReferenceAsPackageId->'%(OriginalIdentity)')" />
+      <ReferenceCopyLocalPaths Remove="@(IndirectReference)" />
+
+      <!-- Don't pass anything to RAR -->
+      <Reference Remove="@(Reference)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "System.Net.Http": "4.0.0",
-    "System.Net.Requests": "4.0.11-rc3-23729",
-    "System.Net.Primitives": "4.0.11-rc3-23729",
+    "System.Net.Requests": "4.0.11-rc3-23803",
+    "System.Net.Primitives": "4.0.11-rc3-23803",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

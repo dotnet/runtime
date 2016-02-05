@@ -46,7 +46,7 @@ namespace System.Buffers.ArrayPool.Tests
         [InlineData(-1)]
         public static void CreatingAPoolWithInvalidArrayCountThrows(int length)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("arraysPerBucket", () => ArrayPool<byte>.Create(numberOfArrays: length, maxArrayLength: 16));
+            Assert.Throws<ArgumentOutOfRangeException>("arraysPerBucket", () => ArrayPool<byte>.Create(maxArraysPerBucket: length, maxArrayLength: 16));
         }
 
         [Theory]
@@ -54,7 +54,7 @@ namespace System.Buffers.ArrayPool.Tests
         [InlineData(-1)]
         public static void CreatingAPoolWithInvalidMaximumArraySizeThrows(int length)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("maxLength", () => ArrayPool<byte>.Create(maxArrayLength: length, numberOfArrays: 1));
+            Assert.Throws<ArgumentOutOfRangeException>("maxLength", () => ArrayPool<byte>.Create(maxArrayLength: length, maxArraysPerBucket: 1));
         }
 
         [Theory]
@@ -75,14 +75,14 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentingMultipleArraysGivesBackDifferentInstances()
         {
-            ArrayPool<byte> instance = ArrayPool<byte>.Create(numberOfArrays: 2, maxArrayLength: 16);
+            ArrayPool<byte> instance = ArrayPool<byte>.Create(maxArraysPerBucket: 2, maxArrayLength: 16);
             Assert.NotSame(instance.Rent(100), instance.Rent(100));
         }
 
         [Fact]
         public static void RentingMoreArraysThanSpecifiedInCreateWillStillSucceed()
         {
-            ArrayPool<byte> instance = ArrayPool<byte>.Create(numberOfArrays: 1, maxArrayLength: 16);
+            ArrayPool<byte> instance = ArrayPool<byte>.Create(maxArraysPerBucket: 1, maxArrayLength: 16);
             Assert.NotNull(instance.Rent(100));
             Assert.NotNull(instance.Rent(100));
         }
@@ -90,7 +90,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentCanReturnBiggerArraySizeThanRequested()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(numberOfArrays: 1, maxArrayLength: 32);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArraysPerBucket: 1, maxArrayLength: 32);
             byte[] rented = pool.Rent(27);
             Assert.NotNull(rented);
             Assert.Equal(rented.Length, 32);
@@ -99,7 +99,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentingAnArrayWithLengthGreaterThanSpecifiedInCreateStillSucceeds()
         {
-            Assert.NotNull(ArrayPool<byte>.Create(maxArrayLength: 100, numberOfArrays: 1).Rent(200));
+            Assert.NotNull(ArrayPool<byte>.Create(maxArrayLength: 100, maxArraysPerBucket: 1).Rent(200));
         }
 
         [Fact]
@@ -184,7 +184,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void TakingAllBuffersFromABucketPlusAnAllocatedOneShouldAllowReturningAllBuffers()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             byte[] rented = pool.Rent(16);
             byte[] allocated = pool.Rent(16);
             pool.Return(rented);
@@ -194,7 +194,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void NewDefaultArrayPoolWithSmallBufferSizeRoundsToOurSmallestSupportedSize()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 8, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 8, maxArraysPerBucket: 1);
             byte[] rented = pool.Rent(8);
             Assert.True(rented.Length == 16);
         }
@@ -202,7 +202,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void ReturningABufferGreaterThanMaxSizeDoesNotThrow()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             byte[] rented = pool.Rent(32);
             pool.Return(rented);
         }
@@ -210,7 +210,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentingAllBuffersAndCallingRentAgainWillAllocateBufferAndReturnIt()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             byte[] rented1 = pool.Rent(16);
             byte[] rented2 = pool.Rent(16);
             Assert.NotNull(rented1);
@@ -220,7 +220,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentingReturningThenRentingABufferShouldNotAllocate()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             byte[] bt = pool.Rent(16);
             int id = bt.GetHashCode();
             pool.Return(bt);
@@ -243,7 +243,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentBufferFiresRentedDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() =>
@@ -256,7 +256,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void ReturnBufferFiresDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() => 
@@ -270,7 +270,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void FirstCallToRentBufferFiresCreatedDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() => 
@@ -283,7 +283,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void AllocatingABufferDueToBucketExhaustionFiresDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() => 
@@ -297,7 +297,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void RentingBufferOverConfiguredMaximumSizeFiresDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() => 
@@ -310,7 +310,7 @@ namespace System.Buffers.ArrayPool.Tests
         [Fact]
         public static void ExhaustingBufferBucketFiresDiagnosticEvent()
         {
-            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, numberOfArrays: 1);
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             AutoResetEvent are = new AutoResetEvent(false);
 
             ActionFiresSpecificEvent(() => 

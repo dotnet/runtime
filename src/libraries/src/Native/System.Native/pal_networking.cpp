@@ -1341,6 +1341,33 @@ extern "C" Error SystemNative_SetLingerOption(int32_t socket, LingerOption* opti
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+Error SetTimeoutOption(int32_t socket, int32_t millisecondsTimeout, int optionName)
+{
+    if (millisecondsTimeout < 0)
+    {
+        return PAL_EINVAL;
+    }
+
+    timeval timeout =
+    {
+        timeout.tv_sec = millisecondsTimeout / 1000,
+        timeout.tv_usec = (millisecondsTimeout % 1000) * 1000
+    };
+
+    int err = setsockopt(socket, SOL_SOCKET, optionName, &timeout, sizeof(timeout));
+    return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error SystemNative_SetReceiveTimeout(int32_t socket, int32_t millisecondsTimeout)
+{
+    return SetTimeoutOption(socket, millisecondsTimeout, SO_RCVTIMEO);
+}
+
+extern "C" Error SystemNative_SetSendTimeout(int32_t socket, int32_t millisecondsTimeout)
+{
+    return SetTimeoutOption(socket, millisecondsTimeout, SO_SNDTIMEO);
+}
+
 static bool ConvertSocketFlagsPalToPlatform(int32_t palFlags, int& platformFlags)
 {
     const int32_t SupportedFlagsMask = PAL_MSG_OOB | PAL_MSG_PEEK | PAL_MSG_DONTROUTE | PAL_MSG_TRUNC | PAL_MSG_CTRUNC;

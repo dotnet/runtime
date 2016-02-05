@@ -31,6 +31,9 @@ internal static partial class Interop
                 throw new InvalidOperationException(string.Format("gethostname returned {0}", err));
             }
 
+            // If the hostname is truncated, it is unspecified whether the returned buffer includes a terminating null byte.
+            name[ArrLength - 1] = 0;
+
             return Marshal.PtrToStringAnsi((IntPtr)name);
         }
     }

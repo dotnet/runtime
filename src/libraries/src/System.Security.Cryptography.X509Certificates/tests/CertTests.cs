@@ -48,7 +48,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3893, PlatformID.AnyUnix)]
         public static void X509Cert2Test()
         {
             string certName = @"E=admin@digsigtrust.com, CN=ABA.ECOM Root CA, O=""ABA.ECOM, INC."", L=Washington, S=DC, C=US";
@@ -73,37 +72,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
                 Assert.Equal("7A74410FB0CD5C972A364B71BF031D88A6510E9E", cert2.Thumbprint);
                 Assert.Equal(3, cert2.Version);
-            }
-        }
-
-        /// <summary>
-        /// This test is for excerising X509Store and X509Chain code without actually installing any certificate 
-        /// </summary>
-        [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void X509CertStoreChain()
-        {
-            X509Store store = new X509Store("My", StoreLocation.LocalMachine);
-            store.Open(OpenFlags.ReadOnly);
-            // can't guarantee there is a certificate in store
-            if (store.Certificates.Count > 0)
-            {
-                X509Chain chain = new X509Chain();
-                Assert.NotNull(chain.SafeHandle);
-                Assert.Same(chain.SafeHandle, chain.SafeHandle);
-                Assert.True(chain.SafeHandle.IsInvalid);
-
-                foreach (X509Certificate2 c in store.Certificates)
-                {
-                    // can't guarantee success, so no Assert 
-                    if (chain.Build(c))
-                    {
-                        foreach (X509ChainElement k in chain.ChainElements)
-                        {
-                            Assert.NotNull(k.Certificate.IssuerName.Name);
-                        }
-                    }
-                }
             }
         }
 
@@ -132,7 +100,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2ToStringVerbose()
         {
             using (X509Store store = new X509Store("My", StoreLocation.CurrentUser))

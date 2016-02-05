@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23729",
+    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23803",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

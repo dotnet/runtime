@@ -17,7 +17,7 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23729",
+        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23803",
         "System.Text.Encoding": "4.0.10",
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.10",
@@ -29,7 +29,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23729",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23803",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -45,7 +45,7 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23729",
+        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23803",
         "System.Text.Encoding": "4.0.10",
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.10",

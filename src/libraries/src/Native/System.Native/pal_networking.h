@@ -364,6 +364,10 @@ extern "C" Error SystemNative_GetLingerOption(int32_t socket, LingerOption* opti
 
 extern "C" Error SystemNative_SetLingerOption(int32_t socket, LingerOption* option);
 
+extern "C" Error SystemNative_SetReceiveTimeout(int32_t socket, int32_t millisecondsTimeout);
+
+extern "C" Error SystemNative_SetSendTimeout(int32_t socket, int32_t millisecondsTimeout);
+
 extern "C" Error SystemNative_ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
 extern "C" Error SystemNative_SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);

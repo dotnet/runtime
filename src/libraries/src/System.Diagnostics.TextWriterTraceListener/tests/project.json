@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Diagnostics.TraceSource": "4.0.0-rc3-23729",
+    "System.Diagnostics.TraceSource": "4.0.0-rc3-23803",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
