@@ -177,10 +177,10 @@ LoadLibraryExA(
     }
 
     /* do the Dos/Unix conversion on our own copy of the name */
-    lpstr = InternalStrdup(lpLibFileName);
+    lpstr = strdup(lpLibFileName);
     if (!lpstr)
     {
-        ERROR("InternalStrdup failure!\n");
+        ERROR("strdup failure!\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto Done;
     }
