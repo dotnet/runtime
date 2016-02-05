@@ -134,6 +134,12 @@ namespace System.Net.WebSockets
 
             state.RequestHandle.DetachCallback();
             state.RequestHandle = null;
+            
+            // Unpin the operation object if there is no WebSocket handle. This will happen in error cases.
+            if (state.WebSocketHandle == null)
+            {
+                state.Unpin();
+            }
         }
 
         private static void OnRequestError(
@@ -290,6 +296,9 @@ namespace System.Net.WebSockets
 
             state.WebSocketHandle.DetachCallback();
             state.WebSocketHandle = null;
+
+            // Unpin the operation object since all handles that would use a callback are now closed.
+            state.Unpin();
         }
 
         private static void OnWebSocketError(

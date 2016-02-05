@@ -26,7 +26,9 @@ namespace System.Net.WebSockets
         private Interop.WinHttp.SafeWinHttpHandleWithCallback _webSocketHandle;
 
         // A GCHandle for this operation object.
-        // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
+        // This is owned by the callback and will be unpinned by the callback when it determines that
+        // no further calls will happen on the callback, i.e. all WinHTTP handles have fully closed via
+        // a WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING notfication being received by the callback.
         private GCHandle _operationHandle = new GCHandle();
 
         private volatile WebSocketState _state = WebSocketState.None;
@@ -37,7 +39,19 @@ namespace System.Net.WebSockets
 
         public WinHttpWebSocketState()
         {
+        }
+
+        public void Pin()
+        {
             _operationHandle = GCHandle.Alloc(this);
+        }
+
+        public void Unpin()
+        {
+            if (_operationHandle.IsAllocated)
+            {
+                _operationHandle.Free();
+            }
         }
 
         public WebSocketState State
