@@ -14150,18 +14150,22 @@ void                Compiler::fgMorphBlocks()
                     fgReturnCount--;
                 }
 
-                // Block is guaranteed to have last stmt as its jump kind is BBJ_RETURN
+                // Block is guaranteed to have last stmt as its jump kind is BBJ_RETURN.
+                // Note that it a block with jump kind BBJ_RETURN not necessarily needs to end with GT_RETURN.
+                // It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
+                // For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
+                // is BAD_VAR_NUM.
+                // 
+                // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
+
                 noway_assert(block->bbTreeList);
                 GenTreePtr last = block->bbTreeList->gtPrev;
                 noway_assert(last != nullptr);
                 noway_assert(last->gtNext == nullptr);
                 noway_assert(last->gtOper == GT_STMT);
 
-                // Block's last stmt must be GT_RETURN
                 GenTreePtr ret = last->gtStmt.gtStmtExpr;
                 noway_assert(ret != nullptr);
-                noway_assert(ret->OperGet() == GT_RETURN);
-                noway_assert(ret->gtGetOp2() == nullptr);
 
                 //replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
                 if (genReturnLocal != BAD_VAR_NUM)
@@ -14169,18 +14173,22 @@ void                Compiler::fgMorphBlocks()
                     noway_assert(compMethodHasRetVal());
 
                     // GT_RETURN must have non-null operand as the method is returning the value assigned to genReturnLocal
+                    noway_assert(ret->OperGet() == GT_RETURN);
                     noway_assert(ret->gtGetOp1() != nullptr);
+                    noway_assert(ret->gtGetOp2() == nullptr);
 
                     last->gtStmt.gtStmtExpr = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
 
                     //make sure that copy-prop ignores this assignment.
                     last->gtStmt.gtStmtExpr->gtFlags |= GTF_DONT_CSE;
                 }
-                else
+                else if (ret->OperGet() == GT_RETURN)
                 {
                     // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn block
-                    noway_assert(ret->gtGetOp1() == nullptr);
                     noway_assert(ret->TypeGet() == TYP_VOID);
+                    noway_assert(ret->gtGetOp1() == nullptr);
+                    noway_assert(ret->gtGetOp2() == nullptr);
+
                     fgRemoveStmt(block, last);
                 }
 
