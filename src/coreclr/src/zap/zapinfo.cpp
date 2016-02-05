@@ -1460,6 +1460,13 @@ void ZapInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
         offsetof(CORCOMPILE_EE_INFO_TABLE, gsCookie));
 }
 
+DWORD ZapInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
+{
+    _ASSERTE(jitFlags != NULL);
+
+    return 0;
+}
+
 IEEMemoryManager* ZapInfo::getMemoryManager()
 {
     return GetEEMemoryManager();
@@ -2756,6 +2763,23 @@ void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppI
 
     *ppIndirection = pImport;
     return NULL;
+}
+
+void ZapInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup)
+{
+    _ASSERTE(pLookup != NULL);
+
+    void * pIndirection;
+    void * pResult = getAddressOfPInvokeFixup(method, &pIndirection);
+    if (pResult != NULL)
+    {
+        pLookup->accessType = IAT_PVALUE;
+        pLookup->addr = pResult;
+        return;
+    }
+
+    pLookup->accessType = IAT_PPVALUE;
+    pLookup->addr = pIndirection;
 }
 
 CORINFO_JUST_MY_CODE_HANDLE ZapInfo::getJustMyCodeHandle(
