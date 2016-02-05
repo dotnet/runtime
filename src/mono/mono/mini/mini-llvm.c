@@ -5112,7 +5112,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			name = get_aotconst_name (ji->type, ji->data.target, got_offset);
 			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, name);
 			g_free (name);
-			set_invariant_load_flag (values [ins->dreg]);
+			/* Can't use this in llvmonly mode since the got slots are initialized by the methods themselves */
+			if (!mono_llvm_only)
+				set_invariant_load_flag (values [ins->dreg]);
 			break;
 		}
 		case OP_NOT_REACHED:
