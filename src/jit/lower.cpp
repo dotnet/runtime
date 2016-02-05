@@ -2811,25 +2811,40 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
     if (call->gtCallType != CT_INDIRECT)
     {
-        GenTree* indir = nullptr;
-
         noway_assert(call->gtCallType == CT_USER_FUNC);
         CORINFO_METHOD_HANDLE methHnd  = call->gtCallMethHnd;
 
-        void* pAddr;
-        addr = comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, (void**)&pAddr);
+        CORINFO_CONST_LOOKUP lookup;
+#if COR_JIT_EE_VERSION > 460
+        comp->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
+#else
+        void* pIndirection;
+        lookup.accessType = IAT_PVALUE;
+        lookup.addr = comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, &pIndirection);
+        if (lookup.addr == nullptr)
+        {
+            lookup.accessType = IAT_PPVALUE;
+            lookup.addr = pIndirection;
+        }
+#endif
 
-        if (addr != nullptr)
+        GenTree* address = AddrGen(lookup.addr);
+        switch (lookup.accessType)
         {
-            indir = Ind(AddrGen(addr));
+            case IAT_VALUE:
+                result = address;
+                break;
+
+            case IAT_PVALUE:
+                result = Ind(address);
+                break;
+
+            case IAT_PPVALUE:
+                result = Ind(Ind(address));
+                break;
         }
-        else
-        {
-            // double indirection
-            indir = Ind(Ind(AddrGen(pAddr)));
-        }
-        result = indir;
     }
+
     InsertPInvokeCallEpilog(call);
 
     return result;
