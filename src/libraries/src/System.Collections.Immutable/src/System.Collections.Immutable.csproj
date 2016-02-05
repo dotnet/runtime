@@ -7,8 +7,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Collections.Immutable</RootNamespace>
     <AssemblyName>System.Collections.Immutable</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile259</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Collections.Immutable.xml</DocumentationFile>
     <GenerateAppxPackageOnBuild>False</GenerateAppxPackageOnBuild>
