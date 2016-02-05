@@ -11,6 +11,27 @@ namespace System.Net.NetworkInformation.Tests
 {
     public class PingTest
     {
+        private class FinalizingPing : Ping
+        {
+            public static volatile bool WasFinalized;
+
+            public static void CreateAndRelease()
+            {
+                new FinalizingPing();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposing)
+                {
+                    WasFinalized = true;
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+
+
         [Fact]
         public async Task SendPingAsync_InvalidArgs()
         {
@@ -342,6 +363,15 @@ namespace System.Net.NetworkInformation.Tests
         {
             var pingResult = await sendPing(new Ping());
             pingResultValidator(pingResult);
+        }
+
+        [Fact]
+        public void CanBeFinalized()
+        {
+            FinalizingPing.CreateAndRelease();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.True(FinalizingPing.WasFinalized);
         }
     }
 }

@@ -25,7 +25,6 @@ namespace System.Diagnostics
         internal ProcessModule(ModuleInfo moduleInfo)
         {
             _moduleInfo = moduleInfo;
-            GC.SuppressFinalize(this);
         }
 
         /// <devdoc>
