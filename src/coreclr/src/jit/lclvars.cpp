@@ -2170,7 +2170,7 @@ void               Compiler::lvaDecRefCnts(GenTreePtr tree)
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
-        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -2229,7 +2229,7 @@ void               Compiler::lvaIncRefCnts(GenTreePtr tree)
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
-        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -2819,7 +2819,7 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
     /* Is this a call to unmanaged code ? */
     if (tree->gtOper == GT_CALL && tree->gtFlags & GTF_CALL_UNMANAGED) 
     {
-        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -3189,7 +3189,7 @@ void                Compiler::lvaMarkLocalVars()
 
     if (info.compCallUnmanaged != 0)
     {
-        assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount &&

@@ -438,7 +438,7 @@ void Compiler::fgPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr a
 
             if ((tree->gtCall.IsUnmanaged() || (tree->gtCall.IsTailCall() && info.compCallUnmanaged)))
             {
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
                 {
                     /* Get the TCB local and mark it as used */
@@ -634,7 +634,7 @@ void                Compiler::fgPerBlockLocalVarLiveness()
 
         if (block->bbJumpKind == BBJ_RETURN && info.compCallUnmanaged)
         {
-            assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+            assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
             if (!opts.ShouldUsePInvokeHelpers())
             {
                 noway_assert(info.compLvFrameListRoot < lvaCount);
@@ -1749,7 +1749,7 @@ SKIP_QMARK:
 
             if (tree->gtCall.IsTailCall() && info.compCallUnmanaged)
             {
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
                 {
                     /* Get the TCB local and make it live */
@@ -1781,7 +1781,7 @@ SKIP_QMARK:
             if (tree->gtCall.IsUnmanaged())
             {
                 /* Get the TCB local and make it live */
-                assert(!opts.ShouldUsePInvokeHelpers() || info.compLvFrameListRoot == BAD_VAR_NUM);
+                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers())
                 {
                     noway_assert(info.compLvFrameListRoot < lvaCount);
