@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <Version>1.0.1</Version>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <PackageTargetRuntime>ubuntu.14.04-$(PackagePlatform)</PackageTargetRuntime>
+    <!-- only build for x64 -->
+    <PackagePlatforms>x64;</PackagePlatforms>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libcoreclr.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libcoreclrtraceptprovider.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libdbgshim.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libmscordaccore.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libmscordbi.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libsos.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)libsosplugin.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Globalization.Native.so"/>
+
+    <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
+
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen"/>
+
+    <File Include="@(ArchitectureSpecificNativeFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+
+    <!-- Using lib/dotnet here.  There is no TFM for this since it is a runtime itself. -->
+    <File Include="@(ArchitectureSpecificLibFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/dotnet</TargetPath>
+    </File>
+
+    <!-- No reference: don't permit reference to the implementation from lib -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>ref/dotnet</TargetPath>
+    </File>
+
+    <File Include="@(ArchitectureSpecificToolFile)">
+      <TargetPath>tools</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

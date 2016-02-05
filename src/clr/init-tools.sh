@@ -1,6 +1,35 @@
 #!/usr/bin/env bash
 
+initDistroName()
+{
+    if [ "$1" == "Linux" ]; then
+        # Detect Distro
+        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
+            export __DistroName=ubuntu
+        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
+            export __DistroName=centos
+        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
+            export __DistroName=rhel
+        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
+            export __DistroName=debian
+        else
+            export __DistroName=""
+        fi
+    fi
+}
+
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
+
+# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
+# This is needed by CLI to function.
+if [ -z "$HOME" ]; then
+    if [ ! -d "$__scriptpath/temp_home" ]; then
+        mkdir temp_home
+    fi
+    export HOME=$__scriptpath/temp_home
+    echo "HOME not defined; setting it to $HOME"
+fi
+
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
@@ -12,6 +41,7 @@ __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PA
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
+__DistroName=""
 
 OSName=$(uname -s)
 case $OSName in
@@ -32,6 +62,16 @@ case $OSName in
         ;;
 esac
 
+# Initialize Linux Distribution name and .NET CLI package name.
+
+initDistroName $OS
+if [ "$__DistroName" == "centos" ]; then
+    __DOTNET_PKG=dotnet-centos-x64
+fi
+
+__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+echo ".NET CLI will be downloaded from $__CLIDownloadURL"
+
 if [ ! -e $__PROJECT_JSON_FILE ]; then
  if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
 
@@ -40,9 +80,9 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     which curl > /dev/null 2> /dev/null
     if [ $? -ne 0 ]; then
       mkdir -p "$__DOTNET_PATH"
-      wget -q -O $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+      wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
     else
-      curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+      curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
     fi
     cd $__DOTNET_PATH
     tar -xf $__DOTNET_PATH/dotnet.tar

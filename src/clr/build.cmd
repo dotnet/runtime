@@ -449,6 +449,31 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:GenerateNuget
+if /i "%__BuildArch%" =="arm64" goto :SkipNuget
+
+set "__BuildLog=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set __msbuildLogArgs=^
+/fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%" ^
+/fileloggerparameters1:WarningsOnly;LogFile="%__BuildWrn%" ^
+/fileloggerparameters2:ErrorsOnly;LogFile="%__BuildErr%" ^
+/consoleloggerparameters:Summary ^
+/verbosity:minimal
+
+set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Runtime.CoreClr\Microsoft.NETCore.Runtime.CoreCLR.builds" /p:Platform=%__BuildArch%
+%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
+:SkipNuget
+
 :SkipCrossGenBuild
 
 REM endlocal to rid us of environment changes from vsdevenv.bat
