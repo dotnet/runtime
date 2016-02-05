@@ -911,6 +911,7 @@ public:
     bool canGetVarArgsHandle(CORINFO_SIG_INFO *sig);
     void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
+    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
 
     void GetProfilingHandle(
@@ -1115,6 +1116,8 @@ public:
 
     // Performs any work JIT-related work that should be performed at process shutdown.
     void JitProcessShutdownWork();
+
+    DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
 private:
     // Shrinking these buffers drastically reduces the amount of stack space
