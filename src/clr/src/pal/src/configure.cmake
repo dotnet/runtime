@@ -75,6 +75,8 @@ check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
+check_function_exists(unw_get_save_loc HAVE_UNW_GET_SAVE_LOC)
+check_function_exists(unw_get_accessors HAVE_UNW_GET_ACCESSORS)
 
 check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
 check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
