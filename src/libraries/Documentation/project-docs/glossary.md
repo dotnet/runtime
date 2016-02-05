@@ -129,6 +129,14 @@ Windows Forms is in maintenance mode currently. That means new features will gen
 
 **Also referred to as**: DX
 
+### XNA
+
+**Also referred to as**: XNA Framwork
+
+### MonoGame
+
+**Also referred to as**: MG, XNA Touch, Silver Sprite
+
 ### ASP.NET
 
 ### ASP.NET Core
