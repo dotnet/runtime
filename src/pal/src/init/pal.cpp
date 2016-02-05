@@ -1131,7 +1131,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     struct stat theStats;
 
     /* if a path is specified, only search there */
-    if(strchr(exe_name, '/'))
+    if (strchr(exe_name, '/'))
     {
         if ( -1 == stat( exe_name, &theStats ) )
         {
@@ -1162,7 +1162,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
             }
             else
             {
-                if(!MultiByteToWideChar(CP_ACP, 0, real_path, -1, 
+                if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1, 
                                         return_value, return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
@@ -1180,16 +1180,16 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 
     /* no path was specified : search $PATH */
 
-    env_path=MiscGetenv("PATH");
-    if(!env_path || *env_path=='\0')
+    env_path = MiscGetenv("PATH");
+    if (!env_path || *env_path=='\0')
     {
         WARN("$PATH isn't set.\n");
         goto last_resort;
     }
 
     /* get our own copy of env_path so we can modify it */
-    env_path=InternalStrdup(env_path);
-    if(!env_path)
+    env_path = strdup(env_path);
+    if (!env_path)
     {
         ERROR("Not enough memory to copy $PATH!\n");
         return NULL;
@@ -1199,24 +1199,24 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 
     cur_dir=env_path;
 
-    while(cur_dir)
+    while (cur_dir)
     {
         LPSTR full_path;
         struct stat theStats;
 
         /* skip all leading ':' */
-        while(*cur_dir==':')
+        while (*cur_dir==':')
         {
             cur_dir++;
         }
-        if(*cur_dir=='\0')
+        if (*cur_dir=='\0')
         {
             break;
         }
 
         /* cut string at next ':' */
-        path_ptr=strchr(cur_dir, ':');
-        if(path_ptr)
+        path_ptr = strchr(cur_dir, ':');
+        if (path_ptr)
         {
             /* check if we need to add a '/' between the path and filename */
             need_slash=(*(path_ptr-1))!='/';
@@ -1235,7 +1235,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
         /* build tentative full file name */
         int iLength = (strlen(cur_dir)+exe_name_length+2);
         full_path = reinterpret_cast<LPSTR>(InternalMalloc(iLength));
-        if(!full_path)
+        if (!full_path)
         {
             ERROR("Not enough memory!\n");
             break;
@@ -1249,7 +1249,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
             return NULL;
         }
 
-        if(need_slash)
+        if (need_slash)
         {
             if (strcat_s(full_path, iLength, "/") != SAFECRT_SUCCESS)
             {
@@ -1274,7 +1274,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
             if( UTIL_IsExecuteBitsSet( &theStats ) )
             {
                 /* generate canonical path */
-                if(!realpath(full_path, real_path))
+                if (!realpath(full_path, real_path))
                 {
                     ERROR("realpath() failed!\n");
                     InternalFree(full_path);
@@ -1299,7 +1299,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
                     return NULL;
                 }
 
-                if(!MultiByteToWideChar(CP_ACP, 0, real_path, -1, return_value,
+                if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1, return_value,
                                     return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
@@ -1311,27 +1311,30 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
                     TRACE("found %s in %s; real path is %s\n", exe_name,
                           cur_dir,real_path);
                 }
+
                 InternalFree(env_path);
                 return return_value;
             }
         }
+
         /* file doesn't exist : keep searching */
         InternalFree(full_path);
 
         /* path_ptr is NULL if there's no ':' after this directory */
         cur_dir=path_ptr;
     }
+
     InternalFree(env_path);
     TRACE("No %s found in $PATH (%s)\n", exe_name, MiscGetenv("PATH"));
 
 last_resort:
     /* last resort : see if the executable is in the current directory. This is
        possible if it comes from a exec*() call. */
-    if(0 == stat(exe_name,&theStats))
+    if (0 == stat(exe_name,&theStats))
     {
         if ( UTIL_IsExecuteBitsSet( &theStats ) )
         {
-            if(!realpath(exe_name, real_path))
+            if (!realpath(exe_name, real_path))
             {
                 ERROR("realpath() failed!\n");
                 return NULL;
@@ -1352,7 +1355,7 @@ last_resort:
             }
             else
             {
-                if(!MultiByteToWideChar(CP_ACP, 0, real_path, -1, 
+                if (!MultiByteToWideChar(CP_ACP, 0, real_path, -1, 
                                         return_value, return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
@@ -1364,6 +1367,7 @@ last_resort:
                     TRACE("full path to executable is %s\n", real_path);
                 }
             }
+
             return return_value;
         }
         else
@@ -1377,6 +1381,7 @@ last_resort:
         TRACE("last resort failed : executable %s is not in the current "
               "directory\n",exe_name);
     }
+
     ERROR("executable %s not found anywhere!\n", exe_name);
     return NULL;
 #else // !__APPLE__
@@ -1408,7 +1413,7 @@ last_resort:
     }
     else
     {
-        if(!MultiByteToWideChar(CP_ACP, 0, exec_path, -1, 
+        if (!MultiByteToWideChar(CP_ACP, 0, exec_path, -1, 
                                 return_value, return_size))
         {
             ASSERT("MultiByteToWideChar failure\n");
