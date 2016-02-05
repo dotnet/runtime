@@ -15,4 +15,9 @@
   <Target Name="Clean">
     <Delete Files="$(BinDir)mscorlib.*" />
   </Target>
+
+  <Target Name="RestoreNETCorePlatforms" AfterTargets="Build">
+    <Exec Command="$(DnuRestoreCommand) $(SourceDir).nuget/init/project.json --source https://www.myget.org/F/dotnet-core/" />
+  </Target>
+  
 </Project>
