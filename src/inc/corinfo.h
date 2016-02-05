@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* f7be09f3-9ca7-42fd-b0ca-f97c0499f5a3 */
-    0xf7be09f3,
-    0x9ca7,
-    0x42fd,
-    {0xb0, 0xca, 0xf9, 0x7c, 0x04, 0x99, 0xf5, 0xa3}
+SELECTANY const GUID JITEEVersionIdentifier = { /* b26841f8-74d6-4fc9-9d81-6500cd662549 */
+    0xb26841f8,
+    0x74d6,
+    0x4fc9,
+    { 0x9d, 0x81, 0x65, 0x00, 0xcd, 0x66, 0x25, 0x49 }
 };
 
 #else
@@ -740,6 +740,9 @@ enum CorInfoHelpFunc
 #if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
+
+    CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
+    CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
 #endif
 
     CORINFO_HELP_COUNT,
@@ -3362,6 +3365,11 @@ public:
                     CORINFO_METHOD_HANDLE context
                     ) = 0;
 
+    // NOTE: the two methods below--getPInvokeUnmanagedTarget and getAddressOfPInvokeFixup--are
+    //       deprecated. New code (i.e. anything that can depend on COR_JIT_EE_VERSION being
+    //       greater than 460) should instead use getAddressOfPInvokeTarget, which subsumes the
+    //       functionality of these methods.
+
     // return the unmanaged target *if method has already been prelinked.*
     virtual void* getPInvokeUnmanagedTarget(
                     CORINFO_METHOD_HANDLE   method,
@@ -3373,6 +3381,15 @@ public:
                     CORINFO_METHOD_HANDLE   method,
                     void                  **ppIndirection = NULL
                     ) = 0;
+
+#if COR_JIT_EE_VERSION > 460
+    // return the address of the PInvoke target. May be a fixup area in the
+    // case of late-bound PInvoke calls.
+    virtual void getAddressOfPInvokeTarget(
+                    CORINFO_METHOD_HANDLE  method,
+                    CORINFO_CONST_LOOKUP  *pLookup
+                    ) = 0;
+#endif
 
     // Generate a cookie based on the signature that would needs to be passed
     // to CORINFO_HELP_PINVOKE_CALLI

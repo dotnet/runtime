@@ -1883,19 +1883,22 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 }
 
 inline
-void                Compiler::compInitOptions(unsigned compileFlags)
+void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 {
 #ifdef UNIX_AMD64_ABI
     opts.compNeedToAlignFrame = false;
 #endif // UNIX_AMD64_ABI   
     memset(&opts, 0, sizeof(opts));
 
+    unsigned compileFlags = jitFlags->corJitFlags;
+
     if (compIsForInlining())
     {
         assert((compileFlags & CORJIT_FLG_LOST_WHEN_INLINING) == 0);
         assert(compileFlags & CORJIT_FLG_SKIP_VERIFICATION);
     }
-    
+
+    opts.jitFlags  = jitFlags;
     opts.eeFlags   = compileFlags;
     opts.compFlags = CLFLG_MAXOPT;      // Default value is for full optimization
 
@@ -3523,7 +3526,7 @@ bool  Compiler::compRsvdRegCheck(FrameLayoutState curState)
 //  
 void                 Compiler::compCompile(void * * methodCodePtr,
                                            ULONG  * methodCodeSize,
-                                           unsigned compileFlags)
+                                           CORJIT_FLAGS * compileFlags)
 {
     hashBv::Init(this);
 
@@ -3596,7 +3599,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     fgRemoveEH();
 #endif // !FEATURE_EH
 
-    if (compileFlags & CORJIT_FLG_BBINSTR)
+    if (compileFlags->corJitFlags & CORJIT_FLG_BBINSTR)
     {
         fgInstrumentMethod();
     }
@@ -4143,7 +4146,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
                                     CORINFO_METHOD_INFO * methodInfo,
                                     void *              * methodCodePtr,
                                     ULONG               * methodCodeSize,
-                                    unsigned              compileFlags)
+                                    CORJIT_FLAGS        * compileFlags)
 {
 #ifdef FEATURE_JIT_METHOD_PERF
     static bool checkedForJitTimeLog = false;
@@ -4300,7 +4303,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    tiVerificationNeeded = ((compileFlags & CORJIT_FLG_SKIP_VERIFICATION) == 0);
+    tiVerificationNeeded = (compileFlags->corJitFlags & CORJIT_FLG_SKIP_VERIFICATION) == 0;
 
     assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
@@ -4372,7 +4375,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         CORINFO_METHOD_INFO * methodInfo;
         void *              * methodCodePtr;
         ULONG               * methodCodeSize;
-        unsigned              compileFlags;
+        CORJIT_FLAGS        * compileFlags;
 
         CorInfoInstantiationVerification instVerInfo;
         int result;
@@ -4680,7 +4683,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                                            CORINFO_METHOD_INFO            * methodInfo,
                                            void *                         * methodCodePtr,
                                            ULONG                          * methodCodeSize,
-                                           unsigned                         compileFlags,
+                                           CORJIT_FLAGS                   * compileFlags,
                                            CorInfoInstantiationVerification instVerInfo)
     {
         CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
@@ -5518,7 +5521,7 @@ int           jitNativeCode ( CORINFO_METHOD_HANDLE     methodHnd,
                               CORINFO_METHOD_INFO*  methodInfo,
                               void *          * methodCodePtr,
                               ULONG           * methodCodeSize,
-                              unsigned          compileFlags,
+                              CORJIT_FLAGS    * compileFlags,
                               void *            inlineInfoPtr
                               )
 {
@@ -5573,7 +5576,7 @@ START:
         CORINFO_METHOD_INFO*  methodInfo;
         void *          * methodCodePtr;
         ULONG           * methodCodeSize;
-        unsigned          compileFlags;
+        CORJIT_FLAGS    * compileFlags;
         InlineInfo *      inlineInfo;
 
         int result;
@@ -5696,8 +5699,8 @@ START:
         jitFallbackCompile = true;
 
         // Update the flags for 'safer' code generation.
-        compileFlags |= CORJIT_FLG_MIN_OPT;
-        compileFlags &= ~(CORJIT_FLG_SIZE_OPT | CORJIT_FLG_SPEED_OPT);
+        compileFlags->corJitFlags |= CORJIT_FLG_MIN_OPT;
+        compileFlags->corJitFlags &= ~(CORJIT_FLG_SIZE_OPT | CORJIT_FLG_SPEED_OPT);
 
         goto START;
     }
