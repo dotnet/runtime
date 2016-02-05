@@ -501,11 +501,11 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
 	gint8 pair_regs [2];
-	/* The size of each pair */
+	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
 	/* Only if storage == ArgOnStack */
-	int arg_size;
+	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
 } ArgInfo;
 
 typedef struct {
@@ -522,16 +522,6 @@ typedef struct {
 } CallInfo;
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
-
-#ifdef TARGET_WIN32
-static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
-
-static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
-#else
-static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
-
- static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
-#endif
 
 static void inline
 add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
@@ -551,12 +541,6 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		(*gr) ++;
     }
 }
-
-#ifdef TARGET_WIN32
-#define FLOAT_PARAM_REGS 4
-#else
-#define FLOAT_PARAM_REGS 8
-#endif
 
 static void inline
 add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
