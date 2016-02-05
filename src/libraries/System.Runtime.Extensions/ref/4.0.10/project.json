@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Runtime.Extensions": "4.0.10"
+  },
+  "frameworks": {
+    "dotnet5.4": {}
+  }
+}

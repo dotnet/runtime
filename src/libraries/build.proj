@@ -18,7 +18,10 @@
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(BuildAllOSGroups)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
     </Project>
-    <Project Include="src\post.msbuild" />
+    <Project Include="src\post.builds">
+      <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
+      <FilterToOSGroup Condition="'$(BuildAllOSGroups)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
+    </Project>
   </ItemGroup>
 
   <Import Project="dir.targets" />

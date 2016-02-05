@@ -84,12 +84,18 @@ namespace System.Net.Http
             {
                 if (value)
                 {
+                    _winHttpHandler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
                     _winHttpHandler.ServerCredentials = CredentialCache.DefaultCredentials;
                 }
-                else if (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials)
+                else
                 {
-                    // Only clear out the ServerCredentials property if it was a DefaultCredentials.
-                    _winHttpHandler.ServerCredentials = null;
+                    _winHttpHandler.DefaultProxyCredentials = null;
+
+                    if (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials)
+                    {
+                        // Only clear out the ServerCredentials property if it was a DefaultCredentials.
+                        _winHttpHandler.ServerCredentials = null;
+                    }
                 }
             }
         }

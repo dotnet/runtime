@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "System.Net.Primitives": "4.0.10",
-    "System.Diagnostics.Process": "4.1.0-rc3-23729",
+    "System.Diagnostics.Process": "4.1.0-rc3-23803",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

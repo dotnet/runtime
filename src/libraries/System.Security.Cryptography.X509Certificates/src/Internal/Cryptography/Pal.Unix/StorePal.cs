@@ -42,8 +42,8 @@ namespace Internal.Cryptography.Pal
 
                 return ListToStorePal(certPals);
             }
-            
-            return null;
+
+            throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
         public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)

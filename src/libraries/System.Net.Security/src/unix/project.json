@@ -3,12 +3,12 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Globalization.Extensions": "4.0.0",
     "System.Threading": "4.0.10",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23729",
+    "System.Threading.ThreadPool": "4.0.10-rc3-23803",
     "System.Net.Primitives": "4.0.10",
-    "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23729",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23729",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23803",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23803",
     "System.Security.Principal": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23729"
+    "System.Security.Principal.Windows": "4.0.0-rc3-23803"
   },
   "frameworks": {
     "dnxcore50": {}

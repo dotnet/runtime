@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc3-23729",
+    "System.Console": "4.0.0-rc3-23803",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Tracing": "4.0.20",
     "System.Net.Primitives": "4.0.10",

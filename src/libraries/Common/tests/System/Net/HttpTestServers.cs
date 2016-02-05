@@ -37,6 +37,16 @@ namespace System.Net.Tests
         public readonly static object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer } };
         public readonly static object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
 
+        public static Uri NegotiateAuthUriForDefaultCreds(bool secure)
+        {
+            return new Uri(
+                string.Format(
+                    "{0}://{1}/{2}?auth=negotiate",
+                    secure ? HttpsScheme : HttpScheme,
+                    Host,
+                    EchoHandler));
+        }
+
         public static Uri BasicAuthUriForCreds(bool secure, string userName, string password)
         {
             return new Uri(

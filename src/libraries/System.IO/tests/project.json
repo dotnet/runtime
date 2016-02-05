@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.IO": "4.1.0-rc3-23729",
+    "System.IO": "4.1.0-rc3-23803",
     "System.Globalization": "4.0.10",
     "System.Text.Encoding.CodePages": "4.0.0",
     "xunit": "2.1.0",

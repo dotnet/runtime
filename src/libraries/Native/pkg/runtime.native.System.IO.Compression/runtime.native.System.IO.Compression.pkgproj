@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="centos\runtime.native.System.IO.Compression.pkgproj">
+    <ProjectReference Include="rhel\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="debian\runtime.native.System.IO.Compression.pkgproj">

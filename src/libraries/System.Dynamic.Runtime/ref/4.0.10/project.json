@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Dynamic.Runtime": "4.0.10"
+  },
+  "frameworks": {
+    "dotnet5.4": {}
+  }
+}

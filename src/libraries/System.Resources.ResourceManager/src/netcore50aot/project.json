@@ -8,7 +8,7 @@
         "System.Diagnostics.Tracing": "4.0.0",
         "System.Globalization": "4.0.0",
         "System.Reflection": "4.0.10",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23729"
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23803"
       }
     }
   }

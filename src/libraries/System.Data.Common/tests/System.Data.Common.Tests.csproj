@@ -9,6 +9,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="DbCommandTests.cs" />
+    <Compile Include="DbConnectionTests.cs" />
     <Compile Include="DbExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -23,6 +23,11 @@ namespace System.Data.Common
         {
         }
 
+        ~DbConnection()
+        {
+            Dispose(disposing: false);
+        }
+
         abstract public string ConnectionString
         {
             get;
@@ -137,6 +142,7 @@ namespace System.Data.Common
         public void Dispose()
         {
             Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
