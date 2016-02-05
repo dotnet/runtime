@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -43,6 +44,7 @@ namespace System.Net.WebSockets
 
         public void Pin()
         {
+            Debug.Assert(!_operationHandle.IsAllocated);
             _operationHandle = GCHandle.Alloc(this);
         }
 
@@ -51,6 +53,7 @@ namespace System.Net.WebSockets
             if (_operationHandle.IsAllocated)
             {
                 _operationHandle.Free();
+                _operationHandle = default(GCHandle);
             }
         }
 
