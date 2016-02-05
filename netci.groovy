@@ -44,7 +44,8 @@ class Constants {
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
                'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
-               'corefx_jitstress1' : ['COMPlus_JitStress' : '1']]
+               'corefx_jitstress1' : ['COMPlus_JitStress' : '1'],
+               'corefx_jitstress2' : ['COMPlus_JitStress' : '2']]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -208,6 +209,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'jitstress1':
             case 'jitstress2':   
             case 'corefx_jitstress1':	            
+            case 'corefx_jitstress2':
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 Utilities.addPeriodicTrigger(job, '@daily')
                 break
@@ -318,6 +320,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
                         case 'corefx_jitstress1':
+                        case 'corefx_jitstress2':
                             // No Linux support is needed now
                             break                          
                         default:
@@ -410,6 +413,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'corefx_jitstress1':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=1)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break                       
+                        case 'corefx_jitstress2':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=2)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                       
                         default:
