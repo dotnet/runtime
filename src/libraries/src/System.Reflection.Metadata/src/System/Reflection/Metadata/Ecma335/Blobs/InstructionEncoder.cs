@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct InstructionEncoder

@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata
 namespace Microsoft.CodeAnalysis.CodeGen
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     enum ILOpCode : ushort

@@ -95,7 +95,7 @@
     <None Include="Resources\NetModule\ModuleCS01.cs" />
     <EmbeddedResource Include="Resources\NetModule\ModuleCS01.mod" />
     <EmbeddedResource Include="Resources\NetModule\ModuleVB01.mod" />
-    <None Include="Resources\NetModule\ModuleVB01.vb" />    
+    <None Include="Resources\NetModule\ModuleVB01.vb" />
     <EmbeddedResource Include="Resources\WinRT\Lib.winmd" />
     <None Include="Resources\WinRT\Lib.cs" />
   </ItemGroup>
