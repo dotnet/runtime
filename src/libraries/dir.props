@@ -101,13 +101,6 @@
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src" />
     <DnuRestoreDir Include="$(ToolsDir)" />
-    <!-- workaround to address issue where DNX won't recurse directories under a project.json
-         https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/src/**/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/ref/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/tests/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/*/netcore50aot/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/Common/tests/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup>
