@@ -17,7 +17,7 @@
     <NugetPackageBuildTargets>BuildNuGetPackages</NugetPackageBuildTargets>
   </PropertyGroup>
 
-  <!-- Generate Microsoft.Dotnet.CoreCLR nuget package and associated development package -->
+  <!-- Generate RyuJIT nuget package -->
   <Target Name="BuildNuGetPackages" AfterTargets="MovePDB" Condition="'$(BuildNugetPackage)' != 'false'">
     <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
     <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(PackagesBinDir)" />
