@@ -166,11 +166,9 @@
     <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
 
     <!--
-      PDB support isn't implemented yet. https://github.com/dotnet/roslyn/issues/2449
-      Note that both DebugSymbols and DebugType need set or project references will assume they need to copy pdbs and fail.
+      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
     -->
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugType>Portable</DebugType>
 
     <!--
       Delay signing with the ECMA key currently doesn't work.
