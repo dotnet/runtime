@@ -85,7 +85,7 @@ enum CorJitFlag
     CORJIT_FLG_GCPOLL_CALLS        = 0x00000040, // Emit calls to JIT_POLLGC for thread suspension.
     CORJIT_FLG_MCJIT_BACKGROUND    = 0x00000080, // Calling from multicore JIT background thread, do not call JitComplete
 
-#ifdef FEATURE_LEGACYNETCF
+#if defined(FEATURE_LEGACYNETCF)
 
     CORJIT_FLG_NETCF_QUIRKS        = 0x00000100, // Mimic .NetCF JIT's quirks for generated code (currently just inlining heuristics)
 
@@ -121,7 +121,8 @@ enum CorJitFlag
 
 #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
-#ifdef MDIL
+#if defined(MDIL)
+
     CORJIT_FLG_MDIL                = 0x00004000, // Generate MDIL code instead of machine code
 
     // Safe to overlap with CORJIT_FLG_MAKEFINALCODE below. Not used by the JIT, used internally by NGen only.
@@ -129,17 +130,24 @@ enum CorJitFlag
 
     // Safe to overlap with CORJIT_FLG_READYTORUN below. Not used by the JIT, used internally by NGen only.
     CORJIT_FLG_NO_MDIL             = 0x00010000, // Generate an MDIL section but no code or CTL. Not used by the JIT, used internally by NGen only.
-#else // MDIL
+
+#else // defined(MDIL)
+
     CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
-#endif // MDIL
 
 #if defined(FEATURE_INTERPRETER)
-    CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
-#endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_READYTORUN_COMPILER
+    CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
+
+#endif // defined(FEATURE_INTERPRETER)
+
+#if defined(FEATURE_READYTORUN_COMPILER)
+
     CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
-#endif
+
+#endif // defined(FEATURE_READYTORUN_COMPILER)
+
+#endif // !defined(MDIL)
 
     CORJIT_FLG_PROF_ENTERLEAVE     = 0x00020000, // Instrument prologues/epilogues
     CORJIT_FLG_PROF_REJIT_NOPS     = 0x00040000, // Insert NOPs to ensure code is re-jitable
