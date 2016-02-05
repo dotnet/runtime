@@ -36,7 +36,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
     // Set up standard options
     Utilities.standardJobSetup(newJob, project, isPR)
     // Set the machine affinity to windows machines
-    Utilities.setMachineAffinity(newJob, 'Windows_NT')
+    Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
     // Publish reports
     Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
     // Archive results.
@@ -66,7 +66,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
     // Set up standard options.
     Utilities.standardJobSetup(newJob, project, isPR)
     // Set the machine affinity to Ubuntu machines
-    Utilities.setMachineAffinity(newJob, 'Ubuntu')
+    Utilities.setMachineAffinity(newJob, 'Ubuntu', 'latest-or-auto')
     if (isPR) {
         // Set PR trigger.  Only trigger when the phrase is said.
         Utilities.addGithubPRTrigger(newJob, 'Code Formatter Check', '(?i).*test\\W+code\\W+formatter\\W+check.*', true)
@@ -165,8 +165,9 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.
                 }
             }
             
-            // Set the affinity.  All of these run on Windows currently.
-            Utilities.setMachineAffinity(newNativeCompJob, os)
+            // Set the affinity.  Use the 'latest or auto' version to pick up
+            // new auto images.
+            Utilities.setMachineAffinity(newNativeCompJob, os, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newNativeCompJob, project, isPR)
             // Add archival for the built data.
@@ -261,7 +262,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.
             }
             
             // Set the affinity.  All of these run on the target
-            Utilities.setMachineAffinity(newTestJob, os)
+            Utilities.setMachineAffinity(newTestJob, os, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newTestJob, project, isPR)
             // Add the unit test results
@@ -295,7 +296,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.
             }
             
             // Set the affinity.  All of these run on the target
-            Utilities.setMachineAffinity(newFlowJob, os)
+            Utilities.setMachineAffinity(newFlowJob, os, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newFlowJob, project, isPR)
             // Set up triggers
@@ -334,7 +335,7 @@ def supportedFullCyclePlatforms = ['Windows_NT']
             }
 
             // Set the affinity.  All of these run on Windows currently.
-            Utilities.setMachineAffinity(newJob, osGroup)
+            Utilities.setMachineAffinity(newJob, osGroup, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR)
             // Add the unit test results
