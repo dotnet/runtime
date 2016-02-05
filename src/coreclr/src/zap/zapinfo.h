@@ -375,6 +375,8 @@ public:
             ICorJitInfo::ProfileBuffer ** profileBuffer,
             ULONG * numRuns);
 
+    DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
+
     // ICorDynamicInfo
 
     DWORD getThreadTLSIndex(void **ppIndirection);
@@ -431,6 +433,8 @@ public:
                                      void **ppIndirection);
     void * getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
                                     void **ppIndirection);
+    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
+                                   CORINFO_CONST_LOOKUP *pLookup);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
                         CORINFO_METHOD_HANDLE method,
                         CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
