@@ -9,7 +9,7 @@ if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages\
 if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
 set DOTNET_PATH=%TOOLRUNTIME_DIR%\dotnetcli\
 if [%DOTNET_CMD%]==[] set DOTNET_CMD=%DOTNET_PATH%bin\dotnet.exe
-if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/
+if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json
 set /P BUILDTOOLS_VERSION=< %~dp0BuildToolsVersion.txt
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set PROJECT_JSON_PATH=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
