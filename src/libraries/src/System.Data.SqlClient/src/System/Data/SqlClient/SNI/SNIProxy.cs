@@ -274,36 +274,44 @@ namespace System.Data.SqlClient.SNI
         {
             if (parallel)
             {
-                SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
+                SNICommon.ReportSNIError(SNIProviders.NP_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
                 return null;
             }
 
-            // Named Pipe Format: np:\\<host name>\pipe\<pipe name>
-            const int minPipeLength = 10; // eg: //./pipe/a
-            string pipePath = fullServerName.Trim();
-            if (pipePath.Length < minPipeLength)
+            if(fullServerName.Length == 0 || fullServerName.Contains("/")) // Pipe paths only allow back slashes
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
 
-            if (pipePath[0] != '\\' || pipePath[1] != '\\')
+            string serverName, pipeName;
+            if (!fullServerName.Contains(@"\"))
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                return null;
+                serverName = fullServerName;
+                pipeName = SNINpHandle.DefaultPipePath;
             }
-
-            int endofServerName = pipePath.IndexOf('\\', 2);
-
-            string pipeToken = @"\pipe\";
-            if (0 != string.Compare(pipeToken, 0, pipePath, endofServerName, pipeToken.Length))
+            else
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                return null;
-            }
+                try
+                {
+                    Uri pipeURI = new Uri(fullServerName);
+                    string resourcePath = pipeURI.AbsolutePath;
 
-            string serverName = pipePath.Substring(2, endofServerName - 2);
-            string pipeName = pipePath.Substring(endofServerName + pipeToken.Length);
+                    string pipeToken = "/pipe/";
+                    if (!resourcePath.StartsWith(pipeToken))
+                    {
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                        return null;
+                    }
+                    pipeName = resourcePath.Substring(pipeToken.Length);
+                    serverName = pipeURI.Host;
+                }
+                catch(UriFormatException)
+                {
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                    return null;
+                }
+            }
 
             return new SNINpHandle(serverName, pipeName, timerExpire, callbackObject);
         }
