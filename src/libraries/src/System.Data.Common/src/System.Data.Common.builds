@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Data.Common.csproj" />
     <Project Include="facade\System.Data.Common.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net45</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
