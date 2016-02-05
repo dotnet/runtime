@@ -223,7 +223,7 @@ GetUserNameW(
     }
 
     // make a copy so that we can modify it
-    szUserName = InternalStrdup(pPalThread, pPasswd->pw_name);
+    szUserName = strdup(pPasswd->pw_name);
     if (NULL == szUserName)
     {
         InternalLeaveCriticalSection(pPalThread, &identity_critsec);

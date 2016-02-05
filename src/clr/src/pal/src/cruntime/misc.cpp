@@ -500,7 +500,7 @@ BOOL MiscPutenv(const char *string, BOOL deleteIfEmpty)
         // See if we are replacing an item or adding one.
         
         // Make our copy up front, since we'll use it either way.
-        copy = InternalStrdup(string);
+        copy = strdup(string);
         if (copy == NULL)
         {
             goto done;
