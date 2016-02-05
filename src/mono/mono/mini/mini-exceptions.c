@@ -62,6 +62,8 @@
 #include <mono/metadata/mono-mlist.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-error-internals.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -1548,6 +1550,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 static gboolean
 mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resume, MonoJitInfo **out_ji)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, *prev_ji;
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
@@ -1646,15 +1649,16 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			MonoObject *message;
 			const char *type_name = mono_class_get_name (mono_object_class (mono_ex));
 			char *msg = NULL;
-			MonoObject *exc = NULL;
 			if (get_message == NULL) {
 				message = NULL;
 			} else if (!strcmp (type_name, "OutOfMemoryException") || !strcmp (type_name, "StackOverflowException")) {
 				message = NULL;
 				msg = g_strdup_printf ("(No exception message for: %s)\n", type_name);
 			} else {
-				message = mono_runtime_invoke (get_message, obj, NULL, &exc);
-				
+				MonoObject *exc = NULL;
+				message = mono_runtime_try_invoke (get_message, obj, NULL, &exc, &error);
+				g_assert (exc == NULL);
+				mono_error_assert_ok (&error);
 			}
 			if (msg == NULL) {
 				msg = message ? mono_string_to_utf8 ((MonoString *) message) : g_strdup ("(System.Exception.Message property not available)");
@@ -1688,7 +1692,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			gboolean unhandled = FALSE;
 
 			/*
-			 * The exceptions caught by the mono_runtime_invoke () calls
+			 * The exceptions caught by the mono_runtime_invoke_checked () calls
 			 * in the threadpool needs to be treated as unhandled (#669836).
 			 *
 			 * FIXME: The check below is hackish, but its hard to distinguish

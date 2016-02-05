@@ -941,6 +941,7 @@ ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObj
 
 void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoMethod *method;
 	void *params [2];
@@ -960,5 +961,7 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 	method = mono_class_get_method_from_name (klass, encrypt ? "Protect" : "Unprotect", 2);
 	params [0] = data;
 	params [1] = scope; /* MemoryProtectionScope.SameProcess */
-	mono_runtime_invoke (method, NULL, params, NULL);
+
+	mono_runtime_invoke_checked (method, NULL, params, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 }

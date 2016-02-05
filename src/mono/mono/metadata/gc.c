@@ -228,7 +228,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	}
 
 	/* 
-	 * To avoid the locking plus the other overhead of mono_runtime_invoke (),
+	 * To avoid the locking plus the other overhead of mono_runtime_invoke_checked (),
 	 * create and precompile a wrapper which calls the finalize method using
 	 * a CALLVIRT.
 	 */
