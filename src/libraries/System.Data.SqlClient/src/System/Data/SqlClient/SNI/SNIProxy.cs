@@ -278,14 +278,14 @@ namespace System.Data.SqlClient.SNI
                 return null;
             }
 
-            if(fullServerName.Length == 0 || fullServerName.IndexOf('/') != -1) // Pipe paths only allow back slashes
+            if(fullServerName.Length == 0 || fullServerName.Contains("/")) // Pipe paths only allow back slashes
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
 
             string serverName, pipeName;
-            if (fullServerName.IndexOf('\\') == -1)
+            if (!fullServerName.Contains(@"\"))
             {
                 serverName = fullServerName;
                 pipeName = SNINpHandle.DefaultPipePath;
@@ -297,8 +297,8 @@ namespace System.Data.SqlClient.SNI
                     Uri pipeURI = new Uri(fullServerName);
                     string resourcePath = pipeURI.AbsolutePath;
 
-                    string pipeToken = @"/pipe/";
-                    if (0 != string.Compare(resourcePath, 0, pipeToken, 0, pipeToken.Length))
+                    string pipeToken = "/pipe/";
+                    if (!resourcePath.StartsWith(pipeToken))
                     {
                         SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                         return null;
