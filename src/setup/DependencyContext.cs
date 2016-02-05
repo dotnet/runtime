@@ -38,7 +38,12 @@ namespace Microsoft.Extensions.DependencyModel
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
-            var stream = entryAssembly?.GetManifestResourceStream(entryAssembly.GetName().Name + DepsResourceSufix);
+            return Load(entryAssembly);
+        }
+
+        public static DependencyContext Load(Assembly assembly)
+        {
+            var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + DepsResourceSufix);
 
             if (stream == null)
             {
