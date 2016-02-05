@@ -159,14 +159,25 @@ enum CorJitFlag
     CORJIT_FLG_ALIGN_LOOPS         = 0x20000000, // add NOPs before loops to align them at 16 byte boundaries
     CORJIT_FLG_PUBLISH_SECRET_PARAM= 0x40000000, // JIT must place stub secret param into local 0.  (used by IL stubs)
     CORJIT_FLG_GCPOLL_INLINE       = 0x80000000, // JIT must inline calls to GCPoll when possible
+
+#if COR_JIT_EE_VERSION > 460
+    CORJIT_FLG_CALL_GETJITFLAGS    = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a
+                                                 // pointer to a CORJIT_FLAGS value via ICorJitInfo::getJitFlags().
+#endif
 };
 
 enum CorJitFlag2
 {
-#ifdef FEATURE_STACK_SAMPLING
-    CORJIT_FLG2_SAMPLING_JIT_BACKGROUND  
-                                   = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
+    CORJIT_FLG2_SAMPLING_JIT_BACKGROUND = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
+#if COR_JIT_EE_VERSION > 460
+    CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
 #endif
+};
+
+struct CORJIT_FLAGS
+{
+    unsigned corJitFlags;  // Values are from CorJitFlag
+    unsigned corJitFlags2; // Values are from CorJitFlag2
 };
 
 /*****************************************************************************
@@ -566,6 +577,16 @@ public:
     // different value than if it was compiling for the host architecture.
     // 
     virtual DWORD getExpectedTargetArchitecture() = 0;
+
+#if COR_JIT_EE_VERSION > 460
+    // Fetches extended flags for a particular compilation instance. Returns
+    // the number of bytes written to the provided buffer.
+    virtual DWORD getJitFlags(
+        CORJIT_FLAGS* flags,       /* IN: Points to a buffer that will hold the extended flags. */
+        DWORD        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
+                                          version number for the CORJIT_FLAGS value. */
+        ) = 0;
+#endif
 };
 
 /**********************************************************************************/

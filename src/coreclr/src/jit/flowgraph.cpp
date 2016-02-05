@@ -21971,8 +21971,10 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
                          pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                          pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-            unsigned   compileFlagsForInlinee = (pParam->pThis->opts.eeFlags & ~CORJIT_FLG_LOST_WHEN_INLINING)
-                                                         | CORJIT_FLG_SKIP_VERIFICATION;
+            CORJIT_FLAGS compileFlagsForInlinee;
+            memcpy(&compileFlagsForInlinee, pParam->pThis->opts.jitFlags, sizeof(compileFlagsForInlinee));
+            compileFlagsForInlinee.corJitFlags &= ~CORJIT_FLG_LOST_WHEN_INLINING;
+            compileFlagsForInlinee.corJitFlags |= CORJIT_FLG_SKIP_VERIFICATION;
 
 #ifdef DEBUG
             if (pParam->pThis->verbose)
@@ -21988,7 +21990,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
                           &pParam->inlineCandidateInfo->methInfo,
                           (void**)pParam->inlineInfo,
                           NULL,
-                          compileFlagsForInlinee,
+                          &compileFlagsForInlinee,
                           pParam->inlineInfo);
 
             if (result != CORJIT_OK)

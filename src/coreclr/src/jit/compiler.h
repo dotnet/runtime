@@ -7648,7 +7648,8 @@ public :
 
     struct Options
     {
-        unsigned            eeFlags;        // flags passed from the EE
+        CORJIT_FLAGS*       jitFlags;       // all flags passed from the EE
+        unsigned            eeFlags;        // CorJitFlag flags passed from the EE
         unsigned            compFlags;      // method attributes
 
         codeOptimize        compCodeOpt;    // what type of code optimizations
@@ -8221,14 +8222,14 @@ public :
                                          CORINFO_METHOD_INFO * methodInfo,
                                          void *          * methodCodePtr,
                                          ULONG           * methodCodeSize,
-                                         unsigned          compileFlags);
+                                         CORJIT_FLAGS    * compileFlags);
     void                compCompileFinish();
     int                 compCompileHelper (CORINFO_MODULE_HANDLE            classPtr,
                                            COMP_HANDLE                      compHnd,
                                            CORINFO_METHOD_INFO            * methodInfo,
                                            void *                         * methodCodePtr,
                                            ULONG                          * methodCodeSize,
-                                           unsigned                         compileFlags,
+                                           CORJIT_FLAGS                   * compileFlags,
                                            CorInfoInstantiationVerification instVerInfo);
 
     norls_allocator *   compGetAllocator();
@@ -8455,7 +8456,7 @@ protected:
 
     unsigned            compMaxUncheckedOffsetForNullObject; 
 
-    void                compInitOptions (unsigned compileFlags);
+    void                compInitOptions (CORJIT_FLAGS* compileFlags);
 
     void                compSetProcessor();
     void                compInitDebuggingInfo();
@@ -8465,7 +8466,7 @@ protected:
 #endif
     void                compCompile  (void * * methodCodePtr,
                                       ULONG  * methodCodeSize,
-                                      unsigned compileFlags);
+                                      CORJIT_FLAGS * compileFlags);
 
     // Data required for generating profiler Enter/Leave/TailCall hooks
 #ifdef PROFILING_SUPPORTED

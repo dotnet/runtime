@@ -163,6 +163,22 @@ CorJitResult CILJit::compileMethod (
         return g_realJitCompiler->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
     }
 
+    CORJIT_FLAGS jitFlags = { 0 };
+
+    DWORD jitFlagsSize = 0;
+#if COR_JIT_EE_VERSION > 460
+    if (flags == CORJIT_FLG_CALL_GETJITFLAGS)
+    {
+        jitFlagsSize = compHnd->getJitFlags(&jitFlags, sizeof(jitFlags));
+    }
+#endif
+
+    assert(jitFlagsSize <= sizeof(jitFlags));
+    if (jitFlagsSize == 0)
+    {
+        jitFlags.corJitFlags = flags;
+    }
+
     int                     result;
     void *                  methodCodePtr = NULL;
     CORINFO_METHOD_HANDLE   methodHandle  = methodInfo->ftn;
@@ -179,7 +195,7 @@ CorJitResult CILJit::compileMethod (
                            methodInfo,
                            &methodCodePtr,
                            nativeSizeOfCode,
-                           flags,
+                           &jitFlags,
                            NULL);
 
     if (result == CORJIT_OK)
