@@ -1012,11 +1012,9 @@ public:
         setCommon(InlineDecision::NEVER, reason);
     }
     
-    // Ensure a decision has been made, and then then report it if
-    // necessary.
+    // Report decision, if necessary.
     ~JitInlineResult() 
     {
-        assert(inlDecision != InlineDecision::UNDECIDED);
         report();
     }
     
