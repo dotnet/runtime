@@ -96,6 +96,9 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\Versioning\NonVersionableAttribute.cs">
+      <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Interfaces.cd" />

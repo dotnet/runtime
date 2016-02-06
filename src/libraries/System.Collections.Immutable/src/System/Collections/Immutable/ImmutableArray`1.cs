@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
@@ -32,6 +33,7 @@ namespace System.Collections.Immutable
     /// it is insulated from other threads.
     /// </devremarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [NonVersionable] // Applies to field layout
     public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IImmutableList<T>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable
     {
         /// <summary>
@@ -66,6 +68,7 @@ namespace System.Collections.Immutable
         /// <param name="left">The instance to the left of the operator.</param>
         /// <param name="right">The instance to the right of the operator.</param>
         /// <returns><c>true</c> if the values' underlying arrays are reference equal; <c>false</c> otherwise.</returns>
+        [NonVersionable]
         public static bool operator ==(ImmutableArray<T> left, ImmutableArray<T> right)
         {
             return left.Equals(right);
@@ -77,6 +80,7 @@ namespace System.Collections.Immutable
         /// <param name="left">The instance to the left of the operator.</param>
         /// <param name="right">The instance to the right of the operator.</param>
         /// <returns><c>true</c> if the values' underlying arrays are reference not equal; <c>false</c> otherwise.</returns>
+        [NonVersionable]
         public static bool operator !=(ImmutableArray<T> left, ImmutableArray<T> right)
         {
             return !left.Equals(right);
@@ -113,6 +117,7 @@ namespace System.Collections.Immutable
         /// <returns>The element at the specified index in the read-only list.</returns>
         public T this[int index]
         {
+            [NonVersionable]
             get
             {
                 // We intentionally do not check this.array != null, and throw NullReferenceException
@@ -160,6 +165,7 @@ namespace System.Collections.Immutable
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool IsEmpty
         {
+            [NonVersionable]
             get { return this.Length == 0; }
         }
 
@@ -169,6 +175,7 @@ namespace System.Collections.Immutable
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public int Length
         {
+            [NonVersionable]
             get
             {
                 // We intentionally do not check this.array != null, and throw NullReferenceException
@@ -1066,6 +1073,7 @@ namespace System.Collections.Immutable
         /// true if the current object is equal to the <paramref name="other"/> parameter; otherwise, false.
         /// </returns>
         [Pure]
+        [NonVersionable]
         public bool Equals(ImmutableArray<T> other)
         {
             return this.array == other.array;
