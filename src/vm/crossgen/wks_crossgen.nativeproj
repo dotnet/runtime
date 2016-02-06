@@ -34,7 +34,6 @@
         <CppCompile Include="$(VmSourcesDir)\clsload.cpp" />
         <CppCompile Include="$(VmSourcesDir)\comdelegate.cpp" />
         <CppCompile Include="$(VmSourcesDir)\codeman.cpp" />
-        <CppCompile Include="$(VmSourcesDir)\CompactLayoutWriter.cpp" Condition="'$(MDILGenerator)' == 'true'"/>
         <CppCompile Include="$(VmSourcesDir)\compile.cpp" />
         <CppCompile Include="$(VmSourcesDir)\ConstrainedExecutionRegion.cpp" />
         <CppCompile Include="$(VmSourcesDir)\CustomMarshalerInfo.cpp" />
