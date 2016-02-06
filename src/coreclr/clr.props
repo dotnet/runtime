@@ -145,8 +145,6 @@
     <FeatureVersioningLog>false</FeatureVersioningLog>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureReadyToRunCompiler Condition="'$(FeatureReadyToRun)' == 'true'">true</FeatureReadyToRunCompiler>
-    <!-- Turn on MDIL generation support in crossgen for phone -->
-    <MDILGenerator Condition="'$(BuildForCoreSystem)' == 'true' and '$(TargetArch)'=='arm'">true</MDILGenerator>
     <!-- Link crossgen with static CRT to make it standalone .exe -->
     <LinkUseCMT>true</LinkUseCMT>
     <UseMsvcrt>false</UseMsvcrt>
