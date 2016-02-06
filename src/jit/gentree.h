@@ -1408,11 +1408,19 @@ public:
     bool                        IsNothingNode       () const;
     void                        gtBashToNOP         ();
 
-    void                        SetOper             (genTreeOps oper);  // set gtOper
+    // Value number update action enumeration
+    enum ValueNumberUpdate
+    {
+        CLEAR_VN,       // Clear value number
+        PRESERVE_VN     // Preserve value number
+    };
+
+    void                        SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);  // set gtOper
     void                        SetOperResetFlags   (genTreeOps oper);  // set gtOper and reset flags
 
     void                        ChangeOperConst     (genTreeOps oper);  // ChangeOper(constOper)
-    void                        ChangeOper          (genTreeOps oper);  // set gtOper and only keep GTF_COMMON_MASK flags
+    // set gtOper and only keep GTF_COMMON_MASK flags
+    void                        ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void                        ChangeOperUnchecked (genTreeOps oper);
 
     bool IsLocal() const
