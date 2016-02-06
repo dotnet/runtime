@@ -2475,6 +2475,24 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(comp->info.compCallUnmanaged);
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        // Initialize the P/Invoke frame by calling CORINFO_HELP_INIT_PINVOKE_FRAME:
+        //
+        // OpaqueFrame opaqueFrame;
+        // CORINFO_HELP_INIT_PINVOKE_FRAME(&opaqueFrame);
+
+        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
+            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        GenTreeStmt* stmt = LowerMorphAndSeqTree(helperCall);
+        comp->fgInsertStmtAtBeg(comp->fgFirstBB, stmt);
+
+        return;
+    }
+
     CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
@@ -2555,6 +2573,11 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     assert(returnBB != nullptr);
     assert(comp->info.compCallUnmanaged);
 
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        return;
+    }
+
     // Method doing Pinvoke calls has exactly one return block unless it has "jmp" or tail calls.
 #ifdef DEBUG
     bool endsWithTailCallOrJmp = false;
@@ -2612,14 +2635,6 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
 // field of the frame (methodHandle may be indirected & have a reloc)
 void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 {
-    // emit the following sequence
-    //
-    // frame.callTarget := methodHandle
-    // (x86) frame.callSiteTracker = SP
-    //       frame.callSiteReturnAddress = return address
-    // thread->gcState = 0
-    // (non-stub) - update top Frame on TCB
-    //
     GenTree* insertBefore = call;
     if (call->gtCallType == CT_INDIRECT)
     {
@@ -2632,6 +2647,29 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
 
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        // First argument is the address of the frame variable.
+        GenTree* frameAddr = new(comp, GT_LCL_VAR_ADDR)
+            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+
+        // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        comp->fgMorphTree(helperCall);
+        comp->fgInsertTreeBeforeAsEmbedded(helperCall, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+        return;
+    }
+
+    // emit the following sequence
+    //
+    // frame.callTarget := methodHandle
+    // (x86) frame.callSiteTracker = SP
+    //       frame.callSiteReturnAddress = return address
+    // thread->gcState = 0
+    // (non-stub) - update top Frame on TCB
+    //
 
     // ----------------------------------------------------------------------------------
     // Setup frame.callSiteTarget (what it referred to in the JIT)
@@ -2751,10 +2789,26 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     comp->fgInsertTreeBeforeAsEmbedded(storeGCState, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
 }
 
-
 // insert the code that goes after every inlined pinvoke call
 void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
+    if (comp->opts.ShouldUsePInvokeHelpers())
+    {
+        noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+        // First argument is the address of the frame variable.
+        GenTree* frameAddr = new(comp, GT_LCL_VAR)
+            GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+        frameAddr->gtOper = GT_LCL_VAR_ADDR;
+
+        // Insert call to CORINFO_HELP_JIT_PINVOKE_END
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_END, TYP_VOID, 0, comp->gtNewArgList(frameAddr));
+
+        comp->fgMorphTree(helperCall);
+        comp->fgInsertTreeAfterAsEmbedded(helperCall, call, comp->compCurStmt->AsStmt(), currBlock);
+        return;
+    }
+
     CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     GenTreeStmt* newStmt;
     GenTreeStmt* topStmt = comp->compCurStmt->AsStmt();
@@ -2793,6 +2847,55 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 {
     //------------------------------------------------------
     // Non-virtual/Indirect calls: PInvoke calls.
+
+    // PInvoke lowering varies depending on the flags passed in by the EE. By default,
+    // GC transitions are generated inline; if CORJIT_FLG2_USE_PINVOKE_HELPERS is specified,
+    // GC transitions are instead performed using helper calls. Examples of each case are given
+    // below. Note that the data structure that is used to store information about a call frame
+    // containing any P/Invoke calls is initialized in the method prolog (see
+    // InsertPInvokeMethod{Prolog,Epilog} for details).
+    //
+    // Inline transitions:
+    //     InlinedCallFrame inlinedCallFrame;
+    //
+    //     ...
+    //
+    //     // Set up frame information
+    //     inlinedCallFrame.callTarget = methodHandle;
+    //     inlinedCallFrame.callSiteTracker = SP; (x86 only)
+    //     inlinedCallFrame.callSiteReturnAddress = &label; (the address of the instruction immediately following the call)
+    //     thread->m_pFrame = &inlinedCallFrame; (non-IL-stub only)
+    //
+    //     // Switch the thread's GC mode to preemptive mode
+    //     thread->m_fPreemptiveGCDisabled = 0;
+    //
+    //     // Call the unmanged method
+    //     target();
+    //
+    //     // Switch the thread's GC mode back to cooperative mode
+    //     thread->m_fPreemptiveGCDisabled = 1;
+    //
+    //     // Rendezvous with a running collection if necessary
+    //     if (g_TrapReturningThreads)
+    //         RareDisablePreemptiveGC();
+    //
+    // Transistions using helpers:
+    //
+    //     OpaqueFrame opaqueFrame;
+    //
+    //     ...
+    //
+    //     // Call the JIT_PINVOKE_BEGIN helper
+    //     JIT_PINVOKE_BEGIN(&opaqueFrame);
+    //
+    //     // Call the unmanaged method
+    //     target();
+    //
+    //     // Call the JIT_PINVOKE_END helper
+    //     JIT_PINVOKE_END(&opaqueFrame);
+    //
+    // Note that the JIT_PINVOKE_{BEGIN.END} helpers currently use the default calling convention for the target platform.
+    // They may be changed in the near future s.t. they preserve all register values.
 
     GenTree* result = nullptr;
     void* addr = nullptr;
