@@ -10327,10 +10327,9 @@ SET_OPER:
                         // IF we get here we should be changing 'oper' 
                         assert(tree->OperGet() != oper);
 
-                        ValueNumPair vnp;
-                        vnp = tree->gtVNPair;  // Save the existing ValueNumber for 'tree'
-
-                        tree->SetOper(oper);
+                        // Keep the old ValueNumber for 'tree' as the new expr
+                        // will still compute the same value as before
+                        tree->SetOper(oper, GenTree::PRESERVE_VN);
                         cns2->gtIntCon.gtIconVal = 0;
 
                         // vnStore is null before the ValueNumber phase has run
@@ -10338,9 +10337,6 @@ SET_OPER:
                         {
                             // Update the ValueNumber for 'cns2', as we just changed it to 0
                             fgValueNumberTreeConst(cns2);
-                            // Restore the old ValueNumber for 'tree' as the new expr
-                            // will still compute the same value as before
-                            tree->gtVNPair = vnp;
                         }
                      
                         op2 = tree->gtOp.gtOp2 = gtFoldExpr(op2);
@@ -10779,7 +10775,8 @@ CM_ADD_OP:
 
             size_t abs_mult = (mult >= 0) ? mult : -mult;
             size_t lowestBit = genFindLowestBit(abs_mult);
-            
+            bool changeToShift = false;
+
             // is it a power of two? (positive or negative)
             if  (abs_mult == lowestBit)
             {
@@ -10814,9 +10811,7 @@ CM_ADD_OP:
 
                 /* Change the multiplication into a shift by log2(val) bits */
                 op2->gtIntConCommon.SetIconValue(genLog2(abs_mult));
-                oper = GT_LSH;
-                tree->ChangeOper(oper);
-                goto DONE_MORPHING_CHILDREN;
+                changeToShift = true;
             }
 #if LEA_AVAILABLE
             else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit) && optAvoidIntMult())
@@ -10844,11 +10839,24 @@ CM_ADD_OP:
                     fgMorphTreeDone(op1);
 
                     op2->gtIntConCommon.SetIconValue(shift);
-                    oper = GT_LSH;
-                    tree->ChangeOper(oper);
-
-                    goto DONE_MORPHING_CHILDREN;
+                    changeToShift = true;
                 }
+            }
+
+            if (changeToShift)
+            {
+                // vnStore is null before the ValueNumber phase has run
+                if (vnStore != nullptr)
+                {
+                    // Update the ValueNumber for 'op2', as we just changed the constant
+                    fgValueNumberTreeConst(op2);
+                }
+                oper = GT_LSH;
+                // Keep the old ValueNumber for 'tree' as the new expr
+                // will still compute the same value as before
+                tree->ChangeOper(oper, GenTree::PRESERVE_VN);
+
+                goto DONE_MORPHING_CHILDREN;
             }
 #endif // LEA_AVAILABLE
         }
