@@ -68,8 +68,6 @@
     <ProjectFile Condition="'$(BuildArchitecture)' != 'arm' and '$(BuildArchitecture)' != 'arm64' and '$(BuildProjectName)' != 'CoreSys'" Include="ildbsymbols\ildbsymbols.nativeproj" />
     <ProjectFile Include="coregen\coregen.nativeproj" />
     <ProjectFile Include="nidump\nidump.nativeproj" Condition="!('$(BuildProjectName)' == 'CoreSys' and ('$(BuildArchitecture)' == 'arm' or '$(BuildArchitecture)' == 'arm64'))"/>
-    <ProjectFile Include="MDILBind\dirs.proj" Condition="'$(BuildArchitecture)' == 'arm'" />
-    <ProjectFile Include="mdilxapcompile\mdilxapcompile.csproj" />
     <ProjectFile Include="crossgen\crossgen.nativeproj" />
     <ProjectFile Include="spawnnowow\spawnnowow.nativeproj" Condition="('$(BuildArchitecture)' == 'i386' or '$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'ia64') and '$(BuildProjectName)' != 'CoreSys'" />
     <ProjectFile Condition="'$(BuildProjectName)' == 'CoreSys'" Include="winphoneintegrate\winphoneintegrate.csproj" />
