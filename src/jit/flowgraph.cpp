@@ -22053,9 +22053,6 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
         if (!(info.compCompHnd->initClass(NULL /* field */, fncHandle /* method */,
                 inlineCandidateInfo->exactContextHnd /* context */) & CORINFO_INITCLASS_INITIALIZED))
         {
-            JITLOG((LL_INFO100000, INLINER_FAILED "Could not complete class init side effect: "
-                    "%s called by %s\n",
-                    eeGetMethodFullName(fncHandle), info.compFullName));
             inlineResult->setNever("Failed class init side-effect");
             return;
         }
