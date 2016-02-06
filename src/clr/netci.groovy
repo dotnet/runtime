@@ -819,9 +819,12 @@ combinedScenarios.each { scenario ->
                     }
                     // Enable Server GC for Ubuntu PR builds
                     def serverGCString = ''
+                    
+                    /* For now, disable server GC since it's causing tests to take too long. May re-enable later with longer timeout.  
                     if (os == 'Ubuntu' && isPR){
                         serverGCString = '--useServerGC'
                     }
+                    */
 
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                         // Add parameters for the inputs
