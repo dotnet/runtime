@@ -15,6 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <ItemGroup>
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="Windows" />
   </ItemGroup>
   <ItemGroup>
