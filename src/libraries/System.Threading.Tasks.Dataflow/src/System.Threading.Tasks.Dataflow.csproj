@@ -3,16 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{1DD0FF15-6234-4BD6-850A-317F05479554}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
     <AssemblyVersion>4.6.0.0</AssemblyVersion>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
+    <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageDestination Include="lib/netstandard1.1">
@@ -24,10 +20,8 @@
     </PackageDestination>
   </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Base\DataflowBlock.cs" />
     <Compile Include="Base\DataflowBlockOptions.cs" />
@@ -68,8 +62,7 @@
     <None Include="XmlDocs\CommonXmlDocComments.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml">
-    </Content>
+    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
