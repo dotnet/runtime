@@ -5823,7 +5823,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                 {
                     if (opts.IsReadyToRun())
                     {
-                        assert(callInfo->kind == CORINFO_CALL);
+                        noway_assert(callInfo->kind == CORINFO_CALL);
                         call->gtIntrinsic.gtEntryPoint = callInfo->codePointerLookup.constLookup;
                     }
                     else
