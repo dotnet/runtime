@@ -1183,7 +1183,7 @@ mini_jit_info_table_find_ext (MonoDomain *domain, char *addr, gboolean allow_tra
 MonoJitInfo*
 mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain)
 {
-	return mini_jit_info_table_find_ext (domain, addr, TRUE, out_domain);
+	return mini_jit_info_table_find_ext (domain, addr, FALSE, out_domain);
 }
 
 /*
