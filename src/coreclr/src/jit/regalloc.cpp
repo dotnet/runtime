@@ -6438,6 +6438,9 @@ void               Compiler::rpPredictRegUse()
         // it must not be in a register trashed by the callee
         if (info.compCallUnmanaged != 0)
         {
+            assert(!opts.ShouldUsePInvokeHelpers());
+            noway_assert(info.compLvFrameListRoot < lvaCount);
+
             LclVarDsc *     pinvokeVarDsc = &lvaTable[info.compLvFrameListRoot];
 
             if (pinvokeVarDsc->lvTracked)
