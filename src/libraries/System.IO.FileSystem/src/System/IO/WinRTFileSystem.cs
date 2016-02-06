@@ -563,7 +563,7 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_DIR_NOT_EMPTY, fullPath);
 
             // StorageFolder.Delete ignores readonly attribute.  Detect and throw.
-            if ((folder.Attributes & Windows.Storage.FileAttributes.ReadOnly) == Windows.Storage.FileAttributes.ReadOnly)
+            if ((folder.Attributes & WinRTFileAttributes.ReadOnly) == WinRTFileAttributes.ReadOnly)
                 throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
 
             StorageFolder parentFolder = await folder.GetParentAsync().TranslateWinRTTask(fullPath, isDirectory: true);

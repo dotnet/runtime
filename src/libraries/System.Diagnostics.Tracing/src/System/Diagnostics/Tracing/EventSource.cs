@@ -195,8 +195,6 @@ using Microsoft.Win32;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-#else
-using System.Threading.Tasks;
 #endif
 
 using Microsoft.Reflection;

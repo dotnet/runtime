@@ -35,7 +35,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
-    <TargetingPackReference Include="windows" />
+    <TargetingPackReference Include="Windows" />
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">

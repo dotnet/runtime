@@ -28,6 +28,7 @@
     <TargetingPackReference Include="System.Private.Interop.Extensions"/>
     <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport"/>
     <TargetingPackReference Include="Windows" />
+    <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <TargetingPackReference Include="mscorlib"/>
