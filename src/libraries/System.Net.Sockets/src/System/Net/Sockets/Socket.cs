@@ -980,77 +980,18 @@ namespace System.Net.Sockets
             {
                 throw new NotSupportedException(SR.net_invalidversion);
             }
+            ThrowIfNotSupportsMultipleConnectAttempts();
 
-            // Disable CS0162: Unreachable code detected
-            //
-            // SuportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162.
-#pragma warning disable 162
             Exception lastex = null;
-            if (SocketPal.SupportsMultipleConnectAttempts)
+            foreach (IPAddress address in addresses)
             {
-                foreach (IPAddress address in addresses)
-                {
-                    if (CanTryAddressFamily(address.AddressFamily))
-                    {
-                        try
-                        {
-                            Connect(new IPEndPoint(address, port));
-                            lastex = null;
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            if (ExceptionCheck.IsFatal(ex))
-                            {
-                                throw;
-                            }
-                            lastex = ex;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                EndPoint endpoint = null;
-                foreach (IPAddress address in addresses)
-                {
-                    if (CanTryAddressFamily(address.AddressFamily))
-                    {
-                        Socket attemptSocket = null;
-                        try
-                        {
-                            attemptSocket = new Socket(_addressFamily, _socketType, _protocolType);
-                            if (IsDualMode)
-                            {
-                                attemptSocket.DualMode = true;
-                            }
-
-                            var attemptEndpoint = new IPEndPoint(address, port);
-                            attemptSocket.Connect(attemptEndpoint);
-                            endpoint = attemptEndpoint;
-                            lastex = null;
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            lastex = ex;
-                        }
-                        finally
-                        {
-                            if (attemptSocket != null)
-                            {
-                                attemptSocket.Dispose();
-                            }
-                        }
-                    }
-                }
-
-                if (endpoint != null)
+                if (CanTryAddressFamily(address.AddressFamily))
                 {
                     try
                     {
-                        Connect(endpoint);
+                        Connect(new IPEndPoint(address, port));
                         lastex = null;
+                        break;
                     }
                     catch (Exception ex)
                     {
@@ -1062,7 +1003,6 @@ namespace System.Net.Sockets
                     }
                 }
             }
-#pragma warning restore
 
             if (lastex != null)
             {
@@ -2415,6 +2355,8 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            ThrowIfNotSupportsMultipleConnectAttempts();
+
             // Here, want to flow the context.  No need to lock.
             MultipleAddressConnectAsyncResult result = new MultipleAddressConnectAsyncResult(null, port, this, state, requestCallback);
             result.StartPostingAsyncOp(false);
@@ -2436,6 +2378,14 @@ namespace System.Net.Sockets
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", result);
             }
             return result;
+        }
+
+        private static void ThrowIfNotSupportsMultipleConnectAttempts()
+        {
+            if (!SocketPal.SupportsMultipleConnectAttempts)
+            {
+                throw new PlatformNotSupportedException(SR.net_sockets_connect_multiaddress_notsupported);
+            }
         }
 
         internal IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
@@ -2502,6 +2452,7 @@ namespace System.Net.Sockets
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
+            ThrowIfNotSupportsMultipleConnectAttempts();
 
             // Set up the result to capture the context.  No need for a lock.
             MultipleAddressConnectAsyncResult result = new MultipleAddressConnectAsyncResult(addresses, port, this, state, requestCallback);
@@ -4408,6 +4359,8 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
+                ThrowIfNotSupportsMultipleConnectAttempts();
+
                 MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, true);
 
                 e.StartOperationCommon(this);
@@ -4518,6 +4471,10 @@ namespace System.Net.Sockets
                     // Disable CS0162 and CS0429: Unreachable code detected
                     //
                     // SuportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162 or CS0429.
+                    //
+                    // This is the only *Connect* API that actually supports multiple endpoint attempts, as it's responsible 
+                    // for creating each Socket instance and can create one per attempt (with the instance methods, once a 
+                    // connect fails, on unix systems that socket can't be used for subsequent connect attempts).
 #pragma warning disable 162, 429
                     multipleConnectAsync = SocketPal.SupportsMultipleConnectAttempts ?
                         (MultipleConnectAsync)(new DualSocketMultipleConnectAsync(socketType, protocolType)) :

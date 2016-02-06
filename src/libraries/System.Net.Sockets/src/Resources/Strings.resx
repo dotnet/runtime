@@ -273,4 +273,7 @@
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
   </data>
+  <data name="net_sockets_connect_multiaddress_notsupported" xml:space="preserve">
+    <value>Sockets on this platform are invalid for use after a failed connection attempt, and as a result do not support attempts to connect to multiple endpoints.  Use the static Connect methods or the instance Connect methods that take a single, non-DNS endpoint.</value>
+  </data>
 </root>
