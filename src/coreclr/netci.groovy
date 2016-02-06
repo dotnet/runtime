@@ -44,7 +44,8 @@ class Constants {
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
                'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
-               'fxjs1' : ['COMPlus_JitStress' : '1'],
+               'fx' : ['' : ''], // corefx baseline
+               'fxjs1' : ['COMPlus_JitStress' : '1'], 
                'fxjs2' : ['COMPlus_JitStress' : '2']]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
@@ -208,6 +209,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'forcerelocs':
             case 'jitstress1':
             case 'jitstress2':   
+            case 'fx':	
             case 'fxjs1':	            
             case 'fxjs2':
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
@@ -319,6 +321,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
+                        case 'fx':
                         case 'fxjs1':
                         case 'fxjs2':
                             // No Linux support is needed now
@@ -410,6 +413,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                       
+                        case 'fx':
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx Baseline)",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break                                                   
                         case 'fxjs1':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=1)",
@@ -635,7 +643,9 @@ combinedScenarios.each { scenario ->
                                                 def setEnvVar = ''
                                                 def envVars = Constants.jitStressModeScenarios[scenario]
                                                 envVars.each{ VarName, Value   ->
-                                                   setEnvVar += "&& set ${VarName}=${Value} "
+                                                    if (VarName != '') {
+                                                        setEnvVar += "&& set ${VarName}=${Value} "
+                                                    }
                                                 }
                                                 
                                                 // Run corefx testing
