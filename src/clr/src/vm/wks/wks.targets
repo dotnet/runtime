@@ -53,7 +53,6 @@
     <CppCompile Include="$(VmSourcesDir)\coreassemblyspec.cpp" />
     <CppCompile Include="$(VmSourcesDir)\COMDependentHandle.cpp" />
     <CppCompile Include="$(VmSourcesDir)\COMModule.cpp" />
-    <CppCompile Include="$(VmSourcesDir)\CompactLayoutWriter.cpp" Condition="'$(MDILGenerator)' == 'true'"  />
     <CppCompile Include="$(VmSourcesDir)\MarshalNative.cpp" />
     <CppCompile Include="$(VmSourcesDir)\CompatibilitySwitch.cpp"/>
     <CppCompile Include="$(VmSourcesDir)\COMSynchronizable.cpp" />

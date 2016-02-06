@@ -42,13 +42,9 @@
     </TargetLib>
 
     <!-- We build RyuJIT only for amd64 and arm64, and use JIT32 for ARM and x86 -->
-    <TargetLib Condition="'$(MDILGenerator)' != 'true'" Include="$(ClrLibPath)\jit_crossgen.lib">
+    <TargetLib Include="$(ClrLibPath)\jit_crossgen.lib">
       <ProjectReference Condition="'$(_BuildArch)' == 'amd64' or  '$(_BuildArch)' == 'arm64'">$(ClrSrcDirectory)jit\crossgen\jit_crossgen.nativeproj</ProjectReference>
       <ProjectReference Condition="'$(_BuildArch)' != 'amd64' and '$(_BuildArch)' != 'arm64'">$(ClrSrcDirectory)jit32\crossgen\jit_crossgen.nativeproj</ProjectReference>
-    </TargetLib>
-
-    <TargetLib Condition="'$(MDILGenerator)' == 'true'" Include="$(ClrLibPath)\jitmdil_crossgen.lib">
-      <ProjectReference>$(ClrSrcDirectory)jitmdil\crossgen\jit_crossgen.nativeproj</ProjectReference>
     </TargetLib>
 
     <TargetLib Include="$(ClrLibPath)\gcinfo_crossgen.lib">

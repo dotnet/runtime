@@ -124,7 +124,6 @@
         <CDefines Condition="'$(UseStl)' == 'true'">$(CDefines);USE_STL</CDefines>
         <CDefines Condition="'$(FeatureMulticoreJIT)' == 'true'">$(CDefines);FEATURE_MULTICOREJIT</CDefines>
         <CDefines Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(CDefines);FEATURE_USE_ASM_GC_WRITE_BARRIERS</CDefines>
-        <CDefines Condition="'$(MDILGenerator)' == 'true'">$(CDefines);MDIL</CDefines>
         <CDefines Condition="'$(BinderDebugLog)' == 'true'">$(CDefines);BINDER_DEBUG_LOG</CDefines>
         <CDefines Condition="'$(FeatureSymDiff)' == 'true'">$(CDefines);FEATURE_SYMDIFF</CDefines>
         <CDefines Condition="'$(FeatureWinDbAppCompat)' == 'true'">$(CDefines);FEATURE_WIN_DB_APPCOMPAT</CDefines>
