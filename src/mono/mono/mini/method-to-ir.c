@@ -4447,22 +4447,6 @@ icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
 	return FALSE;
 }
 
-/* Return whenever METHOD calls Assembly.GetCallingAssembly () */
-// FIXME: It would be better to generalize this using some kind of method attribute
-// or automatic detection
-static gboolean
-method_needs_calling_assembly (MonoMethod *method)
-{
-	MonoClass *klass = method->klass;
-
-	if (klass->image != mono_defaults.corlib)
-		return FALSE;
-	if (!strcmp (klass->name_space, "System") && !strcmp (klass->name, "Activator") &&
-		!strcmp (method->name, "CreateInstance"))
-		return TRUE;
-	return FALSE;
-}
-
 #define is_complex_isinst(klass) ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 static MonoInst*
@@ -6733,11 +6717,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			EMIT_NEW_AOTCONST (cfg, assembly_ins, MONO_PATCH_INFO_IMAGE, cfg->method->klass->image);
 			ins = mono_emit_jit_icall (cfg, mono_get_assembly_object, &assembly_ins);
-			return ins;
-		}
-		if (cfg->llvm_only && !strcmp (cmethod->name, "GetCallingAssembly")) {
-			/* No stack walks are currently available, so implement this as an intrinsic */
-			ins = mono_emit_jit_icall (cfg, mono_llvmonly_get_calling_assembly, NULL);
 			return ins;
 		}
 	} else if (cmethod->klass->image == mono_defaults.corlib &&
@@ -9174,7 +9153,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean delegate_invoke = FALSE;
 			gboolean direct_icall = FALSE;
 			gboolean constrained_partial_call = FALSE;
-			gboolean needs_calling_assembly = FALSE;
 			MonoMethod *cil_method;
 
 			CHECK_OPSIZE (5);
@@ -9301,21 +9279,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					direct_icall = FALSE;
 				}
-			}
-
-			/*
-			 * Stack walks are not supported in llvmonly mode, so
-			 * when calling methods which call GetCallingAssembly (), save the
-			 * current assembly in the caller. The call to GetCallingAssembly ()
-			 * will be turned into an icall which will retrieve the value.
-			 */
-			if (cfg->llvm_only && cmethod && method_needs_calling_assembly (cmethod)) {
-				needs_calling_assembly = TRUE;
-
-				MonoInst *assembly_ins;
-
-				EMIT_NEW_AOTCONST (cfg, assembly_ins, MONO_PATCH_INFO_IMAGE, cfg->method->klass->image);
-				ins = mono_emit_jit_icall (cfg, mono_llvmonly_set_calling_assembly, &assembly_ins);
 			}
 
 			mono_save_token_info (cfg, image, token, cil_method);
@@ -10014,18 +9977,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* See mono_emit_method_call_full () */
 				EMIT_NEW_DUMMY_USE (cfg, dummy_use, keep_this_alive);
-			}
-
-			if (needs_calling_assembly) {
-				/*
-				 * Clear the calling assembly.
-				 * This is not EH safe, but this is not a problem in practice, since
-				 * the null value is only used for error checking.
-				 */
-				MonoInst *assembly_ins;
-
-				EMIT_NEW_PCONST (cfg, assembly_ins, NULL);
-				ins = mono_emit_jit_icall (cfg, mono_llvmonly_set_calling_assembly, &assembly_ins);
 			}
 
 			CHECK_CFG_EXCEPTION;

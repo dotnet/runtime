@@ -3919,8 +3919,6 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_resolve_vcall_gsharedvt, "mono_resolve_vcall_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_generic_virtual_call, "mono_resolve_generic_virtual_call", "ptr ptr int ptr");
 	register_icall_no_wrapper (mono_resolve_generic_virtual_iface_call, "mono_resolve_generic_virtual_iface_call", "ptr ptr int ptr");
-	register_icall_no_wrapper (mono_llvmonly_set_calling_assembly, "mono_llvmonly_set_calling_assembly", "void ptr");
-	register_icall_no_wrapper (mono_llvmonly_get_calling_assembly, "mono_llvmonly_get_calling_assembly", "object");
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mono_init_vtable_slot, "mono_init_vtable_slot", "ptr ptr int", FALSE);
 	register_icall (mono_llvmonly_init_delegate, "mono_llvmonly_init_delegate", "void object", TRUE);

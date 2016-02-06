@@ -217,8 +217,4 @@ MonoObject* mono_get_method_object (MonoMethod *method);
 
 double mono_ckfinite (double d);
 
-void mono_llvmonly_set_calling_assembly (MonoImage *image);
-
-MonoObject* mono_llvmonly_get_calling_assembly (void);
-
 #endif /* __MONO_JIT_ICALLS_H__ */
