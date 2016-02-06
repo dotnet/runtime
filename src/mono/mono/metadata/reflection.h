@@ -50,6 +50,7 @@ MONO_API uint32_t      mono_reflection_get_token (MonoObject *obj);
 MONO_API MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionModule*   mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index);
 MONO_API MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
 MONO_RT_EXTERNAL_ONLY

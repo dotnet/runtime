@@ -29,5 +29,7 @@ mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClas
 MonoReflectionModule*
 mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError *error);
 
+MonoReflectionModule*
+mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int table_index, MonoError *error);
 
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

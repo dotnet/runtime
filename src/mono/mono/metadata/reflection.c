@@ -6735,10 +6735,19 @@ mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError 
 	CACHE_OBJECT (MonoReflectionModule *, image, res, NULL);
 }
 
-MonoReflectionModule*   
+MonoReflectionModule*
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
 	MonoError error;
+	MonoReflectionModule *result;
+	result = mono_module_file_get_object_checked (domain, image, table_index, &error);
+	mono_error_raise_exception (&error);
+	return result;
+}
+
+MonoReflectionModule*
+mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int table_index, MonoError *error)
+{
 	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	MonoTableInfo *table;
@@ -6747,6 +6756,8 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	guint32 i, name_idx;
 	const char *val;
 	
+	mono_error_init (error);
+
 	if (!module_type) {
 		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
 		if (klass == NULL)
@@ -6754,8 +6765,9 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 		g_assert (klass);
 		module_type = klass;
 	}
-	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = (MonoReflectionModule *)mono_object_new_checked (domain, module_type, error);
+	if (!res)
+		return NULL;
 
 	table = &image->tables [MONO_TABLE_FILE];
 	g_assert (table_index < table->rows);

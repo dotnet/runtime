@@ -4883,8 +4883,11 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 
 	for (i = 0; i < file_count; ++i, ++j) {
 		mono_metadata_decode_row (table, i, cols, MONO_FILE_SIZE);
-		if (cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA)
-			mono_array_setref (res, j, mono_module_file_get_object (domain, image, i));
+		if (cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA) {
+			MonoReflectionModule *rm = mono_module_file_get_object_checked (domain, image, i, &error);
+			mono_error_raise_exception (&error);
+			mono_array_setref (res, j, rm);
+		}
 		else {
 			MonoImage *m = mono_image_load_file_for_image (image, i + 1);
 			if (!m) {
