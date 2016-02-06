@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
+
 //
+
 
 #include "common.h"
 #include "reflectioninvocation.h"
@@ -898,8 +900,6 @@ FCIMPL1(DWORD, ReflectionInvocation::GetSpecialSecurityFlags, ReflectMethodObjec
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
-
 // Can not inline this function.
 #ifdef _MSC_VER
 __declspec(noinline)
@@ -999,8 +999,6 @@ FCIMPL4(void, ReflectionInvocation::PerformSecurityCheck, Object *target, Method
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-#endif // FEATURE_CORECLR
 
 /****************************************************************************/
 /* boxed Nullable<T> are represented as a boxed T, so there is no unboxed
