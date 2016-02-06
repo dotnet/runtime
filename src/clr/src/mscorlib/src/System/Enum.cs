@@ -428,7 +428,7 @@ namespace System
                 StringComparison.OrdinalIgnoreCase : 
                 StringComparison.Ordinal;
 
-            int valueIndex = 0;
+            int valueIndex = firstNonWhitespaceIndex;
             while (valueIndex <= value.Length) // '=' is to handle invalid case of an ending comma
             {
                 // Find the next separator, if there is one, otherwise the end of the string.
