@@ -2439,7 +2439,7 @@ void * MAPMapPEFile(HANDLE hFile)
 
     if (MAP_FAILED == loadedBase)
     {
-        /* ERROR_(LOADER) */ fprintf(stderr, "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
+        ERROR_(LOADER)( "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
         palError = FILEGetLastErrorFromErrno();
         loadedBase = NULL; // clear it so we don't try to use it during clean-up
         goto doneReleaseMappingCriticalSection;
@@ -2475,7 +2475,7 @@ void * MAPMapPEFile(HANDLE hFile)
                     (void**)&loadedHeader);
     if (NO_ERROR != palError)
     {
-        /* ERROR_(LOADER) */ fprintf(stderr, "mmap of PE header failed\n" );
+        ERROR_(LOADER)( "mmap of PE header failed\n" );
         goto doneReleaseMappingCriticalSection;
     }
 
@@ -2570,7 +2570,7 @@ void * MAPMapPEFile(HANDLE hFile)
                         &sectionData);
         if (NO_ERROR != palError)
         {
-            /* ERROR_(LOADER) */ fprintf(stderr, "mmap of section %d failed\n", i );
+            ERROR_(LOADER)( "mmap of section %d failed\n", i );
             goto doneReleaseMappingCriticalSection;
         }
 
@@ -2633,7 +2633,7 @@ done:
     else
     {
         retval = NULL;
-        /* LOGEXIT */ fprintf(stderr, "MAPMapPEFile error: %d\n", palError);
+        LOGEXIT("MAPMapPEFile error: %d\n", palError);
 
         // If we had an error, and had mapped anything, we need to unmap it
         if (loadedBase != NULL)
