@@ -150,12 +150,6 @@
   <data name="TypeDoesNotHaveConstructorForTheSignature" xml:space="preserve">
     <value>Type doesn't have constructor with a given signature</value>
   </data>
-  <data name="CountCannotBeNegative" xml:space="preserve">
-    <value>Count must be non-negative.</value>
-  </data>
-  <data name="ArrayTypeMustBeArray" xml:space="preserve">
-    <value>arrayType must be an array type</value>
-  </data>
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
   </data>
@@ -497,9 +491,6 @@
   </data>
   <data name="OutOfRange" xml:space="preserve">
     <value>{0} must be greater than or equal to {1}</value>
-  </data>
-  <data name="QueueEmpty" xml:space="preserve">
-    <value>Queue empty.</value>
   </data>
   <data name="LabelTargetAlreadyDefined" xml:space="preserve">
     <value>Cannot redefine label '{0}' in an inner block.</value>

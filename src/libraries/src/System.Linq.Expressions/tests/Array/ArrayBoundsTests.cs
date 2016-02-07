@@ -3,12 +3,93 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
     public static class ArrayBoundsTests
     {
+        private class BogusCollection<T> : IList<T>
+        {
+            public T this[int index]
+            {
+                get { return default(T); }
+
+                set { throw new NotSupportedException(); }
+            }
+
+            public int Count
+            {
+                get { return -1; }
+            }
+
+            public bool IsReadOnly
+            {
+                get { return true; }
+            }
+
+            public void Add(T item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void Clear()
+            {
+                throw new NotSupportedException();
+            }
+
+            public bool Contains(T item)
+            {
+                return false;
+            }
+
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return Enumerable.Empty<T>().GetEnumerator();
+            }
+
+            public int IndexOf(T item)
+            {
+                return -1;
+            }
+
+            public void Insert(int index, T item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public bool Remove(T item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotSupportedException();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        private class BogusReadOnlyCollection<T> : ReadOnlyCollection<T>
+        {
+            public BogusReadOnlyCollection()
+                : base(new BogusCollection<T>())
+            {
+
+            }
+        }
+
         #region Test methods
 
         #region Byte sized arrays
@@ -1338,6 +1419,15 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        [Fact]
+        public static void ThrowOnNegativeSizedCollection()
+        {
+            // This is an obscure case, and it doesn't much matter what is thrown, as long as is thrown before such
+            // an edge case could cause more obscure damage. A class derived from ReadOnlyCollection is used to catch
+            // assumptions that such a type is safe.
+            Assert.ThrowsAny<Exception>(() => Expression.NewArrayBounds(typeof(int), new BogusReadOnlyCollection<Expression>()));
+        }
 
         #endregion
 

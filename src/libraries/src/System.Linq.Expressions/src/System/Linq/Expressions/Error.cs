@@ -89,20 +89,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.TypeDoesNotHaveConstructorForTheSignature);
         }
         /// <summary>
-        /// ArgumentException with message like "Count must be non-negative."
-        /// </summary>
-        internal static Exception CountCannotBeNegative()
-        {
-            return new ArgumentException(Strings.CountCannotBeNegative);
-        }
-        /// <summary>
-        /// ArgumentException with message like "arrayType must be an array type"
-        /// </summary>
-        internal static Exception ArrayTypeMustBeArray()
-        {
-            return new ArgumentException(Strings.ArrayTypeMustBeArray);
-        }
-        /// <summary>
         /// ArgumentException with message like "Setter should have void type."
         /// </summary>
         internal static Exception SetterMustBeVoid()
@@ -865,13 +851,6 @@ namespace System.Linq.Expressions
         internal static Exception OutOfRange(object p0, object p1)
         {
             return new ArgumentOutOfRangeException(Strings.OutOfRange(p0, p1));
-        }
-        /// <summary>
-        /// InvalidOperationException with message like "Queue empty."
-        /// </summary>
-        internal static Exception QueueEmpty()
-        {
-            return new InvalidOperationException(Strings.QueueEmpty);
         }
         /// <summary>
         /// InvalidOperationException with message like "Cannot redefine label '{0}' in an inner block."
