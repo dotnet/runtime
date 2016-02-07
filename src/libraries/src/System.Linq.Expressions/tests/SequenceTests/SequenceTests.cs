@@ -1669,7 +1669,9 @@ namespace System.Linq.Expressions.Tests
                      "AsEnumerable",
                      "ToList",
                      "Fold",
-                     "LeftJoin"
+                     "LeftJoin",
+                     "Append",
+                     "Prepend",
                  }
                 ).ToList();
 
