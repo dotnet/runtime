@@ -698,5 +698,87 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().SendToAsync(s_eventArgs));
         }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_Connect_DnsEndPoint_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new DnsEndPoint("localhost", 12345)));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_Connect_StringHost_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => s.Connect("localhost", 12345));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_Connect_MultipleAddresses_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new[] { IPAddress.Loopback }, 12345));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_ConnectAsync_DnsEndPoint_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new DnsEndPoint("localhost", 12345)); });
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_ConnectAsync_StringHost_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync("localhost", 12345); });
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_ConnectAsync_MultipleAddresses_NotSupported()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void TcpClient_ConnectAsync_StringHost_NotSupportedAfterClientAccess()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                var tmp = client.Client;
+                Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync("localhost", 12345); });
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void TcpClient_ConnectAsync_MultipleAddresses_NotSupportedAfterClientAccess()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                var tmp = client.Client;
+                Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
+            }
+        }
     }
 }

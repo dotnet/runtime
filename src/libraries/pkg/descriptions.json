@@ -1483,7 +1483,7 @@
     },
     {
         "Name": "System.Text.Encodings.Web",
-        "Description": "Html, Uri, and JavaScript encoding library.",
+        "Description": "Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).",
         "CommonTypes": [
             "System.Text.Encodings.Web.HtmlEncoder",
             "System.Text.Encodings.Web.UrlEncoder",

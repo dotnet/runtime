@@ -28,6 +28,8 @@
 
   <Import Project="dir.traversal.targets" />
 
+  <Import Project="$(ToolsDir)clean.targets" />
+
   <PropertyGroup>
     <!--
       Until we have the full clean\sync\build dev workflow in place we still default to restoring during build.
@@ -44,11 +46,18 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
+  <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
   <Target Name="BatchRestorePackages">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+
     <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
-    <!-- include ToolsDir to restore test-runtime\project.json as well -->
-    <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" />
+    <GatherDirectoriesToRestore RootDirectories="@(DnuRestoreDir)">
+      <Output TaskParameter="DirectoriesToRestore"
+              ItemName="ExpandedDnuRestoreDir" />
+    </GatherDirectoriesToRestore>
+
+    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
@@ -86,19 +95,6 @@
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
     <RemoveDir Directories="$(BinDir)" />
-  </Target>
-
-  <PropertyGroup>
-    <UserLocalFolder Condition="'$(OsEnvironment)'!='Unix'">$(LocalAppData)/</UserLocalFolder>
-    <UserLocalFolder Condition="'$(OsEnvironment)'=='Unix'">$(HOME)/.local/share/</UserLocalFolder>
-  </PropertyGroup>
-
-  <Target Name="CleanPackages">
-    <RemoveDir Directories="$(PackagesDir)" />
-  </Target>
-
-  <Target Name="CleanPackagesCache">
-    <RemoveDir Directories="$(UserLocalFolder)NuGet/Cache/;$(UserLocalFolder)NuGet/v3-cache/;$(UserLocalFolder)dnu/cache/" />
   </Target>
 
 </Project>
