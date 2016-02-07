@@ -61,14 +61,17 @@ namespace System.Net.WebSockets
             }
         }
 
-        public int IncrementHandlesOpenWithCallback()
+        public void IncrementHandlesOpenWithCallback()
         {
-            return Interlocked.Increment(ref _handlesOpenWithCallback);
+            Interlocked.Increment(ref _handlesOpenWithCallback);
         }
 
         public int DecrementHandlesOpenWithCallback()
         {
-            return Interlocked.Decrement(ref _handlesOpenWithCallback);
+            int count = Interlocked.Decrement(ref _handlesOpenWithCallback);
+            Debug.Assert(count >= 0);
+            
+            return count;
         }
 
         public WebSocketState State
