@@ -436,6 +436,10 @@ if (WIN32)
     add_compile_options(/guard:cf) 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
+
+    # Incremental linking with CFG is broken until next VS release.
+    # Disable it for EXE linking (since it is disabled for DLLs already further below)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL:NO")
   endif (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
 
   # Linker flags
