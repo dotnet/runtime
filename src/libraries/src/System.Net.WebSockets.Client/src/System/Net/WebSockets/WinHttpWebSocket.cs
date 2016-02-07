@@ -113,6 +113,7 @@ namespace System.Net.WebSockets
                         secureConnection ? Interop.WinHttp.WINHTTP_FLAG_SECURE : 0);
 
                     ThrowOnInvalidHandle(_operation.RequestHandle);
+                    _operation.IncrementHandlesOpenWithCallback();
 
                     if (!Interop.WinHttp.WinHttpSetOption(
                         _operation.RequestHandle,
@@ -151,6 +152,12 @@ namespace System.Net.WebSockets
 
                     _operation.RequestHandle.AttachCallback();
 
+                    // We need to pin the operation object at this point in time since the WinHTTP callback
+                    // has been fully wired to the request handle and the operation object has been set as
+                    // the context value of the callback. Any notifications from activity on the handle will
+                    // result in the callback being called with the context value.
+                    _operation.Pin();                    
+
                     AddRequestHeaders(uri, options);
 
                     _operation.TcsUpgrade = new TaskCompletionSource<bool>();
@@ -170,6 +177,7 @@ namespace System.Net.WebSockets
                         Interop.WinHttp.WinHttpWebSocketCompleteUpgrade(_operation.RequestHandle, IntPtr.Zero);
 
                     ThrowOnInvalidHandle(_operation.WebSocketHandle);
+                    _operation.IncrementHandlesOpenWithCallback();
 
                     // We need the address of the IntPtr to the GCHandle.
                     IntPtr context = _operation.ToIntPtr();
