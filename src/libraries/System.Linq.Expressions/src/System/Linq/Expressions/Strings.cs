@@ -133,28 +133,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Count must be non-negative."
-        /// </summary>
-        internal static string CountCannotBeNegative
-        {
-            get
-            {
-                return SR.CountCannotBeNegative;
-            }
-        }
-
-        /// <summary>
-        /// A string like "arrayType must be an array type"
-        /// </summary>
-        internal static string ArrayTypeMustBeArray
-        {
-            get
-            {
-                return SR.ArrayTypeMustBeArray;
-            }
-        }
-
-        /// <summary>
         /// A string like "Setter should have void type."
         /// </summary>
         internal static string SetterMustBeVoid
@@ -1161,17 +1139,6 @@ namespace System.Linq.Expressions
         internal static string OutOfRange(object p0, object p1)
         {
             return SR.Format(SR.OutOfRange, p0, p1);
-        }
-
-        /// <summary>
-        /// A string like "Queue empty."
-        /// </summary>
-        internal static string QueueEmpty
-        {
-            get
-            {
-                return SR.QueueEmpty;
-            }
         }
 
         /// <summary>

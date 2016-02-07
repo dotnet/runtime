@@ -1072,7 +1072,7 @@ namespace System.Linq.Expressions.Compiler
         {
             ContractUtils.RequiresNotNull(elementType, "elementType");
             ContractUtils.RequiresNotNull(emit, "emit");
-            if (count < 0) throw Error.CountCannotBeNegative();
+            Debug.Assert(count >= 0);
 
             il.EmitInt(count);
             il.Emit(OpCodes.Newarr, elementType);
@@ -1095,7 +1095,7 @@ namespace System.Linq.Expressions.Compiler
         internal static void EmitArray(this ILGenerator il, Type arrayType)
         {
             ContractUtils.RequiresNotNull(arrayType, "arrayType");
-            if (!arrayType.IsArray) throw Error.ArrayTypeMustBeArray();
+            Debug.Assert(arrayType.IsArray);
 
             if (arrayType.IsVector())
             {
