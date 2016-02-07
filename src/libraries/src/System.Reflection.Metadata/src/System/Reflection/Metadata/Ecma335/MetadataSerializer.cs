@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata.Ecma335
 namespace Roslyn.Reflection.Metadata.Ecma335
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     sealed class StandaloneDebugMetadataSerializer : MetadataSerializer
@@ -74,7 +74,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     sealed class TypeSystemMetadataSerializer : MetadataSerializer
@@ -101,7 +101,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     abstract class MetadataSerializer

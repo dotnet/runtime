@@ -21,7 +21,7 @@ namespace System.Reflection.PortableExecutable
 namespace Roslyn.Reflection.PortableExecutable
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     sealed class PEBuilder

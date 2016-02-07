@@ -32,7 +32,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
     //[EditorBrowsable(EditorBrowsableState.Never)]
     //public override string ToString() => base.ToString();
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct BlobEncoder
@@ -128,7 +128,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct MethodSignatureEncoder
@@ -151,7 +151,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct LocalVariablesEncoder
@@ -173,7 +173,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct LocalVariableTypeEncoder
@@ -211,7 +211,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct ParameterTypeEncoder
@@ -244,7 +244,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct PermissionSetEncoder
@@ -269,7 +269,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct GenericTypeArgumentsEncoder
@@ -291,7 +291,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct FixedArgumentsEncoder
@@ -313,7 +313,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct LiteralEncoder
@@ -348,7 +348,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct ScalarEncoder
@@ -389,7 +389,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct LiteralsEncoder
@@ -411,7 +411,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct VectorEncoder
@@ -430,7 +430,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct NameEncoder
@@ -448,7 +448,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct CustomAttributeNamedArgumentsEncoder
@@ -472,7 +472,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct NamedArgumentsEncoder
@@ -497,7 +497,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct NamedArgumentTypeEncoder
@@ -525,7 +525,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct CustomAttributeArrayTypeEncoder
@@ -550,7 +550,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct CustomAttributeElementTypeEncoder
@@ -621,7 +621,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     enum FunctionPointerAttributes
@@ -631,7 +631,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         HasExplicitThis = SignatureAttributes.Instance | SignatureAttributes.ExplicitThis
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct SignatureTypeEncoder
@@ -778,7 +778,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct CustomModifiersEncoder
@@ -810,7 +810,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct ArrayShapeEncoder
@@ -850,7 +850,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct ReturnTypeEncoder
@@ -888,7 +888,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     struct ParametersEncoder

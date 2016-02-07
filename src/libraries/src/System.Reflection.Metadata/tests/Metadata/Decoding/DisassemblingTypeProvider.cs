@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     // Test implementation of ISignatureTypeProvider<TType> that uses strings in ilasm syntax as TType.
     // A real provider in any sort of perf constraints would not want to allocate strings freely like this, but it keeps test code simple.
-    public class DisassemblingTypeProvider : ISignatureTypeProvider<string>
+    internal class DisassemblingTypeProvider : ISignatureTypeProvider<string>
     {
         public virtual string GetPrimitiveType(PrimitiveTypeCode typeCode)
         {

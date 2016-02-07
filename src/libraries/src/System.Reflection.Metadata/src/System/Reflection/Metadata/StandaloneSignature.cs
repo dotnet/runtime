@@ -31,23 +31,30 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Gets a handle to the signature blob.
-        ///
-        /// Decode using <see cref="DecodeMethodSignature"/> if <see cref="GetKind"/> returns <see cref="StandaloneSignatureKind.Method"/>
-        /// Decode using <see cref="DecodeLocalSignature"/> if <see cref="GetKind"/> returns <see cref="StandaloneSignatureKind.LocalVariables"/>
         /// </summary>
         public BlobHandle Signature
         {
             get { return _reader.StandAloneSigTable.GetSignature(_rowId); }
         }
 
-        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+#if FUTURE
+        public 
+#else
+        internal
+#endif
+        MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSignature(ref blobReader);
         }
 
-        public ImmutableArray<TType> DecodeLocalSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+#if FUTURE
+        public 
+#else
+        internal
+#endif
+        ImmutableArray<TType> DecodeLocalSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);

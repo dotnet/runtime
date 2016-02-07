@@ -36,7 +36,7 @@ namespace Roslyn.Reflection.PortableExecutable
     /// - Runtime Startup Stub
     /// - Mapped Field Data
     /// </remarks>
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     sealed class ManagedTextSection

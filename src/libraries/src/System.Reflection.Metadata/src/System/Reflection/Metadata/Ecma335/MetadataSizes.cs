@@ -19,7 +19,7 @@ namespace System.Reflection.Metadata.Ecma335
 namespace Roslyn.Reflection.Metadata.Ecma335
 #endif
 {
-#if SRM
+#if SRM && FUTURE
     public
 #endif
     sealed class MetadataSizes
