@@ -171,9 +171,8 @@ namespace System.Net.Security.Tests
                     }
 
                     _log.WriteLine(
-                        "Server({0}) authenticated client({1}) with encryption cipher: {2} {3}-bit strength",
-                        serverConnection.Client.LocalEndPoint,
-                        serverConnection.Client.RemoteEndPoint,
+                        "Server({0}) authenticated with encryption cipher: {1} {2}-bit strength",
+                        serverEndPoint,
                         sslServerStream.CipherAlgorithm,
                         sslServerStream.CipherStrength);
 
