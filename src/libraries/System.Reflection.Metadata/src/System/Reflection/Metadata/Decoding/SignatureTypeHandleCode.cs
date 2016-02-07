@@ -4,9 +4,16 @@
 
 using System.Reflection.Metadata.Ecma335;
 
+#if SRM
 namespace System.Reflection.Metadata.Decoding
+#else
+namespace Roslyn.Reflection.Metadata.Decoding
+#endif
 {
-    public enum SignatureTypeHandleCode : byte
+#if SRM && FUTURE
+    public
+#endif
+    enum SignatureTypeHandleCode : byte
     {
         /// <summary>
         /// It is not known in the current context if the type reference or definition is a class or value type.

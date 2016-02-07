@@ -43,8 +43,6 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Gets a handle to the signature blob.
-        ///
-        /// Decode using <see cref="DecodeSignature"/>.
         /// </summary>
         public BlobHandle Signature
         {
@@ -54,12 +52,14 @@ namespace System.Reflection.Metadata
             }
         }
 
+#if FUTURE
         public ImmutableArray<TType> DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSpecificationSignature(ref blobReader);
         }
+#endif
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {

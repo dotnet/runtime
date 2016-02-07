@@ -4,12 +4,19 @@
 
 using System.Collections.Immutable;
 
+#if SRM
 namespace System.Reflection.Metadata.Decoding
+#else
+namespace Roslyn.Reflection.Metadata.Decoding
+#endif
 {
     /// <summary>
     /// Represents the shape of an array type.
     /// </summary>
-    public struct ArrayShape
+#if SRM && FUTURE
+    public
+#endif
+    struct ArrayShape
     {
         private readonly int _rank;
         private readonly ImmutableArray<int> _sizes;

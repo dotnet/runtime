@@ -6,13 +6,20 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
+#if SRM
 namespace System.Reflection.Metadata.Decoding
+#else
+namespace Roslyn.Reflection.Metadata.Decoding
+#endif
 {
     /// <summary>
     /// Decodes signature blobs.
     /// See Metadata Specification section II.23.2: Blobs and signatures.
     /// </summary>
-    public struct SignatureDecoder<TType>
+#if SRM && FUTURE
+    public
+#endif
+    struct SignatureDecoder<TType>
     {
         private readonly ISignatureTypeProvider<TType> _provider;
         private readonly MetadataReader _metadataReaderOpt;

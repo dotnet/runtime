@@ -70,9 +70,6 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Gets a handle to the signature blob.
-        ///
-        /// Decode using <see cref="DecodeMethodSignature"/> if <see cref="GetKind"/> returns <see cref="MemberReferenceKind.Method"/>
-        /// Decode using <see cref="DecodeFieldSignature"/> if <see cref="GetKind"/> returns <see cref="MemberReferenceKind.Field"/>
         /// </summary>
         public BlobHandle Signature
         {
@@ -87,14 +84,24 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+#if FUTURE
+        public
+#else
+        internal
+#endif
+        TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeFieldSignature(ref blobReader);
         }
 
-        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+#if FUTURE
+        public 
+#else
+        internal
+#endif
+        MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
@@ -128,7 +135,7 @@ namespace System.Reflection.Metadata
             return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
-        #region Projections
+#region Projections
 
         private EntityHandle GetProjectedParent()
         {
@@ -151,6 +158,6 @@ namespace System.Reflection.Metadata
             // no change
             return _reader.MemberRefTable.GetSignature(Handle);
         }
-        #endregion
+#endregion
     }
 }
