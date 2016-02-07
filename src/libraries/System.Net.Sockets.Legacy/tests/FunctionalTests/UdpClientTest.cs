@@ -55,14 +55,6 @@ namespace System.Net.Sockets.Tests
             Assert.True(_waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
         }
 
-        [ActiveIssue(4968)]
-        [Fact]
-        public void UdpClient_ConnectAsync_Success()
-        {
-            var c = new UdpClient();
-            c.Client.ConnectAsync("114.114.114.114", 53).Wait();
-        }
-
         private void AsyncCompleted(IAsyncResult ar)
         {
             UdpClient udpService = (UdpClient)ar.AsyncState;
