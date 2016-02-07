@@ -9,9 +9,6 @@
 .class public auto ansi HiDad extends [mscorlib]System.Object
 {
   .custom instance void [mscorlib]Microsoft.VisualBasic.Globals.StandardModuleAttribute::.ctor() = ( 01 00 00 00 ) 
-  .export public 'HiDad'
-  {
-  }
   .method public static void main() il managed forwardref
   {
     .maxstack  8
@@ -60,9 +57,6 @@
 
 .class auto ansi _vbProject extends [mscorlib]System.Object
 {
-  .export '_vbProject'
-  {
-  }
   .field static assembly class [mscorlib]System.Collections.Dictionary _vbEventCollection
   .method public static int32 _main(class [mscorlib]System.String[] _s) il managed forwardref
   {
