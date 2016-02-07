@@ -21,7 +21,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SameResultsRepeatCallsIntQueryPrePend()
+        public void SameResultsRepeatCallsIntQueryPrepend()
         {
             var q1 = from x1 in new int?[] { 2, 3, null, 2, null, 4, 5 }
                      select x1;
@@ -65,10 +65,55 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void PrependNoIteratingSourceBeforeFirstItem()
+        {
+            var ie = new List<int>();
+            var prepended = (from i in ie select i).Prepend(4);
+
+            ie.Add(42);
+
+            Assert.Equal(prepended, ie.Prepend(4));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumeratePrepend()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Prepend(4);
+            // Don't insist on this behaviour, but check it's correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateAppend()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Append(4);
+            // Don't insist on this behaviour, but check it's correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
         public void SourceNull()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Append(1));
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Prepend(1));
+        }
+
+        [Fact]
+        public void Combined()
+        {
+            var v = "foo".Append('1').Append('2').Prepend('3').Concat("qq".Append('Q').Prepend('W'));
+
+            Assert.Equal(v.ToArray(), "3foo12WqqQ".ToArray());
+
+            var v1 = "a".Append('b').Append('c').Append('d');
+
+            Assert.Equal(v1.ToArray(), "abcd".ToArray());
+
+            var v2 = "a".Prepend('b').Prepend('c').Prepend('d');
+
+            Assert.Equal(v2.ToArray(), "dcba".ToArray());
         }
     }
 }
