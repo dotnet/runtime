@@ -2113,7 +2113,7 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 {
 	int j, size, nslots;
 
-	size = get_vtype_size (t);
+	size = mono_class_value_size (mono_class_from_mono_type (t), NULL);
 
 	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (t))) {
 		address = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (LLVMInt8Type (), 0), "");
@@ -2128,6 +2128,9 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 		LLVMValueRef index [2], addr, daddr;
 		int part_size = size > sizeof (gpointer) ? sizeof (gpointer) : size;
 		LLVMTypeRef part_type;
+
+		while (part_size != 1 && part_size != 2 && part_size != 4 && part_size < 8)
+			part_size ++;
 
 		if (ainfo->pair_storage [j] == LLVMArgNone)
 			continue;
@@ -4171,9 +4174,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgVtypeAsScalar: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
 				LLVMValueRef retval;
-				int size;
-
-				size = get_vtype_size (sig->ret);
 
 				g_assert (addresses [ins->sreg1]);
 
