@@ -144,8 +144,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (!Issuer.Equals(other.Issuer))
                 return false;
 
-            byte[] thisSerialNumber = GetSerialNumber();
-            byte[] otherSerialNumber = other.GetSerialNumber();
+            byte[] thisSerialNumber = GetRawSerialNumber();
+            byte[] otherSerialNumber = other.GetRawSerialNumber();
+
             if (thisSerialNumber.Length != otherSerialNumber.Length)
                 return false;
             for (int i = 0; i < thisSerialNumber.Length; i++)
@@ -179,12 +180,13 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash()
         {
             ThrowIfInvalid();
+            return GetRawCertHash().CloneByteArray();
+        }
 
-            byte[] certHash = _lazyCertHash;
-            if (certHash == null)
-                _lazyCertHash = certHash = Pal.Thumbprint;
-
-            return certHash.CloneByteArray();
+        // Only use for internal purposes when the returned byte[] will not be mutated
+        private byte[] GetRawCertHash()
+        {
+            return _lazyCertHash ?? (_lazyCertHash = Pal.Thumbprint);
         }
 
         public virtual string GetFormat()
@@ -197,7 +199,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (Pal == null)
                 return 0;
 
-            byte[] thumbPrint = GetCertHash();
+            byte[] thumbPrint = GetRawCertHash();
             int value = 0;
             for (int i = 0; i < thumbPrint.Length && i < 4; ++i)
             {
@@ -248,10 +250,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            byte[] serialNumber = _lazySerialNumber;
-            if (serialNumber == null)
-                serialNumber = _lazySerialNumber = Pal.SerialNumber;
-            return serialNumber.CloneByteArray();
+            return GetRawSerialNumber().CloneByteArray();
+        }
+
+        // Only use for internal purposes when the returned byte[] will not be mutated
+        private byte[] GetRawSerialNumber()
+        {
+            return _lazySerialNumber ?? (_lazySerialNumber = Pal.SerialNumber);
         }
 
         public override string ToString()
@@ -302,7 +307,7 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Thumbprint]");
             sb.Append("  ");
-            sb.Append(GetCertHash().ToHexArrayUpper());
+            sb.Append(GetRawCertHash().ToHexArrayUpper());
             sb.AppendLine();
 
             return sb.ToString();
