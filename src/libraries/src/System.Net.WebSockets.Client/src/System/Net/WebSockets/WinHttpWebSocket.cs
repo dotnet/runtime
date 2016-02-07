@@ -113,6 +113,7 @@ namespace System.Net.WebSockets
                         secureConnection ? Interop.WinHttp.WINHTTP_FLAG_SECURE : 0);
 
                     ThrowOnInvalidHandle(_operation.RequestHandle);
+                    _operation.IncrementHandlesOpenWithCallback();
 
                     if (!Interop.WinHttp.WinHttpSetOption(
                         _operation.RequestHandle,
@@ -151,6 +152,12 @@ namespace System.Net.WebSockets
 
                     _operation.RequestHandle.AttachCallback();
 
+                    // We need to pin the operation object at this point in time since the WinHTTP callback
+                    // has been fully wired to the request handle and the operation object has been set as
+                    // the context value of the callback. Any notifications from activity on the handle will
+                    // result in the callback being called with the context value.
+                    _operation.Pin();                    
+
                     AddRequestHeaders(uri, options);
 
                     _operation.TcsUpgrade = new TaskCompletionSource<bool>();
@@ -170,6 +177,7 @@ namespace System.Net.WebSockets
                         Interop.WinHttp.WinHttpWebSocketCompleteUpgrade(_operation.RequestHandle, IntPtr.Zero);
 
                     ThrowOnInvalidHandle(_operation.WebSocketHandle);
+                    _operation.IncrementHandlesOpenWithCallback();
 
                     // We need the address of the IntPtr to the GCHandle.
                     IntPtr context = _operation.ToIntPtr();
@@ -235,12 +243,6 @@ namespace System.Net.WebSockets
             lock (_operation.Lock)
             {
                 ThrowOnInvalidConnectState();
-                
-                // We need to pin the operation object at this point in time since it is now going to be bound into
-                // the callback function for the request handle. This happens implicitly as a result of calling
-                // WinHttpSendRequest and passing the object as the context value (last parameter).
-                _operation.Pin();
-                
                 if (!Interop.WinHttp.WinHttpSendRequest(
                                     _operation.RequestHandle,
                                     Interop.WinHttp.WINHTTP_NO_ADDITIONAL_HEADERS,
@@ -250,13 +252,6 @@ namespace System.Net.WebSockets
                                     0,
                                     _operation.ToIntPtr()))
                 {
-                    // Since this API failed, the implcit binding of this operation object as the  context value to
-                    // the callback is not going to happen. Normally, we would unpin it in the callback when the
-                    // handle is closed. But the callback won't have the operation object in the context value and we
-                    // won't be able to pin it at that time. That means that we need to unpin the operation object here.
-                    // Otherwise we will leak the object since it is strongly pinned.
-                    _operation.Unpin();
-                    
                     WinHttpException.ThrowExceptionUsingLastError();
                 }
             }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
@@ -25,6 +26,7 @@ namespace System.Net.WebSockets
         private Interop.WinHttp.SafeWinHttpHandle _connectionHandle;
         private Interop.WinHttp.SafeWinHttpHandleWithCallback _requestHandle;
         private Interop.WinHttp.SafeWinHttpHandleWithCallback _webSocketHandle;
+        private int _handlesOpenWithCallback = 0;
 
         // A GCHandle for this operation object.
         // This is owned by the callback and will be unpinned by the callback when it determines that
@@ -52,9 +54,21 @@ namespace System.Net.WebSockets
         {
             if (_operationHandle.IsAllocated)
             {
+                Debug.Assert(_handlesOpenWithCallback == 0);
+
                 _operationHandle.Free();
                 _operationHandle = default(GCHandle);
             }
+        }
+
+        public int IncrementHandlesOpenWithCallback()
+        {
+            return Interlocked.Increment(ref _handlesOpenWithCallback);
+        }
+
+        public int DecrementHandlesOpenWithCallback()
+        {
+            return Interlocked.Decrement(ref _handlesOpenWithCallback);
         }
 
         public WebSocketState State

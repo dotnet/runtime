@@ -41,6 +41,7 @@ namespace System.Net.WebSockets
             try
             {
                 WinHttpWebSocketState state = WinHttpWebSocketState.FromIntPtr(context);
+                Debug.Assert(state != null, "WinHttpWebSocketCallback: state should not be null");
 
                 if ((state.RequestHandle != null) &&
                     (state.RequestHandle.DangerousGetHandle() == handle))
@@ -135,8 +136,8 @@ namespace System.Net.WebSockets
             state.RequestHandle.DetachCallback();
             state.RequestHandle = null;
             
-            // Unpin the operation object if there is no WebSocket handle. This will happen in error cases.
-            if (state.WebSocketHandle == null)
+            // Unpin the state object if there are no more open handles that are wired to the callback.
+            if (state.DecrementHandlesOpenWithCallback() == 0)
             {
                 state.Unpin();
             }
@@ -297,8 +298,11 @@ namespace System.Net.WebSockets
             state.WebSocketHandle.DetachCallback();
             state.WebSocketHandle = null;
 
-            // Unpin the operation object since all handles that would use a callback are now closed.
-            state.Unpin();
+            // Unpin the state object if there are no more open handles that are wired to the callback.
+            if (state.DecrementHandlesOpenWithCallback() == 0)
+            {
+                state.Unpin();
+            }
         }
 
         private static void OnWebSocketError(
