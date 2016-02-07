@@ -14,6 +14,17 @@
     .ver 4:0:0:0
     .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
 }
+.assembly extern System.Threading
+{
+    .ver 4:0:0:0
+    .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
+}
+.assembly extern System.Threading.Thread
+{
+    .ver 4:0:0:0
+    .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
+}
+.assembly extern mscorlib { }
 .assembly hijacking
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
