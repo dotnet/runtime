@@ -13,7 +13,7 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 
-.class _add {
+.class explicit _add {
 
 .field [0] int32 global0
 .field [4] int32 global1
