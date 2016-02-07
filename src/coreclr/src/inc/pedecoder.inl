@@ -1340,11 +1340,20 @@ inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)
                 dwKind |= (DWORD)pe32Unmanaged;
             }
 
-            if (HasReadyToRunHeader() && (GetReadyToRunHeader()->Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
+            if (HasReadyToRunHeader())
             {
-                // Supply the original PEKind/Machine to the assembly binder to make the full assembly name look like the original
-                dwKind = peILonly;
-                dwMachine = IMAGE_FILE_MACHINE_I386;
+                if (dwMachine == IMAGE_FILE_MACHINE_NATIVE_NI)
+                {
+                    // Supply the original machine type to the assembly binder
+                    dwMachine = IMAGE_FILE_MACHINE_NATIVE;
+                }
+
+                if ((GetReadyToRunHeader()->Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
+                {
+                    // Supply the original PEKind/Machine to the assembly binder to make the full assembly name look like the original
+                    dwKind = peILonly;
+                    dwMachine = IMAGE_FILE_MACHINE_I386;
+                }
             }
         }
         else
