@@ -291,6 +291,14 @@ SCAN_VTYPE_FUNCTION_NAME (GCObject *full_object, char *start, SgenDescriptor des
 }
 #endif
 
+#ifdef SCAN_PTR_FIELD_FUNCTION_NAME
+static void
+SCAN_PTR_FIELD_FUNCTION_NAME (GCObject *full_object, GCObject **ptr, SgenGrayQueue *queue)
+{
+	HANDLE_PTR (ptr, NULL);
+}
+#endif
+
 static gboolean
 DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 {
@@ -320,4 +328,5 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 #undef COPY_OR_MARK_CONCURRENT_WITH_EVACUATION
 #undef SCAN_OBJECT_FUNCTION_NAME
 #undef SCAN_VTYPE_FUNCTION_NAME
+#undef SCAN_PTR_FIELD_FUNCTION_NAME
 #undef DRAIN_GRAY_STACK_FUNCTION_NAME
