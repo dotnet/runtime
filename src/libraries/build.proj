@@ -52,12 +52,14 @@
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
 
     <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
-    <GatherDirectoriesToRestore RootDirectories="@(DnuRestoreDir)">
+    <GatherDirectoriesToRestore RootDirectories="@(DnuRestoreDir)" Condition="'$(SkipGatherRestoreDirs)' != 'true'">
       <Output TaskParameter="DirectoriesToRestore"
               ItemName="ExpandedDnuRestoreDir" />
     </GatherDirectoriesToRestore>
 
-    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" />
+    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" Condition="'$(SkipGatherRestoreDirs)' != 'true'" />
+
+    <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" Condition="'$(SkipGatherRestoreDirs)' == 'true'" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
