@@ -311,7 +311,8 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	g_free (agent);
 
 	pa [0] = main_args;
-	mono_runtime_invoke (method, NULL, pa, exc);
+	mono_runtime_try_invoke (method, NULL, pa, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return 0;
 }

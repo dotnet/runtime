@@ -475,11 +475,16 @@ cominterop_com_visible (MonoClass* klass)
 static void cominterop_raise_hr_exception (int hr)
 {
 	static MonoMethod* throw_exception_for_hr = NULL;
+	MonoError error;
 	MonoException* ex;
 	void* params[1] = {&hr};
+
 	if (!throw_exception_for_hr)
 		throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
-	ex = (MonoException*)mono_runtime_invoke (throw_exception_for_hr, NULL, params, NULL);
+
+	ex = (MonoException*)mono_runtime_invoke_checked (throw_exception_for_hr, NULL, params, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	mono_raise_exception (ex);
 }
 

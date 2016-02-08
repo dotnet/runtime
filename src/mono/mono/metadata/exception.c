@@ -144,7 +144,10 @@ create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2)
 
 	args [0] = a1;
 	args [1] = a2;
-	mono_runtime_invoke (method, o, args, NULL);
+
+	mono_runtime_invoke_checked (method, o, args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	return (MonoException *) o;
 }
 
@@ -602,7 +605,8 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 
 	exc = mono_object_new_checked (mono_domain_get (), klass, &error);
 	mono_error_assert_ok (&error);
-	mono_runtime_invoke (method, exc, args, NULL);
+	mono_runtime_invoke_checked (method, exc, args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return (MonoException *) exc;
 }
@@ -777,7 +781,9 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 
 	exc = mono_object_new_checked (mono_domain_get (), klass, &error);
 	mono_error_assert_ok (&error);
-	mono_runtime_invoke (method, exc, args, NULL);
+
+	mono_runtime_invoke_checked (method, exc, args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return (MonoException *) exc;
 }
@@ -802,7 +808,9 @@ mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 	g_assert (method);
 
 	params [0] = wrapped_exception;
-	mono_runtime_invoke (method, o, params, NULL);
+
+	mono_runtime_invoke_checked (method, o, params, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return (MonoException *)o;
 }	
