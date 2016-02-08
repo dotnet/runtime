@@ -15,7 +15,7 @@ namespace System.Buffers
     {
         private int _index;
         private readonly T[][] _data;
-        private readonly int _bufferLength;
+        internal readonly int _bufferLength;
         private SpinLock _lock;
         private bool _exhaustedEventSent;
         private readonly int _poolId;

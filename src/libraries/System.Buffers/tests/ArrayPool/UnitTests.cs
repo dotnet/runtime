@@ -228,6 +228,57 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(id, bt.GetHashCode());
         }
 
+        [Fact]
+        public static void CanRentManySizedBuffers()
+        {
+            var pool = ArrayPool<byte>.Create();
+            for (int i = 1; i < 10000; i++)
+            {
+                byte[] buffer = pool.Rent(i);
+                Assert.Equal(i <= 16 ? 16 : RoundUpToPowerOf2(i), buffer.Length);
+                pool.Return(buffer);
+            }
+        }
+
+        private static int RoundUpToPowerOf2(int i)
+        {
+            // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --i;
+            i |= i >> 1;
+            i |= i >> 2;
+            i |= i >> 4;
+            i |= i >> 8;
+            i |= i >> 16;
+            return i + 1;
+        }
+
+        [Theory]
+        [InlineData(1, 16)]
+        [InlineData(15, 16)]
+        [InlineData(16, 16)]
+        [InlineData(1023, 1024)]
+        [InlineData(1024, 1024)]
+        [InlineData(4096, 4096)]
+        [InlineData(1024 * 1024, 1024 * 1024)]
+        [InlineData(1024 * 1024 + 1, 1024 * 1024 + 1)]
+        [InlineData(1024 * 1024 * 2, 1024 * 1024 * 2)]
+        public static void RentingSpecificLengthsYieldsExpectedLengths(int requestedMinimum, int expectedLength)
+        {
+            byte[] buffer = ArrayPool<byte>.Create().Rent(requestedMinimum);
+            Assert.NotNull(buffer);
+            Assert.Equal(expectedLength, buffer.Length);
+        }
+
+        [Fact]
+        public static void RentingAfterPoolExhaustionReturnsSizeForCorrespondingBucket()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 64, maxArraysPerBucket: 1);
+            Assert.Equal(16, pool.Rent(15).Length);
+            Assert.Equal(32, pool.Rent(15).Length);
+            Assert.Equal(64, pool.Rent(15).Length);
+            Assert.Equal(16, pool.Rent(15).Length);
+        }
+
         private static void ActionFiresSpecificEvent(Action body, int eventId, AutoResetEvent are)
         {
             using (TestEventListener listener = new TestEventListener("System.Buffers.BufferPoolEventSource", EventLevel.Verbose))
