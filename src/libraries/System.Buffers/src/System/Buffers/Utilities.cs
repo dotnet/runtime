@@ -8,19 +8,37 @@ namespace System.Buffers
 {
     internal static class Utilities
     {
+        private static readonly int[] s_logTable256 = new int[256] {
+           -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        };
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
-            uint bitsRemaining = ((uint)bufferSize - 1) >> 4;
-            int poolIndex = 0;
+            uint input = ((uint)bufferSize - 1) >> 4;
 
-            while (bitsRemaining > 0)
-            {
-                bitsRemaining >>= 1;
-                poolIndex++;
-            }
-
-            return poolIndex;
+            // Based on bit twiddling examples from http://graphics.stanford.edu/~seander/bithacks.html
+            int[] table = s_logTable256;
+            uint t, tt;
+            return 1 +
+                ((tt = input >> 16) != 0 ?
+                    (((t = tt >> 8) != 0 ? 24 + table[t] : 16 + table[tt])) :
+                    (((t = input >> 8) != 0 ? 8 + table[t] : table[input])));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
