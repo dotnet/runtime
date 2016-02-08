@@ -95,6 +95,7 @@
       <Name>System.Runtime.Extensions</Name>
       <!-- Don't deploy reference assembly -->
       <Private>false</Private>
+      <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
