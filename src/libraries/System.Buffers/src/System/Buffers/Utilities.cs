@@ -8,37 +8,19 @@ namespace System.Buffers
 {
     internal static class Utilities
     {
-        private static readonly int[] s_logTable256 = new int[256] {
-           -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        };
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
-            uint input = ((uint)bufferSize - 1) >> 4;
+            uint bitsRemaining = ((uint)bufferSize - 1) >> 4;
 
-            // Based on bit twiddling examples from http://graphics.stanford.edu/~seander/bithacks.html
-            int[] table = s_logTable256;
-            uint t, tt;
-            return 1 +
-                ((tt = input >> 16) != 0 ?
-                    (((t = tt >> 8) != 0 ? 24 + table[t] : 16 + table[tt])) :
-                    (((t = input >> 8) != 0 ? 8 + table[t] : table[input])));
+            int poolIndex = 0;
+            if (bitsRemaining > 0xFFFF) { bitsRemaining >>= 16; poolIndex = 16; }
+            if (bitsRemaining > 0xFF)   { bitsRemaining >>= 8;  poolIndex += 8; }
+            if (bitsRemaining > 0xF)    { bitsRemaining >>= 4;  poolIndex += 4; }
+            if (bitsRemaining > 0x3)    { bitsRemaining >>= 2;  poolIndex += 2; }
+            if (bitsRemaining > 0x1)    { bitsRemaining >>= 1;  poolIndex += 1; }
+
+            return poolIndex + (int)bitsRemaining;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
