@@ -83,8 +83,9 @@ namespace System.Data.Common
                         return Data;
                     case "DataName":
                         return DataName;
+                    default:
+                        return null;
                 }
-                return null;
             }
         }
 
