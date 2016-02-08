@@ -129,4 +129,7 @@
   <data name="event_BucketExhausted" xml:space="preserve">
     <value>Bucket {0}, with {2} maximum buffers, exhausted of all Buffers of size {1} in Pool {3}</value>
   </data>
+  <data name="ArgumentException_BufferNotFromPool" xml:space="preserve">
+    <value>The buffer is not associated with this pool and may not be returned to it.</value>
+  </data>
 </root>
