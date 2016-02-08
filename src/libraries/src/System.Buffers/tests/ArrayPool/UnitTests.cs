@@ -371,5 +371,15 @@ namespace System.Buffers.ArrayPool.Tests
                 Assert.True(are.WaitOne(MaxEventWaitTimeoutInMs));
             }, 4, are);
         }
+
+        [Fact]
+        public static void ReturningANonPooledBufferOfDifferentSizeToThePoolThrows()
+        {
+            ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
+            byte[] buffer = pool.Rent(15);
+            Assert.Throws<ArgumentException>("buffer", () => pool.Return(new byte[1]));
+            buffer = pool.Rent(15);
+            Assert.Equal(buffer.Length, 16);
+        }
     }
 }
