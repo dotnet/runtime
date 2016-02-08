@@ -32,6 +32,7 @@
       <Name>System.Reflection</Name>
       <!-- Don't copy the reference assembly to output -->
       <Private>false</Private>
+      <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\TestExe\System.Reflection.Tests.TestExe.csproj">
       <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
