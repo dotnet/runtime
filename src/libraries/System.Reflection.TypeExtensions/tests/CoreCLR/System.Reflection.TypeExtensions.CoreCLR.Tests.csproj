@@ -28,6 +28,7 @@
       <Name>System.Reflection.TypeExtensions</Name>
       <!-- Don't deploy reference assembly -->
       <Private>false</Private>
+      <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\src\System.Reflection.TypeExtensions.csproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
