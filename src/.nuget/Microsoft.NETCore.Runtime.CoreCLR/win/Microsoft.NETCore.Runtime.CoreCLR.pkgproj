@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <Version>1.0.1</Version>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <MinOSForArch>win7</MinOSForArch>
+    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
+    <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+  </PropertyGroup>
+  
+  <ItemGroup>
+
+    <!-- Windows nuget package will depend upon the APISet package -->
+    <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
+      <Version>1.0.1-rc3-23803</Version>
+    </Dependency>
+
+    <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordbi.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.debug.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll"/>
+
+    <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
+
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe"/>
+
+    <File Include="@(ArchitectureSpecificNativeFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+
+    <!-- Using lib/dotnet here.  There is no TFM for this since it is a runtime itself. -->
+    <File Include="@(ArchitectureSpecificLibFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/dotnet</TargetPath>
+    </File>
+    
+    <File Include="@(ArchitectureSpecificToolFile)">
+      <TargetPath>tools</TargetPath>
+    </File>
+
+    <!-- No reference: don't permit reference to the implementation from lib -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>ref/dotnet</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

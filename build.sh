@@ -23,6 +23,24 @@ usage()
     exit 1
 }
 
+initDistroName()
+{
+    if [ "$__BuildOS" == "Linux" ]; then
+        # Detect Distro
+        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
+            export __DistroName=ubuntu
+        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
+            export __DistroName=rhel
+        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
+            export __DistroName=rhel
+        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
+            export __DistroName=debian
+        else
+            export __DistroName=""
+        fi
+    fi
+}
+
 setup_dirs()
 {
     echo Setting up directories for build
@@ -162,50 +180,49 @@ build_coreclr()
     fi
 }
 
+restoreBuildTools()
+{
+    echo "Restoring BuildTools..."
+    $__ProjectRoot/init-tools.sh
+    if [ $? -ne 0 ]; then
+        echo "Failed to restore BuildTools."
+        exit 1
+    fi
+}
+
+isMSBuildOnNETCoreSupported()
+{
+    __isMSBuildOnNETCoreSupported=0
+
+    if [ "$__BuildOS" == "Linux" ]; then
+        if [ "$__DistroName" == "ubuntu" ]; then
+            __isMSBuildOnNETCoreSupported=1
+        fi
+    elif [ "$__BuildOS" == "OSX" ]; then
+        __isMSBuildOnNETCoreSupported=1
+    fi 
+}
+
 build_mscorlib()
 {
-    hash mono 2> /dev/null || { echo >&2 "Skipping mscorlib.dll build since Mono is not installed."; return; }
 
-    if [ $__SkipMSCorLib == 1 ]; then
-        echo "Skipping mscorlib.dll build."
+    if [ $__isMSBuildOnNETCoreSupported == 0 ]; then
+        echo "Mscorlib.dll build unsupported."
         return
     fi
 
-    # Temporary hack to make dnu restore more reliable. This is specifically for dnu beta 5 since this issue should already be addressed in later versions of dnu.
-    export MONO_THREADS_PER_CPU=2000
+    # CI_TODO: Until we switch CI to stop building mscorlib for platforms supported by isMSBuildOnNETCoreSupported function,
+    # we should ignore skipping building mscorlib.
+    # if [ $__SkipMSCorLib == 1 ]; then
+    #    echo "Skipping building mscorlib."
+    #    return
+    # fi
+
+    # Restore buildTools
+
+    restoreBuildTools
 
     echo "Commencing build of mscorlib components for $__BuildOS.$__BuildArch.$__BuildType"
-
-    # Pull NuGet.exe down if we don't have it already
-    if [ ! -e "$__NuGetPath" ]; then
-        hash curl 2>/dev/null || hash wget 2>/dev/null || { echo >&2 echo "cURL or wget is required to build mscorlib." ; exit 1; }
-
-        echo "Restoring NuGet.exe..."
-
-        # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-        which curl > /dev/null 2> /dev/null
-        if [ $? -ne 0 ]; then
-           mkdir -p $__PackagesDir
-           wget -q -O $__NuGetPath https://api.nuget.org/downloads/nuget.exe
-        else
-           curl -sSL --create-dirs -o $__NuGetPath https://api.nuget.org/downloads/nuget.exe
-        fi
-
-        if [ $? -ne 0 ]; then
-            echo "Failed to restore NuGet.exe."
-            exit 1
-        fi
-    fi
-
-    # Grab the MSBuild package if we don't have it already
-    if [ ! -e "$__MSBuildPath" ]; then
-        echo "Restoring MSBuild..."
-        $__ProjectRoot/init-tools.sh
-        if [ $? -ne 0 ]; then
-            echo "Failed to restore MSBuild."
-            exit 1
-        fi
-    fi
 
     # Invoke MSBuild
     $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false
@@ -225,6 +242,38 @@ build_mscorlib()
     fi
 }
 
+generate_NugetPackages()
+{
+    # We can only generate nuget package if we also support building mscorlib as part of this build.
+    if [ $__isMSBuildOnNETCoreSupported == 0 ]; then
+        echo "Microsoft.NETCore.Runtime.CoreCLR nuget package generation unsupported."
+        return
+    fi
+
+    # Since we can build mscorlib for this OS, did we build the native components as well?
+    if [ $__SkipCoreCLR == 1 ]; then
+        echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since native components were not built."
+        return
+    fi
+
+    # CI_TODO: Until we switch CI to stop building mscorlib for platforms supported by isMSBuildOnNETCoreSupported function,
+    # we should ignore skipping building mscorlib.
+    # if [ $__SkipMSCorLib == 1 ]; then
+    #    echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since mscorlib was not built."
+    #    return
+    # fi
+
+    echo "Generating nuget packages for "$__BuildOS
+
+    # Invoke MSBuild
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.Runtime.CoreCLR/Microsoft.NETCore.Runtime.CoreCLR.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to generate Nuget packages."
+        exit 1
+    fi
+}
+
 echo "Commencing CoreCLR Repo build"
 
 # Argument types supported by this script:
@@ -240,7 +289,7 @@ __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
 # Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName = "unknown" ]; then
+if [ $CPUName == "unknown" ]; then
     CPUName=$(uname -m)
 fi
 
@@ -327,6 +376,7 @@ __ClangMajorVersion=3
 __ClangMinorVersion=5
 __MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
+__DistroName=""
 
 for i in "$@"
 do
@@ -443,6 +493,9 @@ if [[ $__ConfigureOnly == 1 && $__SkipConfigure == 1 ]]; then
     exit 1
 fi
 
+# init the distro name
+initDistroName
+
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
@@ -450,6 +503,20 @@ __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
 export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__isMSBuildOnNETCoreSupported=0
+
+# Init if MSBuild for .NET Core is supported for this platform
+isMSBuildOnNETCoreSupported
+
+# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
+# This is needed by CLI to function.
+if [ -z "$HOME" ]; then
+    if [ ! -d "$__ProjectDir/temp_home" ]; then
+        mkdir temp_home
+    fi
+    export HOME=$__ProjectDir/temp_home
+    echo "HOME not defined; setting it to $HOME"
+fi
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
@@ -488,6 +555,11 @@ build_coreclr
 # Build mscorlib.
 
 build_mscorlib
+
+# Generate nuget packages
+
+generate_NugetPackages
+
 
 # Build complete
 
