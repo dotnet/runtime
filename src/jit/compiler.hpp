@@ -1304,7 +1304,7 @@ inline unsigned    Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree *      t
 /*****************************************************************************/
 
 inline
-void                GenTree::SetOper(genTreeOps oper)
+void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(((gtFlags & GTF_NODE_SMALL) != 0) !=
            ((gtFlags & GTF_NODE_LARGE) != 0));
@@ -1342,9 +1342,11 @@ void                GenTree::SetOper(genTreeOps oper)
         gtIntCon.gtFieldSeq = NULL;
     }
 
-    // Clear the ValueNum field as well.
-    // 
-    gtVNPair.SetBoth(ValueNumStore::NoVN);
+    if (vnUpdate == CLEAR_VN)
+    {
+        // Clear the ValueNum field as well.
+        gtVNPair.SetBoth(ValueNumStore::NoVN);
+    }
 }
 
 inline
@@ -1405,9 +1407,15 @@ inline
 void                GenTree::InitNodeSize(){}
 
 inline
-void                GenTree::SetOper(genTreeOps oper)
+void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     gtOper = oper;
+
+    if (vnUpdate == CLEAR_VN)
+    {
+        // Clear the ValueNum field.
+        gtVNPair.SetBoth(ValueNumStore::NoVN);
+    }
 }
 
 inline
@@ -1461,11 +1469,11 @@ void                GenTree::ChangeOperConst(genTreeOps oper)
 }
 
 inline
-void                GenTree::ChangeOper(genTreeOps oper)
+void                GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperLeaf() instead
 
-    SetOper(oper);
+    SetOper(oper, vnUpdate);
     gtFlags &= GTF_COMMON_MASK;
 
     // Do "oper"-specific initializations...
