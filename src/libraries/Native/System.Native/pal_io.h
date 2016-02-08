@@ -377,6 +377,13 @@ extern "C" int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets
 // complexity around converting command codes.
 
 /**
+ * Sets the O_CLOEXEC flag on a file descriptor.
+ *
+ * Returns 0 for success; -1 for failure. Sets errno for failure.
+ */
+extern "C" int32_t SystemNative_FcntlSetCloseOnExec(intptr_t fd);
+
+/**
  * Determines if the current platform supports getting and setting pipe capacity.
  *
  * Returns true (non-zero) if supported, false (zero) if not.

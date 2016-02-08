@@ -383,10 +383,37 @@ extern "C" int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 
     int32_t result;
 #if HAVE_PIPE2
+    // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
     while (CheckInterrupted(result = pipe2(pipeFds, flags)));
 #else
-    while (CheckInterrupted(result = pipe(pipeFds)));         // CLOEXEC intentionally ignored on platforms without pipe2.
+    // Otherwise, use pipe.
+    while (CheckInterrupted(result = pipe(pipeFds)));
+    
+    // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
+    if ((flags & O_CLOEXEC) != 0 && result == 0)
+    {
+        while (CheckInterrupted(result = fcntl(pipeFds[0], F_SETFD, FD_CLOEXEC)));
+        if (result == 0)
+        {
+            while (CheckInterrupted(result = fcntl(pipeFds[1], F_SETFD, FD_CLOEXEC)));
+        }
+
+        if (result != 0)
+        {
+            int tmpErrno = errno;
+            close(pipeFds[0]);
+            close(pipeFds[1]);
+            errno = tmpErrno;
+        }
+    }
 #endif
+    return result;
+}
+
+extern "C" int32_t SystemNative_FcntlSetCloseOnExec(intptr_t fd)
+{
+    int result;
+    while (CheckInterrupted(result = fcntl(ToFileDescriptor(fd), F_SETFD, FD_CLOEXEC)));
     return result;
 }
 
