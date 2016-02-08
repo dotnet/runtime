@@ -4819,7 +4819,7 @@ self_suspend_internal (MonoInternalThread *thread)
  * This function allows one to determine if a thread was created by the mono runtime and has
  * a well defined lifecycle or it's a foreigh one, created by the native environment.
  *
- * Returns: true if @thread was not created by the runtime.
+ * Returns: TRUE if @thread was not created by the runtime.
  */
 mono_bool
 mono_thread_is_foreign (MonoThread *thread)

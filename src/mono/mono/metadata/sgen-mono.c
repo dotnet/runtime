@@ -2605,7 +2605,7 @@ sgen_client_metadata_for_object (GCObject *obj)
  * @gchandle: a GCHandle's handle.
  * @domain: An application domain.
  *
- * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
+ * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
  */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)

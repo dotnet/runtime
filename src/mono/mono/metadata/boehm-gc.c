@@ -1787,7 +1787,7 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
  * @gchandle: a GCHandle's handle.
  * @domain: An application domain.
  *
- * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
+ * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
  */
 gboolean
 mono_gc_is_null (void)

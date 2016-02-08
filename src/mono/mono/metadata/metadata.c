@@ -3606,7 +3606,7 @@ parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
  * @summary: Where to store the header
  *
  *
- * Returns: true if the header was properly decoded.
+ * Returns: TRUE if the header was properly decoded.
  */
 gboolean
 mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary)

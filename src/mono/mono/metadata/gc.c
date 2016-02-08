@@ -890,7 +890,7 @@ mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
  * This routine tests whether the @thread argument represents the
  * finalization thread.
  * 
- * Returns true if @thread is the finalization thread.
+ * Returns: TRUE if @thread is the finalization thread.
  */
 gboolean
 mono_gc_is_finalizer_thread (MonoThread *thread)

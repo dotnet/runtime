@@ -390,7 +390,7 @@ mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
 /*
  * mono_type_is_enum_type:
  * 
- * Returns TRUE if @type is an enum type. 
+ * Returns: TRUE if @type is an enum type. 
  */
 static gboolean
 mono_type_is_enum_type (MonoType *type)
@@ -405,7 +405,7 @@ mono_type_is_enum_type (MonoType *type)
 /*
  * mono_type_is_value_type:
  * 
- * Returns TRUE if @type is named after @namespace.@name.
+ * Returns: TRUE if @type is named after @namespace.@name.
  * 
  */
 static gboolean
@@ -639,8 +639,10 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 	return TRUE;
 }
 
-/*
- * Return true if @candidate is constraint compatible with @target.
+/**
+ * mono_generic_param_is_constraint_compatible:
+ *
+ * Returns: TRUE if @candidate is constraint compatible with @target.
  * 
  * This means that @candidate constraints are a super set of @target constaints
  */
@@ -1875,8 +1877,12 @@ dump_stack_state (ILCodeDesc *state)
 }
 #endif
 
-/*Returns TRUE if candidate array type can be assigned to target.
- *Both parameters MUST be of type MONO_TYPE_ARRAY (target->type == MONO_TYPE_ARRAY)
+/**
+ * is_array_type_compatible:
+ *
+ * Returns TRUE if candidate array type can be assigned to target.
+ *
+ * Both parameters MUST be of type MONO_TYPE_ARRAY (target->type == MONO_TYPE_ARRAY)
  */
 static gboolean
 is_array_type_compatible (MonoType *target, MonoType *candidate)
@@ -2455,10 +2461,10 @@ recursive_boxed_constraint_type_check (VerifyContext *ctx, MonoType *type, MonoC
 	return FALSE;
 }
 
-/*
+/** 
  * is_compatible_boxed_valuetype:
  * 
- * Returns TRUE if @candidate / @stack is a valid boxed valuetype. 
+ * Returns: TRUE if @candidate / @stack is a valid boxed valuetype. 
  * 
  * @type The source type. It it tested to be of the proper type.    
  * @candidate type of the boxed valuetype.
@@ -4711,7 +4717,7 @@ end_verify:
 #define HANDLER_START(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER ? (clause)->data.filter_offset : clause->handler_offset)
 #define IS_CATCH_OR_FILTER(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER || (clause)->flags == MONO_EXCEPTION_CLAUSE_NONE)
 
-/*
+/**
  * is_clause_in_range :
  * 
  * Returns TRUE if either the protected block or the handler of @clause is in the @start - @end range.  
@@ -4726,7 +4732,7 @@ is_clause_in_range (MonoExceptionClause *clause, guint32 start, guint32 end)
 	return FALSE;
 }
 
-/*
+/**
  * is_clause_inside_range :
  * 
  * Returns TRUE if @clause lies completely inside the @start - @end range.  
@@ -4741,7 +4747,7 @@ is_clause_inside_range (MonoExceptionClause *clause, guint32 start, guint32 end)
 	return TRUE;
 }
 
-/*
+/**
  * is_clause_nested :
  * 
  * Returns TRUE if @nested is nested in @clause.   
@@ -6020,8 +6026,11 @@ mono_verify_corlib ()
 	return NULL;
 }
 
-/*
- * Returns true if @method needs to be verified.
+/**
+ * mono_verifier_is_enabled_for_method:
+ * @method: the method to probe
+ *
+ * Returns TRUE if @method needs to be verified.
  * 
  */
 gboolean
@@ -6030,8 +6039,11 @@ mono_verifier_is_enabled_for_method (MonoMethod *method)
 	return mono_verifier_is_enabled_for_class (method->klass) && (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
 }
 
-/*
- * Returns true if @klass need to be verified.
+/**
+ * mono_verifier_is_enabled_for_class:
+ * @klass: The `MonoClass` to probe
+ *
+ * Returns TRUE if @klass need to be verified.
  * 
  */
 gboolean

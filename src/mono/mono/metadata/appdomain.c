@@ -527,7 +527,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
  * mono_domain_has_type_resolve:
  * @domain: application domains being looked up
  *
- * Returns true if the AppDomain.TypeResolve field has been
+ * Returns: TRUE if the AppDomain.TypeResolve field has been
  * set.
  */
 gboolean
