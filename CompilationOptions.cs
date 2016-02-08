@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -28,6 +29,19 @@ namespace Microsoft.Extensions.DependencyModel
         public bool? EmitEntryPoint { get; }
 
         public bool? GenerateXmlDocumentation { get; }
+
+        public static CompilationOptions Default { get; } = new CompilationOptions(
+            defines: Enumerable.Empty<string>(),
+            languageVersion: null,
+            platform: null,
+            allowUnsafe: null,
+            warningsAsErrors: null,
+            optimize: null,
+            keyFile: null,
+            delaySign: null,
+            publicSign: null,
+            emitEntryPoint: null,
+            generateXmlDocumentation: null);
 
         public CompilationOptions(IEnumerable<string> defines,
             string languageVersion,
