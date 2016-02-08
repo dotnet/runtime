@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
-    "System.Buffers": "4.0.0-rc3-23803",
+    "System.Buffers": "4.0.0-rc3-23808",
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc3-23803",
+    "System.Console": "4.0.0-rc3-23808",
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.Compression": "4.0.0",
@@ -12,8 +12,8 @@
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23803",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23803",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23808",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23808",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",

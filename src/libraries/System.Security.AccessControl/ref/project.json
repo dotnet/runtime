@@ -2,7 +2,7 @@
   "dependencies": {
     "System.Runtime": "4.0.0",
     "System.Runtime.Handles": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23803"
+    "System.Security.Principal.Windows": "4.0.0-rc3-23808"
   },
   "frameworks": {
     "dotnet5.4": {}

@@ -4,7 +4,7 @@
       "dependencies": {
         "System.Runtime": "4.0.0",
         "System.Runtime.Extensions": "4.0.0",
-        "System.Diagnostics.Contracts": "4.0.1-rc3-23803"
+        "System.Diagnostics.Contracts": "4.0.1-rc3-23808"
       }
     },
     "net46": {
