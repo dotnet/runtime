@@ -55,6 +55,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
@@ -898,6 +899,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 MonoArray *
 ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly)
 {
+	MonoError error;
 	MonoDomain *domain = ad->data; 
 	MonoAssembly* ass;
 	static MonoClass *System_Reflection_Assembly;
@@ -906,6 +908,8 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	int i;
 	GPtrArray *assemblies;
 
+	mono_error_init (&error);
+	
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
@@ -930,17 +934,23 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	res = mono_array_new (domain, System_Reflection_Assembly, assemblies->len);
 	for (i = 0; i < assemblies->len; ++i) {
 		ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-		mono_array_setref (res, i, mono_assembly_get_object (domain, ass));
+		MonoReflectionAssembly *ass_obj = mono_assembly_get_object_checked (domain, ass, &error);
+		if (!mono_error_ok (&error))
+			goto leave;
+		mono_array_setref (res, i, ass_obj);
 	}
 
+leave:
 	g_ptr_array_free (assemblies, TRUE);
-
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
 	return res;
 }
 
 MonoReflectionAssembly *
 mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoMethod *method;
 	MonoBoolean isrefonly;
@@ -962,7 +972,12 @@ mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *
 
 	isrefonly = refonly ? 1 : 0;
 	params [0] = fname;
-	params [1] = (requesting) ? mono_assembly_get_object (domain, requesting) : NULL;
+	if (requesting) {
+		params[1] = mono_assembly_get_object_checked (domain, requesting, &error);
+		if (!mono_error_ok (&error))
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+	} else
+		params [1] = NULL;
 	params [2] = &isrefonly;
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
@@ -1039,6 +1054,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 {
 	static MonoClassField *assembly_load_field;
 	static MonoMethod *assembly_load_method;
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoReflectionAssembly *ref_assembly;
 	MonoClass *klass;
@@ -1068,8 +1084,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	ref_assembly = mono_assembly_get_object (domain, assembly);
-	g_assert (ref_assembly);
+	ref_assembly = mono_assembly_get_object_checked (domain, assembly, &error);
+	mono_error_assert_ok (&error);
 
 	if (assembly_load_method == NULL) {
 		assembly_load_method = mono_class_get_method_from_name (klass, "DoAssemblyLoad", -1);
@@ -1922,6 +1938,8 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 MonoReflectionAssembly *
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean refOnly)
 {
+	MonoError error;
+	MonoReflectionAssembly *result;
 	MonoDomain *domain = mono_domain_get ();
 	char *name, *filename;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
@@ -1951,7 +1969,10 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 
 	g_free (name);
 
-	return mono_assembly_get_object (domain, ass);
+	result = mono_assembly_get_object_checked (domain, ass, &error);
+	if (!result)
+		mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoReflectionAssembly *
@@ -1960,6 +1981,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 					    MonoArray *raw_symbol_store, MonoObject *evidence,
 					    MonoBoolean refonly)
 {
+	MonoError error;
 	MonoAssembly *ass;
 	MonoReflectionAssembly *refass = NULL;
 	MonoDomain *domain = ad->data;
@@ -1984,14 +2006,18 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 		return NULL; 
 	}
 
-	refass = mono_assembly_get_object (domain, ass);
-	MONO_OBJECT_SETREF (refass, evidence, evidence);
+	refass = mono_assembly_get_object_checked (domain, ass, &error);
+	if (!refass)
+		mono_error_set_pending_exception (&error);
+	else
+		MONO_OBJECT_SETREF (refass, evidence, evidence);
 	return refass;
 }
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef, MonoObject *evidence, MonoBoolean refOnly)
 {
+	MonoError error;
 	MonoDomain *domain = ad->data; 
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
@@ -2028,9 +2054,12 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	}
 
 	if (refass == NULL)
-		refass = mono_assembly_get_object (domain, ass);
+		refass = mono_assembly_get_object_checked (domain, ass, &error);
 
-	MONO_OBJECT_SETREF (refass, evidence, evidence);
+	if (refass == NULL)
+		mono_error_set_pending_exception (&error);
+	else
+		MONO_OBJECT_SETREF (refass, evidence, evidence);
 	return refass;
 }
 
