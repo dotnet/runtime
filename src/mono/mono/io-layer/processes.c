@@ -2754,7 +2754,29 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	/* We don't need to lock mono_processes here, the entry
 	 * has a handle_count > 0 which means it will not be freed. */
 	mp = process_handle->mono_process;
-	g_assert (mp);
+	if (!mp) {
+		pid_t res;
+
+		/* This path is used when calling Process.HasExited, so
+		 * it is only used to poll the state of the process, not
+		 * to actually wait on it to exit */
+		g_assert (timeout == 0);
+
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on non-child process", __func__, handle, timeout);
+
+		res = waitpid (pid, &status, WNOHANG);
+		if (res == 0) {
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process WAIT_TIMEOUT", __func__, handle, timeout);
+			return WAIT_TIMEOUT;
+		}
+		if (res > 0) {
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process waited successfully", __func__, handle, timeout);
+			return WAIT_OBJECT_0;
+		}
+
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): non-child process WAIT_FAILED, error : %s (%d))", __func__, handle, timeout, g_strerror (errno), errno);
+		return WAIT_FAILED;
+	}
 
 	start = mono_msec_ticks ();
 	now = start;

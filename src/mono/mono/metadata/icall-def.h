@@ -37,6 +37,21 @@
  * declaration if you add a new icall at the beginning of a type's icall list.
  */
 
+#ifndef DISABLE_PROCESS_HANDLING
+ICALL_TYPE(NATIVEMETHODS, "Microsoft.Win32.NativeMethods", NATIVEMETHODS_1)
+ICALL(NATIVEMETHODS_1, "CloseProcess", ves_icall_Microsoft_Win32_NativeMethods_CloseProcess)
+ICALL(NATIVEMETHODS_2, "GetCurrentProcess", ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess)
+ICALL(NATIVEMETHODS_3, "GetCurrentProcessId", ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcessId)
+ICALL(NATIVEMETHODS_4, "GetExitCodeProcess", ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess)
+ICALL(NATIVEMETHODS_5, "GetPriorityClass", ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass)
+ICALL(NATIVEMETHODS_6, "GetProcessTimes", ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes)
+ICALL(NATIVEMETHODS_7, "GetProcessWorkingSetSize", ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize)
+ICALL(NATIVEMETHODS_8, "SetPriorityClass", ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass)
+ICALL(NATIVEMETHODS_9, "SetProcessWorkingSetSize", ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize)
+ICALL(NATIVEMETHODS_10, "TerminateProcess", ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess)
+ICALL(NATIVEMETHODS_11, "WaitForInputIdle", ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle)
+#endif /* !DISABLE_PROCESS_HANDLING */
+
 #ifndef DISABLE_COM
 ICALL_TYPE(COMPROX, "Mono.Interop.ComInteropProxy", COMPROX_1)
 ICALL(COMPROX_1, "AddProxy", ves_icall_Mono_Interop_ComInteropProxy_AddProxy)
@@ -187,29 +202,12 @@ ICALL(PERFCTRCAT_8, "InstanceExistsInternal", mono_perfcounter_instance_exists)
 
 ICALL_TYPE(PROCESS, "System.Diagnostics.Process", PROCESS_1)
 ICALL(PROCESS_1, "CreateProcess_internal(System.Diagnostics.ProcessStartInfo,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_CreateProcess_internal)
-ICALL(PROCESS_2, "ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal)
-ICALL(PROCESS_3, "ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal)
 ICALL(PROCESS_4, "GetModules_internal(intptr)", ves_icall_System_Diagnostics_Process_GetModules_internal)
-ICALL(PROCESS_5, "GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal)
-ICALL(PROCESS_5B, "GetPriorityClass(intptr,int&)", ves_icall_System_Diagnostics_Process_GetPriorityClass)
 ICALL(PROCESS_5H, "GetProcessData", ves_icall_System_Diagnostics_Process_GetProcessData)
 ICALL(PROCESS_6, "GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal)
 ICALL(PROCESS_7, "GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal)
-ICALL(PROCESS_8, "GetWorkingSet_internal(intptr,int&,int&)", ves_icall_System_Diagnostics_Process_GetWorkingSet_internal)
-ICALL(PROCESS_9, "Kill_internal", ves_icall_System_Diagnostics_Process_Kill_internal)
 ICALL(PROCESS_10, "ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal)
-ICALL(PROCESS_11, "Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal)
-ICALL(PROCESS_11B, "SetPriorityClass(intptr,int,int&)", ves_icall_System_Diagnostics_Process_SetPriorityClass)
-ICALL(PROCESS_12, "SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal)
 ICALL(PROCESS_13, "ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal)
-ICALL(PROCESS_14, "StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal)
-ICALL(PROCESS_14M, "Times", ves_icall_System_Diagnostics_Process_Times)
-ICALL(PROCESS_15, "WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal)
-ICALL(PROCESS_16, "WaitForInputIdle_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal)
-
-ICALL_TYPE (PROCESSHANDLE, "System.Diagnostics.Process/ProcessWaitHandle", PROCESSHANDLE_1)
-ICALL (PROCESSHANDLE_1, "ProcessHandle_close(intptr)", ves_icall_System_Diagnostics_Process_ProcessHandle_close)
-ICALL (PROCESSHANDLE_2, "ProcessHandle_duplicate(intptr)", ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate)
 #endif /* !DISABLE_PROCESS_HANDLING */
 
 ICALL_TYPE(SFRAME, "System.Diagnostics.StackFrame", SFRAME_1)
@@ -728,8 +726,7 @@ ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
 #endif
 
 ICALL_TYPE(RVH, "System.Runtime.Versioning.VersioningHelper", RVH_1)
-ICALL(RVH_1, "GetCurrentProcessId", ves_icall_System_Diagnostics_Process_GetPid_internal)
-ICALL(RVH_2, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId)
+ICALL(RVH_1, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId)
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 ICALL(RFH_1, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect)
