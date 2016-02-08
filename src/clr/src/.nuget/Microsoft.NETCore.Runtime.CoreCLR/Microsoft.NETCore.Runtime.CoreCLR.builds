@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
+    <OutputPath>$(PackageOutputPath)</OutputPath>
+  </PropertyGroup>
+
+  <!-- We always build the identity/redirection package. However, the platform specific runtime-*.nupkg is built based upon the target OS we are building the product for. -->
+  <ItemGroup>
+    <Project Include="Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+    </Project>
+    <Project Condition="'$(TargetsWindows)' == 'true'" Include="win/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'rhel'" Include="rhel/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'debian'" Include="debian/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'ubuntu'" Include="ubuntu/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <OSGroup>OSX</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>

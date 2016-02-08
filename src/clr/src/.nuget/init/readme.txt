@@ -1,0 +1,1 @@
+Please keep the package details listed in project.json in sync with <repo_root>/dir.props.
