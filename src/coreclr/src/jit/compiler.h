@@ -7725,7 +7725,14 @@ public :
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
         // PInvoke transitions inline (e.g. when targeting CoreRT).
-        inline bool         ShouldUsePInvokeHelpers() { return (jitFlags->corJitFlags2 & CORJIT_FLG2_USE_PINVOKE_HELPERS) != 0; }
+        inline bool         ShouldUsePInvokeHelpers()
+        {
+#if COR_JIT_EE_VERSION > 460
+            return (jitFlags->corJitFlags2 & CORJIT_FLG2_USE_PINVOKE_HELPERS) != 0;
+#else
+            return false;
+#endif
+        }
 
         // true if we must generate compatible code with Jit64 quirks
         inline bool         IsJit64Compat()
