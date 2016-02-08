@@ -931,6 +931,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 				break;
 		}
 		g_free (ips);
+		return;
 	}
 
 	g_assert (start_ctx);
