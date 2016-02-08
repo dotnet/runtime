@@ -4037,6 +4037,7 @@ int RedirectedHandledJITCaseExceptionFilter(
     // Copy the saved context record into the EH context;
     ReplaceExceptionContextRecord(pExcepPtrs->ContextRecord, pCtx);
 
+    DWORD espValue = pCtx->Esp;
     if (pThread->GetSavedRedirectContext())
     {
         delete pCtx;
@@ -4062,7 +4063,7 @@ int RedirectedHandledJITCaseExceptionFilter(
     EXCEPTION_REGISTRATION_RECORD *pCurSEH = GetCurrentSEHRecord();
 
     // Unlink all records above the target resume ESP
-    PopSEHRecords((LPVOID)(size_t)pCtx->Esp);
+    PopSEHRecords((LPVOID)(size_t)espValue);
 
     // Link the special OS handler back in to the top
     pCurSEH->Next = GetCurrentSEHRecord();

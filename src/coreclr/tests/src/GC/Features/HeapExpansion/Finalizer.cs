@@ -7,6 +7,7 @@ This test stimulates heap expansion on the finalizer thread
 */
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
@@ -24,12 +25,19 @@ public class Test
         GCUtil.FreePins2();
     }
 
+    // Clearing stack references can't be relied upon to actually remove references to an object, so instead, create and remove
+    // the reference to a finalizable object in a function that won't be inlined.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CreateAndReleaseFinalizable()
+    {
+        var t = new Test();
+    }
+
     public static int Main()
     {
-        Test t = new Test();
+        CreateAndReleaseFinalizable();
         TestFramework.LogInformation("First Alloc");
         GCUtil.Alloc(1024 * 1024, 50);
-        t = null;
         GC.Collect();
         GC.WaitForPendingFinalizers();
         TestFramework.LogInformation("Second Alloc");
