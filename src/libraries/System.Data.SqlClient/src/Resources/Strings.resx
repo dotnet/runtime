@@ -1030,9 +1030,12 @@
     <value>TCP Provider</value>
   </data>
   <data name="SNI_PN8" xml:space="preserve">
-    <value>   </value>
+    <value>VIA Provider</value>
   </data>
   <data name="SNI_PN9" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="SNI_PN10" xml:space="preserve">
     <value>SQL Network Interfaces</value>
   </data>
   <data name="ADP_FeatureNotSupportedOnNonWindowsPlatform" xml:space="preserve">
