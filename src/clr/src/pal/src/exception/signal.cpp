@@ -100,7 +100,7 @@ struct sigaction g_previous_sigquit;
 Function :
     SEHInitializeSignals
 
-    Set-up signal handlers to catch signals and translate them to exceptions
+    Set up signal handlers to catch signals and translate them to exceptions
 
 Parameters :
     None
@@ -112,7 +112,7 @@ BOOL SEHInitializeSignals()
 {
     TRACE("Initializing signal handlers\n");
 
-    /* we call handle signal for every possible signal, even
+    /* we call handle_signal for every possible signal, even
        if we don't provide a signal handler.
 
        handle_signal will set SA_RESTART flag for specified signal.
@@ -164,7 +164,7 @@ Parameters :
 note :
 reason for this function is that during PAL_Terminate, we reach a point where 
 SEH isn't possible anymore (handle manager is off, etc). Past that point, 
-we can't avoid crashing on a signal     
+we can't avoid crashing on a signal.
 --*/
 void SEHCleanupSignals()
 {
@@ -620,13 +620,13 @@ Function :
 
 Parameters :
     PEXCEPTION_POINTERS pointers : exception information
-    native_context_t *ucontext : context structure given to signal handler
     int code : signal received
+    native_context_t *ucontext : context structure given to signal handler
 
     (no return value)
 Note:
-    the "pointers" parameter should contain a valid exception record pointer, 
-    but the contextrecord pointer will be overwritten.    
+    the "pointers" parameter should contain a valid exception record pointer,
+    but the ContextRecord pointer will be overwritten.
 --*/
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext)
@@ -638,7 +638,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     // which is required for restoring context
     RtlCaptureContext(&context);
 
-    // Fill context record with required information. from pal.h :
+    // Fill context record with required information. from pal.h:
     // On non-Win32 platforms, the CONTEXT pointer in the
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
     CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
@@ -648,10 +648,11 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     /* Unmask signal so we can receive it again */
     sigemptyset(&signal_set);
     sigaddset(&signal_set, code);
-    if(-1 == sigprocmask(SIG_UNBLOCK, &signal_set, NULL))
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
     {
-        ASSERT("sigprocmask failed; error is %d (%s)\n", errno, strerror(errno));
-    } 
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
 
     SEHProcessException(pointers);
 }
