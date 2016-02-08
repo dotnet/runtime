@@ -445,7 +445,7 @@ namespace System.Net.Sockets.Tests
                             sentChecksum.Add(sendBuffer, 0, sent);
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            if (remaining <= 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -484,7 +484,7 @@ namespace System.Net.Sockets.Tests
                             }
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            if (remaining <= 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -507,7 +507,7 @@ namespace System.Net.Sockets.Tests
                 sendHandler(0);
             });
 
-            Assert.True(serverFinished.Task.Wait(TestTimeout));
+            Assert.True(serverFinished.Task.Wait(TestTimeout), "Timed out");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
