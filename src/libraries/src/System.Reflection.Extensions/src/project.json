@@ -2,16 +2,16 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23803"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808"
       }
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23803",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23808",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.IO": "4.0.10",
-        "System.Reflection": "4.1.0-rc3-23803",
+        "System.Reflection": "4.1.0-rc3-23808",
         "System.Reflection.Primitives": "4.0.0",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20.0",

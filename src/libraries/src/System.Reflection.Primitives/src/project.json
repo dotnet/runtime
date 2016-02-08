@@ -2,7 +2,7 @@
   "frameworks": {
     "dotnet5.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23803"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808"
       }
     },
     "netcore50": {

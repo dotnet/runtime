@@ -5,7 +5,7 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Diagnostics.Debug": "4.0.10",
-    "System.Console": "4.0.0-rc3-23803",
+    "System.Console": "4.0.0-rc3-23808",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
