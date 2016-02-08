@@ -70,6 +70,12 @@ namespace System.IO.MemoryMappedFiles
                 {
                     ownsFileStream = true;
                     fileStream = CreateSharedBackingObject(protections, capacity);
+
+                    // If the MMF handle should not be inherited, mark the backing object fd as O_CLOEXEC.
+                    if (inheritability == HandleInheritability.None)
+                    {
+                        Interop.CheckIo(Interop.Sys.Fcntl.SetCloseOnExec(fileStream.SafeFileHandle));
+                    }
                 }
             }
 
