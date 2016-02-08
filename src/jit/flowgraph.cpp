@@ -4438,7 +4438,7 @@ DECODE_OPCODE:
             {
                 if (stateNetCFQuirks >= 0)
                 {
-                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains control flow");
+                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_CONTROL_FLOW);
                     return;
                 }
             }
@@ -4484,13 +4484,13 @@ DECODE_OPCODE:
 
                 if (stateNetCFQuirks >= 0)
                 {
-                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains control flow");
+                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_CONTROL_FLOW);
                     return;
                 }
 
 #endif // FEATURE_LEGACYNETCF
 
-                compInlineResult->setNever("Inlinee contains SWITCH instruction");
+                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_SWITCH);
                 return;
             }
 
@@ -4554,7 +4554,7 @@ DECODE_OPCODE:
             {
                 if (stateNetCFQuirks >= 0)
                 {
-                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains prefix");
+                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_PREFIX);
                     return;
                 }
             }
@@ -4580,7 +4580,7 @@ DECODE_OPCODE:
             {
                 if (stateNetCFQuirks >= 0)
                 {
-                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains throw");
+                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_THROW);
                     return;
                 }
             }
@@ -4631,15 +4631,7 @@ DECODE_OPCODE:
             //Consider making this only for not force inline.
             if (compIsForInlining())
             {
-                const char* message;
-#ifdef DEBUG
-                message = (char*)compAllocator->nraAlloc(128);
-                sprintf((char*)message, "Unsupported opcode for inlining: %s\n",
-                        opcodeNames[opcode]);
-#else
-                message = "Unsupported opcode for inlining";
-#endif
-                compInlineResult->setNever(message);
+                compInlineResult->noteFatal(InlineObservation::CALLEE_UNSUPPORTED_OPCODE);
                 return;
             }
             break;
@@ -4764,7 +4756,7 @@ ARG_PUSH:
                     stateNetCFQuirks++;
                     if (varNum != expectedVarNum)
                     {
-                        compInlineResult->setNever("Windows Phone OS 7 compatibility - out of order ldarg");
+                        compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_LDARG_ORDER);
                         return;
                     }
                 }
@@ -4783,7 +4775,7 @@ ADDR_TAKEN:
             {
                 if (stateNetCFQuirks >= 0)
                 {
-                    compInlineResult->setNever("Windows Phone OS 7 compatibility - address taken");
+                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_ADDRESS_TAKEN);
                     return;
                 }
             }
@@ -4910,7 +4902,7 @@ ARG_WRITE:
                 /* The inliner keeps the args as trees and clones them.  Storing the arguments breaks that
                  * simplification.  To allow this, flag the argument as written to and spill it before
                  * inlining.  That way the STARG in the inlinee is trivial. */
-                compInlineResult->setNever("Inlinee writes to an argument");
+                compInlineResult->noteFatal(InlineObservation::CALLEE_STORES_TO_ARGUMENT);
                 return;
             }
             else
@@ -21916,7 +21908,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
             printf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
         }
 #endif // DEBUG
-        inlineResult->setFailure("Recursive or deep inline");
+        inlineResult->noteFatal(InlineObservation::CALLSITE_IS_RECURSIVE_OR_DEEP);
         return;
     }
 
@@ -21991,7 +21983,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
 
             if (result != CORJIT_OK)
             {
-                pParam->inlineInfo->inlineResult->setFailure("Error invoking the compiler for the inlinee");
+                pParam->inlineInfo->inlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
             }
         }
     }
@@ -22004,7 +21996,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
                     eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineResult->setFailure("Exception invoking the compiler for the inlinee");
+        inlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
     endErrorTrap();
 
@@ -22038,7 +22030,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
                     eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineResult->setNever("inlinee did not contain a return expression");
+        inlineResult->noteFatal(InlineObservation::CALLEE_LACKS_RETURN);
         return;
     }
 
@@ -22049,7 +22041,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
         if (!(info.compCompHnd->initClass(NULL /* field */, fncHandle /* method */,
                 inlineCandidateInfo->exactContextHnd /* context */) & CORINFO_INITCLASS_INITIALIZED))
         {
-            inlineResult->setNever("Failed class init side-effect");
+            inlineResult->noteFatal(InlineObservation::CALLEE_CLASS_INIT_FAILURE);
             return;
         }
     }

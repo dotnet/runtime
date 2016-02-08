@@ -1583,8 +1583,7 @@ inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
         if (pComp->lvaHaveManyLocals())
         {
             // Don't create more LclVar with inlining 
-            JITLOG((LL_INFO1000000, INLINER_FAILED "Inlining requires new LclVars and we already have too many locals."));
-            compInlineResult->setFailure("Inlining requires new LclVars and we already have too many locals.");
+            compInlineResult->noteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
