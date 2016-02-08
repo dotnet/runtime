@@ -4198,8 +4198,6 @@ void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
 
     OPCODE  opcode;
 
-    const char * inlineFailReason = NULL;
-
     var_types varType = DUMMY_INIT(TYP_UNDEF);  // TYP_ type
     typeInfo  ti;                               // Verifier type.
 
@@ -4436,10 +4434,13 @@ DECODE_OPCODE:
 
 #ifdef FEATURE_LEGACYNETCF
 
-            if (stateNetCFQuirks >= 0)
+            if (compIsForInlining()) 
             {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains control flow.";
-                goto InlineNever;
+                if (stateNetCFQuirks >= 0)
+                {
+                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains control flow");
+                    return;
+                }
             }
 
 #endif // FEATURE_LEGACYNETCF
@@ -4483,14 +4484,14 @@ DECODE_OPCODE:
 
                 if (stateNetCFQuirks >= 0)
                 {
-                    inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains control flow.";
-                    goto InlineNever;
+                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains control flow");
+                    return;
                 }
 
 #endif // FEATURE_LEGACYNETCF
 
-                inlineFailReason = "Inlinee contains SWITCH instruction.";
-                goto InlineFailed;
+                compInlineResult->setNever("Inlinee contains SWITCH instruction");
+                return;
             }
 
             // Make sure we don't go past the end reading the number of cases
@@ -4549,10 +4550,13 @@ DECODE_OPCODE:
 
 #ifdef FEATURE_LEGACYNETCF
 
-            if (stateNetCFQuirks >= 0)
+            if (compIsForInlining())
             {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains prefix.";
-                goto InlineNever;
+                if (stateNetCFQuirks >= 0)
+                {
+                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains prefix");
+                    return;
+                }
             }
 
 #endif // FEATURE_LEGACYNETCF
@@ -4572,10 +4576,13 @@ DECODE_OPCODE:
 
 #ifdef FEATURE_LEGACYNETCF
 
-            if (stateNetCFQuirks >= 0)
+            if (compIsForInlining())
             {
-                inlineFailReason = "Windows Phone OS 7 compatibility - Inlinee contains throw.";
-                goto InlineNever;
+                if (stateNetCFQuirks >= 0)
+                {
+                    compInlineResult->setNever("Windows Phone OS 7 compatibility - Inlinee contains throw");
+                    return;
+                }
             }
 
 #endif // FEATURE_LEGACYNETCF
@@ -4624,14 +4631,16 @@ DECODE_OPCODE:
             //Consider making this only for not force inline.
             if (compIsForInlining())
             {
+                char *message;
 #ifdef DEBUG
-                inlineFailReason = (char*)compAllocator->nraAlloc(128);
-                sprintf((char*)inlineFailReason, "Unsupported opcode for inlining: %s\n",
+                message = (char*)compAllocator->nraAlloc(128);
+                sprintf((char*)message, "Unsupported opcode for inlining: %s\n",
                         opcodeNames[opcode]);
 #else
-                inlineFailReason = "Unsupported opcode for inlining.";
+                message = "Unsupported opcode for inlining";
 #endif
-                goto InlineFailed;
+                compInlineResult->setNever(message);
+                return;
             }
             break;
 
@@ -4755,8 +4764,8 @@ ARG_PUSH:
                     stateNetCFQuirks++;
                     if (varNum != expectedVarNum)
                     {
-                        inlineFailReason = "Windows Phone OS 7 compatibility - out of order ldarg.";
-                        goto InlineNever;
+                        compInlineResult->setNever("Windows Phone OS 7 compatibility - out of order ldarg");
+                        return;
                     }
                 }
 
@@ -4770,10 +4779,13 @@ ADDR_TAKEN:
 
 #ifdef FEATURE_LEGACYNETCF
 
-            if (stateNetCFQuirks >= 0)
+            if (compIsForInlining())
             {
-                inlineFailReason = "Windows Phone OS 7 compatibility - address taken.";
-                goto InlineNever;
+                if (stateNetCFQuirks >= 0)
+                {
+                    compInlineResult->setNever("Windows Phone OS 7 compatibility - address taken");
+                    return;
+                }
             }
 
 #endif // FEATURE_LEGACYNETCF
@@ -4898,8 +4910,8 @@ ARG_WRITE:
                 /* The inliner keeps the args as trees and clones them.  Storing the arguments breaks that
                  * simplification.  To allow this, flag the argument as written to and spill it before
                  * inlining.  That way the STARG in the inlinee is trivial. */
-                inlineFailReason = "Inlinee writes to an argument.";
-                goto InlineNever;
+                compInlineResult->setNever("Inlinee writes to an argument");
+                return;
             }
             else
             {
@@ -5043,28 +5055,6 @@ TOO_FAR:
             lvaTable[info.compThisArg].lvArgWrite = false;
         }
     }
-
-    return;
-
-    CorInfoInline failResult;
-InlineNever:
-    compInlineResult->setNever(inlineFailReason);
-    goto Report;
-InlineFailed:
-    compInlineResult->setFailure(inlineFailReason);
-
-Report:
-#ifdef DEBUG
-    if (verbose)
-    {
-        impCurOpcName = opcodeNames[opcode];
-        printf("\n\nInline expansion aborted due to opcode [%02u] OP_%s in method %s\n",
-               codeAddr-codeBegp-1, impCurOpcName, info.compFullName);
-    }
-#endif
-
-    noway_assert(compIsForInlining());
-    noway_assert(impInlineInfo->fncHandle == info.compMethodHnd);
 
     return;
 }
