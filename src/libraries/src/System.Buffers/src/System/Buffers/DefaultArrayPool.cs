@@ -48,7 +48,7 @@ namespace System.Buffers
             if (index < _buckets.Length)
             {
                 // Search for an array starting at the 'index' bucket. If the bucket
-                // is empty, bump up to the next higher bucket and try that one
+                // is empty, bump up to the next higher bucket and try that one.
                 for (int i = index; i < _buckets.Length; i++)
                 {
                     buffer = _buckets[i].Rent();
@@ -63,20 +63,26 @@ namespace System.Buffers
                         return buffer;
                     }
                 }
+
+                // The pool was exhausted.  Allocate a new buffer with a size corresponding to the appropriate bucket.
+                buffer = new T[_buckets[index]._bufferLength];
+            }
+            else
+            {
+                // The request was for a size too large for the pool.  Allocate an array of exactly the requested length.
+                // When it's returned to the pool, we'll simply throw it away.
+                buffer = new T[minimumLength];
             }
 
-            // Gettings here means we have too big of a request OR all the buckets from 
-            // index through _buckets.Length are taken so we need to allocate a buffer on-demand.
-            buffer = new T[Utilities.GetMaxSizeForBucket(index)];
+            // We had to allocate a buffer, so log that fact.
             if (log.IsEnabled())
             {
-                int maxLength = Utilities.GetMaxSizeForBucket(_buckets.Length);
                 log.BufferAllocated(
                     Utilities.GetBufferId(buffer),
                     buffer.Length,
                     Utilities.GetPoolId(this),
                     -1, // no bucket for an on-demand allocated buffer,
-                    buffer.Length > maxLength ? 
+                    index >= _buckets.Length ? 
                         ArrayPoolEventSource.BufferAllocationReason.OverMaximumSize :
                         ArrayPoolEventSource.BufferAllocationReason.PoolExhausted);
             }
