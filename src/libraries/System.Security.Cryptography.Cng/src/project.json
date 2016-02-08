@@ -6,7 +6,7 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23803"
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23808"
   },
   "frameworks": {
     "dnxcore50": {}

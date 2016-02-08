@@ -3,7 +3,7 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Net.Primitives": "4.0.10",
-    "System.Net.NameResolution": "4.0.0-rc3-23803",
+    "System.Net.NameResolution": "4.0.0-rc3-23808",
     "System.Runtime": "4.0.20",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",

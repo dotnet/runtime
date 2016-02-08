@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.CSharp": "4.0.1-rc3-23803",
-    "System.Data.Common": "4.0.1-rc3-23803",
+    "Microsoft.CSharp": "4.0.1-rc3-23808",
+    "System.Data.Common": "4.0.1-rc3-23808",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
