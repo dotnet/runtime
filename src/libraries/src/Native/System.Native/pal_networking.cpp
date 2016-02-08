@@ -2461,15 +2461,6 @@ extern "C" Error SystemNative_WaitForSocketEvents(int32_t port, SocketEvent* buf
     return WaitForSocketEventsInner(port, buffer, count);
 }
 
-extern "C" int32_t SystemNative_PlatformSupportsMultipleConnectAttempts()
-{
-#if HAVE_SUPPORT_FOR_MULTIPLE_CONNECT_ATTEMPTS
-    return 1;
-#else
-    return 0;
-#endif
-}
-
 extern "C" int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo()
 {
 #if HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
