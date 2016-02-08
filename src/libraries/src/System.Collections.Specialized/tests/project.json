@@ -2,7 +2,7 @@
   "dependencies": {
     "System.Collections": "4.0.10",
     "System.Collections.NonGeneric": "4.0.0",
-    "System.Console": "4.0.0-rc3-23803",
+    "System.Console": "4.0.0-rc3-23808",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.Runtime": "4.0.20",

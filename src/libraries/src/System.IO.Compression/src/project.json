@@ -2,7 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "System.Buffers": "4.0.0-rc3-23803",
+        "System.Buffers": "4.0.0-rc3-23808",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
@@ -21,7 +21,7 @@
     "net46": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0",
-        "System.Buffers": "4.0.0-rc3-23803"
+        "System.Buffers": "4.0.0-rc3-23808"
       }
     }
   }

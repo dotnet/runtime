@@ -6,7 +6,7 @@
     "System.Reflection.Emit": "4.0.0",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
-    "System.Runtime.Loader": "4.0.0-rc3-23803",
+    "System.Runtime.Loader": "4.0.0-rc3-23808",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

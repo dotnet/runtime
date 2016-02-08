@@ -12,7 +12,7 @@
     "System.Threading": "4.0.10",
     "System.Threading.Overlapped": "4.0.0",
     "System.Threading.Tasks": "4.0.10",
-    "System.Threading.Thread": "4.0.0-rc3-23803"
+    "System.Threading.Thread": "4.0.0-rc3-23808"
   },
   "frameworks": {
     "dnxcore50": {}

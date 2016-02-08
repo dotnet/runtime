@@ -2,11 +2,11 @@
   "dependencies": {
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Threading": "4.0.10",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23803",
+    "System.Threading.ThreadPool": "4.0.10-rc3-23808",
     "System.Net.Primitives": "4.0.10",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23803",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23808",
     "System.Security.Principal": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23803",
+    "System.Security.Principal.Windows": "4.0.0-rc3-23808",
     "System.Collections.Specialized": "4.0.0"
   },
   "frameworks": {
