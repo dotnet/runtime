@@ -79,10 +79,10 @@ namespace System.Data.Common
                         return NumericScale;
                     case "UdtAssemblyQualifiedName":
                         return UdtAssemblyQualifiedName;
-                    case "Data":
-                        return Data;
-                    case "DataName":
-                        return DataName;
+                    case "DataType":
+                        return DataType;
+                    case "DataTypeName":
+                        return DataTypeName;
                     default:
                         return null;
                 }
