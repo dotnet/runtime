@@ -666,11 +666,13 @@ combinedScenarios.each { scenario ->
                                     }
                                 
                                     // Run the rest of the build    
-                                    // Build the mscorlib for the other OS's
+                                    
+                                    // Remove this command step once we can build mscorlib on CentOS/OpenSuse
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
+
+                                    // Remove this command step once we can build mscorlib on FreeBSD
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
-                                    buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
-                                
+                                    
                                     if (!enableCorefxTesting) {
                                         // Zip up the tests directory so that we don't use so much space/time copying
                                         // 10s of thousands of files around.
@@ -719,10 +721,15 @@ combinedScenarios.each { scenario ->
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
-                                    // Build commands are the same regardless of scenario on non-Windows other OS's.
-                                    
                                     // On other OS's we skipmscorlib but run the pal tests
-                                    buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                    if ((architecture == 'x64') && ((os == 'Ubuntu') || (os == 'OSX')))
+                                    {
+                                        buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+                                    }
+                                    else
+                                    {
+                                        buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                    }
                                     buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
                                 
                                     // Basic archiving of the build
