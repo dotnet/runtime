@@ -298,8 +298,5 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.cmd" >
              <Issue>2452</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\HeapExpansion\Finalizer\Finalizer.cmd" >
-             <Issue>2744</Issue>
-        </ExcludeList>
     </ItemGroup>
 </Project>
