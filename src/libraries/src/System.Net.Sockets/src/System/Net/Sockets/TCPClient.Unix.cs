@@ -51,7 +51,8 @@ namespace System.Net.Sockets
             // Nop.  We want to lazily-allocate the socket.
         }
 
-        private Socket ClientCore
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)] // TODO: Remove once https://github.com/dotnet/corefx/issues/5868 is addressed.
+        private Socket Client
         {
             get
             {
@@ -67,19 +68,6 @@ namespace System.Net.Sockets
                         ApplyInitializedOptionsToSocket(_clientSocket);
                     }
                     return _clientSocket;
-                }
-                finally
-                {
-                    ExitClientLock();
-                }
-            }
-            set
-            {
-                EnterClientLock();
-                try
-                {
-                    _clientSocket = value;
-                    ClearInitializedValues();
                 }
                 finally
                 {
@@ -132,25 +120,6 @@ namespace System.Net.Sockets
             {
                 socket.NoDelay = so._noDelay != 0;
             }
-        }
-
-        private void ClearInitializedValues()
-        {
-            ShadowOptions so = _shadowOptions;
-            if (so == null)
-            {
-                return;
-            }
-
-            // Clear the initialized fields for all of our shadow properties.
-            so._exclusiveAddressUseInitialized =
-                so._receiveBufferSizeInitialized =
-                so._sendBufferSizeInitialized =
-                so._receiveTimeoutInitialized =
-                so._sendTimeoutInitialized =
-                so._lingerStateInitialized =
-                so._noDelayInitialized =
-                false;
         }
 
         private int AvailableCore
@@ -249,9 +218,9 @@ namespace System.Net.Sockets
                 ExceptionDispatchInfo lastException = null;
                 foreach (IPAddress address in addresses)
                 {
+                    Socket s = CreateSocket();
                     try
                     {
-                        Socket s = CreateSocket();
                         ApplyInitializedOptionsToSocket(s);
                         await s.ConnectAsync(address, port).ConfigureAwait(false);
 
@@ -262,6 +231,7 @@ namespace System.Net.Sockets
                     }
                     catch (Exception exc)
                     {
+                        s.Dispose();
                         lastException = ExceptionDispatchInfo.Capture(exc);
                     }
                 }

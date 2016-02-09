@@ -63,14 +63,6 @@ namespace System.Net.Sockets
             }
         }
 
-        // Used by the class to provide the underlying network socket.
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)] // TODO: Remove once https://github.com/dotnet/corefx/issues/5868 is addressed.
-        public Socket Client
-        {
-            get { return ClientCore; }
-            set { ClientCore = value; }
-        }
-
         // Used by the class to indicate that a connection has been made.
         protected bool Active
         {
@@ -151,14 +143,14 @@ namespace System.Net.Sockets
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
-            if (!Client.Connected)
+            if (!Connected)
             {
                 throw new InvalidOperationException(SR.net_notconnected);
             }
 
             if (_dataStream == null)
             {
-                _dataStream = new NetworkStream(Client, true);
+                _dataStream = new NetworkStream(_clientSocket, true);
             }
 
             if (NetEventSource.Log.IsEnabled())

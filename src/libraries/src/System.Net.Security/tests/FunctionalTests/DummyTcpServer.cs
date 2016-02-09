@@ -96,8 +96,7 @@ namespace System.Net.Security.Tests
             try
             {
                 result.GetAwaiter().GetResult();
-                _log.WriteLine("Server({0}) authenticated to client({1}) with encryption cipher: {2} {3}-bit strength",
-                    state.TcpClient.Client.LocalEndPoint, state.TcpClient.Client.RemoteEndPoint,
+                _log.WriteLine("Server authenticated to client with encryption cipher: {0} {1}-bit strength",
                     sslStream.CipherAlgorithm, sslStream.CipherStrength);
 
                 // Start listening for data from the client connection.
@@ -106,15 +105,13 @@ namespace System.Net.Security.Tests
             catch (AuthenticationException authEx)
             {
                 _log.WriteLine(
-                    "Server({0}) disconnecting from client({1}) during authentication.  No shared SSL/TLS algorithm. ({2})",
-                    state.TcpClient.Client.LocalEndPoint,
-                    state.TcpClient.Client.RemoteEndPoint,
+                    "Server disconnecting from client during authentication.  No shared SSL/TLS algorithm. ({0})",
                     authEx);
             }
             catch (Exception ex)
             {
-                _log.WriteLine("Server({0}) disconnecting from client({1}) during authentication.  Exception: {2}",
-                    state.TcpClient.Client.LocalEndPoint, state.TcpClient.Client.RemoteEndPoint, ex.Message);
+                _log.WriteLine("Server disconnecting from client during authentication.  Exception: {0}",
+                    ex.Message);
             }
             finally
             {

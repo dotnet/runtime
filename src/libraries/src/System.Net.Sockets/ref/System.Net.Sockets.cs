@@ -417,7 +417,6 @@ namespace System.Net.Sockets
         public TcpClient(System.Net.Sockets.AddressFamily family) { }
         protected bool Active { get { return default(bool); } set { } }
         public int Available { get { return default(int); } }
-        public System.Net.Sockets.Socket Client { get { return default(System.Net.Sockets.Socket); } set { } }
         public bool Connected { get { return default(bool); } }
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }
         public System.Net.Sockets.LingerOption LingerState { get { return default(System.Net.Sockets.LingerOption); } set { } }
@@ -458,7 +457,6 @@ namespace System.Net.Sockets
         public UdpClient(System.Net.Sockets.AddressFamily family) { }
         protected bool Active { get { return default(bool); } set { } }
         public int Available { get { return default(int); } }
-        public System.Net.Sockets.Socket Client { get { return default(System.Net.Sockets.Socket); } set { } }
         public bool DontFragment { get { return default(bool); } set { } }
         public bool EnableBroadcast { get { return default(bool); } set { } }
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }

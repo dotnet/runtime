@@ -6,6 +6,8 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -25,7 +27,6 @@ namespace System.Data.SqlClient.SNI
         private readonly TaskFactory _writeTaskFactory;
 
         private Stream _stream;
-        private TcpClient _tcpClient;
         private SslStream _sslStream;
         private SslOverTdsStream _sslOverTdsStream;
         private SNIAsyncCallback _receiveCallback;
@@ -55,12 +56,6 @@ namespace System.Data.SqlClient.SNI
                 {
                     _sslStream.Dispose();
                     _sslStream = null;
-                }
-
-                if (_tcpClient != null)
-                {
-                    _tcpClient.Dispose();
-                    _tcpClient = null;
                 }
             }
         }
@@ -103,8 +98,6 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                _tcpClient = new TcpClient();
-
                 TimeSpan ts;
 
                 // In case the Timeout is Infinite, we will receive the max value of Int64 as the tick count
@@ -116,7 +109,7 @@ namespace System.Data.SqlClient.SNI
                     ts = ts.Ticks < 0 ? TimeSpan.FromTicks(0) : ts;
                 }
 
-                Task connectTask;
+                Task<Socket> connectTask;
                 if (parallel)
                 {
                     Task<IPAddress[]> serverAddrTask = Dns.GetHostAddressesAsync(serverName);
@@ -130,11 +123,11 @@ namespace System.Data.SqlClient.SNI
                         return;
                     }
 
-                    connectTask = _tcpClient.ConnectAsync(serverAddresses, port);
+                    connectTask = ConnectAsync(serverAddresses, port);
                 }
                 else
                 {
-                    connectTask = _tcpClient.ConnectAsync(serverName, port);
+                    connectTask = ConnectAsync(serverName, port);
                 }
 
                 if (!(isInfiniteTimeOut ? connectTask.Wait(-1) : connectTask.Wait(ts)))
@@ -143,9 +136,9 @@ namespace System.Data.SqlClient.SNI
                     return;
                 }
 
-                _tcpClient.NoDelay = true;
-                _tcpStream = _tcpClient.GetStream();
-                _socket = _tcpClient.Client;
+                _socket = connectTask.Result;
+                _socket.NoDelay = true;
+                _tcpStream = new NetworkStream(_socket, true);
 
                 _sslOverTdsStream = new SslOverTdsStream(_tcpStream);
                 _sslStream = new SslStream(_sslOverTdsStream, true, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
@@ -163,6 +156,70 @@ namespace System.Data.SqlClient.SNI
 
             _stream = _tcpStream;
             _status = TdsEnums.SNI_SUCCESS;
+        }
+
+        private static async Task<Socket> ConnectAsync(string serverName, int port)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                await socket.ConnectAsync(serverName, port).ConfigureAwait(false);
+                return socket;
+            }
+
+            // On unix we can't use the instance Socket methods that take multiple endpoints
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
+            return await ConnectAsync(addresses, port).ConfigureAwait(false);
+        }
+
+        private static async Task<Socket> ConnectAsync(IPAddress[] serverAddresses, int port)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                await socket.ConnectAsync(serverAddresses, port).ConfigureAwait(false);
+                return socket;
+            }
+
+            // On unix we can't use the instance Socket methods that take multiple endpoints
+
+            if (serverAddresses == null)
+            {
+                throw new ArgumentNullException("serverAddresses");
+            }
+            if (serverAddresses.Length == 0)
+            {
+                throw new ArgumentOutOfRangeException("serverAddresses");
+            }
+
+            // Try each address in turn, and return the socket opened for the first one that works.
+            ExceptionDispatchInfo lastException = null;
+            foreach (IPAddress address in serverAddresses)
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                try
+                {
+                    await socket.ConnectAsync(address, port).ConfigureAwait(false);
+                    return socket;
+                }
+                catch (Exception exc)
+                {
+                    socket.Dispose();
+                    lastException = ExceptionDispatchInfo.Capture(exc);
+                }
+            }
+
+            // Propagate the last failure that occurrred
+            if (lastException != null)
+            {
+                lastException.Throw();
+            }
+
+            // Should never get here.  Either there will have been no addresses and we'll have thrown
+            // at the beginning, or one of the addresses will have worked and we'll have returned, or
+            // at least one of the addresses will failed, in which case we will have propagated that.
+            throw new ArgumentException();
         }
 
         /// <summary>
@@ -276,11 +333,11 @@ namespace System.Data.SqlClient.SNI
                 {
                     if (timeoutInMilliseconds > 0)
                     {
-                        _tcpClient.ReceiveTimeout = timeoutInMilliseconds;
+                        _socket.ReceiveTimeout = timeoutInMilliseconds;
                     }
                     else if (timeoutInMilliseconds == -1)
                     {   // SqlCient internally represents infinite timeout by -1, and for TcpClient this is translated to a timeout of 0 
-                        _tcpClient.ReceiveTimeout = 0;
+                        _socket.ReceiveTimeout = 0;
                     }
                     else
                     {
@@ -320,7 +377,7 @@ namespace System.Data.SqlClient.SNI
                 }
                 finally
                 {
-                    _tcpClient.ReceiveTimeout = 0;
+                    _socket.ReceiveTimeout = 0;
                 }
             }
         }

@@ -79,7 +79,7 @@ namespace System.Net.Sockets
 
             CreateClientSocket();
 
-            Client.Bind(localEP);
+            _clientSocket.Bind(localEP);
         }
 
         // Creates a new instance of the UdpClient class that communicates on the
@@ -98,20 +98,7 @@ namespace System.Net.Sockets
 
             CreateClientSocket();
 
-            Client.Bind(localEP);
-        }
-
-        // Used by the class to provide the underlying network socket.
-        public Socket Client
-        {
-            get
-            {
-                return _clientSocket;
-            }
-            set
-            {
-                _clientSocket = value;
-            }
+            _clientSocket.Bind(localEP);
         }
 
         // Used by the class to indicate that a connection to a remote host has been made.
@@ -207,7 +194,7 @@ namespace System.Net.Sockets
                 return;
             }
 
-            Socket chkClientSocket = Client;
+            Socket chkClientSocket = _clientSocket;
             if (chkClientSocket != null)
             {
                 // If the NetworkStream wasn't retrieved, the Socket might
@@ -215,7 +202,7 @@ namespace System.Net.Sockets
                 // of the Bind() call and free the bound IPEndPoint.
                 chkClientSocket.InternalShutdown(SocketShutdown.Both);
                 chkClientSocket.Dispose();
-                Client = null;
+                _clientSocket = null;
             }
             _cleanedUp = true;
         }
@@ -247,12 +234,12 @@ namespace System.Net.Sockets
             // and in that case we set SocketOptionName.Broadcast on the socket to allow its use.
             // if the user really wants complete control over Broadcast addresses he needs to
             // inherit from UdpClient and gain control over the Socket and do whatever is appropriate.
-            if (Client != null && !_isBroadcast && IsBroadcast(ipAddress))
+            if (_clientSocket != null && !_isBroadcast && IsBroadcast(ipAddress))
             {
                 // We need to set the Broadcast socket option.
                 // Note that once we set the option on the Socket we never reset it.
                 _isBroadcast = true;
-                Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
+                _clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
             }
         }
 
@@ -294,12 +281,12 @@ namespace System.Net.Sockets
 
             if (endPoint == null)
             {
-                return Client.BeginSend(datagram, 0, bytes, SocketFlags.None, requestCallback, state);
+                return _clientSocket.BeginSend(datagram, 0, bytes, SocketFlags.None, requestCallback, state);
             }
 
             CheckForBroadcast(endPoint.Address);
 
-            return Client.BeginSendTo(datagram, 0, bytes, SocketFlags.None, endPoint, requestCallback, state);
+            return _clientSocket.BeginSendTo(datagram, 0, bytes, SocketFlags.None, endPoint, requestCallback, state);
         }
 
         internal IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
@@ -346,11 +333,11 @@ namespace System.Net.Sockets
 
             if (_active)
             {
-                return Client.EndSend(asyncResult);
+                return _clientSocket.EndSend(asyncResult);
             }
             else
             {
-                return Client.EndSendTo(asyncResult);
+                return _clientSocket.EndSendTo(asyncResult);
             }
         }
 
@@ -375,7 +362,7 @@ namespace System.Net.Sockets
                 tempRemoteEP = IPEndPointStatics.IPv6Any;
             }
 
-            return Client.BeginReceiveFrom(_buffer, 0, MaxUDPSize, SocketFlags.None, ref tempRemoteEP, requestCallback, state);
+            return _clientSocket.BeginReceiveFrom(_buffer, 0, MaxUDPSize, SocketFlags.None, ref tempRemoteEP, requestCallback, state);
         }
 
         internal byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
@@ -395,7 +382,7 @@ namespace System.Net.Sockets
                 tempRemoteEP = IPEndPointStatics.IPv6Any;
             }
 
-            int received = Client.EndReceiveFrom(asyncResult, ref tempRemoteEP);
+            int received = _clientSocket.EndReceiveFrom(asyncResult, ref tempRemoteEP);
             remoteEP = (IPEndPoint)tempRemoteEP;
 
             // Because we don't return the actual length, we need to ensure the returned buffer
@@ -435,7 +422,7 @@ namespace System.Net.Sockets
             {
                 MulticastOption mcOpt = new MulticastOption(multicastAddr);
 
-                Client.SetSocketOption(
+                _clientSocket.SetSocketOption(
                     SocketOptionLevel.IP,
                     SocketOptionName.AddMembership,
                     mcOpt);
@@ -444,7 +431,7 @@ namespace System.Net.Sockets
             {
                 IPv6MulticastOption mcOpt = new IPv6MulticastOption(multicastAddr);
 
-                Client.SetSocketOption(
+                _clientSocket.SetSocketOption(
                     SocketOptionLevel.IPv6,
                     SocketOptionName.AddMembership,
                     mcOpt);
@@ -466,7 +453,7 @@ namespace System.Net.Sockets
 
             MulticastOption mcOpt = new MulticastOption(multicastAddr, localAddress);
 
-            Client.SetSocketOption(
+            _clientSocket.SetSocketOption(
                SocketOptionLevel.IP,
                SocketOptionName.AddMembership,
                mcOpt);
@@ -500,7 +487,7 @@ namespace System.Net.Sockets
 
             IPv6MulticastOption mcOpt = new IPv6MulticastOption(multicastAddr, ifindex);
 
-            Client.SetSocketOption(
+            _clientSocket.SetSocketOption(
                 SocketOptionLevel.IPv6,
                 SocketOptionName.AddMembership,
                 mcOpt);
@@ -527,7 +514,7 @@ namespace System.Net.Sockets
             JoinMulticastGroup(multicastAddr);
 
             // Set Time To Live (TTL).
-            Client.SetSocketOption(
+            _clientSocket.SetSocketOption(
                 (_family == AddressFamily.InterNetwork) ? SocketOptionLevel.IP : SocketOptionLevel.IPv6,
                 SocketOptionName.MulticastTimeToLive,
                 timeToLive);
@@ -557,7 +544,7 @@ namespace System.Net.Sockets
             {
                 MulticastOption mcOpt = new MulticastOption(multicastAddr);
 
-                Client.SetSocketOption(
+                _clientSocket.SetSocketOption(
                     SocketOptionLevel.IP,
                     SocketOptionName.DropMembership,
                     mcOpt);
@@ -566,7 +553,7 @@ namespace System.Net.Sockets
             {
                 IPv6MulticastOption mcOpt = new IPv6MulticastOption(multicastAddr);
 
-                Client.SetSocketOption(
+                _clientSocket.SetSocketOption(
                     SocketOptionLevel.IPv6,
                     SocketOptionName.DropMembership,
                     mcOpt);
@@ -601,7 +588,7 @@ namespace System.Net.Sockets
 
             IPv6MulticastOption mcOpt = new IPv6MulticastOption(multicastAddr, ifindex);
 
-            Client.SetSocketOption(
+            _clientSocket.SetSocketOption(
                 SocketOptionLevel.IPv6,
                 SocketOptionName.DropMembership,
                 mcOpt);
@@ -667,7 +654,7 @@ namespace System.Net.Sockets
             // Common initialization code.
             //
             // IPv6 Changes: Use the AddressFamily of this class rather than hardcode.
-            Client = new Socket(_family, SocketType.Dgram, ProtocolType.Udp);
+            _clientSocket = new Socket(_family, SocketType.Dgram, ProtocolType.Udp);
         }
     }
 }
