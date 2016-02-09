@@ -93,6 +93,43 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 ### LINQ
 
+Introduced in .NET Framework 3.5, LINQ is designed to make data processing easier. LINQ is primarily a collection of methods that operate on `IEnumerable` and `IEnumerable<T>`. LINQ was intended to be used with extension methods (added in C# 3.0 and VB 9.0 at the sametime as .NET Framework 3.5 was released) allowing for a function style of programing.
+
+For example to filter an array before LINQ the following would be done:
+
+```csharp
+var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+var odds = new int[10];
+var j = -1;
+for (int i = 0; i < arr.length; i++)
+   if (arr[i] % 2 != 0)
+      odds[j++] = arr[i];
+```
+
+Now with link that can simply be done as:
+
+```csharp
+void bool IsOdd(int n)
+{
+   return n % 2 !=0;
+}
+var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+var oods = arr.Where(IsOdd).ToArray();
+```
+
+And if we use Lambda expressions (another new feature for C# 3.0 and VB 9.0):
+
+```csharp
+var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+var oods = arr.Where(n => n % 2 != 0).ToArray();
+```
+
+####Parallel LINQ
+
+**Also referred to as**: PLINQ
+
+Also introduced in .NET Framework 3.5 Parallel LINQ. Parallel LINQ has a subset of the methods the LINQ does but may execute the iterations on different threads in any order. Generally to use Parallel LINQ you would just call the `AsParallel()` method on a collection implementing `IEnumerable`. And if at any point you wanted to return to "normal LINQ you can just call `AsSequential()`.
+
 ### ADO.NET
 
 ### Managed Extensibility Framework
