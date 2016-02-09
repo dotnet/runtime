@@ -1783,25 +1783,12 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	major_collector.init_to_space ();
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
-	/*
-	 * The concurrent collector doesn't move objects, neither on
-	 * the major heap nor in the nursery, so we can mark even
-	 * before pinning has finished.  For the non-concurrent
-	 * collector we start the workers after pinning.
-	 */
-	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		if (precleaning_enabled) {
-			ScanJob *sj;
-			/* Mod union preclean job */
-			sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
-			sj->ops = object_ops;
-			sgen_workers_start_all_workers (object_ops, &sj->job);
-		} else {
-			sgen_workers_start_all_workers (object_ops, NULL);
-		}
-		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
+	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		if (sgen_workers_have_idle_work ()) {
+			/*
+			 * We force the finish of the worker with the new object ops context
+			 * which can also do copying. We need to have finished pinning.
+			 */
 			sgen_workers_start_all_workers (object_ops, NULL);
 			sgen_workers_join ();
 		}
@@ -1818,14 +1805,28 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 
 	sgen_client_collecting_major_3 (&fin_ready_queue, &critical_fin_queue);
 
-	/*
-	 * FIXME: is this the right context?  It doesn't seem to contain a copy function
-	 * unless we're concurrent.
-	 */
-	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops, mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
+	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops, FALSE);
 
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
+
+	/*
+	 * We start the concurrent worker after pinning and after we scanned the roots
+	 * in order to make sure that the worker does not finish before handling all
+	 * the roots.
+	 */
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
+		if (precleaning_enabled) {
+			ScanJob *sj;
+			/* Mod union preclean job */
+			sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
+			sj->ops = object_ops;
+			sgen_workers_start_all_workers (object_ops, &sj->job);
+		} else {
+			sgen_workers_start_all_workers (object_ops, NULL);
+		}
+		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	}
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		ScanJob *sj;
@@ -1850,11 +1851,6 @@ static void
 major_finish_copy_or_mark (CopyOrMarkFromRootsMode mode)
 {
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		/*
-		 * Prepare the pin queue for the next collection.  Since pinning runs on the worker
-		 * threads we must wait for the jobs to finish before we can reset it.
-		 */
-		sgen_workers_wait_for_jobs_finished ();
 		sgen_finish_pinning ();
 
 		sgen_pin_stats_reset ();
