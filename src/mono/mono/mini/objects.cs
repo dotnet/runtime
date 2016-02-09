@@ -874,6 +874,32 @@ class Tests {
 		return 2;
 	}
 
+	interface IFaceVirtualDel {
+		int return_field ();
+	}
+
+	struct VtypeVirtualDelStruct : IFaceVirtualDel {
+		public int f;
+		public int return_field_nonvirt () {
+			return f;
+		}
+		public int return_field () {
+			return f;
+		}
+	}
+
+	public static int test_42_vtype_delegate () {
+		var s = new VtypeVirtualDelStruct () { f = 42 };
+		Func<int> f = s.return_field_nonvirt;
+		return f ();
+	}
+
+	public static int test_42_vtype_virtual_delegate () {
+		IFaceVirtualDel s = new VtypeVirtualDelStruct () { f = 42 };
+		Func<int> f = s.return_field;
+		return f ();
+	}
+
 	public static int test_1_store_decimal () {
 		decimal[,] a = {{1}};
 

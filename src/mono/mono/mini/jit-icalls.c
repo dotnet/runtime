@@ -1711,6 +1711,10 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 	 */
 	if (G_UNLIKELY (!ftndesc)) {
 		gpointer addr = mono_compile_method (del->method);
+
+		if (del->method->klass->valuetype && mono_method_signature (del->method)->hasthis)
+		    addr = mono_aot_get_unbox_trampoline (del->method);
+
 		gpointer arg = mini_get_delegate_arg (del->method, addr);
 
 		ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
@@ -1730,6 +1734,8 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 
 	del->method = method;
 	del->method_ptr = mono_compile_method (method);
+	if (method->klass->valuetype)
+		del->method_ptr = mono_aot_get_unbox_trampoline (method);
 	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
