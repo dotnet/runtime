@@ -13130,7 +13130,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 
 guint32
 mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, 
-						 gboolean create_open_instance, gboolean register_token)
+			 gboolean create_open_instance, gboolean register_token, MonoError *error)
 {
 	g_assert_not_reached ();
 	return 0;
