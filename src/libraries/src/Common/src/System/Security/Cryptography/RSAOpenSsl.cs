@@ -11,6 +11,14 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    public partial class RSA : AsymmetricAlgorithm
+    {
+        public static RSA Create()
+        {
+            return new RSAImplementation.RSAOpenSsl();
+        }
+    }
+
     internal static partial class RSAImplementation
     {
 #endif

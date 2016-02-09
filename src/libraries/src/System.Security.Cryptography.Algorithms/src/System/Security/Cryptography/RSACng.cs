@@ -8,6 +8,14 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
+    public partial class RSA : AsymmetricAlgorithm
+    {
+        public static RSA Create()
+        {
+            return new RSAImplementation.RSACng();
+        }
+    }
+
     internal static partial class RSAImplementation
     {
         public sealed partial class RSACng : RSA
