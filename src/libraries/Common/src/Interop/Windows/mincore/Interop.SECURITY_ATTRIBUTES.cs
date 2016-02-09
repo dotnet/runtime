@@ -15,7 +15,7 @@ internal partial class Interop
         {
             internal uint nLength;
             internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
+            internal BOOL bInheritHandle;
         }
     }
 }
