@@ -13,8 +13,16 @@
     <DocumentationFile>$(OutputPath)System.Collections.Immutable.xml</DocumentationFile>
     <GenerateAppxPackageOnBuild>False</GenerateAppxPackageOnBuild>
     <AssemblyVersion>1.2.0</AssemblyVersion>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageDestination Include="lib/dotnet5.1">
+      <TargetFramework>dotnet5.1</TargetFramework>
+    </PackageDestination>
+    <!-- Support targets that were supported in previous package versions -->
+    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
+      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Optimize>false</Optimize>
     <DefineConstants>DEBUG;TRACE</DefineConstants>

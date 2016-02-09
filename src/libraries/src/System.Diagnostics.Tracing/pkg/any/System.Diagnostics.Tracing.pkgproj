@@ -9,11 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Diagnostics.Tracing.csproj" />
 
-    <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 -->
-    <ProjectReference Include="..\..\src\System.Diagnostics.Tracing.csproj">
-      <PackageTargetFramework>dnxcore50</PackageTargetFramework>
-    </ProjectReference>
-
     <!-- AOT implementation comes from AOT package -->
     <ExternalOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>aot</PackageTargetRuntime>

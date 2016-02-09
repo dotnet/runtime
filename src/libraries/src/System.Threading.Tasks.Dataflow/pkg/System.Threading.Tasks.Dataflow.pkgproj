@@ -10,11 +10,6 @@
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj">
       <SupportedFramework>net45;netcore45;wp8;wpa81;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <!-- Support targets that were supported in previous package versions -->
-    <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj">
-      <PackageTargetPath>lib/portable-net45+win8+wpa81</PackageTargetPath>
-      <PackageTargetFramework>portable-net45+win8+wpa81</PackageTargetFramework>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.WP8.csproj" />
   </ItemGroup>
 

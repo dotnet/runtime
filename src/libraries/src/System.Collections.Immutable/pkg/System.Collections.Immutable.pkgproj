@@ -10,11 +10,6 @@
     <ProjectReference Include="..\src\System.Collections.Immutable.builds">
       <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
     </ProjectReference>
-    <!-- Support targets that were supported in previous package versions -->
-    <ProjectReference Include="..\src\System.Collections.Immutable.builds">
-      <PackageTargetPath>lib/portable-net45+win8+wp8+wpa81</PackageTargetPath>
-      <PackageTargetFramework>portable-net45+win8+wp8+wpa81</PackageTargetFramework>
-    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
