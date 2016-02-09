@@ -453,7 +453,7 @@ namespace System.Collections.Generic
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("index", arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("arrayIndex", arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - arrayIndex < Count)
