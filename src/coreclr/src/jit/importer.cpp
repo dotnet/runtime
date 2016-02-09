@@ -950,66 +950,6 @@ GenTreeArgList*     Compiler::impPopList(unsigned   count,
                 info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
             }
 
-#ifdef DEBUG
-            // Ensure that IL is half-way sane (what was pushed is what the function expected)
-            var_types argType = genActualType(args->Current()->TypeGet());
-            unsigned argSize = genTypeSize(argType);
-            if (varTypeIsStruct(argType))
-            {
-                if (args->Current()->gtOper == GT_LDOBJ)
-                    argSize = info.compCompHnd->getClassSize(args->Current()->gtLdObj.gtClass);
-                else if (args->Current()->gtOper == GT_MKREFANY)
-                    argSize = 2 * sizeof(void*);
-                else if (args->Current()->gtOper == GT_RET_EXPR)
-                {
-                    CORINFO_SIG_INFO *callArgs = &args->Current()->gtRetExpr.gtInlineCandidate->gtCall.gtInlineCandidateInfo->methInfo.args;
-                    assert(callArgs->retType == CORINFO_TYPE_VALUECLASS);
-                    argSize = info.compCompHnd->getClassSize(callArgs->retTypeClass);
-                }
-                else if (args->Current()->gtOper == GT_LCL_VAR)
-                {
-                    argSize = lvaLclSize(args->Current()->gtLclVarCommon.gtLclNum);
-                }
-                else if (args->Current()->gtOper == GT_CALL)
-                {
-                    if (args->Current()->gtCall.gtInlineCandidateInfo)
-                    {
-                        CORINFO_SIG_INFO *callArgs = &args->Current()->gtCall.gtInlineCandidateInfo->methInfo.args;
-                        assert(callArgs->retType == CORINFO_TYPE_VALUECLASS);
-                        argSize = info.compCompHnd->getClassSize(callArgs->retTypeClass);
-                    }
-                    else if (!(args->Current()->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG))
-                    {
-                        assert((var_types)args->Current()->gtCall.gtReturnType != TYP_STRUCT);
-                        argSize = genTypeSize((var_types)args->Current()->gtCall.gtReturnType);
-                    }
-                    else
-                    {
-                        // No easy way to recover the return type size, so just give up
-                        goto SKIP_SIZE_CHECK;
-                    }
-                }
-                else
-                {
-                    assert(!"Unexpeced tree node with type TYP_STRUCT");
-                    goto SKIP_SIZE_CHECK;
-                }
-            }
-
-            sigSize = compGetTypeSize(corType, argClass);
-            if (argSize != sigSize)
-            {
-                var_types sigType = genActualType(JITtype2varType(corType));
-                char buff[400];
-                sprintf_s(buff, sizeof(buff), "Arg type mismatch: Wanted %s (size %d), Got %s (size %d) for call at IL offset 0x%x\n", 
-                    varTypeName(sigType), sigSize, varTypeName(argType), argSize, impCurOpcOffs);
-                assertAbort(buff, __FILE__, __LINE__);
-            }
-
-SKIP_SIZE_CHECK:
-
-#endif // DEBUG
-
             argLst = info.compCompHnd->getArgNext(argLst);
         }
     }
