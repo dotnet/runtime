@@ -18,10 +18,8 @@ internal partial class Interop
             internal long AllocationSize;
             internal long EndOfFile;
             internal uint NumberOfLinks;
-            [MarshalAs(UnmanagedType.U1)]
-            internal bool DeletePending;
-            [MarshalAs(UnmanagedType.U1)]
-            internal bool Directory;
+            internal BOOL DeletePending;
+            internal BOOL Directory;
         }
 
     }

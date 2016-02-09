@@ -254,8 +254,8 @@ namespace System.IO.MemoryMappedFiles
             if ((inheritability & HandleInheritability.Inheritable) != 0)
             {
                 secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)Marshal.SizeOf(secAttrs);
-                secAttrs.bInheritHandle = true;
+                secAttrs.nLength = (uint)sizeof(Interop.mincore.SECURITY_ATTRIBUTES);
+                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
             return secAttrs;
         }

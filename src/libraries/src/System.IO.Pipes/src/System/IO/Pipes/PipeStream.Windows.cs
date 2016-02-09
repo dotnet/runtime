@@ -429,14 +429,14 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        internal static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
+        internal unsafe static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
             if ((inheritability & HandleInheritability.Inheritable) != 0)
             {
                 secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)Marshal.SizeOf(secAttrs);
-                secAttrs.bInheritHandle = true;
+                secAttrs.nLength = (uint)sizeof(Interop.mincore.SECURITY_ATTRIBUTES);
+                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
             return secAttrs;
         }
