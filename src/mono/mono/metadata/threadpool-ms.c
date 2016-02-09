@@ -46,7 +46,7 @@
 #define CPU_USAGE_LOW 80
 #define CPU_USAGE_HIGH 95
 
-#define MONITOR_INTERVAL 100 // ms
+#define MONITOR_INTERVAL 500 // ms
 #define MONITOR_MINIMAL_LIFETIME 60 * 1000 // ms
 
 #define WORKER_CREATION_MAX_PER_SEC 10
@@ -876,8 +876,8 @@ monitor_thread (void)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, started", mono_native_thread_id_get ());
 
 	do {
-		MonoInternalThread *thread;
-		gboolean all_waitsleepjoin = TRUE;
+		ThreadPoolCounter counter;
+		gboolean limit_worker_max_reached;
 		gint32 interval_left = MONITOR_INTERVAL;
 		gint32 awake = 0; /* number of spurious awakes we tolerate before doing a round of rebalancing */
 
@@ -918,49 +918,38 @@ monitor_thread (void)
 		}
 		mono_coop_mutex_unlock (&threadpool->domains_lock);
 
-
-		mono_coop_mutex_lock (&threadpool->active_threads_lock);
-		for (i = 0; i < threadpool->working_threads->len; ++i) {
-			thread = (MonoInternalThread *)g_ptr_array_index (threadpool->working_threads, i);
-			if ((thread->state & ThreadState_WaitSleepJoin) == 0) {
-				all_waitsleepjoin = FALSE;
-				break;
-			}
-		}
-		mono_coop_mutex_unlock (&threadpool->active_threads_lock);
-
-		if (all_waitsleepjoin) {
-			ThreadPoolCounter counter;
-			gboolean limit_worker_max_reached = FALSE;
-
-			COUNTER_ATOMIC (counter, {
-				if (counter._.max_working >= threadpool->limit_worker_max) {
-					limit_worker_max_reached = TRUE;
-					break;
-				}
-				counter._.max_working ++;
-			});
-
-			if (!limit_worker_max_reached)
-				hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
-		}
-
 		threadpool->cpu_usage = mono_cpu_usage (threadpool->cpu_usage_state);
 
-		if (monitor_sufficient_delay_since_last_dequeue ()) {
-			for (i = 0; i < 5; ++i) {
-				if (mono_runtime_is_shutting_down ())
-					break;
+		if (!monitor_sufficient_delay_since_last_dequeue ())
+			continue;
 
-				if (worker_try_unpark ()) {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, unparked", mono_native_thread_id_get ());
-					break;
-				}
+		limit_worker_max_reached = FALSE;
 
-				if (worker_try_create ()) {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, created", mono_native_thread_id_get ());
-					break;
-				}
+		COUNTER_ATOMIC (counter, {
+			if (counter._.max_working >= threadpool->limit_worker_max) {
+				limit_worker_max_reached = TRUE;
+				break;
+			}
+			counter._.max_working ++;
+		});
+
+		if (limit_worker_max_reached)
+			continue;
+
+		hill_climbing_force_change (counter._.max_working, TRANSITION_STARVATION);
+
+		for (i = 0; i < 5; ++i) {
+			if (mono_runtime_is_shutting_down ())
+				break;
+
+			if (worker_try_unpark ()) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, unparked", mono_native_thread_id_get ());
+				break;
+			}
+
+			if (worker_try_create ()) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, created", mono_native_thread_id_get ());
+				break;
 			}
 		}
 	} while (monitor_should_keep_running ());
