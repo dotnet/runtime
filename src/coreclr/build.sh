@@ -222,6 +222,8 @@ build_mscorlib()
        return
     fi
 
+    hash mono 2> /dev/null || { echo >&2 "Skipping mscorlib.dll build since Mono is not installed."; __SkipMSCorLib=1; return; }
+
     # Restore buildTools
 
     restoreBuildTools
