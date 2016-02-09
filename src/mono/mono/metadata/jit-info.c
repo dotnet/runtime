@@ -311,6 +311,21 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	return ji;
 }
 
+/**
+ * mono_jit_info_table_find:
+ * @domain: Domain that you want to look up
+ * @addr: Points to an address with JITed code.
+ *
+ * Use this function to obtain a `MonoJitInfo*` object that can be used to get
+ * some statistics.   You should provide both the @domain on which you will be
+ * performing the probe, and an address.   Since application domains can share code
+ * the same address can be in use by multiple domains at once.
+ *
+ * This does not return any results for trampolines.
+ *
+ * Returns: NULL if the address does not belong to JITed code (it might be native
+ * code or a trampoline) or a valid pointer to a `MonoJitInfo*`.
+ */
 MonoJitInfo*
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
@@ -806,18 +821,48 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 		ji->has_thunk_info = 1;
 }
 
+/**
+ * mono_jit_info_get_code_start:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the starting address for the method described by
+ * the @ji object.  You can use this plus the `mono_jit_info_get_code_size`
+ * to determine the start and end of the native code.
+ *
+ * Returns: Starting address with the native code.
+ */
 gpointer
 mono_jit_info_get_code_start (MonoJitInfo* ji)
 {
 	return ji->code_start;
 }
 
+/**
+ * mono_jit_info_get_code_size:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the code size for the method described by
+ * the @ji object.   You can use this plus the `mono_jit_info_get_code_start`
+ * to determine the start and end of the native code.
+ *
+ * Returns: Starting address with the native code.
+ */
 int
 mono_jit_info_get_code_size (MonoJitInfo* ji)
 {
 	return ji->code_size;
 }
 
+/**
+ * mono_jit_info_get_method:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the `MonoMethod *` that backs
+ * the @ji object.
+ *
+ * Returns: The MonoMethod that represents the code tracked
+ * by @ji.
+ */
 MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji)
 {

@@ -267,6 +267,8 @@ mono_install_free_domain_hook (MonoFreeDomainFunc func)
  * @s1: First string to compare
  * @s2: Second string to compare
  *
+ * Compares two `MonoString*` instances ordinally for equality.
+ *
  * Returns FALSE if the strings differ.
  */
 gboolean
@@ -287,6 +289,7 @@ mono_string_equal (MonoString *s1, MonoString *s2)
  * mono_string_hash:
  * @s: the string to hash
  *
+ * Compute the hash for a `MonoString*`
  * Returns the hash for the string.
  */
 guint
@@ -888,6 +891,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
  * 
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
+ *
  * This function is guaranteed to not run any IL code.
  * The runtime is initialized using the default runtime version.
  *
@@ -1641,132 +1645,286 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 	domain->static_data_array [0] = GINT_TO_POINTER (next);
 }
 
+/**
+ * mono_get_corlib:
+ *
+ * Use this function to get the `MonoImage*` for the mscorlib.dll assembly
+ *
+ * Returns: The MonoImage for mscorlib.dll
+ */
 MonoImage*
 mono_get_corlib (void)
 {
 	return mono_defaults.corlib;
 }
 
+/**
+ * mono_get_object_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Object`.
+ *
+ * Returns: The `MonoClass*` for the `System.Object` type.
+ */
 MonoClass*
 mono_get_object_class (void)
 {
 	return mono_defaults.object_class;
 }
 
+/**
+ * mono_get_byte_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Byte`.
+ *
+ * Returns: The `MonoClass*` for the `System.Byte` type.
+ */
 MonoClass*
 mono_get_byte_class (void)
 {
 	return mono_defaults.byte_class;
 }
 
+/**
+ * mono_get_void_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Void`.
+ *
+ * Returns: The `MonoClass*` for the `System.Void` type.
+ */
 MonoClass*
 mono_get_void_class (void)
 {
 	return mono_defaults.void_class;
 }
 
+/**
+ * mono_get_boolean_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Boolean`.
+ *
+ * Returns: The `MonoClass*` for the `System.Boolean` type.
+ */
 MonoClass*
 mono_get_boolean_class (void)
 {
 	return mono_defaults.boolean_class;
 }
 
+/**
+ * mono_get_sbyte_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.SByte`.
+ *
+ * Returns: The `MonoClass*` for the `System.SByte` type.
+ */
 MonoClass*
 mono_get_sbyte_class (void)
 {
 	return mono_defaults.sbyte_class;
 }
 
+/**
+ * mono_get_int16_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Int16`.
+ *
+ * Returns: The `MonoClass*` for the `System.Int16` type.
+ */
 MonoClass*
 mono_get_int16_class (void)
 {
 	return mono_defaults.int16_class;
 }
 
+/**
+ * mono_get_uint16_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt16`.
+ *
+ * Returns: The `MonoClass*` for the `System.UInt16` type.
+ */
 MonoClass*
 mono_get_uint16_class (void)
 {
 	return mono_defaults.uint16_class;
 }
 
+/**
+ * mono_get_int32_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Int32`.
+ *
+ * Returns: The `MonoClass*` for the `System.Int32` type.
+ */
 MonoClass*
 mono_get_int32_class (void)
 {
 	return mono_defaults.int32_class;
 }
 
+/**
+ * mono_get_uint32_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt32`.
+ *
+ * Returns: The `MonoClass*` for the `System.UInt32` type.
+ */
 MonoClass*
 mono_get_uint32_class (void)
 {
 	return mono_defaults.uint32_class;
 }
 
+/**
+ * mono_get_intptr_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.IntPtr`.
+ *
+ * Returns: The `MonoClass*` for the `System.IntPtr` type.
+ */
 MonoClass*
 mono_get_intptr_class (void)
 {
 	return mono_defaults.int_class;
 }
 
+/**
+ * mono_get_uintptr_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.UIntPtr`.
+ *
+ * Returns: The `MonoClass*` for the `System.UIntPtr` type.
+ */
 MonoClass*
 mono_get_uintptr_class (void)
 {
 	return mono_defaults.uint_class;
 }
 
+/**
+ * mono_get_int64_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Int64`.
+ *
+ * Returns: The `MonoClass*` for the `System.Int64` type.
+ */
 MonoClass*
 mono_get_int64_class (void)
 {
 	return mono_defaults.int64_class;
 }
 
+/**
+ * mono_get_uint64_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt64`.
+ *
+ * Returns: The `MonoClass*` for the `System.UInt64` type.
+ */
 MonoClass*
 mono_get_uint64_class (void)
 {
 	return mono_defaults.uint64_class;
 }
 
+/**
+ * mono_get_single_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Single` (32-bit floating points).
+ *
+ * Returns: The `MonoClass*` for the `System.Single` type.
+ */
 MonoClass*
 mono_get_single_class (void)
 {
 	return mono_defaults.single_class;
 }
 
+/**
+ * mono_get_double_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Double` (64-bit floating points).
+ *
+ * Returns: The `MonoClass*` for the `System.Double` type.
+ */
 MonoClass*
 mono_get_double_class (void)
 {
 	return mono_defaults.double_class;
 }
 
+/**
+ * mono_get_char_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Char`.
+ *
+ * Returns: The `MonoClass*` for the `System.Char` type.
+ */
 MonoClass*
 mono_get_char_class (void)
 {
 	return mono_defaults.char_class;
 }
 
+/**
+ * mono_get_string_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.String`.
+ *
+ * Returns: The `MonoClass*` for the `System.String` type.
+ */
 MonoClass*
 mono_get_string_class (void)
 {
 	return mono_defaults.string_class;
 }
 
+/**
+ * mono_get_enum_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Enum`.
+ *
+ * Returns: The `MonoClass*` for the `System.Enum` type.
+ */
 MonoClass*
 mono_get_enum_class (void)
 {
 	return mono_defaults.enum_class;
 }
 
+/**
+ * mono_get_array_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Array`.
+ *
+ * Returns: The `MonoClass*` for the `System.Array` type.
+ */
 MonoClass*
 mono_get_array_class (void)
 {
 	return mono_defaults.array_class;
 }
 
+/**
+ * mono_get_thread_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Threading.Thread`.
+ *
+ * Returns: The `MonoClass*` for the `System.Threading.Thread` type.
+ */
 MonoClass*
 mono_get_thread_class (void)
 {
 	return mono_defaults.thread_class;
 }
 
+/**
+ * mono_get_exception_class:
+ *
+ * Use this function to get the `MonoClass*` that the runtime is using for `System.Exception`.
+ *
+ * Returns: The `MonoClass*` for the `` type.
+ */
 MonoClass*
 mono_get_exception_class (void)
 {

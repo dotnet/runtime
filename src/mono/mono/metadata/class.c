@@ -8864,6 +8864,8 @@ mono_install_get_class_from_name (MonoGetClassFromName func)
 /**
  * mono_class_get_image:
  *
+ * Use this method to get the `MonoImage*` where this class came from.
+ *
  * Returns: The image where this class is defined.
  */
 MonoImage*
@@ -8876,7 +8878,9 @@ mono_class_get_image (MonoClass *klass)
  * mono_class_get_element_class:
  * @klass: the MonoClass to act on
  *
- * Returns: The element class of an array or an enumeration.
+ * Use this function to get the element class of an array.
+ *
+ * Returns: The element class of an array.
  */
 MonoClass*
 mono_class_get_element_class (MonoClass *klass)
@@ -8888,7 +8892,10 @@ mono_class_get_element_class (MonoClass *klass)
  * mono_class_is_valuetype:
  * @klass: the MonoClass to act on
  *
- * Returns: TRUE if the MonoClass represents a ValueType.
+ * Use this method to determine if the provided `MonoClass*` represents a value type,
+ * or a reference type.
+ *
+ * Returns: TRUE if the MonoClass represents a ValueType, FALSE if it represents a reference type.
  */
 gboolean
 mono_class_is_valuetype (MonoClass *klass)
@@ -8899,6 +8906,8 @@ mono_class_is_valuetype (MonoClass *klass)
 /**
  * mono_class_is_enum:
  * @klass: the MonoClass to act on
+ *
+ * Use this function to determine if the provided `MonoClass*` represents an enumeration.
  *
  * Returns: TRUE if the MonoClass represents an enumeration.
  */
@@ -8912,6 +8921,8 @@ mono_class_is_enum (MonoClass *klass)
  * mono_class_enum_basetype:
  * @klass: the MonoClass to act on
  *
+ * Use this function to get the underlying type for an enumeration value.
+ * 
  * Returns: The underlying type representation for an enumeration.
  */
 MonoType*
@@ -8939,6 +8950,10 @@ mono_class_get_parent (MonoClass *klass)
 /**
  * mono_class_get_nesting_type:
  * @klass: the MonoClass to act on
+ *
+ * Use this function to obtain the class that the provided `MonoClass*` is nested on.
+ *
+ * If the return is NULL, this indicates that this class is not nested.
  *
  * Returns: The container type where this type is nested or NULL if this type is not a nested type.
  */

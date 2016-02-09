@@ -4854,6 +4854,20 @@ ves_icall_object_new_specific (MonoVTable *vtable)
 	return o;
 }
 
+/**
+ * mono_object_new_alloc_specific:
+ * @vtable: virtual table for the object.
+ *
+ * This function allocates a new `MonoObject` with the type derived
+ * from the @vtable information.   If the class of this object has a 
+ * finalizer, then the object will be tracked for finalization.
+ *
+ * This method might raise an exception on errors.  Use the
+ * `mono_object_new_fast_checked` method if you want to manually raise
+ * the exception.
+ *
+ * Returns: the allocated object.   
+ */
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
@@ -4864,6 +4878,22 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 	return o;
 }
 
+/**
+ * mono_object_new_alloc_specific_checked:
+ * @vtable: virtual table for the object.
+ * @error: holds the error return value.  
+ *
+ * This function allocates a new `MonoObject` with the type derived
+ * from the @vtable information. If the class of this object has a 
+ * finalizer, then the object will be tracked for finalization.
+ *
+ * If there is not enough memory, the @error parameter will be set
+ * and will contain a user-visible message with the amount of bytes
+ * that were requested.
+ *
+ * Returns: the allocated object, or NULL if there is not enough memory
+ *
+ */
 MonoObject *
 mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 {
@@ -4883,6 +4913,21 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 	return o;
 }
 
+/**
+ * mono_object_new_fast:
+ * @vtable: virtual table for the object.
+ *
+ * This function allocates a new `MonoObject` with the type derived
+ * from the @vtable information.   The returned object is not tracked
+ * for finalization.   If your object implements a finalizer, you should
+ * use `mono_object_new_alloc_specific` instead.
+ *
+ * This method might raise an exception on errors.  Use the
+ * `mono_object_new_fast_checked` method if you want to manually raise
+ * the exception.
+ *
+ * Returns: the allocated object.   
+ */
 MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
 {
@@ -4893,6 +4938,23 @@ mono_object_new_fast (MonoVTable *vtable)
 	return o;
 }
 
+/**
+ * mono_object_new_fast_checked:
+ * @vtable: virtual table for the object.
+ * @error: holds the error return value.
+ *
+ * This function allocates a new `MonoObject` with the type derived
+ * from the @vtable information. The returned object is not tracked
+ * for finalization.   If your object implements a finalizer, you should
+ * use `mono_object_new_alloc_specific_checked` instead.
+ *
+ * If there is not enough memory, the @error parameter will be set
+ * and will contain a user-visible message with the amount of bytes
+ * that were requested.
+ *
+ * Returns: the allocated object, or NULL if there is not enough memory
+ *
+ */
 MonoObject*
 mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
 {
@@ -5723,7 +5785,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	return res;
 }
 
-/*
+/**
  * mono_value_copy:
  * @dest: destination pointer
  * @src: source pointer
@@ -5740,7 +5802,7 @@ mono_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 	mono_gc_wbarrier_value_copy (dest, src, 1, klass);
 }
 
-/*
+/**
  * mono_value_copy_array:
  * @dest: destination array
  * @dest_idx: index in the @dest array
@@ -5779,8 +5841,10 @@ mono_object_get_domain (MonoObject *obj)
 /**
  * mono_object_get_class:
  * @obj: object to query
- * 
- * Returns: the MonOClass of the object.
+ *
+ * Use this function to obtain the `MonoClass*` for a given `MonoObject`.
+ *
+ * Returns: the MonoClass of the object.
  */
 MonoClass*
 mono_object_get_class (MonoObject *obj)
@@ -7507,6 +7571,11 @@ mono_array_length (MonoArray *array)
  * @size: size of the array elements
  * @idx: index into the array
  *
+ * Use this function to obtain the address for the @idx item on the
+ * @array containing elements of size @size.
+ *
+ * This method performs no bounds checking or type checking.
+ *
  * Returns the address of the @idx element in the array.
  */
 char*
@@ -7537,3 +7606,68 @@ mono_glist_to_array (GList *list, MonoClass *eclass)
 	return res;
 }
 
+#if NEVER_DEFINED
+/*
+ * The following section is purely to declare prototypes and
+ * document the API, as these C files are processed by our
+ * tool
+ */
+
+/**
+ * mono_array_set:
+ * @array: array to alter
+ * @element_type: A C type name, this macro will use the sizeof(type) to determine the element size
+ * @index: index into the array
+ * @value: value to set
+ *
+ * Value Type version: This sets the @index's element of the @array
+ * with elements of size sizeof(type) to the provided @value.
+ *
+ * This macro does not attempt to perform type checking or bounds checking.
+ *
+ * Use this to set value types in a `MonoArray`.
+ */
+void mono_array_set(MonoArray *array, Type element_type, uintptr_t index, Value value)
+{
+}
+
+/**
+ * mono_array_setref:
+ * @array: array to alter
+ * @index: index into the array
+ * @value: value to set
+ *
+ * Reference Type version: This sets the @index's element of the
+ * @array with elements of size sizeof(type) to the provided @value.
+ *
+ * This macro does not attempt to perform type checking or bounds checking.
+ *
+ * Use this to reference types in a `MonoArray`.
+ */
+void mono_array_setref(MonoArray *array, uintptr_t index, MonoObject *object)
+{
+}
+
+/**
+ * mono_array_get:
+ * @array: array on which to operate on
+ * @element_type: C element type (example: MonoString *, int, MonoObject *)
+ * @index: index into the array
+ *
+ * Use this macro to retrieve the @index element of an @array and
+ * extract the value assuming that the elements of the array match
+ * the provided type value.
+ *
+ * This method can be used with both arrays holding value types and
+ * reference types.   For reference types, the @type parameter should
+ * be a `MonoObject*` or any subclass of it, like `MonoString*`.
+ *
+ * This macro does not attempt to perform type checking or bounds checking.
+ *
+ * Returns: The element at the @index position in the @array.
+ */
+Type mono_array_get (MonoArray *array, Type element_type, uintptr_t index)
+{
+}
+#endif
+ 

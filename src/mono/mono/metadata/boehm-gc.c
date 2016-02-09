@@ -1696,7 +1696,7 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
 /**
  * mono_gchandle_new_weakref:
  * @obj: managed object to get a handle for
- * @pinned: whether the object should be pinned
+ * @track_resurrection: Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
  *
  * This returns a weak handle that wraps the object, this is used to
  * keep a reference to a managed object from the unmanaged world.
@@ -1704,10 +1704,12 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
  * 
- * If @pinned is false the address of the object can not be obtained, if it is
- * true the address of the object can be obtained.  This will also pin the
- * object so it will not be possible by a moving garbage collector to move the
- * object. 
+ * If @track_resurrection is TRUE the object will be tracked through
+ * finalization and if the object is resurrected during the execution
+ * of the finalizer, then the returned weakref will continue to hold
+ * a reference to the object.   If @track_resurrection is FALSE, then
+ * the weak reference's target will become NULL as soon as the object
+ * is passed on to the finalizer.
  * 
  * Returns: a handle that can be used to access the object from
  * unmanaged code.
@@ -1722,10 +1724,10 @@ mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
  * mono_gchandle_get_target:
  * @gchandle: a GCHandle's handle.
  *
- * The handle was previously created by calling mono_gchandle_new or
- * mono_gchandle_new_weakref. 
+ * The handle was previously created by calling `mono_gchandle_new` or
+ * `mono_gchandle_new_weakref`.
  *
- * Returns a pointer to the MonoObject represented by the handle or
+ * Returns: A pointer to the `MonoObject*` represented by the handle or
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
@@ -1782,19 +1784,22 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	unlock_handles (handles);
 }
 
-/**
- * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
- *
- * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
- */
 gboolean
 mono_gc_is_null (void)
 {
 	return FALSE;
 }
 
+/**
+ * mono_gchandle_is_in_domain:
+ * @gchandle: a GCHandle's handle.
+ * @domain: An application domain.
+ *
+ * Use this function to determine if the @gchandle points to an
+ * object allocated in the specified @domain.
+ *
+ * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
+ */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 {
