@@ -38,6 +38,9 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
+      <Link>Common\System\IO\StreamHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Files exclusive to Core -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">

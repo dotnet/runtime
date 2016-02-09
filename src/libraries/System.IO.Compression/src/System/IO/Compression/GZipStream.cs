@@ -159,6 +159,11 @@ namespace System.IO.Compression
             }
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
+        }
+
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
