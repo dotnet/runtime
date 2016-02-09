@@ -13405,31 +13405,6 @@ LDOBJ:
 #pragma warning(pop)
 #endif
 
-void Compiler::impAbortInline(bool abortThisInlineOnly, bool contextDependent,
-                              const char *reason)
-{
-    JITDUMP("\n\nInline expansion aborted due to opcode [%02u] OP_%s in method %s\n",
-           impCurOpcOffs, impCurOpcName, info.compFullName);
-
-    if (abortThisInlineOnly)
-    {
-        JITDUMP("(aborted for this callsite only)\n");
-        compInlineResult->setFailure(reason);
-    }
-    else 
-    {
-        compInlineResult->setNever(reason);
-    }
-
-    if (contextDependent)
-    {
-        JITDUMP("Context dependent inline rejection for method %s\n", info.compFullName);
-    }
-
-    assert(compIsForInlining());
-    assert(impInlineInfo->fncHandle == info.compMethodHnd);
-}
-
 // Push a local/argument treeon the operand stack
 void Compiler::impPushVar(GenTree * op, typeInfo tiRetVal)
 {
@@ -13471,7 +13446,7 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
     {
         if (ilArgNum >= info.compArgsCount)
         {
-            impAbortInline(false, false, "bad arg num");
+            compInlineResult->setNever("bad argument number");
             return;
         }
 
@@ -13513,7 +13488,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
     {
         if (ilLclNum >= info.compMethodInfo->locals.numArgs)
         {
-            impAbortInline(false, false, "bad loc num");
+            compInlineResult->setNever("bad local number");
             return;
         }
 
@@ -13699,7 +13674,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                    
             if (returnType != originalCallType)
             {
-                impAbortInline(true, false, "Return types are not matching.");
+                compInlineResult->setFailure("Return type mismatch");
                 return false;
             }
 
