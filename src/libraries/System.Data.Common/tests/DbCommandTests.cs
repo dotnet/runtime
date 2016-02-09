@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Data.Common.Tests
 {
-    class DbCommandTests
+    public class DbCommandTests
     {
         private static volatile bool _wasFinalized;
 
