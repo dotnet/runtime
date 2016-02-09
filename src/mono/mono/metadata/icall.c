@@ -7943,6 +7943,42 @@ mono_icall_cleanup (void)
 	mono_os_mutex_destroy (&icall_mutex);
 }
 
+/**
+ * mono_add_internal_call:
+ * @name: method specification to surface to the managed world
+ * @method: pointer to a C method to invoke when the method is called
+ *
+ * This method surfaces the C function pointed by @method as a method
+ * that has been surfaced in managed code with the method specified in
+ * @name as an internal call.
+ *
+ * Internal calls are surfaced to all app domains loaded and they are
+ * accessibly by a type with the specified name.
+ *
+ * You must provide a fully qualified type name, that is namespaces
+ * and type name, followed by a colon and the method name, with an
+ * optional signature to bind.
+ *
+ * For example, the following are all valid declarations:
+ *
+ * "MyApp.Services.ScriptService:Accelerate"
+ * "MyApp.Services.ScriptService:Slowdown(int,bool)"
+ *
+ * You use method parameters in cases where there might be more than
+ * one surface method to managed code.  That way you can register different
+ * internal calls for different method overloads.
+ *
+ * The internal calls are invoked with no marshalling.   This means that .NET
+ * types like System.String are exposed as `MonoString *` parameters.   This is
+ * different than the way that strings are surfaced in P/Invoke.
+ *
+ * For more information on how the parameters are marshalled, see the
+ * <a href="http://www.mono-project.com/docs/advanced/embedding/">Mono Embedding</a>
+ * page.
+ *
+ * See the <a  href="mono-api-methods.html#method-desc">Method Description</a>
+ * reference for more information on the format of method descriptions.
+ */
 void
 mono_add_internal_call (const char *name, gconstpointer method)
 {
