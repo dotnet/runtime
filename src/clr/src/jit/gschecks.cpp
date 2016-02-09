@@ -405,7 +405,7 @@ void Compiler::gsParamsToShadows()
         }
 
         if (!varDsc->lvIsPtr && !varDsc->lvIsUnsafeBuffer)
-        {            
+        {
             continue;
         }
 
@@ -414,7 +414,18 @@ void Compiler::gsParamsToShadows()
         // Copy some info
 
         var_types type = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
-        lvaTable[shadowVar].lvType        = type;
+        lvaTable[shadowVar].lvType = type;
+
+#ifdef FEATURE_SIMD
+        lvaTable[shadowVar].lvSIMDType = varDsc->lvSIMDType;
+        lvaTable[shadowVar].lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
+        if (varDsc->lvSIMDType)
+        {
+            lvaTable[shadowVar].lvBaseType = varDsc->lvBaseType;
+        }
+#endif
+        lvaTable[shadowVar].lvRegStruct = varDsc->lvRegStruct;
+
         lvaTable[shadowVar].lvAddrExposed = varDsc->lvAddrExposed;
         lvaTable[shadowVar].lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
