@@ -64,7 +64,7 @@ def static setMachineAffinity(def job, def os, def architecture) {
             label('arm64')
         }
     } else {
-        return Utilities.setMachineAffinity(job, os);
+        return Utilities.setMachineAffinity(job, os, 'latest-or-auto');
     }
 }
 
@@ -456,7 +456,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'Windows_NT':
                     // Set up a private trigger
                     Utilities.addPrivateGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${architecture}\\W+${osGroup}.*", null, ['jashook', 'RussKeldorph', 'gkhanna79', 'briansul', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard'])
+                        "(?i).*test\\W+${os}\\W+${architecture}.*", null, ['jashook', 'RussKeldorph', 'gkhanna79', 'briansul', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
                     break
             }
             break
