@@ -123,8 +123,6 @@ namespace System.Linq.Expressions.Tests
         {
             if (expression.Type == typeof(void))
                 return; // Can't have void parameter.
-            if (expression.Type.IsConstructedGenericType && expression.Type.GetGenericTypeDefinition() == typeof(Nullable<>) && expression.Type != type)
-                return; // ActiveIssue 5272
             bool expected;
             if (type == typeof(void))
                 expected = false;
@@ -156,8 +154,6 @@ namespace System.Linq.Expressions.Tests
         {
             if (expression.Type == typeof(void))
                 return; // Can't have void parameter.
-            if (expression.Type.IsConstructedGenericType && expression.Type.GetGenericTypeDefinition() == typeof(Nullable<>) && expression.Type != type)
-                return; // ActiveIssue 5272
             bool expected;
             if (type == typeof(void))
                 expected = false;
