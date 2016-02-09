@@ -153,6 +153,9 @@
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+  </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
@@ -161,6 +164,12 @@
   </data>
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
   </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
@@ -194,5 +203,8 @@
   </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
+  </data>
+  <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
+    <value>The specified PaddingMode is not supported.</value>
   </data>
 </root>
