@@ -135,7 +135,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
 
                 case (int)SignatureTypeHandleCode.Class:
                 case (int)SignatureTypeHandleCode.ValueType:
-                    return DecodeTypeDefOrRef(ref blobReader, (SignatureTypeHandleCode)typeCode);
+                    return DecodeTypeHandle(ref blobReader, (SignatureTypeHandleCode)typeCode, allowTypeSpecifications);
 
                 default:
 #if SRM
@@ -308,20 +308,10 @@ namespace Roslyn.Reflection.Metadata.Decoding
 
         private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)
         {
-            TType modifier = DecodeTypeDefOrRefOrSpec(ref blobReader, SignatureTypeHandleCode.Unresolved);
+            TType modifier = DecodeTypeHandle(ref blobReader, SignatureTypeHandleCode.Unresolved, allowTypeSpecifications: true);
             TType unmodifiedType = DecodeType(ref blobReader);
 
             return _provider.GetModifiedType(_metadataReaderOpt, isRequired, modifier, unmodifiedType);
-        }
-
-        private TType DecodeTypeDefOrRef(ref BlobReader blobReader, SignatureTypeHandleCode code)
-        {
-            return DecodeTypeHandle(ref blobReader, code, allowTypeSpecifications: false);
-        }
-
-        private TType DecodeTypeDefOrRefOrSpec(ref BlobReader blobReader, SignatureTypeHandleCode code)
-        {
-            return DecodeTypeHandle(ref blobReader, code, allowTypeSpecifications: true);
         }
 
         private TType DecodeTypeHandle(ref BlobReader blobReader, SignatureTypeHandleCode code, bool allowTypeSpecifications)
@@ -360,7 +350,6 @@ namespace Roslyn.Reflection.Metadata.Decoding
 #else
                             throw new BadImageFormatException();
 #endif
-
                         }
 
                         if (code != SignatureTypeHandleCode.Unresolved)
