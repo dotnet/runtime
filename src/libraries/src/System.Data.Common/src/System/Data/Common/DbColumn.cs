@@ -8,7 +8,6 @@ namespace System.Data.Common
 {
     public class DbColumn
     {
-        private readonly Dictionary<string, object> _customValues = new Dictionary<string, object>();
         public virtual bool AllowDBNull { get; set; }
         public virtual string BaseCatalogName { get; set; }
         public virtual string BaseColumnName { get; set; }
@@ -36,13 +35,57 @@ namespace System.Data.Common
         {
             get
             {
-                object value;
-                _customValues.TryGetValue(property, out value);
-                return value;
-            }
-            set
-            {
-                _customValues[property] = value;
+                switch (property)
+                {
+                    case "AllowDBNull":
+                        return AllowDBNull;
+                    case "BaseCatalogName":
+                        return BaseCatalogName;
+                    case "BaseColumnName":
+                        return BaseColumnName;
+                    case "BaseSchemaName":
+                        return BaseSchemaName;
+                    case "BaseServerName":
+                        return BaseServerName;
+                    case "BaseTableName":
+                        return BaseTableName;
+                    case "ColumnName":
+                        return ColumnName;
+                    case "ColumnOrdinal":
+                        return ColumnOrdinal;
+                    case "ColumnSize":
+                        return ColumnSize;
+                    case "IsAliased":
+                        return IsAliased;
+                    case "IsAutoIncrement":
+                        return IsAutoIncrement;
+                    case "IsExpression":
+                        return IsExpression;
+                    case "IsHidden":
+                        return IsHidden;
+                    case "IsIdentity":
+                        return IsIdentity;
+                    case "IsKey":
+                        return IsKey;
+                    case "IsLong":
+                        return IsLong;
+                    case "IsReadOnly":
+                        return IsReadOnly;
+                    case "IsUnique":
+                        return IsUnique;
+                    case "NumericPrecision":
+                        return NumericPrecision;
+                    case "NumericScale":
+                        return NumericScale;
+                    case "UdtAssemblyQualifiedName":
+                        return UdtAssemblyQualifiedName;
+                    case "DataType":
+                        return DataType;
+                    case "DataTypeName":
+                        return DataTypeName;
+                    default:
+                        return null;
+                }
             }
         }
 
