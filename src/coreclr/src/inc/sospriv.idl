@@ -347,3 +347,13 @@ interface ISOSDacInterface3 : IUnknown
     HRESULT GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *data);
     HRESULT GetGCGlobalMechanisms(size_t* globalMechanisms);
 };
+
+[
+    object,
+    local,
+    uuid(74B9D34C-A612-4B07-93DD-5462178FCE11)
+]
+interface ISOSDacInterface4 : IUnknown
+{
+    HRESULT GetClrNotification(CLRDATA_ADDRESS arguments[], int count, int *pNeeded);
+};
