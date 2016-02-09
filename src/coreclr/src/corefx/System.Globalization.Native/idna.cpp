@@ -53,15 +53,6 @@ extern "C" int32_t GlobalizationNative_ToAscii(
     return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? asciiStrLen : 0;
 }
 
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the corefx managed assemblies
-// are synced up with the native assemblies.
-extern "C" int32_t ToAscii(
-    uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
-{
-    return GlobalizationNative_ToAscii(flags, lpSrc, cwSrcLength, lpDst, cwDstLength);
-}
-
 /*
 Function:
 ToUnicode
@@ -86,13 +77,4 @@ extern "C" int32_t GlobalizationNative_ToUnicode(
     uidna_close(pIdna);
 
     return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? unicodeStrLen : 0;
-}
-
-// TODO: temporarily keeping the un-prefixed signature of this method
-// to keep tests running in CI. This will be removed once the corefx managed assemblies
-// are synced up with the native assemblies.
-extern "C" int32_t ToUnicode(
-    int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
-{
-    return GlobalizationNative_ToUnicode(flags, lpSrc, cwSrcLength, lpDst, cwDstLength);
 }
