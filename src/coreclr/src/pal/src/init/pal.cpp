@@ -34,6 +34,7 @@ Abstract:
 #include "pal/module.h"
 #include "pal/virtual.h"
 #include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/locale.h"
@@ -240,14 +241,14 @@ Initialize(
         }
 
         // Initialize the environment.
-        if (FALSE == MiscInitialize())
+        if (FALSE == EnvironInitialize())
         {
             goto CLEANUP0;
         }
 
         // Initialize debug channel settings before anything else.
         // This depends on the environment, so it must come after
-        // MiscInitialize.
+        // EnvironInitialize.
         if (FALSE == DBG_init_channels())
         {
             goto CLEANUP0;
@@ -1182,7 +1183,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 
     /* no path was specified : search $PATH */
 
-    env_path = MiscGetenv("PATH");
+    env_path = EnvironGetenv("PATH");
     if (!env_path || *env_path=='\0')
     {
         WARN("$PATH isn't set.\n");
@@ -1327,7 +1328,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     }
 
     InternalFree(env_path);
-    TRACE("No %s found in $PATH (%s)\n", exe_name, MiscGetenv("PATH"));
+    TRACE("No %s found in $PATH (%s)\n", exe_name, EnvironGetenv("PATH"));
 
 last_resort:
     /* last resort : see if the executable is in the current directory. This is

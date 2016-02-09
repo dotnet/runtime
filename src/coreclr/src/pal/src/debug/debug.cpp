@@ -34,7 +34,7 @@ Revision History:
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/malloc.hpp"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
@@ -174,15 +174,15 @@ OutputDebugStringA(
     ENTRY("OutputDebugStringA (lpOutputString=%p (%s))\n",
           lpOutputString?lpOutputString:"NULL",
           lpOutputString?lpOutputString:"NULL");
-    
+
     /* as we don't support debug events, we are going to output the debug string
       to stderr instead of generating OUT_DEBUG_STRING_EVENT */
     if ( (lpOutputString != NULL) && 
-         (NULL != MiscGetenv(PAL_OUTPUTDEBUGSTRING)))
+         (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING)))
     {
         fprintf(stderr, "%s", lpOutputString);
     }
-        
+
     LOGEXIT("OutputDebugStringA returns\n");
     PERF_EXIT(OutputDebugStringA);
 }
@@ -370,7 +370,7 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!MiscPutenv (pid_buf, FALSE) || !MiscPutenv (exe_buf, FALSE)) {
+        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE)) {
             goto FAILED;
         }
         if (run_debug_command (command_string)) {

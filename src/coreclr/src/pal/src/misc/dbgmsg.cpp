@@ -29,7 +29,7 @@ Abstract:
 #include "pal/cruntime.h"
 #include "pal/critsect.h"
 #include "pal/file.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 
 /* standard headers */
 
@@ -168,7 +168,7 @@ BOOL DBG_init_channels(void)
 
     /* parse PAL_DBG_CHANNELS environment variable */
 
-    if (!(env_string = MiscGetenv(ENV_CHANNELS))) 
+    if (!(env_string = EnvironGetenv(ENV_CHANNELS))) 
     {
         env_pcache = env_workstring = NULL;
     }
@@ -316,7 +316,7 @@ BOOL DBG_init_channels(void)
     PAL_free(env_pcache);
 
     /* select output file */
-    env_string=MiscGetenv(ENV_FILE);
+    env_string = EnvironGetenv(ENV_FILE);
     if(env_string && *env_string!='\0')
     {
         if(!strcmp(env_string, "stderr"))
@@ -347,7 +347,7 @@ BOOL DBG_init_channels(void)
     }
 
     /* see if we need to disable assertions */
-    env_string = MiscGetenv(ENV_ASSERTS);
+    env_string = EnvironGetenv(ENV_ASSERTS);
     if(env_string && 0 == strcmp(env_string,"1"))
     {
         g_Dbg_asserts_enabled = FALSE;
@@ -358,7 +358,7 @@ BOOL DBG_init_channels(void)
     }
 
     /* select ENTRY level limitation */
-    env_string = MiscGetenv(ENV_ENTRY_LEVELS);    
+    env_string = EnvironGetenv(ENV_ENTRY_LEVELS);    
     if(env_string)
     {
         max_entry_level = atoi(env_string);
