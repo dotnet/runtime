@@ -172,7 +172,7 @@ Windows Forms is in maintenance mode currently. That means new features will gen
 
 ### MonoGame
 
-**Also referred to as**: MG, XNA Touch, Silver Sprite
+**Also referred to as**: MG
 
 ### ASP.NET
 
