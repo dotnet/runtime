@@ -5201,7 +5201,7 @@ void CodeGen::genEmitCall(int                   callType,
 void CodeGen::genEmitCall(int                   callType,
                           CORINFO_METHOD_HANDLE methHnd,
                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          GenTreeIndir*         indir 
+                          GenTreeIndir*         indir
                           X86_ARG(ssize_t       argSize),
                           emitAttr              retSize,
                           IL_OFFSETX            ilOffset)
@@ -5688,6 +5688,19 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 #endif // DEBUGGING_SUPPORT
     
+#if defined(_TARGET_X86_)
+    // If the callee pops the arguments, we pass a positive value as the argSize, and the emitter will
+    // adjust its stack level accordingly.
+    // If the caller needs to explicitly pop its arguments, we must pass a negative value, and then do the
+    // pop when we're done.
+    ssize_t argSizeForEmitter = stackArgBytes;
+    if ((call->gtFlags & GTF_CALL_POP_ARGS) != 0)
+    {
+        argSizeForEmitter = -stackArgBytes;
+    }
+
+#endif // defined(_TARGET_X86_)
+
     if (target != nullptr)
     {
         if (target->isContainedIndir())
@@ -5701,10 +5714,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                 genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
-                            (void*) target->AsIndir()->Base()->AsIntConCommon()->IconValue(),
-#if defined(_TARGET_X86_)
-                            stackArgBytes,
-#endif // defined(_TARGET_X86_)
+                            (void*) target->AsIndir()->Base()->AsIntConCommon()->IconValue()
+                            X86_ARG(argSizeForEmitter),
                             retSize,
                             ilOffset);
             }
@@ -5715,10 +5726,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                 genEmitCall(emitter::EC_INDIR_ARD,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
-                            target->AsIndir(),
-#if defined(_TARGET_X86_)
-                            stackArgBytes,
-#endif // defined(_TARGET_X86_)
+                            target->AsIndir()
+                            X86_ARG(argSizeForEmitter),
                             retSize,
                             ilOffset);
             }
@@ -5731,10 +5740,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             genEmitCall(emitter::EC_INDIR_R,
                         methHnd,
                         INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr, //addr
-#if defined(_TARGET_X86_)
-                        stackArgBytes,
-#endif // defined(_TARGET_X86_)
+                        nullptr //addr
+                        X86_ARG(argSizeForEmitter),
                         retSize,
                         ilOffset,
                         genConsumeReg(target));
@@ -5746,10 +5753,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         genEmitCall((call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR,
                     methHnd,
                     INDEBUG_LDISASM_COMMA(sigInfo)
-                    (void*) call->gtEntryPoint.addr,
-#ifdef _TARGET_X86_
-                    stackArgBytes,
-#endif // _TARGET_X86_
+                    (void*) call->gtEntryPoint.addr
+                    X86_ARG(argSizeForEmitter),
                     retSize,
                     ilOffset);
     }
@@ -5804,10 +5809,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         genEmitCall(emitter::EC_FUNC_TOKEN,
                     methHnd, 
                     INDEBUG_LDISASM_COMMA(sigInfo)
-                    addr,
-#if defined(_TARGET_X86_)
-                    stackArgBytes,
-#endif // _defined(_TARGET_X86_)
+                    addr
+                    X86_ARG(argSizeForEmitter),
                     retSize,
                     ilOffset);
     }
@@ -5914,6 +5917,12 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         default:
             break;
         }
+    }
+
+    // Is the caller supposed to pop the arguments?
+    if (((call->gtFlags & GTF_CALL_POP_ARGS) != 0) && (stackArgBytes != 0))
+    {
+        genAdjustSP(stackArgBytes);
     }
 #endif // _TARGET_X86_
 }
@@ -7925,22 +7934,38 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
     // a separate putarg_stk for each of the upper and lower halves.
     noway_assert(targetType != TYP_LONG);
 
-    // Decrement SP.
     int argSize = genTypeSize(genActualType(targetType));
-    inst_RV_IV(INS_sub, REG_SPBASE, argSize, emitActualTypeSize(TYP_I_IMPL));
-
     genStackLevel += argSize;
 
     // TODO-Cleanup: Handle this in emitInsMov() in emitXArch.cpp?
-    if (data->isContained())
+    if (data->isContainedIntOrIImmed())
     {
-        NYI_X86("Contained putarg_stk");
-
+        if  (data->IsIconHandle())
+        {
+            inst_IV_handle(INS_push, data->gtIntCon.gtIconVal);
+        }
+        else
+        {
+            inst_IV(INS_push, data->gtIntCon.gtIconVal);
+        }
+    }
+    else if (data->isContained())
+    {
+        NYI_X86("Contained putarg_stk of non-constant");
     }
     else
     {
         genConsumeReg(data);
-        getEmitter()->emitIns_AR_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, REG_SPBASE, 0);
+        if (varTypeIsIntegralOrI(targetType))
+        {
+            inst_RV(INS_push, data->gtRegNum, targetType);
+        }
+        else
+        {
+            // Decrement SP.
+            inst_RV_IV(INS_sub, REG_SPBASE, argSize, emitActualTypeSize(TYP_I_IMPL));
+            getEmitter()->emitIns_AR_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, REG_SPBASE, 0);
+        }
     }
 #else // !_TARGET_X86_
     {
