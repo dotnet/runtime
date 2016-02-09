@@ -72,12 +72,7 @@ namespace System.IO
         public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent) : base(parent)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
-            Init(path, mode, access, share, bufferSize, options, secAttrs);
-        }
 
-        [System.Security.SecuritySafeCritical]
-        private void Init(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, Interop.mincore.SECURITY_ATTRIBUTES secAttrs)
-        {
             _exposedHandle = false;
 
             int fAccess =
@@ -290,15 +285,15 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
+        private unsafe static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
             if ((share & FileShare.Inheritable) != 0)
             {
                 secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)Marshal.SizeOf(secAttrs);
+                secAttrs.nLength = (uint)sizeof(Interop.mincore.SECURITY_ATTRIBUTES);
 
-                secAttrs.bInheritHandle = true;
+                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
             return secAttrs;
         }
