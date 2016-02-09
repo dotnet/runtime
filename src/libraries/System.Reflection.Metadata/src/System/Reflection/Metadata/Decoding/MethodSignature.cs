@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
+using System.Reflection.Metadata;
 
 #if SRM
 namespace System.Reflection.Metadata.Decoding
