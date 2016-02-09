@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "Microsoft.Win32.Registry": "4.0.0-rc3-23808",
     "System.Diagnostics.Process": "4.1.0-rc3-23808",
     "System.Runtime": "4.0.20",

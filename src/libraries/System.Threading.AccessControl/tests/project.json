@@ -1,9 +1,10 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Diagnostics.Contracts": "4.0.0",
-    "System.Runtime.Handles": "4.0.0",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
+    "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Security.AccessControl": "4.0.0-rc3-23808",
     "System.Security.Principal.Windows": "4.0.0-rc3-23808",
@@ -13,6 +14,8 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
   }
 }

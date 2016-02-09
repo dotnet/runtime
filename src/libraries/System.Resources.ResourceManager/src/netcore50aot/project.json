@@ -2,13 +2,14 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "System.Runtime": "4.0.20",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23808",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Diagnostics.Tracing": "4.0.0",
         "System.Globalization": "4.0.0",
         "System.Reflection": "4.0.10",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23808"
+        "System.Runtime": "4.0.20"
       }
     }
   }

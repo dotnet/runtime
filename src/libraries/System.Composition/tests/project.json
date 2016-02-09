@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Linq.Expressions": "4.0.10",
     "System.Runtime": "4.0.20",
     "xunit": "2.1.0",

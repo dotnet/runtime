@@ -1,12 +1,13 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Globalization": "4.0.10",
-    "System.Threading.Tasks": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Text.Encoding": "4.0.10",
     "System.Text.Encoding.Extensions": "4.0.10",
+    "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

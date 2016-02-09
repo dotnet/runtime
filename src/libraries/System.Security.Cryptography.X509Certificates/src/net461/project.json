@@ -2,7 +2,7 @@
   "frameworks": {
     "net461": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.0"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
       }
     }
   }

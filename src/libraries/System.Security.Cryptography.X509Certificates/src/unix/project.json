@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -19,5 +20,9 @@
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {}
   }
 }

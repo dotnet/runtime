@@ -15,6 +15,7 @@
     <TargetPackageFramework Condition="'$(TargetPackageFramework)'==''">dotnet5.3</TargetPackageFramework>
     <TargetPackageRuntime>win8</TargetPackageRuntime>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
     <DefineConstants>$(DefineConstants);dotnet53;FEATURE_APPX</DefineConstants>

@@ -1,10 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20",
-    "System.Runtime.Extensions": "4.0.10",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
     "System.IO.FileSystem.Primitives": "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Xml.ReaderWriter": "4.0.10",
     "xunit": "2.1.0",
