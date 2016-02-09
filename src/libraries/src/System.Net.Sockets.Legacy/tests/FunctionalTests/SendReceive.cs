@@ -285,7 +285,6 @@ namespace System.Net.Sockets.Tests
                         random.NextBytes(sendBuffer);
 
                         sent = client.Send(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining), SocketFlags.None);
-                        Assert.NotEqual(0, sent);
                         bytesSent += sent;
                         sentChecksum.Add(sendBuffer, 0, sent);
                     }
@@ -307,10 +306,6 @@ namespace System.Net.Sockets.Tests
                         }
 
                         sent = client.Send(sendBuffers, SocketFlags.None);
-                        if (sent == 0)
-                        {
-                            break;
-                        }
 
                         bytesSent += sent;
                         for (int i = 0, remaining = sent; i < sendBuffers.Count && remaining > 0; i++)
@@ -326,7 +321,7 @@ namespace System.Net.Sockets.Tests
                 client.LingerState = new LingerOption(true, LingerTime);
             }
 
-            Assert.True(serverThread.Join(TestTimeout));
+            Assert.True(serverThread.Join(TestTimeout), "Completed within allowed time");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
@@ -445,7 +440,7 @@ namespace System.Net.Sockets.Tests
                             sentChecksum.Add(sendBuffer, 0, sent);
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            if (remaining <= 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -484,7 +479,7 @@ namespace System.Net.Sockets.Tests
                             }
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            if (remaining <= 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -507,7 +502,7 @@ namespace System.Net.Sockets.Tests
                 sendHandler(0);
             });
 
-            Assert.True(serverFinished.Task.Wait(TestTimeout));
+            Assert.True(serverFinished.Task.Wait(TestTimeout), "Completed within allowed time");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
