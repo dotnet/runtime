@@ -4,7 +4,7 @@
 
 using System;
 using System.IO;
-using System.Net.Tests;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 

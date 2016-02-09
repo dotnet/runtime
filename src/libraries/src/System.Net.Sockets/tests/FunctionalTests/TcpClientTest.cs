@@ -6,7 +6,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 using System.Threading.Tasks;
-using System.Net.Tests;
+using System.Net.Test.Common;
 using System.Text;
 
 namespace System.Net.Sockets.Tests

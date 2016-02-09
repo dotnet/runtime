@@ -17,14 +17,14 @@ namespace System.Net.Security.Tests
     {
         private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
 
-        [Fact]
         [ActiveIssue(4467)]
+        [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var server = new SslStream(serverStream))
             {
@@ -41,10 +41,10 @@ namespace System.Net.Security.Tests
         [Fact]
         public void SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new SslStream(clientStream))
             using (var server = new SslStream(serverStream))
             {
@@ -65,10 +65,10 @@ namespace System.Net.Security.Tests
         public void SslStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -94,10 +94,10 @@ namespace System.Net.Security.Tests
         [ActiveIssue(5896, PlatformID.OSX)]
         public void SslStream_StreamToStream_LargeWrites_Sync_Success()
         {
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -130,10 +130,10 @@ namespace System.Net.Security.Tests
         public void SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
@@ -160,10 +160,10 @@ namespace System.Net.Security.Tests
         [Fact]
         public void SslStream_StreamToStream_Write_ReadByte_Success()
         {
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer:false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer:true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {

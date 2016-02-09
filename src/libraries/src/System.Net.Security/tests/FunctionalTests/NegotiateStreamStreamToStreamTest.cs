@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Net.Test.Common;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,10 +21,10 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void NegotiateStream_StreamToStream_Authentication_Success()
         {
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
@@ -75,10 +76,10 @@ namespace System.Net.Security.Tests
         {
             string targetName = "testTargetName";
 
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
@@ -137,10 +138,10 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultCredentials);
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultNetworkCredentials);
 
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
@@ -195,10 +196,10 @@ namespace System.Net.Security.Tests
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
@@ -230,10 +231,10 @@ namespace System.Net.Security.Tests
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
-            MockNetwork network = new MockNetwork();
+            VirtualNetwork network = new VirtualNetwork();
 
-            using (var clientStream = new FakeNetworkStream(false, network))
-            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
@@ -265,7 +266,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
         public void NegotiateStream_Ctor_Throws()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateStream(new FakeNetworkStream(false, null)));
+            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateStream(new VirtualNetworkStream(null, isServer: false)));
         }
     }
 }

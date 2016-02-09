@@ -138,9 +138,8 @@ namespace System.Net.Security.Tests
                 await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
-                    Task async = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
-                    Assert.True(((IAsyncResult)async).AsyncWaitHandle.WaitOne(TestConfiguration.PassingTestTimeoutMilliseconds), "Timed Out");
-                    async.GetAwaiter().GetResult();
+                    Task clientAuthTask = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
+                    await clientAuthTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         server.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
