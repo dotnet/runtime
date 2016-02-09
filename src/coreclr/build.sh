@@ -192,15 +192,21 @@ restoreBuildTools()
 
 isMSBuildOnNETCoreSupported()
 {
+    # This needs to be updated alongwith corresponding changes to netci.groovy.
     __isMSBuildOnNETCoreSupported=0
 
-    if [ "$__BuildOS" == "Linux" ]; then
-        if [ "$__DistroName" == "ubuntu" ]; then
+    if [ "$__BuildArch" == "x64" ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ "$__DistroName" == "ubuntu" ]; then
+                __OSVersion=$(lsb_release -sr)
+                if [ "$__OSVersion" == "14.04" ]; then
+                    __isMSBuildOnNETCoreSupported=1
+                fi 
+            fi
+        elif [ "$__BuildOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
-        fi
-    elif [ "$__BuildOS" == "OSX" ]; then
-        __isMSBuildOnNETCoreSupported=1
-    fi 
+        fi 
+    fi
 }
 
 build_mscorlib()
@@ -211,12 +217,10 @@ build_mscorlib()
         return
     fi
 
-    # CI_TODO: Until we switch CI to stop building mscorlib for platforms supported by isMSBuildOnNETCoreSupported function,
-    # we should ignore skipping building mscorlib.
-    # if [ $__SkipMSCorLib == 1 ]; then
-    #    echo "Skipping building mscorlib."
-    #    return
-    # fi
+    if [ $__SkipMSCorLib == 1 ]; then
+       echo "Skipping building mscorlib."
+       return
+    fi
 
     # Restore buildTools
 
@@ -256,12 +260,10 @@ generate_NugetPackages()
         return
     fi
 
-    # CI_TODO: Until we switch CI to stop building mscorlib for platforms supported by isMSBuildOnNETCoreSupported function,
-    # we should ignore skipping building mscorlib.
-    # if [ $__SkipMSCorLib == 1 ]; then
-    #    echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since mscorlib was not built."
-    #    return
-    # fi
+    if [ $__SkipMSCorLib == 1 ]; then
+       echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since mscorlib was not built."
+       return
+    fi
 
     echo "Generating nuget packages for "$__BuildOS
 
