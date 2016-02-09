@@ -2523,7 +2523,13 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	g_assert (method);
 
 	mono_runtime_try_invoke (method, domain->domain, NULL, exc, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	if (!mono_error_ok (&error)) {
+		if (*exc)
+			mono_error_cleanup (&error);
+		else
+			*exc = mono_error_convert_to_exception (&error);
+	}
 
 	if (*exc) {
 		/* Roll back the state change */

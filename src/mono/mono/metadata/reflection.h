@@ -58,7 +58,9 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MONO_API MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
@@ -72,6 +74,7 @@ MONO_API MonoArray*  mono_reflection_get_custom_attrs_data (MonoObject *obj);
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
 MONO_API MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, uint32_t idx);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);

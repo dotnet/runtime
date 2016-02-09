@@ -1596,6 +1596,7 @@ ves_icall_get_attributes (MonoReflectionType *type)
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
 ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *field)
 {
+	MonoError error;
 	MonoClass *klass = field->field->parent;
 	MonoMarshalType *info;
 	MonoType *ftype;
@@ -1615,8 +1616,13 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 		if (info->fields [i].field == field->field) {
 			if (!info->fields [i].mspec)
 				return NULL;
-			else
-				return mono_reflection_marshal_as_attribute_from_marshal_spec (field->object.vtable->domain, klass, info->fields [i].mspec);
+			else {
+				MonoReflectionMarshalAsAttribute* obj;
+				obj = mono_reflection_marshal_as_attribute_from_marshal_spec (field->object.vtable->domain, klass, info->fields [i].mspec, &error);
+				if (!mono_error_ok (&error))
+					mono_error_set_pending_exception (&error);
+				return obj;
+			}
 		}
 	}
 
@@ -1729,6 +1735,7 @@ ves_icall_get_parameter_info (MonoMethod *method, MonoReflectionMethod *member)
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
 ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoReflectionMarshalAsAttribute* res = NULL;
 	MonoMarshalSpec **mspecs;
@@ -1737,8 +1744,13 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	if (mspecs [0])
-		res = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [0]);
+	if (mspecs [0]) {
+		res = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [0], &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
+	}
 		
 	for (i = mono_method_signature (method)->param_count; i >= 0; i--)
 		if (mspecs [i])
@@ -3932,7 +3944,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
-	MonoException *ex;
+	MonoError error;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_PropertyInfo;
 	MonoClass *startklass, *klass;
@@ -3947,6 +3959,8 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	GHashTable *properties = NULL;
 	MonoPtrArray tmp_array;
 
+	mono_error_init (&error);
+	
 	mono_ptr_array_init (tmp_array, 8, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection properties list"); /*This the average for ASP.NET types*/
 
 	if (!System_Reflection_PropertyInfo)
@@ -4014,7 +4028,10 @@ handle_parent:
 		if (g_hash_table_lookup (properties, prop))
 			continue;
 
-		mono_ptr_array_append (tmp_array, mono_property_get_object (domain, startklass, prop));
+		MonoReflectionProperty *pr = mono_property_get_object_checked (domain, startklass, prop, &error);
+		if (!pr)
+			goto failure;
+		mono_ptr_array_append (tmp_array, pr);
 		
 		g_hash_table_insert (properties, prop, prop);
 	}
@@ -4032,20 +4049,25 @@ handle_parent:
 
 	return res;
 
+
+
 loader_error:
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
+	} else {
+		mono_error_set_from_loader_error (&error);
+		mono_loader_clear_error ();
+	}
+
+failure:
 	if (properties)
 		g_hash_table_destroy (properties);
 	if (name)
 		g_free (propname);
 	mono_ptr_array_destroy (tmp_array);
 
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		ex = mono_class_get_exception_for_failure (klass);
-	} else {
-		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-		mono_loader_clear_error ();
-	}
-	mono_set_pending_exception (ex);
+	mono_error_set_pending_exception (&error);
+
 	return NULL;
 }
 
@@ -4067,7 +4089,7 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
 {
-	MonoException *ex;
+	MonoError error;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_EventInfo;
 	MonoClass *startklass, *klass;
@@ -4081,6 +4103,8 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 	GHashTable *events = NULL;
 	MonoPtrArray tmp_array;
 
+	mono_error_init (&error);
+	
 	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection events list");
 
 	if (!System_Reflection_EventInfo)
@@ -4151,7 +4175,11 @@ handle_parent:
 		if (g_hash_table_lookup (events, event))
 			continue;
 
-		mono_ptr_array_append (tmp_array, mono_event_get_object (domain, startklass, event));
+		MonoReflectionEvent *ev_obj;
+		ev_obj = mono_event_get_object_checked (domain, startklass, event, &error);
+		if (!ev_obj)
+			goto failure;
+		mono_ptr_array_append (tmp_array, ev_obj);
 
 		g_hash_table_insert (events, event, event);
 	}
@@ -4173,14 +4201,23 @@ handle_parent:
 	return res;
 
 loader_error:
-	mono_ptr_array_destroy (tmp_array);
 	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		ex = mono_class_get_exception_for_failure (klass);
+		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
-		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_error_set_from_loader_error (&error);
 		mono_loader_clear_error ();
 	}
-	mono_set_pending_exception (ex);
+
+failure:
+	
+	if (events != NULL)
+		g_hash_table_destroy (events);
+	if (utf8_name != NULL)
+		g_free (utf8_name);
+
+	mono_ptr_array_destroy (tmp_array);
+
+	mono_error_set_pending_exception (&error);
 	return NULL;
 }
 
