@@ -35,6 +35,107 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 //------------------------------------------------------------------------
+// genInstrWithConstant:   we will typically generate one instruction
+//
+//    ins  reg1, reg2, imm
+//
+// However the imm might not fit as a directly encodable immediate,
+// when it doesn't fit we generate extra instruction(s) that sets up
+// the 'regTmp' with the proper immediate value.
+//
+//     mov  regTmp, imm
+//     ins  reg1, reg2, regTmp
+//
+// Arguments:
+//    ins                 - instruction
+//    attr                - operation size and GC attribute
+//    reg1, reg2          - first and second register operands
+//    imm                 - immediate value (third operand when it fits)
+//    tmpReg              - temp register to use when the 'imm' doesn't fit
+//    inUnwindRegion      - true if we are in a prolog/epilog region with unwind codes
+//
+// Return Value:
+//    returns true if the immediate was too large and tmpReg was used and modified.
+//
+bool CodeGen::genInstrWithConstant(instruction ins,  
+                                   emitAttr    attr, 
+                                   regNumber   reg1, 
+                                   regNumber   reg2,
+                                   ssize_t     imm, 
+                                   regNumber   tmpReg,
+                                   bool        inUnwindRegion /* = false */)
+{
+    bool immFitsInIns = false;
+    emitAttr size = EA_SIZE(attr);
+
+    // reg1 is usually a dest register
+    // reg2 is always source register
+    assert(tmpReg != reg2);  // regTmp can not match any source register
+
+    switch (ins) 
+    {
+    case INS_add:
+    case INS_sub:
+        if (imm < 0)
+        {
+            imm = -imm;
+            ins = (ins == INS_add) ? INS_sub : INS_add;
+        }
+        immFitsInIns = emitter::emitIns_valid_imm_for_add(imm, size);
+        break;
+
+    case INS_strb:
+    case INS_strh:
+    case INS_str:
+        // reg1 is a source register for store instructions
+        assert(tmpReg != reg1);  // regTmp can not match any source register
+        immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
+        break;
+
+    case INS_ldrsb:
+    case INS_ldrsh:
+    case INS_ldrsw:
+    case INS_ldrb:
+    case INS_ldrh:
+    case INS_ldr:
+        immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
+        break;
+
+    default:
+        assert(!"Unexpected instruction in genInstrWithConstant");
+        break;
+    }
+
+    if (immFitsInIns)
+    {
+        // generate a single instruction that encodes the immediate directly
+        getEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+    }
+    else
+    {
+        // caller can specify REG_NA  for tmpReg, when it "knows" that the immediate will always fit
+        assert(tmpReg != REG_NA);
+
+        // generate two or more instructions
+
+        // first we load the immediate into tmpReg
+        instGen_Set_Reg_To_Imm(size, tmpReg, imm);
+        regTracker.rsTrackRegTrash(tmpReg);
+
+        // when we are in an unwind code region 
+        // we record the extra instructions using unwindPadding()
+        if (inUnwindRegion)
+        {
+            compiler->unwindPadding();
+        }
+
+        // generate the instruction using a three register encoding with the immediate in tmpReg
+        getEmitter()->emitIns_R_R_R(ins, attr, reg1, reg2, tmpReg);
+    }
+    return immFitsInIns;
+}
+
+//------------------------------------------------------------------------
 // genStackPointerAdjustment: add a specified constant value to the stack pointer in either the prolog
 // or the epilog. The unwind codes for the generated instructions are produced. An available temporary
 // register is required to be specified, in case the constant is too large to encode in an "add"
@@ -52,31 +153,22 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
 {
-    unsigned unwindSpDelta;
-
-    if (emitter::emitIns_valid_imm_for_add(spDelta, EA_8BYTE))
+    // Even though INS_add is specified here, the encoder will choose either
+    // an INS_add or an INS_sub and encode the immediate as a positive value
+    //
+    if (genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true))
     {
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta);
-
-        unwindSpDelta = (unsigned)abs(spDelta);
-    }
-    else
-    {
-        bool adjustmentIsNegative = (spDelta < 0);
-        spDelta = abs(spDelta);
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, spDelta);
         if (pTmpRegIsZero != nullptr)
         {
             *pTmpRegIsZero = false;
         }
-        compiler->unwindPadding();
-
-        getEmitter()->emitIns_R_R_R(adjustmentIsNegative ? INS_sub : INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tmpReg);
-
-        unwindSpDelta = (unsigned)spDelta;
     }
 
     // spDelta is negative in the prolog, positive in the epilog, but we always tell the unwind codes the positive value.
+    ssize_t spDeltaAbs = abs(spDelta);
+    unsigned unwindSpDelta = (unsigned) spDeltaAbs;
+    assert((ssize_t)unwindSpDelta == spDeltaAbs);   // make sure that it fits in a unsigned
+
     compiler->unwindAllocStack(unwindSpDelta);
 }
 
@@ -125,9 +217,11 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 
             needToSaveRegs = false;
         }
-        else
+        else // (spDelta < -512))
         {
             // We need to do SP adjustment separately from the store; we can't fold in a pre-indexed addressing and the non-zero offset.
+
+            // generate sub SP,SP,imm
             genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
         }
     }
@@ -186,6 +280,7 @@ void CodeGen::genPrologSaveReg(regNumber reg1,
         assert(spOffset != 0);
         assert(spOffset == REGSIZE_BYTES);
 
+        // generate sub SP,SP,imm
         genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
     }
 
@@ -232,7 +327,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
             compiler->unwindSaveRegPairPreindexed(reg1, reg2, -spDelta);
         }
-        else
+        else // (spDelta > 504))
         {
             // Can't fold in the SP change; need to use a separate ADD instruction.
 
@@ -240,6 +335,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
             compiler->unwindSaveRegPair(reg1, reg2, spOffset);
 
+            // generate add SP,SP,imm
             genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
         }
     }
@@ -282,6 +378,8 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1,
     if (spDelta != 0)
     {
         assert(spOffset != 0);
+
+        // generate add SP,SP,imm
         genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
     }
 }
@@ -820,7 +918,8 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
 
     if (genFuncletInfo.fiFrameType == 1)
     {
-        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
+        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, 
+                                      REG_SPBASE, genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
         compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
@@ -828,19 +927,24 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
     }
     else if (genFuncletInfo.fiFrameType == 2)
     {
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -genFuncletInfo.fiSpDelta1);
-        compiler->unwindAllocStack(-genFuncletInfo.fiSpDelta1);
+        // fiFrameType==2 constraints:
+        assert(genFuncletInfo.fiSpDelta1 < 0);
+        assert(genFuncletInfo.fiSpDelta1 >= -512);
+
+        // generate sub SP,SP,imm
+        genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
 
-        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSP_to_FPLR_save_delta);
+        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, 
+                                      REG_SPBASE, genFuncletInfo.fiSP_to_FPLR_save_delta);
         compiler->unwindSaveRegPair(REG_FP, REG_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
     }
     else
     {
         assert(genFuncletInfo.fiFrameType == 3);
-
-        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
+        getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 
+                                      genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
         compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
 
         lowestCalleeSavedOffset += genFuncletInfo.fiSpDelta2; // We haven't done the second adjustment of SP yet.
@@ -851,9 +955,11 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
 
     if (genFuncletInfo.fiFrameType == 3)
     {
-        assert(genFuncletInfo.fiSpDelta2 != 0);
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -genFuncletInfo.fiSpDelta2);
-        compiler->unwindAllocStack(-genFuncletInfo.fiSpDelta2);
+        // Note that genFuncletInfo.fiSpDelta2 is always a negative value
+        assert(genFuncletInfo.fiSpDelta2 < 0);
+
+        // generate sub SP,SP,imm
+        genStackPointerAdjustment(genFuncletInfo.fiSpDelta2, REG_R2, nullptr);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -862,18 +968,29 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
     if (isFilter)
     {
         // This is the first block of a filter
+        // Note that register x1 = CallerSP of the containing function
+        // X1 is overwritten by the first Load (new callerSP)
+        // X2 is scratch when we have a large constant offset
 
-        getEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_R1, REG_R1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta);
+        // Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or function)
+        genInstrWithConstant(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_R1, REG_R1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta, REG_R2, false);
         regTracker.rsTrackRegTrash(REG_R1);
-        getEmitter()->emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_R1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta);
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_R1, genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
+
+        // Store the PSP value (aka CallerSP)
+        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_R1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_R2, false);
+
+        // re-establish the frame pointer
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_FPBASE, REG_R1, genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_R2, false);
     }
-    else
+    else    // This is a non-filter funclet
     {
-        // This is a non-filter funclet
-        getEmitter()->emitIns_R_R_Imm(INS_add, EA_PTRSIZE, REG_R3, REG_FPBASE, -genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
+        // X3 is scratch, X2 can also become scratch
+        
+        // compute the CallerSP, given the frame pointer. x3 is scratch.
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_R3, REG_FPBASE, -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_R2, false);        
         regTracker.rsTrackRegTrash(REG_R3);
-        getEmitter()->emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_R3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta);
+
+        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_R3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_R2, false);
     }
 }
 
@@ -914,9 +1031,11 @@ void                CodeGen::genFuncletEpilog()
  
     if (genFuncletInfo.fiFrameType == 3)
     {
-        assert(genFuncletInfo.fiSpDelta2 != 0);
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -genFuncletInfo.fiSpDelta2);
-        compiler->unwindAllocStack(-genFuncletInfo.fiSpDelta2);
+        // Note that genFuncletInfo.fiSpDelta2 is always a negative value
+        assert(genFuncletInfo.fiSpDelta2 < 0);
+
+        // generate add SP,SP,imm
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta2, REG_R2, nullptr);
 
         lowestCalleeSavedOffset += genFuncletInfo.fiSpDelta2;
     }
@@ -926,7 +1045,8 @@ void                CodeGen::genFuncletEpilog()
     
     if (genFuncletInfo.fiFrameType == 1)
     {
-        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
+        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, 
+                                      REG_SPBASE, -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
         compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
@@ -934,11 +1054,16 @@ void                CodeGen::genFuncletEpilog()
     }
     else if (genFuncletInfo.fiFrameType == 2)
     {
-        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSP_to_FPLR_save_delta);
+        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, 
+                                      REG_SPBASE, genFuncletInfo.fiSP_to_FPLR_save_delta);
         compiler->unwindSaveRegPair(REG_FP, REG_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
 
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -genFuncletInfo.fiSpDelta1);
-        compiler->unwindAllocStack(-genFuncletInfo.fiSpDelta1);
+        // fiFrameType==2 constraints:
+        assert(genFuncletInfo.fiSpDelta1 < 0);
+        assert(genFuncletInfo.fiSpDelta1 >= -512);
+
+        // generate add SP,SP,imm
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
     }
@@ -946,7 +1071,8 @@ void                CodeGen::genFuncletEpilog()
     {
         assert(genFuncletInfo.fiFrameType == 3);
 
-        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
+        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, 
+                                      REG_SPBASE, -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
         compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
     }
 
