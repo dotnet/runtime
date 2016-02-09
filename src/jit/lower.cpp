@@ -2648,6 +2648,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
+#if COR_JIT_EE_VERSION > 460
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // First argument is the address of the frame variable.
@@ -2661,6 +2662,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         comp->fgInsertTreeBeforeAsEmbedded(helperCall, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
         return;
     }
+#endif
 
     // emit the following sequence
     //
@@ -2792,6 +2794,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 // insert the code that goes after every inlined pinvoke call
 void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
+#if COR_JIT_EE_VERSION > 460
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
@@ -2808,6 +2811,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         comp->fgInsertTreeAfterAsEmbedded(helperCall, call, comp->compCurStmt->AsStmt(), currBlock);
         return;
     }
+#endif
 
     CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     GenTreeStmt* newStmt;
