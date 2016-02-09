@@ -1724,8 +1724,20 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	sgen_init_pinning ();
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, ctx);
-
+	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
+		/* Pin cemented objects that were forced */
+		sgen_pin_cemented_objects ();
+	}
 	sgen_optimize_pin_queue ();
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
+		/*
+		 * Cemented objects that are in the pinned list will be marked. When
+		 * marking concurrently we won't mark mod-union cards for these objects.
+		 * Instead they will remain cemented until the next major collection,
+		 * when we will recheck if they are still pinned in the roots.
+		 */
+		sgen_cement_force_pinned ();
+	}
 
 	sgen_client_collecting_major_1 ();
 
