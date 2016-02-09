@@ -26,12 +26,17 @@
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.Unix.cs" />
-    <Compile Include="Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
+      <Link>Common\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs"</Link>
@@ -80,6 +85,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

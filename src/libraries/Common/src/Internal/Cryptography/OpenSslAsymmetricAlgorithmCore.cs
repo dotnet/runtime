@@ -4,12 +4,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-
-using Microsoft.Win32.SafeHandles;
 
 
 namespace Internal.Cryptography
