@@ -401,6 +401,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, &error);
 		if (exc == NULL && !mono_error_ok (&error))
 			exc = mono_error_convert_to_exception (&error);
+		else
+			mono_error_cleanup (&error);
 
 		/* If the initialization failed, mark the class as unusable. */
 		/* Avoid infinite loops */
@@ -2915,7 +2917,8 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		res = mono_runtime_try_invoke (method, obj, params, exc, &error);
 		if (*exc == NULL && !mono_error_ok(&error)) {
 			*exc = (MonoObject*) mono_error_convert_to_exception (&error);
-		}
+		} else
+			mono_error_cleanup (&error);
 	} else {
 		res = mono_runtime_invoke_checked (method, obj, params, &error);
 		mono_error_raise_exception (&error);
@@ -3799,6 +3802,8 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 		o = mono_runtime_try_invoke (im, delegate, params, exc, &error);
 		if (*exc == NULL && !mono_error_ok (&error))
 			*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+		else
+			mono_error_cleanup (&error);
 	} else {
 		o = mono_runtime_invoke_checked (im, delegate, params, &error);
 		mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -4014,6 +4019,8 @@ serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	array = mono_runtime_try_invoke (serialize_method, NULL, params, exc, &error);
 	if (*exc == NULL && !mono_error_ok (&error))
 		*exc = (MonoObject*) mono_error_convert_to_exception (&error); /* FIXME convert serialize_object to MonoError */
+	else
+		mono_error_cleanup (&error);
 
 	if (*exc)
 		*failure = TRUE;
@@ -4047,6 +4054,8 @@ deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	result = mono_runtime_try_invoke (deserialize_method, NULL, params, exc, &error);
 	if (*exc == NULL && !mono_error_ok (&error))
 		*exc = (MonoObject*) mono_error_convert_to_exception (&error); /* FIXME convert deserialize_object to MonoError */
+	else
+		mono_error_cleanup (&error);
 
 	if (*exc)
 		*failure = TRUE;
@@ -4086,6 +4095,8 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	transparent_proxy = (MonoTransparentProxy*) mono_runtime_try_invoke (get_proxy_method, real_proxy, NULL, exc, &error);
 	if (*exc == NULL && !mono_error_ok (&error))
 		*exc = (MonoObject*) mono_error_convert_to_exception (&error); /* FIXME change make_transparent_proxy outarg to MonoError */
+	else
+		mono_error_cleanup (&error);
 	if (*exc)
 		*failure = TRUE;
 
@@ -4396,6 +4407,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			res = mono_runtime_try_invoke (method, NULL, pa, exc, &error);
 			if (*exc == NULL && !mono_error_ok (&error))
 				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+			else
+				mono_error_cleanup (&error);
 		} else {
 			res = mono_runtime_invoke_checked (method, NULL, pa, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -4412,6 +4425,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			mono_runtime_try_invoke (method, NULL, pa, exc, &error);
 			if (*exc == NULL && !mono_error_ok (&error))
 				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+			else
+				mono_error_cleanup (&error);
 		} else {
 			mono_runtime_invoke_checked (method, NULL, pa, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -4603,6 +4618,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			mono_runtime_try_invoke (method, o, pa, exc, &error);
 			if (*exc == NULL && !mono_error_ok (&error))
 				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+			else
+				mono_error_cleanup (&error);
 		} else {
 			mono_runtime_invoke_checked (method, o, pa, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -4626,6 +4643,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			res = mono_runtime_try_invoke (method, obj, pa, exc, &error);
 			if (*exc == NULL && !mono_error_ok (&error))
 				*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+			else
+				mono_error_cleanup (&error);
 		} else {
 			res = mono_runtime_invoke_checked (method, obj, pa, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -6872,6 +6891,8 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 		s = (MonoString *) mono_runtime_try_invoke (method, target, NULL, exc, &error);
 		if (*exc == NULL && !mono_error_ok (&error))
 			*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+		else
+			mono_error_cleanup (&error);
 	} else {
 		s = (MonoString *) mono_runtime_invoke_checked (method, target, NULL, &error);
 		mono_error_raise_exception (&error); /* FIXME don't raise here */
