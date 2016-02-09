@@ -134,7 +134,6 @@ done:
     return dwRet;
 }
 
-
 /*++
 Function:
   GetEnvironmentVariableW
@@ -229,7 +228,6 @@ done:
 
     return size;
 }
-
 
 /*++
 Function:
@@ -343,7 +341,6 @@ done:
     return bRet;
 }
 
-
 /*++
 Function:
   GetEnvironmentStringsW
@@ -381,7 +378,8 @@ GetEnvironmentStringsW(
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
 
-    PALCEnterCriticalSection(&gcsEnvironment);
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -413,13 +411,12 @@ GetEnvironmentStringsW(
     *tempEnviron = 0; /* Put an extra null at the end */
 
  EXIT:
-    PALCLeaveCriticalSection(&gcsEnvironment);
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsW returning %p\n", wenviron);
     PERF_EXIT(GetEnvironmentStringsW);
     return wenviron;
 }
-
 
 /*++
 Function:
@@ -433,13 +430,14 @@ PALAPI
 GetEnvironmentStringsA(
                VOID)
 {
-    char *environ = NULL, *tempEnviron;
+    char *environ = nullptr, *tempEnviron;
     int i, len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsA);
     ENTRY("GetEnvironmentStringsA()\n");
 
-    PALCEnterCriticalSection(&gcsEnvironment);
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -452,7 +450,7 @@ GetEnvironmentStringsA(
     }
 
     environ = (char *)PAL_malloc(envNum + 1);
-    if (environ == NULL)
+    if (environ == nullptr)
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -469,16 +467,15 @@ GetEnvironmentStringsA(
         envNum      -= len;
     }
 
-    *tempEnviron = 0; /* Put an extra NULL at the end */
-    
+    *tempEnviron = 0; /* Put an extra null at the end */
+
  EXIT:
-    PALCLeaveCriticalSection(&gcsEnvironment);
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsA returning %p\n", environ);
     PERF_EXIT(GetEnvironmentStringsA);
     return environ;
 }
-
 
 /*++
 Function:
@@ -511,18 +508,17 @@ FreeEnvironmentStringsW(
             IN LPWSTR lpValue)
 {
     PERF_ENTRY(FreeEnvironmentStringsW);
-    ENTRY("FreeEnvironmentStringsW(lpValue=%p (%S))\n", lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
+    ENTRY("FreeEnvironmentStringsW(lpValue=%p (%S))\n", lpValue ? lpValue : W16_NULLSTRING, lpValue ? lpValue : W16_NULLSTRING);
 
-    if (lpValue != NULL)
+    if (lpValue != nullptr)
     {
         PAL_free(lpValue);
     }
 
     LOGEXIT("FreeEnvironmentStringW returning BOOL TRUE\n");
     PERF_EXIT(FreeEnvironmentStringsW);
-    return TRUE ;
+    return TRUE;
 }
-
 
 /*++
 Function:
@@ -537,18 +533,17 @@ FreeEnvironmentStringsA(
             IN LPSTR lpValue)
 {
     PERF_ENTRY(FreeEnvironmentStringsA);
-    ENTRY("FreeEnvironmentStringsA(lpValue=%p (%s))\n", lpValue?lpValue:"NULL", lpValue?lpValue:"NULL");
+    ENTRY("FreeEnvironmentStringsA(lpValue=%p (%s))\n", lpValue ? lpValue : "NULL", lpValue ? lpValue : "NULL");
 
-    if (lpValue != NULL)
+    if (lpValue != nullptr)
     {
         PAL_free(lpValue);
     }
 
     LOGEXIT("FreeEnvironmentStringA returning BOOL TRUE\n");
     PERF_EXIT(FreeEnvironmentStringsA);
-    return TRUE ;
+    return TRUE;
 }
-
 
 /*++
 Function:
@@ -563,11 +558,11 @@ lpName
        [in] Pointer to a null-terminated string that specifies the
        environment variable whose value is being set. The operating
        system creates the environment variable if it does not exist
-       and lpValue is not NULL.
+       and lpValue is not null.
 lpValue
        [in] Pointer to a null-terminated string containing the new
        value of the specified environment variable. If this parameter
-       is NULL, the variable is deleted from the current process's
+       is null, the variable is deleted from the current process's
        environment.
 
 Return Values
@@ -600,7 +595,7 @@ SetEnvironmentVariableA(
     // exit if the input variable name is null
     if ((lpName == nullptr) || (lpName[0] == 0))
     {
-        ERROR("lpName is NULL\n");
+        ERROR("lpName is null\n");
         goto done;
     }
 
@@ -635,7 +630,7 @@ SetEnvironmentVariableA(
         nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
 
         PAL_free(string);
-        string = NULL;
+        string = nullptr;
 
         // If EnvironPutenv returns FALSE, it almost certainly failed to allocate memory.
         if (nResult == -1)
@@ -664,7 +659,7 @@ int ResizeEnvironment(int newSize)
 
     if (newSize < palEnvironmentCount)
     {
-        printf("ERROR! new size < current count\n"); 
+        ASSERT("ResizeEnvironment: New size < current count!\n"); 
         return -1;
     }
 
@@ -672,10 +667,8 @@ int ResizeEnvironment(int newSize)
 
     // If palEnvironment is null, realloc acts like malloc.
     palEnvironment = (char**)realloc(palEnvironment, palEnvironmentCapacity * sizeof(char *));
-
     if (!palEnvironment)
     {
-        printf("ERROR! realloc failed\n");
         ret = -1;
     }
 
@@ -683,42 +676,6 @@ int ResizeEnvironment(int newSize)
 
     return ret;
 }
-
-int InitializePalEnvironment()
-{
-    char** sourceEnviron;
-
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-
-#if HAVE__NSGETENVIRON
-    sourceEnviron = *(_NSGetEnviron());
-#else   // HAVE__NSGETENVIRON
-    extern char **environ;
-    sourceEnviron = environ;
-#endif  // HAVE__NSGETENVIRON
-
-    int variableCount = 0;
-    while (sourceEnviron[variableCount] != nullptr)
-        variableCount++;
-
-    printf("variableCount is %d\n", variableCount);
-
-    palEnvironmentCount = 0;
-
-    ResizeEnvironment(variableCount * 2); //// decide resize factor
-
-    for (int i = 0; i < variableCount; ++i)
-    {
-        palEnvironment[i] = strdup(sourceEnviron[i]);
-        palEnvironmentCount++;
-    }
-
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    return 0;
-}
-
 
 void EnvironUnsetenv(const char *name)
 {
@@ -763,7 +720,7 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     CPalThread * pthrCurrent = InternalGetCurrentThread();
 
     const char *equalsSignPosition = strchr(entry, '=');
-    if (equalsSignPosition == entry || equalsSignPosition == NULL)
+    if (equalsSignPosition == entry || equalsSignPosition == nullptr)
     {
         // "=foo" and "foo" have no meaning
         goto done;
@@ -897,6 +854,20 @@ char* EnvironGetenv(const char* name)
     return retValue;
 }
 
+char** EnvironGetSystemEnvironment()
+{
+    char** sysEnviron;
+
+#if HAVE__NSGETENVIRON
+    sysEnviron = *(_NSGetEnviron());
+#else   // HAVE__NSGETENVIRON
+    extern char **environ;
+    sysEnviron = environ;
+#endif  // HAVE__NSGETENVIRON
+
+    return sysEnviron;
+}
+
 /*++
 Function:
   EnvironInitialize
@@ -910,7 +881,28 @@ BOOL
 EnvironInitialize(void)
 {
     InternalInitializeCriticalSection(&gcsEnvironment);
-    InitializePalEnvironment();
+
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+    char** sourceEnviron = EnvironGetSystemEnvironment();
+
+    int variableCount = 0;
+    while (sourceEnviron[variableCount] != nullptr)
+        variableCount++;
+
+    palEnvironmentCount = 0;
+
+    ResizeEnvironment(variableCount * 2); //////// decide resize factor
+
+    for (int i = 0; i < variableCount; ++i)
+    {
+        palEnvironment[i] = strdup(sourceEnviron[i]);
+        palEnvironmentCount++;
+    }
+
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
     return TRUE;
 }
@@ -967,6 +959,7 @@ char * __cdecl PAL_getenv(const char *varname)
         PERF_EXIT(getenv);
         return(NULL);
     }
+
     retval = EnvironGetenv(varname);
 
     LOGEXIT("getenv returning %p\n", retval);
