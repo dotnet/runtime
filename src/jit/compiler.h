@@ -3354,7 +3354,6 @@ private:
     void                impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void                impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool                impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &opcode);
-    void                impAbortInline(bool abortThisInlineOnly, bool contextDependent, const char *reason);
 
 #if defined(_TARGET_ARM_)
     void                impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
