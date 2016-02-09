@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -13,146 +13,190 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-     <Compile Include="System\Security\Cryptography\AesCng.cs" />
-     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
-     <Compile Include="System\Security\Cryptography\CngAlgorithmGroup.cs" />
-     <Compile Include="System\Security\Cryptography\CngExportPolicies.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Properties.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Create.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Import.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Export.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Delete.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Exists.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.Open.cs" />
-     <Compile Include="System\Security\Cryptography\CngKey.OpenHandle.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyBlobFormat.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyCreationOptions.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyCreationParameters.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyHandleOpenOptions.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyOpenOptions.cs" />
-     <Compile Include="System\Security\Cryptography\CngKeyUsages.cs" />
-     <Compile Include="System\Security\Cryptography\CngProperty.cs" />
-     <Compile Include="System\Security\Cryptography\CngPropertyCollection.cs" />
-     <Compile Include="System\Security\Cryptography\CngPropertyOptions.cs" />
-     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
-     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
-     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
-     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
-     <Compile Include="System\Security\Cryptography\ECDsaCng.HashData.cs" />
-     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
-     <Compile Include="System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.EncryptDecrypt.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.HashData.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
-     <Compile Include="System\Security\Cryptography\RSACng.SignVerify.cs" />
-     <Compile Include="System\Security\Cryptography\TripleDESCng.cs" />
-
-     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
-
-     <Compile Include="Internal\Cryptography\BasicSymmetricCipherCng.cs" />
-     <Compile Include="Internal\Cryptography\CngAlgorithmCore.cs" />
-     <Compile Include="Internal\Cryptography\CngCommon.Hash.cs" />
-     <Compile Include="Internal\Cryptography\CngCommon.SignVerify.cs" />
-     <Compile Include="Internal\Cryptography\Helpers.cs" />
-     <Compile Include="Internal\Cryptography\ICngSymmetricAlgorithm.cs" />
-     <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
-     <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
-     <Compile Include="Internal\Cryptography\SafeUnicodeStringHandle.cs" />
-     <Compile Include="Internal\Cryptography\SymmetricImportExportExtensions.cs" />
-     <Compile Include="Internal\Cryptography\CngSymmetricAlgorithmCore.cs" />
-
-     <Compile Include="Interop\NCrypt\NCrypt.cs" />
-     <Compile Include="Interop\BCrypt\Interop.Blobs.cs" />
-     <Compile Include="Interop\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
-
-     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-       <Link>Interop\Windows\Interop.Libraries.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-       <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
-       <Link>Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptHashData.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs">
-       <Link>Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
-       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptChainingModes.cs">
-       <Link>Internal\Windows\BCrypt\Interop.BCryptChainingModes.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs">
-       <Link>Internal\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptAlgorithms.cs">
-       <Link>Internal\Windows\NCrypt\Interop.NCryptAlgorithms.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs">
-       <Link>Internal\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptPropertyNames.cs">
-       <Link>Internal\Windows\NCrypt\Interop.NCryptPropertyNames.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-       <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
-       <Link>Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs">
-       <Link>Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs">
-       <Link>Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
-       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\HashProvider.cs">
-       <Link>Internal\Cryptography\HashProvider.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
-       <Link>Internal\Cryptography\HashProviderCng.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
-       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoTransform.cs">
-       <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoEncryptor.cs">
-       <Link>Internal\Cryptography\UniversalCryptoEncryptor.cs</Link>
-     </Compile>
-     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
-       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
-     </Compile>
+    <Compile Include="System\Security\Cryptography\AesCng.cs" />
+    <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\CngAlgorithmGroup.cs" />
+    <Compile Include="System\Security\Cryptography\CngExportPolicies.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Properties.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Create.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Import.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Export.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Delete.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Exists.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.Open.cs" />
+    <Compile Include="System\Security\Cryptography\CngKey.OpenHandle.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyBlobFormat.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyCreationOptions.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyCreationParameters.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyHandleOpenOptions.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyOpenOptions.cs" />
+    <Compile Include="System\Security\Cryptography\CngKeyUsages.cs" />
+    <Compile Include="System\Security\Cryptography\CngProperty.cs" />
+    <Compile Include="System\Security\Cryptography\CngPropertyCollection.cs" />
+    <Compile Include="System\Security\Cryptography\CngPropertyOptions.cs" />
+    <Compile Include="System\Security\Cryptography\CngProvider.cs" />
+    <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
+    <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.HashData.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
+    <Compile Include="System\Security\Cryptography\RSACng.cs" />
+    <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
+    <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\TripleDESCng.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
+    <Compile Include="Internal\Cryptography\BasicSymmetricCipherCng.cs" />
+    <Compile Include="Internal\Cryptography\CngAlgorithmCore.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\ICngSymmetricAlgorithm.cs" />
+    <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
+    <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
+    <Compile Include="Internal\Cryptography\SymmetricImportExportExtensions.cs" />
+    <Compile Include="Internal\Cryptography\CngSymmetricAlgorithmCore.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
+      <Link>Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.Blobs.cs">
+      <Link>Interop\Windows\BCrypt\Interop.Blobs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
+      <Link>Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptHashData.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
+      <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptChainingModes.cs">
+      <Link>Internal\Windows\BCrypt\Interop.BCryptChainingModes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs">
+      <Link>Internal\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
+      <Link>Internal\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.EncryptDecrypt.cs">
+      <Link>Internal\Windows\NCrypt\Interop.EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.ErrorCode.cs">
+      <Link>Internal\Windows\NCrypt\Interop.ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.Keys.cs">
+      <Link>Internal\Windows\NCrypt\Interop.Keys.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptAlgorithms.cs">
+      <Link>Internal\Windows\NCrypt\Interop.NCryptAlgorithms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
+      <Link>Internal\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs">
+      <Link>Internal\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptPropertyNames.cs">
+      <Link>Internal\Windows\NCrypt\Interop.NCryptPropertyNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs">
+      <Link>Internal\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.Properties.cs">
+      <Link>Internal\Windows\NCrypt\Interop.Properties.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.SignVerify.cs">
+      <Link>Internal\Windows\NCrypt\Interop.SignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.UiPolicy.cs">
+      <Link>Internal\Windows\NCrypt\Interop.UiPolicy.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
+      <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\ErrorCodeHelper.cs">
+      <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\CngCommon.Hash.cs">
+      <Link>Internal\Cryptography\CngCommon.Hash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\CngCommon.SignVerify.cs">
+      <Link>Internal\Cryptography\CngCommon.SignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\HashProvider.cs">
+      <Link>Internal\Cryptography\HashProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
+      <Link>Internal\Cryptography\HashProviderCng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
+      <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoTransform.cs">
+      <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoEncryptor.cs">
+      <Link>Internal\Cryptography\UniversalCryptoEncryptor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
+      <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.EncryptDecrypt.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

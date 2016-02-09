@@ -77,7 +77,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)'==''">
+    <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
     <Compile Include="Internal\Cryptography\CngCipher.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
@@ -93,6 +95,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.Blobs.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.Blobs.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
@@ -124,6 +132,30 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.ErrorCode.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.EncryptDecrypt.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.Keys.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.Keys.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.Properties.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.SignVerify.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.SignVerify.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
     </Compile>
@@ -133,14 +165,38 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\CngCommon.Hash.cs">
+      <Link>Internal\Cryptography\CngCommon.Hash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\CngCommon.SignVerify.cs">
+      <Link>Internal\Cryptography\CngCommon.SignVerify.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
       <Link>Internal\Cryptography\HashProviderCng.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\ErrorCodeHelper.cs">
+      <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.EncryptDecrypt.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">

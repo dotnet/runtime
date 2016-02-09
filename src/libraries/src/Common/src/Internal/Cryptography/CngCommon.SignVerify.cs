@@ -15,13 +15,11 @@ namespace Internal.Cryptography
 {
     internal static partial class CngCommon
     {
-        public static unsafe byte[] SignHash(this CngKey key, byte[] hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
+        public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, byte[] hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
             estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
 #endif
-            SafeNCryptKeyHandle keyHandle = key.Handle;
-
             byte[] signature = new byte[estimatedSize];
             int numBytesNeeded;
             ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
@@ -37,13 +35,11 @@ namespace Internal.Cryptography
             return signature;
         }
 
-        public static unsafe bool VerifyHash(this CngKey key, byte[] hash, byte[] signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
+        public static unsafe bool VerifyHash(this SafeNCryptKeyHandle keyHandle, byte[] hash, byte[] signature, AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
         {
-            SafeNCryptKeyHandle keyHandle = key.Handle;
             ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
             bool verified = (errorCode == ErrorCode.ERROR_SUCCESS);  // For consistency with other AsymmetricAlgorithm-derived classes, return "false" for any error code rather than making the caller catch an exception.
             return verified;
         }
     }
 }
-

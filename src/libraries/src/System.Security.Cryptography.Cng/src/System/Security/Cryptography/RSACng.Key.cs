@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -36,6 +37,11 @@ namespace System.Security.Cryptography
                 _core.SetKey(key);
                 KeySize = key.KeySize;
             }
+        }
+
+        private SafeNCryptKeyHandle GetKeyHandle()
+        {
+            return Key.Handle;
         }
     }
 }
