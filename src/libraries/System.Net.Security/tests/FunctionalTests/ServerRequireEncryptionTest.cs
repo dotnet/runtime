@@ -44,9 +44,8 @@ namespace System.Net.Security.Tests
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
                     await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
-                    _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
-                        client.Client.LocalEndPoint, client.Client.RemoteEndPoint,
-                        sslStream.CipherAlgorithm, sslStream.CipherStrength);
+                    _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
+                        serverRequireEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
                     Assert.True(sslStream.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
                     Assert.True(sslStream.CipherStrength > 0, "Cipher strength should be greater than 0");
                 }
@@ -65,9 +64,8 @@ namespace System.Net.Security.Tests
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 {
                     await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
-                    _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
-                        client.Client.LocalEndPoint, client.Client.RemoteEndPoint,
-                        sslStream.CipherAlgorithm, sslStream.CipherStrength);
+                    _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
+                        serverRequireEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
                     Assert.True(sslStream.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
                     Assert.True(sslStream.CipherStrength > 0, "Cipher strength should be greater than 0");
                 }
