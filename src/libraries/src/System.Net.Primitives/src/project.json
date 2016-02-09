@@ -2,6 +2,8 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "Microsoft.Win32.Primitives": "4.0.0",
         "System.Collections": "4.0.0",
         "System.Collections.NonGeneric": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
@@ -14,33 +16,12 @@
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Threading": "4.0.0",
-        "System.Threading.Tasks": "4.0.0",
-        "Microsoft.Win32.Primitives": "4.0.0"
+        "System.Threading.Tasks": "4.0.0"
       }
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
-      }
-    },
-    "netcore50": {
-      "dependencies": {
-        "System.Collections": "4.0.0",
-        "System.Collections.NonGeneric": "4.0.0",
-        "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tracing": "4.0.20",
-        "System.Globalization": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Handles": "4.0.0",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Runtime.WindowsRuntime": "4.0.0",
-        "System.Threading": "4.0.0",
-        "System.Threading.Tasks": "4.0.0",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0",
-        "Microsoft.Win32.Primitives": "4.0.0",
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

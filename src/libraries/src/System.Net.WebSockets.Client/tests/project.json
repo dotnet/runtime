@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Net.WebSockets": "4.0.0-rc3-23808",
     "System.Net.WebSockets.Client": "4.0.0-rc3-23808",
     "System.Reflection.Extensions": "4.0.0",

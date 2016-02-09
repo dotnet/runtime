@@ -2,6 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tracing": "4.0.20",
@@ -19,38 +20,13 @@
         "System.Security.Principal.Windows": "4.0.0-rc3-23808",
         "System.Threading": "4.0.10",
         "System.Threading.Overlapped": "4.0.0",
-        "System.Threading.ThreadPool": "4.0.10-rc3-23808",
-        "System.Threading.Tasks": "4.0.10"
+        "System.Threading.Tasks": "4.0.10",
+        "System.Threading.ThreadPool": "4.0.10-rc3-23808"
       }
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
-      }
-    },
-    "netcore50": {
-      "dependencies": {
-        "System.Collections": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tracing": "4.0.20",
-        "System.Globalization": "4.0.0",
-        "System.IO": "4.0.10",
-        "System.IO.FileSystem": "4.0.0",
-        "System.IO.FileSystem.Primitives": "4.0.0",
-        "System.Net.NameResolution": "4.0.0-rc3-23808",
-        "System.Net.Primitives": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Handles": "4.0.0",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Runtime.WindowsRuntime": "4.0.0",
-        "System.Security.Principal.Windows": "4.0.0-rc3-23808",
-        "System.Threading": "4.0.10",
-        "System.Threading.Overlapped": "4.0.0",
-        "System.Threading.ThreadPool": "4.0.10-rc3-23808",
-        "System.Threading.Tasks": "4.0.10",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

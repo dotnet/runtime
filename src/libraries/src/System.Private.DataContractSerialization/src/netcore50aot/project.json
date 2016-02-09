@@ -1,0 +1,37 @@
+{
+  "frameworks": {
+    "netcore50": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23808",
+        "System.Collections": "4.0.10",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.Diagnostics.Tools": "4.0.0",
+        "System.Globalization": "4.0.10",
+        "System.IO": "4.0.10",
+        "System.Linq": "4.0.0",
+        "System.Reflection": "4.0.10",
+        "System.Reflection.Emit.ILGeneration": "4.0.0",
+        "System.Reflection.Emit.Lightweight": "4.0.0",
+        "System.Reflection.Extensions": "4.0.0",
+        "System.Reflection.Primitives": "4.0.0",
+        "System.Reflection.TypeExtensions": "4.0.0",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.10",
+        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23808",
+        "System.Text.Encoding": "4.0.10",
+        "System.Text.Encoding.Extensions": "4.0.10",
+        "System.Text.RegularExpressions": "4.0.10",
+        "System.Threading": "4.0.10",
+        "System.Threading.Tasks": "4.0.10",
+        "System.Xml.ReaderWriter": "4.0.10",
+        "System.Xml.XmlSerializer": "4.0.10"
+      }
+    }
+  },
+  "runtimes": {
+    "win8-x86": {},
+    "win8-x64": {}
+  }
+}

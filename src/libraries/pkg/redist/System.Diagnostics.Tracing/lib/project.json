@@ -1,13 +1,9 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Targets": "1.0.0",
     "System.Diagnostics.Tracing": "4.0.20"
   },
   "frameworks": {
-    "dnxcore50": {},
-    "netcore50": {}
-  },
-  "runtimes": {
-    "win8": {},
-    "win8-aot": {}
+    "dnxcore50": {}
   }
 }

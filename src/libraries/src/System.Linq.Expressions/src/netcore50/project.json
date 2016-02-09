@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc3-23808",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
@@ -10,6 +11,9 @@
     "System.Linq": "4.0.0",
     "System.ObjectModel": "4.0.10",
     "System.Reflection": "4.0.10",
+    "System.Reflection.Emit": "4.0.0",
+    "System.Reflection.Emit.ILGeneration": "4.0.0",
+    "System.Reflection.Emit.Lightweight": "4.0.0",
     "System.Reflection.Extensions": "4.0.0",
     "System.Reflection.Primitives": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",

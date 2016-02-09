@@ -2,6 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
@@ -14,7 +15,6 @@
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23808",
-        "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23808",
         "System.Text.Encoding": "4.0.10",
         "System.Threading": "4.0.0",
         "System.Threading.Tasks": "4.0.10"
@@ -22,22 +22,7 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0"
-      }
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0",
-        "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Diagnostics.Tracing": "4.0.0",
-        "System.Net.Primitives": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.WindowsRuntime": "4.0.10",
-        "System.Text.Encoding.Extensions": "4.0.10",
-        "System.Threading.Tasks": "4.0.10"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

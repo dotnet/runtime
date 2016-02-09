@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "Microsoft.Win32.Primitives": "4.0.0",
     "System.Collections": "4.0.10",
     "System.Collections.NonGeneric": "4.0.0",
     "System.Diagnostics.Contracts": "4.0.0",
@@ -12,7 +14,6 @@
     "System.Runtime.InteropServices": "4.0.20",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
-    "Microsoft.Win32.Primitives": "4.0.0",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

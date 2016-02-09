@@ -1,11 +1,12 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Collections": "4.0.10",
-    "System.Text.Encoding": "4.0.10",
-    "System.IO": "4.0.10",
     "System.Console": "4.0.0-rc3-23808",
-    "System.Diagnostics.Debug": "4.0.10"
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.IO": "4.0.10",
+    "System.Runtime": "4.0.20",
+    "System.Text.Encoding": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}

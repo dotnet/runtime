@@ -3,26 +3,7 @@
     "dotnet5.3": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0"
-      }
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc3-23808",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0",
-        "System.Collections": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Dynamic.Runtime": "4.0.10",
-        "System.Globalization": "4.0.0",
-        "System.IO": "4.0.10",
-        "System.Reflection": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.0",
-        "System.Runtime.InteropServices": "4.0.20",
-        "System.Runtime.InteropServices.WindowsRuntime": "4.0.0",
-        "System.Threading": "4.0.10.0",
-        "System.Threading.Tasks": "4.0.10.0"
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
     }
   }

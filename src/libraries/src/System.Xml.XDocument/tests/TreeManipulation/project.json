@@ -1,13 +1,14 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "System.Collections": "4.0.10",
+    "System.IO": "4.0.10",
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
+    "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Xml.ReaderWriter": "4.0.10",
-    "System.Text.Encoding": "4.0.10",
-    "System.Collections": "4.0.10",
-    "System.IO": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
