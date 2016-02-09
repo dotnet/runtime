@@ -1,13 +1,19 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0603 */
+ /* File created by MIDL compiler version 8.00.0613 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/ssd/coreclr/src/inc/sospriv.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -23,7 +29,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -86,6 +92,13 @@ typedef interface ISOSDacInterface2 ISOSDacInterface2;
 typedef interface ISOSDacInterface3 ISOSDacInterface3;
 
 #endif 	/* __ISOSDacInterface3_FWD_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface4_FWD_DEFINED__
+#define __ISOSDacInterface4_FWD_DEFINED__
+typedef interface ISOSDacInterface4 ISOSDacInterface4;
+
+#endif 	/* __ISOSDacInterface4_FWD_DEFINED__ */
 
 
 /* header files for imported files */
@@ -2087,6 +2100,90 @@ EXTERN_C const IID IID_ISOSDacInterface3;
 
 
 #endif 	/* __ISOSDacInterface3_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface4_INTERFACE_DEFINED__
+#define __ISOSDacInterface4_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface4 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface4;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("74B9D34C-A612-4B07-93DD-5462178FCE11")
+    ISOSDacInterface4 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetClrNotification( 
+            CLRDATA_ADDRESS arguments[  ],
+            int count,
+            int *pNeeded) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface4Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface4 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface4 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface4 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetClrNotification )( 
+            ISOSDacInterface4 * This,
+            CLRDATA_ADDRESS arguments[  ],
+            int count,
+            int *pNeeded);
+        
+        END_INTERFACE
+    } ISOSDacInterface4Vtbl;
+
+    interface ISOSDacInterface4
+    {
+        CONST_VTBL struct ISOSDacInterface4Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface4_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface4_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface4_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface4_GetClrNotification(This,arguments,count,pNeeded)	\
+    ( (This)->lpVtbl -> GetClrNotification(This,arguments,count,pNeeded) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface4_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */
