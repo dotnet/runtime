@@ -17,6 +17,7 @@ set( CORGUIDS_IDL_SOURCES
   clrprivhosting.idl
   clrprivruntimebinders.idl
   corsym.idl
+  sospriv.idl
 )
 
 if(WIN32)

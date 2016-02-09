@@ -3250,6 +3250,8 @@ BOOL GcNotifications::SetNotification(GcEvtArgs ev)
     return TRUE;
 }
 
+GARY_IMPL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
+
 #ifdef DACCESS_COMPILE
 
 GcNotification *GcNotifications::InitializeNotificationTable(UINT TableSize)
@@ -3273,10 +3275,12 @@ BOOL GcNotifications::UpdateOutOfProcTable()
 {
     return ::UpdateOutOfProcTable<GcNotification>(g_pGcNotificationTable, m_gcTable - 1, GetTableSize() + 1);
 }
-#endif // DACCESS_COMPILE
 
+#else // DACCESS_COMPILE
 
-void DACNotifyExceptionHelper(TADDR *args,UINT argCount)
+static CrstStatic g_clrNotificationCrst;
+
+void DACRaiseException(TADDR *args, UINT argCount)
 {
     struct Param
     {
@@ -3287,16 +3291,38 @@ void DACNotifyExceptionHelper(TADDR *args,UINT argCount)
     param.argCount = argCount;
 
     PAL_TRY(Param *, pParam, &param)
-    {  
-        if (IsDebuggerPresent() && !CORDebuggerAttached()) 
-        {
-            RaiseException(CLRDATA_NOTIFY_EXCEPTION, 0, pParam->argCount, (ULONG_PTR *) pParam->args);
-        }
+    {
+        RaiseException(CLRDATA_NOTIFY_EXCEPTION, 0, pParam->argCount, (ULONG_PTR *)pParam->args);
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-    {        
+    {
     }
     PAL_ENDTRY
+}
+
+void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
+{
+    _ASSERTE(argCount <= MAX_CLR_NOTIFICATION_ARGS);
+
+    if (IsDebuggerPresent() && !CORDebuggerAttached())
+    {
+        CrstHolder lh(&g_clrNotificationCrst);
+
+        for (UINT i = 0; i < argCount; i++)
+        {
+            g_clrNotificationArguments[i] = args[i];
+        }
+
+        DACRaiseException(args, argCount);
+
+        g_clrNotificationArguments[0] = NULL;
+    }
+}
+
+void InitializeClrNotifications()
+{
+    g_clrNotificationCrst.Init(CrstClrNotification);
+    g_clrNotificationArguments[0] = NULL;
 }
 
 // <TODO> FIX IN BETA 2
@@ -3318,18 +3344,19 @@ void DACNotifyExceptionHelper(TADDR *args,UINT argCount)
 #pragma warning(disable: 4748)
 #pragma optimize("", off)
 #endif  // _MSC_VER
-    // called from the runtime
+
+// called from the runtime
 void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
 {
     WRAPPER_NO_CONTRACT;
     TADDR Args[2] = { JIT_NOTIFICATION, (TADDR) MethodDescPtr };
-    DACNotifyExceptionHelper(Args,2);
+    DACNotifyExceptionHelper(Args, 2);
 }
 
 void DACNotify::DoJITDiscardNotification(MethodDesc *MethodDescPtr)
 {
     TADDR Args[2] = { JIT_DISCARD_NOTIFICATION, (TADDR) MethodDescPtr };
-    DACNotifyExceptionHelper(Args,2);
+    DACNotifyExceptionHelper(Args, 2);
 }    
    
 void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
@@ -3387,7 +3414,9 @@ void DACNotify::DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, D
 #endif  // _MSC_VER
 // </TODO>
 
-    // called from the DAC
+#endif // DACCESS_COMPILE
+
+// called from the DAC
 int DACNotify::GetType(TADDR Args[])
 {
     // Type is an enum, and will thus fit into an int.

@@ -4352,3 +4352,26 @@ HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy
     return E_NOTIMPL;
 #endif // FEATURE_COMINTEROP
 }
+
+HRESULT ClrDataAccess::GetClrNotification(CLRDATA_ADDRESS arguments[], int count, int *pNeeded)
+{
+    SOSDacEnter();
+
+    *pNeeded = MAX_CLR_NOTIFICATION_ARGS;
+
+    if (g_clrNotificationArguments[0] == NULL)
+    {
+        hr = E_FAIL;
+    }
+    else
+    {
+        for (int i = 0; i < count && i < MAX_CLR_NOTIFICATION_ARGS; i++)
+        {
+            arguments[i] = g_clrNotificationArguments[i];
+        }
+    }
+
+    SOSDacLeave();
+
+    return hr;;
+}
