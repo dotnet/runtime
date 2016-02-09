@@ -240,7 +240,7 @@ static void io_ops_init (void)
  * This is is a best effort kind of thing. It assumes a reasonable sane set
  * of permissions by the underlying OS.
  *
- * We assume that basic unix permission bits are authoritative. Which might not
+ * We generally assume that basic unix permission bits are authoritative. Which might not
  * be the case under systems with extended permissions systems (posix ACLs, SELinux, OSX/iOS sandboxing, etc)
  *
  * The choice of access as the fallback is due to the expected lower overhead compared to trying to open the file.
@@ -252,6 +252,13 @@ static void io_ops_init (void)
 static gboolean
 is_file_writable (struct stat *st, const char *path)
 {
+#if __APPLE__
+	// OS X Finder "locked" or `ls -lO` "uchg".
+	// This only covers one of several cases where an OS X file could be unwritable through special flags.
+	if (st->st_flags & (UF_IMMUTABLE|SF_IMMUTABLE))
+		return 0;
+#endif
+
 	/* Is it globally writable? */
 	if (st->st_mode & S_IWOTH)
 		return 1;
