@@ -242,7 +242,7 @@ namespace System.Net.Sockets.Tests
 
                             remaining -= sent;
                             Assert.True(remaining >= 0);
-                            if (remaining == 0 || sent == 0)
+                            if (remaining == 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
                             }
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            if (remaining <= 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -305,7 +305,7 @@ namespace System.Net.Sockets.Tests
                 sendHandler(0);
             });
 
-            Assert.True(serverFinished.Task.Wait(TestTimeout));
+            Assert.True(serverFinished.Task.Wait(TestTimeout), "Completed within allowed time");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
