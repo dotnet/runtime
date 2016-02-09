@@ -13,7 +13,6 @@ namespace System.Net.Security.Tests
 {
     public class CertificateValidationRemoteServer
     {
-        [ActiveIssue(5555, PlatformID.OSX)]
         [Fact]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok()
         {
