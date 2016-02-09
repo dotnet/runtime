@@ -136,6 +136,10 @@ Crst ClassInit
     SameLevelAs Jit
 End
 
+Crst ClrNotification
+    Unordered
+End
+
 Crst CrstCLRPrivBinderLocalWinMDPath
 End
 

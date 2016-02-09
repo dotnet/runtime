@@ -333,6 +333,8 @@ DEFINE_DACVAR(ULONG, DWORD, dac__g_MiniMetaDataBuffMaxSize, ::g_MiniMetaDataBuff
 DEFINE_DACVAR(ULONG, TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuffAddress)
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
+DEFINE_DACVAR(ULONG, SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
+
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_SVR
 #undef DEFINE_DACVAR_NO_DUMP
