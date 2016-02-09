@@ -192,6 +192,21 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        public void CopyToAsync_InvalidArgs_Throws()
+        {
+            using (ServerClientPair pair = CreateServerClientPair())
+            {
+                Assert.Throws<ArgumentNullException>("destination", () => { pair.readablePipe.CopyToAsync(null); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { pair.readablePipe.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<NotSupportedException>(() => { pair.readablePipe.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
+                if (!pair.writeablePipe.CanRead)
+                {
+                    Assert.Throws<NotSupportedException>(() => { pair.writeablePipe.CopyToAsync(new MemoryStream()); });
+                }
+            }
+        }
+
+        [Fact]
         public virtual async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -262,7 +277,7 @@ namespace System.IO.Pipes.Tests
 
         [Theory]
         [MemberData("AsyncReadWriteChain_MemberData")]
-        public async Task AsyncReadWriteChain(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
+        public async Task AsyncReadWriteChain_ReadWrite(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
             var writeBuffer = new byte[writeBufferSize];
             var readBuffer = new byte[readBufferSize];

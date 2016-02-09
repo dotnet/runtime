@@ -143,20 +143,7 @@ namespace System.IO.Compression.Tests
             var zip = new GZipStream(gzStream, CompressionMode.Decompress);
 
             var GZipStream = new MemoryStream();
-
-            int _bufferSize = 1024;
-            var bytes = new Byte[_bufferSize];
-            bool finished = false;
-            int retCount;
-            while (!finished)
-            {
-                retCount = await zip.ReadAsync(bytes, 0, _bufferSize);
-
-                if (retCount != 0)
-                    await GZipStream.WriteAsync(bytes, 0, retCount);
-                else
-                    finished = true;
-            }
+            await zip.CopyToAsync(GZipStream);
 
             GZipStream.Position = 0;
             compareStream.Position = 0;
@@ -223,6 +210,23 @@ namespace System.IO.Compression.Tests
             {
                 var gzip = new GZipStream(ms, CompressionMode.Decompress);
             });
+        }
+
+        [Fact]
+        public void CopyToAsyncArgumentValidation()
+        {
+            using (GZipStream gs = new GZipStream(new MemoryStream(), CompressionMode.Decompress))
+            {
+                Assert.Throws<ArgumentNullException>("destination", () => { gs.CopyToAsync(null); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { gs.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<NotSupportedException>(() => { gs.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
+                gs.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { gs.CopyToAsync(new MemoryStream()); });
+            }
+            using (GZipStream gs = new GZipStream(new MemoryStream(), CompressionMode.Compress))
+            {
+                Assert.Throws<NotSupportedException>(() => { gs.CopyToAsync(new MemoryStream()); });
+            }
         }
 
         [Fact]

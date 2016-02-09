@@ -459,6 +459,23 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public void CopyToAsyncArgumentValidation()
+        {
+            using (DeflateStream ds = new DeflateStream(new MemoryStream(), CompressionMode.Decompress))
+            {
+                Assert.Throws<ArgumentNullException>("destination", () => { ds.CopyToAsync(null); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { ds.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<NotSupportedException>(() => { ds.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
+                ds.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { ds.CopyToAsync(new MemoryStream()); });
+            }
+            using (DeflateStream ds = new DeflateStream(new MemoryStream(), CompressionMode.Compress))
+            {
+                Assert.Throws<NotSupportedException>(() => { ds.CopyToAsync(new MemoryStream()); });
+            }
+        }
+
+        [Fact]
         public void Precancellation()
         {
             var ms = new MemoryStream();

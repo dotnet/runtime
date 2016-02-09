@@ -120,6 +120,9 @@
   <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
     <value>Enum value was out of legal range.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
   <data name="CannotReadFromDeflateStream" xml:space="preserve">
     <value>Reading from the compression stream is not supported.</value>
   </data>
@@ -141,14 +144,14 @@
   <data name="InvalidHuffmanData" xml:space="preserve">
     <value>Failed to construct a huffman tree using the length array. The stream might be corrupted.</value>
   </data>
-  <data name="NotReadableStream" xml:space="preserve">
-    <value>The base stream is not readable.</value>
-  </data>
   <data name="NotSupported" xml:space="preserve">
     <value>This operation is not supported.</value>
   </data>
-  <data name="NotWriteableStream" xml:space="preserve">
-    <value>The base stream is not writeable.</value>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Can not access a closed Stream.</value>

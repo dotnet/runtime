@@ -900,7 +900,7 @@ namespace System.IO
             Debug.Assert(_buffer == null);
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _buffer = new byte[_bufferSize]; // TODO: Issue #5598: Use ArrayPool.
+            _buffer = new byte[_bufferSize];
             if (_isAsync)
             {
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
@@ -1682,6 +1682,11 @@ namespace System.IO
             }
 
             return errorCode;
+        }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
         }
 
         [System.Security.SecuritySafeCritical]
