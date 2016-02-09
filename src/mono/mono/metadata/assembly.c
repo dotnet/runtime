@@ -632,7 +632,7 @@ set_dirs (char *exe)
 
 	config = g_build_filename (base, "etc", NULL);
 	lib = g_build_filename (base, "lib", NULL);
-	mono = g_build_filename (lib, "mono/2.0", NULL);
+	mono = g_build_filename (lib, "mono/4.5", NULL);  // FIXME: stop hardcoding 4.5 here
 	if (stat (mono, &buf) == -1)
 		fallback ();
 	else {
@@ -3071,7 +3071,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	corlib = load_in_path (corlib_file, default_path, status, FALSE);
 	g_free (corlib_file);
 	
-	if (corlib && !strcmp (runtime->framework_version, "4.5"))
+	if (corlib && !strcmp (runtime->framework_version, "4.5"))  // FIXME: stop hardcoding 4.5 here
 		default_path [1] = g_strdup_printf ("%s/mono/4.5/Facades", default_path [0]);
 		
 	return corlib;
