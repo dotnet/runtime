@@ -859,7 +859,7 @@ namespace System.Diagnostics
         private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             Interop.mincore.SECURITY_ATTRIBUTES securityAttributesParent = new Interop.mincore.SECURITY_ATTRIBUTES();
-            securityAttributesParent.bInheritHandle = true;
+            securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;
 
             SafeFileHandle hTmp = null;
             try

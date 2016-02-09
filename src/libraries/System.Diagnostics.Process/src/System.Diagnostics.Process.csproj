@@ -184,6 +184,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateProcessWithLogon.cs">
       <Link>Common\Interop\Windows\Interop.CreateProcessWithLogon.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
