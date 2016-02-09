@@ -33,6 +33,9 @@ Variables :
     gcsEnvironment: critical section to synchronize access to palEnvironment
 --*/
 extern char **palEnvironment;
+extern int palEnvironmentCapacity;
+extern int palEnvironmentCount;
+
 extern CRITICAL_SECTION gcsEnvironment;
 
 /*++
