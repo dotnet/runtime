@@ -764,6 +764,19 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Asynchronously reads the bytes from the current stream and writes them to another
+        /// stream, using a specified buffer size.
+        /// </summary>
+        /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
+        /// <param name="bufferSize">The size, in bytes, of the buffer. This value must be greater than zero.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous copy operation.</returns>
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
+        }
+
+        /// <summary>
         /// Asynchronously reads a sequence of bytes from the current stream and advances
         /// the position within the stream by the number of bytes read.
         /// </summary>

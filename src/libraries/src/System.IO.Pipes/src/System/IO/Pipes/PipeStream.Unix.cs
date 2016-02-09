@@ -373,18 +373,16 @@ namespace System.IO.Pipes
 
                             if (signaledFdCount != 0)
                             {
-                                // Our pipe is ready.  Break out of the loop to read from it.
-                                Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0, "Expected revents on read fd to have POLLIN set");
+                                // Our pipe is ready.  Break out of the loop to read from it.  The fd may have been signaled due to 
+                                // POLLIN (data available), POLLHUP (hang-up), POLLERR (some error on the stream), etc... any such
+                                // data will be propagated to us when we do the actual read.
                                 break;
                             }
                         }
 
                         // Read it.
-                        Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0);
                         int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
-                        Debug.Assert(result <= count);
-
-                        Debug.Assert(result >= 0);
+                        Debug.Assert(result >= 0 && result <= count, "Expected 0 <= result <= count bytes, got " + result);
 
                         // return what we read.
                         return result;
