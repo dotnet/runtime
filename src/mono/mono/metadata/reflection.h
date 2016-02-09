@@ -68,6 +68,7 @@ MONO_API MonoObject *mono_get_dbnull_object (MonoDomain *domain);
 
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass, MonoError *error);
 MONO_API MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_data (MonoObject *obj);
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 

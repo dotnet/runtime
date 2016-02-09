@@ -7704,6 +7704,17 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 	}
 }
 
+ICALL_EXPORT MonoArray*
+ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObject *obj)
+{
+	MonoError error;
+	MonoArray *result;
+	result = mono_reflection_get_custom_attrs_data_checked (obj, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+
 ICALL_EXPORT MonoString*
 ves_icall_Mono_Runtime_GetDisplayName (void)
 {

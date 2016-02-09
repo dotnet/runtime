@@ -9951,8 +9951,29 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 MonoArray*
 mono_reflection_get_custom_attrs_data (MonoObject *obj)
 {
+	MonoError error;
+	MonoArray* result;
+	result = mono_reflection_get_custom_attrs_data_checked (obj, &error);
+	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
+	return result;
+}
+
+/*
+ * mono_reflection_get_custom_attrs_data_checked:
+ * @obj: a reflection obj handle
+ * @error: set on error
+ *
+ * Returns an array of System.Reflection.CustomAttributeData,
+ * which include information about attributes reflected on
+ * types loaded using the Reflection Only methods
+ */
+MonoArray*
+mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error)
+{
 	MonoArray *result;
 	MonoCustomAttrInfo *cinfo;
+
+	mono_error_init (error);
 
 	cinfo = mono_reflection_get_custom_attrs_info (obj);
 	if (cinfo) {
@@ -9961,6 +9982,9 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj)
 			mono_custom_attrs_free (cinfo);
 	} else
 		result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, 0);
+
+	if (mono_loader_get_last_error ())
+		mono_error_set_from_loader_error (error);
 
 	return result;
 }
