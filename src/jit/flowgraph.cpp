@@ -4631,7 +4631,7 @@ DECODE_OPCODE:
             //Consider making this only for not force inline.
             if (compIsForInlining())
             {
-                char *message;
+                const char* message;
 #ifdef DEBUG
                 message = (char*)compAllocator->nraAlloc(128);
                 sprintf((char*)message, "Unsupported opcode for inlining: %s\n",
