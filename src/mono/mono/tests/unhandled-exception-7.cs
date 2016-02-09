@@ -2,12 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Remoting.Messaging;
 
 class CustomException : Exception
-{
-}
-
-class CustomException2 : Exception
 {
 }
 
@@ -38,18 +35,16 @@ class Driver
 
 		var cd = (CrossDomain) AppDomain.CreateDomain ("ad").CreateInstanceAndUnwrap (typeof(CrossDomain).Assembly.FullName, "CrossDomain");
 
-		var a = cd.NewDelegateWithoutTarget ();
-		var ares = a.BeginInvoke (delegate { throw new CustomException2 (); }, null);
+		var action = cd.NewDelegateWithoutTarget ();
+		var ares = action.BeginInvoke (Callback, null);
 
-		try {
-			a.EndInvoke (ares);
-			Environment.Exit (4);
-		} catch (CustomException) {
-		} catch (Exception ex) {
-			Console.WriteLine (ex);
-			Environment.Exit (3);
-		}
+		Thread.Sleep (5000);
 
-		Environment.Exit (0);
+		Environment.Exit (1);
+	}
+
+	static void Callback (IAsyncResult iares)
+	{
+		((Action) ((AsyncResult) iares).AsyncDelegate).EndInvoke (iares);
 	}
 }
