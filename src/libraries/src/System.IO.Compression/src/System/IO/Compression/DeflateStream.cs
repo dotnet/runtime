@@ -90,7 +90,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(stream != null);
             if (!stream.CanRead)
-                throw new ArgumentException(SR.NotReadableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnreadableStream, "stream");
 
             _inflater = new Inflater(windowBits);
 
@@ -107,7 +107,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(stream != null);
             if (!stream.CanWrite)
-                throw new ArgumentException(SR.NotWriteableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnwritableStream, "stream");
 
             _deflater = new Deflater(compressionLevel, windowBits);
 
@@ -333,6 +333,11 @@ namespace System.IO.Compression
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
+        }
+
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             EnsureDecompressionMode();
@@ -373,7 +378,7 @@ namespace System.IO.Compression
                 readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                 if (readTask == null)
                 {
-                    throw new InvalidOperationException(SR.NotReadableStream);
+                    throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                 }
 
                 return ReadAsyncCore(readTask, array, offset, count, cancellationToken);
@@ -422,7 +427,7 @@ namespace System.IO.Compression
                         readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                         if (readTask == null)
                         {
-                            throw new InvalidOperationException(SR.NotReadableStream);
+                            throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                         }
                     }
                     else

@@ -396,6 +396,23 @@ namespace System.IO.Tests
                 numWrites: 10);
         }
 
+        [Fact]
+        public void CopyToAsync_InvalidArgs_Throws()
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                Assert.Throws<ArgumentNullException>("destination", () => { fs.CopyToAsync(null); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { fs.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<NotSupportedException>(() => { fs.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
+                fs.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { fs.CopyToAsync(new MemoryStream()); });
+            }
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
+            {
+                Assert.Throws<NotSupportedException>(() => { fs.CopyToAsync(new MemoryStream()); });
+            }
+        }
+
         [Theory]
         [MemberData("MemberData_FileStreamAsyncWriting")]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
