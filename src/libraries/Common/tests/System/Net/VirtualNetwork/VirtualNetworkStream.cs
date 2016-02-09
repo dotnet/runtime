@@ -3,16 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace System.Net.Security.Tests
+namespace System.Net.Test.Common
 {
-    internal class FakeNetworkStream : Stream
+    internal class VirtualNetworkStream : Stream
     {
-        private readonly MockNetwork _network;
+        private readonly VirtualNetwork _network;
         private MemoryStream _readStream;
         private readonly bool _isServer;
+        private object _readStreamLock = new object();
 
-        public FakeNetworkStream(bool isServer, MockNetwork network)
+        public VirtualNetworkStream(VirtualNetwork network, bool isServer)
         {
             _network = network;
             _isServer = isServer;
@@ -80,8 +83,18 @@ namespace System.Net.Security.Tests
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            UpdateReadStream();
-            return _readStream.Read(buffer, offset, count);
+            lock (_readStreamLock)
+            {
+                if (_readStream == null || (_readStream.Position >= _readStream.Length))
+                {
+                    byte[] innerBuffer;
+
+                    _network.ReadFrame(_isServer, out innerBuffer);
+                    _readStream = new MemoryStream(innerBuffer);
+                }
+
+                return _readStream.Read(buffer, offset, count);
+            }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -92,16 +105,32 @@ namespace System.Net.Security.Tests
             _network.WriteFrame(_isServer, innerBuffer);
         }
 
-        private void UpdateReadStream()
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (_readStream != null && (_readStream.Position < _readStream.Length))
+            try
             {
-                return;
+                cancellationToken.ThrowIfCancellationRequested();
+                int bytesRead = Read(buffer, offset, count);
+                return Task.FromResult<int>(bytesRead);
             }
+            catch (Exception e)
+            {
+                return Task.FromException<int>(e);
+            }
+        }
 
-            byte[] innerBuffer;
-            _network.ReadFrame(_isServer, out innerBuffer);
-            _readStream = new MemoryStream(innerBuffer);
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
         }
     }
 }

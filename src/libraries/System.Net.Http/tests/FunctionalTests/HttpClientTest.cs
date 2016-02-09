@@ -5,7 +5,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Net.Tests;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 

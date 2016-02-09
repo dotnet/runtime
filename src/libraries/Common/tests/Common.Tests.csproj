@@ -60,6 +60,17 @@
     <Compile Include="Tests\System\Runtime\InteropServices\NativeBufferTests.cs" />
     <Compile Include="Tests\System\Runtime\InteropServices\StringBufferTests.cs" />
     <Compile Include="Tests\System\Runtime\InteropServices\SafeHeapHandleCacheTests.cs" />
+    <Compile Include="System\Net\Sockets\Fletcher32.cs">
+      <Link>System\Net\Sockets\Fletcher32.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\VirtualNetwork\VirtualNetwork.cs">
+      <Link>System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\VirtualNetwork\VirtualNetworkStream.cs">
+      <Link>System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
+    </Compile>
+    <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
+    <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Http;
+using System.Net.Test.Common;
 using System.Threading.Tasks;
 
 using Xunit;

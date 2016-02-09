@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Tests;
+using System.Net.Test.Common;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading;
