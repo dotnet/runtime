@@ -10,11 +10,6 @@
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
       <SupportedFramework>net45;netcore45;dnxcore50;wpa81</SupportedFramework>
     </ProjectReference>
-    <!-- Support targets that were supported in previous package versions -->
-    <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
-      <PackageTargetPath>lib/portable-net45+win8</PackageTargetPath>
-      <PackageTargetFramework>portable-net45+win8</PackageTargetFramework>
-    </ProjectReference>
     <Dependency Include="System.Collections.Immutable">
       <TargetFramework>portable-net45+win8</TargetFramework>
       <Version>1.1.37</Version>

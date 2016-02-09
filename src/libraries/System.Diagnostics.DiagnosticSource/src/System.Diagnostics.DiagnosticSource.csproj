@@ -6,9 +6,17 @@
     <AssemblyName>System.Diagnostics.DiagnosticSource</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
-    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="lib/dotnet5.2">
+      <TargetFramework>dotnet5.2</TargetFramework>
+    </PackageDestination>
+    <!-- Support downlevel targets -->
+    <PackageDestination Include="lib/portable-net45+win8+wpa81">
+      <TargetFramework>portable-net45+win8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <NoWarn>0420</NoWarn>

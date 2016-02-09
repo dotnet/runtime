@@ -12,10 +12,18 @@
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
     <LangVersion>6</LangVersion>
     <DefineConstants>$(DefineConstants);SRM</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageDestination Include="lib/dotnet5.2">
+      <TargetFramework>dotnet5.2</TargetFramework>
+    </PackageDestination>
+    <!-- Support targets that were supported in previous package versions -->
+    <PackageDestination Include="lib/portable-net45+win8">
+      <TargetFramework>portable-net45+win8</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Optimize>false</Optimize>
