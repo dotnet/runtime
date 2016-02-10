@@ -51,7 +51,7 @@ namespace System.Net.Http
                     case CURLcode.CURLE_UNKNOWN_OPTION:
                     // Curl 7.39 and later
                     case CURLcode.CURLE_NOT_BUILT_IN:
-                        VerboseTrace("CURLOPT_SSL_CTX_FUNCTION is not supported, platform default https chain building in use");
+                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported. Platform default HTTPS chain building in use");
                         if (clientCertOption == ClientCertificateOption.Automatic)
                         {
                             throw new PlatformNotSupportedException(SR.net_http_unix_invalid_client_cert_option);
@@ -75,7 +75,7 @@ namespace System.Net.Http
 
                     if (userPointer == IntPtr.Zero)
                     {
-                        VerboseTrace("Not using client Certificate callback ");
+                        EventSourceTrace("Not using client certificate callback");
                     }
                     else
                     {

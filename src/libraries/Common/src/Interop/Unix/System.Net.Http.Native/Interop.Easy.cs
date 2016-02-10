@@ -48,6 +48,8 @@ internal static partial class Interop
 
         public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer);
 
+        public delegate void DebugCallback(IntPtr curl, CurlInfoType type, IntPtr data, ulong size, IntPtr userPointer);
+
         [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterSeekCallback")]
         public static extern void RegisterSeekCallback(
             SafeCurlHandle curl,
@@ -67,6 +69,13 @@ internal static partial class Interop
         public static extern CURLcode RegisterSslCtxCallback(
             SafeCurlHandle curl,
             SslCtxCallback callback,
+            IntPtr userPointer,
+            ref SafeCallbackHandle callbackHandle);
+
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterDebugCallback")]
+        public static extern int RegisterDebugCallback(
+            SafeCurlHandle curl,
+            DebugCallback callback,
             IntPtr userPointer,
             ref SafeCallbackHandle callbackHandle);
 
@@ -166,6 +175,17 @@ internal static partial class Interop
             CURL_SEEKFUNC_FAIL = 1,
             CURL_SEEKFUNC_CANTSEEK = 2,
         }
+
+        internal enum CurlInfoType : int
+        {
+            CURLINFO_TEXT = 0,
+            CURLINFO_HEADER_IN = 1,
+            CURLINFO_HEADER_OUT = 2,
+            CURLINFO_DATA_IN = 3,
+            CURLINFO_DATA_OUT = 4,
+            CURLINFO_SSL_DATA_IN = 5,
+            CURLINFO_SSL_DATA_OUT = 6,
+        };
 
         // constants defined for the results of a CURL_READ or CURL_WRITE function
         internal const ulong CURL_READFUNC_ABORT = 0x10000000;
