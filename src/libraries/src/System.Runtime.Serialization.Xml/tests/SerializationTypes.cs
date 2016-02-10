@@ -2515,9 +2515,43 @@ public class NonSerializablePerson
     }
 }
 
+public class NonSerializablePersonForStress
+{
+    public string Name { get; private set; }
+    public int Age { get; private set; }
+
+    public NonSerializablePersonForStress(string name, int age)
+    {
+        this.Name = name;
+        this.Age = age;
+    }
+
+    public override string ToString()
+    {
+        return string.Format("Person[Name={0},Age={1}]", this.Name, this.Age);
+    }
+}
+
 public class Family
 {
     public NonSerializablePerson[] Members;
+
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Family members:");
+        foreach (var member in this.Members)
+        {
+            sb.AppendLine("  " + member);
+        }
+
+        return sb.ToString();
+    }
+}
+
+public class FamilyForStress
+{
+    public NonSerializablePersonForStress[] Members;
 
     public override string ToString()
     {
@@ -2541,6 +2575,16 @@ public class NonSerializablePersonSurrogate
     public int Age { get; set; }
 }
 
+// Note that DataContractAttribute.IsReference is set to true.
+[DataContract(IsReference = true)]
+public class NonSerializablePersonForStressSurrogate
+{
+    [DataMember(Name = "PersonName")]
+    public string Name { get; set; }
+    [DataMember(Name = "PersonAge")]
+    public int Age { get; set; }
+}
+
 public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
 {
     public Type GetSurrogateType(Type type)
@@ -2548,6 +2592,10 @@ public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
         if (type == typeof(NonSerializablePerson))
         {
             return typeof(NonSerializablePersonSurrogate);
+        }
+        else if (type == typeof(NonSerializablePersonForStress))
+        {
+            return typeof(NonSerializablePersonForStressSurrogate);
         }
         else
         {
@@ -2562,6 +2610,11 @@ public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
             NonSerializablePersonSurrogate person = (NonSerializablePersonSurrogate)obj;
             return new NonSerializablePerson(person.Name, person.Age);
         }
+        else if (obj is NonSerializablePersonForStressSurrogate)
+        {
+            NonSerializablePersonForStressSurrogate person = (NonSerializablePersonForStressSurrogate)obj;
+            return new NonSerializablePersonForStress(person.Name, person.Age);
+        }
 
         return obj;
     }
@@ -2572,6 +2625,17 @@ public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
         {
             NonSerializablePerson nsp = (NonSerializablePerson)obj;
             NonSerializablePersonSurrogate serializablePerson = new NonSerializablePersonSurrogate
+            {
+                Name = nsp.Name,
+                Age = nsp.Age,
+            };
+
+            return serializablePerson;
+        }
+        else if (obj is NonSerializablePersonForStress)
+        {
+            NonSerializablePersonForStress nsp = (NonSerializablePersonForStress)obj;
+            NonSerializablePersonForStressSurrogate serializablePerson = new NonSerializablePersonForStressSurrogate
             {
                 Name = nsp.Name,
                 Age = nsp.Age,
