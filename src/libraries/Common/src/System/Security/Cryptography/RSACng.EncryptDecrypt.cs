@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.IO;
-
 using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography;
@@ -16,6 +12,10 @@ using BCRYPT_OAEP_PADDING_INFO = Interop.BCrypt.BCRYPT_OAEP_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class RSAImplementation
+    {
+#endif
     public sealed partial class RSACng : RSA
     {
         /// <summary>
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                SafeNCryptKeyHandle keyHandle = Key.Handle;
+                SafeNCryptKeyHandle keyHandle = GetKeyHandle();
                 switch (padding.Mode)
                 {
                     case RSAEncryptionPaddingMode.Pkcs1:
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography
 
                                     // It would nice to put randomized data here but RSAEncryptionPadding does not at this point provide support for this.
                                     pbLabel = IntPtr.Zero,
-                                    cbLabel = 0, 
+                                    cbLabel = 0,
                                 };
                                 return EncryptOrDecrypt(keyHandle, data, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encryptOrDecrypt);
                             }
@@ -110,5 +110,7 @@ namespace System.Security.Cryptography
         // Delegate binds to either NCryptEncrypt() or NCryptDecrypt() depending on which api was called.
         private unsafe delegate ErrorCode EncryptOrDecryptAction(SafeNCryptKeyHandle hKey, byte[] pbInput, int cbInput, void* pPaddingInfo, byte[] pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }
-

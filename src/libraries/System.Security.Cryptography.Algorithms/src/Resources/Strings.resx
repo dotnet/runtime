@@ -126,8 +126,14 @@
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
+  </data>
+  <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
+    <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
@@ -147,11 +153,26 @@
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+  </data>
+  <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
+    <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
   <data name="Cryptography_MissingIV" xml:space="preserve">
     <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
   </data>
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
+    <value>Cannot open an invalid handle.</value>
   </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
@@ -174,10 +195,16 @@
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>
   </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
   <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
     <value>Unknown padding mode used.</value>
   </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
+  </data>
+  <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
+    <value>The specified PaddingMode is not supported.</value>
   </data>
 </root>

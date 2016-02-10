@@ -47,11 +47,6 @@ namespace Internal.Cryptography
             return src;
         }
 
-        public static CryptographicException ToCryptographicException(this ErrorCode errorCode)
-        {
-            return ((int)errorCode).ToCryptographicException();
-        }
-
         public static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)
         {
             string providerName = provider.Provider;
