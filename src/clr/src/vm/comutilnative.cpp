@@ -1402,7 +1402,6 @@ void QCALLTYPE ExceptionNative::GetMessageFromNativeResources(ExceptionMessageKi
     END_QCALL;
 }
 
-
 // BlockCopy
 // This method from one primitive array to another based
 //  upon an offset into each an a byte count.
@@ -1416,20 +1415,37 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     if (src==NULL || dst==NULL)
         FCThrowArgumentNullVoid((src==NULL) ? W("src") : W("dst"));
 
-    // Size of the Arrays in bytes
-    SIZE_T srcLen = src->GetNumComponents() * src->GetComponentSize();
-    SIZE_T dstLen = srcLen;
+    SIZE_T srcLen, dstLen;
 
-    // We only want to allow arrays of primitives, no Objects.
-    const CorElementType srcET = src->GetArrayElementType();
-    if (!CorTypeInfo::IsPrimitiveType_NoThrow(srcET))
-        FCThrowArgumentVoid(W("src"), W("Arg_MustBePrimArray"));
+    //
+    // Use specialized fast path for byte arrays because of it is what Buffer::BlockCopy is 
+    // typically used for.
+    //
 
-    if (src != dst) {
-        const CorElementType dstET = dst->GetArrayElementType();
-        if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
-            FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
-        dstLen = dst->GetNumComponents() * dst->GetComponentSize();
+    MethodTable * pByteArrayMT = g_pByteArrayMT;
+    _ASSERTE(pByteArrayMT != NULL);
+    if (src->GetMethodTable() == pByteArrayMT &&  dst->GetMethodTable() == pByteArrayMT)
+    {
+        srcLen = src->GetNumComponents();
+        dstLen = dst->GetNumComponents();
+    }
+    else
+    {
+        // Size of the Arrays in bytes
+        srcLen = src->GetNumComponents() * src->GetComponentSize();
+        dstLen = srcLen;
+
+        // We only want to allow arrays of primitives, no Objects.
+        const CorElementType srcET = src->GetArrayElementType();
+        if (!CorTypeInfo::IsPrimitiveType_NoThrow(srcET))
+            FCThrowArgumentVoid(W("src"), W("Arg_MustBePrimArray"));
+
+        if (src != dst) {
+            const CorElementType dstET = dst->GetArrayElementType();
+            if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
+                FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
+            dstLen = dst->GetNumComponents() * dst->GetComponentSize();
+        }
     }
 
     if (srcOffset < 0 || dstOffset < 0 || count < 0) {
