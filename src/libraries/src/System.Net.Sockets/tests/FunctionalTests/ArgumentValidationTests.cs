@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Xunit;
+using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
@@ -758,5 +759,85 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
             }
         }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Connect_ConnectTwice_NotSupported()
+        {
+            //
+            // Allocate a port, but don't listen, so we have something to fail to connect to.
+            //
+            using (Socket nonListeningServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = nonListeningServer.BindToAnonymousPort(IPAddress.Loopback);
+
+                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    //
+                    // Connect once, expecting failure
+                    //
+                    Assert.Throws<SocketException>(delegate
+                    {
+                        try
+                        {
+                            client.Connect(IPAddress.Loopback, port);
+
+                        }
+                        catch (SocketException ex)
+                        {
+                            Assert.Equal(SocketError.ConnectionRefused, ex.SocketErrorCode);
+                            throw;
+                        }
+                    });
+
+                    //
+                    // Connect again, expecting PlatformNotSupportedException
+                    //
+                    Assert.Throws<PlatformNotSupportedException>(() => client.Connect(IPAddress.Loopback, port));
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void ConnectAsync_ConnectTwice_NotSupported()
+        {
+            AutoResetEvent completed = new AutoResetEvent(false);
+
+            //
+            // Allocate a port, but don't listen, so we have something to fail to connect to.
+            //
+            using (Socket nonListeningServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = nonListeningServer.BindToAnonymousPort(IPAddress.Loopback);
+
+                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                    args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
+                    args.Completed += delegate
+                    {
+                        completed.Set();
+                    };
+
+                    //
+                    // Connect once, expecting failure
+                    //
+                    if (client.ConnectAsync(args))
+                    {
+                        Assert.True(completed.WaitOne(5000), "IPv4: Timed out while waiting for connection");
+                    }
+
+                    Assert.Equal(SocketError.ConnectionRefused, args.SocketError);
+
+                    //
+                    // Connect again, expecting PlatformNotSupportedException
+                    //
+                    Assert.Throws<PlatformNotSupportedException>(() => client.ConnectAsync(args));
+                }
+            }
+        }
+
+
     }
 }
