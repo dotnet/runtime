@@ -1188,7 +1188,11 @@ extern "C" Error SystemNative_GetIPv4MulticastOption(int32_t socket, int32_t mul
         return PAL_EINVAL;
     }
 
+#if HAVE_IP_MREQN
     ip_mreqn opt;
+#else
+    ip_mreq opt;
+#endif
     socklen_t len = sizeof(opt);
     int err = getsockopt(socket, IPPROTO_IP, optionName, &opt, &len);
     if (err != 0)
@@ -1197,8 +1201,13 @@ extern "C" Error SystemNative_GetIPv4MulticastOption(int32_t socket, int32_t mul
     }
 
     *option = {.MulticastAddress = opt.imr_multiaddr.s_addr,
+#if HAVE_IP_MREQN
                .LocalAddress = opt.imr_address.s_addr,
                .InterfaceIndex = opt.imr_ifindex};
+#else
+               .LocalAddress = opt.imr_interface.s_addr,
+               .InterfaceIndex = 0};
+#endif
     return PAL_SUCCESS;
 }
 
@@ -1215,9 +1224,14 @@ extern "C" Error SystemNative_SetIPv4MulticastOption(int32_t socket, int32_t mul
         return PAL_EINVAL;
     }
 
+#if HAVE_IP_MREQN
     ip_mreqn opt = {.imr_multiaddr = {.s_addr = option->MulticastAddress},
                     .imr_address = {.s_addr = option->LocalAddress},
                     .imr_ifindex = option->InterfaceIndex};
+#else
+    ip_mreq opt = {.imr_multiaddr = {.s_addr = option->MulticastAddress},
+                   .imr_interface = {.s_addr = option->LocalAddress}};
+#endif
     int err = setsockopt(socket, IPPROTO_IP, optionName, &opt, sizeof(opt));
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
