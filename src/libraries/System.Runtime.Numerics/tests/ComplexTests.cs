@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -715,51 +717,55 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Equals_TestData()
+        [Fact]
+        public static void Equals()
         {
-            yield return new object[] { Complex.Zero, Complex.Zero, true, true };
-            yield return new object[] { Complex.Zero, Complex.One, false, false };
-            yield return new object[] { Complex.Zero, -Complex.One, false, false };
-            yield return new object[] { Complex.Zero, Complex.ImaginaryOne, false, false };
-            yield return new object[] { Complex.Zero, -Complex.ImaginaryOne, false, false };
+            // This is not InlineData, to workaround a niche bug, that mainly occurs on non Windows platforms.
+            // This bug moves test values around to different intermediate memory locations, causing true assertions to be false.
+            // Moving these methods into a method, not an iterator fixes this.
+            Equals(Complex.Zero, Complex.Zero, true, true);
+            Equals(Complex.Zero, Complex.One, false, false);
+            Equals(Complex.Zero, -Complex.One, false, false);
+            Equals(Complex.Zero, Complex.ImaginaryOne, false, false);
+            Equals(Complex.Zero, -Complex.ImaginaryOne, false, false);
 
-            yield return new object[] { Complex.One, Complex.One, true, true };
-            yield return new object[] { Complex.One, -Complex.One, false, false };
-            yield return new object[] { Complex.One, Complex.ImaginaryOne, false, false };
-            yield return new object[] { Complex.One, -Complex.ImaginaryOne, false, false };
+            Equals(Complex.One, Complex.One, true, true);
+            Equals(Complex.One, -Complex.One, false, false);
+            Equals(Complex.One, Complex.ImaginaryOne, false, false);
+            Equals(Complex.One, -Complex.ImaginaryOne, false, false);
 
-            yield return new object[] { -Complex.One, -Complex.One, true, true };
-            yield return new object[] { -Complex.One, Complex.ImaginaryOne, false, false };
-            yield return new object[] { -Complex.One, -Complex.ImaginaryOne, false, false };
+            Equals(-Complex.One, -Complex.One, true, true);
+            Equals(-Complex.One, Complex.ImaginaryOne, false, false);
+            Equals(-Complex.One, -Complex.ImaginaryOne, false, false);
 
-            yield return new object[] { Complex.ImaginaryOne, Complex.ImaginaryOne, true, true };
-            yield return new object[] { Complex.ImaginaryOne, -Complex.ImaginaryOne, false, false };
+            Equals(Complex.ImaginaryOne, Complex.ImaginaryOne, true, true);
+            Equals(Complex.ImaginaryOne, -Complex.ImaginaryOne, false, false);
 
-            yield return new object[] { -Complex.ImaginaryOne, -Complex.ImaginaryOne, true, true };
+            Equals(-Complex.ImaginaryOne, -Complex.ImaginaryOne, true, true);
 
-            yield return new object[] { Complex.Zero, new Complex(0, 0), true, true };
-            yield return new object[] { Complex.Zero, new Complex(1, 0), false, false };
-            yield return new object[] { Complex.Zero, new Complex(0, 1), false, false };
+            Equals(Complex.Zero, new Complex(0, 0), true, true);
+            Equals(Complex.Zero, new Complex(1, 0), false, false);
+            Equals(Complex.Zero, new Complex(0, 1), false, false);
 
-            yield return new object[] { Complex.One, new Complex(1, 0), true, true };
-            yield return new object[] { Complex.One, new Complex(1, 1), false, false };
-            yield return new object[] { Complex.One, new Complex(0, 1), false, false };
+            Equals(Complex.One, new Complex(1, 0), true, true);
+            Equals(Complex.One, new Complex(1, 1), false, false);
+            Equals(Complex.One, new Complex(0, 1), false, false);
 
-            yield return new object[] { -Complex.One, new Complex(-1, 0), true, true };
-            yield return new object[] { -Complex.One, new Complex(-1, -1), false, false };
-            yield return new object[] { -Complex.One, new Complex(0, -1), false, false };
+            Equals(-Complex.One, new Complex(-1, 0), true, true);
+            Equals(-Complex.One, new Complex(-1, -1), false, false);
+            Equals(-Complex.One, new Complex(0, -1), false, false);
 
-            yield return new object[] { Complex.ImaginaryOne, new Complex(0, 1), true, true };
-            yield return new object[] { Complex.ImaginaryOne, new Complex(1, 1), false, false };
-            yield return new object[] { Complex.ImaginaryOne, new Complex(0, -1), false, false };
+            Equals(Complex.ImaginaryOne, new Complex(0, 1), true, true);
+            Equals(Complex.ImaginaryOne, new Complex(1, 1), false, false);
+            Equals(Complex.ImaginaryOne, new Complex(0, -1), false, false);
 
-            yield return new object[] { -Complex.ImaginaryOne, new Complex(0, -1), true, true };
-            yield return new object[] { -Complex.ImaginaryOne, new Complex(-1, -1), false, false };
-            yield return new object[] { -Complex.ImaginaryOne, new Complex(0, 1), false, false };
+            Equals(-Complex.ImaginaryOne, new Complex(0, -1), true, true);
+            Equals(-Complex.ImaginaryOne, new Complex(-1, -1), false, false);
+            Equals(-Complex.ImaginaryOne, new Complex(0, 1), false, false);
 
-            yield return new object[] { new Complex(0.5, 0.5), new Complex(0.5, 0.5), true, true };
-            yield return new object[] { new Complex(0.5, 0.5), new Complex(0.5, 1.5), false, false };
-            yield return new object[] { new Complex(0.5, 0.5), new Complex(1.5, 0.5), false, false };
+            Equals(new Complex(0.5, 0.5), new Complex(0.5, 0.5), true, true);
+            Equals(new Complex(0.5, 0.5), new Complex(0.5, 1.5), false, false);
+            Equals(new Complex(0.5, 0.5), new Complex(1.5, 0.5), false, false);
 
             // Boundary values
             Complex maxMax = new Complex(double.MaxValue, double.MaxValue);
@@ -767,30 +773,30 @@ namespace System.Numerics.Tests
             Complex minMax = new Complex(double.MinValue, double.MaxValue);
             Complex minMin = new Complex(double.MinValue, double.MinValue);
 
-            yield return new object[] { maxMax, maxMax, true, true };
-            yield return new object[] { maxMax, maxMin, false, false };
-            yield return new object[] { maxMax, minMax, false, false };
-            yield return new object[] { maxMax, minMin, false, false };
-            yield return new object[] { maxMax, new Complex(1, 2), false, false };
+            Equals(maxMax, maxMax, true, true);
+            Equals(maxMax, maxMin, false, false);
+            Equals(maxMax, minMax, false, false);
+            Equals(maxMax, minMin, false, false);
+            Equals(maxMax, new Complex(1, 2), false, false);
 
-            yield return new object[] { maxMin, maxMin, true, true };
-            yield return new object[] { maxMin, minMax, false, false };
-            yield return new object[] { maxMin, minMin, false, false };
-            yield return new object[] { maxMin, new Complex(1, 2), false, false };
+            Equals(maxMin, maxMin, true, true);
+            Equals(maxMin, minMax, false, false);
+            Equals(maxMin, minMin, false, false);
+            Equals(maxMin, new Complex(1, 2), false, false);
 
-            yield return new object[] { minMax, minMax, true, true };
-            yield return new object[] { minMax, minMin, false, false };
-            yield return new object[] { minMax, new Complex(1, 2), false, false };
+            Equals(minMax, minMax, true, true);
+            Equals(minMax, minMin, false, false);
+            Equals(minMax, new Complex(1, 2), false, false);
 
-            yield return new object[] { minMin, minMin, true, true };
-            yield return new object[] { minMin, new Complex(1, 2), false, false };
+            Equals(minMin, minMin, true, true);
+            Equals(minMin, new Complex(1, 2), false, false);
 
-            yield return new object[] { new Complex(100.5, 0), 100.5, false, false };
-            yield return new object[] { new Complex(0, 100.5), 100.5, false, false };
-            yield return new object[] { new Complex(100.5, 0), 0, false, false };
-            yield return new object[] { new Complex(0, 100.5), 0, false, false };
-            yield return new object[] { new Complex(0, 100.5), "0", false, false };
-            yield return new object[] { new Complex(0, 100.5), null, false, false };
+            Equals(new Complex(100.5, 0), 100.5, false, false);
+            Equals(new Complex(0, 100.5), 100.5, false, false);
+            Equals(new Complex(100.5, 0), 0, false, false);
+            Equals(new Complex(0, 100.5), 0, false, false);
+            Equals(new Complex(0, 100.5), "0", false, false);
+            Equals(new Complex(0, 100.5), null, false, false);
 
             // Invalid values
             Complex invalidComplex;
@@ -798,67 +804,39 @@ namespace System.Numerics.Tests
             foreach (double invalidReal in s_invalidDoubleValues)
             {
                 invalidComplex = new Complex(invalidReal, 1);
-                yield return new object[] { invalidComplex, complex, false, false };
-                yield return new object[] { invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true }; // Handle double.NaN != double.NaN
+                Equals(invalidComplex, complex, false, false);
+                Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true); // Handle double.NaN != double.NaN
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     invalidComplex = new Complex(1, invalidImaginary);
-                    yield return new object[] { invalidComplex, complex, false, false };
-                    yield return new object[] { invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true }; // Handle double.NaN != double.NaN
+                    Equals(invalidComplex, complex, false, false);
+                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
 
                     invalidComplex = new Complex(invalidReal, invalidImaginary);
-                    yield return new object[] { invalidComplex, complex, false, false };
-                    yield return new object[] { invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true }; // Handle double.NaN != double.NaN
+                    Equals(invalidComplex, complex, false, false);
+                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
                 }
             }
         }
-
-        [Theory, MemberData("Equals_TestData")]
-        public static void Equals(Complex complex1, object obj, bool expected, bool expectedEquals)
+        
+        private static void Equals(Complex complex1, object obj, bool expected, bool expectedEquals)
         {
             if (obj is Complex)
             {
                 Complex complex2 = (Complex)obj;
-                if (expected)
-                {
-                    Assert.True(complex1 == complex2, string.Format("c1:{0} == c2{1} is not '{2}' as expected", complex1, complex2, expected));
-                    Assert.True(complex2 == complex1, string.Format("c2:{0} == c1{1} is not '{2}' as expected", complex2, complex1, expected));
+                Assert.True(expected == (complex1 == complex2), string.Format("c1:{0} == c2{1} is not '{2}' as expected", complex1, complex2, expected));
+                Assert.True(expected == (complex2 == complex1), string.Format("c2:{0} == c1{1} is not '{2}' as expected", complex2, complex1, expected));
 
-                    Assert.False(complex1 != complex2, string.Format("c1:{0} != c2{1} is not '{2}' as expected", complex1, complex2, !expected));
-                    Assert.False(complex2 != complex1, string.Format("c2:{0} != c1{1} is not '{2}' as expected", complex2, complex1, !expected));
-                }
-                else
-                {
-                    Assert.False(complex1 == complex2, string.Format("c1:{0} == c2{1} is not '{2}' as expected", complex1, complex2, expected));
-                    Assert.False(complex2 == complex1, string.Format("c2:{0} == c1{1} is not '{2}' as expected", complex2, complex1, expected));
+                Assert.False(expected == (complex1 != complex2), string.Format("c1:{0} != c2{1} is not '{2}' as expected", complex1, complex2, !expected));
+                Assert.False(expected == (complex2 != complex1), string.Format("c2:{0} != c1{1} is not '{2}' as expected", complex2, complex1, !expected));
+                
+                Assert.True(expectedEquals == complex1.Equals(complex2), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, complex2, expectedEquals));
+                Assert.True(expectedEquals == complex2.Equals(complex1), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex2, complex1, expectedEquals));
 
-                    Assert.True(complex1 != complex2, string.Format("c1:{0} != c2{1} is not '{2}' as expected", complex1, complex2, !expected));
-                    Assert.True(complex2 != complex1, string.Format("c2:{0} != c1{1} is not '{2}' as expected", complex2, complex1, !expected));
-                }
-
-                if (expectedEquals)
-                {
-                    Assert.True(complex1.Equals(complex2), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, complex2, expectedEquals));
-                    Assert.True(complex2.Equals(complex1), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex2, complex1, expectedEquals));
-
-                    Assert.True(complex1.GetHashCode().Equals(complex2.GetHashCode()), string.Format("{0} and {1} do not have the same hashcode", complex1, complex2));
-                }
-                else
-                {
-                    Assert.False(complex1.Equals(complex2), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, complex2, expectedEquals));
-                    Assert.False(complex2.Equals(complex1), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex2, complex1, expectedEquals));
-
-                    Assert.False(complex1.GetHashCode().Equals(complex2.GetHashCode()), string.Format("{0} and {1} have the same hashcode", complex1, complex2));
-                }
+                Assert.True(expectedEquals == complex1.GetHashCode().Equals(complex2.GetHashCode()), 
+                    string.Format("{0}.GetHashCode().Equals({1}.GetHashCode()) is not '{2}' as expected", complex1, complex2, expectedEquals));
             }
-            if (expectedEquals)
-            {
-                Assert.True(complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
-            }
-            else
-            {
-                Assert.False(complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
-            }
+            Assert.True(expected == complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
         }
 
         public static IEnumerable<object[]> Exp_TestData()
@@ -920,6 +898,18 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expected.Real, expected.Imaginary);
         }
 
+        [ActiveIssue(6022, PlatformID.AnyUnix)]
+        [Fact]
+        public static void Exp_MaxReal()
+        {
+            // On Windows, the result is {double.PostiveInfinity, double.NaN}
+            // On Unix, the result is {double.NegativeInfinity, double.NaN}
+            // Which one is incorrect should be determined.
+            var complex = new Complex(double.MaxValue, 0);
+            Complex result = Complex.Exp(complex);
+            VerifyRealImaginaryProperties(result, double.PositiveInfinity, double.NaN);
+        }
+
         public static IEnumerable<object[]> FromPolarCoordinates_TestData()
         {
             foreach (double magnitude in s_validDoubleValues)
@@ -977,10 +967,14 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(complex, magnitude, phase);
         }
 
-        public static IEnumerable<object[]> Log_TestData()
+        [Fact]
+        public static void Log()
         {
-            yield return new object[] { Complex.One, Complex.Zero, true };
-            yield return new object[] { Complex.One, Complex.ImaginaryOne, true };
+            // This is not InlineData, to workaround a niche bug, that mainly occurs on non Windows platforms.
+            // This bug moves test values around to different intermediate memory locations, causing true assertions to be false.
+            // Moving these methods into a method, not an iterator fixes this.
+            Log(Complex.One, Complex.Zero, true);
+            Log(Complex.One, Complex.ImaginaryOne, true);
 
             var positivePositiveComplex = new Complex(SmallRandomPositiveDouble(), SmallRandomPositiveDouble());
             var positiveNegativeComplex = new Complex(SmallRandomPositiveDouble(), SmallRandomNegativeDouble());
@@ -988,35 +982,34 @@ namespace System.Numerics.Tests
             var negativeNegativeComplex = new Complex(SmallRandomNegativeDouble(), SmallRandomNegativeDouble());
 
             // First quadrant, first quadrant
-            yield return new object[] { positivePositiveComplex, positivePositiveComplex, true };
+            Log(positivePositiveComplex, positivePositiveComplex, true);
             // First quadrant, second quadrant
-            yield return new object[] { positivePositiveComplex, negativePositiveComplex, true };
+            Log(positivePositiveComplex, negativePositiveComplex, true);
             // First quadrant, third quadrant
-            yield return new object[] { positivePositiveComplex, negativeNegativeComplex, true };
+            Log(positivePositiveComplex, negativeNegativeComplex, true);
             // First quadrant, fourth quadrant
-            yield return new object[] { positivePositiveComplex, positiveNegativeComplex, true };
+            Log(positivePositiveComplex, positiveNegativeComplex, true);
             // Second quadrant, second quadrant
-            yield return new object[] { negativePositiveComplex, negativePositiveComplex, true };
+            Log(negativePositiveComplex, negativePositiveComplex, true);
             // Second quadrant, third quadrant
-            yield return new object[] { negativePositiveComplex, negativeNegativeComplex, true };
+            Log(negativePositiveComplex, negativeNegativeComplex, true);
             // Second quadrant, fourth quadrant
-            yield return new object[] { negativePositiveComplex, positiveNegativeComplex, true };
+            Log(negativePositiveComplex, positiveNegativeComplex, true);
             // Third quadrant, third quadrant
-            yield return new object[] { negativeNegativeComplex, negativeNegativeComplex, true };
+            Log(negativeNegativeComplex, negativeNegativeComplex, true);
             // Third quadrant, fourth quadrant
-            yield return new object[] { negativeNegativeComplex, positiveNegativeComplex, true };
+            Log(negativeNegativeComplex, positiveNegativeComplex, true);
             // Fourth quadrant, fouth quadrant
-            yield return new object[] { positiveNegativeComplex, positiveNegativeComplex, true };
+            Log(positiveNegativeComplex, positiveNegativeComplex, true);
 
             // Boundary values
-            yield return new object[] { new Complex(double.MaxValue, 0), Complex.One, false };
-            yield return new object[] { new Complex(double.MinValue, 0), Complex.One, false };
-            yield return new object[] { new Complex(0, double.MaxValue), Complex.ImaginaryOne, false };
-            yield return new object[] { new Complex(0, double.MinValue), Complex.ImaginaryOne, false };
+            Log(new Complex(double.MaxValue, 0), Complex.One, false);
+            Log(new Complex(double.MinValue, 0), Complex.One, false);
+            Log(new Complex(0, double.MaxValue), Complex.ImaginaryOne, false);
+            Log(new Complex(0, double.MinValue), Complex.ImaginaryOne, false);
         }
-
-        [Theory, MemberData("Log_TestData")]
-        public static void Log(Complex complex1, Complex complex2, bool extended)
+        
+        private static void Log(Complex complex1, Complex complex2, bool extended)
         {
             if (complex1 == Complex.Zero)
             {
@@ -1083,7 +1076,7 @@ namespace System.Numerics.Tests
 
         private static void VerifyLogWithMultiply(Complex complex1, Complex complex2)
         {
-            // Log(c1*c2) == Log(c1) + Log(c2), if -PI < Arg(c1) + Arg(c2) <= PI
+            // Log(complex1 * complex2) == Log(complex1) + Log(complex2), if -PI < Arctan(complex1) + Arctan(complex2) <= PI
             double equalityCondition = Math.Atan2(complex1.Imaginary, complex1.Real) + Math.Atan2(complex2.Imaginary, complex2.Real);
             if (equalityCondition <= -Math.PI || equalityCondition > Math.PI)
             {
@@ -1097,7 +1090,7 @@ namespace System.Numerics.Tests
 
         private static void VerifyLogWithPowerMinusOne(Complex complex)
         {
-            // Log(c) == -Log(1/c)
+            // Log(complex) == -Log(1 / complex)
             Complex logComplex = Complex.Log(complex);
             Complex logPowerMinusOne = Complex.Log(1 / complex);
 
@@ -1106,7 +1099,7 @@ namespace System.Numerics.Tests
 
         private static void VerifyLogWithExp(Complex complex)
         {
-            // Exp(log(c)) == c, if c != Zero
+            // Exp(log(complex)) == complex, if complex != Zero
             Complex logComplex = Complex.Log(complex);
             Complex expLogComplex = Complex.Exp(logComplex);
 
@@ -2240,15 +2233,15 @@ namespace System.Numerics.Tests
                 double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
         }
 
-        private static void VerifyRealImaginaryProperties(Complex complex, double real, double imaginary)
+        private static void VerifyRealImaginaryProperties(Complex complex, double real, double imaginary, [CallerLineNumber] int lineNumber = 0)
         {
             Assert.True(real.Equals(complex.Real) || IsDiffTolerable(complex.Real, real),
-                string.Format("Expected real: {0}. Actual real: {1}", real, complex.Real));
+                string.Format("Failure at line {0}. Expected real: {1}. Actual real: {2}", lineNumber, real, complex.Real));
             Assert.True(imaginary.Equals(complex.Imaginary) || IsDiffTolerable(complex.Imaginary, imaginary),
-                string.Format("Expected imaginary: {0}. Actual imaginary: {1}", imaginary, complex.Imaginary));
+                string.Format("Failure at line {0}. Expected imaginary: {1}. Actual imaginary: {2}", lineNumber, imaginary, complex.Imaginary));
         }
 
-        private static void VerifyMagnitudePhaseProperties(Complex complex, double magnitude, double phase)
+        private static void VerifyMagnitudePhaseProperties(Complex complex, double magnitude, double phase, [CallerLineNumber] int lineNumber = 0)
         {
             // The magnitude (m) of a complex number (z = x + yi) is the absolute value - |z| = sqrt(x^2 + y^2)
             // Verification is done using the square of the magnitude since m^2 = x^2 + y^2
@@ -2256,7 +2249,7 @@ namespace System.Numerics.Tests
             double actualMagnitudeSquared = complex.Magnitude * complex.Magnitude;
 
             Assert.True(expectedMagnitudeSquared.Equals(actualMagnitudeSquared) || IsDiffTolerable(actualMagnitudeSquared, expectedMagnitudeSquared),
-                string.Format("Expected magnitude squared: {0}. Actual magnitude squared: {1}", expectedMagnitudeSquared, actualMagnitudeSquared));
+                string.Format("Failure at line {0}. Expected magnitude squared: {1}. Actual magnitude squared: {2}", lineNumber, expectedMagnitudeSquared, actualMagnitudeSquared));
 
             if (double.IsNaN(magnitude))
             {
@@ -2272,7 +2265,7 @@ namespace System.Numerics.Tests
             }
 
             Assert.True(phase.Equals(complex.Phase) || IsDiffTolerable(complex.Phase, phase),
-                string.Format("Expected phase: {0}. Actual phase: {1}", phase, complex.Phase));
+                string.Format("Failure at line {0}. Expected phase: {1}. Actual phase: {2}", lineNumber, phase, complex.Phase));
         }
     }
 }

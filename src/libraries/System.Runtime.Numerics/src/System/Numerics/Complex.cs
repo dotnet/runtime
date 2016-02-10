@@ -161,11 +161,11 @@ namespace System.Numerics
         {
             return left._real != right._real || left._imaginary != right._imaginary;
         }
-        
+
         public override bool Equals(object obj)
         {
             if (!(obj is Complex)) return false;
-            return Equals((Complex)obj);
+            return this == ((Complex)obj);
         }
 
         public bool Equals(Complex value)
@@ -181,27 +181,27 @@ namespace System.Numerics
             int finalHash = realHash ^ imaginaryHash;
             return finalHash;
         }
-        
+
         public override string ToString()
         {
-            return ToString(string.Empty);
+            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", _real, _imaginary);
         }
 
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.CurrentCulture);
+            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", _real.ToString(format, CultureInfo.CurrentCulture), _imaginary.ToString(format, CultureInfo.CurrentCulture));
         }
 
         public string ToString(IFormatProvider provider)
         {
-            return ToString(string.Empty, provider);
+            return string.Format(provider, "({0}, {1})", _real, _imaginary);
         }
 
         public string ToString(string format, IFormatProvider provider)
         {
             return string.Format(provider, "({0}, {1})", _real.ToString(format, provider), _imaginary.ToString(format, provider));
         }
-        
+
         public static Complex Sin(Complex value)
         {
             double a = value._real;
