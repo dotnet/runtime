@@ -327,6 +327,8 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
+            EventSourceTrace("{0}", request);
+
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
             var easy = new EasyRequest(this, request, cancellationToken);
@@ -511,6 +513,11 @@ namespace System.Net.Http
 
         private static bool EventSourceTracingEnabled { get { return HttpEventSource.Log.IsEnabled(); } }
 
+        // PERF NOTE:
+        // These generic overloads of EventSourceTrace (and similar wrapper methods in some of the other CurlHandler
+        // nested types) exist to allow call sites to call EventSourceTrace without boxing and without checking
+        // EventSourceTracingEnabled.  Do not remove these without fixing the call sites accordingly.
+
         private static void EventSourceTrace<TArg0>(
             string formatMessage, TArg0 arg0,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
@@ -532,7 +539,7 @@ namespace System.Net.Http
         }
 
         private static void EventSourceTrace(
-            string message = null, 
+            string message, 
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
             if (EventSourceTracingEnabled)
@@ -544,7 +551,7 @@ namespace System.Net.Http
         private static void EventSourceTraceCore(string message, MultiAgent agent, EasyRequest easy, string memberName)
         {
             // If we weren't handed a multi agent, see if we can get one from the EasyRequest
-            if (agent == null && easy != null && easy._associatedMultiAgent != null)
+            if (agent == null && easy != null)
             {
                 agent = easy._associatedMultiAgent;
             }
@@ -552,8 +559,8 @@ namespace System.Net.Http
             HttpEventSource.Log.HandlerMessage(
                 agent != null && agent.RunningWorkerId.HasValue ? agent.RunningWorkerId.GetValueOrDefault() : 0,
                 easy != null ? easy.Task.Id : 0,
-                memberName ?? string.Empty,
-                message ?? string.Empty);
+                memberName,
+                message);
         }
 
         private static Exception CreateHttpRequestException(Exception inner = null)

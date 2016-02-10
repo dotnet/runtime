@@ -267,7 +267,7 @@ extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
     return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
 }
 
-static int debug_callback(CURL* curl, curl_infotype type, char *data, size_t size, void *userPointer)
+static int debug_callback(CURL* curl, curl_infotype type, char* data, size_t size, void* userPointer)
 {
     assert(userPointer != nullptr);
     CallbackHandle* handle = static_cast<CallbackHandle*>(userPointer);

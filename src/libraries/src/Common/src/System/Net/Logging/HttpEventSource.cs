@@ -164,6 +164,16 @@ namespace System.Net
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
         internal unsafe void HandlerMessage(int workerId, int requestId, string memberName, string message)
         {
+            if (memberName == null)
+            {
+                memberName = string.Empty;
+            }
+
+            if (message == null)
+            {
+                message = string.Empty;
+            }
+
             const int SizeData = 4;
             fixed (char* memberNamePtr = memberName)
             fixed (char* messagePtr = message)
