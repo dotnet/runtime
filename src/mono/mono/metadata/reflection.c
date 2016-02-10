@@ -6661,12 +6661,11 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	MonoError error;
 	MonoReflectionAssembly *result;
 	result = mono_assembly_get_object_checked (domain, assembly, &error);
-	if (!result)
-		mono_error_set_pending_exception (&error);
+	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
 	return result;
 }
 /*
- * mono_assembly_get_object:
+ * mono_assembly_get_object_checked:
  * @domain: an app domain
  * @assembly: an assembly
  *
@@ -6764,7 +6763,7 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	MonoError error;
 	MonoReflectionModule *result;
 	result = mono_module_file_get_object_checked (domain, image, table_index, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
 	return result;
 }
 
