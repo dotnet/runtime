@@ -95,25 +95,25 @@ namespace System.Net.Sockets
                 ThreadPool.QueueUserWorkItem(o => ((AsyncOperation)o).InvokeCallback(), this);
             }
 
-            public bool TryComplete(int fileDescriptor)
+            public bool TryComplete(SocketAsyncContext context)
             {
                 Debug.Assert(_state == (int)State.Waiting);
 
-                return DoTryComplete(fileDescriptor);
+                return DoTryComplete(context);
             }
 
-            public bool TryCompleteAsync(int fileDescriptor)
+            public bool TryCompleteAsync(SocketAsyncContext context)
             {
-                return TryCompleteOrAbortAsync(fileDescriptor, abort: false);
+                return TryCompleteOrAbortAsync(context, abort: false);
             }
 
-            public void AbortAsync()
+            public void AbortAsync(SocketAsyncContext context)
             {
-                bool completed = TryCompleteOrAbortAsync(fileDescriptor: -1, abort: true);
+                bool completed = TryCompleteOrAbortAsync(context, abort: true);
                 Debug.Assert(completed);
             }
 
-            private bool TryCompleteOrAbortAsync(int fileDescriptor, bool abort)
+            private bool TryCompleteOrAbortAsync(SocketAsyncContext context, bool abort)
             {
                 int state = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
                 if (state == (int)State.Cancelled)
@@ -135,7 +135,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    completed = DoTryComplete(fileDescriptor);
+                    completed = DoTryComplete(context);
                 }
 
                 if (completed)
@@ -189,7 +189,7 @@ namespace System.Net.Sockets
 
             protected abstract void Abort();
 
-            protected abstract bool DoTryComplete(int fileDescriptor);
+            protected abstract bool DoTryComplete(SocketAsyncContext context);
 
             protected abstract void InvokeCallback();
         }
@@ -225,17 +225,17 @@ namespace System.Net.Sockets
 
         private sealed class SendOperation : SendReceiveOperation
         {
-            protected override bool DoTryComplete(int fileDescriptor)
+            protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteSendTo(fileDescriptor, Buffer, Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._fileDescriptor, Buffer, Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
         }
 
         private sealed class ReceiveOperation : SendReceiveOperation
         {
-            protected override bool DoTryComplete(int fileDescriptor)
+            protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteReceiveFrom(fileDescriptor, Buffer, Buffers, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                return SocketPal.TryCompleteReceiveFrom(context._fileDescriptor, Buffer, Buffers, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
             }
         }
 
@@ -251,9 +251,9 @@ namespace System.Net.Sockets
                 set { CallbackOrEvent = value; }
             }
 
-            protected override bool DoTryComplete(int fileDescriptor)
+            protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteReceiveMessageFrom(fileDescriptor, Buffer, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                return SocketPal.TryCompleteReceiveMessageFrom(context._fileDescriptor, Buffer, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
             }
 
             protected override void InvokeCallback()
@@ -281,9 +281,9 @@ namespace System.Net.Sockets
                 AcceptedFileDescriptor = -1;
             }
 
-            protected override bool DoTryComplete(int fileDescriptor)
+            protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool completed = SocketPal.TryCompleteAccept(fileDescriptor, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
+                bool completed = SocketPal.TryCompleteAccept(context._fileDescriptor, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
                 Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == -1);
                 return completed;
             }
@@ -304,9 +304,11 @@ namespace System.Net.Sockets
 
             protected override void Abort() { }
 
-            protected override bool DoTryComplete(int fileDescriptor)
+            protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteConnect(fileDescriptor, SocketAddressLen, out ErrorCode);
+                bool result = SocketPal.TryCompleteConnect(context._fileDescriptor, SocketAddressLen, out ErrorCode);
+                context.RegisterConnectResult(ErrorCode);
+                return result;
             }
 
             protected override void InvokeCallback()
@@ -412,6 +414,7 @@ namespace System.Net.Sockets
         private SocketAsyncEngine _engine;
         private Interop.Sys.SocketEvents _registeredEvents;
         private bool _nonBlockingSet;
+        private bool _connectFailed;
 
         // These locks are hierarchical: _closeLock must be acquired before _queueLock in order
         // to prevent deadlock.
@@ -531,7 +534,7 @@ namespace System.Net.Sockets
             while (!acceptOrConnectQueue.IsEmpty)
             {
                 AcceptOrConnectOperation op = acceptOrConnectQueue.Head;
-                op.AbortAsync();
+                op.AbortAsync(this);
                 acceptOrConnectQueue.Dequeue();
             }
 
@@ -539,7 +542,7 @@ namespace System.Net.Sockets
             while (!sendQueue.IsEmpty)
             {
                 SendReceiveOperation op = sendQueue.Head;
-                op.AbortAsync();
+                op.AbortAsync(this);
                 sendQueue.Dequeue();
             }
 
@@ -547,7 +550,7 @@ namespace System.Net.Sockets
             while (!receiveQueue.IsEmpty)
             {
                 TransferOperation op = receiveQueue.Head;
-                op.AbortAsync();
+                op.AbortAsync(this);
                 receiveQueue.Dequeue();
             }
         }
@@ -582,6 +585,18 @@ namespace System.Net.Sockets
 
                 _nonBlockingSet = true;
             }
+        }
+
+        public void CheckForPriorConnectFailure()
+        {
+            if (_connectFailed)
+                throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
+        }
+
+        public void RegisterConnectResult(SocketError error)
+        {
+            if (error != SocketError.Success && error != SocketError.WouldBlock)
+                _connectFailed = true;
         }
 
         private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, out bool isStopped)
@@ -656,7 +671,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         socketAddressLen = operation.SocketAddressLen;
                         acceptedFd = operation.AcceptedFileDescriptor;
@@ -715,7 +730,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -730,9 +745,12 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0);
             Debug.Assert(timeout == -1 || timeout > 0);
 
+            CheckForPriorConnectFailure();
+
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_fileDescriptor, socketAddress, socketAddressLen, out errorCode))
             {
+                RegisterConnectResult(errorCode);
                 return errorCode;
             }
 
@@ -752,7 +770,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         return operation.ErrorCode;
                     }
@@ -768,15 +786,20 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0);
             Debug.Assert(callback != null);
 
+            CheckForPriorConnectFailure();
+
             SetNonBlocking();
 
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_fileDescriptor, socketAddress, socketAddressLen, out errorCode))
             {
+                RegisterConnectResult(errorCode);
+
                 if (errorCode == SocketError.Success)
                 {
                     ThreadPool.QueueUserWorkItem(arg => ((Action<SocketError>)arg)(SocketError.Success), callback);
                 }
+
                 return errorCode;
             }
 
@@ -794,7 +817,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -850,7 +873,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         socketAddressLen = operation.SocketAddressLen;
                         flags = operation.ReceivedFlags;
@@ -907,7 +930,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -960,7 +983,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         socketAddressLen = operation.SocketAddressLen;
                         flags = operation.ReceivedFlags;
@@ -1015,7 +1038,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -1065,7 +1088,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         socketAddressLen = operation.SocketAddressLen;
                         flags = operation.ReceivedFlags;
@@ -1128,7 +1151,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -1180,7 +1203,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         bytesSent = operation.BytesTransferred;
                         return operation.ErrorCode;
@@ -1231,7 +1254,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -1285,7 +1308,7 @@ namespace System.Net.Sockets
                         return SocketError.Interrupted;
                     }
 
-                    if (operation.TryComplete(_fileDescriptor))
+                    if (operation.TryComplete(this))
                     {
                         bytesSent = operation.BytesTransferred;
                         return operation.ErrorCode;
@@ -1338,7 +1361,7 @@ namespace System.Net.Sockets
                     return SocketError.OperationAborted;
                 }
 
-                if (operation.TryComplete(_fileDescriptor))
+                if (operation.TryComplete(this))
                 {
                     operation.QueueCompletionCallback();
                     break;
@@ -1396,7 +1419,7 @@ namespace System.Net.Sockets
                     while (!receiveQueue.IsEmpty)
                     {
                         TransferOperation op = receiveQueue.Head;
-                        bool completed = op.TryCompleteAsync(_fileDescriptor);
+                        bool completed = op.TryCompleteAsync(this);
                         Debug.Assert(completed);
                         receiveQueue.Dequeue();
                     }
@@ -1433,7 +1456,7 @@ namespace System.Net.Sockets
                         do
                         {
                             op = _acceptOrConnectQueue.Head;
-                            if (!op.TryCompleteAsync(_fileDescriptor))
+                            if (!op.TryCompleteAsync(this))
                             {
                                 break;
                             }
@@ -1447,7 +1470,7 @@ namespace System.Net.Sockets
                         do
                         {
                             op = _receiveQueue.Head;
-                            if (!op.TryCompleteAsync(_fileDescriptor))
+                            if (!op.TryCompleteAsync(this))
                             {
                                 break;
                             }
@@ -1475,7 +1498,7 @@ namespace System.Net.Sockets
                         do
                         {
                             op = _acceptOrConnectQueue.Head;
-                            if (!op.TryCompleteAsync(_fileDescriptor))
+                            if (!op.TryCompleteAsync(this))
                             {
                                 break;
                             }
@@ -1489,7 +1512,7 @@ namespace System.Net.Sockets
                         do
                         {
                             op = _sendQueue.Head;
-                            if (!op.TryCompleteAsync(_fileDescriptor))
+                            if (!op.TryCompleteAsync(this))
                             {
                                 break;
                             }
