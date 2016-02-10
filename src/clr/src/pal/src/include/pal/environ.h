@@ -49,7 +49,7 @@ Function:
 
 Gets an environment variable's value.
 --*/
-char *EnvironGetenv(const char *name);
+char *EnvironGetenv(const char *name, bool copyValue = true);
 
 /*++
 Function:
