@@ -857,7 +857,8 @@ class ClrDataAccess
       public ICLRDataEnumMemoryRegions,
       public ISOSDacInterface,
       public ISOSDacInterface2,
-      public ISOSDacInterface3
+      public ISOSDacInterface3,
+      public ISOSDacInterface4
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1196,6 +1197,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, struct DacpGCInterestingInfoData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCGlobalMechanisms(size_t* globalMechanisms);
+
+    // ISOSDacInterface4
+    virtual HRESULT STDMETHODCALLTYPE GetClrNotification(CLRDATA_ADDRESS arguments[], int count, int *pNeeded);
 
     //
     // ClrDataAccess.
