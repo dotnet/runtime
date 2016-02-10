@@ -349,13 +349,6 @@ bool _DbgBreakCheck(
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    RaiseExceptionOnAssert(rTestAndRaise);
-
-    if (DebugBreakOnAssert())
-    {
-        DebugBreak();
-    }
-
     DBGIGNORE* pDBGIFNORE = GetDBGIGNORE();
     _DBGIGNOREDATA *psData;
     int i;
@@ -558,13 +551,6 @@ bool _DbgBreakCheckNoThrow(
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    RaiseExceptionOnAssert(rTestAndRaise);
-
-    if (DebugBreakOnAssert())
-    {
-        DebugBreak();
-    }
-
     bool failed = false;
     bool result = false;
     EX_TRY
@@ -706,11 +692,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
     dbgForceToMemory = &szExpr;
 
     RaiseExceptionOnAssert(rTestAndRaise);
-
-    if (DebugBreakOnAssert())
-    {
-        DebugBreak();
-    }
 
     BOOL fConstrained = FALSE;
 
