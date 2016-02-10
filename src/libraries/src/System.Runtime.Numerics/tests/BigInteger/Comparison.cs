@@ -358,6 +358,14 @@ namespace System.Numerics.Tests
             Assert.Equal(false, BigInteger.Zero.Equals((Object)"0"));
         }
 
+        [Fact]
+        public static void IComparable_Invalid()
+        {
+            IComparable comparable = new BigInteger();
+            Assert.Equal(1, comparable.CompareTo(null));
+            Assert.Throws<ArgumentException>("obj", () => comparable.CompareTo(0)); // Obj is not a BigInteger
+        }
+
         private static void VerifyComparison(BigInteger x, BigInteger y, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -378,6 +386,11 @@ namespace System.Numerics.Tests
 
             VerifyCompareResult(expectedResult, x.CompareTo(y), "x.CompareTo(y)");
             VerifyCompareResult(-expectedResult, y.CompareTo(x), "y.CompareTo(x)");
+
+            IComparable comparableX = x;
+            IComparable comparableY = y;
+            VerifyCompareResult(expectedResult, comparableX.CompareTo(y), "comparableX.CompareTo(y)");
+            VerifyCompareResult(-expectedResult, comparableY.CompareTo(x), "comparableY.CompareTo(x)");
 
             VerifyCompareResult(expectedResult, BigInteger.Compare(x, y), "Compare(x,y)");
             VerifyCompareResult(-expectedResult, BigInteger.Compare(y, x), "Compare(y,x)");

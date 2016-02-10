@@ -998,8 +998,8 @@ namespace System.Numerics
             if (obj == null)
                 return 1;
             if (!(obj is BigInteger))
-                throw new ArgumentException(SR.Argument_MustBeBigInt);
-            return this.CompareTo((BigInteger)obj);
+                throw new ArgumentException(SR.Argument_MustBeBigInt, "obj");
+            return CompareTo((BigInteger)obj);
         }
 
         /// <summary>
