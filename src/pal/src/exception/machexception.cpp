@@ -29,6 +29,7 @@ Abstract:
 #include "pal/process.h"
 #include "pal/virtual.h"
 #include "pal/map.hpp"
+#include "pal/environ.h"
 
 #include "machmessage.h"
 
@@ -170,10 +171,11 @@ GetExceptionMask()
     {
         exMode = MachException_Default;
 
-        const char * exceptionSettings = getenv(PAL_MACH_EXCEPTION_MODE);
+        char* exceptionSettings = EnvironGetenv(PAL_MACH_EXCEPTION_MODE);
         if (exceptionSettings)
         {
             exMode = (MachExceptionMode)atoi(exceptionSettings);
+            InternalFree(exceptionSettings);
         }
         else
         {

@@ -1187,15 +1187,12 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     if (!env_path || *env_path=='\0')
     {
         WARN("$PATH isn't set.\n");
-        goto last_resort;
-    }
+        if (env_path != NULL)
+        {
+            InternalFree(env_path);
+        }
 
-    /* get our own copy of env_path so we can modify it */
-    env_path = strdup(env_path);
-    if (!env_path)
-    {
-        ERROR("Not enough memory to copy $PATH!\n");
-        return NULL;
+        goto last_resort;
     }
 
     exe_name_length=strlen(exe_name);
@@ -1328,7 +1325,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     }
 
     InternalFree(env_path);
-    TRACE("No %s found in $PATH (%s)\n", exe_name, EnvironGetenv("PATH"));
+    TRACE("No %s found in $PATH (%s)\n", exe_name, EnvironGetenv("PATH")); /////// leak in debug. fix?
 
 last_resort:
     /* last resort : see if the executable is in the current directory. This is

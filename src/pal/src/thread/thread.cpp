@@ -1690,6 +1690,8 @@ CorUnix::InitializeGlobalThreadData(
         {
             CPalThread::s_dwDefaultThreadStackSize = dw;
         }
+
+        InternalFree(pszStackSize);
     }
 
 #if !HAVE_MACH_EXCEPTIONS

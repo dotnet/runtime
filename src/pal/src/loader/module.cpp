@@ -30,7 +30,7 @@ Abstract:
 #include "pal/utils.h"
 #include "pal/init.h"
 #include "pal/modulename.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/stackstring.hpp"
@@ -745,12 +745,17 @@ PAL_LOADLoadPEFile(HANDLE hFile)
 #ifdef _DEBUG
     if (loadedBase != nullptr)
     {
-        char* envVar = getenv("PAL_ForcePEMapFailure");
-        if (envVar && strlen(envVar) > 0)
+        char* envVar = EnvironGetenv("PAL_ForcePEMapFailure");
+        if (envVar)
         {
-            TRACE("Forcing failure of PE file map, and retry\n");
-            PAL_LOADUnloadPEFile(loadedBase); // unload it
-            loadedBase = MAPMapPEFile(hFile); // load it again
+            if (strlen(envVar) > 0)
+            {
+                TRACE("Forcing failure of PE file map, and retry\n");
+                PAL_LOADUnloadPEFile(loadedBase); // unload it
+                loadedBase = MAPMapPEFile(hFile); // load it again
+            }
+
+            InternalFree(envVar);
         }
     }
 #endif // _DEBUG

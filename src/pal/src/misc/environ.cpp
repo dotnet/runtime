@@ -26,6 +26,10 @@ Revision History:
 #include "pal/environ.h"
 #include "pal/malloc.hpp"
 
+#if HAVE_CRT_EXTERNS_H
+#include <crt_externs.h>
+#endif
+
 #include <stdlib.h>
 
 using namespace CorUnix;
@@ -50,11 +54,11 @@ characters.
 Parameters
 
 lpName 
-       [in] Pointer to a null-terminated string that specifies the environment variable. 
+       [in] Pointer to a null-terminated string that specifies the environment variable.
 lpBuffer 
-       [out] Pointer to a buffer to receive the value of the specified environment variable. 
+       [out] Pointer to a buffer to receive the value of the specified environment variable.
 nSize 
-       [in] Specifies the size, in TCHARs, of the buffer pointed to by the lpBuffer parameter. 
+       [in] Specifies the size, in TCHARs, of the buffer pointed to by the lpBuffer parameter.
 
 Return Values
 
@@ -84,7 +88,10 @@ GetEnvironmentVariableA(
     ENTRY("GetEnvironmentVariableA(lpName=%p (%s), lpBuffer=%p, nSize=%u)\n",
         lpName ? lpName : "NULL",
         lpName ? lpName : "NULL", lpBuffer, nSize);
-    
+
+    bool enteredCritSec = false;
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+
     if (lpName == nullptr)
     {
         ERROR("lpName is null\n");
@@ -106,7 +113,14 @@ GetEnvironmentVariableA(
     }
     else
     {
-        value = EnvironGetenv(lpName); ///////// make this not return a copy, or have it fill out the buffer
+        // Enter the environment critical section so that we can safely get
+        // the environment variable value without EnvironGetenv making an
+        // intermediate copy. We will just copy the string to the output 
+        // buffer anyway, so just stay in the critical section until then.
+        InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+        enteredCritSec = true;
+
+        value = EnvironGetenv(lpName, /* copyValue */ false);
     }
 
     if (value == nullptr)
@@ -129,6 +143,12 @@ GetEnvironmentVariableA(
     SetLastError(ERROR_SUCCESS);
 
 done:
+
+    if (enteredCritSec)
+    {
+        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    }
+
     LOGEXIT("GetEnvironmentVariableA returns DWORD 0x%x\n", dwRet);
     PERF_EXIT(GetEnvironmentVariableA);
     return dwRet;
@@ -604,7 +624,10 @@ SetEnvironmentVariableA(
      * the variable name from process environment */
     if (lpValue == nullptr)
     {
-        if ((lpValue = EnvironGetenv(lpName)) == nullptr)
+        // We tell EnvironGetenv not to bother with making a copy of the
+        // value since we're not going to use it for anything interesting
+        // apart from checking whether it's null.
+        if ((lpValue = EnvironGetenv(lpName, /* copyValue */ false)) == nullptr)
         {
             ERROR("Couldn't find environment variable (%s)\n", lpName);
             SetLastError(ERROR_ENVVAR_NOT_FOUND);
@@ -746,6 +769,8 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
         copy[length - 1] = '\0';
 
         EnvironUnsetenv(copy);
+        InternalFree(copy);
+
         result = TRUE;
     }
     else
@@ -798,7 +823,7 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
                 int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
                 if (resizeRet != 0)
                 {
-                    free(copy);
+                    InternalFree(copy);
                     goto done;
                 }
             }
@@ -821,7 +846,7 @@ done:
     return result;
 }
 
-char* EnvironGetenv(const char* name)
+char* EnvironGetenv(const char* name, bool copyValue)
 {
     char *retValue = nullptr;
 
@@ -839,7 +864,7 @@ char* EnvironGetenv(const char* name)
             // treat the whole thing as name, so the value is an empty string.
             if (*equalsSignPosition == '\0')
             {
-                retValue = strdup("");
+                retValue = (char *)"";
                 break;
             }
             else if (*equalsSignPosition == '=')
@@ -848,6 +873,11 @@ char* EnvironGetenv(const char* name)
                 break;
             }
         }
+    }
+
+    if ((retValue != nullptr) && copyValue)
+    {
+        retValue = strdup(retValue);
     }
 
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
@@ -881,7 +911,6 @@ BOOL
 EnvironInitialize(void)
 {
     InternalInitializeCriticalSection(&gcsEnvironment);
-
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
