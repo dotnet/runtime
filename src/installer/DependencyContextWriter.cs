@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             using (var writer = new StreamWriter(stream))
             {
-                using (var jsonWriter = new JsonTextWriter(writer))
+                using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
                 {
                     Write(context).WriteTo(jsonWriter);
                 }
