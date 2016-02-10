@@ -125,7 +125,7 @@ branchList.each { branchName ->
                     // Jobs run as a service in unix, which means that HOME variable is not set, and it is required for restoring packages
                     // so we set it first, and then call build.sh
                     steps {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")
                     }
                 }
             }
@@ -136,6 +136,11 @@ branchList.each { branchName ->
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+
+            // Unix runs take more than 2 hours to run, so we set the timeout to be longer.
+            if (os == 'Ubuntu' || os == 'OSX') {
+                Utilities.setJobTimeout(newJob, 240)
+            }
 
             // Set up appropriate triggers.  PR on demand, otherwise nightly
             if (isPR) {
