@@ -354,17 +354,6 @@
     </Otherwise>
   </Choose>
 
-  <!-- Provide defaults for ToolNugetRuntimeId -->
-  <PropertyGroup Condition="'$(ToolNugetRuntimeId)'== ''">
-    <ToolNugetRuntimeId Condition="'$(OsEnvironment)'=='Windows_NT'">win7-x64</ToolNugetRuntimeId>
-
-    <!-- This is a bit of a hack because inside MSBuild we have no real concept of the host distro, so we'll assume
-         that if you are building on not windows, your host OS is the same as your target.  If that's not
-         the case, you'll have to provide your own ToolNugetRuntimeId, which is not the end of the world (build.sh will
-         do this for you, for example). -->
-    <ToolNugetRuntimeId Condition="'$(OsEnvironment)'=='Unix'">$(TestNugetRuntimeId)</ToolNugetRuntimeId>
-  </PropertyGroup>
-
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
     <NoStdLib>true</NoStdLib>
