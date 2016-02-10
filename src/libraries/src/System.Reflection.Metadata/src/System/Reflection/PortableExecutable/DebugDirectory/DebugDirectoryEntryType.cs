@@ -39,9 +39,9 @@ namespace System.Reflection.PortableExecutable
         /// this value is an implementation detail of the tool that produced the file.
         /// </para>
         /// <para>
-        /// The debug directory entry of type <see cref="Deterministic"/> must have all fields, except for Type zeroed.
+        /// The debug directory entry of type <see cref="Reproducible"/> must have all fields, except for Type zeroed.
         /// </para>
         /// </remarks>
-        Deterministic = 16,
+        Reproducible = 16,
     }
 }
