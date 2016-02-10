@@ -6,14 +6,28 @@
     <AssemblyName>System.Linq</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <RootNamespace>System.Linq</RootNamespace>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net462'">true</IsPartialFacadeAssembly>
+    <!-- The following line needs to be removed once we have a targeting pack for 4.6.2 -->
+    <TargetingPackNugetPackageId Condition="'$(TargetGroup)' == 'net462'">Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 
+         And replace with property 
+         <PackageTargetFramework >dotnet5.6</PackageTargetFramework>
+    -->
+    <PackageDestination Include="lib/dotnet5.6">
+      <TargetFramework>dotnet5.6</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="lib/dnxcore50">
+      <TargetFramework>dnxcore50</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
@@ -22,6 +36,10 @@
     </Compile>
     <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Linq\Errors.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
