@@ -84,7 +84,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 Assert.Equal(@"C:\Temp\Deterministic.pdb", cv.Path);
 
                 var detEntry = entries[1];
-                Assert.Equal(DebugDirectoryEntryType.Deterministic, detEntry.Type);
+                Assert.Equal(DebugDirectoryEntryType.Reproducible, detEntry.Type);
                 Assert.Equal(0, detEntry.DataPointer);
                 Assert.Equal(0, detEntry.DataRelativeVirtualAddress);
                 Assert.Equal(0, detEntry.DataSize);
