@@ -30,9 +30,7 @@ Abstract:
 #include <stdarg.h>
 #include <time.h>
 #include <limits.h>
-#if HAVE_CRT_EXTERNS_H
-#include <crt_externs.h>
-#endif  // HAVE_CRT_EXTERNS_H
+
 #if defined(_AMD64_) || defined(_x86_)
 #include <xmmintrin.h>
 #endif // defined(_AMD64_) || defined(_x86_)

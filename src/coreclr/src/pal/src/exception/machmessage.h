@@ -56,7 +56,7 @@ using namespace CorUnix;
 
 #ifdef _DEBUG
 
-#define NONPAL_TRACE_ENABLED getenv("NONPAL_TRACING")
+#define NONPAL_TRACE_ENABLED EnvironGetenv("NONPAL_TRACING", /* copyValue */ false);
 
 #define NONPAL_ASSERT(_msg, ...) NONPAL_RETAIL_ASSERT(_msg, __VA_ARGS__)
 
@@ -67,7 +67,7 @@ using namespace CorUnix;
     } while (false)
 
 // Debug-only output with printf-style formatting.
-#define NONPAL_TRACE(_format, ...) do {                                                  \
+#define NONPAL_TRACE(_format, ...) do {                                              \
         if (NONPAL_TRACE_ENABLED) printf("NONPAL_TRACE: " _format, ## __VA_ARGS__);  \
     } while (false)
 
