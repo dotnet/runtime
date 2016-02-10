@@ -88,6 +88,8 @@ GPTR_IMPL(MethodTable,      g_ArgumentHandleMT);
 GPTR_IMPL(MethodTable,      g_ArgIteratorMT);
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
+GPTR_IMPL(MethodTable,      g_pByteArrayMT);
+
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 GPTR_IMPL(MethodTable,      g_pBaseRuntimeClass);
