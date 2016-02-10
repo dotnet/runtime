@@ -3050,13 +3050,13 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	mono_assembly_name_free (aname);
 	g_free (aname);
 	if (corlib != NULL)
-		return corlib;
+		goto return_corlib_and_facades;
 
 	// This unusual directory layout can occur if mono is being built and run out of its own source repo
 	if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
 		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
 		if (corlib)
-			return corlib;
+			goto return_corlib_and_facades;
 	}
 
 	/* Normal case: Load corlib from mono/<version> */
@@ -3065,14 +3065,15 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE);
 		if (corlib) {
 			g_free (corlib_file);
-			return corlib;
+			goto return_corlib_and_facades;
 		}
 	}
 	corlib = load_in_path (corlib_file, default_path, status, FALSE);
 	g_free (corlib_file);
-	
+
+return_corlib_and_facades:
 	if (corlib && !strcmp (runtime->framework_version, "4.5"))  // FIXME: stop hardcoding 4.5 here
-		default_path [1] = g_strdup_printf ("%s/mono/4.5/Facades", default_path [0]);
+		default_path [1] = g_strdup_printf ("%s/Facades", corlib->basedir);
 		
 	return corlib;
 }
