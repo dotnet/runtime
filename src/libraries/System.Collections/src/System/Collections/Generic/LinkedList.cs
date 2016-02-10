@@ -187,9 +187,14 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("array");
             }
 
-            if (index < 0 || index > array.Length)
+            if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index));
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (index > array.Length)
+            {
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_BiggerThanCollection);
             }
 
             if (array.Length - index < Count)
@@ -411,17 +416,17 @@ namespace System.Collections.Generic
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_MultiRank);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+                throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.Format(SR.IndexOutOfRange, index));
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < Count)
@@ -441,7 +446,7 @@ namespace System.Collections.Generic
                 object[] objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Invalid_Array_Type);
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                 }
                 LinkedListNode<T> node = head;
                 try
@@ -457,7 +462,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Invalid_Array_Type);
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                 }
             }
         }
