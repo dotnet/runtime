@@ -834,13 +834,13 @@ namespace System.Collections.Generic
             // check array index valid index into array
             if (arrayIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("arrayIndex", arrayIndex, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             // also throw if count less than 0
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("count", count, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             // will array, starting at arrayIndex, be able to hold elements? Note: not

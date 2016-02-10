@@ -37,7 +37,7 @@ namespace System.Collections
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("length", length, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -203,7 +203,7 @@ namespace System.Collections
         {
             if (index < 0 || index >= Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -220,7 +220,7 @@ namespace System.Collections
         {
             if (index < 0 || index >= Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -351,7 +351,7 @@ namespace System.Collections
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
                 Contract.EndContractBlock();
 
@@ -388,10 +388,10 @@ namespace System.Collections
                 throw new ArgumentNullException("array");
 
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
 
             Contract.EndContractBlock();
 
@@ -419,7 +419,7 @@ namespace System.Collections
                     b[index + i] = ((m_array[i / 32] >> (i % 32)) & 0x00000001) != 0;
             }
             else
-                throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported);
+                throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, "array");
         }
 
         int ICollection.Count
