@@ -98,11 +98,11 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelper<TLeftKey, TRightKey>(
-            PartitionedStream<Pair, TLeftKey> leftHashStream, PartitionedStream<TRightInput, TRightKey> rightPartitionedStream,
+            PartitionedStream<Pair<TLeftInput, TKey>, TLeftKey> leftHashStream, PartitionedStream<TRightInput, TRightKey> rightPartitionedStream,
             IPartitionedStreamRecipient<TOutput> outputRecipient, CancellationToken cancellationToken)
         {
             int partitionCount = leftHashStream.PartitionCount;
-            PartitionedStream<Pair, int> rightHashStream = ExchangeUtilities.HashRepartition(
+            PartitionedStream<Pair<TRightInput, TKey>, int> rightHashStream = ExchangeUtilities.HashRepartition(
                 rightPartitionedStream, _rightKeySelector, _keyComparer, null, cancellationToken);
 
             PartitionedStream<TOutput, TLeftKey> outputStream = new PartitionedStream<TOutput, TLeftKey>(

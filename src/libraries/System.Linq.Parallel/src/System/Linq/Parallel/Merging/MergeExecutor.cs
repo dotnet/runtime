@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<TInputOutput>)this).GetEnumerator();
+            return GetEnumerator();
         }
 
         public IEnumerator<TInputOutput> GetEnumerator()

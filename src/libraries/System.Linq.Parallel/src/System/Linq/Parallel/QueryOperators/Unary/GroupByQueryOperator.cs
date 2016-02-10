@@ -96,7 +96,7 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelper<TIgnoreKey, TKey>(
-            PartitionedStream<Pair, TKey> hashStream,
+            PartitionedStream<Pair<TSource, TGroupKey>, TKey> hashStream,
             IPartitionedStreamRecipient<IGrouping<TGroupKey, TElement>> recipient,
             CancellationToken cancellationToken)
         {
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelperOrdered<TKey>(
-            PartitionedStream<Pair, TKey> hashStream,
+            PartitionedStream<Pair<TSource, TGroupKey>, TKey> hashStream,
             IPartitionedStreamRecipient<IGrouping<TGroupKey, TElement>> recipient,
             CancellationToken cancellationToken)
         {
@@ -190,7 +190,7 @@ namespace System.Linq.Parallel
             if (_elementSelector == null)
             {
                 Debug.Assert(typeof(TElement) == typeof(TSource));
-                return (IEnumerable<IGrouping<TGroupKey, TElement>>)(object)(wrappedChild.GroupBy(_keySelector, _keyComparer));
+                return (IEnumerable<IGrouping<TGroupKey, TElement>>)wrappedChild.GroupBy(_keySelector, _keyComparer);
             }
             else
             {
@@ -221,7 +221,7 @@ namespace System.Linq.Parallel
     internal abstract class GroupByQueryOperatorEnumerator<TSource, TGroupKey, TElement, TOrderKey> :
         QueryOperatorEnumerator<IGrouping<TGroupKey, TElement>, TOrderKey>
     {
-        protected readonly QueryOperatorEnumerator<Pair, TOrderKey> _source; // The data source to enumerate.
+        protected readonly QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> _source; // The data source to enumerate.
         protected readonly IEqualityComparer<TGroupKey> _keyComparer; // A key comparer.
         protected readonly CancellationToken _cancellationToken;
         private Mutables _mutables; // All of the mutable state.
@@ -237,7 +237,7 @@ namespace System.Linq.Parallel
         //
 
         protected GroupByQueryOperatorEnumerator(
-            QueryOperatorEnumerator<Pair, TOrderKey> source,
+            QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             IEqualityComparer<TGroupKey> keyComparer, CancellationToken cancellationToken)
         {
             Debug.Assert(source != null);
@@ -307,7 +307,7 @@ namespace System.Linq.Parallel
         //
 
         internal GroupByIdentityQueryOperatorEnumerator(
-            QueryOperatorEnumerator<Pair, TOrderKey> source,
+            QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             IEqualityComparer<TGroupKey> keyComparer, CancellationToken cancellationToken)
             : base(source, keyComparer, cancellationToken)
         {
@@ -322,7 +322,7 @@ namespace System.Linq.Parallel
             HashLookup<Wrapper<TGroupKey>, ListChunk<TSource>> hashlookup =
                 new HashLookup<Wrapper<TGroupKey>, ListChunk<TSource>>(new WrapperEqualityComparer<TGroupKey>(_keyComparer));
 
-            Pair sourceElement = new Pair(default(TSource), default(TGroupKey));
+            Pair<TSource, TGroupKey> sourceElement = default(Pair<TSource, TGroupKey>);
             TOrderKey sourceKeyUnused = default(TOrderKey);
             int i = 0;
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
@@ -331,7 +331,7 @@ namespace System.Linq.Parallel
                     CancellationState.ThrowIfCanceled(_cancellationToken);
 
                 // Generate a key and place it into the hashtable.
-                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>((TGroupKey)sourceElement.Second);
+                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
 
                 // If the key already exists, we just append it to the existing list --
                 // otherwise we will create a new one and add it to that instead.
@@ -345,7 +345,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
-                currentValue.Add((TSource)sourceElement.First);
+                currentValue.Add(sourceElement.First);
             }
 
             return hashlookup;
@@ -367,7 +367,7 @@ namespace System.Linq.Parallel
         //
 
         internal GroupByElementSelectorQueryOperatorEnumerator(
-            QueryOperatorEnumerator<Pair, TOrderKey> source,
+            QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             IEqualityComparer<TGroupKey> keyComparer, Func<TSource, TElement> elementSelector, CancellationToken cancellationToken) :
             base(source, keyComparer, cancellationToken)
         {
@@ -384,7 +384,7 @@ namespace System.Linq.Parallel
             HashLookup<Wrapper<TGroupKey>, ListChunk<TElement>> hashlookup =
                 new HashLookup<Wrapper<TGroupKey>, ListChunk<TElement>>(new WrapperEqualityComparer<TGroupKey>(_keyComparer));
 
-            Pair sourceElement = new Pair(default(TSource), default(TGroupKey));
+            Pair<TSource, TGroupKey> sourceElement = default(Pair<TSource, TGroupKey>);
             TOrderKey sourceKeyUnused = default(TOrderKey);
             int i = 0;
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
@@ -393,7 +393,7 @@ namespace System.Linq.Parallel
                     CancellationState.ThrowIfCanceled(_cancellationToken);
 
                 // Generate a key and place it into the hashtable.
-                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>((TGroupKey)sourceElement.Second);
+                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
 
                 // If the key already exists, we just append it to the existing list --
                 // otherwise we will create a new one and add it to that instead.
@@ -407,7 +407,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
-                currentValue.Add(_elementSelector((TSource)sourceElement.First));
+                currentValue.Add(_elementSelector(sourceElement.First));
             }
 
             return hashlookup;
@@ -422,7 +422,7 @@ namespace System.Linq.Parallel
     internal abstract class OrderedGroupByQueryOperatorEnumerator<TSource, TGroupKey, TElement, TOrderKey> :
         QueryOperatorEnumerator<IGrouping<TGroupKey, TElement>, TOrderKey>
     {
-        protected readonly QueryOperatorEnumerator<Pair, TOrderKey> _source; // The data source to enumerate.
+        protected readonly QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> _source; // The data source to enumerate.
         private readonly Func<TSource, TGroupKey> _keySelector; // The key selection routine.
         protected readonly IEqualityComparer<TGroupKey> _keyComparer; // The key comparison routine.
         protected readonly IComparer<TOrderKey> _orderComparer; // The comparison routine for order keys.
@@ -439,7 +439,7 @@ namespace System.Linq.Parallel
         // Instantiates a new group by enumerator.
         //
 
-        protected OrderedGroupByQueryOperatorEnumerator(QueryOperatorEnumerator<Pair, TOrderKey> source,
+        protected OrderedGroupByQueryOperatorEnumerator(QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             Func<TSource, TGroupKey> keySelector, IEqualityComparer<TGroupKey> keyComparer, IComparer<TOrderKey> orderComparer,
             CancellationToken cancellationToken)
         {
@@ -535,7 +535,7 @@ namespace System.Linq.Parallel
         // Instantiates a new group by enumerator.
         //
 
-        internal OrderedGroupByIdentityQueryOperatorEnumerator(QueryOperatorEnumerator<Pair, TOrderKey> source,
+        internal OrderedGroupByIdentityQueryOperatorEnumerator(QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             Func<TSource, TGroupKey> keySelector, IEqualityComparer<TGroupKey> keyComparer, IComparer<TOrderKey> orderComparer,
             CancellationToken cancellationToken)
             : base(source, keySelector, keyComparer, orderComparer, cancellationToken)
@@ -551,7 +551,7 @@ namespace System.Linq.Parallel
             HashLookup<Wrapper<TGroupKey>, GroupKeyData> hashLookup = new HashLookup<Wrapper<TGroupKey>, GroupKeyData>(
                 new WrapperEqualityComparer<TGroupKey>(_keyComparer));
 
-            Pair sourceElement = new Pair(default(TSource), default(TGroupKey));
+            Pair<TSource, TGroupKey> sourceElement = default(Pair<TSource, TGroupKey>);
             TOrderKey sourceOrderKey = default(TOrderKey);
             int i = 0;
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
@@ -560,7 +560,7 @@ namespace System.Linq.Parallel
                     CancellationState.ThrowIfCanceled(_cancellationToken);
 
                 // Generate a key and place it into the hashtable.
-                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>((TGroupKey)sourceElement.Second);
+                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
 
                 // If the key already exists, we just append it to the existing list --
                 // otherwise we will create a new one and add it to that instead.
@@ -581,7 +581,7 @@ namespace System.Linq.Parallel
 
                 Debug.Assert(currentValue != null);
 
-                currentValue._grouping.Add((TSource)sourceElement.First, sourceOrderKey);
+                currentValue._grouping.Add(sourceElement.First, sourceOrderKey);
             }
 
             // Sort the elements within each group
@@ -608,7 +608,7 @@ namespace System.Linq.Parallel
         // Instantiates a new group by enumerator.
         //
 
-        internal OrderedGroupByElementSelectorQueryOperatorEnumerator(QueryOperatorEnumerator<Pair, TOrderKey> source,
+        internal OrderedGroupByElementSelectorQueryOperatorEnumerator(QueryOperatorEnumerator<Pair<TSource, TGroupKey>, TOrderKey> source,
             Func<TSource, TGroupKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TGroupKey> keyComparer, IComparer<TOrderKey> orderComparer,
             CancellationToken cancellationToken) :
             base(source, keySelector, keyComparer, orderComparer, cancellationToken)
@@ -626,7 +626,7 @@ namespace System.Linq.Parallel
             HashLookup<Wrapper<TGroupKey>, GroupKeyData> hashLookup = new HashLookup<Wrapper<TGroupKey>, GroupKeyData>(
                 new WrapperEqualityComparer<TGroupKey>(_keyComparer));
 
-            Pair sourceElement = new Pair(default(TSource), default(TGroupKey));
+            Pair<TSource, TGroupKey> sourceElement = default(Pair<TSource, TGroupKey>);
             TOrderKey sourceOrderKey = default(TOrderKey);
             int i = 0;
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
@@ -635,7 +635,7 @@ namespace System.Linq.Parallel
                     CancellationState.ThrowIfCanceled(_cancellationToken);
 
                 // Generate a key and place it into the hashtable.
-                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>((TGroupKey)sourceElement.Second);
+                Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
 
                 // If the key already exists, we just append it to the existing list --
                 // otherwise we will create a new one and add it to that instead.
@@ -657,7 +657,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
-                currentValue._grouping.Add(_elementSelector((TSource)sourceElement.First), sourceOrderKey);
+                currentValue._grouping.Add(_elementSelector(sourceElement.First), sourceOrderKey);
             }
 
             // Sort the elements within each group
