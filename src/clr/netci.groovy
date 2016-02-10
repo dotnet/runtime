@@ -64,7 +64,7 @@ def static setMachineAffinity(def job, def os, def architecture) {
             label('arm64')
         }
     } else {
-        return Utilities.setMachineAffinity(job, os);
+        return Utilities.setMachineAffinity(job, os, 'latest-or-auto');
     }
 }
 
