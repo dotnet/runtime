@@ -1441,13 +1441,16 @@ HRESULT EEStartup(COINITIEE fFlags)
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
 
-#if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
-    DacGlobals::Initialize();
-    InitializeJITNotificationTable();
-#endif
-
     PAL_TRY(COINITIEE *, pfFlags, &fFlags)
     {
+#ifndef CROSSGEN_COMPILE
+#ifdef FEATURE_PAL
+        DacGlobals::Initialize();
+        InitializeJITNotificationTable();
+#endif
+        InitializeClrNotifications();
+#endif // CROSSGEN_COMPILE
+
         EEStartupHelper(*pfFlags);
     }
     PAL_EXCEPT_FILTER (FilterStartupException)

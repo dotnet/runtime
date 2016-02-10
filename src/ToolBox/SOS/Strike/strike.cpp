@@ -6878,9 +6878,43 @@ int CNotification::s_condemnedGen = -1;
 
 BOOL CheckCLRNotificationEvent(DEBUG_LAST_EVENT_INFO_EXCEPTION* pdle)
 {
+    ISOSDacInterface4 *psos4 = NULL;
+    CLRDATA_ADDRESS arguments[3];
+    HRESULT Status;
+
+    if (SUCCEEDED(Status = g_sos->QueryInterface(__uuidof(ISOSDacInterface4), (void**) &psos4)))
+    {
+        int count = _countof(arguments);
+        int countNeeded = 0;
+
+        Status = psos4->GetClrNotification(arguments, count, &countNeeded);
+        psos4->Release();
+
+        if (SUCCEEDED(Status))
+        {
+            memset(&pdle->ExceptionRecord, 0, sizeof(pdle->ExceptionRecord));
+            pdle->FirstChance = TRUE;
+            pdle->ExceptionRecord.ExceptionCode = CLRDATA_NOTIFY_EXCEPTION;
+
+            _ASSERTE(count <= EXCEPTION_MAXIMUM_PARAMETERS);
+            for (int i = 0; i < count; i++)
+            {
+                pdle->ExceptionRecord.ExceptionInformation[i] = arguments[i];
+            }
+            // The rest of the ExceptionRecord isn't used by TranslateExceptionRecordToNotification
+            return TRUE;
+        }
+        // No pending exception notification
+        return FALSE;
+    }
+
+    // The new DAC based interface doesn't exists so ask the debugger for the last exception 
+    // information. NOTE: this function doesn't work on xplat version when the coreclr symbols
+    // have been stripped.
+
     ULONG Type, ProcessId, ThreadId;
     ULONG ExtraInformationUsed;
-    HRESULT Status = g_ExtControl->GetLastEventInformation(
+    Status = g_ExtControl->GetLastEventInformation(
         &Type,
         &ProcessId,
         &ThreadId,
