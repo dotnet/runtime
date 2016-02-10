@@ -12,8 +12,8 @@ namespace System.Net.Http.Headers
         Justification = "This is not a collection")]
     public sealed class HttpContentHeaders : HttpHeaders
     {
-        private static readonly Dictionary<string, HttpHeaderParser> s_parserStore;
-        private static readonly HashSet<string> s_invalidHeaders;
+        private static readonly Dictionary<string, HttpHeaderParser> s_parserStore = CreateParserStore();
+        private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
         private Func<long?> _calculateLengthFunc;
         private bool _contentLengthSet;
@@ -153,26 +153,34 @@ namespace System.Net.Http.Headers
             SetConfiguration(s_parserStore, s_invalidHeaders);
         }
 
-        static HttpContentHeaders()
+        private static Dictionary<string, HttpHeaderParser> CreateParserStore()
         {
-            s_parserStore = new Dictionary<string, HttpHeaderParser>(StringComparer.OrdinalIgnoreCase);
+            var parserStore = new Dictionary<string, HttpHeaderParser>(11, StringComparer.OrdinalIgnoreCase);
 
-            s_parserStore.Add(HttpKnownHeaderNames.Allow, GenericHeaderParser.TokenListParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentDisposition, GenericHeaderParser.ContentDispositionParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentEncoding, GenericHeaderParser.TokenListParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentLanguage, GenericHeaderParser.TokenListParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentLength, Int64NumberHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentLocation, UriHeaderParser.RelativeOrAbsoluteUriParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentMD5, ByteArrayHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentRange, GenericHeaderParser.ContentRangeParser);
-            s_parserStore.Add(HttpKnownHeaderNames.ContentType, MediaTypeHeaderParser.SingleValueParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Expires, DateHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.LastModified, DateHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.Allow, GenericHeaderParser.TokenListParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentDisposition, GenericHeaderParser.ContentDispositionParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentEncoding, GenericHeaderParser.TokenListParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentLanguage, GenericHeaderParser.TokenListParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentLength, Int64NumberHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.ContentLocation, UriHeaderParser.RelativeOrAbsoluteUriParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentMD5, ByteArrayHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.ContentRange, GenericHeaderParser.ContentRangeParser);
+            parserStore.Add(HttpKnownHeaderNames.ContentType, MediaTypeHeaderParser.SingleValueParser);
+            parserStore.Add(HttpKnownHeaderNames.Expires, DateHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.LastModified, DateHeaderParser.Parser);
 
-            s_invalidHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HttpRequestHeaders.AddKnownHeaders(s_invalidHeaders);
-            HttpResponseHeaders.AddKnownHeaders(s_invalidHeaders);
-            HttpGeneralHeaders.AddKnownHeaders(s_invalidHeaders);
+            return parserStore;
+        }
+
+        private static HashSet<string> CreateInvalidHeaders()
+        {
+            var invalidHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            HttpRequestHeaders.AddKnownHeaders(invalidHeaders);
+            HttpResponseHeaders.AddKnownHeaders(invalidHeaders);
+            HttpGeneralHeaders.AddKnownHeaders(invalidHeaders);
+
+            return invalidHeaders;
         }
 
         internal static void AddKnownHeaders(HashSet<string> headerSet)

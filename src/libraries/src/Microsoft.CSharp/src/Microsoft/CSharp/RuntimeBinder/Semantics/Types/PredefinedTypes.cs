@@ -427,22 +427,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        static PredefinedTypeFacts()
-        {
-#if DEBUG
-            for (int i = 0; i < (int)PredefinedType.PT_COUNT; i++)
-            {
-                System.Diagnostics.Debug.Assert(s_pdTypes[i].type == (PredefinedType)i);
-            }
-#endif
-            for (int i = 0; i < (int)PredefinedType.PT_COUNT; i++)
-            {
-                s_pdTypeNames.Add(s_pdTypes[i].name, (PredefinedType)i);
-            }
-        }
-
-        private static readonly Dictionary<string, PredefinedType> s_pdTypeNames = new Dictionary<string, PredefinedType>();
-
         private static readonly PredefinedTypeInfo[] s_pdTypes = new PredefinedTypeInfo[] {
             new PredefinedTypeInfo(PredefinedType.PT_BYTE,   typeof(System.Byte), "System.Byte", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U1, true),
             new PredefinedTypeInfo(PredefinedType.PT_SHORT,  typeof(System.Int16), "System.Int16", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I2, true),
@@ -571,5 +555,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new PredefinedTypeInfo(PredefinedType.PT_G_IREADONLYLIST, typeof(System.Collections.Generic.IReadOnlyList<>), "System.Collections.Generic.IReadOnlyList`1", false, 1, AggKindEnum.Interface, FUNDTYPE.FT_REF, false),
             new PredefinedTypeInfo(PredefinedType.PT_G_IREADONLYCOLLECTION, typeof(System.Collections.Generic.IReadOnlyCollection<>), "System.Collections.Generic.IReadOnlyCollection`1", false, 1, AggKindEnum.Interface, FUNDTYPE.FT_REF, false),
         };
+
+        private static readonly Dictionary<string, PredefinedType> s_pdTypeNames = CreatePredefinedTypeFacts();
+
+        private static Dictionary<string, PredefinedType> CreatePredefinedTypeFacts()
+        {
+            var pdTypeNames = new Dictionary<string, PredefinedType>((int)PredefinedType.PT_COUNT);
+#if DEBUG
+            for (int i = 0; i < (int)PredefinedType.PT_COUNT; i++)
+            {
+                System.Diagnostics.Debug.Assert(s_pdTypes[i].type == (PredefinedType)i);
+            }
+#endif
+            for (int i = 0; i < (int)PredefinedType.PT_COUNT; i++)
+            {
+                pdTypeNames.Add(s_pdTypes[i].name, (PredefinedType)i);
+            }
+            return pdTypeNames;
+        }
     }
 }
