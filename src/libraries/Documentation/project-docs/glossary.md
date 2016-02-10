@@ -93,7 +93,7 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 ### LINQ
 
-Introduced in .NET Framework 3.5, LINQ is designed to make data processing easier. LINQ is primarily a collection of methods that operate on `IEnumerable` and `IEnumerable<T>`. LINQ was intended to be used with extension methods (added in C# 3.0 and VB 9.0 at the sametime as .NET Framework 3.5 was released) allowing for a function style of programing.
+Introduced in .NET Framework 3.5, LINQ is designed to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
 
 For example to filter an array before LINQ the following would be done:
 
@@ -156,7 +156,7 @@ Also introduced in .NET Framework 3.5 Parallel LINQ. Parallel LINQ has a subset 
 
 Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Forms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono has an implementation of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
 
-Windows Forms is in maintenance mode currently. That means new features will generally not be added.
+Windows Forms is in maintenance mode now. That means new features will generally not be added.
 
 ### Windows Presentation Foundation
 
@@ -168,7 +168,7 @@ Windows Forms is in maintenance mode currently. That means new features will gen
 
 ### XNA
 
-**Also referred to as**: XNA Framwork
+**Also referred to as**: XNA Framework
 
 ### MonoGame
 
