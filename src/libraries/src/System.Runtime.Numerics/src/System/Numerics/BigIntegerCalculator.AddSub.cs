@@ -58,9 +58,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Add(uint* left, int leftLength,
-                                       uint* right, int rightLength,
-                                       uint* bits, int bitsLength)
+        private unsafe static void Add(uint* left, int leftLength, uint* right, int rightLength, uint* bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -91,8 +89,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void AddSelf(uint* left, int leftLength,
-                                           uint* right, int rightLength)
+        private unsafe static void AddSelf(uint* left, int leftLength, uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -171,9 +168,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Subtract(uint* left, int leftLength,
-                                            uint* right, int rightLength,
-                                            uint* bits, int bitsLength)
+        private unsafe static void Subtract(uint* left, int leftLength, uint* right, int rightLength, uint* bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -206,8 +201,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void SubtractSelf(uint* left, int leftLength,
-                                                uint* right, int rightLength)
+        private unsafe static void SubtractSelf(uint* left, int leftLength, uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -259,8 +253,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static int Compare(uint* left, int leftLength,
-                                          uint* right, int rightLength)
+        private unsafe static int Compare(uint* left, int leftLength, uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
