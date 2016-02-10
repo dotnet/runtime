@@ -118,9 +118,9 @@ namespace System.Linq.Parallel
             int partitionCount = leftStreamInc.PartitionCount;
 
             // Generate the shared data.
-            IComparer<ConcatKey> comparer = ConcatKey.MakeComparer(
+            IComparer<ConcatKey<TLeftKey, TRightKey>> comparer = ConcatKey<TLeftKey, TRightKey>.MakeComparer(
                 leftStreamInc.KeyComparer, rightStreamInc.KeyComparer);
-            var outputStream = new PartitionedStream<TSource, ConcatKey>(partitionCount, comparer, OrdinalIndexState);
+            var outputStream = new PartitionedStream<TSource, ConcatKey<TLeftKey, TRightKey>>(partitionCount, comparer, OrdinalIndexState);
 
             for (int i = 0; i < partitionCount; i++)
             {
@@ -155,7 +155,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for concatenating two data sources.
         //
 
-        class ConcatQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TSource, ConcatKey>
+        sealed class ConcatQueryOperatorEnumerator<TLeftKey, TRightKey> : QueryOperatorEnumerator<TSource, ConcatKey<TLeftKey, TRightKey>>
         {
             private QueryOperatorEnumerator<TSource, TLeftKey> _firstSource; // The first data source to enumerate.
             private QueryOperatorEnumerator<TSource, TRightKey> _secondSource; // The second data source to enumerate.
@@ -184,7 +184,7 @@ namespace System.Linq.Parallel
             // index offset.
             //
 
-            internal override bool MoveNext(ref TSource currentElement, ref ConcatKey currentKey)
+            internal override bool MoveNext(ref TSource currentElement, ref ConcatKey<TLeftKey, TRightKey> currentKey)
             {
                 Debug.Assert(_firstSource != null);
                 Debug.Assert(_secondSource != null);
@@ -196,7 +196,7 @@ namespace System.Linq.Parallel
                     TLeftKey leftKey = default(TLeftKey);
                     if (_firstSource.MoveNext(ref currentElement, ref leftKey))
                     {
-                        currentKey = ConcatKey.MakeLeft<TLeftKey, TRightKey>(leftKey);
+                        currentKey = ConcatKey<TLeftKey, TRightKey>.MakeLeft(leftKey);
                         return true;
                     }
                     _begunSecond = true;
@@ -206,7 +206,7 @@ namespace System.Linq.Parallel
                 TRightKey rightKey = default(TRightKey);
                 if (_secondSource.MoveNext(ref currentElement, ref rightKey))
                 {
-                    currentKey = ConcatKey.MakeRight<TLeftKey, TRightKey>(rightKey);
+                    currentKey = ConcatKey<TLeftKey, TRightKey>.MakeRight(rightKey);
                     return true;
                 }
 
@@ -296,33 +296,33 @@ namespace System.Linq.Parallel
     // the elements ordering key.
     //
 
-    internal struct ConcatKey
+    internal struct ConcatKey<TLeftKey, TRightKey>
     {
-        private readonly object _leftKey;
-        private readonly object _rightKey;
+        private readonly TLeftKey _leftKey;
+        private readonly TRightKey _rightKey;
         private readonly bool _isLeft;
 
-        private ConcatKey(object leftKey, object rightKey, bool isLeft)
+        private ConcatKey(TLeftKey leftKey, TRightKey rightKey, bool isLeft)
         {
             _leftKey = leftKey;
             _rightKey = rightKey;
             _isLeft = isLeft;
         }
 
-        internal static ConcatKey MakeLeft<TLeftKey, TRightKey>(object leftKey)
+        internal static ConcatKey<TLeftKey, TRightKey> MakeLeft(TLeftKey leftKey)
         {
-            return new ConcatKey(leftKey, default(TRightKey), true);
+            return new ConcatKey<TLeftKey, TRightKey>(leftKey, default(TRightKey), isLeft: true);
         }
 
-        internal static ConcatKey MakeRight<TLeftKey, TRightKey>(object rightKey)
+        internal static ConcatKey<TLeftKey, TRightKey> MakeRight(TRightKey rightKey)
         {
-            return new ConcatKey(default(TLeftKey), rightKey, false);
+            return new ConcatKey<TLeftKey, TRightKey>(default(TLeftKey), rightKey, isLeft: false);
         }
 
-        internal static IComparer<ConcatKey> MakeComparer<T, U>(
-            IComparer<T> leftComparer, IComparer<U> rightComparer)
+        internal static IComparer<ConcatKey<TLeftKey, TRightKey>> MakeComparer(
+            IComparer<TLeftKey> leftComparer, IComparer<TRightKey> rightComparer)
         {
-            return new ConcatKeyComparer<T, U>(leftComparer, rightComparer);
+            return new ConcatKeyComparer(leftComparer, rightComparer);
         }
 
         //---------------------------------------------------------------------------------------
@@ -331,18 +331,18 @@ namespace System.Linq.Parallel
         // according to the corresponding order key.
         //
 
-        private class ConcatKeyComparer<T, U> : IComparer<ConcatKey>
+        private class ConcatKeyComparer : IComparer<ConcatKey<TLeftKey, TRightKey>>
         {
-            private IComparer<T> _leftComparer;
-            private IComparer<U> _rightComparer;
+            private IComparer<TLeftKey> _leftComparer;
+            private IComparer<TRightKey> _rightComparer;
 
-            internal ConcatKeyComparer(IComparer<T> leftComparer, IComparer<U> rightComparer)
+            internal ConcatKeyComparer(IComparer<TLeftKey> leftComparer, IComparer<TRightKey> rightComparer)
             {
                 _leftComparer = leftComparer;
                 _rightComparer = rightComparer;
             }
 
-            public int Compare(ConcatKey x, ConcatKey y)
+            public int Compare(ConcatKey<TLeftKey, TRightKey> x, ConcatKey<TLeftKey, TRightKey> y)
             {
                 // If one element is from the left source and the other not, the element from the left source
                 // comes earlier.
@@ -354,9 +354,9 @@ namespace System.Linq.Parallel
                 // Elements are from the same source (left or right). Compare the corresponding keys.
                 if (x._isLeft)
                 {
-                    return _leftComparer.Compare((T)x._leftKey, (T)y._leftKey);
+                    return _leftComparer.Compare(x._leftKey, y._leftKey);
                 }
-                return _rightComparer.Compare((U)x._rightKey, (U)y._rightKey);
+                return _rightComparer.Compare(x._rightKey, y._rightKey);
             }
         }
     }

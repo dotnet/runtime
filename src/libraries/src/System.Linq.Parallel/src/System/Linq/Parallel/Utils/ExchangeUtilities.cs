@@ -88,7 +88,7 @@ namespace System.Linq.Parallel
         //    keyComparer                 - equality comparer for the keys
         //
 
-        internal static PartitionedStream<Pair, int> HashRepartition<TElement, THashKey, TIgnoreKey>(
+        internal static PartitionedStream<Pair<TElement, THashKey>, int> HashRepartition<TElement, THashKey, TIgnoreKey>(
             PartitionedStream<TElement, TIgnoreKey> source, Func<TElement, THashKey> keySelector, IEqualityComparer<THashKey> keyComparer,
             IEqualityComparer<TElement> elementComparer, CancellationToken cancellationToken)
         {
@@ -96,7 +96,7 @@ namespace System.Linq.Parallel
             return new UnorderedHashRepartitionStream<TElement, THashKey, TIgnoreKey>(source, keySelector, keyComparer, elementComparer, cancellationToken);
         }
 
-        internal static PartitionedStream<Pair, TOrderKey> HashRepartitionOrdered<TElement, THashKey, TOrderKey>(
+        internal static PartitionedStream<Pair<TElement, THashKey>, TOrderKey> HashRepartitionOrdered<TElement, THashKey, TOrderKey>(
             PartitionedStream<TElement, TOrderKey> source, Func<TElement, THashKey> keySelector, IEqualityComparer<THashKey> keyComparer,
             IEqualityComparer<TElement> elementComparer, CancellationToken cancellationToken)
         {

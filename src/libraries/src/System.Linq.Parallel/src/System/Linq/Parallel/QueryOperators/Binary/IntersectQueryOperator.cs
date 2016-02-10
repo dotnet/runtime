@@ -79,12 +79,12 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelper<TLeftKey, TRightKey>(
-            PartitionedStream<Pair, TLeftKey> leftHashStream, PartitionedStream<TInputOutput, TRightKey> rightPartitionedStream,
+            PartitionedStream<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftHashStream, PartitionedStream<TInputOutput, TRightKey> rightPartitionedStream,
             IPartitionedStreamRecipient<TInputOutput> outputRecipient, CancellationToken cancellationToken)
         {
             int partitionCount = leftHashStream.PartitionCount;
 
-            PartitionedStream<Pair, int> rightHashStream =
+            PartitionedStream<Pair<TInputOutput, NoKeyMemoizationRequired>, int> rightHashStream =
                 ExchangeUtilities.HashRepartition<TInputOutput, NoKeyMemoizationRequired, TRightKey>(
                     rightPartitionedStream, null, null, _comparer, cancellationToken);
 
@@ -125,8 +125,8 @@ namespace System.Linq.Parallel
 
         class IntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair, int> _rightSource; // Right data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private IEqualityComparer<TInputOutput> _comparer; // Comparer to use for equality/hash-coding.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the intersection.
             private CancellationToken _cancellationToken;
@@ -137,8 +137,8 @@ namespace System.Linq.Parallel
             //
 
             internal IntersectQueryOperatorEnumerator(
-                QueryOperatorEnumerator<Pair, TLeftKey> leftSource,
-                QueryOperatorEnumerator<Pair, int> rightSource,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftSource,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> rightSource,
                 IEqualityComparer<TInputOutput> comparer, CancellationToken cancellationToken)
             {
                 Debug.Assert(leftSource != null);
@@ -166,7 +166,7 @@ namespace System.Linq.Parallel
                     _outputLoopCount = new Shared<int>(0);
                     _hashLookup = new Set<TInputOutput>(_comparer);
 
-                    Pair rightElement = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                    Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     int rightKeyUnused = default(int);
 
                     int i = 0;
@@ -175,12 +175,12 @@ namespace System.Linq.Parallel
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
-                        _hashLookup.Add((TInputOutput)rightElement.First);
+                        _hashLookup.Add(rightElement.First);
                     }
                 }
 
                 // Now iterate over the left data source, looking for matches.
-                Pair leftElement = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                Pair<TInputOutput, NoKeyMemoizationRequired> leftElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                 TLeftKey keyUnused = default(TLeftKey);
 
                 while (_leftSource.MoveNext(ref leftElement, ref keyUnused))
@@ -191,9 +191,9 @@ namespace System.Linq.Parallel
                     // If we found the element in our set, and if we haven't returned it yet,
                     // we can yield it to the caller. We also mark it so we know we've returned
                     // it once already and never will again.
-                    if (_hashLookup.Remove((TInputOutput)leftElement.First))
+                    if (_hashLookup.Remove(leftElement.First))
                     {
-                        currentElement = (TInputOutput)leftElement.First;
+                        currentElement = leftElement.First;
 #if DEBUG
                         currentKey = unchecked((int)0xdeadbeef);
 #endif
@@ -226,11 +226,11 @@ namespace System.Linq.Parallel
 
         class OrderedIntersectQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
         {
-            private QueryOperatorEnumerator<Pair, TLeftKey> _leftSource; // Left data source.
-            private QueryOperatorEnumerator<Pair, int> _rightSource; // Right data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private IEqualityComparer<Wrapper<TInputOutput>> _comparer; // Comparer to use for equality/hash-coding.
             private IComparer<TLeftKey> _leftKeyComparer; // Comparer to use to determine ordering of order keys.
-            private Dictionary<Wrapper<TInputOutput>, Pair> _hashLookup; // The hash lookup, used to produce the intersection.
+            private Dictionary<Wrapper<TInputOutput>, Pair<TInputOutput, TLeftKey>> _hashLookup; // The hash lookup, used to produce the intersection.
             private CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------
@@ -238,8 +238,8 @@ namespace System.Linq.Parallel
             //
 
             internal OrderedIntersectQueryOperatorEnumerator(
-                QueryOperatorEnumerator<Pair, TLeftKey> leftSource,
-                QueryOperatorEnumerator<Pair, int> rightSource,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftSource,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> rightSource,
                 IEqualityComparer<TInputOutput> comparer, IComparer<TLeftKey> leftKeyComparer,
                 CancellationToken cancellationToken)
             {
@@ -266,9 +266,9 @@ namespace System.Linq.Parallel
                 int i = 0;
                 if (_hashLookup == null)
                 {
-                    _hashLookup = new Dictionary<Wrapper<TInputOutput>, Pair>(_comparer);
+                    _hashLookup = new Dictionary<Wrapper<TInputOutput>, Pair<TInputOutput, TLeftKey>>(_comparer);
 
-                    Pair leftElement = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                    Pair<TInputOutput, NoKeyMemoizationRequired> leftElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     TLeftKey leftKey = default(TLeftKey);
                     while (_leftSource.MoveNext(ref leftElement, ref leftKey))
                     {
@@ -276,23 +276,23 @@ namespace System.Linq.Parallel
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
                         // For each element, we track the smallest order key for that element that we saw so far
-                        Pair oldEntry;
-                        Wrapper<TInputOutput> wrappedLeftElem = new Wrapper<TInputOutput>((TInputOutput)leftElement.First);
+                        Pair<TInputOutput, TLeftKey> oldEntry;
+                        Wrapper<TInputOutput> wrappedLeftElem = new Wrapper<TInputOutput>(leftElement.First);
 
                         // If this is the first occurrence of this element, or the order key is lower than all keys we saw previously,
                         // update the order key for this element.
-                        if (!_hashLookup.TryGetValue(wrappedLeftElem, out oldEntry) || _leftKeyComparer.Compare(leftKey, (TLeftKey)oldEntry.Second) < 0)
+                        if (!_hashLookup.TryGetValue(wrappedLeftElem, out oldEntry) || _leftKeyComparer.Compare(leftKey, oldEntry.Second) < 0)
                         {
                             // For each "elem" value, we store the smallest key, and the element value that had that key.
                             // Note that even though two element values are "equal" according to the EqualityComparer,
                             // we still cannot choose arbitrarily which of the two to yield.
-                            _hashLookup[wrappedLeftElem] = new Pair(leftElement.First, leftKey);
+                            _hashLookup[wrappedLeftElem] = new Pair<TInputOutput, TLeftKey>(leftElement.First, leftKey);
                         }
                     }
                 }
 
                 // Now iterate over the right data source, looking for matches.
-                Pair rightElement = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                 int rightKeyUnused = default(int);
                 while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                 {
@@ -303,15 +303,15 @@ namespace System.Linq.Parallel
                     // we can yield it to the caller. We also mark it so we know we've returned
                     // it once already and never will again.
 
-                    Pair entry;
-                    Wrapper<TInputOutput> wrappedRightElem = new Wrapper<TInputOutput>((TInputOutput)rightElement.First);
+                    Pair<TInputOutput, TLeftKey> entry;
+                    Wrapper<TInputOutput> wrappedRightElem = new Wrapper<TInputOutput>(rightElement.First);
 
                     if (_hashLookup.TryGetValue(wrappedRightElem, out entry))
                     {
-                        currentElement = (TInputOutput)entry.First;
-                        currentKey = (TLeftKey)entry.Second;
+                        currentElement = entry.First;
+                        currentKey = entry.Second;
 
-                        _hashLookup.Remove(new Wrapper<TInputOutput>((TInputOutput)entry.First));
+                        _hashLookup.Remove(new Wrapper<TInputOutput>(entry.First));
                         return true;
                     }
                 }

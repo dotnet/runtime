@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
             if (keyComparer == Util.GetDefaultComparer<int>())
             {
                 Debug.Assert(typeof(TKey) == typeof(int));
-                _producerComparer = (IComparer<Producer<TKey>>)(object)new ProducerComparerInt();
+                _producerComparer = (IComparer<Producer<TKey>>)new ProducerComparerInt();
             }
             else
             {
