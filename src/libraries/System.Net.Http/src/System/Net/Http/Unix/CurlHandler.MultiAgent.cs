@@ -85,7 +85,7 @@ namespace System.Net.Http
 
                 if (_runningWorker == null)
                 {
-                    EventSourceTrace("MultiAgent worker queued");
+                    EventSourceTrace("MultiAgent worker queueing");
 
                     // Create pipe used to forcefully wake up curl_multi_wait calls when something important changes.
                     // This is created here rather than in Process so that the pipe is available immediately
@@ -107,20 +107,21 @@ namespace System.Net.Http
                     const TaskCreationOptions Options = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning;
                     _runningWorker = new Task(s =>
                     {
-                        EventSourceTrace("MultiAgent worker starting");
                         var thisRef = (MultiAgent)s;
                         try
                         {
                             // Do the actual processing
+                            thisRef.EventSourceTrace("MultiAgent worker running");
                             thisRef.WorkerLoop();
                         }
                         catch (Exception exc)
                         {
+                            thisRef.EventSourceTrace("Unexpected worker failure: {0}", exc);
                             Debug.Fail("Unexpected exception from processing loop: " + exc.ToString());
                         }
                         finally
                         {
-                            EventSourceTrace("MultiAgent worker shutting down");
+                            thisRef.EventSourceTrace("MultiAgent worker shutting down");
                             lock (thisRef._incomingRequests)
                             {
                                 // Close our wakeup pipe (ignore close errors).
@@ -164,7 +165,7 @@ namespace System.Net.Http
             {
                 unsafe
                 {
-                    EventSourceTrace("Writing to wakeup pipe");
+                    EventSourceTrace(null);
                     byte b = 1;
                     Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
                 }
@@ -190,7 +191,7 @@ namespace System.Net.Http
             /// <summary>Requests that libcurl unpause the connection associated with this request.</summary>
             internal void RequestUnpause(EasyRequest easy)
             {
-                EventSourceTrace(easy: easy);
+                EventSourceTrace(null, easy: easy);
                 Queue(new IncomingRequest { Easy = easy, Type = IncomingRequestType.Unpause });
             }
 
@@ -301,12 +302,12 @@ namespace System.Net.Http
                             // We woke up (at least in part) because a wake-up was requested.  
                             // Read the data out of the pipe to clear it.
                             Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
-                            EventSourceTrace("curl_multi_wait wake-up notification");
+                            EventSourceTrace("Wait wake-up");
                             ReadFromWakeupPipeWhenKnownToContainData();
                         }
                         if (isTimeout)
                         {
-                            EventSourceTrace("curl_multi_wait timeout");
+                            EventSourceTrace("Wait timeout");
                         }
 
                         // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
@@ -513,7 +514,7 @@ namespace System.Net.Http
 
             private void FinishRequest(EasyRequest completedOperation, CURLcode messageResult)
             {
-                EventSourceTrace("Message result: {0}", messageResult, easy: completedOperation);
+                EventSourceTrace("Curl result: {0}", messageResult, easy: completedOperation);
 
                 if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized)
                 {
@@ -549,7 +550,7 @@ namespace System.Net.Http
                 completedOperation.Cleanup();
             }
 
-            private static unsafe void CurlDebugFunction(IntPtr curl, Interop.Http.CurlInfoType type, IntPtr data, ulong size, IntPtr context)
+            private static void CurlDebugFunction(IntPtr curl, Interop.Http.CurlInfoType type, IntPtr data, ulong size, IntPtr context)
             {
                 EasyRequest easy;
                 TryGetEasyRequestFromContext(context, out easy);
@@ -629,7 +630,7 @@ namespace System.Net.Http
 
                 // Returing a value other than size fails the callback and forces
                 // request completion with an error
-                CurlHandler.EventSourceTrace("Aborting request");
+                CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return size - 1;
             }
 
@@ -665,7 +666,7 @@ namespace System.Net.Http
 
                 // Returing a value other than size fails the callback and forces
                 // request completion with an error.
-                CurlHandler.EventSourceTrace("Aborting request");
+                CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return (size > 0) ? size - 1 : 1;
             }
 
@@ -697,7 +698,7 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong.
-                CurlHandler.EventSourceTrace("Aborting request");
+                CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return Interop.Http.CURL_READFUNC_ABORT;
             }
 
@@ -708,6 +709,8 @@ namespace System.Net.Http
             /// <returns>The number of bytes transferred.</returns>
             private static ulong TransferDataFromRequestStream(IntPtr buffer, int length, EasyRequest easy)
             {
+                CurlHandler.EventSourceTrace("Length: {0}", length, easy: easy);
+
                 MultiAgent multi = easy._associatedMultiAgent;
 
                 // First check to see whether there's any data available from a previous asynchronous read request.
@@ -743,7 +746,6 @@ namespace System.Net.Http
                         Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, "ReadAsync returned an invalid result length: " + bytesRead);
                         if (bytesRead == 0)
                         {
-                            multi.EventSourceTrace("End of stream from stored task", easy: easy);
                             sts.SetTaskOffsetCount(null, 0, 0);
                             return 0;
                         }
@@ -803,13 +805,10 @@ namespace System.Net.Http
                 // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
                 if (asyncRead.IsCompleted)
                 {
-                    multi.EventSourceTrace("ReadAsync completed immediately", easy: easy);
-
                     // Get the amount of data read.
                     int bytesRead = asyncRead.GetAwaiter().GetResult(); // will throw if read failed
                     if (bytesRead == 0)
                     {
-                        multi.EventSourceTrace("End of stream from quick returning ReadAsync", easy: easy);
                         return 0;
                     }
 
@@ -817,12 +816,10 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(bytesRead, length);
                     Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, "ReadAsync quickly returned an invalid result length: " + bytesToCopy);
                     Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
-                    multi.EventSourceTrace("Copied {0} bytes from quick returning ReadAsync", bytesToCopy, easy: easy);
 
                     // If we read more than we were able to copy, stash it away for the next read.
                     if (bytesToCopy < bytesRead)
                     {
-                        multi.EventSourceTrace("Stashing away {0} bytes for next read", (bytesRead - bytesToCopy), easy: easy);
                         sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
                     }
 
@@ -909,15 +906,12 @@ namespace System.Net.Http
 
             private void EventSourceTrace<TArg0>(string formatMessage, TArg0 arg0, EasyRequest easy = null, [CallerMemberName] string memberName = null)
             {
-                if (EventSourceTracingEnabled)
-                {
-                    EventSourceTrace(string.Format(formatMessage, arg0), easy, memberName);
-                }
+                CurlHandler.EventSourceTrace(formatMessage, arg0, this, easy, memberName);
             }
 
-            private void EventSourceTrace(string message = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace(string message, EasyRequest easy = null, [CallerMemberName] string memberName = null)
             {
-                CurlHandler.EventSourceTrace(message: message, agent: this, easy: easy, memberName: memberName);
+                CurlHandler.EventSourceTrace(message, this, easy, memberName);
             }
 
             /// <summary>Represents an active request currently being processed by the agent.</summary>

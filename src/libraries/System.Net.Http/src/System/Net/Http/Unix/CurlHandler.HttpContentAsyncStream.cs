@@ -128,7 +128,6 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(_count, count);
                     Debug.Assert(bytesToCopy > 0, "Expected to be copying at least 1 byte");
                     Buffer.BlockCopy(_buffer, _offset, buffer, offset, bytesToCopy);
-                    EventSourceTrace("Read {0} bytes from writer", bytesToCopy);
 
                     if (bytesToCopy == _count)
                     {
@@ -206,7 +205,6 @@ namespace System.Net.Http
                     _cancellationRegistration.Dispose();
                     bool completed = _asyncOp.TrySetResult(bytesToCopy);
                     Debug.Assert(completed, "No one else should have completed the reader");
-                    EventSourceTrace("Writer transferred {0} bytes to reader", bytesToCopy);
 
                     if (bytesToCopy < count)
                     {
@@ -297,7 +295,7 @@ namespace System.Net.Http
                     }
                 }
 
-                EventSourceTrace("TryReset failed");
+                EventSourceTrace("TryReset failed due to existing copy task.");
                 return false;
             }
 
@@ -334,7 +332,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
                 lock (_syncObj)
                 {
-                    EventSourceTrace("CopyToAsync completed: {0}", completedCopy.Status);
+                    EventSourceTrace("Status: {0}", completedCopy.Status);
 
                     // We're done transferring, but a reader doesn't know that until they successfully
                     // read 0 bytes, which won't happen until either a) we complete an already waiting

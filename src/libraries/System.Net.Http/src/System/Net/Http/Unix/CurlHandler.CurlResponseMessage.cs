@@ -196,7 +196,6 @@ namespace System.Net.Http
                     Marshal.Copy(pointer, _pendingReadRequest._buffer, _pendingReadRequest._offset, numBytesForTask);
                     _pendingReadRequest.SetResult(numBytesForTask);
                     ClearPendingReadRequest();
-                    EventSourceTrace("Bytes copied to task: {0}", numBytesForTask);
 
                     // If there's any data left, transfer it to our remaining buffer. libcurl does not support
                     // partial transfers of data, so since we just took some of it to satisfy the read request
@@ -221,7 +220,6 @@ namespace System.Net.Http
 
                         // Copy the remaining data to the buffer
                         Marshal.Copy(remainingPointer, _remainingData, 0, _remainingDataCount);
-                        EventSourceTrace("Copied to buffer: {0}", _remainingDataCount);
                     }
 
                     // All of the data from libcurl was consumed.
@@ -258,7 +256,7 @@ namespace System.Net.Http
                     // If there's currently a pending read, fail this read, as we don't support concurrent reads.
                     if (_pendingReadRequest != null)
                     {
-                        EventSourceTrace("Existing pending read");
+                        EventSourceTrace("Failing due to existing pending read; concurrent reads not supported.");
                         return Task.FromException<int>(new InvalidOperationException(SR.net_http_content_no_concurrent_reads));
                     }
 
@@ -277,7 +275,6 @@ namespace System.Net.Http
                     // for errors so that we can still fail the read and transfer the exception if we should.
                     if (count == 0)
                     {
-                        EventSourceTrace("0 count requested");
                         return s_zeroTask;
                     }
 
@@ -292,14 +289,12 @@ namespace System.Net.Http
                         Debug.Assert(_remainingDataCount >= 0, "The remaining count should never go negative");
                         Debug.Assert(_remainingDataOffset <= _remainingData.Length, "The remaining offset should never exceed the buffer size");
 
-                        EventSourceTrace("Bytes copied to task: {0}", bytesToCopy);
                         return Task.FromResult(bytesToCopy);
                     }
 
                     // If the stream has already been completed, complete the read immediately.
                     if (_completed == s_completionSentinel)
                     {
-                        EventSourceTrace("Completed successfully after stream completion");
                         return s_zeroTask;
                     }
 
@@ -337,13 +332,11 @@ namespace System.Net.Http
                             }, s1, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                         }, crs);
                         _pendingReadRequest = crs;
-                        EventSourceTrace("Created pending cancelable read");
                     }
                     else
                     {
                         // The token isn't cancelable.  Just create a normal read state.
                         _pendingReadRequest = new ReadState(buffer, offset, count);
-                        EventSourceTrace("Created pending read");
                     }
 
                     _easy._associatedMultiAgent.RequestUnpause(_easy);
@@ -375,7 +368,6 @@ namespace System.Net.Http
                     {
                         if (_completed == s_completionSentinel)
                         {
-                            EventSourceTrace("Completed pending read task with 0 bytes");
                             _pendingReadRequest.TrySetResult(0);
                         }
                         else
@@ -431,25 +423,19 @@ namespace System.Net.Http
                 }
             }
 
-            private void EventSourceTrace<T>(string formatMessage, T arg0, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace<TArg0>(string formatMessage, TArg0 arg0, [CallerMemberName] string memberName = null)
             {
-                if (EventSourceTracingEnabled)
-                {
-                    EventSourceTrace(string.Format(formatMessage, arg0), memberName);
-                }
+                CurlHandler.EventSourceTrace(formatMessage, arg0, agent: null, easy: _easy, memberName: memberName);
             }
 
-            private void EventSourceTrace<T1, T2, T3>(string formatMessage, T1 arg0, T2 arg1, T3 arg2, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace<TArg0, TArg1, TArg2>(string formatMessage, TArg0 arg0, TArg1 arg1, TArg2 arg2, [CallerMemberName] string memberName = null)
             {
-                if (EventSourceTracingEnabled)
-                {
-                    EventSourceTrace(string.Format(formatMessage, arg0, arg1, arg2), memberName);
-                }
+                CurlHandler.EventSourceTrace(formatMessage, arg0, arg1, arg2, agent: null, easy: _easy, memberName: memberName);
             }
 
-            private void EventSourceTrace(string message = null, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace(string message, [CallerMemberName] string memberName = null)
             {
-                CurlHandler.EventSourceTrace(message: message, memberName: memberName, easy: _easy);
+                CurlHandler.EventSourceTrace(message, agent: null, easy: _easy, memberName: memberName);
             }
 
             /// <summary>Verifies various invariants that must be true about our state.</summary>

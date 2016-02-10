@@ -296,7 +296,6 @@ namespace System.Net.Http
                 if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) ||
                     (_handler.Proxy == null))
                 {
-                    EventSourceTrace("Default proxy");
                     return;
                 }
 
@@ -323,17 +322,12 @@ namespace System.Net.Http
 
                 KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
                 NetworkCredential credentials = credentialScheme.Key;
-                if (credentials == null)
-                {
-                    // No credentials; nothing to do.
-                    EventSourceTrace("No proxy credentials");
-                }
-                else if (credentials == CredentialCache.DefaultCredentials)
+                if (credentials == CredentialCache.DefaultCredentials)
                 {
                     // No "default credentials" on Unix; nop just like UseDefaultCredentials.
                     EventSourceTrace("Default proxy credentials. Skipping.");
                 }
-                else
+                else if (credentials != null)
                 {
                     if (string.IsNullOrEmpty(credentials.UserName))
                     {
@@ -441,7 +435,6 @@ namespace System.Net.Http
                 {
                     _requestHeaders = slist;
                     SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
-                    EventSourceTrace();
                 }
                 else
                 {
@@ -512,11 +505,15 @@ namespace System.Net.Http
                 if (EventSourceTracingEnabled)
                 {
                     SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
-                    Interop.Http.RegisterDebugCallback(
+                    CURLcode curlResult = Interop.Http.RegisterDebugCallback(
                         _easyHandle, 
                         debugCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    if (curlResult != CURLcode.CURLE_OK)
+                    {
+                        EventSourceTrace("Failed to register debug callback.");
+                    }
                 }
             }
 
@@ -593,15 +590,12 @@ namespace System.Net.Http
 
             private void EventSourceTrace<TArg0>(string formatMessage, TArg0 arg0, [CallerMemberName] string memberName = null)
             {
-                if (EventSourceTracingEnabled)
-                {
-                    EventSourceTrace(string.Format(formatMessage, arg0), memberName);
-                }
+                CurlHandler.EventSourceTrace(formatMessage, arg0, easy: this, memberName: memberName);
             }
 
-            private void EventSourceTrace(string message = null, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace(string message, [CallerMemberName] string memberName = null)
             {
-                CurlHandler.EventSourceTrace(message: message, easy: this, agent: null, memberName: memberName);
+                CurlHandler.EventSourceTrace(message, easy: this, memberName: memberName);
             }
         }
     }

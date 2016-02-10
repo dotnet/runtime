@@ -73,7 +73,7 @@ internal static partial class Interop
             ref SafeCallbackHandle callbackHandle);
 
         [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_RegisterDebugCallback")]
-        public static extern int RegisterDebugCallback(
+        public static extern CURLcode RegisterDebugCallback(
             SafeCurlHandle curl,
             DebugCallback callback,
             IntPtr userPointer,
