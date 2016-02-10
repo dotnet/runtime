@@ -932,6 +932,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
 				break;
+#ifdef TARGET_POWERPC
+/* FIXME This is normally handled in cprop. Proper fix or remove if no longer needed. */
 			case OP_LSHR_UN_IMM:
 				if (tree->inst_c1 == 32) {
 
@@ -940,20 +942,12 @@ mono_decompose_long_opts (MonoCompile *cfg)
 					 * later apply the speedup to the left shift as well
 					 * See BUG# 57957.
 					 */
-					/* FIXME: Move this to the strength reduction pass */
 					/* just move the upper half to the lower and zero the high word */
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_LS (tree->dreg), MONO_LVREG_MS (tree->sreg1));
 					MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), 0);
 				}
 				break;
-			case OP_LSHL_IMM:
-				if (tree->inst_c1 == 32) {
-					/* just move the lower half to the upper and zero the lower word */
-					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, MONO_LVREG_MS (tree->dreg), MONO_LVREG_LS (tree->sreg1));
-					MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (tree->dreg), 0);
-				}
-				break;
-
+#endif
 			case OP_LCOMPARE: {
 				MonoInst *next = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
 
