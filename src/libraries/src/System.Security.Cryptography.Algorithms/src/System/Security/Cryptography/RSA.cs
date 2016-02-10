@@ -8,7 +8,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public abstract class RSA : AsymmetricAlgorithm
+    public abstract partial class RSA : AsymmetricAlgorithm
     {
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);

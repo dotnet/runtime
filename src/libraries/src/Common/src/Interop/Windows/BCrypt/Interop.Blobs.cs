@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 internal partial class Interop
 {
     //
-    // These structures define the layout of CNG key blobs passed to NCryptImportKey 
+    // These structures define the layout of CNG key blobs passed to NCryptImportKey
     //
     internal partial class BCrypt
     {
@@ -26,7 +26,7 @@ internal partial class Interop
             BCRYPT_ECDSA_PUBLIC_P521_MAGIC = 0x35534345,
             BCRYPT_RSAPUBLIC_MAGIC = 0x31415352,
             BCRYPT_RSAPRIVATE_MAGIC = 0x32415352,
-            BCRYPT_RSAFULLPRIVATE_MAGIC = 0x33415352,   
+            BCRYPT_RSAFULLPRIVATE_MAGIC = 0x33415352,
             BCRYPT_KEY_DATA_BLOB_MAGIC = 0x4d42444b,
         }
 
@@ -36,9 +36,9 @@ internal partial class Interop
         /// </summary>
         internal static class KeyBlobType
         {
-            internal const string BCRYPT_RSAFULLPRIVATE_BLOB = "RSAFULLPRIVATEBLOB";    
-            internal const string BCRYPT_RSAPRIVATE_BLOB = "RSAPRIVATEBLOB";            
-            internal const string BCRYPT_PUBLIC_KEY_BLOB = "RSAPUBLICBLOB";             
+            internal const string BCRYPT_RSAFULLPRIVATE_BLOB = "RSAFULLPRIVATEBLOB";
+            internal const string BCRYPT_RSAPRIVATE_BLOB = "RSAPRIVATEBLOB";
+            internal const string BCRYPT_PUBLIC_KEY_BLOB = "RSAPUBLICBLOB";
         }
 
 

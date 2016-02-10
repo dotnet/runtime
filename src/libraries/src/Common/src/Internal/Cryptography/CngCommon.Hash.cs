@@ -48,4 +48,3 @@ namespace Internal.Cryptography
         }
     }
 }
-
