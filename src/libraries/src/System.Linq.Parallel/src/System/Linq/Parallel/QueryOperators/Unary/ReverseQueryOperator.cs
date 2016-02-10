@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to reverse.
             private readonly CancellationToken _cancellationToken;
-            private List<Pair> _buffer; // Our buffer. [allocate in moveNext to avoid false-sharing]
+            private List<Pair<TSource, TKey>> _buffer; // Our buffer. [allocate in moveNext to avoid false-sharing]
             private Shared<int> _bufferIndex; // Our current index within the buffer. [allocate in moveNext to avoid false-sharing]
 
             //---------------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ namespace System.Linq.Parallel
                 {
                     _bufferIndex = new Shared<int>(0);
                     // Buffer all of our data.
-                    _buffer = new List<Pair>();
+                    _buffer = new List<Pair<TSource, TKey>>();
                     TSource current = default(TSource);
                     TKey key = default(TKey);
                     int i = 0;
@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
-                        _buffer.Add(new Pair(current, key));
+                        _buffer.Add(new Pair<TSource, TKey>(current, key));
                         _bufferIndex.Value++;
                     }
                 }
@@ -148,8 +148,8 @@ namespace System.Linq.Parallel
                 // Continue yielding elements from our buffer.
                 if (--_bufferIndex.Value >= 0)
                 {
-                    currentElement = (TSource)_buffer[_bufferIndex.Value].First;
-                    currentKey = (TKey)_buffer[_bufferIndex.Value].Second;
+                    currentElement = _buffer[_bufferIndex.Value].First;
+                    currentKey = _buffer[_bufferIndex.Value].Second;
                     return true;
                 }
 

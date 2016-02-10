@@ -211,7 +211,7 @@ namespace System.Linq.Parallel
             private readonly CountdownEvent _sharedBarrier; // To separate the search/yield phases.
             private readonly CancellationToken _cancellationToken; // Token used to cancel this operator.
 
-            private List<Pair> _buffer; // Our buffer.
+            private List<Pair<TResult, TKey>> _buffer; // Our buffer.
             private Shared<int> _bufferIndex; // Our current index within the buffer.  [allocate in moveNext to avoid false-sharing]
             private int _updatesSeen; // How many updates has this enumerator observed? (Each other enumerator will contribute one update.)
             private TKey _currentLowKey; // The lowest key rejected by one of the other enumerators.
@@ -251,7 +251,7 @@ namespace System.Linq.Parallel
                 if (_buffer == null)
                 {
                     // Create a buffer, but don't publish it yet (in case of exception).
-                    List<Pair> buffer = new List<Pair>();
+                    List<Pair<TResult, TKey>> buffer = new List<Pair<TResult, TKey>>();
 
                     // Enter the search phase.  In this phase, we scan the input until one of three
                     // things happens:  (1) all input has been exhausted, (2) the predicate yields
@@ -270,7 +270,7 @@ namespace System.Linq.Parallel
                                 CancellationState.ThrowIfCanceled(_cancellationToken);
 
                             // Add the current element to our buffer.
-                            buffer.Add(new Pair(current, key));
+                            buffer.Add(new Pair<TResult, TKey>(current, key));
 
                             // See if another partition has found a false value before this element. If so,
                             // we should stop scanning the input now and reach the barrier ASAP.
@@ -345,8 +345,8 @@ namespace System.Linq.Parallel
 
                     // Increment the index, and remember the values.
                     ++_bufferIndex.Value;
-                    currentElement = (TResult)_buffer[_bufferIndex.Value].First;
-                    currentKey = (TKey)_buffer[_bufferIndex.Value].Second;
+                    currentElement = _buffer[_bufferIndex.Value].First;
+                    currentKey = _buffer[_bufferIndex.Value].Second;
 
                     return _operatorState._updatesDone == 0 || _keyComparer.Compare(_operatorState._currentLowKey, currentKey) > 0;
                 }
@@ -367,10 +367,10 @@ namespace System.Linq.Parallel
                         {
                             // If the current buffered element's index is greater than or equal to the smallest
                             // false index found, we will yield it as a result.
-                            if (_keyComparer.Compare((TKey)_buffer[_bufferIndex.Value].Second, _operatorState._currentLowKey) >= 0)
+                            if (_keyComparer.Compare(_buffer[_bufferIndex.Value].Second, _operatorState._currentLowKey) >= 0)
                             {
-                                currentElement = (TResult)_buffer[_bufferIndex.Value].First;
-                                currentKey = (TKey)_buffer[_bufferIndex.Value].Second;
+                                currentElement = _buffer[_bufferIndex.Value].First;
+                                currentKey = _buffer[_bufferIndex.Value].Second;
                                 return true;
                             }
                         }

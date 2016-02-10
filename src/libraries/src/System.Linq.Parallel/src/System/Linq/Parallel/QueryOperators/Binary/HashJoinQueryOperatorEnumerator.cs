@@ -36,8 +36,8 @@ namespace System.Linq.Parallel
     internal class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, THashKey, TOutput>
         : QueryOperatorEnumerator<TOutput, TLeftKey>
     {
-        private readonly QueryOperatorEnumerator<Pair, TLeftKey> _leftSource; // Left (outer) data source. For probing.
-        private readonly QueryOperatorEnumerator<Pair, int> _rightSource; // Right (inner) data source. For building.
+        private readonly QueryOperatorEnumerator<Pair<TLeftInput,THashKey>, TLeftKey> _leftSource; // Left (outer) data source. For probing.
+        private readonly QueryOperatorEnumerator<Pair<TRightInput,THashKey>, int> _rightSource; // Right (inner) data source. For building.
         private readonly Func<TLeftInput, TRightInput, TOutput> _singleResultSelector; // Single result selector.
         private readonly Func<TLeftInput, IEnumerable<TRightInput>, TOutput> _groupResultSelector; // Group result selector.
         private readonly IEqualityComparer<THashKey> _keyComparer; // An optional key comparison object.
@@ -48,7 +48,7 @@ namespace System.Linq.Parallel
         {
             internal TLeftInput _currentLeft; // The current matching left element.
             internal TLeftKey _currentLeftKey; // The current index of the matching left element.
-            internal HashLookup<THashKey, Pair> _rightHashLookup; // The hash lookup.
+            internal HashLookup<THashKey, Pair<TRightInput, ListChunk<TRightInput>>> _rightHashLookup; // The hash lookup.
             internal ListChunk<TRightInput> _currentRightMatches; // Current right matches (if any).
             internal int _currentRightMatchesIndex; // Current index in the set of right matches.
             internal int _outputLoopCount;
@@ -59,8 +59,8 @@ namespace System.Linq.Parallel
         //
 
         internal HashJoinQueryOperatorEnumerator(
-            QueryOperatorEnumerator<Pair, TLeftKey> leftSource,
-            QueryOperatorEnumerator<Pair, int> rightSource,
+            QueryOperatorEnumerator<Pair<TLeftInput,THashKey>, TLeftKey> leftSource,
+            QueryOperatorEnumerator<Pair<TRightInput,THashKey>, int> rightSource,
             Func<TLeftInput, TRightInput, TOutput> singleResultSelector,
             Func<TLeftInput, IEnumerable<TRightInput>, TOutput> groupResultSelector,
             IEqualityComparer<THashKey> keyComparer,
@@ -105,9 +105,9 @@ namespace System.Linq.Parallel
                 int hashLookupCount = 0;
                 int hashKeyCollisions = 0;
 #endif
-                mutables._rightHashLookup = new HashLookup<THashKey, Pair>(_keyComparer);
+                mutables._rightHashLookup = new HashLookup<THashKey, Pair<TRightInput, ListChunk<TRightInput>>>(_keyComparer);
 
-                Pair rightPair = new Pair(default(TRightInput), default(THashKey));
+                Pair<TRightInput, THashKey> rightPair = default(Pair<TRightInput, THashKey>);
                 int rightKeyUnused = default(int);
                 int i = 0;
                 while (_rightSource.MoveNext(ref rightPair, ref rightKeyUnused))
@@ -115,8 +115,8 @@ namespace System.Linq.Parallel
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                         CancellationState.ThrowIfCanceled(_cancellationToken);
 
-                    TRightInput rightElement = (TRightInput)rightPair.First;
-                    THashKey rightHashKey = (THashKey)rightPair.Second;
+                    TRightInput rightElement = rightPair.First;
+                    THashKey rightHashKey = rightPair.Second;
 
                     // We ignore null keys.
                     if (rightHashKey != null)
@@ -128,17 +128,17 @@ namespace System.Linq.Parallel
                         // See if we've already stored an element under the current key. If not, we
                         // lazily allocate a pair to hold the elements mapping to the same key.
                         const int INITIAL_CHUNK_SIZE = 2;
-                        Pair currentValue = new Pair(default(TRightInput), default(ListChunk<TRightInput>));
+                        Pair<TRightInput, ListChunk<TRightInput>> currentValue = default(Pair<TRightInput, ListChunk<TRightInput>>);
                         if (!mutables._rightHashLookup.TryGetValue(rightHashKey, ref currentValue))
                         {
-                            currentValue = new Pair(rightElement, null);
+                            currentValue = new Pair<TRightInput, ListChunk<TRightInput>>(rightElement, null);
 
                             if (_groupResultSelector != null)
                             {
                                 // For group joins, we also add the element to the list. This makes
                                 // it easier later to yield the list as-is.
                                 currentValue.Second = new ListChunk<TRightInput>(INITIAL_CHUNK_SIZE);
-                                ((ListChunk<TRightInput>)currentValue.Second).Add((TRightInput)rightElement);
+                                currentValue.Second.Add(rightElement);
                             }
 
                             mutables._rightHashLookup.Add(rightHashKey, currentValue);
@@ -153,7 +153,7 @@ namespace System.Linq.Parallel
                                 mutables._rightHashLookup[rightHashKey] = currentValue;
                             }
 
-                            ((ListChunk<TRightInput>)currentValue.Second).Add((TRightInput)rightElement);
+                            currentValue.Second.Add(rightElement);
 #if DEBUG
                             hashKeyCollisions++;
 #endif
@@ -178,7 +178,7 @@ namespace System.Linq.Parallel
             if (mutables._currentRightMatches == null)
             {
                 // We have to look up the next list of matches in the hash-table.
-                Pair leftPair = new Pair(default(TLeftInput), default(THashKey));
+                Pair<TLeftInput, THashKey> leftPair = default(Pair<TLeftInput, THashKey>);
                 TLeftKey leftKey = default(TLeftKey);
                 while (_leftSource.MoveNext(ref leftPair, ref leftKey))
                 {
@@ -186,9 +186,9 @@ namespace System.Linq.Parallel
                         CancellationState.ThrowIfCanceled(_cancellationToken);
 
                     // Find the match in the hash table.
-                    Pair matchValue = new Pair(default(TRightInput), default(ListChunk<TRightInput>));
-                    TLeftInput leftElement = (TLeftInput)leftPair.First;
-                    THashKey leftHashKey = (THashKey)leftPair.Second;
+                    Pair<TRightInput, ListChunk<TRightInput>> matchValue = default(Pair<TRightInput, ListChunk<TRightInput>>);
+                    TLeftInput leftElement = leftPair.First;
+                    THashKey leftHashKey = leftPair.Second;
 
                     // Ignore null keys.
                     if (leftHashKey != null)
@@ -200,13 +200,13 @@ namespace System.Linq.Parallel
                             // them up. For outer joins, we will use the list momentarily.
                             if (_singleResultSelector != null)
                             {
-                                mutables._currentRightMatches = (ListChunk<TRightInput>)matchValue.Second;
+                                mutables._currentRightMatches = matchValue.Second;
                                 Debug.Assert(mutables._currentRightMatches == null || mutables._currentRightMatches.Count > 0,
                                                 "we were expecting that the list would be either null or empty");
                                 mutables._currentRightMatchesIndex = 0;
 
                                 // Yield the value.
-                                currentElement = _singleResultSelector(leftElement, (TRightInput)matchValue.First);
+                                currentElement = _singleResultSelector(leftElement, matchValue.First);
                                 currentKey = leftKey;
 
                                 // If there is a list of matches, remember the left values for next time.
@@ -225,7 +225,7 @@ namespace System.Linq.Parallel
                     if (_groupResultSelector != null)
                     {
                         // Grab the matches, or create an empty list if there are none.
-                        IEnumerable<TRightInput> matches = (ListChunk<TRightInput>)matchValue.Second;
+                        IEnumerable<TRightInput> matches = matchValue.Second;
                         if (matches == null)
                         {
                             matches = ParallelEnumerable.Empty<TRightInput>();
