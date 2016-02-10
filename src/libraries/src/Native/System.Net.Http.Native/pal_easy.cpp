@@ -70,6 +70,14 @@ static_assert(PAL_CURL_READFUNC_ABORT == CURL_READFUNC_ABORT, "");
 static_assert(PAL_CURL_READFUNC_PAUSE == CURL_READFUNC_PAUSE, "");
 static_assert(PAL_CURL_WRITEFUNC_PAUSE == CURL_WRITEFUNC_PAUSE, "");
 
+static_assert(PAL_CURLINFO_TEXT == CURLINFO_TEXT, "");
+static_assert(PAL_CURLINFO_HEADER_IN == CURLINFO_HEADER_IN, "");
+static_assert(PAL_CURLINFO_HEADER_OUT == CURLINFO_HEADER_OUT, "");
+static_assert(PAL_CURLINFO_DATA_IN == CURLINFO_DATA_IN, "");
+static_assert(PAL_CURLINFO_DATA_OUT == CURLINFO_DATA_OUT, "");
+static_assert(PAL_CURLINFO_SSL_DATA_IN == CURLINFO_SSL_DATA_IN, "");
+static_assert(PAL_CURLINFO_SSL_DATA_OUT == CURLINFO_SSL_DATA_OUT, "");
+
 extern "C" CURL* HttpNative_EasyCreate()
 {
     return curl_easy_init();
@@ -146,6 +154,9 @@ struct CallbackHandle
 
     SslCtxCallback sslCtxCallback;
     void* sslUserPointer;
+
+    DebugCallback debugCallback;
+    void* debugUserPointer;
 };
 
 static inline void EnsureCallbackHandle(CallbackHandle** callbackHandle)
@@ -254,6 +265,31 @@ extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
 
     curl_easy_setopt(curl, CURLOPT_SSL_CTX_DATA, handle);
     return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
+}
+
+static int debug_callback(CURL* curl, curl_infotype type, char *data, size_t size, void *userPointer)
+{
+    assert(userPointer != nullptr);
+    CallbackHandle* handle = static_cast<CallbackHandle*>(userPointer);
+    handle->debugCallback(curl, static_cast<PAL_CurlInfoType>(type), data, size, handle->debugUserPointer);
+    return 0;
+}
+
+extern "C" int32_t HttpNative_RegisterDebugCallback(CURL* curl, 
+                                                    DebugCallback callback, 
+                                                    void* userPointer, 
+                                                    CallbackHandle** callbackHandle)
+{
+    EnsureCallbackHandle(callbackHandle);
+
+    CallbackHandle* handle = *callbackHandle;
+    handle->debugCallback = callback;
+    handle->debugUserPointer = userPointer;
+
+    CURLcode rv = curl_easy_setopt(curl, CURLOPT_DEBUGDATA, handle);
+    return rv == CURLE_OK ? 
+        curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback) : 
+        rv;
 }
 
 extern "C" void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle)

@@ -35,14 +35,13 @@ namespace System.Net.Http
                 {
                     certHandle = IntPtr.Zero;
                     privateKeyHandle = IntPtr.Zero;
-                    VerboseTrace("libssl's client certificate callback");
 
                     ISet<string> issuerNames = GetRequestCertificateAuthorities(sslHandle);
                     X509Certificate2 certificate;
                     X509Chain chain;
                     if (!GetClientCertificate(issuerNames, out certificate, out chain))
                     {
-                        VerboseTrace("no cert or chain");
+                        EventSourceTrace("No certificate or chain");
                         return 0;
                     }
 
@@ -52,6 +51,7 @@ namespace System.Net.Http
                         if (rsa != null)
                         {
                             _privateKeyHandle = rsa.DuplicateKeyHandle();
+                            EventSourceTrace("RSA key");
                         }
                         else
                         {
@@ -60,6 +60,7 @@ namespace System.Net.Http
                                 if (ecdsa != null)
                                 {
                                     _privateKeyHandle = ecdsa.DuplicateKeyHandle();
+                                    EventSourceTrace("ECDsa key");
                                 }
                             }
                         }
@@ -67,7 +68,7 @@ namespace System.Net.Http
 
                     if (_privateKeyHandle == null || _privateKeyHandle.IsInvalid)
                     {
-                        VerboseTrace("invalid private key");
+                        EventSourceTrace("Invalid private key");
                         return 0;
                     }
 
@@ -81,7 +82,7 @@ namespace System.Net.Http
                             Interop.Crypto.CheckValidOpenSslHandle(dupCertHandle);
                             if (!Interop.Ssl.SslAddExtraChainCert(sslHandle, dupCertHandle))
                             {
-                                VerboseTrace("failed to add extra chain cert");
+                                EventSourceTrace("Failed to add extra chain certificate");
                                 return -1;
                             }
                         }
@@ -105,7 +106,6 @@ namespace System.Net.Http
                 {
                     _certHandle.Dispose();
                 }
-                VerboseTrace("Disposed client cert provider");
             }
 
             private static ISet<string> GetRequestCertificateAuthorities(SafeSslHandle sslHandle)

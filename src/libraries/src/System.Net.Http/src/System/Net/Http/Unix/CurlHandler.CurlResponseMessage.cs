@@ -162,7 +162,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(pointer != IntPtr.Zero, "Expected a non-null pointer");
                 Debug.Assert(length >= 0, "Expected a non-negative length");
-                VerboseTrace("length: " + length);
+                EventSourceTrace("Length: {0}", length);
 
                 CheckDisposed();
 
@@ -178,9 +178,14 @@ namespace System.Net.Http
 
                     // If there's existing data in the remaining data buffer, or if there's no pending read request, 
                     // we need to pause until the existing data is consumed or until there's a waiting read.
-                    if (_remainingDataCount > 0 || _pendingReadRequest == null)
+                    if (_remainingDataCount > 0)
                     {
-                        VerboseTrace("Pausing due to _remainingDataCount: " + _remainingDataCount + ", _pendingReadRequest: " + (_pendingReadRequest != null));
+                        EventSourceTrace("Pausing. Remaining bytes: {0}", _remainingDataCount);
+                        return Interop.Http.CURL_WRITEFUNC_PAUSE;
+                    }
+                    else if (_pendingReadRequest == null)
+                    {
+                        EventSourceTrace("Pausing. No pending read request");
                         return Interop.Http.CURL_WRITEFUNC_PAUSE;
                     }
 
@@ -191,7 +196,7 @@ namespace System.Net.Http
                     Marshal.Copy(pointer, _pendingReadRequest._buffer, _pendingReadRequest._offset, numBytesForTask);
                     _pendingReadRequest.SetResult(numBytesForTask);
                     ClearPendingReadRequest();
-                    VerboseTrace("Copied to task: " + numBytesForTask);
+                    EventSourceTrace("Bytes copied to task: {0}", numBytesForTask);
 
                     // If there's any data left, transfer it to our remaining buffer. libcurl does not support
                     // partial transfers of data, so since we just took some of it to satisfy the read request
@@ -213,11 +218,10 @@ namespace System.Net.Http
                         {
                             _remainingData = new byte[Math.Max(_remainingData.Length * 2, _remainingDataCount)];
                         }
-                        VerboseTrace("Allocated new remainingData array of length: " + _remainingData.Length);
 
                         // Copy the remaining data to the buffer
                         Marshal.Copy(remainingPointer, _remainingData, 0, _remainingDataCount);
-                        VerboseTrace("Copied to buffer: " + _remainingDataCount);
+                        EventSourceTrace("Copied to buffer: {0}", _remainingDataCount);
                     }
 
                     // All of the data from libcurl was consumed.
@@ -238,12 +242,12 @@ namespace System.Net.Http
                 if (offset > buffer.Length - count) throw new ArgumentException("buffer");
                 CheckDisposed();
 
-                VerboseTrace("buffer: " + buffer.Length + ", offset: " + offset + ", count: " + count);
+                EventSourceTrace("Buffer: {0}, Offset: {1}, Count: {2}", buffer.Length, offset, count);
 
                 // Check for cancellation
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    VerboseTrace("Canceled");
+                    EventSourceTrace("Canceled");
                     return Task.FromCanceled<int>(cancellationToken);
                 }
 
@@ -254,14 +258,15 @@ namespace System.Net.Http
                     // If there's currently a pending read, fail this read, as we don't support concurrent reads.
                     if (_pendingReadRequest != null)
                     {
-                        VerboseTrace("Existing pending read");
+                        EventSourceTrace("Existing pending read");
                         return Task.FromException<int>(new InvalidOperationException(SR.net_http_content_no_concurrent_reads));
                     }
 
                     // If the stream was already completed with failure, complete the read as a failure.
                     if (_completed != null && _completed != s_completionSentinel)
                     {
-                        VerboseTrace("Failing read with " + _completed);
+                        EventSourceTrace("Failing read with error: {0}", _completed);
+
                         OperationCanceledException oce = _completed as OperationCanceledException;
                         return (oce != null && oce.CancellationToken.IsCancellationRequested) ?
                             Task.FromCanceled<int>(oce.CancellationToken) :
@@ -272,7 +277,7 @@ namespace System.Net.Http
                     // for errors so that we can still fail the read and transfer the exception if we should.
                     if (count == 0)
                     {
-                        VerboseTrace("Zero count");
+                        EventSourceTrace("0 count requested");
                         return s_zeroTask;
                     }
 
@@ -287,14 +292,14 @@ namespace System.Net.Http
                         Debug.Assert(_remainingDataCount >= 0, "The remaining count should never go negative");
                         Debug.Assert(_remainingDataOffset <= _remainingData.Length, "The remaining offset should never exceed the buffer size");
 
-                        VerboseTrace("Copied to task: " + bytesToCopy);
+                        EventSourceTrace("Bytes copied to task: {0}", bytesToCopy);
                         return Task.FromResult(bytesToCopy);
                     }
 
                     // If the stream has already been completed, complete the read immediately.
                     if (_completed == s_completionSentinel)
                     {
-                        VerboseTrace("Completed successfully after stream completion");
+                        EventSourceTrace("Completed successfully after stream completion");
                         return s_zeroTask;
                     }
 
@@ -316,7 +321,7 @@ namespace System.Net.Http
                         var crs = new CancelableReadState(buffer, offset, count, this, cancellationToken);
                         crs._registration = cancellationToken.Register(s1 =>
                         {
-                            ((CancelableReadState)s1)._stream.VerboseTrace("Cancellation invoked. Queueing work item to cancel read state.");
+                            ((CancelableReadState)s1)._stream.EventSourceTrace("Cancellation invoked. Queueing work item to cancel read state");
                             Task.Factory.StartNew(s2 =>
                             {
                                 var crsRef = (CancelableReadState)s2;
@@ -332,13 +337,13 @@ namespace System.Net.Http
                             }, s1, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                         }, crs);
                         _pendingReadRequest = crs;
-                        VerboseTrace("Created pending cancelable read");
+                        EventSourceTrace("Created pending cancelable read");
                     }
                     else
                     {
                         // The token isn't cancelable.  Just create a normal read state.
                         _pendingReadRequest = new ReadState(buffer, offset, count);
-                        VerboseTrace("Created pending read");
+                        EventSourceTrace("Created pending read");
                     }
 
                     _easy._associatedMultiAgent.RequestUnpause(_easy);
@@ -370,12 +375,12 @@ namespace System.Net.Http
                     {
                         if (_completed == s_completionSentinel)
                         {
-                            VerboseTrace("Completed pending read task with 0 bytes.");
+                            EventSourceTrace("Completed pending read task with 0 bytes");
                             _pendingReadRequest.TrySetResult(0);
                         }
                         else
                         {
-                            VerboseTrace("Completed pending read task with " + _completed);
+                            EventSourceTrace("Failing pending read task with error: {0}", _completed);
                             OperationCanceledException oce = _completed as OperationCanceledException;
                             if (oce != null)
                             {
@@ -426,10 +431,25 @@ namespace System.Net.Http
                 }
             }
 
-            [Conditional(VerboseDebuggingConditional)]
-            private void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+            private void EventSourceTrace<T>(string formatMessage, T arg0, [CallerMemberName] string memberName = null)
             {
-                CurlHandler.VerboseTrace(text, memberName, _easy);
+                if (EventSourceTracingEnabled)
+                {
+                    EventSourceTrace(string.Format(formatMessage, arg0), memberName);
+                }
+            }
+
+            private void EventSourceTrace<T1, T2, T3>(string formatMessage, T1 arg0, T2 arg1, T3 arg2, [CallerMemberName] string memberName = null)
+            {
+                if (EventSourceTracingEnabled)
+                {
+                    EventSourceTrace(string.Format(formatMessage, arg0, arg1, arg2), memberName);
+                }
+            }
+
+            private void EventSourceTrace(string message = null, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.EventSourceTrace(message: message, memberName: memberName, easy: _easy);
             }
 
             /// <summary>Verifies various invariants that must be true about our state.</summary>
