@@ -76,8 +76,7 @@ prepare_managed_build()
     fi
 
     # Run Init-Tools to restore BuildTools and ToolRuntime
-    chmod a+x $__scriptpath/init-tools.sh
-    sh $__scriptpath/init-tools.sh
+    $__scriptpath/init-tools.sh
 }
 
 prepare_native_build()
@@ -102,7 +101,7 @@ build_managed_corefx()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
 
-    ReferenceAssemblyRoot=$__referenceassemblyroot $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
+    ReferenceAssemblyRoot=$__referenceassemblyroot $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -186,7 +185,19 @@ case $OSName in
 
     Linux)
         __HostOS=Linux
-        __TestNugetRuntimeId=ubuntu.14.04-x64
+        source /etc/os-release
+        if [ "$ID" == "centos" ]; then
+            __TestNugetRuntimeId=centos.7-x64
+        elif [ "$ID" == "rhel" ]; then
+            __TestNugetRuntimeId=rhel.7-x64
+        elif [ "$ID" == "ubuntu" ]; then
+            __TestNugetRuntimeId=ubuntu.14.04-x64
+        elif [ "$ID" == "debian" ]; then
+            __TestNugetRuntimeId=debian.8.2-x64
+        else
+            echo "Unsupported Linux distribution '$ID' detected. Configuring as if for Ubuntu."
+            __TestNugetRuntimeId=ubuntu.14.04-x64
+        fi
         ;;
 
     NetBSD)
@@ -196,7 +207,7 @@ case $OSName in
         ;;
 
     *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        echo "Unsupported OS '$OSName' detected. Configuring as if for Ubuntu."
         __HostOS=Linux
         __TestNugetRuntimeId=ubuntu.14.04-x64
         ;;
@@ -276,13 +287,19 @@ for i in "$@"
             ;;
         freebsd)
             __BuildOS=FreeBSD
+            __TestNugetRuntimeId=osx.10.10-x64
             ;;
         linux)
             __BuildOS=Linux
-            __TestNugetRuntimeId=ubuntu.14.04-x64
+            # If the Host OS is also Linux, then use the RID of the host.
+            # Otherwise, override it to Ubuntu by default.
+            if [ "$__HostOS" != "Linux" ]; then
+                __TestNugetRuntimeId=ubuntu.14.04-x64
+            fi
             ;;
         netbsd)
             __BuildOS=NetBSD
+            __TestNugetRuntimeId=osx.10.10-x64
             ;;
         osx)
             __BuildOS=OSX
@@ -290,6 +307,7 @@ for i in "$@"
             ;;
         windows)
             __BuildOS=Windows_NT
+            __TestNugetRuntimeId=win7-x64
             ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
