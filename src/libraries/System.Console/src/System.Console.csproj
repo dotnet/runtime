@@ -37,7 +37,9 @@
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\SyncTextWriter.cs" />
     <Compile Include="System\IO\Error.cs" />
-    <Compile Include="System\Text\ConsoleEncoding.cs" />
+    <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
+      <Link>Common\System\Text\ConsoleEncoding.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\ConsolePal.Windows.cs" />
