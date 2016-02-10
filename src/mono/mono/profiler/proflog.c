@@ -80,9 +80,10 @@
 
 #include <unistd.h>
 #include <sys/syscall.h>
-#include "perf_event.h"
 
 #ifdef ENABLE_PERF_EVENTS
+#include <linux/perf_event.h>
+
 #define USE_PERF_EVENTS 1
 
 static int read_perf_mmap (MonoProfiler* prof, int cpu);
