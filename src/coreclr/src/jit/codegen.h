@@ -304,6 +304,14 @@ protected:
     void                genCheckUseBlockInit();
 
 #if defined(_TARGET_ARM64_)
+    bool                genInstrWithConstant(instruction ins,  
+                                             emitAttr    attr, 
+                                             regNumber   reg1, 
+                                             regNumber   reg2,
+                                             ssize_t     imm, 
+                                             regNumber   tmpReg,
+                                             bool        inUnwindRegion = false);
+
     void                genStackPointerAdjustment(ssize_t   spAdjustment,
                                                   regNumber tmpReg,
                                                   bool*     pTmpRegIsZero);
