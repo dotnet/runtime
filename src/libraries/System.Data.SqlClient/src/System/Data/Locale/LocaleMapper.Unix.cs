@@ -12,26 +12,7 @@ namespace System.Data
     /// </summary>
     internal class LocaleMapper
     {
-        private static readonly Dictionary<int, LocaleCodePage> _mapper;
-        public static string LcidToLocaleNameInternal(int lcid)
-        {
-            return _mapper[lcid].LocaleName;
-        }
-
-        public static int LocaleNameToAnsiCodePage(string localeName)
-        {
-            return _mapper.FirstOrDefault(t => t.Value.LocaleName == localeName).Value.CodePage;
-        }
-
-        public static int GetLcidForLocaleName(string localeName)
-        {
-            return _mapper.FirstOrDefault(t => t.Value.LocaleName == localeName).Key;
-        }
-
-        static LocaleMapper()
-        {
-            _mapper = new Dictionary<int, LocaleCodePage>
-            {
+        private static readonly Dictionary<int, LocaleCodePage> s_mapper = new Dictionary<int, LocaleCodePage>(431) {
             #region <<Locale Mapper>>
                 {1, new LocaleCodePage("ar", 1256)},
                 {2, new LocaleCodePage("bg", 1251)},
@@ -466,6 +447,20 @@ namespace System.Data
                 {267268, new LocaleCodePage("zh-MO", 950)}
             #endregion
         };
+
+        public static string LcidToLocaleNameInternal(int lcid)
+        {
+            return s_mapper[lcid].LocaleName;
+        }
+
+        public static int LocaleNameToAnsiCodePage(string localeName)
+        {
+            return s_mapper.FirstOrDefault(t => t.Value.LocaleName == localeName).Value.CodePage;
+        }
+
+        public static int GetLcidForLocaleName(string localeName)
+        {
+            return s_mapper.FirstOrDefault(t => t.Value.LocaleName == localeName).Key;
         }
     }
 

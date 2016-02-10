@@ -79,10 +79,9 @@ namespace Microsoft.SqlServer.Server
 
         // Hash table to map from clr type object to ExtendedClrTypeCodeMap enum
         // this HashTable should only be accessed from DetermineExtendedTypeCode and class ctor for setup.
-        private static readonly Hashtable s_typeToExtendedTypeCodeMap;
+        private static readonly Hashtable s_typeToExtendedTypeCodeMap = CreateTypeToExtendedTypeCodeMap();
 
-
-        static MetaDataUtilsSmi()
+        private static Hashtable CreateTypeToExtendedTypeCodeMap()
         {
             // Set up type mapping hash table
             // Keep this initialization list in the same order as ExtendedClrTypeCode for ease in validating!
@@ -128,9 +127,8 @@ namespace Microsoft.SqlServer.Server
             ht.Add(typeof(IEnumerable<SqlDataRecord>), ExtendedClrTypeCode.IEnumerableOfSqlDataRecord);
             ht.Add(typeof(System.TimeSpan), ExtendedClrTypeCode.TimeSpan);
             ht.Add(typeof(System.DateTimeOffset), ExtendedClrTypeCode.DateTimeOffset);
-            s_typeToExtendedTypeCodeMap = ht;
+            return ht;
         }
-
 
         internal static bool IsCharOrXmlType(SqlDbType type)
         {

@@ -638,16 +638,16 @@ namespace System.Security.AccessControl
             Invalid   = GO,      // not a valid combination of flags
         }
 
-        private static PM[] AFtoPM;    // AceFlags-to-Propagation conversion matrix
-        private static AF[] PMtoAF;    // Propagation-to-AceFlags conversion matrix
+        private readonly static PM[] s_AFtoPM = CreateAFtoPMConversionMatrix();    // AceFlags-to-Propagation conversion matrix
+        private readonly static AF[] s_PMtoAF = CreatePMtoAFConversionMatrix();    // Propagation-to-AceFlags conversion matrix
 
-        static CommonAcl()
+        private static PM[] CreateAFtoPMConversionMatrix()
         {
-            AFtoPM = new PM[16];
+            var afToPm = new PM[16];
 
-            for ( int i = 0; i < AFtoPM.Length; i++ )
+            for ( int i = 0; i < afToPm.Length; i++ )
             {
-                AFtoPM[i] = PM.Invalid;
+                afToPm[i] = PM.Invalid;
             }
 
             //
@@ -656,25 +656,30 @@ namespace System.Security.AccessControl
             // Important: Not all combinations of inheritance bits are valid
             //
 
-            AFtoPM[( int )(   0   |   0   |   0   |   0   )] = PM.F |   0   |   0   |   0   |   0   ;
-            AFtoPM[( int )(   0   | AF.OI |   0   |   0   )] = PM.F |   0   | PM.CO |   0   | PM.GO ;
-            AFtoPM[( int )(   0   | AF.OI |   0   | AF.NP )] = PM.F |   0   | PM.CO |   0   |   0   ;
-            AFtoPM[( int )(   0   | AF.OI | AF.IO |   0   )] =   0  |   0   | PM.CO |   0   | PM.GO ;
-            AFtoPM[( int )(   0   | AF.OI | AF.IO | AF.NP )] =   0  |   0   | PM.CO |   0   |   0   ;
-            AFtoPM[( int )( AF.CI |   0   |   0   |   0   )] = PM.F | PM.CF |   0   | PM.GF |   0   ;
-            AFtoPM[( int )( AF.CI |   0   |   0   | AF.NP )] = PM.F | PM.CF |   0   |   0   |   0   ;
-            AFtoPM[( int )( AF.CI |   0   | AF.IO |   0   )] =   0  | PM.CF |   0   | PM.GF |   0   ;
-            AFtoPM[( int )( AF.CI |   0   | AF.IO | AF.NP )] =   0  | PM.CF |   0   |   0   |   0   ;
-            AFtoPM[( int )( AF.CI | AF.OI |   0   |   0   )] = PM.F | PM.CF | PM.CO | PM.GF | PM.GO ;
-            AFtoPM[( int )( AF.CI | AF.OI |   0   | AF.NP )] = PM.F | PM.CF | PM.CO |   0   |   0   ;
-            AFtoPM[( int )( AF.CI | AF.OI | AF.IO |   0   )] =   0  | PM.CF | PM.CO | PM.GF | PM.GO ;
-            AFtoPM[( int )( AF.CI | AF.OI | AF.IO | AF.NP )] =   0  | PM.CF | PM.CO |   0   |   0   ;
+            afToPm[( int )(   0   |   0   |   0   |   0   )] = PM.F |   0   |   0   |   0   |   0   ;
+            afToPm[( int )(   0   | AF.OI |   0   |   0   )] = PM.F |   0   | PM.CO |   0   | PM.GO ;
+            afToPm[( int )(   0   | AF.OI |   0   | AF.NP )] = PM.F |   0   | PM.CO |   0   |   0   ;
+            afToPm[( int )(   0   | AF.OI | AF.IO |   0   )] =   0  |   0   | PM.CO |   0   | PM.GO ;
+            afToPm[( int )(   0   | AF.OI | AF.IO | AF.NP )] =   0  |   0   | PM.CO |   0   |   0   ;
+            afToPm[( int )( AF.CI |   0   |   0   |   0   )] = PM.F | PM.CF |   0   | PM.GF |   0   ;
+            afToPm[( int )( AF.CI |   0   |   0   | AF.NP )] = PM.F | PM.CF |   0   |   0   |   0   ;
+            afToPm[( int )( AF.CI |   0   | AF.IO |   0   )] =   0  | PM.CF |   0   | PM.GF |   0   ;
+            afToPm[( int )( AF.CI |   0   | AF.IO | AF.NP )] =   0  | PM.CF |   0   |   0   |   0   ;
+            afToPm[( int )( AF.CI | AF.OI |   0   |   0   )] = PM.F | PM.CF | PM.CO | PM.GF | PM.GO ;
+            afToPm[( int )( AF.CI | AF.OI |   0   | AF.NP )] = PM.F | PM.CF | PM.CO |   0   |   0   ;
+            afToPm[( int )( AF.CI | AF.OI | AF.IO |   0   )] =   0  | PM.CF | PM.CO | PM.GF | PM.GO ;
+            afToPm[( int )( AF.CI | AF.OI | AF.IO | AF.NP )] =   0  | PM.CF | PM.CO |   0   |   0   ;
 
-            PMtoAF = new AF[32];
+            return afToPm;
+        }
 
-            for ( int i = 0; i < PMtoAF.Length; i++ )
+        private static AF[] CreatePMtoAFConversionMatrix()
+        {
+            var pmToAf = new AF[32];
+
+            for ( int i = 0; i < pmToAf.Length; i++ )
             {
-                PMtoAF[i] = AF.Invalid;
+                pmToAf[i] = AF.Invalid;
             }
 
             //
@@ -684,19 +689,21 @@ namespace System.Security.AccessControl
             // the four ACE inheritance bits
             //
 
-            PMtoAF[( int )( PM.F |   0   |   0   |   0   |   0   )] =    0   |   0   |   0   |   0   ;
-            PMtoAF[( int )( PM.F |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI |   0   |   0   ;
-            PMtoAF[( int )( PM.F |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI |   0   | AF.NP ;
-            PMtoAF[( int )(   0  |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI | AF.IO |   0   ;
-            PMtoAF[( int )(   0  |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI | AF.IO | AF.NP ;
-            PMtoAF[( int )( PM.F | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   |   0   |   0   ;
-            PMtoAF[( int )( PM.F | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   |   0   | AF.NP ;
-            PMtoAF[( int )(   0  | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   | AF.IO |   0   ;
-            PMtoAF[( int )(   0  | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   | AF.IO | AF.NP ;
-            PMtoAF[( int )( PM.F | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI |   0   |   0   ;
-            PMtoAF[( int )( PM.F | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI |   0   | AF.NP ;
-            PMtoAF[( int )(   0  | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI | AF.IO |   0   ;
-            PMtoAF[( int )(   0  | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI | AF.IO | AF.NP ;
+            pmToAf[( int )( PM.F |   0   |   0   |   0   |   0   )] =    0   |   0   |   0   |   0   ;
+            pmToAf[( int )( PM.F |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI |   0   |   0   ;
+            pmToAf[( int )( PM.F |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI |   0   | AF.NP ;
+            pmToAf[( int )(   0  |   0   | PM.CO |   0   | PM.GO )] =    0   | AF.OI | AF.IO |   0   ;
+            pmToAf[( int )(   0  |   0   | PM.CO |   0   |   0   )] =    0   | AF.OI | AF.IO | AF.NP ;
+            pmToAf[( int )( PM.F | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   |   0   |   0   ;
+            pmToAf[( int )( PM.F | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   |   0   | AF.NP ;
+            pmToAf[( int )(   0  | PM.CF |   0   | PM.GF |   0   )] =  AF.CI |   0   | AF.IO |   0   ;
+            pmToAf[( int )(   0  | PM.CF |   0   |   0   |   0   )] =  AF.CI |   0   | AF.IO | AF.NP ;
+            pmToAf[( int )( PM.F | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI |   0   |   0   ;
+            pmToAf[( int )( PM.F | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI |   0   | AF.NP ;
+            pmToAf[( int )(   0  | PM.CF | PM.CO | PM.GF | PM.GO )] =  AF.CI | AF.OI | AF.IO |   0   ;
+            pmToAf[( int )(   0  | PM.CF | PM.CO |   0   |   0   )] =  AF.CI | AF.OI | AF.IO | AF.NP ;
+
+            return pmToAf;
         }
 
         //
@@ -780,8 +787,8 @@ namespace System.Security.AccessControl
             AF leftAF = AFFromAceFlags( left, isDS );
             AF rightAF = AFFromAceFlags( right, isDS );
 
-            PM leftPM = AFtoPM[(int)leftAF];
-            PM rightPM = AFtoPM[(int)rightAF];
+            PM leftPM = s_AFtoPM[(int)leftAF];
+            PM rightPM = s_AFtoPM[(int)rightAF];
 
             if ( leftPM == PM.Invalid || rightPM == PM.Invalid )
             {
@@ -789,7 +796,7 @@ namespace System.Security.AccessControl
             }
 
             PM resultPM = leftPM | rightPM;
-            AF resultAF = PMtoAF[( int )resultPM];
+            AF resultAF = s_PMtoAF[( int )resultPM];
 
             if ( resultAF == AF.Invalid )
             {
@@ -810,8 +817,8 @@ namespace System.Security.AccessControl
             AF leftAF = AFFromAceFlags( existing, isDS );
             AF rightAF = AFFromAceFlags( remove, isDS );
 
-            PM leftPM = AFtoPM[( int )leftAF];
-            PM rightPM = AFtoPM[( int )rightAF];
+            PM leftPM = s_AFtoPM[( int )leftAF];
+            PM rightPM = s_AFtoPM[( int )rightAF];
 
             if ( leftPM == PM.Invalid || rightPM == PM.Invalid )
             {
@@ -832,7 +839,7 @@ namespace System.Security.AccessControl
                 return true;
             }
 
-            AF resultAF = PMtoAF[( int )resultPM];
+            AF resultAF = s_PMtoAF[( int )resultPM];
 
             if ( resultAF == AF.Invalid )
             {

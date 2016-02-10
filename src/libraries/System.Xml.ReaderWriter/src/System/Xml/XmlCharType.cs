@@ -1029,15 +1029,9 @@ namespace System.Xml
                         0x700 , 0x700 , 0x700 , 0x700 , 0x700 , 0x700 , 0x700 , 0x1B00
         };
 
-        private static byte** s_CharProperties;
+        private static readonly IntPtr[] s_PageIndexes = new IntPtr[256];
+        private static readonly byte** s_CharProperties = InitializeCharProperties();
         private byte** _charProperties;
-        private static IntPtr[] s_PageIndexes;
-
-        static XmlCharType()
-        {
-            s_PageIndexes = new IntPtr[256];
-            s_CharProperties = InitializeCharProperties();
-        }
 
         private static byte** InitializeCharProperties()
         {

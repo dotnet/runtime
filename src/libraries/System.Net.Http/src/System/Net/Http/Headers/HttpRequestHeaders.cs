@@ -13,8 +13,8 @@ namespace System.Net.Http.Headers
         Justification = "This is not a collection")]
     public sealed class HttpRequestHeaders : HttpHeaders
     {
-        private static readonly Dictionary<string, HttpHeaderParser> s_parserStore;
-        private static readonly HashSet<string> s_invalidHeaders;
+        private static readonly Dictionary<string, HttpHeaderParser> s_parserStore = CreateParserStore();
+        private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
         private HttpGeneralHeaders _generalHeaders;
         private HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> _accept;
@@ -351,34 +351,41 @@ namespace System.Net.Http.Headers
             base.SetConfiguration(s_parserStore, s_invalidHeaders);
         }
 
-        static HttpRequestHeaders()
+        private static Dictionary<string, HttpHeaderParser> CreateParserStore()
         {
-            s_parserStore = new Dictionary<string, HttpHeaderParser>(StringComparer.OrdinalIgnoreCase);
+            var parserStore = new Dictionary<string, HttpHeaderParser>(StringComparer.OrdinalIgnoreCase);
 
-            s_parserStore.Add(HttpKnownHeaderNames.Accept, MediaTypeHeaderParser.MultipleValuesParser);
-            s_parserStore.Add(HttpKnownHeaderNames.AcceptCharset, GenericHeaderParser.MultipleValueStringWithQualityParser);
-            s_parserStore.Add(HttpKnownHeaderNames.AcceptEncoding, GenericHeaderParser.MultipleValueStringWithQualityParser);
-            s_parserStore.Add(HttpKnownHeaderNames.AcceptLanguage, GenericHeaderParser.MultipleValueStringWithQualityParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Authorization, GenericHeaderParser.SingleValueAuthenticationParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Expect, GenericHeaderParser.MultipleValueNameValueWithParametersParser);
-            s_parserStore.Add(HttpKnownHeaderNames.From, GenericHeaderParser.MailAddressParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Host, GenericHeaderParser.HostParser);
-            s_parserStore.Add(HttpKnownHeaderNames.IfMatch, GenericHeaderParser.MultipleValueEntityTagParser);
-            s_parserStore.Add(HttpKnownHeaderNames.IfModifiedSince, DateHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.IfNoneMatch, GenericHeaderParser.MultipleValueEntityTagParser);
-            s_parserStore.Add(HttpKnownHeaderNames.IfRange, GenericHeaderParser.RangeConditionParser);
-            s_parserStore.Add(HttpKnownHeaderNames.IfUnmodifiedSince, DateHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.MaxForwards, Int32NumberHeaderParser.Parser);
-            s_parserStore.Add(HttpKnownHeaderNames.ProxyAuthorization, GenericHeaderParser.SingleValueAuthenticationParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Range, GenericHeaderParser.RangeParser);
-            s_parserStore.Add(HttpKnownHeaderNames.Referer, UriHeaderParser.RelativeOrAbsoluteUriParser);
-            s_parserStore.Add(HttpKnownHeaderNames.TE, TransferCodingHeaderParser.MultipleValueWithQualityParser);
-            s_parserStore.Add(HttpKnownHeaderNames.UserAgent, ProductInfoHeaderParser.MultipleValueParser);
+            parserStore.Add(HttpKnownHeaderNames.Accept, MediaTypeHeaderParser.MultipleValuesParser);
+            parserStore.Add(HttpKnownHeaderNames.AcceptCharset, GenericHeaderParser.MultipleValueStringWithQualityParser);
+            parserStore.Add(HttpKnownHeaderNames.AcceptEncoding, GenericHeaderParser.MultipleValueStringWithQualityParser);
+            parserStore.Add(HttpKnownHeaderNames.AcceptLanguage, GenericHeaderParser.MultipleValueStringWithQualityParser);
+            parserStore.Add(HttpKnownHeaderNames.Authorization, GenericHeaderParser.SingleValueAuthenticationParser);
+            parserStore.Add(HttpKnownHeaderNames.Expect, GenericHeaderParser.MultipleValueNameValueWithParametersParser);
+            parserStore.Add(HttpKnownHeaderNames.From, GenericHeaderParser.MailAddressParser);
+            parserStore.Add(HttpKnownHeaderNames.Host, GenericHeaderParser.HostParser);
+            parserStore.Add(HttpKnownHeaderNames.IfMatch, GenericHeaderParser.MultipleValueEntityTagParser);
+            parserStore.Add(HttpKnownHeaderNames.IfModifiedSince, DateHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.IfNoneMatch, GenericHeaderParser.MultipleValueEntityTagParser);
+            parserStore.Add(HttpKnownHeaderNames.IfRange, GenericHeaderParser.RangeConditionParser);
+            parserStore.Add(HttpKnownHeaderNames.IfUnmodifiedSince, DateHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.MaxForwards, Int32NumberHeaderParser.Parser);
+            parserStore.Add(HttpKnownHeaderNames.ProxyAuthorization, GenericHeaderParser.SingleValueAuthenticationParser);
+            parserStore.Add(HttpKnownHeaderNames.Range, GenericHeaderParser.RangeParser);
+            parserStore.Add(HttpKnownHeaderNames.Referer, UriHeaderParser.RelativeOrAbsoluteUriParser);
+            parserStore.Add(HttpKnownHeaderNames.TE, TransferCodingHeaderParser.MultipleValueWithQualityParser);
+            parserStore.Add(HttpKnownHeaderNames.UserAgent, ProductInfoHeaderParser.MultipleValueParser);
 
-            HttpGeneralHeaders.AddParsers(s_parserStore);
+            HttpGeneralHeaders.AddParsers(parserStore);
 
-            s_invalidHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HttpContentHeaders.AddKnownHeaders(s_invalidHeaders);
+            return parserStore;
+        }
+
+        private static HashSet<string> CreateInvalidHeaders()
+        {
+            var invalidHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HttpContentHeaders.AddKnownHeaders(invalidHeaders);
+            return invalidHeaders;
+
             // Note: Reserved response header names are allowed as custom request header names.  Reserved response
             // headers have no defined meaning or format when used on a request.  This enables a server to accept
             // any headers sent from the client as either content headers or request headers.

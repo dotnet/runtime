@@ -11,9 +11,9 @@ namespace System.Net.Http
     internal static class WinHttpTraceHelper
     {
         private const string WinHtpTraceEnvironmentVariable = "WINHTTPHANDLER_TRACE";
-        private static bool s_TraceEnabled;
+        private static readonly bool s_traceEnabled = IsTraceEnabledViaEnvironmentVariable();
 
-        static WinHttpTraceHelper()
+        private static bool IsTraceEnabledViaEnvironmentVariable()
         {
             string env;
             try
@@ -25,13 +25,13 @@ namespace System.Net.Http
                 env = null;
             }
 
-            s_TraceEnabled = !string.IsNullOrEmpty(env);
+            return !string.IsNullOrEmpty(env);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsTraceEnabled()
         {
-            return s_TraceEnabled;
+            return s_traceEnabled;
         }
 
         public static void Trace(string message)
