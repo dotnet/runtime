@@ -1,14 +1,9 @@
 CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
-CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
-CoreMangLib/cti/system/datetime/DateTimeKind/DateTimeKind.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact2/DateTimeParseExact2.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact3/DateTimeParseExact3.sh
-CoreMangLib/cti/system/decimal/DecimalToInt32/DecimalToInt32.sh
 CoreMangLib/cti/system/double/DoubleToString3/DoubleToString3.sh
 CoreMangLib/cti/system/double/DoubleToString4/DoubleToString4.sh
-CoreMangLib/cti/system/globalization/datetimeformatinfo/DateTimeFormatInfoGetAbbreviatedDayName/DateTimeFormatInfoGetAbbreviatedDayName.sh
-CoreMangLib/cti/system/globalization/datetimeformatinfo/DateTimeFormatInfoGetDayName/DateTimeFormatInfoGetDayName.sh
 CoreMangLib/cti/system/int64/Int64ToString3/Int64ToString3.sh
 CoreMangLib/cti/system/int/Int32ToString3/Int32ToString3.sh
 CoreMangLib/cti/system/string/StringCompare15/StringCompare15.sh
