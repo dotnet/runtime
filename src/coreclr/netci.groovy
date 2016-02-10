@@ -6,6 +6,7 @@ def project = GithubProject
                        
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
+        'RHEL7.2': 'Linux',
         'Ubuntu15.10': 'Linux',
         'Debian8.2':'Linux',
         'OSX':'OSX',
@@ -33,7 +34,7 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10']
+    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10', 'RHEL7.2']
     def static crossList = ['Ubuntu', 'OSX']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -232,6 +233,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     assert !isFlowJob
                     assert scenario == 'default'
                     Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+Ubuntu15\\.10.*')
+                    break
+                case 'RHEL7.2':
+                    assert !isFlowJob
+                    assert scenario == 'default'
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+RHEL7\\.2.*')
                     break
                 case 'Ubuntu':
                 case 'OSX':
@@ -648,6 +654,7 @@ combinedScenarios.each { scenario ->
                         case 'OSX':
                         case 'FreeBSD':
                         case 'CentOS7.1':
+                        case 'RHEL7.2':
                         case 'OpenSUSE13.2':
                             switch (architecture) {
                                 case 'x64':
