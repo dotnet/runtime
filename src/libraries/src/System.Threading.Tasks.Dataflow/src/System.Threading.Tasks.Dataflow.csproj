@@ -13,8 +13,16 @@
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
-    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageDestination Include="lib/dotnet5.2">
+      <TargetFramework>dotnet5.2</TargetFramework>
+    </PackageDestination>
+    <!-- Support targets that were supported in previous package versions -->
+    <PackageDestination Include="lib/portable-net45+win8+wpa81">
+      <TargetFramework>portable-net45+win8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
