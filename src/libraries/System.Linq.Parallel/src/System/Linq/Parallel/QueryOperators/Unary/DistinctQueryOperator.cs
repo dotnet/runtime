@@ -76,7 +76,7 @@ namespace System.Linq.Parallel
         //
 
         private void WrapPartitionedStreamHelper<TKey>(
-            PartitionedStream<Pair, TKey> hashStream,
+            PartitionedStream<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> hashStream,
             IPartitionedStreamRecipient<TInputOutput> recipient, CancellationToken cancellationToken)
         {
             int partitionCount = hashStream.PartitionCount;
@@ -118,7 +118,7 @@ namespace System.Linq.Parallel
 
         class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
-            private QueryOperatorEnumerator<Pair, TKey> _source; // The data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
             private CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
@@ -128,7 +128,7 @@ namespace System.Linq.Parallel
             //
 
             internal DistinctQueryOperatorEnumerator(
-                QueryOperatorEnumerator<Pair, TKey> source, IEqualityComparer<TInputOutput> comparer,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> source, IEqualityComparer<TInputOutput> comparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(source != null);
@@ -148,7 +148,7 @@ namespace System.Linq.Parallel
 
                 // Iterate over this set's elements until we find a unique element.
                 TKey keyUnused = default(TKey);
-                Pair current = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                Pair<TInputOutput, NoKeyMemoizationRequired> current = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
 
                 if (_outputLoopCount == null)
                     _outputLoopCount = new Shared<int>(0);
@@ -159,12 +159,12 @@ namespace System.Linq.Parallel
                         CancellationState.ThrowIfCanceled(_cancellationToken);
 
                     // We ensure we never return duplicates by tracking them in our set.
-                    if (_hashLookup.Add((TInputOutput)current.First))
+                    if (_hashLookup.Add(current.First))
                     {
 #if DEBUG
                         currentKey = unchecked((int)0xdeadbeef);
 #endif
-                        currentElement = (TInputOutput)current.First;
+                        currentElement = current.First;
                         return true;
                     }
                 }
@@ -191,7 +191,7 @@ namespace System.Linq.Parallel
 
         class OrderedDistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
-            private QueryOperatorEnumerator<Pair, TKey> _source; // The data source.
+            private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
             private Dictionary<Wrapper<TInputOutput>, TKey> _hashLookup; // The hash lookup, used to produce the distinct set.
             private IComparer<TKey> _keyComparer; // Comparer to decide the key order.
             private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, TKey>> _hashLookupEnumerator; // Enumerates over _hashLookup.
@@ -202,7 +202,7 @@ namespace System.Linq.Parallel
             //
 
             internal OrderedDistinctQueryOperatorEnumerator(
-                QueryOperatorEnumerator<Pair, TKey> source,
+                QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> source,
                 IEqualityComparer<TInputOutput> comparer, IComparer<TKey> keyComparer,
                 CancellationToken cancellationToken)
             {
@@ -227,7 +227,7 @@ namespace System.Linq.Parallel
 
                 if (_hashLookupEnumerator == null)
                 {
-                    Pair elem = new Pair(default(TInputOutput), default(NoKeyMemoizationRequired));
+                    Pair<TInputOutput, NoKeyMemoizationRequired> elem = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     TKey orderKey = default(TKey);
 
                     int i = 0;
@@ -239,7 +239,7 @@ namespace System.Linq.Parallel
                         // For each element, we track the smallest order key for that element that we saw so far
                         TKey oldEntry;
 
-                        Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>((TInputOutput)elem.First);
+                        Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>(elem.First);
 
                         // If this is the first occurrence of this element, or the order key is lower than all keys we saw previously,
                         // update the order key for this element.

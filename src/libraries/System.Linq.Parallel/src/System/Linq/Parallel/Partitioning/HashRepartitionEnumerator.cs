@@ -21,7 +21,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput">The kind of elements.</typeparam>
     /// <typeparam name="THashKey">The key used to distribute elements.</typeparam>
     /// <typeparam name="TIgnoreKey">The kind of keys found in the source (ignored).</typeparam>
-    internal class HashRepartitionEnumerator<TInputOutput, THashKey, TIgnoreKey> : QueryOperatorEnumerator<Pair, int>
+    internal class HashRepartitionEnumerator<TInputOutput, THashKey, TIgnoreKey> : QueryOperatorEnumerator<Pair<TInputOutput,THashKey>, int>
 
     {
         private const int ENUMERATION_NOT_STARTED = -1; // Sentinel to note we haven't begun enumerating yet.
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
         private readonly int _partitionIndex; // Our unique partition index.
         private readonly Func<TInputOutput, THashKey> _keySelector; // A key-selector function.
         private readonly HashRepartitionStream<TInputOutput, THashKey, int> _repartitionStream; // A repartitioning stream.
-        private readonly ListChunk<Pair>[][] _valueExchangeMatrix; // Matrix to do inter-task communication.
+        private readonly ListChunk<Pair<TInputOutput,THashKey>>[][] _valueExchangeMatrix; // Matrix to do inter-task communication.
         private readonly QueryOperatorEnumerator<TInputOutput, TIgnoreKey> _source; // The immediate source of data.
         private CountdownEvent _barrier; // Used to signal and wait for repartitions to complete.
         private readonly CancellationToken _cancellationToken; // A token for canceling the process.
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel
         class Mutables
         {
             internal int _currentBufferIndex; // Current buffer index.
-            internal ListChunk<Pair> _currentBuffer; // The buffer we're currently enumerating.
+            internal ListChunk<Pair<TInputOutput,THashKey>> _currentBuffer; // The buffer we're currently enumerating.
             internal int _currentIndex; // Current index into the buffer.
 
             internal Mutables()
@@ -64,7 +64,7 @@ namespace System.Linq.Parallel
         internal HashRepartitionEnumerator(
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source, int partitionCount, int partitionIndex,
             Func<TInputOutput, THashKey> keySelector, HashRepartitionStream<TInputOutput, THashKey, int> repartitionStream,
-            CountdownEvent barrier, ListChunk<Pair>[][] valueExchangeMatrix, CancellationToken cancellationToken)
+            CountdownEvent barrier, ListChunk<Pair<TInputOutput,THashKey>>[][] valueExchangeMatrix, CancellationToken cancellationToken)
         {
             Debug.Assert(source != null);
             Debug.Assert(keySelector != null || typeof(THashKey) == typeof(NoKeyMemoizationRequired));
@@ -101,7 +101,7 @@ namespace System.Linq.Parallel
         // anyway, so having the repartitioning operator do so isn't complicating matters much at all.
         //
 
-        internal override bool MoveNext(ref Pair currentElement, ref int currentKey)
+        internal override bool MoveNext(ref Pair<TInputOutput,THashKey> currentElement, ref int currentKey)
         {
             if (_partitionCount == 1)
             {
@@ -113,7 +113,7 @@ namespace System.Linq.Parallel
 #endif
                 if (_source.MoveNext(ref current, ref keyUnused))
                 {
-                    currentElement = new Pair(
+                    currentElement = new Pair<TInputOutput,THashKey>(
                         current, _keySelector == null ? default(THashKey) : _keySelector(current));
                     return true;
                 }
@@ -198,7 +198,7 @@ namespace System.Linq.Parallel
             Mutables mutables = _mutables;
             Debug.Assert(mutables != null);
 
-            ListChunk<Pair>[] privateBuffers = new ListChunk<Pair>[_partitionCount];
+            ListChunk<Pair<TInputOutput,THashKey>>[] privateBuffers = new ListChunk<Pair<TInputOutput,THashKey>>[_partitionCount];
 
             TInputOutput element = default(TInputOutput);
             TIgnoreKey ignoreKey = default(TIgnoreKey);
@@ -231,14 +231,14 @@ namespace System.Linq.Parallel
                 // too much.  In the original implementation, we'd access the buffer in the matrix ([N,M],
                 // where N is the current partition and M is the destination), but some rudimentary
                 // performance profiling indicates copying at the end performs better.
-                ListChunk<Pair> buffer = privateBuffers[destinationIndex];
+                ListChunk<Pair<TInputOutput, THashKey>> buffer = privateBuffers[destinationIndex];
                 if (buffer == null)
                 {
                     const int INITIAL_PRIVATE_BUFFER_SIZE = 128;
-                    privateBuffers[destinationIndex] = buffer = new ListChunk<Pair>(INITIAL_PRIVATE_BUFFER_SIZE);
+                    privateBuffers[destinationIndex] = buffer = new ListChunk<Pair<TInputOutput, THashKey>>(INITIAL_PRIVATE_BUFFER_SIZE);
                 }
 
-                buffer.Add(new Pair(element, elementHashKey));
+                buffer.Add(new Pair<TInputOutput, THashKey>(element, elementHashKey));
             }
 
             // Copy the local buffers to the shared space and then signal to other threads that
