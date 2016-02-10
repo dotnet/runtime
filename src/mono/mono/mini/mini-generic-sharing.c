@@ -35,6 +35,10 @@ static int num_templates_bytes;
 static int num_oti_allocted;
 static int num_oti_bytes;
 
+#define gshared_lock() mono_os_mutex_lock (&gshared_mutex)
+#define gshared_unlock() mono_os_mutex_unlock (&gshared_mutex)
+static mono_mutex_t gshared_mutex;
+
 static gboolean partial_supported = FALSE;
 
 static inline gboolean
@@ -1145,7 +1149,7 @@ MonoMethod*
 mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 {
 	MonoMethodBuilder *mb;
-	MonoMethod *res;
+	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
 	int i, pindex, retval_var;
@@ -1157,8 +1161,9 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	// FIXME: Normal cache
 	if (!cache)
 		cache = g_hash_table_new_full ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal, NULL, NULL);
-	// FIXME: Locking
+	gshared_lock ();
 	res = g_hash_table_lookup (cache, sig);
+	gshared_unlock ();
 	if (res) {
 		g_free (sig);
 		return res;
@@ -1229,9 +1234,13 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
 
-	// FIXME: Locking
-	g_hash_table_insert (cache, sig, res);
-
+	gshared_lock ();
+	cached = g_hash_table_lookup (cache, sig);
+	if (cached)
+		res = cached;
+	else
+		g_hash_table_insert (cache, sig, res);
+	gshared_unlock ();
 	return res;
 }
 
@@ -1244,7 +1253,7 @@ MonoMethod*
 mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 {
 	MonoMethodBuilder *mb;
-	MonoMethod *res;
+	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
 	int i, pindex, args_start, ldind_op, stind_op;
@@ -1256,8 +1265,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	// FIXME: Normal cache
 	if (!cache)
 		cache = g_hash_table_new_full ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal, NULL, NULL);
-	// FIXME: Locking
+	gshared_lock ();
 	res = g_hash_table_lookup (cache, sig);
+	gshared_unlock ();
 	if (res) {
 		g_free (sig);
 		return res;
@@ -1344,9 +1354,13 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
 
-	// FIXME: Locking
-	g_hash_table_insert (cache, sig, res);
-
+	gshared_lock ();
+	cached = g_hash_table_lookup (cache, sig);
+	if (cached)
+		res = cached;
+	else
+		g_hash_table_insert (cache, sig, res);
+	gshared_unlock ();
 	return res;
 }
 
@@ -3081,7 +3095,7 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 /*
  * mono_generic_sharing_init:
  *
- * Register the generic sharing counters.
+ * Initialize the module.
  */
 void
 mono_generic_sharing_init (void)
@@ -3092,6 +3106,8 @@ mono_generic_sharing_init (void)
 	mono_counters_register ("RGCTX oti bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_oti_bytes);
 
 	mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
+
+	mono_os_mutex_init_recursive (&gshared_mutex);
 }
 
 void
