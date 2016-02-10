@@ -7336,11 +7336,25 @@ CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     NYI_IF(varTypeIsLong(srcType), "Conversion from long to float");
 #endif // !defined(_TARGET_64BIT_)
 
+    // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
+    // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
+    // for GT_LCL_VAR_ADDR and GT_LCL_FLD_ADDR that represent stack addresses and can be considered
+    // as TYP_I_IMPL. In all other cases where src operand is a gc-type and not known to be on stack,
+    // Front-end (see fgMorphCast()) ensures this by assigning gc-type local to a non gc-type
+    // temp and using temp as operand of cast operation. 
+    if (srcType == TYP_BYREF)
+    {
+        noway_assert(op1->OperGet() == GT_LCL_VAR_ADDR || op1->OperGet() == GT_LCL_FLD_ADDR);
+        srcType = TYP_I_IMPL;
+    }
+
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (treeNode->gtFlags & GTF_UNSIGNED)
     {
         srcType = genUnsignedType(srcType);
     }
+
+    noway_assert(!varTypeIsGC(srcType));
 
     // We should never be seeing srcType whose size is not sizeof(int) nor sizeof(long).
     // For conversions from byte/sbyte/int16/uint16 to float/double, we would expect
