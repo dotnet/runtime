@@ -149,7 +149,7 @@ namespace System.Linq.Parallel
         {
             int partitionCount = inputStream.PartitionCount;
             var keyComparer = new PairComparer<TLeftKey, int>(inputStream.KeyComparer, Util.GetDefaultComparer<int>());
-            var outputStream = new PartitionedStream<TOutput, Pair>(partitionCount, keyComparer, OrdinalIndexState);
+            var outputStream = new PartitionedStream<TOutput, Pair<TLeftKey, int>>(partitionCount, keyComparer, OrdinalIndexState);
             for (int i = 0; i < partitionCount; i++)
             {
                 outputStream[i] = new SelectManyQueryOperatorEnumerator<TLeftKey>(inputStream[i], this, settings.CancellationState.MergedCancellationToken);
@@ -201,7 +201,7 @@ namespace System.Linq.Parallel
                 {
                     return CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_rightChildSelector, _resultSelector);
                 }
-                return (IEnumerable<TOutput>)(object)(CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_rightChildSelector));
+                return (IEnumerable<TOutput>)CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_rightChildSelector);
             }
             else
             {
@@ -211,7 +211,7 @@ namespace System.Linq.Parallel
                     return CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_indexedRightChildSelector, _resultSelector);
                 }
 
-                return (IEnumerable<TOutput>)(object)(CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_indexedRightChildSelector));
+                return (IEnumerable<TOutput>)CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token).SelectMany(_indexedRightChildSelector);
             }
         }
 
@@ -308,7 +308,7 @@ namespace System.Linq.Parallel
                         // enumerator object as an IEnumerator<TOutput> and access that later on.
                         if (_selectManyOperator._resultSelector == null)
                         {
-                            _currentRightSourceAsOutput = (IEnumerator<TOutput>)(object)_currentRightSource;
+                            _currentRightSourceAsOutput = (IEnumerator<TOutput>)_currentRightSource;
                             Debug.Assert(_currentRightSourceAsOutput == _currentRightSource,
                                             "these must be equal, otherwise the surrounding logic will be broken");
                         }
@@ -360,7 +360,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the SelectMany logic.
         //
 
-        class SelectManyQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TOutput, Pair>
+        class SelectManyQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TOutput, Pair<TLeftKey, int>>
         {
             private readonly QueryOperatorEnumerator<TLeftInput, TLeftKey> _leftSource; // The left data source to enumerate.
             private readonly SelectManyQueryOperator<TLeftInput, TRightInput, TOutput> _selectManyOperator; // The select many operator to use.
@@ -400,7 +400,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext(ref TOutput currentElement, ref Pair currentKey)
+            internal override bool MoveNext(ref TOutput currentElement, ref Pair<TLeftKey, int> currentKey)
             {
                 while (true)
                 {
@@ -438,7 +438,7 @@ namespace System.Linq.Parallel
                         // enumerator object as an IEnumerator<TOutput> and access that later on.
                         if (_selectManyOperator._resultSelector == null)
                         {
-                            _currentRightSourceAsOutput = (IEnumerator<TOutput>)(object)_currentRightSource;
+                            _currentRightSourceAsOutput = (IEnumerator<TOutput>)_currentRightSource;
                             Debug.Assert(_currentRightSourceAsOutput == _currentRightSource,
                                             "these must be equal, otherwise the surrounding logic will be broken");
                         }
@@ -461,7 +461,7 @@ namespace System.Linq.Parallel
                             Debug.Assert(_currentRightSourceAsOutput != null);
                             currentElement = _currentRightSourceAsOutput.Current;
                         }
-                        currentKey = new Pair(_mutables._currentLeftKey, _mutables._currentRightSourceIndex);
+                        currentKey = new Pair<TLeftKey, int>(_mutables._currentLeftKey, _mutables._currentRightSourceIndex);
 
                         return true;
                     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
 
@@ -101,6 +102,59 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.True(certFromPfx.HasPrivateKey);
                     Assert.Equal(cert, certFromPfx);
                 }
+            }
+        }
+
+        [Fact]
+        public static void ReadECDsaPrivateKey_WindowsPfx()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
+            using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+            {
+                Assert.NotNull(ecdsa);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    AssertEccAlgorithm(ecdsa, "ECDSA_P256");
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadECDsaPrivateKey_OpenSslPfx()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_OpenSsl, "Test"))
+            using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+            {
+                Assert.NotNull(ecdsa);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // If Windows were to start detecting this case as ECDSA that wouldn't be bad,
+                    // but this assert is the only proof that this certificate was made with OpenSSL.
+                    //
+                    // Windows ECDSA PFX files contain metadata in the private key keybag which identify it
+                    // to Windows as ECDSA.  OpenSSL doesn't have anywhere to persist that data when
+                    // extracting it to the key PEM file, and so no longer has it when putting the PFX
+                    // together.  But, it also wouldn't have had the Windows-specific metadata when the
+                    // key was generated on the OpenSSL side in the first place.
+                    //
+                    // So, again, it's not important that Windows "mis-detects" this as ECDH.  What's
+                    // important is that we were able to create an ECDsa object from it.
+                    AssertEccAlgorithm(ecdsa, "ECDH_P256");
+                }
+            }
+        }
+
+        // Keep the ECDsaCng-ness contained within this helper method so that it doesn't trigger a
+        // FileNotFoundException on Unix.
+        private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
+        {
+            ECDsaCng cng = ecdsa as ECDsaCng;
+
+            if (cng != null)
+            {
+                Assert.Equal(algorithmId, cng.Key.Algorithm.Algorithm);
             }
         }
 

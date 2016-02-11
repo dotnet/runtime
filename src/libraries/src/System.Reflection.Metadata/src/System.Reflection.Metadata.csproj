@@ -65,7 +65,6 @@
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\ExceptionRegionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\InstructionEncoder.cs" />
-    <Compile Include="System\Reflection\Metadata\Ecma335\MethodSemanticsAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\ILOpCode.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CodedIndex.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataSerializer.cs" />

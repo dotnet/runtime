@@ -589,7 +589,7 @@ namespace System.Collections.Generic
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException("index", index , SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < Count)
@@ -609,17 +609,17 @@ namespace System.Collections.Generic
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
                 }
 
                 if (array.GetLowerBound(0) != 0)
                 {
-                    throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
                 }
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("arrayIndex", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < _dictionary.Count)
@@ -637,7 +637,7 @@ namespace System.Collections.Generic
                     object[] objects = (object[])array;
                     if (objects == null)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                     }
 
                     try
@@ -646,7 +646,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                     }
                 }
             }
@@ -778,7 +778,7 @@ namespace System.Collections.Generic
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < Count)
@@ -798,17 +798,17 @@ namespace System.Collections.Generic
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
                 }
 
                 if (array.GetLowerBound(0) != 0)
                 {
-                    throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
                 }
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("arrayIndex", SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < _dictionary.Count)
@@ -826,7 +826,7 @@ namespace System.Collections.Generic
                     object[] objects = (object[])array;
                     if (objects == null)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                     }
 
                     try
@@ -835,7 +835,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
                     }
                 }
             }
