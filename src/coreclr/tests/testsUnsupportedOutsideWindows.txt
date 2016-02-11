@@ -1,7 +1,10 @@
 CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
+CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
+CoreMangLib/cti/system/datetime/DateTimeKind/DateTimeKind.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact2/DateTimeParseExact2.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact3/DateTimeParseExact3.sh
+CoreMangLib/cti/system/decimal/DecimalToInt32/DecimalToInt32.sh
 CoreMangLib/cti/system/double/DoubleToString3/DoubleToString3.sh
 CoreMangLib/cti/system/double/DoubleToString4/DoubleToString4.sh
 CoreMangLib/cti/system/int64/Int64ToString3/Int64ToString3.sh
@@ -12,6 +15,8 @@ CoreMangLib/cti/system/string/StringCompare2/StringCompare2.sh
 CoreMangLib/cti/system/uint16/UInt16ToString3/UInt16ToString3.sh
 CoreMangLib/cti/system/uint16/UInt16ToString4/UInt16ToString4.sh
 CoreMangLib/cti/system/uint32/UInt32ToString2/UInt32ToString2.sh
+CoreMangLib/system/collections/generic/hashset/Regression_Dev10_609271/Regression_Dev10_609271.sh
+CoreMangLib/system/collections/generic/hashset/Regression_Dev10_624201/Regression_Dev10_624201.sh
 Interop/NativeCallable/NativeCallableTest/NativeCallableTest.sh
 JIT/Directed/IL/PInvokeTail/PInvokeTail/PInvokeTail.sh
 JIT/Directed/IL/PInvokeTail/TailWinApi/TailWinApi.sh
@@ -114,6 +119,9 @@ JIT/Methodical/explicit/coverage/seq_short_1_d/seq_short_1_d.sh
 JIT/Methodical/explicit/coverage/seq_short_1_r/seq_short_1_r.sh
 JIT/Methodical/explicit/coverage/seq_val_1_d/seq_val_1_d.sh
 JIT/Methodical/explicit/coverage/seq_val_1_r/seq_val_1_r.sh
+JIT/Performance/CodeQuality/Roslyn/CscBench/CscBench.sh
+JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
+JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/b32374.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M01/b07493/b07493/b07493.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b427411/Desktop/b427411/b427411.sh
@@ -181,5 +189,6 @@ JIT/jit64/mcc/interop/mcc_i87/mcc_i87.sh
 JIT/jit64/regress/vsw/286991/test/test.sh
 JIT/opt/Inline/tests/security/security.sh
 JIT/opt/Inline/tests/xmodb/xmodb.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b79250/b79250/b79250.sh
 managed/Compilation/Compilation/Compilation.sh
 Regressions/coreclr/0584/Test584/Test584.sh
