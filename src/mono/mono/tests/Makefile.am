@@ -1,6 +1,7 @@
 SUBDIRS = assemblyresolve gc-descriptors
 
-check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform test-process-exit test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload rm-empty-logs
+check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform	\
+		 test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload test-process-stress rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -1407,6 +1408,14 @@ test-console-output: console-output.exe
 	@$(RUNTIME) console-output.exe 2>console-output.exe.stderr
 	@diff -w console-output.exe.stdout $(srcdir)/console-output.exe.stdout.expected \
 		&& diff -w console-output.exe.stderr $(srcdir)/console-output.exe.stderr.expected
+
+PROCESS_STRESS_TESTS=	\
+		process-stress-1.exe	\
+		process-stress-2.exe	\
+		process-stress-3.exe
+
+test-process-stress: $(PROCESS_STRESS_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 600 $(PROCESS_STRESS_TESTS)
 
 coreclr-gcstress:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress
