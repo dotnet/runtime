@@ -19,6 +19,7 @@ namespace System.Net
         private const int ContentNullId = 3;
         private const int ClientSendCompletedId = 4;
         private const int HeadersInvalidValueId = 5;
+        private const int HandlerMessageId = 6;
 
         private readonly static HttpEventSource s_log = new HttpEventSource();
         private HttpEventSource() { }
@@ -158,6 +159,41 @@ namespace System.Net
         internal void HeadersInvalidValue(string name, string rawValue)
         {
             WriteEvent(HeadersInvalidValueId, name, rawValue);
+        }
+
+        [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        internal unsafe void HandlerMessage(int workerId, int requestId, string memberName, string message)
+        {
+            if (memberName == null)
+            {
+                memberName = string.Empty;
+            }
+
+            if (message == null)
+            {
+                message = string.Empty;
+            }
+
+            const int SizeData = 4;
+            fixed (char* memberNamePtr = memberName)
+            fixed (char* messagePtr = message)
+            {
+                EventData* dataDesc = stackalloc EventSource.EventData[SizeData];
+
+                dataDesc[0].DataPointer = (IntPtr)(&workerId);
+                dataDesc[0].Size = sizeof(int);
+
+                dataDesc[1].DataPointer = (IntPtr)(&requestId);
+                dataDesc[1].Size = sizeof(int);
+
+                dataDesc[2].DataPointer = (IntPtr)(memberNamePtr);
+                dataDesc[2].Size = (memberName.Length + 1) * sizeof(char);
+
+                dataDesc[3].DataPointer = (IntPtr)(messagePtr);
+                dataDesc[3].Size = (message.Length + 1) * sizeof(char);
+
+                WriteEventCore(HandlerMessageId, SizeData, dataDesc);
+            }
         }
 
         public class Keywords

@@ -19,7 +19,6 @@ namespace System.Net.Http
     {
         #region Constants
 
-        private const string VerboseDebuggingConditional = "CURLHANDLER_VERBOSE";
         private const char SpaceChar = ' ';
         private const int StatusCodeLength = 3;
 
@@ -328,6 +327,8 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
+            EventSourceTrace("{0}", request);
+
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
             var easy = new EasyRequest(this, request, cancellationToken);
@@ -413,11 +414,9 @@ namespace System.Net.Http
             }
             catch (CookieException e)
             {
-                string msg = string.Format("Malformed cookie: SetCookies Failed with {0}, server: {1}, cookie:{2}",
-                                           e.Message,
-                                           state._requestMessage.RequestUri,
-                                           cookieHeader);
-                VerboseTrace(msg);
+                EventSourceTrace(
+                    "Malformed cookie parsing failed: {0}, server: {1}, cookie: {2}", 
+                    e.Message, state._requestMessage.RequestUri, cookieHeader);
             }
         }
 
@@ -449,7 +448,7 @@ namespace System.Net.Http
                 }
             }
 
-            VerboseTrace("curlAuthScheme = " + curlAuthScheme);
+            EventSourceTrace("Authentication scheme: {0}", curlAuthScheme);
             return new KeyValuePair<NetworkCredential, CURLAUTH>(nc, curlAuthScheme); ;
         }
 
@@ -475,7 +474,7 @@ namespace System.Net.Http
             if (error != CURLcode.CURLE_OK)
             {
                 var inner = new CurlException((int)error, isMulti: false);
-                VerboseTrace(inner.Message);
+                EventSourceTrace(inner.Message);
                 throw inner;
             }
         }
@@ -485,7 +484,7 @@ namespace System.Net.Http
             if (error != CURLMcode.CURLM_OK)
             {
                 string msg = CurlException.GetCurlErrorString((int)error, true);
-                VerboseTrace(msg);
+                EventSourceTrace(msg);
                 switch (error)
                 {
                     case CURLMcode.CURLM_ADDED_ALREADY:
@@ -512,39 +511,56 @@ namespace System.Net.Http
                 string.Equals(credential1.Password, credential2.Password, StringComparison.Ordinal);
         }
 
-        [Conditional(VerboseDebuggingConditional)]
-        private static void VerboseTrace(string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null, MultiAgent agent = null)
+        private static bool EventSourceTracingEnabled { get { return HttpEventSource.Log.IsEnabled(); } }
+
+        // PERF NOTE:
+        // These generic overloads of EventSourceTrace (and similar wrapper methods in some of the other CurlHandler
+        // nested types) exist to allow call sites to call EventSourceTrace without boxing and without checking
+        // EventSourceTracingEnabled.  Do not remove these without fixing the call sites accordingly.
+
+        private static void EventSourceTrace<TArg0>(
+            string formatMessage, TArg0 arg0,
+            MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
+        {
+            if (EventSourceTracingEnabled)
+            {
+                EventSourceTraceCore(string.Format(formatMessage, arg0), agent, easy, memberName);
+            }
+        }
+
+        private static void EventSourceTrace<TArg0, TArg1, TArg2>
+            (string formatMessage, TArg0 arg0, TArg1 arg1, TArg2 arg2,
+            MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
+        {
+            if (EventSourceTracingEnabled)
+            {
+                EventSourceTraceCore(string.Format(formatMessage, arg0, arg1, arg2), agent, easy, memberName);
+            }
+        }
+
+        private static void EventSourceTrace(
+            string message, 
+            MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
+        {
+            if (EventSourceTracingEnabled)
+            {
+                EventSourceTraceCore(message, agent, easy, memberName);
+            }
+        }
+
+        private static void EventSourceTraceCore(string message, MultiAgent agent, EasyRequest easy, string memberName)
         {
             // If we weren't handed a multi agent, see if we can get one from the EasyRequest
-            if (agent == null && easy != null && easy._associatedMultiAgent != null)
+            if (agent == null && easy != null)
             {
                 agent = easy._associatedMultiAgent;
             }
-            int? agentId = agent != null ? agent.RunningWorkerId : null;
 
-            // Get an ID string that provides info about which MultiAgent worker and which EasyRequest this trace is about
-            string ids = "";
-            if (agentId != null || easy != null)
-            {
-                ids = "(" +
-                    (agentId != null ? "M#" + agentId : "") +
-                    (agentId != null && easy != null ? ", " : "") +
-                    (easy != null ? "E#" + easy.Task.Id : "") +
-                    ")";
-            }
-
-            // Create the message and trace it out
-            string msg = string.Format("[{0, -30}]{1, -16}: {2}", memberName, ids, text);
-            Interop.Sys.PrintF("%s\n", msg);
-        }
-
-        [Conditional(VerboseDebuggingConditional)]
-        private static void VerboseTraceIf(bool condition, string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null)
-        {
-            if (condition)
-            {
-                VerboseTrace(text, memberName, easy, agent: null);
-            }
+            HttpEventSource.Log.HandlerMessage(
+                agent != null && agent.RunningWorkerId.HasValue ? agent.RunningWorkerId.GetValueOrDefault() : 0,
+                easy != null ? easy.Task.Id : 0,
+                memberName,
+                message);
         }
 
         private static Exception CreateHttpRequestException(Exception inner = null)
