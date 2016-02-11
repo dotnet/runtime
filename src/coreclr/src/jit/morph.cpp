@@ -10839,7 +10839,7 @@ CM_ADD_OP:
                     changeToShift = true;
                 }
             }
-
+#endif // LEA_AVAILABLE
             if (changeToShift)
             {
                 // vnStore is null before the ValueNumber phase has run
@@ -10855,7 +10855,6 @@ CM_ADD_OP:
 
                 goto DONE_MORPHING_CHILDREN;
             }
-#endif // LEA_AVAILABLE
         }
         else if (fgOperIsBitwiseRotationRoot(oper))
         {
