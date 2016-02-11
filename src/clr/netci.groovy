@@ -72,7 +72,7 @@ def static setMachineAffinity(def job, def os, def architecture) {
 def static isCorefxTesting(def scenario) {
     return scenario.substring(0,2) == 'fx'
 }
-    
+
 // Generates the string for creating a file that sets environment variables
 // that makes it possible to run stress modes.  Writes the script to a file called
 // SetStressModes.[sh/cmd]
@@ -644,6 +644,10 @@ combinedScenarios.each { scenario ->
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
                                                 // Sync to corefx repo
+                                                // Move coreclr files to a subdirectory, %workspace%/clr. Otherwise, corefx build 
+                                                // thinks that %workspace% is the project base directory.
+                                                buildCommands += "powershell new-item clr -type directory -force"
+                                                buildCommands += 'powershell foreach ($x in get-childitem -force) { if (\$x.name -ne \'clr\') { move-item $x clr }}'
                                                 buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                                 
                                                 def setEnvVar = ''
@@ -654,8 +658,8 @@ combinedScenarios.each { scenario ->
                                                     }
                                                 }
                                                 
-                                                // Run corefx testing
-                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 ${setEnvVar} && Build.cmd /p:ConfigurationGroup=Release /p:WithCategories=\"InnerLoop;OuterLoop\" /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\bin\\Product\\Windows_NT.x64.Checked /p:TestWithLocalLibraries=true"
+                                                // Run corefx build and testing
+                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 ${setEnvVar} && Build.cmd /p:ConfigurationGroup=Release  /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
                                             }
                                             else {
                                                 def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
@@ -670,16 +674,14 @@ combinedScenarios.each { scenario ->
                                             buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
                                         }
                                     }
-                                
-                                    // Run the rest of the build    
-                                    
-                                    // Remove this command step once we can build mscorlib on CentOS/OpenSuse
-                                    buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
 
-                                    // Remove this command step once we can build mscorlib on FreeBSD
-                                    buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
-                                    
                                     if (!enableCorefxTesting) {
+                                        // Run the rest of the build    
+                                        // Build the mscorlib for the other OS's
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
+                                    
                                         // Zip up the tests directory so that we don't use so much space/time copying
                                         // 10s of thousands of files around.
                                         buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
@@ -694,10 +696,12 @@ combinedScenarios.each { scenario ->
                                         }
                                     }
                                     else {
-                                        // Archive only result xml files since corefx/bin/tests is very large around 10 GB.
-                                        
+                                        // Archive only result xml files since corefx/bin/tests is very large around 10 GB.                                        
                                         // For windows, pull full test results and test drops for x86/x64
-                                        Utilities.addArchival(newJob, "fx/bin/test/**/testResults.xml")
+                                        Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
+                                        
+                                        // Set timeout to 240
+                                        Utilities.setJobTimeout(newJob, 240)
                                         
                                         if (architecture == 'x64' || !isPR) {
                                             Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
