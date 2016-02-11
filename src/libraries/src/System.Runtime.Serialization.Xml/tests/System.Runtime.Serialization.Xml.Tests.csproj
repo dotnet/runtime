@@ -19,6 +19,7 @@
     <Compile Include="Utils.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="DataContractSerializer.cs" />
+    <Compile Include="DataContractSerializerStressTests.cs" />
     <Compile Include="DataContractSerializerTestData.cs" />
     <Compile Include="MyResolver.cs" />
     <Compile Include="XmlDictionaryReaderTests.cs" />
