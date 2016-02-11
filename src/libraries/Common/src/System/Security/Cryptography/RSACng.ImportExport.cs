@@ -145,9 +145,7 @@ namespace System.Security.Cryptography
             //     byte[cbPrime1]       coefficient         - InverseQ
             //     byte[cbModulus]      privateExponent     - D
             //
-            byte[] tempMagic = new byte[4];
-            tempMagic[0] = rsaBlob[0]; tempMagic[1] = rsaBlob[1]; tempMagic[2] = rsaBlob[2]; tempMagic[3] = rsaBlob[3];
-            KeyBlobMagicNumber magic = (KeyBlobMagicNumber)BitConverter.ToInt32(tempMagic, 0);
+            KeyBlobMagicNumber magic = (KeyBlobMagicNumber)BitConverter.ToInt32(rsaBlob, 0);
 
             // Check the magic value in the key blob header. If the blob does not have the required magic,
             // then throw a CryptographicException.
