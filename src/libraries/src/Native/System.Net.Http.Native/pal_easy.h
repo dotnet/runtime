@@ -88,6 +88,7 @@ enum PAL_CURLAUTH : int64_t
     PAL_CURLAUTH_Basic = 1 << 0,
     PAL_CURLAUTH_Digest = 1 << 1,
     PAL_CURLAUTH_Negotiate = 1 << 2,
+    PAL_CURLAUTH_NTLM = 1 << 3,
 };
 
 enum PAL_CURLPROXYTYPE : int32_t

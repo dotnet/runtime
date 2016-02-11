@@ -518,13 +518,16 @@ namespace System.Net.Http
 
                 if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized)
                 {
+                    // If preauthentication is enabled, then we want to transfer credentials to the handler's credential cache.
+                    // That entails asking the easy operation which auth types are supported, and then giving that info to the
+                    // handler, which along with the request URI and its server credentials will populate the cache appropriately.
                     if (completedOperation._handler.PreAuthenticate)
                     {
                         long authAvailable;
                         if (Interop.Http.EasyGetInfoLong(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out authAvailable) == CURLcode.CURLE_OK)
                         {
-                            completedOperation._handler.AddCredentialToCache(
-                               completedOperation._requestMessage.RequestUri, (CURLAUTH)authAvailable, completedOperation._networkCredential);
+                            completedOperation._handler.TransferCredentialsToCache(
+                                completedOperation._requestMessage.RequestUri, (CURLAUTH)authAvailable);
                         }
                         // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                     }
