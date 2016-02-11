@@ -363,8 +363,11 @@ branchList.each { branchName ->
                 }
             }
             else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newFlowJob)
+                // Temporary: Disk is corrupted around freebsd_debug_bld directory, removing from automatic runs for now
+                if (os != 'FreeBSD' || configurationGroup != 'Debug') {
+                    // Set a push trigger
+                    Utilities.addGithubPushTrigger(newFlowJob)
+                }
             }
         }
     }
