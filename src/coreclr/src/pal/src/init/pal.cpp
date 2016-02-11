@@ -1325,7 +1325,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     }
 
     InternalFree(env_path);
-    TRACE("No %s found in $PATH (%s)\n", exe_name, EnvironGetenv("PATH")); /////// leak in debug. fix?
+    TRACE("No %s found in $PATH (%s)\n", exe_name, EnvironGetenv("PATH", FALSE));
 
 last_resort:
     /* last resort : see if the executable is in the current directory. This is
