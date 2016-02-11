@@ -43,9 +43,6 @@
     <Compile Include="Microsoft\Composition\Diagnostics\TraceSourceTraceWriter.cs" />
     <Compile Include="Microsoft\Composition\Diagnostics\TraceWriter.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
-    <Compile Include="Microsoft\Internal\Lock.cs" />
-    <Compile Include="Microsoft\Internal\Lock.Reader.cs" />
-    <Compile Include="Microsoft\Internal\Lock.Writer.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
     <Compile Include="Strings.Designer.cs" />
     <Compile Include="System\Composition\Convention\ConventionBuilder.cs" />

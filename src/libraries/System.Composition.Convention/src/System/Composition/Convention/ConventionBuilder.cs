@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using Microsoft.Internal;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
-
-using Microsoft.Internal;
+using System.Threading;
 
 namespace System.Composition.Convention
 {
@@ -19,7 +17,7 @@ namespace System.Composition.Convention
     {
         private static readonly List<object> s_emptyList = new List<object>();
 
-        private readonly Lock _lock = new Lock();
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private readonly List<PartConventionBuilder> _conventions = new List<PartConventionBuilder>();
 
         private readonly Dictionary<MemberInfo, List<Attribute>> _memberInfos = new Dictionary<MemberInfo, List<Attribute>>();
@@ -161,13 +159,19 @@ namespace System.Composition.Convention
             if (typeInfo != null)
             {
                 var memberInfo = typeInfo as MemberInfo;
-                using (new ReadLock(_lock))
+                _lock.EnterReadLock();
+                try
                 {
                     _memberInfos.TryGetValue(memberInfo, out cachedAttributes);
                 }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
                 if (cachedAttributes == null)
                 {
-                    using (new WriteLock(_lock))
+                    _lock.EnterWriteLock();
+                    try
                     {
                         //Double check locking another thread may have inserted one while we were away.
                         if (!_memberInfos.TryGetValue(memberInfo, out cachedAttributes))
@@ -210,6 +214,10 @@ namespace System.Composition.Convention
                         // We will have updated all of the MemberInfos by now so lets reload cachedAttributes wiuth the current store
                         _memberInfos.TryGetValue(memberInfo, out cachedAttributes);
                     }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
                 }
             }
             else if (member.IsMemberInfoForProperty() || member.IsMemberInfoForConstructor() || member.IsMemberInfoForMethod())
@@ -232,7 +240,8 @@ namespace System.Composition.Convention
             bool getMemberAttributes = false;
 
             // Now edit the attributes returned from the base type
-            using (new ReadLock(_lock))
+            _lock.EnterReadLock();
+            try
             {
                 if (!_memberInfos.TryGetValue(member, out cachedAttributes))
                 {
@@ -247,15 +256,24 @@ namespace System.Composition.Convention
                     cachedAttributes = null;
                 }
             }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
 
             if (getMemberAttributes)
             {
                 GetCustomAttributes(null, reflectedType.GetTypeInfo() as MemberInfo);
 
                 // We should have run the rules for the enclosing parameter so we can again
-                using (new ReadLock(_lock))
+                _lock.EnterReadLock();
+                try
                 {
                     _memberInfos.TryGetValue(member, out cachedAttributes);
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
                 }
             }
 
@@ -283,7 +301,8 @@ namespace System.Composition.Convention
             bool getMemberAttributes = false;
 
             // Now edit the attributes returned from the base type
-            using (new ReadLock(_lock))
+            _lock.EnterReadLock();
+            try
             {
                 if (!_parameters.TryGetValue(parameter, out cachedAttributes))
                 {
@@ -298,15 +317,24 @@ namespace System.Composition.Convention
                     cachedAttributes = null;
                 }
             }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
 
             if (getMemberAttributes)
             {
                 GetCustomAttributes(null, reflectedType.GetTypeInfo() as MemberInfo);
 
                 // We should have run the rules for the enclosing parameter so we can again
-                using (new ReadLock(_lock))
+                _lock.EnterReadLock();
+                try
                 {
                     _parameters.TryGetValue(parameter, out cachedAttributes);
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
                 }
             }
 
