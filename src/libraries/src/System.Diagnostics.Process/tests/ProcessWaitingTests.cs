@@ -122,7 +122,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(5780, PlatformID.AnyUnix)]
         [Fact]
         public void WaitForPeerProcess()
         {
