@@ -8,11 +8,16 @@ namespace System.Data.Common
     {
         public static System.Collections.ObjectModel.ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader)
         {
-            if (reader is IDbColumnSchemaGenerator)
+            if (reader.CanProvideSchema())
             {
                 return ((IDbColumnSchemaGenerator)reader).GetColumnSchema();
             }
             throw new NotImplementedException();
+        }
+
+        public static bool CanProvideSchema(this DbDataReader reader)
+        {
+            return reader is IDbColumnSchemaGenerator;
         }
     }
 }
