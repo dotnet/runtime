@@ -6,6 +6,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'" >true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

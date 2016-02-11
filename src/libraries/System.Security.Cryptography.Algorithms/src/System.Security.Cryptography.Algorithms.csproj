@@ -19,6 +19,7 @@
     <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition=" '$(TargetGroup)' == 'net46'"></PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />

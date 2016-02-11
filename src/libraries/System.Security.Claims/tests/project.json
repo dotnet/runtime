@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Globalization": "4.0.0",
@@ -12,6 +13,8 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
   }
 }

@@ -21,9 +21,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
 
+  <!-- netcore50 project.json fork is shared for both netcore50 and netcore50aot. This redirects netcore50aot. -->
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <ProjectJson>netcore50aot/project.json</ProjectJson>
-    <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
+    <ProjectJson>netcore50/project.json</ProjectJson>
+    <ProjectLockJson>netcore50/project.lock.json</ProjectLockJson>
     <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
 

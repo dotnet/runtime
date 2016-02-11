@@ -1,19 +1,20 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Reflection.Primitives": "4.0.0",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "System.Collections": "4.0.0",
+    "System.Collections.Immutable": "1.1.37",
     "System.Diagnostics.Debug": "4.0.0",
     "System.IO": "4.0.0",
-    "System.Collections.Immutable": "1.1.37",
-    "System.Collections": "4.0.0",
-    "System.Text.Encoding": "4.0.0",
-    "System.Runtime.InteropServices": "4.0.0",
     "System.Reflection": "4.0.0",
+    "System.Reflection.Extensions": "4.0.0",
+    "System.Reflection.Primitives": "4.0.0",
+    "System.Resources.ResourceManager": "4.0.0",
+    "System.Runtime": "4.0.0",
     "System.Runtime.Extensions": "4.0.0",
-    "System.Threading": "4.0.0",
+    "System.Runtime.InteropServices": "4.0.0",
+    "System.Text.Encoding": "4.0.0",
     "System.Text.Encoding.Extensions": "4.0.0",
-    "System.Reflection.Extensions": "4.0.0"
+    "System.Threading": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}

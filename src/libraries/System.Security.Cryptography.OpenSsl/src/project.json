@@ -1,13 +1,14 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Collections": "4.0.0",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
-    "System.Runtime.Numerics": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
+    "System.Runtime.Numerics": "4.0.0",
     "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23808",
     "System.Security.Cryptography.Encoding": "4.0.0-rc3-23808",
     "System.Text.Encoding": "4.0.10"

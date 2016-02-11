@@ -3,8 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0.0\System.Linq.depproj">
+      <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Linq.csproj">
-      <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Linq.builds" />
     

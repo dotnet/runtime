@@ -1,11 +1,11 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Globalization.Calendars": "4.0.0",
     "System.IO.FileSystem": "4.0.0",
-    "System.IO.FileSystem.Watcher": "4.0.0-rc3-23808",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.InteropServices": "4.0.20",
@@ -17,5 +17,9 @@
   },
   "frameworks": {
     "netcore50": {}
+  },
+  "runtimes": {
+    "win8-x86": {},
+    "win8-x64": {}
   }
 }

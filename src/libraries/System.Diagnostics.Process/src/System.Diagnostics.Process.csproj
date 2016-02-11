@@ -16,6 +16,7 @@
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">dotnet5.5</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.5</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->

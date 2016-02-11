@@ -4,8 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.1</NuGetTargetMoniker>
+    <PackageTargetFramework>dotnet5.6</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.6</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Linq.cs" />

@@ -1,16 +1,21 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Globalization.Extensions": "4.0.0",
-    "System.Threading": "4.0.10",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23808",
     "System.Net.Primitives": "4.0.10",
     "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23808",
     "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23808",
     "System.Security.Principal": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23808"
+    "System.Security.Principal.Windows": "4.0.0-rc3-23808",
+    "System.Threading": "4.0.10",
+    "System.Threading.ThreadPool": "4.0.10-rc3-23808"
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {}
   }
 }

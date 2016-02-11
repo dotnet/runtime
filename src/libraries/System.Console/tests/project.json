@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Diagnostics.Process": "4.1.0-rc3-23808",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
