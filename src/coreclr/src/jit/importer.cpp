@@ -7079,8 +7079,11 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     assert(info.compRetBuffArg == BAD_VAR_NUM);
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(!info.compIsVarArgs); // No VarArgs for CoreCLR.
+    // No VarArgs for CoreCLR.
+    assert(!info.compIsVarArgs); 
+
     if (varTypeIsStruct(info.compRetNativeType))
     {
         SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -7091,9 +7094,10 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
             if (op->gtOper == GT_LCL_VAR)
             {
                 // This LCL_VAR is a register return value, it stays as a TYP_STRUCT
-                unsigned lclNum = op->gtLclVarCommon.gtLclNum;
                 // Make sure this struct type stays as struct so that we can return it in registers.
+                unsigned lclNum = op->gtLclVarCommon.gtLclNum;                
                 lvaTable[lclNum].lvIsMultiRegArgOrRet = true;
+
                 return op;
             }
 
@@ -7139,7 +7143,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
         }
         return impAssignStructClassToVar(op, retClsHnd);
     }
-#endif
+#endif //_TARGET_ARM_
 
 REDO_RETURN_NODE:
     // adjust the type away from struct to integral
@@ -7167,8 +7171,9 @@ REDO_RETURN_NODE:
             op = op1->gtOp.gtOp1;
             goto REDO_RETURN_NODE;
         }
-        op->gtLdObj.gtClass = NULL;
-        op->gtLdObj.gtFldTreeList = NULL;
+
+        op->gtLdObj.gtClass = nullptr;
+        op->gtLdObj.gtFldTreeList = nullptr;
         op->ChangeOperUnchecked(GT_IND);
         op->gtFlags |= GTF_IND_TGTANYWHERE;
     }
@@ -7215,6 +7220,7 @@ REDO_RETURN_NODE:
             }
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif // DEBUG
+
             // Don't change the gtType node just yet, it will get changed later
             return op;
         }
@@ -7223,6 +7229,7 @@ REDO_RETURN_NODE:
     {
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
     }
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (varTypeIsStruct(op))
     {
@@ -13507,19 +13514,38 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 #ifdef DEBUG
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(hClass, &structDesc);
     // If single eightbyte, the return type would have been normalized and there won't be a temp var.
     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
     assert(structDesc.passedInRegisters && structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-#endif // DEBUG
-    // Mark the var to store the eightbytes on stack non promotable.
-    // The return value is based on eightbytes, so all the fields need 
-    // to be on stack before loading the eightbyte in the corresponding return register.
+#endif
+
+    // The return value is based on eightbytes, so all the fields need to be on stack
+    // before loading the eightbyte in the corresponding return register.
+    //
+    // TODO-Amd64-Unix-CQ: Right now codegen assumes that tmpNum lcl var is on stack and 
+    // and does not live in a register.  For example, consider a case where Vector3/4
+    // return value of a call is assigned to tmpNum.  In such a case tmpNum will be of
+    // SIMD type and will be allocated a register unless explicitly marked as DoNotEnregister.
+    // Code quality can be improved by not marking enregistrable struct type tmpNum
+    // as DoNotEnregister=true.
+
+    // Mark the var so that fields are not promoted and stay together
     lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
+
+    // For now to workaround codegen limitation marking tmpNum as DoNotEnregister
+    // if it can be enregistered.
+    if (varTypeIsEnregisterableStruct(op))
+    {
+        lvaTable[tmpNum].lvDoNotEnregister = true;
+    }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
     return ret;
 }
 #endif // FEATURE_MULTIREG_RET
