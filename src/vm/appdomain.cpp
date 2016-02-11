@@ -2918,6 +2918,10 @@ void SystemDomain::LoadBaseSystemClasses()
     _ASSERTE(g_pStringClass->GetBaseSize() == ObjSizeOf(StringObject)+sizeof(WCHAR));
     _ASSERTE(g_pStringClass->GetComponentSize() == 2);
 
+    // Used by Buffer::BlockCopy
+    g_pByteArrayMT = ClassLoader::LoadArrayTypeThrowing(
+        TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))).AsArray()->GetMethodTable();
+
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
 
