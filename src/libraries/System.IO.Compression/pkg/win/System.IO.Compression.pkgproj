@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageTargetRuntime>win7</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.IO.Compression.builds" >
+      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    </ProjectReference>
+
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.IO.Compression\runtime.native.System.IO.Compression.pkgproj" />
+
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wp8" />
+    <InboxOnTargetFramework Include="wpa81" />
+    <ExternalOnTargetFramework Include="net"/>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

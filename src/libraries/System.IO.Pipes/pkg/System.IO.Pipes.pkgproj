@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.IO.Pipes.csproj">
+      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\facade\System.IO.Pipes.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    </ProjectReference>
+
+    <ProjectReference Include="$(MSBuildThisFileDirectory)win\System.IO.Pipes.pkgproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)unix\System.IO.Pipes.pkgproj" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

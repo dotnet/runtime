@@ -4,9 +4,17 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
     <NuGetTargetMoniker>.NETPlatform,Version=v5.1</NuGetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="ref/dotnet5.1">
+      <TargetFramework>dotnet5.1</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="ref/portable-net45+win8+wp8+wpa81">
+      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System.Data.Common.cs" />
     <Compile Include="System.Data.Common.Manual.cs" />

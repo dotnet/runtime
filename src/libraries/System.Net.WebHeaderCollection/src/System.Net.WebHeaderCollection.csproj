@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.WebHeaderCollection</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
