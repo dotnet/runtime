@@ -33,7 +33,8 @@ namespace System.Numerics
         private static int AllocationThreshold = 256;
 
         [SecuritySafeCritical]
-        private unsafe static void Square(uint* value, int valueLength, uint* bits, int bitsLength)
+        private unsafe static void Square(uint* value, int valueLength,
+                                          uint* bits, int bitsLength)
         {
             Debug.Assert(valueLength >= 0);
             Debug.Assert(bitsLength == valueLength + valueLength);
@@ -210,7 +211,9 @@ namespace System.Numerics
         private static int MultiplyThreshold = 32;
 
         [SecuritySafeCritical]
-        private unsafe static void Multiply(uint* left, int leftLength, uint* right, int rightLength, uint* bits, int bitsLength)
+        private unsafe static void Multiply(uint* left, int leftLength,
+                                            uint* right, int rightLength,
+                                            uint* bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -356,7 +359,9 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void SubtractCore(uint* left, int leftLength, uint* right, int rightLength, uint* core, int coreLength)
+        private unsafe static void SubtractCore(uint* left, int leftLength,
+                                                uint* right, int rightLength,
+                                                uint* core, int coreLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);

@@ -7,16 +7,14 @@ using System.Security;
 
 namespace System.Numerics
 {
-    // ATTENTION: always pass BitsBuffer by reference,
-    // it's a class for performance reasons. Furthermore
-    // it's a mutable one, so use it only with care!
     internal static partial class BigIntegerCalculator
     {
-        // To spare memory allocations a buffer helps reusing memory!
-        // We just create the target array twice and switch between every
-        // operation. In order to not compute unnecessarily with all those
-        // leading zeros we take care of the current actual length.
-
+        /// <summary>
+        /// To spare memory allocations a buffer helps reusing memory!
+        /// We just create the target array twice and switch between every
+        /// operation. In order to not compute unnecessarily with all those
+        /// leading zeros we take care of the current actual length.
+        /// </summary>
         internal struct BitsBuffer
         {
             private uint[] _bits;

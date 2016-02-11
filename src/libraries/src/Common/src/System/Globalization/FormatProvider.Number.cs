@@ -705,9 +705,10 @@ namespace System.Globalization
 
                 StringBuilder sb = new StringBuilder(MIN_SB_BUFFER_SIZE);
 
-                switch (char.ToUpper(format))
+                switch (format)
                 {
                     case 'C':
+                    case 'c':
                         {
                             nMinDigits = nMaxDigits >= 0 ? nMaxDigits : info.CurrencyDecimalDigits;
                             if (nMaxDigits < 0)
@@ -721,6 +722,7 @@ namespace System.Globalization
                         }
 
                     case 'F':
+                    case 'f':
                         {
                             if (nMaxDigits < 0)
                                 nMaxDigits = nMinDigits = info.NumberDecimalDigits;
@@ -738,6 +740,7 @@ namespace System.Globalization
                         }
 
                     case 'N':
+                    case 'n':
                         {
                             if (nMaxDigits < 0)
                                 nMaxDigits = nMinDigits = info.NumberDecimalDigits; // Since we are using digits in our calculation
@@ -752,6 +755,7 @@ namespace System.Globalization
                         }
 
                     case 'E':
+                    case 'e':
                         {
                             if (nMaxDigits < 0)
                                 nMaxDigits = nMinDigits = 6;
@@ -770,6 +774,7 @@ namespace System.Globalization
                         }
 
                     case 'G':
+                    case 'g':
                         {
                             bool enableRounding = true;
                             if (nMaxDigits < 1)
@@ -810,6 +815,7 @@ namespace System.Globalization
                         }
 
                     case 'P':
+                    case 'p':
                         {
                             if (nMaxDigits < 0)
                                 nMaxDigits = nMinDigits = info.PercentDecimalDigits;
