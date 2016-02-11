@@ -250,4 +250,22 @@ public class ChangedTests
             Utility.ExpectNoEvent(are, "symlink'd file change");
         }
     }
+
+    [Fact]
+    public static void FileSystemWatcher_Changed_RootFolderChangeDoesNotFireEvent()
+    {
+       using (var dir = Utility.CreateTestDirectory())
+       using (var watcher = new FileSystemWatcher())
+       {
+          AutoResetEvent are = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+
+          // Setup the watcher
+          watcher.Path = Path.GetFullPath(dir.Path);
+          watcher.Filter = "*";
+          watcher.EnableRaisingEvents = true;
+
+          Directory.SetLastWriteTime(dir.Path, DateTime.Now.AddSeconds(10));
+          Utility.ExpectNoEvent(are, "Root Directory Change");
+       }
+    }          
 }
