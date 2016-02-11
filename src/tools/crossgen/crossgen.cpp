@@ -506,9 +506,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     argv = argv2;
 
     bool fCopySourceToOut = false;
-    
+
     // By default, Crossgen will assume code-generation for fulltrust domains unless /PartialTrust switch is specified
     dwFlags |= NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
+
+#ifdef FEATURE_CORECLR
+    // By default, Crossgen will generate readytorun images unless /FragileNonVersionable switch is specified
+    dwFlags |= NGENWORKER_FLAGS_READYTORUN;
+#endif
 
     while (argc > 0)
     {
@@ -590,6 +595,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("ReadyToRun")))
         {
             dwFlags |= NGENWORKER_FLAGS_READYTORUN;
+        }
+        else if (MatchParameter(*argv, W("FragileNonVersionable")))
+        {
+            dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
         }
 #endif
 #ifdef FEATURE_CORECLR
@@ -959,7 +968,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     
     // Are we compiling mscorlib.dll? 
     bool fCompilingMscorlib = StringEndsWith((LPWSTR)pwzFilename, W("mscorlib.dll"));
-    
+
+    if (fCompilingMscorlib)
+        dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
+
     if(pwzPlatformAssembliesPaths != nullptr)
     {
         // Platform_Assemblies_Paths command line switch has been specified.
