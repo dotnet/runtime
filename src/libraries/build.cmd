@@ -55,6 +55,8 @@ set Platform=
 :: Log build command line
 set _buildproj=%~dp0build.proj
 set _buildlog=%~dp0msbuild.log
+set _binclashLoggerDll=%~dp0Tools\net45\Microsoft.DotNet.Build.Tasks.dll
+set _binclashlog=%~dp0binclash.log
 set _buildprefix=echo
 set _buildpostfix=^> "%_buildlog%"
 call :build %__args%
@@ -68,7 +70,7 @@ call :build %__args%
 goto :AfterBuild
 
 :build
-%_buildprefix% msbuild "%_buildproj%" /nologo /maxcpucount /v:minimal /clp:Summary /nodeReuse:false /flp:v=normal;LogFile="%_buildlog%";Append %__args% %_buildpostfix%
+%_buildprefix% msbuild "%_buildproj%" /nologo /maxcpucount /v:minimal /clp:Summary /nodeReuse:false /flp:v=normal;LogFile="%_buildlog%";Append "/l:BinClashLogger,%_binclashLoggerDll%;LogFile=%_binclashlog%" %__args% %_buildpostfix%
 set BUILDERRORLEVEL=%ERRORLEVEL%
 goto :eof
 
