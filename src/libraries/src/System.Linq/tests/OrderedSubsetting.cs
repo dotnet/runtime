@@ -209,6 +209,7 @@ namespace System.Linq.Tests
             var ordered = source.OrderBy(i => i);
             Assert.Equal(Enumerable.Range(20, 60), ordered.Skip(20).Take(60));
             Assert.Equal(Enumerable.Range(30, 20), ordered.Skip(20).Skip(10).Take(50).Take(20));
+            Assert.Equal(Enumerable.Range(30, 20), ordered.Skip(20).Skip(10).Take(20).Take(int.MaxValue));
             Assert.Empty(ordered.Skip(10).Take(9).Take(0));
             Assert.Empty(ordered.Skip(200).Take(10));
             Assert.Empty(ordered.Skip(3).Take(0));
@@ -304,9 +305,34 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void ToList()
+        {
+            Assert.Equal(Enumerable.Range(10, 20), Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(10).Take(20).ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            Assert.Equal(20, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(10).Take(20).Count());
+        }
+
+        [Fact]
         public void EmptyToArray()
         {
             Assert.Empty(Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(100).ToArray());
+        }
+
+        [Fact]
+        public void EmptyToList()
+        {
+            Assert.Empty(Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(100).ToList());
+        }
+
+        [Fact]
+        public void EmptyCount()
+        {
+            Assert.Equal(0, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(100).Count());
+            Assert.Equal(0, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Take(0).Count());
         }
 
         [Fact]
@@ -316,9 +342,33 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void AttemptedMoreList()
+        {
+            Assert.Equal(Enumerable.Range(0, 20), Enumerable.Range(0, 20).Shuffle().OrderBy(i => i).Take(30).ToList());
+        }
+
+        [Fact]
+        public void AttemptedMoreCount()
+        {
+            Assert.Equal(20, Enumerable.Range(0, 20).Shuffle().OrderBy(i => i).Take(30).Count());
+        }
+
+        [Fact]
         public void SingleElementToArray()
         {
             Assert.Equal(Enumerable.Repeat(10, 1), Enumerable.Range(0, 20).Shuffle().OrderBy(i => i).Skip(10).Take(1).ToArray());
+        }
+
+        [Fact]
+        public void SingleElementToList()
+        {
+            Assert.Equal(Enumerable.Repeat(10, 1), Enumerable.Range(0, 20).Shuffle().OrderBy(i => i).Skip(10).Take(1).ToList());
+        }
+
+        [Fact]
+        public void SingleElementCount()
+        {
+            Assert.Equal(1, Enumerable.Range(0, 20).Shuffle().OrderBy(i => i).Skip(10).Take(1).Count());
         }
 
         [Fact]

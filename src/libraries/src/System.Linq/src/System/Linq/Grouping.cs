@@ -172,7 +172,7 @@ namespace System.Linq
         }
     }
 
-    internal class GroupedEnumerable<TSource, TKey, TElement, TResult> : IEnumerable<TResult>
+    internal class GroupedEnumerable<TSource, TKey, TElement, TResult> : IIListProvider<TResult>
     {
         private IEnumerable<TSource> _source;
         private Func<TSource, TKey> _keySelector;
@@ -203,9 +203,24 @@ namespace System.Linq
         {
             return GetEnumerator();
         }
+
+        public TResult[] ToArray()
+        {
+            return Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).ToArray(_resultSelector);
+        }
+
+        public List<TResult> ToList()
+        {
+            return Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).ToList(_resultSelector);
+        }
+
+        public int GetCount(bool onlyIfCheap)
+        {
+            return onlyIfCheap ? -1 : Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).Count;
+        }
     }
 
-    internal class GroupedEnumerable<TSource, TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>, IArrayProvider<IGrouping<TKey, TElement>>, IListProvider<IGrouping<TKey, TElement>>
+    internal class GroupedEnumerable<TSource, TKey, TElement> : IIListProvider<IGrouping<TKey, TElement>>
     {
         private IEnumerable<TSource> _source;
         private Func<TSource, TKey> _keySelector;
@@ -235,14 +250,19 @@ namespace System.Linq
 
         public IGrouping<TKey, TElement>[] ToArray()
         {
-            IArrayProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer);
+            IIListProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer);
             return lookup.ToArray();
         }
 
         public List<IGrouping<TKey, TElement>> ToList()
         {
-            IListProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer);
+            IIListProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer);
             return lookup.ToList();
+        }
+
+        public int GetCount(bool onlyIfCheap)
+        {
+            return onlyIfCheap ? -1 : Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer).Count;
         }
     }
 }

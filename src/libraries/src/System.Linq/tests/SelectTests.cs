@@ -43,7 +43,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SelectProperty()
         {
-            var source = new []{
+            var source = new[]{
                 new { name="Prakash", custID=98088 },
                 new { name="Bob", custID=29099 },
                 new { name="Chris", custID=39033 },
@@ -759,12 +759,34 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
         [Fact]
         public void ForcedToEnumeratorDoesntEnumerateIList()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().AsReadOnly().Select(i => i);
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_Count()
+        {
+            var source = new[] { 1, 2, 3, 4 };
+            Assert.Equal(source.Length, source.Select(i => i * 2).Count());
+        }
+
+        [Fact]
+        public void Select_SourceIsAList_Count()
+        {
+            var source = new List<int> { 1, 2, 3, 4 };
+            Assert.Equal(source.Count, source.Select(i => i * 2).Count());
+        }
+
+        [Fact]
+        public void Select_SourceIsAnIList_Count()
+        {
+            var souce = new List<int> { 1, 2, 3, 4 }.AsReadOnly();
+            Assert.Equal(souce.Count, souce.Select(i => i * 2).Count());
         }
     }
 }
