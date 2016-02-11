@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -34,8 +34,49 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
+    <Compile Include="System\Linq\Aggregate.cs" />
+    <Compile Include="System\Linq\AnyAll.cs" />
+    <Compile Include="System\Linq\Average.cs" />
+    <Compile Include="System\Linq\Buffer.cs" />
+    <Compile Include="System\Linq\Cast.cs" />
+    <Compile Include="System\Linq\Concatenate.cs" />
+    <Compile Include="System\Linq\Contains.cs" />
+    <Compile Include="System\Linq\Count.cs" />
+    <Compile Include="System\Linq\DebugView.cs" />
+    <Compile Include="System\Linq\DefaultIfEmpty.cs" />
+    <Compile Include="System\Linq\Distinct.cs" />
+    <Compile Include="System\Linq\ElementAt.cs" />
     <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Linq\Errors.cs" />
+    <Compile Include="System\Linq\Except.cs" />
+    <Compile Include="System\Linq\First.cs" />
+    <Compile Include="System\Linq\Grouping.cs" />
+    <Compile Include="System\Linq\GroupJoin.cs" />
+    <Compile Include="System\Linq\Intersect.cs" />
+    <Compile Include="System\Linq\Iterator.cs" />
+    <Compile Include="System\Linq\Join.cs" />
+    <Compile Include="System\Linq\Last.cs" />
+    <Compile Include="System\Linq\Lookup.cs" />
+    <Compile Include="System\Linq\Max.cs" />
+    <Compile Include="System\Linq\Min.cs" />
+    <Compile Include="System\Linq\OrderBy.cs" />
+    <Compile Include="System\Linq\OrderedEnumerable.cs" />
+    <Compile Include="System\Linq\Partition.cs" />
+    <Compile Include="System\Linq\Range.cs" />
+    <Compile Include="System\Linq\Repeat.cs" />
+    <Compile Include="System\Linq\Reverse.cs" />
+    <Compile Include="System\Linq\Select.cs" />
+    <Compile Include="System\Linq\SelectMany.cs" />
+    <Compile Include="System\Linq\SequenceEqual.cs" />
+    <Compile Include="System\Linq\Set.cs" />
+    <Compile Include="System\Linq\Single.cs" />
+    <Compile Include="System\Linq\Skip.cs" />
+    <Compile Include="System\Linq\Sum.cs" />
+    <Compile Include="System\Linq\Take.cs" />
+    <Compile Include="System\Linq\ToCollection.cs" />
+    <Compile Include="System\Linq\Union.cs" />
+    <Compile Include="System\Linq\Where.cs" />
+    <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
     <TargetingPackReference Include="mscorlib" />
