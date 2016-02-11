@@ -40,6 +40,7 @@ extern CRITICAL_SECTION gcsEnvironment;
 Function:
   EnvironInitialize
 
+Initialization function for the PAL environment code.
 --*/
 BOOL EnvironInitialize();
 
@@ -47,17 +48,16 @@ BOOL EnvironInitialize();
 Function:
   EnvironGetenv
 
-Gets an environment variable's value.
+Get the value of environment variable with the given name.
 --*/
-char *EnvironGetenv(const char *name, bool copyValue = true);
+char *EnvironGetenv(const char *name, BOOL copyValue = TRUE);
 
 /*++
 Function:
   EnvironPutenv
 
-Sets an environment variable's value.
-Returns TRUE if the variable was set, or FALSE if malloc or realloc
-failed or if the given string is malformed.
+Add the environment variable string provided to the PAL version
+of the environment.
 --*/
 BOOL EnvironPutenv(const char *string, BOOL deleteIfEmpty);
 
@@ -65,8 +65,8 @@ BOOL EnvironPutenv(const char *string, BOOL deleteIfEmpty);
 Function:
   EnvironUnsetenv
 
-Removes a variable from the environment. Does nothing if the variable
-does not exist in the environment.
+Remove the environment variable with the given name from the PAL
+version of the environment if it exists.
 --*/
 void EnvironUnsetenv(const char *name);
 
