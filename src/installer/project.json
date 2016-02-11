@@ -18,22 +18,22 @@
     "dotnet5.4": {
       "imports": "portable-net451+win8",
       "dependencies": {
-        "System.IO.FileSystem": "4.0.1-rc2-23810",
-        "System.Linq": "4.0.1-rc2-23810",
-        "System.Runtime": "4.0.21-rc2-23810",
-        "System.Reflection": "4.1.0-rc2-23810",
-        "System.Dynamic.Runtime": "4.0.11-rc2-23810"
+        "System.IO.FileSystem": "4.0.1-rc2-23811",
+        "System.Linq": "4.0.1-rc2-23811",
+        "System.Runtime": "4.0.21-rc2-23811",
+        "System.Reflection": "4.1.0-rc2-23811",
+        "System.Dynamic.Runtime": "4.0.11-rc2-23811"
       }
     },
     "dnxcore50": {
       "imports": "portable-net45+win8",
       "dependencies": {          
-        "Microsoft.NETCore.Platforms": "1.0.1-rc2-23810",
-        "System.IO.FileSystem": "4.0.1-rc2-23810",
-        "System.Linq": "4.0.1-rc2-23810",
-        "System.Runtime": "4.0.21-rc2-23810",
-        "System.Reflection": "4.1.0-rc2-23810",
-        "System.Dynamic.Runtime": "4.0.11-rc2-23810"
+        "Microsoft.NETCore.Platforms": "1.0.1-rc2-23811",
+        "System.IO.FileSystem": "4.0.1-rc2-23811",
+        "System.Linq": "4.0.1-rc2-23811",
+        "System.Runtime": "4.0.21-rc2-23811",
+        "System.Reflection": "4.1.0-rc2-23811",
+        "System.Dynamic.Runtime": "4.0.11-rc2-23811"
       }
     }
   },
