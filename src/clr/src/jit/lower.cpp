@@ -3064,8 +3064,6 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     // THIS IS VERY TIGHTLY TIED TO THE PREDICATES IN
     // vm\i386\cGenCpu.h, esp. isCallRegisterIndirect.
     
-    NYI_X86("Virtual Stub dispatched call lowering");
-
 #ifdef _TARGET_64BIT_
     // Non-tail calls: Jump Stubs are not taken into account by VM for mapping an AV into a NullRef
     // exception. Therefore, JIT needs to emit an explicit null check.  Note that Jit64 too generates
@@ -3090,6 +3088,8 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     // via dictionary lookup.  
     if (call->gtCallType == CT_INDIRECT)
     {
+        NYI_X86("Virtual Stub dispatched call lowering via dictionary lookup");
+        
         // The importer decided we needed a stub call via a computed
         // stub dispatch address, i.e. an address which came from a dictionary lookup.
         //   - The dictionary lookup produces an indirected address, suitable for call
@@ -3118,13 +3118,18 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 
         // Direct stub calls, though the stubAddr itself may still need to be
         // accesed via an indirection.        
-        GenTree* tmp = AddrGen(stubAddr);
-        tmp->gtRegNum = REG_VIRTUAL_STUB_PARAM;
+        GenTree* addr = AddrGen(stubAddr);
+        GenTree* indir = Ind(addr);
 
-        tmp = Ind(tmp);
-        tmp->gtRegNum = REG_JUMP_THUNK_PARAM;
-
-        result = tmp;
+        // On x86 we generate this:
+        //        call dword ptr [rel32]  ;  FF 15 ---rel32----
+        // So we don't use a register.
+#ifndef _TARGET_X86_
+        // on x64 we must materialize the target using specific registers.
+        addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
+        indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+#endif
+        result = indir;
     }
 
     // TODO-Cleanup: start emitting random NOPS
