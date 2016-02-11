@@ -1,13 +1,20 @@
 {
-  "dependencies": {
-    "System.Collections": "4.0.10",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.20",
-    "System.Runtime.Extensions": "4.0.10",
-    "System.Threading.Tasks": "4.0.10"
-  },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "System.Collections": "4.0.10",
+        "System.Diagnostics.Debug": "4.0.10",
+        "System.Resources.ResourceManager": "4.0.0",
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.10",
+        "System.Threading.Tasks": "4.0.10"
+      }
+    },
+    "net462": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NetFramework.v4.6.1": "1.0.1"
+      }
+    }
   }
 }

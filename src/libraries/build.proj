@@ -57,9 +57,17 @@
               ItemName="ExpandedDnuRestoreDir" />
     </GatherDirectoriesToRestore>
 
-    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" Condition="'$(SkipGatherRestoreDirs)' != 'true'" />
+    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
+          ContinueOnError="ErrorAndContinue"
+          Condition="'$(SkipGatherRestoreDirs)' != 'true'" />
 
-    <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)" ContinueOnError="WarnAndContinue" Condition="'$(SkipGatherRestoreDirs)' == 'true'" />
+    <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
+          ContinueOnError="ErrorAndContinue"
+          Condition="'$(SkipGatherRestoreDirs)' == 'true'" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>

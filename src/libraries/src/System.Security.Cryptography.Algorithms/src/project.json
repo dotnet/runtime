@@ -15,7 +15,7 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

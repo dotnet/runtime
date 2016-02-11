@@ -12,6 +12,9 @@
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    
+    <!-- We do not want to block reflection for this assembly -->
+    <BlockReflectionAttribute Condition="'$(TargetGroup)'=='netcore50aot'">false</BlockReflectionAttribute>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

@@ -2,11 +2,13 @@
   "frameworks": {
     "dotnet5.1": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808"
       }
     },
     "netcore50": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
         "System.Diagnostics.Debug": "4.0.0.0",
         "System.Resources.ResourceManager": "4.0.0.0",
         "System.Runtime": "4.0.20.0",
@@ -18,7 +20,7 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.1"
       }
     }
   }

@@ -2,6 +2,7 @@
   "frameworks": {
     "dotnet5.1": {
       "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
@@ -16,7 +17,7 @@
     },
     "net45": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.0"
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
       }
     }
   }

@@ -7,13 +7,13 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.1"
       }
     },
     "netcore50": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23808",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0"
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
     }
   }

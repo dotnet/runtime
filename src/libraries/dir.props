@@ -73,16 +73,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ValidationPattern Include="^((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.TargetingPack\.Private.%2A)|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
+    <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
       <ExpectedPrerelease>rc3-23808</ExpectedPrerelease>
     </ValidationPattern>
-    <ValidationPattern Include="^(Microsoft\.TargetingPack\.NetFramework.%2A)$">
-      <ExpectedVersion>1.0.0</ExpectedVersion>
+    <ValidationPattern Include="^(?i)Microsoft\.TargetingPack\.(NetFramework.%2A|Private\.WinRT)$">
+      <ExpectedVersion>1.0.1</ExpectedVersion>
     </ValidationPattern>
-    <ValidationPattern Include="^xunit$">
+    <ValidationPattern Include="^(?i)xunit$">
       <ExpectedVersion>2.1.0</ExpectedVersion>
     </ValidationPattern>
-    <ValidationPattern Include="^xunit\.netcore\.extensions$">
+    <ValidationPattern Include="^(?i)xunit\.netcore\.extensions$">
       <ExpectedVersion>1.0.0-prerelease-00123</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
@@ -99,19 +99,19 @@
 
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src" />
-    <DnuRestoreDir Include="$(ToolsDir)" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/pkg" />
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(SkipGatherRestoreDirs)' == 'true'">
     <!-- workaround to address issue where DNX won't recurse directories under a project.json
          https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/pkg/**/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/src/**/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/ref/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/tests/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/*/*/netcore50aot/project.json" />
-    <DnuRestoreDir Include="$(MSBuildProjectDirectory)/src/Common/tests/**/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/pkg/**/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/src/**/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/ref/*/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/tests/*/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/*/netcore50aot/project.json" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/Common/tests/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -129,11 +129,13 @@
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configFile $(NuGetConfigPath)</DnuRestoreCommand>
   </PropertyGroup>
 
   <!-- Create a collection of all project.json files for dependency updates. -->
   <ItemGroup>
     <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)/pkg/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -353,6 +355,13 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <!-- If there is a target group, try to find project.json and lockfile in a subfolder named as that target. -->
+  <PropertyGroup Condition="'$(TargetGroup)'!=''">
+    <ProjectJson Condition="Exists('$(MSBuildProjectDirectory)/$(TargetGroup)/project.json')">$(MSBuildProjectDirectory)/$(TargetGroup)/project.json</ProjectJson>
+    <!-- Check for both project.json and lockfile to avoid using a stale lockfile. -->
+    <ProjectLockJson Condition="Exists('$(MSBuildProjectDirectory)/$(TargetGroup)/project.json') AND Exists('$(MSBuildProjectDirectory)/$(TargetGroup)/project.lock.json')">$(MSBuildProjectDirectory)/$(TargetGroup)/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>

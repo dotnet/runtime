@@ -1,0 +1,17 @@
+{
+  "frameworks": {
+    "netcore50": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
+        "System.Linq": "4.0.0",
+        "System.Net.Sockets": "4.1.0-rc3-23808",
+        "System.Runtime.InteropServices.WindowsRuntime": "4.0.0"
+      }
+    }
+  },
+  "runtimes": {
+    "win8-x86": {},
+    "win8-x64": {}
+  }
+}

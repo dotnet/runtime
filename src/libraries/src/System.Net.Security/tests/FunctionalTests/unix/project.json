@@ -1,10 +1,11 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Net.Primitives": "4.0.10",
     "System.Net.Sockets": "4.1.0-rc3-23808",
     "System.Net.TestData": "1.0.0-prerelease",
-    "System.Security.Principal": "4.0.0",
     "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23808",
+    "System.Security.Principal": "4.0.0",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },

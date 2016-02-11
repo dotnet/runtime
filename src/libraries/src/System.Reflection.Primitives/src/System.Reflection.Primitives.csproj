@@ -6,6 +6,7 @@
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.1</NuGetTargetMoniker>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

@@ -4,7 +4,7 @@
       "dependencies": {
         "System.Collections": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
-        "System.Diagnostics.Process": "4.0.0",
+        "System.Diagnostics.Process": "4.1.0-rc3-23808",
         "System.Globalization": "4.0.0",
         "System.IO": "4.0.10",
         "System.Resources.ResourceManager": "4.0.0",
@@ -20,7 +20,7 @@
     },
     "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

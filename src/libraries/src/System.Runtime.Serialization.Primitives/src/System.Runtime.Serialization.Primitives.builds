@@ -6,6 +6,12 @@
     <Project Include="System.Runtime.Serialization.Primitives.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
+    <!-- System.Runtime.Serialization.Primitives needs to be build for netcore50 because it needs to have the reflection block enabled
+    By default, all assemblies that are built for netcore50 or netcore50aot have the reflection block enabled. -->
+    <Project Include="System.Runtime.Serialization.Primitives.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

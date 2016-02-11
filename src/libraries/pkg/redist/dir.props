@@ -3,6 +3,10 @@
     <NuspecSuffix>-redist</NuspecSuffix>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.props))\dir.props" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot' AND Exists('$(MSBuildProjectDirectory)/netcore50/project.json') AND Exists('$(MSBuildProjectDirectory)/netcore50/project.lock.json')">
+    <ProjectJson>$(MSBuildProjectDirectory)/netcore50/project.json</ProjectJson>
+    <ProjectLockJson>$(MSBuildProjectDirectory)/netcore50/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <PropertyGroup>
     <OutputPath>$(BaseOutputPath)redist/$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)</OutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)redist/$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>

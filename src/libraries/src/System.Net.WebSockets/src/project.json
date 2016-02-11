@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "Microsoft.Win32.Primitives": "4.0.0",
     "System.Diagnostics.Debug": "4.0.0",
     "System.Diagnostics.Tools": "4.0.0",

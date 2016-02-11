@@ -5,18 +5,9 @@
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808"
       }
     },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.0",
-        "System.Collections": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Threading": "4.0.0"
-      }
-    },
     "net462": {
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.0"
+        "Microsoft.TargetingPack.NetFramework.v4.6": "1.0.1"
       }
     }
   }

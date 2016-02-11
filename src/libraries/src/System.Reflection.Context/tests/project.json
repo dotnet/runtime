@@ -1,12 +1,15 @@
 {
   "dependencies": {
-    "System.Reflection.Primitives": "4.0.0",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
     "System.Reflection": "4.0.10",
+    "System.Reflection.Primitives": "4.0.0",
     "System.Runtime": "4.0.20",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
   }
 }
