@@ -171,10 +171,6 @@ namespace System.Security.AccessControl
 
             #region Constructor and Finalizer
 
-            static TlsContents()
-            {
-            }
-
             public TlsContents()
             {
                 int error = 0;

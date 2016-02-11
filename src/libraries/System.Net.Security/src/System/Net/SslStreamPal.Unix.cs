@@ -14,6 +14,8 @@ namespace System.Net
 {
     internal static class SslStreamPal
     {
+        private static readonly StreamSizes s_streamSizes = new StreamSizes();
+
         public static Exception GetException(SecurityStatusPal status)
         {
             return new Interop.OpenSsl.SslException((int)status);
@@ -76,7 +78,7 @@ namespace System.Net
 
         public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
-            streamSizes = new StreamSizes();
+            streamSizes = s_streamSizes;
         }
 
         public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)

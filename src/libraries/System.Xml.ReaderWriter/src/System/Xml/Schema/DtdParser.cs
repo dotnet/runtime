@@ -182,9 +182,9 @@ namespace System.Xml
         // Constructor
         //
 
+#if DEBUG
         static DtdParser()
         {
-#if DEBUG
             //  The absolute numbering is utilized in attribute type parsing
             Debug.Assert((int)Token.CDATA == (int)XmlTokenizedType.CDATA && (int)XmlTokenizedType.CDATA == 0);
             Debug.Assert((int)Token.ID == (int)XmlTokenizedType.ID && (int)XmlTokenizedType.ID == 1);
@@ -195,8 +195,8 @@ namespace System.Xml
             Debug.Assert((int)Token.NMTOKEN == (int)XmlTokenizedType.NMTOKEN && (int)XmlTokenizedType.NMTOKEN == 6);
             Debug.Assert((int)Token.NMTOKENS == (int)XmlTokenizedType.NMTOKENS && (int)XmlTokenizedType.NMTOKENS == 7);
             Debug.Assert((int)Token.NOTATION == (int)XmlTokenizedType.NOTATION && (int)XmlTokenizedType.NOTATION == 8);
+    }
 #endif
-        }
 
         private DtdParser()
         {

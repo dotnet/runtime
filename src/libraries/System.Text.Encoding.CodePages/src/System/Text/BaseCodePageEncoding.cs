@@ -54,11 +54,6 @@ namespace System.Text
         protected char[] arrayUnicodeBestFit = null;
         protected char[] arrayBytesBestFit = null;
 
-        [System.Security.SecuritySafeCritical] // static constructors should be safe to call
-        static BaseCodePageEncoding()
-        {
-        }
-
         [System.Security.SecurityCritical]  // auto-generated
         internal BaseCodePageEncoding(int codepage)
             : this(codepage, codepage)
