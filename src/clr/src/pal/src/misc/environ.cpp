@@ -120,7 +120,7 @@ GetEnvironmentVariableA(
         InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
         enteredCritSec = true;
 
-        value = EnvironGetenv(lpName, /* copyValue */ false);
+        value = EnvironGetenv(lpName, /* copyValue */ FALSE);
     }
 
     if (value == nullptr)
@@ -627,7 +627,7 @@ SetEnvironmentVariableA(
         // We tell EnvironGetenv not to bother with making a copy of the
         // value since we're not going to use it for anything interesting
         // apart from checking whether it's null.
-        if ((lpValue = EnvironGetenv(lpName, /* copyValue */ false)) == nullptr)
+        if ((lpValue = EnvironGetenv(lpName, /* copyValue */ FALSE)) == nullptr)
         {
             ERROR("Couldn't find environment variable (%s)\n", lpName);
             SetLastError(ERROR_ENVVAR_NOT_FOUND);
@@ -673,17 +673,31 @@ done:
     return bRet;
 }
 
-int ResizeEnvironment(int newSize)
-{
-    int ret = 0;
+/*++
+Function:
+  ResizeEnvironment
 
+Resizes the PAL environment buffer.
+
+Parameters
+
+    newSize 
+           [in] New size of palEnvironment
+
+Return Values
+
+    TRUE on success, FALSE otherwise
+
+--*/
+BOOL ResizeEnvironment(int newSize)
+{
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
     if (newSize < palEnvironmentCount)
     {
-        ASSERT("ResizeEnvironment: New size < current count!\n"); 
-        return -1;
+        ASSERT("ResizeEnvironment: New size < current count!\n");
+        return FALSE;
     }
 
     palEnvironmentCapacity = newSize;
@@ -692,14 +706,27 @@ int ResizeEnvironment(int newSize)
     palEnvironment = (char**)realloc(palEnvironment, palEnvironmentCapacity * sizeof(char *));
     if (!palEnvironment)
     {
-        ret = -1;
+        return FALSE;
     }
 
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
-    return ret;
+    return TRUE;
 }
 
+/*++
+Function:
+  EnvironUnsetenv
+
+Remove the environment variable with the given name from the PAL version
+of the environment if it exists.
+
+Parameters
+
+    name 
+           [in] Name of variable to unset.
+
+--*/
 void EnvironUnsetenv(const char *name)
 {
     int nameLength = strlen(name);
@@ -721,9 +748,10 @@ void EnvironUnsetenv(const char *name)
         {
             if (memcmp(name, palEnvironment[i], nameLength) == 0)
             {
+                // Free the string we're removing.
                 InternalFree(palEnvironment[i]);
 
-                // Move the last variable here and set it to null.
+                // Move the last environment variable pointer here.
                 palEnvironment[i] = palEnvironment[palEnvironmentCount - 1];
                 palEnvironment[palEnvironmentCount - 1] = nullptr;
 
@@ -735,6 +763,26 @@ void EnvironUnsetenv(const char *name)
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 }
 
+/*++
+Function:
+  EnvironPutenv
+
+Add the environment variable string provided to the PAL version
+of the environment.
+
+Parameters
+
+    entry
+            [in] The variable string to add. Should be in the format
+                 "name=value", where value might be empty (see below).
+    deleteIfEmpty
+            [in] If this is TRUE, "name=" will unset the 'name' variable.
+
+Return Values
+
+    TRUE on success, FALSE otherwise
+
+--*/
 BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 {
     bool fOwningCS = false;
@@ -816,19 +864,19 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 
         if (palEnvironment[i] == nullptr)
         {
-  //          ASSERT(i <= palEnvironmentCapacity)
+            _ASSERTE(i <= palEnvironmentCapacity);
             if (i == palEnvironmentCapacity)
             {
-                // We need more space in our environment
+                // We need more space in our environment, so let's double the size.
                 int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
-                if (resizeRet != 0)
+                if (resizeRet != TRUE)
                 {
                     InternalFree(copy);
                     goto done;
                 }
             }
 
-//            ASSERT(copy != nullptr);
+            _ASSERTE(copy != nullptr);
             palEnvironment[i] = copy;
             palEnvironment[i + 1] = nullptr;
             palEnvironmentCount++;
@@ -846,7 +894,31 @@ done:
     return result;
 }
 
-char* EnvironGetenv(const char* name, bool copyValue)
+/*++
+Function:
+  EnvironGetenv
+
+Get the value of environment variable with the given name.
+
+Parameters
+
+    name
+            [in] The name of the environment variable to get.
+    copyValue
+            [in] If this is TRUE, the function will make a copy of the
+                 value and return a pointer to that. Otherwise, it will
+                 return a pointer to the value in the PAL environment
+                 directly. Calling this function with copyValue set to
+                 FALSE is therefore unsafe without taking special pre-
+                 cautions since the pointer may point to garbage later.
+
+Return Value
+
+    A pointer to the value of the environment variable if it exists,
+    or nullptr otherwise.
+
+--*/
+char* EnvironGetenv(const char* name, BOOL copyValue)
 {
     char *retValue = nullptr;
 
@@ -884,6 +956,20 @@ char* EnvironGetenv(const char* name, bool copyValue)
     return retValue;
 }
 
+/*++
+Function:
+  EnvironGetSystemEnvironment
+
+Get a pointer to the array of pointers representing the process's
+environment.
+
+See 'man environ' for details.
+
+Return Value
+
+    A pointer to the environment.
+
+--*/
 char** EnvironGetSystemEnvironment()
 {
     char** sysEnviron;
@@ -923,7 +1009,11 @@ EnvironInitialize(void)
 
     palEnvironmentCount = 0;
 
-    ResizeEnvironment(variableCount * 2); //////// decide resize factor
+    // We need to decide how much space to allocate. Since we need enough
+    // space for all of the 'n' current environment variables, but we don't
+    // know how many more there will be, we will initially make room for
+    // '2n' variables. If even more are added, we will resize again.
+    ResizeEnvironment(variableCount * 2);
 
     for (int i = 0; i < variableCount; ++i)
     {
