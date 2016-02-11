@@ -104,7 +104,11 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
     {
 
 #if HAVE_STATFS_FSTYPENAME
+#ifdef VFS_NAMELEN
+        if (bufferLength < VFS_NAMELEN)
+#else
         if (bufferLength < MFSNAMELEN)
+#endif
         {
             result = ERANGE;
             *formatType = 0;
