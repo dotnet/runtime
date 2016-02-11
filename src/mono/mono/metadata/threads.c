@@ -202,9 +202,10 @@ static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
-static void abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort);
-static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
-static void self_suspend_internal (MonoInternalThread *thread);
+static void async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
+static void self_abort_internal (void);
+static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
+static void self_suspend_internal (void);
 
 static MonoException* mono_thread_execute_interruption (void);
 static void ref_stack_destroy (gpointer rs);
@@ -2145,9 +2146,9 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj)
 	throw_ = current != thread && (thread->state & ThreadState_WaitSleepJoin);
 
 	UNLOCK_THREAD (thread);
-	
+
 	if (throw_) {
-		abort_thread_internal (thread, TRUE, FALSE);
+		async_abort_internal (thread, FALSE);
 	}
 }
 
@@ -2209,7 +2210,10 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 
 	UNLOCK_THREAD (thread);
 
-	abort_thread_internal (thread, TRUE, TRUE);
+	if (thread == mono_thread_internal_current ())
+		self_abort_internal ();
+	else
+		async_abort_internal (thread, TRUE);
 }
 
 void
@@ -2309,7 +2313,15 @@ mono_thread_suspend (MonoInternalThread *thread)
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
-	suspend_thread_internal (thread, FALSE);
+
+	if (thread == mono_thread_internal_current ()) {
+		/* calls UNLOCK_THREAD (thread) */
+		self_suspend_internal ();
+	} else {
+		/* calls UNLOCK_THREAD (thread) */
+		async_suspend_internal (thread, FALSE);
+	}
+
 	return TRUE;
 }
 
@@ -2417,7 +2429,10 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 	
 	UNLOCK_THREAD (thread);
 	
-	abort_thread_internal (thread, TRUE, TRUE);
+	if (thread == mono_thread_internal_current ())
+		self_abort_internal ();
+	else
+		async_abort_internal (thread, TRUE);
 }
 
 void mono_thread_stop (MonoThread *thread)
@@ -3285,8 +3300,9 @@ void mono_thread_suspend_all_other_threads (void)
 				thread->state &= ~ThreadState_AbortRequested;
 			
 			thread->state |= ThreadState_SuspendRequested;
-			/* Signal the thread to suspend */
-			suspend_thread_internal (thread, TRUE);
+
+			/* Signal the thread to suspend + calls UNLOCK_THREAD (thread) */
+			async_suspend_internal (thread, TRUE);
 		}
 		if (eventidx <= 0) {
 			/* 
@@ -4336,7 +4352,8 @@ mono_thread_execute_interruption (void)
 		return thread->abort_exc;
 	}
 	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
-		self_suspend_internal (thread);		
+		/* calls UNLOCK_THREAD (thread) */
+		self_suspend_internal ();
 		return NULL;
 	}
 	else if ((thread->state & ThreadState_StopRequested) != 0) {
@@ -4676,7 +4693,7 @@ typedef struct {
 } AbortThreadData;
 
 static SuspendThreadResult
-abort_thread_critical (MonoThreadInfo *info, gpointer ud)
+async_abort_critical (MonoThreadInfo *info, gpointer ud)
 {
 	AbortThreadData *data = (AbortThreadData *)ud;
 	MonoInternalThread *thread = data->thread;
@@ -4718,41 +4735,45 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 }
 
 static void
-abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort)
+async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 {
-	AbortThreadData data = { 0 };
+	AbortThreadData data;
+
+	g_assert (thread != mono_thread_internal_current ());
+
 	data.thread = thread;
 	data.install_async_abort = install_async_abort;
+	data.interrupt_token = NULL;
 
-	/*
-	FIXME this is insanely broken, it doesn't cause interruption to happen
-	synchronously since passing FALSE to mono_thread_request_interruption makes sure it returns NULL
-	*/
-	if (thread == mono_thread_internal_current ()) {
-		/* Do it synchronously */
-		MonoException *exc = mono_thread_request_interruption (can_raise_exception); 
-		if (exc)
-			mono_raise_exception (exc);
-
-		mono_thread_info_self_interrupt ();
-
-		return;
-	}
-
-	mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), TRUE, abort_thread_critical, &data);
+	mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), TRUE, async_abort_critical, &data);
 	if (data.interrupt_token)
 		mono_thread_info_finish_interrupt (data.interrupt_token);
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
 }
 
-typedef struct{
+static void
+self_abort_internal (void)
+{
+	MonoException *exc;
+
+	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
+	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */
+
+	exc = mono_thread_request_interruption (TRUE);
+	if (exc)
+		mono_raise_exception (exc);
+
+	mono_thread_info_self_interrupt ();
+}
+
+typedef struct {
 	MonoInternalThread *thread;
 	gboolean interrupt;
 	MonoThreadInfoInterruptToken *interrupt_token;
 } SuspendThreadData;
 
 static SuspendThreadResult
-suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
+async_suspend_critical (MonoThreadInfo *info, gpointer ud)
 {
 	SuspendThreadData *data = (SuspendThreadData *)ud;
 	MonoInternalThread *thread = data->thread;
@@ -4777,40 +4798,42 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 		return MonoResumeThread;
 	}
 }
-	
-static void
-suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
-{
-	if (thread == mono_thread_internal_current ()) {
-		mono_thread_info_begin_self_suspend ();
-		//XXX replace this with better named functions
-		thread->state &= ~ThreadState_SuspendRequested;
-		thread->state |= ThreadState_Suspended;
-		UNLOCK_THREAD (thread);
-		mono_thread_info_end_self_suspend ();
-	} else {
-		SuspendThreadData data = { 0 };
-		data.thread = thread;
-		data.interrupt = interrupt;
 
-		mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), interrupt, suspend_thread_critical, &data);
-		if (data.interrupt_token)
-			mono_thread_info_finish_interrupt (data.interrupt_token);
-		UNLOCK_THREAD (thread);
-	}
+/* LOCKING: called with @thread synch_cs held, and releases it */
+static void
+async_suspend_internal (MonoInternalThread *thread, gboolean interrupt)
+{
+	SuspendThreadData data;
+
+	g_assert (thread != mono_thread_internal_current ());
+
+	data.thread = thread;
+	data.interrupt = interrupt;
+	data.interrupt_token = NULL;
+
+	mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), interrupt, async_suspend_critical, &data);
+	if (data.interrupt_token)
+		mono_thread_info_finish_interrupt (data.interrupt_token);
+
+	UNLOCK_THREAD (thread);
 }
 
-/*This is called with @thread synch_cs held and it must release it*/
+/* LOCKING: called with @thread synch_cs held, and releases it */
 static void
-self_suspend_internal (MonoInternalThread *thread)
+self_suspend_internal (void)
 {
+	MonoInternalThread *thread;
+
+	thread = mono_thread_internal_current ();
+
 	mono_thread_info_begin_self_suspend ();
 	thread->state &= ~ThreadState_SuspendRequested;
 	thread->state |= ThreadState_Suspended;
+
 	UNLOCK_THREAD (thread);
+
 	mono_thread_info_end_self_suspend ();
 }
-
 
 /*
  * mono_thread_is_foreign:
