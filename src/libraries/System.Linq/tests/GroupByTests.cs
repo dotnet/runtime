@@ -631,5 +631,73 @@ namespace System.Linq.Tests
             Assert.Equal(4, groupedList.Count);
             Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedList);
         }
+
+        [Fact]
+        public void GroupingCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name).Count());
+        }
+
+        [Fact]
+        public void GroupingWithResultsCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name, (r, e) => e).Count());
+        }
+
+        [Fact]
+        public void EmptyGroupingToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i).ToArray());
+        }
+
+        [Fact]
+        public void EmptyGroupingToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i).ToList());
+        }
+
+        [Fact]
+        public void EmptyGroupingCount()
+        {
+            Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i).Count());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).ToArray());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).ToList());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultCount()
+        {
+            Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).Count());
+        }
     }
 }

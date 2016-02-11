@@ -225,5 +225,11 @@ namespace System.Linq.Tests
         {
             Assert.Equal(0, Enumerable.Repeat(3, 3).ElementAtOrDefault(100));
         }
+
+        [Fact]
+        public void Count()
+        {
+            Assert.Equal(42, Enumerable.Repeat("Test", 42).Count());
+        }
     }
 }

@@ -214,5 +214,247 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void Count()
+        {
+            Assert.Equal(2, NumberRangeGuaranteedNotCollectionType(0, 3).Skip(1).Count());
+            Assert.Equal(2, new[] { 1, 2, 3 }.Skip(1).Count());
+        }
+
+        [Fact]
+        public void FollowWithTake()
+        {
+            var source = new[] { 5, 6, 7, 8 };
+            var expected = new[] { 6, 7 };
+            Assert.Equal(expected, source.Skip(1).Take(2));
+        }
+
+        [Fact]
+        public void FollowWithTakeNotIList()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(5, 4);
+            var expected = new[] { 6, 7 };
+            Assert.Equal(expected, source.Skip(1).Take(2));
+        }
+
+        [Fact]
+        public void FollowWithTakeThenMassiveTake()
+        {
+            var source = new[] { 5, 6, 7, 8 };
+            var expected = new[] { 7 };
+            Assert.Equal(expected, source.Skip(2).Take(1).Take(int.MaxValue));
+        }
+        [Fact]
+        public void FollowWithTakeThenMassiveTakeNotIList()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(5, 4);
+            var expected = new[] { 7 };
+            Assert.Equal(expected, source.Skip(2).Take(1).Take(int.MaxValue));
+        }
+
+        [Fact]
+        public void FollowWithSkip()
+        {
+            var source = new[] { 1, 2, 3, 4, 5, 6 };
+            var expected = new[] { 4, 5, 6 };
+            Assert.Equal(expected, source.Skip(1).Skip(2).Skip(-4));
+        }
+
+        [Fact]
+        public void FollowWithSkipNotIList()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(1, 6);
+            var expected = new[] { 4, 5, 6 };
+            Assert.Equal(expected, source.Skip(1).Skip(2).Skip(-4));
+        }
+
+        [Fact]
+        public void ElementAt()
+        {
+            var source = new[] { 1, 2, 3, 4, 5, 6 };
+            var remaining = source.Skip(2);
+            Assert.Equal(3, remaining.ElementAt(0));
+            Assert.Equal(4, remaining.ElementAt(1));
+            Assert.Equal(6, remaining.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => remaining.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => remaining.ElementAt(4));
+        }
+
+        [Fact]
+        public void ElementAtNotIList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5, 6 });
+            var remaining = source.Skip(2);
+            Assert.Equal(3, remaining.ElementAt(0));
+            Assert.Equal(4, remaining.ElementAt(1));
+            Assert.Equal(6, remaining.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => remaining.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => remaining.ElementAt(4));
+        }
+
+        [Fact]
+        public void ElementAtOrDefault()
+        {
+            var source = new[] { 1, 2, 3, 4, 5, 6 };
+            var remaining = source.Skip(2);
+            Assert.Equal(3, remaining.ElementAtOrDefault(0));
+            Assert.Equal(4, remaining.ElementAtOrDefault(1));
+            Assert.Equal(6, remaining.ElementAtOrDefault(3));
+            Assert.Equal(0, remaining.ElementAtOrDefault(-1));
+            Assert.Equal(0, remaining.ElementAtOrDefault(4));
+        }
+
+        [Fact]
+        public void ElementAtOrDefaultNotIList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5, 6 });
+            var remaining = source.Skip(2);
+            Assert.Equal(3, remaining.ElementAtOrDefault(0));
+            Assert.Equal(4, remaining.ElementAtOrDefault(1));
+            Assert.Equal(6, remaining.ElementAtOrDefault(3));
+            Assert.Equal(0, remaining.ElementAtOrDefault(-1));
+            Assert.Equal(0, remaining.ElementAtOrDefault(4));
+        }
+
+        [Fact]
+        public void First()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(1, source.Skip(0).First());
+            Assert.Equal(3, source.Skip(2).First());
+            Assert.Equal(5, source.Skip(4).First());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(5).First());
+        }
+
+        [Fact]
+        public void FirstNotIList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(1, source.Skip(0).First());
+            Assert.Equal(3, source.Skip(2).First());
+            Assert.Equal(5, source.Skip(4).First());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(5).First());
+        }
+
+        [Fact]
+        public void FirstOrDefault()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(1, source.Skip(0).FirstOrDefault());
+            Assert.Equal(3, source.Skip(2).FirstOrDefault());
+            Assert.Equal(5, source.Skip(4).FirstOrDefault());
+            Assert.Equal(0, source.Skip(5).FirstOrDefault());
+        }
+
+        [Fact]
+        public void FirstOrDefaultNotIList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(1, source.Skip(0).FirstOrDefault());
+            Assert.Equal(3, source.Skip(2).FirstOrDefault());
+            Assert.Equal(5, source.Skip(4).FirstOrDefault());
+            Assert.Equal(0, source.Skip(5).FirstOrDefault());
+        }
+
+        [Fact]
+        public void Last()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(5, source.Skip(0).Last());
+            Assert.Equal(5, source.Skip(1).Last());
+            Assert.Equal(5, source.Skip(4).Last());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Last());
+        }
+
+        [Fact]
+        public void LastNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(5, source.Skip(0).Last());
+            Assert.Equal(5, source.Skip(1).Last());
+            Assert.Equal(5, source.Skip(4).Last());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Last());
+        }
+
+        [Fact]
+        public void LastOrDefault()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(5, source.Skip(0).LastOrDefault());
+            Assert.Equal(5, source.Skip(1).LastOrDefault());
+            Assert.Equal(5, source.Skip(4).LastOrDefault());
+            Assert.Equal(0, source.Skip(5).LastOrDefault());
+        }
+
+        [Fact]
+        public void LastOrDefaultNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(5, source.Skip(0).LastOrDefault());
+            Assert.Equal(5, source.Skip(1).LastOrDefault());
+            Assert.Equal(5, source.Skip(4).LastOrDefault());
+            Assert.Equal(0, source.Skip(5).LastOrDefault());
+        }
+
+        [Fact]
+        public void ToArray()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Skip(0).ToArray());
+            Assert.Equal(new[] { 2, 3, 4, 5 }, source.Skip(1).ToArray());
+            Assert.Equal(5, source.Skip(4).ToArray().Single());
+            Assert.Empty(source.Skip(5).ToArray());
+            Assert.Empty(source.Skip(40).ToArray());
+        }
+
+        [Fact]
+        public void ToArrayNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Skip(0).ToArray());
+            Assert.Equal(new[] { 2, 3, 4, 5 }, source.Skip(1).ToArray());
+            Assert.Equal(5, source.Skip(4).ToArray().Single());
+            Assert.Empty(source.Skip(5).ToArray());
+            Assert.Empty(source.Skip(40).ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Skip(0).ToList());
+            Assert.Equal(new[] { 2, 3, 4, 5 }, source.Skip(1).ToList());
+            Assert.Equal(5, source.Skip(4).ToList().Single());
+            Assert.Empty(source.Skip(5).ToList());
+            Assert.Empty(source.Skip(40).ToList());
+        }
+
+        [Fact]
+        public void ToListNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Skip(0).ToList());
+            Assert.Equal(new[] { 2, 3, 4, 5 }, source.Skip(1).ToList());
+            Assert.Equal(5, source.Skip(4).ToList().Single());
+            Assert.Empty(source.Skip(5).ToList());
+            Assert.Empty(source.Skip(40).ToList());
+        }
+
+        [Fact]
+        public void RepeatEnumerating()
+        {
+            var source = new[] { 1, 2, 3, 4, 5 };
+            var remaining = source.Skip(1);
+            Assert.Equal(remaining, remaining);
+        }
+
+        [Fact]
+        public void RepeatEnumeratingNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
+            var remaining = source.Skip(1);
+            Assert.Equal(remaining, remaining);
+        }
     }
 }

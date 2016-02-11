@@ -14,7 +14,7 @@ namespace System.Linq
 
         internal Buffer(IEnumerable<TElement> source)
         {
-            IArrayProvider<TElement> iterator = source as IArrayProvider<TElement>;
+            IIListProvider<TElement> iterator = source as IIListProvider<TElement>;
             if (iterator != null)
             {
                 TElement[] array = iterator.ToArray();

@@ -38,7 +38,7 @@ namespace System.Linq
         bool Contains(TKey key);
     }
 
-    public class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IArrayProvider<IGrouping<TKey, TElement>>, IListProvider<IGrouping<TKey, TElement>>
+    public class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IIListProvider<IGrouping<TKey, TElement>>
     {
         private IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
@@ -109,7 +109,7 @@ namespace System.Linq
             }
         }
 
-        IGrouping<TKey, TElement>[] IArrayProvider<IGrouping<TKey, TElement>>.ToArray()
+        IGrouping<TKey, TElement>[] IIListProvider<IGrouping<TKey, TElement>>.ToArray()
         {
             IGrouping<TKey, TElement>[] array = new IGrouping<TKey, TElement>[_count];
             int index = 0;
@@ -126,7 +126,24 @@ namespace System.Linq
             return array;
         }
 
-        List<IGrouping<TKey, TElement>> IListProvider<IGrouping<TKey, TElement>>.ToList()
+        internal TResult[] ToArray<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
+        {
+            TResult[] array = new TResult[_count];
+            int index = 0;
+            Grouping<TKey, TElement> g = _lastGrouping;
+            if (g != null)
+            {
+                do
+                {
+                    g = g.next;
+                    array[index] = resultSelector(g.key, g.elements);
+                    ++index;
+                } while (g != _lastGrouping);
+            }
+            return array;
+        }
+
+        List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
         {
             List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
             Grouping<TKey, TElement> g = _lastGrouping;
@@ -139,6 +156,26 @@ namespace System.Linq
                 } while (g != _lastGrouping);
             }
             return list;
+        }
+
+        internal List<TResult> ToList<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
+        {
+            List<TResult> list = new List<TResult>(_count);
+            Grouping<TKey, TElement> g = _lastGrouping;
+            if (g != null)
+            {
+                do
+                {
+                    g = g.next;
+                    list.Add(resultSelector(g.key, g.elements));
+                } while (g != _lastGrouping);
+            }
+            return list;
+        }
+
+        int IIListProvider<IGrouping<TKey, TElement>>.GetCount(bool onlyIfCheap)
+        {
+            return _count;
         }
 
         public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)

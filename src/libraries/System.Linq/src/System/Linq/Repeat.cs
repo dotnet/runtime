@@ -17,7 +17,7 @@ namespace System.Linq
             return new RepeatIterator<TResult>(element, count);
         }
 
-        private sealed class RepeatIterator<TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>, IPartition<TResult>
+        private sealed class RepeatIterator<TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly int _count;
             private int _sent;
@@ -68,6 +68,11 @@ namespace System.Linq
                 for (int i = 0; i != _count; ++i) list.Add(current);
 
                 return list;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                return _count;
             }
 
             public IPartition<TResult> Skip(int count)
