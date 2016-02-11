@@ -9,7 +9,8 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Divide(uint[] left, uint right, out uint remainder)
+        public static uint[] Divide(uint[] left, uint right,
+                                    out uint remainder)
         {
             Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
@@ -70,7 +71,8 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Divide(uint[] left, uint[] right, out uint[] remainder)
+        public unsafe static uint[] Divide(uint[] left, uint[] right,
+                                           out uint[] remainder)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -146,7 +148,9 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Divide(uint* left, int leftLength, uint* right, int rightLength, uint* bits, int bitsLength)
+        private unsafe static void Divide(uint* left, int leftLength,
+                                          uint* right, int rightLength,
+                                          uint* bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 1);
             Debug.Assert(rightLength >= 1);
@@ -231,7 +235,8 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint AddDivisor(uint* left, int leftLength, uint* right, int rightLength)
+        private unsafe static uint AddDivisor(uint* left, int leftLength,
+                                              uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -251,7 +256,9 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint SubtractDivisor(uint* left, int leftLength, uint* right, int rightLength, ulong q)
+        private unsafe static uint SubtractDivisor(uint* left, int leftLength,
+                                                   uint* right, int rightLength,
+                                                   ulong q)
         {
             Debug.Assert(leftLength >= 0);
             Debug.Assert(rightLength >= 0);
@@ -276,7 +283,8 @@ namespace System.Numerics
             return (uint)carry;
         }
 
-        private static bool DivideGuessTooBig(ulong q, ulong valHi, uint valLo, uint divHi, uint divLo)
+        private static bool DivideGuessTooBig(ulong q, ulong valHi, uint valLo,
+                                              uint divHi, uint divLo)
         {
             Debug.Assert(q <= 0xFFFFFFFF);
 

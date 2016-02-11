@@ -184,7 +184,9 @@ namespace System.Numerics
             }
         }
 
-        private static void ExtractDigits(ref BitsBuffer xBuffer, ref BitsBuffer yBuffer, out ulong x, out ulong y)
+        private static void ExtractDigits(ref BitsBuffer xBuffer,
+                                          ref BitsBuffer yBuffer,
+                                          out ulong x, out ulong y)
         {
             Debug.Assert(xBuffer.GetLength() >= 3);
             Debug.Assert(yBuffer.GetLength() >= 3);
@@ -242,7 +244,10 @@ namespace System.Numerics
             Debug.Assert(x >= y);
         }
 
-        private static void LehmerCore(ref BitsBuffer xBuffer, ref BitsBuffer yBuffer, long a, long b, long c, long d)
+        private static void LehmerCore(ref BitsBuffer xBuffer,
+                                       ref BitsBuffer yBuffer,
+                                       long a, long b,
+                                       long c, long d)
         {
             Debug.Assert(xBuffer.GetLength() >= 1);
             Debug.Assert(yBuffer.GetLength() >= 1);

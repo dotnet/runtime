@@ -6,13 +6,13 @@ using System.Diagnostics;
 
 namespace System.Numerics
 {
-    /// <summary>
-    // Executes different exponentiation algorithms, which are
-    // basically based on the classic square-and-multiply method.
-    // https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-    /// </summary>
     internal static partial class BigIntegerCalculator
     {
+        /// <summary>
+        /// Executes different exponentiation algorithms, which are
+        /// basically based on the classic square-and-multiply method.
+        /// https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+        /// </summary>
         public static uint[] Pow(uint value, uint power)
         {
             // The basic pow method for a 32-bit integer.
@@ -31,7 +31,6 @@ namespace System.Numerics
             // The basic pow method for a big integer.
             // To spare memory allocations we first roughly
             // estimate an upper bound for our buffers.
-
             int size = PowBound(power, value.Length, 1);
             BitsBuffer v = new BitsBuffer(size, value);
             return PowCore(power, ref v);
@@ -40,7 +39,6 @@ namespace System.Numerics
         private static uint[] PowCore(uint power, ref BitsBuffer value)
         {
             // Executes the basic pow algorithm.
-
             int size = value.GetSize();
 
             BitsBuffer temp = new BitsBuffer(size, 0);
@@ -51,11 +49,11 @@ namespace System.Numerics
             return result.GetBits();
         }
 
-        private static int PowBound(uint power, int valueLength, int resultLength)
+        private static int PowBound(uint power, int valueLength,
+                                    int resultLength)
         {
             // The basic pow algorithm, but instead of squaring
             // and multiplying we just sum up the lengths.
-
             while (power != 0)
             {
                 checked
@@ -71,10 +69,10 @@ namespace System.Numerics
             return resultLength;
         }
 
-        private static void PowCore(uint power, ref BitsBuffer value, ref BitsBuffer result, ref BitsBuffer temp)
+        private static void PowCore(uint power, ref BitsBuffer value,
+                                    ref BitsBuffer result, ref BitsBuffer temp)
         {
             // The basic pow algorithm using square-and-multiply.
-
             while (power != 0)
             {
                 if ((power & 1) == 1)
@@ -89,7 +87,6 @@ namespace System.Numerics
         {
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a 32-bit integer...
-
             return PowCore(power, modulus, value, 1);
         }
 
@@ -99,7 +96,6 @@ namespace System.Numerics
 
             // The 32-bit modulus pow method for a big integer
             // raised by a 32-bit integer...
-
             uint v = Remainder(value, modulus);
             return PowCore(power, modulus, v, 1);
         }
@@ -110,7 +106,6 @@ namespace System.Numerics
 
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a big integer...
-
             return PowCore(power, modulus, value, 1);
         }
 
@@ -121,16 +116,15 @@ namespace System.Numerics
 
             // The 32-bit modulus pow method for a big integer
             // raised by a big integer...
-
             uint v = Remainder(value, modulus);
             return PowCore(power, modulus, v, 1);
         }
 
-        private static uint PowCore(uint[] power, uint modulus, ulong value, ulong result)
+        private static uint PowCore(uint[] power, uint modulus,
+                                    ulong value, ulong result)
         {
             // The 32-bit modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
-
             for (int i = 0; i < power.Length - 1; i++)
             {
                 uint p = power[i];
@@ -146,11 +140,11 @@ namespace System.Numerics
             return PowCore(power[power.Length - 1], modulus, value, result);
         }
 
-        private static uint PowCore(uint power, uint modulus, ulong value, ulong result)
+        private static uint PowCore(uint power, uint modulus,
+                                    ulong value, ulong result)
         {
             // The 32-bit modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
-
             while (power != 0)
             {
                 if ((power & 1) == 1)
@@ -169,7 +163,6 @@ namespace System.Numerics
 
             // The big modulus pow method for a 32-bit integer
             // raised by a 32-bit integer...
-
             int size = modulus.Length + modulus.Length;
             BitsBuffer v = new BitsBuffer(size, value);
             return PowCore(power, modulus, ref v);
@@ -224,10 +217,10 @@ namespace System.Numerics
         // Mutable for unit testing...
         private static int ReducerThreshold = 32;
 
-        private static uint[] PowCore(uint[] power, uint[] modulus, ref BitsBuffer value)
+        private static uint[] PowCore(uint[] power, uint[] modulus,
+                                      ref BitsBuffer value)
         {
             // Executes the big pow algorithm.
-
             int size = value.GetSize();
 
             BitsBuffer temp = new BitsBuffer(size, 0);
@@ -246,10 +239,10 @@ namespace System.Numerics
             return result.GetBits();
         }
 
-        private static uint[] PowCore(uint power, uint[] modulus, ref BitsBuffer value)
+        private static uint[] PowCore(uint power, uint[] modulus,
+                                      ref BitsBuffer value)
         {
             // Executes the big pow algorithm.
-
             int size = value.GetSize();
 
             BitsBuffer temp = new BitsBuffer(size, 0);
@@ -268,14 +261,14 @@ namespace System.Numerics
             return result.GetBits();
         }
 
-        private static void PowCore(uint[] power, uint[] modulus, ref BitsBuffer value, ref BitsBuffer result, ref BitsBuffer temp)
+        private static void PowCore(uint[] power, uint[] modulus,
+                                    ref BitsBuffer value, ref BitsBuffer result,
+                                    ref BitsBuffer temp)
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
-
             // NOTE: we're using an ordinary remainder here,
             // since the reducer overhead doesn't pay off.
-
             for (int i = 0; i < power.Length - 1; i++)
             {
                 uint p = power[i];
@@ -296,14 +289,14 @@ namespace System.Numerics
                 ref temp);
         }
 
-        private static void PowCore(uint power, uint[] modulus, ref BitsBuffer value, ref BitsBuffer result, ref BitsBuffer temp)
+        private static void PowCore(uint power, uint[] modulus,
+                                    ref BitsBuffer value, ref BitsBuffer result,
+                                    ref BitsBuffer temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
-
             // NOTE: we're using an ordinary remainder here,
             // since the reducer overhead doesn't pay off.
-
             while (power != 0)
             {
                 if ((power & 1) == 1)
@@ -324,10 +317,8 @@ namespace System.Numerics
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
-
             // NOTE: we're using a special reducer here,
             // since it's additional overhead does pay off.
-
             for (int i = 0; i < power.Length - 1; i++)
             {
                 uint p = power[i];
@@ -348,14 +339,14 @@ namespace System.Numerics
                 ref temp);
         }
 
-        private static void PowCore(uint power, ref FastReducer reducer, ref BitsBuffer value, ref BitsBuffer result, ref BitsBuffer temp)
+        private static void PowCore(uint power, ref FastReducer reducer,
+                                    ref BitsBuffer value, ref BitsBuffer result,
+                                    ref BitsBuffer temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
-
             // NOTE: we're using a special reducer here,
             // since it's additional overhead does pay off.
-
             while (power != 0)
             {
                 if ((power & 1) == 1)
@@ -376,7 +367,6 @@ namespace System.Numerics
         {
             // Since we're reusing memory here, the actual length
             // of a given value may be less then the array's length
-
             return ActualLength(value, value.Length);
         }
 
