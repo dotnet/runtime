@@ -3585,7 +3585,12 @@ namespace System.Threading.Tasks
             // Atomically store the fact that this task is completing.  From this point on, the adding of continuations will
             // result in the continuations being run/launched directly rather than being added to the continuation list.
             object continuationObject = Interlocked.Exchange(ref m_continuationObject, s_taskCompletionSentinel);
-            TplEtwProvider.Log.RunningContinuation(Id, continuationObject);
+            TplEtwProvider etw = TplEtwProvider.Log;
+            bool tplEtwProviderLoggingEnabled = etw.IsEnabled();
+            if (tplEtwProviderLoggingEnabled)
+            {
+                etw.RunningContinuation(Id, continuationObject);
+            }
 
             // If continuationObject == null, then we don't have any continuations to process
             if (continuationObject != null)
@@ -3658,7 +3663,10 @@ namespace System.Threading.Tasks
                     var tc = continuations[i] as StandardTaskContinuation;
                     if (tc != null && (tc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                     {
-                        TplEtwProvider.Log.RunningContinuationList(Id, i, tc);
+                        if (tplEtwProviderLoggingEnabled)
+                        {
+                            etw.RunningContinuationList(Id, i, tc);
+                        }
                         continuations[i] = null; // so that we can skip this later
                         tc.Run(this, bCanInlineContinuations);
                     }
@@ -3672,7 +3680,10 @@ namespace System.Threading.Tasks
                     object currentContinuation = continuations[i];
                     if (currentContinuation == null) continue;
                     continuations[i] = null; // to enable free'ing up memory earlier
-                    TplEtwProvider.Log.RunningContinuationList(Id, i, currentContinuation);
+                    if (tplEtwProviderLoggingEnabled)
+                    {
+                        etw.RunningContinuationList(Id, i, currentContinuation);
+                    }
 
                     // If the continuation is an Action delegate, it came from an await continuation,
                     // and we should use AwaitTaskContinuation to run it.
