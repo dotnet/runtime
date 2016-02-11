@@ -549,6 +549,7 @@ namespace System
 
         private const int MinBeepFrequency = 37;
         private const int MaxBeepFrequency = 32767;
+
         public static void Beep(int frequency, int duration)
         {
             if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
@@ -626,7 +627,7 @@ namespace System
             {
                 writeCoord.Y = (short)i;
                 r = Interop.mincore.FillConsoleOutputCharacter(OutputHandle, sourceChar, sourceWidth, writeCoord, out numWritten);
-                Contract.Assert(numWritten == sourceWidth, "FillConsoleOutputCharacter wrote the wrong number of chars!");
+                Debug.Assert(numWritten == sourceWidth, "FillConsoleOutputCharacter wrote the wrong number of chars!");
                 if (!r)
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
