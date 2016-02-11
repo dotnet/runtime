@@ -22,7 +22,11 @@ static int32_t GetMountInfo(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
+#if HAVE_STATFS
     struct statfs* mounts = nullptr;
+#else
+    struct statvfs* mounts = nullptr;
+#endif
     int count = getmntinfo(&mounts, 0);
     for (int32_t i = 0; i < count; i++)
     {
@@ -68,8 +72,13 @@ extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, Moun
     assert(name != nullptr);
     assert(mpi != nullptr);
 
+#if HAVE_STATFS
     struct statfs stats = {};
     int result = statfs(name, &stats);
+#else
+    struct statvfs stats = {};
+    int result = statvfs(name, &stats);
+#endif
     if (result == 0)
     {
         // Note that these have signed integer types on some platforms but musn't be negative.
@@ -98,12 +107,17 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
     assert((formatNameBuffer != nullptr) && (formatType != nullptr));
     assert(bufferLength > 0);
 
+#if HAVE_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
+#else
+    struct statvfs stats;
+    int result = statvfs(name, &stats);
+#endif
     if (result == 0)
     {
 
-#if HAVE_STATFS_FSTYPENAME
+#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_FSTYPENAME
 #ifdef VFS_NAMELEN
         if (bufferLength < VFS_NAMELEN)
 #else

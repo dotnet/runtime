@@ -7,6 +7,7 @@
 #cmakedefine01 HAVE_DIRENT_NAME_LEN
 #cmakedefine01 HAVE_MNTINFO
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
+#cmakedefine01 HAVE_STATVFS_FSTYPENAME
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
@@ -20,6 +21,7 @@
 #cmakedefine01 HAVE_FDS_BITS
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_ALLOCA_H
+#cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_GETHOSTBYNAME_R
