@@ -2528,7 +2528,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 		if (*exc)
 			mono_error_cleanup (&error);
 		else
-			*exc = mono_error_convert_to_exception (&error);
+			*exc = (MonoObject*)mono_error_convert_to_exception (&error);
 	}
 
 	if (*exc) {
