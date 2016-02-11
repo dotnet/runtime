@@ -4729,7 +4729,7 @@ mono_aot_get_plt_entry (guint8 *code)
 		return NULL;
 
 #ifdef TARGET_ARM
-	if (is_thumb_code (amodule, code))
+	if (is_thumb_code (amodule, code - 4))
 		return mono_arm_get_thumb_plt_entry (code);
 #endif
 
