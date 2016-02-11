@@ -118,7 +118,7 @@ namespace System.Net.Http
                     // If there's no writer waiting for us, register our buffer/offset/count and return.
                     if (_buffer == null)
                     {
-                        VerboseTrace("No waiting writer. Queueing.");
+                        EventSourceTrace("No waiting writer. Queueing");
                         Update(true, buffer, offset, count, NewTcs());
                         RegisterCancellation(cancellationToken);
                         return _asyncOp.Task;
@@ -128,7 +128,6 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(_count, count);
                     Debug.Assert(bytesToCopy > 0, "Expected to be copying at least 1 byte");
                     Buffer.BlockCopy(_buffer, _offset, buffer, offset, bytesToCopy);
-                    VerboseTrace("Read " + bytesToCopy + " from writer.");
 
                     if (bytesToCopy == _count)
                     {
@@ -181,14 +180,13 @@ namespace System.Net.Http
                     // If we've been disposed, throw an exception so as to end the CopyToAsync operation.
                     if (_disposed)
                     {
-                        VerboseTrace("WriteAsync when already disposed");
                         throw CreateHttpRequestException();
                     }
 
                     if (_buffer == null)
                     {
                         // There's no waiting reader.  Store everything for later.
-                        VerboseTrace("No waiting reader. Queueing.");
+                        EventSourceTrace("No waiting reader. Queueing");
                         Debug.Assert(_asyncOp == null, "No one else should be waiting");
                         Update(false, buffer, offset, count, NewTcs());
                         RegisterCancellation(cancellationToken);
@@ -207,7 +205,6 @@ namespace System.Net.Http
                     _cancellationRegistration.Dispose();
                     bool completed = _asyncOp.TrySetResult(bytesToCopy);
                     Debug.Assert(completed, "No one else should have completed the reader");
-                    VerboseTrace("Writer transferred " + bytesToCopy + " to reader.");
 
                     if (bytesToCopy < count)
                     {
@@ -266,7 +263,7 @@ namespace System.Net.Http
 
                 _cancellationRegistration = cancellationToken.Register(s =>
                 {
-                    VerboseTrace("Cancellation requested");
+                    EventSourceTrace("Cancellation requested");
                     var thisRef = (HttpContentAsyncStream)s;
                     lock (thisRef._syncObj)
                     {
@@ -292,13 +289,13 @@ namespace System.Net.Http
                 {
                     if (_copyTask == null || _copyTask.IsCompleted)
                     {
-                        VerboseTrace("TryReset successful");
+                        EventSourceTrace("TryReset successful");
                         _copyTask = null;
                         return true;
                     }
                 }
 
-                VerboseTrace("TryReset failed");
+                EventSourceTrace("TryReset failed due to existing copy task.");
                 return false;
             }
 
@@ -335,7 +332,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
                 lock (_syncObj)
                 {
-                    VerboseTrace("CopyToAsync completed " + completedCopy.Status + " " + completedCopy.Exception);
+                    EventSourceTrace("Status: {0}", completedCopy.Status);
 
                     // We're done transferring, but a reader doesn't know that until they successfully
                     // read 0 bytes, which won't happen until either a) we complete an already waiting
@@ -349,7 +346,7 @@ namespace System.Net.Http
                     if (_asyncOp != null)
                     {
                         _cancellationRegistration.Dispose();
-                        Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader.");
+                        Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader");
                         if (completedCopy.IsFaulted)
                         {
                             _asyncOp.TrySetException(completedCopy.Exception.InnerException);
