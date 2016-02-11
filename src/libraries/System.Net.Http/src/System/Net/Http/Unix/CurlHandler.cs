@@ -37,10 +37,25 @@ namespace System.Net.Http
 
         #region Fields
 
-        private readonly static char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
-        private readonly static string[] s_authenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
-        private readonly static CURLAUTH[] s_authSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
+        // To enable developers to opt-in to support certain auth types that we don't want
+        // to enable by default (e.g. NTLM), we allow for such types to be specified explicitly
+        // when credentials are added to a credential cache, but we don't enable them
+        // when no auth type is specified, e.g. when a NetworkCredential is provided directly
+        // to the handler.  As such, we have two different sets of auth types that we use
+        // for when the supplied creds are a cache vs not.
+        private readonly static KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypesCredentialCache = new KeyValuePair<string, CURLAUTH>[] {
+            new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
+            new KeyValuePair<string,CURLAUTH>("NTLM", CURLAUTH.NTLM), // only available when credentials supplied via a credential cache
+            new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
+            new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
+        };
+        private readonly static KeyValuePair<string, CURLAUTH>[] s_orderedAuthTypesICredential = new KeyValuePair<string, CURLAUTH>[] {
+            new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
+            new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
+            new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
+        };
 
+        private readonly static char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
         private readonly static bool s_supportsHttp2Multiplexing;
@@ -359,15 +374,21 @@ namespace System.Net.Http
             }
         }
 
-        private KeyValuePair<NetworkCredential, CURLAUTH> GetNetworkCredentials(ICredentials credentials, Uri requestUri)
+        private KeyValuePair<NetworkCredential, CURLAUTH> GetCredentials(Uri requestUri)
         {
+            // Get the auth types (Negotiate, Digest, etc.) that are allowed to be selected automatically
+            // based on the type of the ICredentials provided.
+            KeyValuePair<string, CURLAUTH>[] validAuthTypes = AuthTypesPermittedByCredentialKind(_serverCredentials);
+
+            // If preauthentication is enabled, we may have populated our internal credential cache,
+            // so first check there to see if we have any credentials for this uri.
             if (_preAuthenticate)
             {
                 KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme;
                 lock (LockObject)
                 {
                     Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
-                    ncAndScheme = GetCredentials(_credentialCache, requestUri);
+                    ncAndScheme = GetCredentials(requestUri, _credentialCache, validAuthTypes);
                 }
                 if (ncAndScheme.Key != null)
                 {
@@ -375,29 +396,62 @@ namespace System.Net.Http
                 }
             }
 
-            return GetCredentials(credentials, requestUri);
+            // We either weren't preauthenticating or we didn't have any cached credentials
+            // available, so check the credentials on the handler.
+            return GetCredentials(requestUri, _serverCredentials, validAuthTypes);
         }
 
-        private void AddCredentialToCache(Uri serverUri, CURLAUTH authAvail, NetworkCredential nc)
+        private void TransferCredentialsToCache(Uri serverUri, CURLAUTH serverAuthAvail)
         {
+            if (_serverCredentials == null)
+            {
+                // No credentials, nothing to put into the cache.
+                return;
+            }
+
+            // Get the auth types valid based on the type of the ICredentials used.  We're effectively
+            // going to intersect this (the types we allow to be used) with those the server supports
+            // and with the credentials we have available.  The best of that resulting intersection
+            // will be added to the cache.
+            KeyValuePair<string, CURLAUTH>[] validAuthTypes = AuthTypesPermittedByCredentialKind(_serverCredentials);
+
             lock (LockObject)
             {
-                for (int i=0; i < s_authSchemePriorityOrder.Length; i++)
+                // For each auth type we allow, check whether it's one supported by the server.
+                for (int i = 0; i < validAuthTypes.Length; i++)
                 {
-                    if ((authAvail & s_authSchemePriorityOrder[i]) != 0)
+                    // Is it supported by the server?
+                    if ((serverAuthAvail & validAuthTypes[i].Value) != 0)
                     {
-                        Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
-                        try
+                        // And do we have a credential for it?
+                        NetworkCredential nc = _serverCredentials.GetCredential(serverUri, validAuthTypes[i].Key);
+                        if (nc != null)
                         {
-                            _credentialCache.Add(serverUri, s_authenticationSchemes[i], nc);
-                        }
-                        catch(ArgumentException)
-                        {
-                            //Ignore the case of key already present
+                            // We have a credential for it, so add it, and we're done.
+                            Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
+                            try
+                            {
+                                _credentialCache.Add(serverUri, validAuthTypes[i].Key, nc);
+                            }
+                            catch (ArgumentException)
+                            {
+                                // Ignore the case of key already present
+                            }
+                            break;
                         }
                     }
                 }
             }
+        }
+
+        private static KeyValuePair<string, CURLAUTH>[] AuthTypesPermittedByCredentialKind(ICredentials c)
+        {
+            // Special-case CredentialCache for auth types, as credentials put into the cache are put
+            // in explicitly tagged with an auth type, and thus credentials are opted-in to potentially
+            // less secure auth types we might otherwise want disabled by default.
+            return c is CredentialCache ?
+                s_orderedAuthTypesCredentialCache :
+                s_orderedAuthTypesICredential;
         }
 
         private void AddResponseCookies(EasyRequest state, string cookieHeader)
@@ -420,22 +474,23 @@ namespace System.Net.Http
             }
         }
 
-        private static KeyValuePair<NetworkCredential, CURLAUTH> GetCredentials(ICredentials credentials, Uri requestUri)
+        private static KeyValuePair<NetworkCredential, CURLAUTH> GetCredentials(Uri requestUri, ICredentials credentials, KeyValuePair<string, CURLAUTH>[] validAuthTypes)
         {
             NetworkCredential nc = null;
             CURLAUTH curlAuthScheme = CURLAUTH.None;
 
             if (credentials != null)
             {
-                // we collect all the schemes that are accepted by libcurl for which there is a non-null network credential.
-                // But CurlHandler works under following assumption:
-                //           for a given server, the credentials do not vary across authentication schemes.
-                for (int i=0; i < s_authSchemePriorityOrder.Length; i++)
+                // For each auth type we consider valid, try to get a credential for it.
+                // Union together the auth types for which we could get credentials, but validate
+                // that the found credentials are all the same, as libcurl doesn't support differentiating
+                // by auth type.
+                for (int i = 0; i < validAuthTypes.Length; i++)
                 {
-                    NetworkCredential networkCredential = credentials.GetCredential(requestUri, s_authenticationSchemes[i]);
+                    NetworkCredential networkCredential = credentials.GetCredential(requestUri, validAuthTypes[i].Key);
                     if (networkCredential != null)
                     {
-                        curlAuthScheme |= s_authSchemePriorityOrder[i];
+                        curlAuthScheme |= validAuthTypes[i].Value;
                         if (nc == null)
                         {
                             nc = networkCredential;
@@ -597,7 +652,11 @@ namespace System.Net.Http
             Uri forwardUri;
             if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
             {
-                KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
+                // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is 
+                // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
+                // are specifically tied to URIs.
+                var creds = state._handler.Credentials as CredentialCache;
+                KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme = GetCredentials(forwardUri, creds, AuthTypesPermittedByCredentialKind(creds));
                 if (ncAndScheme.Key != null)
                 {
                     state.SetCredentialsOptions(ncAndScheme);
