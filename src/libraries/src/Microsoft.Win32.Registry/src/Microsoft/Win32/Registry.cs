@@ -17,11 +17,6 @@ namespace Microsoft.Win32
     //This class contains only static members and does not need to be serializable.
     public static class Registry
     {
-        [System.Security.SecuritySafeCritical]  
-        static Registry()
-        {
-        }
-
         /**
          * Current User Key.
          * 

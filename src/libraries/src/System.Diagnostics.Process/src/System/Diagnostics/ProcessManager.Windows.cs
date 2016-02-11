@@ -225,31 +225,28 @@ namespace System.Diagnostics
         private const string PerfCounterQueryString = "230 232";
         internal const int IdleProcessID = 0;
 
-        private static Dictionary<String, ValueId> s_valueIds;
-
-        static NtProcessManager()
+        private static readonly Dictionary<String, ValueId> s_valueIds = new Dictionary<string, ValueId>(19)
         {
-            s_valueIds = new Dictionary<String, ValueId>();
-            s_valueIds.Add("Pool Paged Bytes", ValueId.PoolPagedBytes);
-            s_valueIds.Add("Pool Nonpaged Bytes", ValueId.PoolNonpagedBytes);
-            s_valueIds.Add("Elapsed Time", ValueId.ElapsedTime);
-            s_valueIds.Add("Virtual Bytes Peak", ValueId.VirtualBytesPeak);
-            s_valueIds.Add("Virtual Bytes", ValueId.VirtualBytes);
-            s_valueIds.Add("Private Bytes", ValueId.PrivateBytes);
-            s_valueIds.Add("Page File Bytes", ValueId.PageFileBytes);
-            s_valueIds.Add("Page File Bytes Peak", ValueId.PageFileBytesPeak);
-            s_valueIds.Add("Working Set Peak", ValueId.WorkingSetPeak);
-            s_valueIds.Add("Working Set", ValueId.WorkingSet);
-            s_valueIds.Add("ID Thread", ValueId.ThreadId);
-            s_valueIds.Add("ID Process", ValueId.ProcessId);
-            s_valueIds.Add("Priority Base", ValueId.BasePriority);
-            s_valueIds.Add("Priority Current", ValueId.CurrentPriority);
-            s_valueIds.Add("% User Time", ValueId.UserTime);
-            s_valueIds.Add("% Privileged Time", ValueId.PrivilegedTime);
-            s_valueIds.Add("Start Address", ValueId.StartAddress);
-            s_valueIds.Add("Thread State", ValueId.ThreadState);
-            s_valueIds.Add("Thread Wait Reason", ValueId.ThreadWaitReason);
-        }
+            { "Pool Paged Bytes", ValueId.PoolPagedBytes },
+            { "Pool Nonpaged Bytes", ValueId.PoolNonpagedBytes },
+            { "Elapsed Time", ValueId.ElapsedTime },
+            { "Virtual Bytes Peak", ValueId.VirtualBytesPeak },
+            { "Virtual Bytes", ValueId.VirtualBytes },
+            { "Private Bytes", ValueId.PrivateBytes },
+            { "Page File Bytes", ValueId.PageFileBytes },
+            { "Page File Bytes Peak", ValueId.PageFileBytesPeak },
+            { "Working Set Peak", ValueId.WorkingSetPeak },
+            { "Working Set", ValueId.WorkingSet },
+            { "ID Thread", ValueId.ThreadId },
+            { "ID Process", ValueId.ProcessId },
+            { "Priority Base", ValueId.BasePriority },
+            { "Priority Current", ValueId.CurrentPriority },
+            { "% User Time", ValueId.UserTime },
+            { "% Privileged Time", ValueId.PrivilegedTime },
+            { "Start Address", ValueId.StartAddress },
+            { "Thread State", ValueId.ThreadState },
+            { "Thread Wait Reason", ValueId.ThreadWaitReason }
+        };
 
         internal static int SystemProcessID
         {
