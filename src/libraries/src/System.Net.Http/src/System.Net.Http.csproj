@@ -12,8 +12,10 @@
     <AssemblyName>System.Net.Http</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime> 
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>unix/project.json</ProjectJson>

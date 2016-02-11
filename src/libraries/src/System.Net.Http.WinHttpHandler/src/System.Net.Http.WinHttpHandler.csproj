@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>    
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

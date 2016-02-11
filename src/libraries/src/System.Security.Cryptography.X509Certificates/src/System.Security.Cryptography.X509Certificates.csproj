@@ -14,7 +14,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461'">win7</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' != 'net461'">unix</PackageTargetRuntime> 
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">

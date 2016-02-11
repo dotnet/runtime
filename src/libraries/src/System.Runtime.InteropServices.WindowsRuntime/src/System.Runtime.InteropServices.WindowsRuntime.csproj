@@ -8,11 +8,10 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.InteropServices.WindowsRuntime</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
-    <PackageTargetRuntime>win8</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <PackageTargetRuntime>win8</PackageTargetRuntime>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

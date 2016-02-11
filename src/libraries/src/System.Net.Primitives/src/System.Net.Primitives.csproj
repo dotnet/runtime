@@ -13,10 +13,10 @@
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
     <PackageTargetFramework Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">netcore50</PackageTargetFramework>
-    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'net46'" />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true' AND '$(TargetGroup)' == ''">

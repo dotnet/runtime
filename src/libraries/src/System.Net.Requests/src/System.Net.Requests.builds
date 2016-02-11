@@ -14,9 +14,10 @@
     <Project Include="System.Net.Requests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <!-- Net46 facade is currently inbox for 4.0 
     <Project Include="facade\System.Net.Requests.csproj">
       <TargetGroup>net46</TargetGroup>
-    </Project>
+    </Project> -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -7,6 +7,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
     <RootNamespace>System.Resources</RootNamespace>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

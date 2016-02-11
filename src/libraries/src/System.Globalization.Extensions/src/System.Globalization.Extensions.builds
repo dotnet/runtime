@@ -6,9 +6,6 @@
       <OSGroup>Linux</OSGroup>
     </Project>
     <Project Include="System.Globalization.Extensions.csproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
-    <Project Include="System.Globalization.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Globalization.Extensions.csproj">

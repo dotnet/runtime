@@ -9,6 +9,7 @@
     <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netcore50aot'">true</IsInterpreting>
     <DefineConstants Condition="'$(IsInterpreting)' != 'true'">$(DefineConstants);FEATURE_COMPILER</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->

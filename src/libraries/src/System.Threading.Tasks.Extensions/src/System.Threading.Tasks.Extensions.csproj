@@ -6,9 +6,17 @@
     <AssemblyName>System.Threading.Tasks.Extensions</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="lib/dotnet5.1">
+      <TargetFramework>dotnet5.1</TargetFramework>
+    </PackageDestination>
+    <!-- Support downlevel targets -->
+    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
+      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

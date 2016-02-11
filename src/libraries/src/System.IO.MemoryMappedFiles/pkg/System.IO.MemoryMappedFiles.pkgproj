@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.IO.MemoryMappedFiles.csproj">
+      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\facade\System.IO.MemoryMappedFiles.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    </ProjectReference>
+    
+    <ProjectReference Include="win\System.IO.MemoryMappedFiles.pkgproj" />
+    <ProjectReference Include="linux\System.IO.MemoryMappedFiles.pkgproj" />
+    <ProjectReference Include="osx\System.IO.MemoryMappedFiles.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
