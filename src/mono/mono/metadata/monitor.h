@@ -106,6 +106,9 @@ MONO_API void mono_locks_dump (gboolean include_untaken);
 void mono_monitor_init (void);
 void mono_monitor_cleanup (void);
 
+gboolean mono_monitor_enter_fast (MonoObject *obj);
+gboolean mono_monitor_enter_v4_fast (MonoObject *obj, char *lock_taken);
+
 guint32 mono_monitor_get_object_monitor_gchandle (MonoObject *object);
 
 void mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);

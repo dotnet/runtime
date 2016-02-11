@@ -48,6 +48,7 @@
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/monitor.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -709,6 +710,19 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 		sig = NULL;
 
 	mono_register_jit_icall_full (func, name, sig, TRUE, FALSE, name);
+}
+
+static void
+register_icall_with_wrapper (gpointer func, const char *name, const char *sigstr)
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_full (func, name, sig, FALSE, FALSE, NULL);
 }
 
 static void
@@ -3947,6 +3961,11 @@ register_icalls (void)
 	register_icall (mono_llvmonly_init_delegate_virtual, "mono_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);
+
+	register_icall_with_wrapper (mono_monitor_enter, "mono_monitor_enter", "void obj");
+	register_icall_with_wrapper (mono_monitor_enter_v4, "mono_monitor_enter_v4", "void obj ptr");
+	register_icall_no_wrapper (mono_monitor_enter_fast, "mono_monitor_enter_fast", "int obj");
+	register_icall_no_wrapper (mono_monitor_enter_v4_fast, "mono_monitor_enter_v4_fast", "int obj ptr");
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);

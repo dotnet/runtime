@@ -1009,6 +1009,12 @@ mono_monitor_enter (MonoObject *obj)
 }
 
 gboolean 
+mono_monitor_enter_fast (MonoObject *obj)
+{
+	return mono_monitor_try_enter_internal (obj, 0, FALSE) == 1;
+}
+
+gboolean
 mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 {
 	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
@@ -1100,13 +1106,29 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {
-
 	if (*lock_taken == 1) {
 		mono_set_pending_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
 		return;
 	}
 
 	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, INFINITE, lock_taken);
+}
+
+/*
+ * mono_monitor_enter_v4_fast:
+ *
+ *   Same as mono_monitor_enter_v4, but return immediately if the
+ * monitor cannot be acquired.
+ * Returns TRUE if the lock was acquired, FALSE otherwise.
+ */
+gboolean
+mono_monitor_enter_v4_fast (MonoObject *obj, char *lock_taken)
+{
+	if (*lock_taken == 1)
+		return FALSE;
+	gint32 res = mono_monitor_try_enter_internal (obj, 0, TRUE);
+	*lock_taken = res == 1;
+	return res == 1;
 }
 
 gboolean 
