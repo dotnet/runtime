@@ -1636,6 +1636,10 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #endif
 	if (S_ISFIFO (statbuf.st_mode)) {
 		handle_type = WAPI_HANDLE_PIPE;
+		/* maintain invariant that pipes have no filename */
+		file_handle.filename = NULL;
+		g_free (filename);
+		filename = NULL;
 	} else if (S_ISCHR (statbuf.st_mode)) {
 		handle_type = WAPI_HANDLE_CONSOLE;
 	} else {
