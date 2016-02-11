@@ -80,11 +80,17 @@ namespace System.Linq.Expressions
                 return ReduceConstantTypeEqual();
             }
 
-            // If the operand type is a sealed reference type or a nullable
-            // type, it will match if value is not null
-            if (cType.GetTypeInfo().IsSealed && (cType == _typeOperand))
+            // If the expression type is a sealed reference type or a nullable
+            // type, it will match if the value is not null and the type operand
+            // either matches or one is a nullable type while the other is its
+            // type argument (T to the other's T?).
+            if (cType.GetTypeInfo().IsSealed)
             {
-                if (cType.IsNullableType())
+                if (cType.GetNonNullableType() != _typeOperand.GetNonNullableType())
+                {
+                    return Expression.Block(Expression, Expression.Constant(false));
+                }
+                else if (cType.IsNullableType())
                 {
                     return Expression.NotEqual(Expression, Expression.Constant(null, Expression.Type));
                 }
@@ -93,6 +99,8 @@ namespace System.Linq.Expressions
                     return Expression.ReferenceNotEqual(Expression, Expression.Constant(null, Expression.Type));
                 }
             }
+
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(object), Expression.Type), "Expecting reference types only after this point.");
 
             // expression is a ByVal parameter. Can safely reevaluate.
             var parameter = Expression as ParameterExpression;
@@ -104,16 +112,9 @@ namespace System.Linq.Expressions
             // Create a temp so we only evaluate the left side once
             parameter = Expression.Parameter(typeof(object));
 
-            // Convert to object if necessary
-            var expression = Expression;
-            if (!TypeUtils.AreReferenceAssignable(typeof(object), expression.Type))
-            {
-                expression = Expression.Convert(expression, typeof(object));
-            }
-
             return Expression.Block(
                 new[] { parameter },
-                Expression.Assign(parameter, expression),
+                Expression.Assign(parameter, Expression),
                 ByValParameterTypeEqual(parameter)
             );
         }

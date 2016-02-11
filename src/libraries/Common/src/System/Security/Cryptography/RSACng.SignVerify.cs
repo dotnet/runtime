@@ -16,6 +16,10 @@ using BCRYPT_PSS_PADDING_INFO = Interop.BCrypt.BCRYPT_PSS_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class RSAImplementation
+    {
+#endif
     public sealed partial class RSACng : RSA
     {
         /// <summary>
@@ -33,7 +37,7 @@ namespace System.Security.Cryptography
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
                         int estimatedSize = KeySize / 8;
-                        signature = Key.SignHash(hash, paddingMode, pPaddingInfo, estimatedSize);
+                        signature = GetKeyHandle().SignHash(hash, paddingMode, pPaddingInfo, estimatedSize);
                     }
                 );
                 return signature;
@@ -56,7 +60,7 @@ namespace System.Security.Cryptography
                 SignOrVerify(padding, hashAlgorithm, hash,
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
-                        verified = Key.VerifyHash(hash, signature, paddingMode, pPaddingInfo);
+                        verified = GetKeyHandle().VerifyHash(hash, signature, paddingMode, pPaddingInfo);
                     }
                 );
                 return verified;
@@ -112,4 +116,7 @@ namespace System.Security.Cryptography
 
         private unsafe delegate void SignOrVerifyAction(AsymmetricPaddingMode paddingMode, void* pPaddingInfo);
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }

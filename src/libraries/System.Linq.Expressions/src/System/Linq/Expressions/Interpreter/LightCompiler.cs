@@ -1996,9 +1996,10 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(enterTryInstr != null);
 
             PushLabelBlock(LabelScopeKind.Try);
-            Compile(node.Body);
+            bool hasValue = node.Type != typeof(void);
 
-            bool hasValue = node.Body.Type != typeof(void);
+            Compile(node.Body, !hasValue);
+
             int tryEnd = _instructions.Count;
 
             // handlers jump here:
@@ -2072,12 +2073,11 @@ namespace System.Linq.Expressions.Interpreter
                     int handlerStart = _instructions.Count;
 
                     CompileSetVariable(parameter, true);
-                    Compile(handler.Body);
+                    Compile(handler.Body, !hasValue);
 
                     _exceptionForRethrowStack.Pop();
 
                     // keep the value of the body on the stack:
-                    Debug.Assert(hasValue == (handler.Body.Type != typeof(void)));
                     _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
 
                     exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, handler.Test));
@@ -2656,7 +2656,10 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     Compile(arg);
                 }
-                _instructions.EmitCall(initializers[i].AddMethod);
+                var add = initializers[i].AddMethod;
+                _instructions.EmitCall(add);
+                if (add.ReturnType != typeof(void))
+                    _instructions.EmitPop();
             }
         }
 

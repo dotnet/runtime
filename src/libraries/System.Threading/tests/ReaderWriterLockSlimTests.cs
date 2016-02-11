@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -380,5 +381,72 @@ namespace System.Threading.Tests
             }
         }
 
+        [Fact]
+        public static void ReleaseReadersWhenWaitingWriterTimesOut()
+        {
+            using (var rwls = new ReaderWriterLockSlim())
+            {
+                // Enter the read lock
+                rwls.EnterReadLock();
+                // Typical order of execution: 0
+
+                Thread writeWaiterThread;
+                using (var beforeTryEnterWriteLock = new ManualResetEvent(false))
+                {
+                    writeWaiterThread =
+                        new Thread(() =>
+                        {
+                            // Typical order of execution: 1
+
+                            // Add a writer to the wait list for enough time to allow successive readers to enter the wait list while this
+                            // writer is waiting
+                            beforeTryEnterWriteLock.Set();
+                            if (rwls.TryEnterWriteLock(2000))
+                            {
+                                // The typical order of execution is not guaranteed, as sleep times are not guaranteed. For
+                                // instance, before this write lock is added to the wait list, the two new read locks may be
+                                // acquired. In that case, the test may complete before or while the write lock is taken.
+                                rwls.ExitWriteLock();
+                            }
+
+                            // Typical order of execution: 4
+                        });
+                    writeWaiterThread.IsBackground = true;
+                    writeWaiterThread.Start();
+                    beforeTryEnterWriteLock.WaitOne();
+                }
+                Thread.Sleep(1000); // wait for TryEnterWriteLock to enter the wait list
+
+                // A writer should now be waiting, add readers to the wait list. Since a read lock is still acquired, the writer
+                // should time out waiting, then these readers should enter and exit the lock.
+                ThreadStart EnterAndExitReadLock = () =>
+                {
+                    // Typical order of execution: 2, 3
+                    rwls.EnterReadLock();
+                    // Typical order of execution: 5, 6
+                    rwls.ExitReadLock();
+                };
+                var readerThreads =
+                    new Thread[]
+                    {
+                        new Thread(EnterAndExitReadLock),
+                        new Thread(EnterAndExitReadLock)
+                    };
+                foreach (var readerThread in readerThreads)
+                {
+                    readerThread.IsBackground = true;
+                    readerThread.Start();
+                }
+                foreach (var readerThread in readerThreads)
+                {
+                    readerThread.Join();
+                }
+
+                rwls.ExitReadLock();
+                // Typical order of execution: 7
+
+                writeWaiterThread.Join();
+            }
+        }
     }
 }

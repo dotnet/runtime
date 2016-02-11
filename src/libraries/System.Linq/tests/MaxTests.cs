@@ -196,6 +196,19 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SeveralNaNSingleWithSelector()
+        {
+            Assert.True(float.IsNaN(Enumerable.Repeat(float.NaN, 5).Max(i => i)));
+        }
+
+        [Fact]
+        public void SeveralNaNOrNullSingleWithSelector()
+        {
+            float?[] source = new float?[] { float.NaN, null, float.NaN, null };
+            Assert.True(float.IsNaN(source.Max(i => i).Value));
+        }
+
+        [Fact]
         public void NullSingleSource()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max());
@@ -206,6 +219,13 @@ namespace System.Linq.Tests
         {
             float[] source = { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f };
             Assert.Equal(10f, source.Max());
+        }
+
+        [Fact]
+        public void SingleNaNFirstWithSelector()
+        {
+            float[] source = { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f };
+            Assert.Equal(10f, source.Max(i => i));
         }
 
         [Fact]
@@ -266,6 +286,19 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void DoubleAllNaNWithSelector()
+        {
+            Assert.True(double.IsNaN(Enumerable.Repeat(double.NaN, 5).Max(i => i)));
+        }
+
+        [Fact]
+        public void SeveralNaNOrNullDoubleWithSelector()
+        {
+            double?[] source = new double?[] { double.NaN, null, double.NaN, null };
+            Assert.True(double.IsNaN(source.Max(i => i).Value));
+        }
+
+        [Fact]
         public void DoubleMaximumFirst()
         {
             double[] source = { 112.5, 4.9, 30, 4.7, 28 };
@@ -305,6 +338,13 @@ namespace System.Linq.Tests
         {
             double[] source = { double.NaN, double.NegativeInfinity };
             Assert.True(double.IsNegativeInfinity(source.Max()));
+        }
+
+        [Fact]
+        public void DoubleNaNThenNegativeInfinityWithSelector()
+        {
+            double[] source = { double.NaN, double.NegativeInfinity };
+            Assert.True(double.IsNegativeInfinity(source.Max(i => i)));
         }
 
         [Fact]
@@ -1159,6 +1199,7 @@ namespace System.Linq.Tests
             var thousand = new[] { default(long?), -16L, 0, 50, 100, 1000 };
             Assert.Equal(42, Enumerable.Repeat((long?)42, 1).Max(x => x));
             Assert.Equal(10, ten.Max(x => x));
+            Assert.Equal(10, ten.Concat(new[] { default(long?) }).Max(x => x));
             Assert.Equal(-10, minusTen.Max(x => x));
             Assert.Equal(1000, thousand.Max(x => x));
             Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)).Max(x => x));
@@ -1386,6 +1427,12 @@ namespace System.Linq.Tests
             Assert.Equal(new DateTime(2000, 12, 31), newYearsEve.Max(x => x));
             Assert.Equal(new DateTime(3000, 1, 1), threeThousand.Max(x => x));
             Assert.Equal(DateTime.MaxValue, threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyMaxDateTimeWithSelector()
+        {
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(i => i));
         }
 
         [Fact]

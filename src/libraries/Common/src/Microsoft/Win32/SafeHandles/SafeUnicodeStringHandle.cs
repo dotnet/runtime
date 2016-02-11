@@ -3,14 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-
-namespace Internal.Cryptography
+namespace Microsoft.Win32.SafeHandles
 {
     /// <summary>
-    ///     Holds a managed string marshaled as a LPCWSTR. 
+    ///     Holds a managed string marshaled as a LPCWSTR.
     /// </summary>
     internal sealed class SafeUnicodeStringHandle : SafeHandle
     {
@@ -38,5 +36,3 @@ namespace Internal.Cryptography
         }
     }
 }
-
-

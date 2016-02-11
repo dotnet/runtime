@@ -7,6 +7,7 @@
 #include "pal_maphardwaretype.h"
 #include "pal_utilities.h"
 
+#include <sys/types.h>
 #include <assert.h>
 #include <ifaddrs.h>
 #include <net/if.h>

@@ -6,6 +6,7 @@
     <MinClientVersion>2.8.6</MinClientVersion>
     <!-- This is the .pkgproj for the "future" build which is not on the same release cadence as corefx -->
     <PreReleaseLabel>beta</PreReleaseLabel>
+    <NuspecSuffix>-future</NuspecSuffix>
   </PropertyGroup>
 
   <ItemGroup>

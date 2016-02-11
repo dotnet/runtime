@@ -129,6 +129,7 @@ namespace System.Security.Cryptography
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected RSA() { }
+        public static RSA Create() { return default(RSA); }
         public abstract byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
         public abstract byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding);
         public abstract System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters);
