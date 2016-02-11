@@ -117,6 +117,27 @@ check_struct_has_member(
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
+    "struct statvfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATVFS_FSTYPENAME)
+
+# statfs: Find whether this struct exists
+if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
+    set (STATFS_INCLUDES sys/mount.h)
+else ()
+    set (STATFS_INCLUDES sys/statfs.h)
+endif ()
+
+set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
+check_type_size(
+    "struct statfs"
+    HAVE_STATFS
+    BUILTIN_TYPES_ONLY)
+set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+# /statfs
+
+check_struct_has_member(
     "struct in6_addr"
     __in6_u
     "netdb.h"
