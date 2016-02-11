@@ -40,8 +40,6 @@ namespace System.Net.Http
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSListHandle _requestHeaders;
 
-            internal NetworkCredential _networkCredential;
-
             internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
             internal bool _isRedirect = false;
@@ -90,7 +88,7 @@ namespace System.Net.Http
                 SetVersion();
                 SetDecompressionOptions();
                 SetProxyOptions(_requestMessage.RequestUri);
-                SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials, _requestMessage.RequestUri));
+                SetCredentialsOptions(_handler.GetCredentials(_requestMessage.RequestUri));
                 SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
                 SetSslOptions();
@@ -320,7 +318,7 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
-                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
+                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_requestMessage.RequestUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
                 NetworkCredential credentials = credentialScheme.Key;
                 if (credentials == CredentialCache.DefaultCredentials)
                 {
@@ -347,7 +345,6 @@ namespace System.Net.Http
             {
                 if (credentialSchemePair.Key == null)
                 {
-                    _networkCredential = null;
                     return;
                 }
 
@@ -365,7 +362,6 @@ namespace System.Net.Http
                 }
 
                 EventSourceTrace("Credentials set.");
-                _networkCredential = credentials;
             }
 
             internal void SetCookieOption(Uri uri)
