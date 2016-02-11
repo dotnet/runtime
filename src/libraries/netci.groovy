@@ -235,6 +235,12 @@ branchList.each { branchName ->
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
             // Archive the results
             Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
+
+            def serverGCString = ''
+                     
+            if (os == 'Ubuntu' && configurationGroup == 'Debug' && isPR){
+                serverGCString = '--useServerGC'
+            }
             
             //
             // Then we set up a job that runs the test on the target OS
@@ -292,7 +298,8 @@ branchList.each { branchName ->
                         --os ${osGroup} \\
                         --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
-                        --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/
+                        --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
+                        ${serverGCString}
                     """)
                 }
                 
