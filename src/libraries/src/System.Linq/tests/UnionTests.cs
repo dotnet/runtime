@@ -206,5 +206,45 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void ToArray()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+            string[] expected = { "Bob", "Robert", "Tim", "Matt", "miT", "ttaM", "Charlie", "Bbo" };
+
+            Assert.Equal(expected, first.Union(second).ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+            string[] expected = { "Bob", "Robert", "Tim", "Matt", "miT", "ttaM", "Charlie", "Bbo" };
+
+            Assert.Equal(expected, first.Union(second).ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+
+            Assert.Equal(8, first.Union(second).Count());
+        }
+
+        [Fact]
+        public void RepeatEnumerating()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+
+            var result = first.Union(second);
+
+            Assert.Equal(result, result);
+        }
     }
 }
