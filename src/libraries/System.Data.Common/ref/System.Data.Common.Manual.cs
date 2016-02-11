@@ -63,14 +63,14 @@ namespace System.Data.Common
         }
     }
 
-    public static class DbDataReaderExtension
+    public static class DbDataReaderExtensions
     {
         public static System.Collections.ObjectModel.ReadOnlyCollection<DbColumn> GetColumnSchema(this DbDataReader reader)
         {
             return default(System.Collections.ObjectModel.ReadOnlyCollection<DbColumn>);
         }
 
-        public static bool ProvidesSchema(this DbDataReader reader)
+        public static bool CanGetColumnSchema(this DbDataReader reader)
         {
             return default(bool);
         }
