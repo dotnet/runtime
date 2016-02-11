@@ -56,6 +56,7 @@ static_assert(PAL_CURLAUTH_None == CURLAUTH_NONE, "");
 static_assert(PAL_CURLAUTH_Basic == CURLAUTH_BASIC, "");
 static_assert(PAL_CURLAUTH_Digest == CURLAUTH_DIGEST, "");
 static_assert(PAL_CURLAUTH_Negotiate == CURLAUTH_GSSNEGOTIATE, "");
+static_assert(PAL_CURLAUTH_NTLM == CURLAUTH_NTLM, "");
 
 static_assert(PAL_CURLPROXY_HTTP == CURLPROXY_HTTP, "");
 
