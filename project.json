@@ -1,0 +1,25 @@
+{
+  "description": "Abstractions for making code that uses file system and environment testable.",
+  "version": "1.0.0-*",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dotnet/cli"
+  },
+  "compilationOptions": {
+    "warningsAsErrors": true,
+    "keyFile": "../../tools/Key.snk"
+  },
+  "dependencies": {
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16537"
+  },
+  "frameworks": {
+    "net451": { },
+    "dotnet5.4": {
+      "dependencies": {
+        "System.Runtime": "4.0.21-rc2-23811"
+      }
+    },
+  },
+  "scripts": {
+  }
+}
