@@ -151,6 +151,20 @@ check_cxx_source_compiles(
     "
     HAVE_GNU_STRERROR_R)
 
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/event.h>
+    int main(void)
+    {
+        struct kevent event;
+        void* data;
+        EV_SET(&event, 0, EVFILT_READ, 0, 0, 0, data);
+        return 0;
+    }
+    "
+    KEVENT_HAS_VOID_UDATA)
+
 check_struct_has_member(
     "struct fd_set"
     fds_bits
@@ -236,9 +250,16 @@ check_cxx_source_runs(
 check_prototype_definition(
     getpriority
     "int getpriority(int which, int who)"
-    "0"
+    0
     "sys/resource.h"
     PRIORITY_REQUIRES_INT_WHO)
+
+check_prototype_definition(
+    kevent
+    "int kevent(int kg, const struct kevent* chagelist, int nchanges, struct kevent* eventlist, int nevents, const struct timespec* timeout)"
+    0
+    "sys/types.h;sys/event.h"
+    KEVENT_REQUIRES_INT_PARAMS)
 
 check_cxx_source_compiles(
     "

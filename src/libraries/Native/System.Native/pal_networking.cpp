@@ -29,6 +29,55 @@
 #include <unistd.h>
 #include <vector>
 
+#if HAVE_KQUEUE
+#if KEVENT_HAS_VOID_UDATA
+void* GetKeventUdata(uintptr_t udata)
+{
+    return reinterpret_cast<void*>(udata);
+}
+uintptr_t GetSocketEventData(void* udata)
+{
+    return reinterpret_cast<uintptr_t>(udata);
+}
+#else
+intptr_t GetKeventUdata(uintptr_t udata)
+{
+    return static_cast<intptr_t>(udata);
+}
+uintptr_t GetSocketEventData(intptr_t udata)
+{
+    return static_cast<uintptr_t>(udata);
+}
+#endif
+#if KEVENT_REQUIRES_INT_PARAMS
+int GetKeventNchanges(int nchanges)
+{
+    return nchanges;
+}
+int16_t GetKeventFilter(int16_t filter)
+{
+    return filter;
+}
+uint16_t GetKeventFlags(uint16_t flags)
+{
+    return flags;
+}
+#else
+size_t GetKeventNchanges(int nchanges)
+{
+    return static_cast<size_t>(nchanges);
+}
+int16_t GetKeventFilter(uint32_t filter)
+{
+    return static_cast<int16_t>(filter);
+}
+uint16_t GetKeventFlags(uint32_t flags)
+{
+    return static_cast<uint16_t>(flags);
+}
+#endif
+#endif
+
 #if !HAVE_IN_PKTINFO
 // On platforms, such as FreeBSD, where in_pktinfo
 // is not available, fallback to custom definition
@@ -2329,8 +2378,13 @@ static Error CloseSocketEventPortInner(int32_t port)
 static Error TryChangeSocketEventRegistrationInner(
     int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
 {
+#ifdef EV_RECEIPT
     const uint16_t AddFlags = EV_ADD | EV_CLEAR | EV_RECEIPT;
     const uint16_t RemoveFlags = EV_DELETE | EV_RECEIPT;
+#else
+    const uint16_t AddFlags = EV_ADD | EV_CLEAR;
+    const uint16_t RemoveFlags = EV_DELETE;
+#endif
 
     assert(currentEvents != newEvents);
 
@@ -2349,7 +2403,7 @@ static Error TryChangeSocketEventRegistrationInner(
                (newEvents & PAL_SA_READ) == 0 ? RemoveFlags : AddFlags,
                0,
                0,
-               reinterpret_cast<void*>(data));
+               GetKeventUdata(data));
     }
 
     if (writeChanged)
@@ -2360,11 +2414,11 @@ static Error TryChangeSocketEventRegistrationInner(
                (newEvents & PAL_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
                0,
                0,
-               reinterpret_cast<void*>(data));
+               GetKeventUdata(data));
     }
 
     int err;
-    while (CheckInterrupted(err = kevent(port, events, i, nullptr, 0, nullptr)));
+    while (CheckInterrupted(err = kevent(port, events, GetKeventNchanges(i), nullptr, 0, nullptr)));
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -2376,7 +2430,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
 
     auto* events = reinterpret_cast<struct kevent*>(buffer);
     int numEvents;
-    while (CheckInterrupted(numEvents = kevent(port, nullptr, 0, events, *count, nullptr)));
+    while (CheckInterrupted(numEvents = kevent(port, nullptr, 0, events, GetKeventNchanges(*count), nullptr)));
     if (numEvents == -1)
     {
         *count = -1;
@@ -2394,7 +2448,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     {
         // This copy is made deliberately to avoid overwriting data.
         struct kevent evt = events[i];
-        buffer[i] = {.Data = reinterpret_cast<uintptr_t>(evt.udata), .Events = GetSocketEvents(evt.filter, evt.flags)};
+        buffer[i] = {.Data = GetSocketEventData(evt.udata), .Events = GetSocketEvents(GetKeventFilter(evt.filter), GetKeventFlags(evt.flags))};
     }
 
     *count = numEvents;
