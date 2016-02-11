@@ -1475,7 +1475,7 @@ public:
 
         // Create the continue semaphore first so we don't race with PAL_NotifyRuntimeStarted. This open will fail if another 
         // debugger is trying to attach to this process because the name will already exist.
-        m_continueSem = sem_open(continueSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO, 0);
+        m_continueSem = sem_open(continueSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU, 0);
         if (m_continueSem == SEM_FAILED)
         {
             TRACE("sem_open(continue) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1485,7 +1485,7 @@ public:
 
         // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for a debugger 
         // connection.
-        m_startupSem = sem_open(startupSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO, 0);
+        m_startupSem = sem_open(startupSemName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU, 0);
         if (m_startupSem == SEM_FAILED)
         {
             TRACE("sem_open(startup) failed: errno is %d (%s)\n", errno, strerror(errno));
