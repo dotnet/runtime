@@ -4,13 +4,14 @@
 #define EXPORT_API extern "C" __attribute__((visibility("default")))
 #endif 
 
+#include <cstddef>
 
 EXPORT_API unsigned __int32 Ret_Int(unsigned __int32 argVal){
 	unsigned __int32 retVal = (unsigned __int32)argVal;
 	return retVal;
 }
 EXPORT_API unsigned __int32 Ret_Ptr(void *argVal){
-	unsigned __int32 retVal = (unsigned __int32)argVal;
+	unsigned __int32 retVal = (unsigned __int32)(size_t)argVal;
 	return retVal;
 }
 
