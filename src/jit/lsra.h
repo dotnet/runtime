@@ -720,13 +720,14 @@ private:
     regNumber allocateBusyReg(Interval *current, RefPosition *refPosition);
     regNumber assignCopyReg(RefPosition * refPosition);
 
-    void assignPhysReg( RegRecord * physRegInterval, Interval * interval);
+    void checkAndAssignInterval(RegRecord * regRec, Interval * interval);
+    void assignPhysReg(RegRecord * regRec, Interval * interval);
     void assignPhysReg( regNumber reg, Interval * interval) { assignPhysReg(getRegisterRecord(reg), interval); }
 
-    void unassignPhysReg( RegRecord* reg, RefPosition* spillRefPosition);
+    void checkAndClearInterval(RegRecord * regRec, RefPosition* spillRefPosition);
+    void unassignPhysReg(RegRecord * regRec, RefPosition* spillRefPosition);
     void unassignPhysRegNoSpill( RegRecord* reg);
     void unassignPhysReg( regNumber reg) { unassignPhysReg(getRegisterRecord(reg), nullptr); }
-
 
     void spillInterval(Interval* interval, RefPosition* fromRefPosition, RefPosition* toRefPosition);
 

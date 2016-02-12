@@ -4096,6 +4096,9 @@ public :
         }
     }
 
+    // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
+    var_types   getJitGCType(BYTE gcType);
+
     // Get the "primitive" type, if any, that is used to pass or return
     // values of the given struct type.
     var_types    argOrReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, bool forReturn);
@@ -8134,6 +8137,12 @@ public :
 #endif
         return false;
     }
+
+#if FEATURE_MULTIREG_ARGS
+    // Given a GenTree node of TYP_STRUCT that represents a pass by value argument
+    // return the gcPtr layout for the pointers sized fields 
+    void getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut);
+#endif // FEATURE_MULTIREG_ARGS
 
     // Returns true if the method being compiled returns a value
     bool                compMethodHasRetVal()
