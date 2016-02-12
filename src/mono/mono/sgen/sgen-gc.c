@@ -1974,6 +1974,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	time_major_fragment_creation += TV_ELAPSED (atv, btv);
 
 	binary_protocol_sweep_begin (GENERATION_OLD, !major_collector.sweeps_lazily);
+	sgen_memgov_major_pre_sweep ();
 
 	TV_GETTIME (atv);
 	time_major_free_bigobjs += TV_ELAPSED (btv, atv);

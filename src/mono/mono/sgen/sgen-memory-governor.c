@@ -56,6 +56,9 @@ static gboolean debug_print_allowance = FALSE;
 /* use this to tune when to do a major/minor collection */
 static mword major_collection_trigger_size;
 
+static mword major_pre_sweep_heap_size;
+static mword major_start_heap_size;
+
 static mword last_major_num_sections = 0;
 static mword last_los_memory_usage = 0;
 
@@ -73,6 +76,7 @@ static void
 sgen_memgov_calculate_minor_collection_allowance (void)
 {
 	size_t new_major, new_heap_size, allowance_target, allowance;
+	size_t decrease;
 
 	if (!need_calculate_minor_collection_allowance)
 		return;
@@ -89,6 +93,16 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	allowance_target = new_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO;
 
 	allowance = MAX (allowance_target, MIN_MINOR_COLLECTION_ALLOWANCE);
+
+	/*
+	 * For the concurrent collector, we decrease the allowance relative to the memory
+	 * growth during the M&S phase, survival rate of the collection and the allowance
+	 * ratio.
+	 */
+	decrease = (major_pre_sweep_heap_size - major_start_heap_size) * ((float)new_heap_size / major_pre_sweep_heap_size) * (SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO + 1);
+	if (decrease > allowance)
+		decrease = allowance;
+	allowance -= decrease;
 
 	if (new_heap_size + allowance > soft_heap_limit) {
 		if (new_heap_size > soft_heap_limit)
@@ -129,13 +143,14 @@ sgen_need_major_collection (mword space_needed)
 		if (heap_size <= major_collection_trigger_size)
 			return FALSE; 
 
-		/* We allow the heap to grow an additional third of the allowance during a concurrent collection */
-		if ((heap_size - major_collection_trigger_size) >
-				(major_collection_trigger_size
-				* (SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO / (SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO + 1))
-				* SGEN_DEFAULT_CONCURRENT_HEAP_ALLOWANCE_RATIO)) {
+		/*
+		 * The more the heap grows, the more we need to decrease the allowance above,
+		 * in order to have similar trigger sizes as the synchronous collector.
+		 * If the heap grows so much that we would need to have a negative allowance,
+		 * we force the finishing of the collection, to avoid increased memory usage.
+		 */
+		if ((heap_size - major_start_heap_size) > major_start_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO)
 			return TRUE;
-		}
 		return FALSE;
 	}
 
@@ -164,12 +179,24 @@ sgen_memgov_minor_collection_end (void)
 }
 
 void
+sgen_memgov_major_pre_sweep (void)
+{
+	if (sgen_concurrent_collection_in_progress ()) {
+		major_pre_sweep_heap_size = get_heap_size ();
+	} else {
+		/* We decrease the allowance only in the concurrent case */
+		major_pre_sweep_heap_size = major_start_heap_size;
+	}
+}
+
+void
 sgen_memgov_major_collection_start (void)
 {
 	need_calculate_minor_collection_allowance = TRUE;
+	major_start_heap_size = get_heap_size ();
 
 	if (debug_print_allowance) {
-		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)get_heap_size ());
+		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)major_start_heap_size);
 	}
 }
 
