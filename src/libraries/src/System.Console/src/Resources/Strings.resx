@@ -228,4 +228,10 @@
   <data name="ArgumentOutOfRange_ConsoleBufferLessThanWindowSize" xml:space="preserve">
     <value>The console buffer size must not be less than the current size and position of the console window, nor greater than or equal to short.MaxValue.</value>
   </data>
+  <data name="ArgumentOutOfRange_CursorSize" xml:space="preserve">
+    <value>The cursor size is invalid. It must be a percentage between 1 and 100.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
+    <value>The frequency must be between {0} and {1}.</value>
+  </data>
 </root>

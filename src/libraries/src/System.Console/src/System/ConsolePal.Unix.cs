@@ -131,6 +131,12 @@ namespace System
             }
         }
 
+        public static int CursorSize
+        {
+            get { return 100; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public static string Title
         {
             get { throw new PlatformNotSupportedException(); }
@@ -154,6 +160,11 @@ namespace System
             {
                 WriteStdoutAnsiString(TerminalFormatStrings.Instance.Bell);
             }
+        }
+
+        public static void Beep(int frequency, int duration)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public static void Clear()
@@ -240,6 +251,16 @@ namespace System
                     TerminalFormatStrings.Instance.Lines;
             }
             set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static void SetWindowPosition(int left, int top)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void SetWindowSize(int width, int height)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public static bool CursorVisible
@@ -340,6 +361,16 @@ namespace System
                 // Find the ending 'R'
                 ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R');
             }
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>

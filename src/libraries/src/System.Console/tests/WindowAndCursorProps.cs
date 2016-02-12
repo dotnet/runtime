@@ -119,7 +119,7 @@ public class WindowAndCursorProps
 
             // Try to set the title to some other value.
             Console.Title = newTitle;
-            
+
             Assert.Equal(newTitle, Console.Title);
 
             //// Try setting a Title greater than 256 chars.
@@ -143,6 +143,26 @@ public class WindowAndCursorProps
     {
         // Nothing to verify; just run the code.
         Console.Beep();
+    }
+
+    [Fact]
+    [OuterLoop] // makes noise, not very inner-loop friendly
+    public static void BeepWithFrequency()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => Console.Beep(36, 200));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Console.Beep(32768, 200));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Console.Beep(800, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Console.Beep(800, -1));
+
+            // Nothing to verify; just run the code.
+            Console.Beep(800, 200);
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.Beep(800, 200));
+        }
     }
 
     [Fact]
@@ -194,6 +214,162 @@ public class WindowAndCursorProps
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
+        }
+    }
+
+    [Fact]
+    public static void CursorSize()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => { Console.CursorSize = 0; });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { Console.CursorSize = 101; });
+
+                int orig = Console.CursorSize;
+                try
+                {
+                    Console.CursorSize = 50;
+                    Assert.Equal(50, Console.CursorSize);
+                }
+                finally
+                {
+                    Console.CursorSize = orig;
+                }
+            }
+        }
+        else
+        {
+            Assert.Equal(100, Console.CursorSize);
+            Assert.Throws<PlatformNotSupportedException>(() => { Console.CursorSize = 50; });
+        }
+    }
+
+    [Fact]
+    public static void SetWindowPosition()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowPosition(-1, Console.WindowTop));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowPosition(Console.WindowLeft, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowPosition(Console.BufferWidth - Console.WindowWidth + 2, Console.WindowTop));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowPosition(Console.WindowHeight, Console.BufferHeight - Console.WindowHeight + 2));
+
+                int origTop = Console.WindowTop;
+                int origLeft = Console.WindowLeft;
+                try
+                {
+                    Console.SetWindowPosition(0, 0);
+                    Assert.Equal(0, Console.WindowTop);
+                    Assert.Equal(0, Console.WindowLeft);
+                }
+                finally
+                {
+                    Console.WindowTop = origTop;
+                    Console.WindowLeft = origLeft;
+                }
+            }
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowPosition(50, 50));
+        }
+    }
+
+    [Fact]
+    public static void SetWindowSize()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(-1, Console.WindowHeight));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.WindowWidth, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(short.MaxValue - Console.WindowLeft, Console.WindowHeight));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.WindowWidth, short.MaxValue - Console.WindowTop));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.LargestWindowWidth + 1, Console.WindowHeight));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.WindowWidth, Console.LargestWindowHeight + 1));
+
+                int origWidth = Console.WindowWidth;
+                int origHeight = Console.WindowHeight;
+                try
+                {
+                    Console.SetWindowSize(10, 10);
+                    Assert.Equal(10, Console.WindowWidth);
+                    Assert.Equal(10, Console.WindowHeight);
+                }
+                finally
+                {
+                    Console.WindowWidth = origWidth;
+                    Console.WindowHeight = origHeight;
+                }
+            }
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowSize(50, 50));
+        }
+    }
+
+    [Fact]
+    public static void MoveBufferArea_DefaultChar()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(-1, 0, 0, 0, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, -1, 0, 0, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, -1, 0, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, -1, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, -1, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(Console.BufferWidth + 1, 0, 0, 0, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, Console.BufferWidth + 1, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, Console.BufferHeight + 1, 0, 0, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, Console.BufferHeight + 1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 1, 0, Console.BufferHeight, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(1, 0, Console.BufferWidth, 0, 0, 0));
+                // Nothing to verify; just run the code.
+                Console.MoveBufferArea(0, 0, 1, 1, 2, 2);
+            }
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, 0));
+        }
+    }
+
+    [Fact]
+    public static void MoveBufferArea()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(-1, 0, 0, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, -1, 0, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, -1, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, -1, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, -1, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, -1, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(Console.BufferWidth + 1, 0, 0, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, Console.BufferWidth + 1, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, Console.BufferHeight + 1, 0, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, Console.BufferHeight + 1, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(0, 1, 0, Console.BufferHeight, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+                Assert.Throws<ArgumentOutOfRangeException>(() => Console.MoveBufferArea(1, 0, Console.BufferWidth, 0, 0, 0, '0', ConsoleColor.Black, ConsoleColor.White));
+
+                // Nothing to verify; just run the code.
+                Console.MoveBufferArea(0, 0, 1, 1, 2, 2, 'a', ConsoleColor.Black, ConsoleColor.White);
+            }
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.MoveBufferArea(0, 0, 0, 0, 0, 0));
         }
     }
 }

@@ -12,11 +12,13 @@ namespace System
     {
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
         public static void Beep() { }
+        public static void Beep(int frequency, int duration) { }
         public static int BufferHeight { get { return default(int); } set { } }
         public static int BufferWidth { get { return default(int); } set { } }
         public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
         public static void Clear() { }
         public static int CursorLeft { get { return default(int); } set { } }
+        public static int CursorSize { get { return default(int); } set { } }
         public static int CursorTop { get { return default(int); } set { } }
         public static bool CursorVisible { get { return default(bool); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
@@ -28,6 +30,8 @@ namespace System
         public static bool KeyAvailable { get { return default(bool); }}
         public static int LargestWindowWidth { get { return default(int); } }
         public static int LargestWindowHeight { get { return default(int); }}
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop) { }
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor) { }
         public static System.IO.Stream OpenStandardError() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardInput() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardOutput() { return default(System.IO.Stream); }
@@ -42,6 +46,8 @@ namespace System
         public static void SetError(System.IO.TextWriter newError) { }
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
+        public static void SetWindowPosition(int left, int top) { }
+        public static void SetWindowSize(int width, int height) { }
         public static string Title { get { return default(string); } set { } }
         public static int WindowHeight { get { return default(int); } set { } }
         public static int WindowWidth { get { return default(int); } set { } }
