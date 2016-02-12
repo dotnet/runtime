@@ -2537,7 +2537,7 @@ DestroyProcessModules(IN ProcessModules *listHead)
 
 /*++
 Function:
-  PROCShutdownProcess
+  PROCNotifyProcessShutdown
   
   Calls the abort handler to do any shutdown cleanup. Call be called 
   from the unhandled native exception handler.
@@ -2545,9 +2545,9 @@ Function:
 (no return value)
 --*/
 __attribute__((destructor)) 
-void PROCShutdownProcess()
+void PROCNotifyProcessShutdown()
 {
-    TRACE("PROCShutdownProcess %p\n", g_shutdownCallback.RawValue());
+    TRACE("PROCNotifyProcessShutdown %p\n", g_shutdownCallback.RawValue());
 
     PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, NULL);
     if (callback != NULL)
@@ -2569,7 +2569,7 @@ PAL_NORETURN
 void
 PROCAbort()
 {
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
     abort();
 }
 
@@ -3214,7 +3214,7 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     locked = PALInitLock();
     if(locked && PALIsInitialized())
     {
-        PROCShutdownProcess();
+        PROCNotifyProcessShutdown();
         PALCommonCleanup();
     }
 }
