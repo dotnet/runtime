@@ -4,7 +4,7 @@ PYTHON=${PYTHON:-python}
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs]"
     echo "BuildArch can be: x64, x86, arm, arm64"
     echo "BuildType can be: Debug, Checked, Release"
     echo "clean - optional argument to force a clean build."
@@ -19,6 +19,7 @@ usage()
     echo "skipnative - do not build native components."
     echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
+    echo "cmakeargs - user-settable additional arguments passed to CMake."
 
     exit 1
 }
@@ -142,8 +143,8 @@ build_coreclr()
 
     if [ $__SkipConfigure == 0 ]; then
         # Regenerate the CMake solution
-        echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator"
-        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator
+        echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__cmakeargs"
+        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__cmakeargs"
     fi
 
     if [ $__SkipCoreCLR == 1 ]; then
@@ -381,10 +382,14 @@ __ClangMinorVersion=5
 __MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __DistroName=""
+__cmakeargs=""
 
-for i in "$@"
-do
-    lowerI="$(echo $i | awk '{print tolower($0)}')"
+while :; do
+    if [ $# -le 0 ]; then
+        break
+    fi
+
+    lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
         -\?|-h|--help)
             usage
@@ -486,10 +491,22 @@ do
             __IncludeTests=
             ;;
 
+        cmakeargs)
+            if [ -n "$2" ]; then
+                __cmakeargs="$2"
+                shift
+            else
+                echo "ERROR: 'cmakeargs' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
         *)
-            __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+            __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
     esac
+
+    shift
 done
 
 if [[ $__ConfigureOnly == 1 && $__SkipConfigure == 1 ]]; then
