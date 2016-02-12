@@ -7340,15 +7340,8 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
         if (size == REGSIZE_BYTES)
         {
             BYTE gcPtr;
-
             info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-
-            if       (gcPtr == TYPE_GC_NONE)
-                type = TYP_I_IMPL;
-            else if  (gcPtr == TYPE_GC_REF)
-                type = TYP_REF;
-            else if  (gcPtr == TYPE_GC_BYREF)
-                type = TYP_BYREF;
+            type = getJitGCType(gcPtr);
         }
     }
 
