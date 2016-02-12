@@ -353,21 +353,15 @@ branchList.each { branchName ->
                 // Set PR trigger.
                 // Set of OS's that work currently. 
                 if (os in ['OSX', 'Ubuntu', 'OpenSUSE13.2', 'CentOS7.1']) {
-                    // Temporary: Disk is corrupted around CentOS7.1 release directory, removing from automatic runs for now
-                    if (os != 'CentOS7.1' || configurationGroup != 'Release') {
-                        Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
-                    }
+                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
                 }
                 else {
                     Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test", "(?i).*test\\W+${os}.*")
                 }
             }
             else {
-                // Temporary: Disk is corrupted around freebsd_debug_bld directory, removing from automatic runs for now
-                if (os != 'FreeBSD' || configurationGroup != 'Debug') {
-                    // Set a push trigger
-                    Utilities.addGithubPushTrigger(newFlowJob)
-                }
+                // Set a push trigger
+                Utilities.addGithubPushTrigger(newFlowJob)
             }
         }
     }
