@@ -11,12 +11,10 @@
     <ProjectGuid>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">netcore50</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'net46'" />
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == ''">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' == ''">unix</PackageTargetRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true' AND '$(TargetGroup)' == ''">
@@ -36,8 +34,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
@@ -45,7 +41,7 @@
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup>
     <Compile Include="System\Net\AuthenticationSchemes.cs" />
     <Compile Include="System\Net\Cookie.cs" />
     <Compile Include="System\Net\CookieContainer.cs" />
@@ -131,7 +127,7 @@
     </Compile>
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net46' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\IPAddressPal.Windows.cs" />
     <Compile Include="System\Net\SocketException.Windows.cs" />
 
@@ -169,7 +165,7 @@
   </ItemGroup>
   
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' AND '$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs" >
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
@@ -192,13 +188,13 @@
   </ItemGroup>
   
   <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true' AND '$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.NetNative.cs" >
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.NetNative.cs</Link>
     </Compile>
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetGroup)' != 'net46' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\IPAddressPal.Unix.cs" />
     <Compile Include="System\Net\SocketException.Unix.cs" />
 
@@ -235,7 +231,7 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup>
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

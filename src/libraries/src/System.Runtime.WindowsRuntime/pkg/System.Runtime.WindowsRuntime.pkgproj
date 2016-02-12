@@ -2,19 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <!-- The library actually works on desktop where WinRT is supported and it appears in Desktop.settings.targets
-       and has some ToF test coverage on desktop from that. However, we don't officially support it so it is
-       by design that we do not have desktop support in the nuget package at this time. -->
-  <PropertyGroup>
-    <SkipSupportCheck>true</SkipSupportCheck>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.Runtime.WindowsRuntime.depproj" >
-      <SupportedFramework>net45;netcore45;wp8</SupportedFramework>
+      <SupportedFramework>netcore45;wp8</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Runtime.WindowsRuntime.csproj">
-      <SupportedFramework>net451;netcore451;dnxcore50;wpa81</SupportedFramework>
+      <SupportedFramework>netcore451;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.builds" />
 

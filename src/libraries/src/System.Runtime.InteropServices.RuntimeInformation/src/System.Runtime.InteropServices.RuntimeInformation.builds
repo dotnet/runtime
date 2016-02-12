@@ -17,19 +17,15 @@
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>net45</TargetGroup>
-      <PackageTargetFramework>net45</PackageTargetFramework>
-      <AdditionalProperties>PackageTargetPath=runtimes/win7/lib/net45</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
-      <PackageTargetFramework>netcore50</PackageTargetFramework>
       <AdditionalProperties>PackageTargetPath=runtimes/win7/lib/netcore50</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
-      <PackageTargetFramework>netcore50aot</PackageTargetFramework>
       <AdditionalProperties>PackageTargetPath=runtimes/win8-aot/lib/netcore50</AdditionalProperties>
     </Project>
   </ItemGroup>

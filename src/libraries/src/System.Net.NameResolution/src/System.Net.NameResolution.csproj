@@ -13,9 +13,8 @@
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup>' != 'net46'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup>' != 'net46'">unix</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'net46'" />
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net46'">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' != 'net46'">unix</PackageTargetRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
