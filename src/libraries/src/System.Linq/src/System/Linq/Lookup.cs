@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -12,21 +13,24 @@ namespace System.Linq
     {
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            return Lookup<TKey, TSource>.Create(source, keySelector, IdentityFunction<TSource>.Instance, null);
+            return ToLookup(source, keySelector, IdentityFunction<TSource>.Instance, null);
         }
 
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
         {
-            return Lookup<TKey, TSource>.Create(source, keySelector, IdentityFunction<TSource>.Instance, comparer);
+            return ToLookup(source, keySelector, IdentityFunction<TSource>.Instance, comparer);
         }
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector)
         {
-            return Lookup<TKey, TElement>.Create(source, keySelector, elementSelector, null);
+            return ToLookup(source, keySelector, elementSelector, null);
         }
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
         {
+            if (source == null) throw Error.ArgumentNull("source");
+            if (keySelector == null) throw Error.ArgumentNull("keySelector");
+            if (elementSelector == null) throw Error.ArgumentNull("elementSelector");
             return Lookup<TKey, TElement>.Create(source, keySelector, elementSelector, comparer);
         }
     }
@@ -47,9 +51,9 @@ namespace System.Linq
 
         internal static Lookup<TKey, TElement> Create<TSource>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
-            if (elementSelector == null) throw Error.ArgumentNull("elementSelector");
+            Debug.Assert(source != null);
+            Debug.Assert(keySelector != null);
+            Debug.Assert(elementSelector != null);
             Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
             foreach (TSource item in source)
             {
