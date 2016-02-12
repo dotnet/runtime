@@ -7837,6 +7837,9 @@
     <Type Status="ImplRoot" Name="System.Threading.QueueUserWorkItemCallback">
       <Member Status="ImplRoot" Name="#ctor(System.Threading.WaitCallback,System.Object,System.Threading.ExecutionContext)"/>
     </Type>
+    <Type Status="ImplRoot" Name="System.Threading.QueueUserWorkItemCallbackDefaultContext">
+      <Member Status="ImplRoot" Name="#ctor(System.Threading.WaitCallback,System.Object)"/>
+    </Type>
     <Type Name="System.Threading.SynchronizationContext">
       <Member Name="#ctor"/>
       <Member Name="Send(System.Threading.SendOrPostCallback,System.Object)"/>
