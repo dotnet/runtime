@@ -3282,6 +3282,9 @@ static CrstStatic g_clrNotificationCrst;
 
 void DACRaiseException(TADDR *args, UINT argCount)
 {
+    // The compiler doesn't like try/catch and constract macros together
+    WRAPPER_NO_CONTRACT;
+
     struct Param
     {
         TADDR *args;
@@ -3302,6 +3305,15 @@ void DACRaiseException(TADDR *args, UINT argCount)
 
 void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     _ASSERTE(argCount <= MAX_CLR_NOTIFICATION_ARGS);
 
     if (IsDebuggerPresent() && !CORDebuggerAttached())
@@ -3321,7 +3333,7 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
 void InitializeClrNotifications()
 {
-    g_clrNotificationCrst.Init(CrstClrNotification);
+    g_clrNotificationCrst.Init(CrstClrNotification, CRST_UNSAFE_ANYMODE);
     g_clrNotificationArguments[0] = NULL;
 }
 
@@ -3348,20 +3360,45 @@ void InitializeClrNotifications()
 // called from the runtime
 void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     TADDR Args[2] = { JIT_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }
 
 void DACNotify::DoJITDiscardNotification(MethodDesc *MethodDescPtr)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     TADDR Args[2] = { JIT_DISCARD_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }    
    
 void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_MODULE_LOAD) != 0)
     {
         TADDR Args[2] = { MODULE_LOAD_NOTIFICATION, (TADDR) ModulePtr};
@@ -3371,7 +3408,15 @@ void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
 
 void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_MODULE_UNLOAD) != 0)
     {
         TADDR Args[2] = { MODULE_UNLOAD_NOTIFICATION, (TADDR) ModulePtr};
@@ -3381,6 +3426,15 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
 
 void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION) != 0)
     {
         TADDR Args[2] = { EXCEPTION_NOTIFICATION, (TADDR) ThreadPtr};
@@ -3390,7 +3444,15 @@ void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
 
 void DACNotify::DoGCNotification(const GcEvtArgs& args)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     if (args.typ == GC_MARK_END)
     {
         TADDR Args[3] = { GC_NOTIFICATION, (TADDR) args.typ, args.condemnedGeneration };
@@ -3400,7 +3462,15 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
 
 void DACNotify::DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_INTOLERANT;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if ((g_dacNotificationFlags & CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER) != 0)
     {
         TADDR Args[3] = { CATCH_ENTER_NOTIFICATION, (TADDR) MethodDescPtr, (TADDR)nativeOffset };
