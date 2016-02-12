@@ -640,6 +640,10 @@ public:
             return gtVNPair.SetConservative(vn);
         }
     }
+    void                SetVNs(ValueNumPair vnp)
+    {
+        gtVNPair = vnp;
+    }
     void                ClearVN()
     {
         gtVNPair = ValueNumPair();          // Initializes both elements to "NoVN".

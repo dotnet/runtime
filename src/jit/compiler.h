@@ -5520,6 +5520,7 @@ protected:
     bool                optNarrowTree   (GenTreePtr     tree,
                                          var_types      srct,
                                          var_types      dstt,
+                                         ValueNumPair   vnpNarrow,
                                          bool           doit);
 
     /**************************************************************************
