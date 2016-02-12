@@ -56,7 +56,7 @@ using namespace CorUnix;
 
 #ifdef _DEBUG
 
-#define NONPAL_TRACE_ENABLED EnvironGetenv("NONPAL_TRACING", /* copyValue */ false);
+#define NONPAL_TRACE_ENABLED EnvironGetenv("NONPAL_TRACING", /* copyValue */ false)
 
 #define NONPAL_ASSERT(_msg, ...) NONPAL_RETAIL_ASSERT(_msg, __VA_ARGS__)
 

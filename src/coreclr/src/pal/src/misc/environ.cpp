@@ -89,7 +89,6 @@ GetEnvironmentVariableA(
         lpName ? lpName : "NULL",
         lpName ? lpName : "NULL", lpBuffer, nSize);
 
-    bool enteredCritSec = false;
     CPalThread * pthrCurrent = InternalGetCurrentThread();
 
     if (lpName == nullptr)
@@ -118,36 +117,35 @@ GetEnvironmentVariableA(
         // intermediate copy. We will just copy the string to the output 
         // buffer anyway, so just stay in the critical section until then.
         InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-        enteredCritSec = true;
 
         value = EnvironGetenv(lpName, /* copyValue */ FALSE);
+
+        if (value != nullptr)
+        {
+            DWORD valueLength = strlen(value);
+            if (valueLength < nSize)
+            {
+                strcpy_s(lpBuffer, nSize, value);
+                dwRet = valueLength;
+            }
+            else 
+            {
+                dwRet = valueLength + 1;
+            }
+
+            SetLastError(ERROR_SUCCESS);
+        }
+
+        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
     }
 
     if (value == nullptr)
     {
         TRACE("%s is not found\n", lpName);
         SetLastError(ERROR_ENVVAR_NOT_FOUND);
-        goto done;
     }
-
-    if (strlen(value) < nSize)
-    {
-        strcpy_s(lpBuffer, nSize, value);
-        dwRet = strlen(value);
-    }
-    else 
-    {
-        dwRet = strlen(value)+1;
-    }
-
-    SetLastError(ERROR_SUCCESS);
 
 done:
-
-    if (enteredCritSec)
-    {
-        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-    }
 
     LOGEXIT("GetEnvironmentVariableA returns DWORD 0x%x\n", dwRet);
     PERF_EXIT(GetEnvironmentVariableA);
@@ -694,24 +692,26 @@ BOOL ResizeEnvironment(int newSize)
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
-    if (newSize < palEnvironmentCount)
+    BOOL ret = FALSE;
+    if (newSize >= palEnvironmentCount)
     {
-        ASSERT("ResizeEnvironment: New size < current count!\n");
-        return FALSE;
+        // If palEnvironment is null, realloc acts like malloc.
+        char **newEnvironment = (char**)realloc(palEnvironment, newSize * sizeof(char *));
+        if (newEnvironment != nullptr)
+        {
+            // realloc succeeded, so set palEnvironment to what it returned.
+            palEnvironment = newEnvironment;
+            palEnvironmentCapacity = newSize;
+            ret = TRUE;
+        }
     }
-
-    palEnvironmentCapacity = newSize;
-
-    // If palEnvironment is null, realloc acts like malloc.
-    palEnvironment = (char**)realloc(palEnvironment, palEnvironmentCapacity * sizeof(char *));
-    if (!palEnvironment)
+    else
     {
-        return FALSE;
+        ASSERT("ResizeEnvironment: newSize < current palEnvironmentCount!\n");
     }
 
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    return TRUE;
+    return ret;
 }
 
 /*++
@@ -785,8 +785,9 @@ Return Values
 --*/
 BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 {
-    bool fOwningCS = false;
     BOOL result = FALSE;
+
+    bool fOwningCS = false;
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
 
@@ -794,8 +795,16 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     if (equalsSignPosition == entry || equalsSignPosition == nullptr)
     {
         // "=foo" and "foo" have no meaning
-        goto done;
+        return FALSE;
     }
+
+    char* copy = strdup(entry);
+    if (copy == nullptr)
+    {
+        return FALSE;
+    }
+
+    int nameLength = equalsSignPosition - entry;
 
     if (equalsSignPosition[1] == '\0' && deleteIfEmpty)
     {
@@ -804,17 +813,9 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
         // with the empty string as the value, but in that case we want to
         // set the variable's value to "". deleteIfEmpty will be FALSE in
         // that case.
-        int length = strlen(entry);
-        char* copy = (char *) InternalMalloc(length);
-        if (copy == nullptr)
-        {
-            goto done;
-        }
-
-        memcpy(copy, entry, length - 1);
 
         // Change '=' to '\0'
-        copy[length - 1] = '\0';
+        copy[nameLength] = '\0';
 
         EnvironUnsetenv(copy);
         InternalFree(copy);
@@ -824,15 +825,6 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     else
     {
         // See if we are replacing an item or adding one.
-
-        // Make our copy up front, since we'll use it either way.
-        char* copy = strdup(entry);
-        if (copy == nullptr)
-        {
-            goto done;
-        }
-
-        int nameLength = equalsSignPosition - entry;
 
         InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
         fOwningCS = true;
@@ -864,10 +856,11 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
 
         if (palEnvironment[i] == nullptr)
         {
-            _ASSERTE(i <= palEnvironmentCapacity);
-            if (i == palEnvironmentCapacity)
+            _ASSERTE(i < palEnvironmentCapacity);
+            if (i == (palEnvironmentCapacity - 1))
             {
-                // We need more space in our environment, so let's double the size.
+                // We found the first null, but it's the last element in our environment
+                // block. We need more space in our environment, so let's double its size.
                 int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
                 if (resizeRet != TRUE)
                 {
@@ -928,6 +921,11 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
     int nameLength = strlen(name);
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
     {
+        if (strlen(palEnvironment[i]) < nameLength)
+        {
+            continue;
+        }
+
         if (memcmp(palEnvironment[i], name, nameLength) == 0)
         {
             char *equalsSignPosition = palEnvironment[i] + nameLength;
@@ -996,6 +994,8 @@ Note: This is called before debug channels are initialized, so it
 BOOL
 EnvironInitialize(void)
 {
+    BOOL ret = FALSE;
+
     InternalInitializeCriticalSection(&gcsEnvironment);
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
@@ -1013,17 +1013,26 @@ EnvironInitialize(void)
     // space for all of the 'n' current environment variables, but we don't
     // know how many more there will be, we will initially make room for
     // '2n' variables. If even more are added, we will resize again.
-    ResizeEnvironment(variableCount * 2);
+    // If there are no variables, we will still make room for 1 entry to 
+    // store a nullptr there.
+    int initialSize = (variableCount == 0) ? 1 : variableCount * 2;
 
-    for (int i = 0; i < variableCount; ++i)
+    ret = ResizeEnvironment(initialSize);
+    if (ret == TRUE)
     {
-        palEnvironment[i] = strdup(sourceEnviron[i]);
-        palEnvironmentCount++;
+        _ASSERTE(palEnvironment != nullptr);
+        for (int i = 0; i < variableCount; ++i)
+        {
+            palEnvironment[i] = strdup(sourceEnviron[i]);
+            palEnvironmentCount++;
+        }
+
+        // Set the entry after the last variable to null to indicate the end.
+        palEnvironment[variableCount] = nullptr;
     }
 
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    return TRUE;
+    return ret;
 }
 
 /*++
@@ -1044,15 +1053,15 @@ _putenv( const char * envstring )
     PERF_ENTRY(_putenv);
     ENTRY( "_putenv( %p (%s) )\n", envstring ? envstring : "NULL", envstring ? envstring : "NULL") ;
 
-    if (!envstring)
+    if (envstring != nullptr)
+    {
+        ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
+    }
+    else
     {
         ERROR( "_putenv() called with NULL envstring!\n");
-        goto EXIT;
     }
 
-    ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
-
-EXIT:
     LOGEXIT( "_putenv returning %d\n", ret);
     PERF_EXIT(_putenv);
     return ret;
