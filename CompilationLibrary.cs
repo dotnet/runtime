@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             string basePath;
 
-            var appBase = Path.GetDirectoryName(entryAssembly.Location);
+            var appBase = PlatformServices.Default.Application.ApplicationBasePath;
             var refsDir = Path.Combine(appBase, "refs");
             var hasRefs = Directory.Exists(refsDir);
             var isProject = string.Equals(LibraryType, "project", StringComparison.OrdinalIgnoreCase);
