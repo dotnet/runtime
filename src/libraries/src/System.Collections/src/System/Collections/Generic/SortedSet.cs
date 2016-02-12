@@ -1015,52 +1015,6 @@ namespace System.Collections.Generic
             }
         }
 
-        /// <summary>
-        /// Decides whether these sets are the same, given the comparer. If the EC's are the same, we can
-        /// just use SetEquals, but if they aren't then we have to manually check with the given comparer
-        /// </summary>        
-        internal static bool SortedSetEquals(SortedSet<T> set1, SortedSet<T> set2, IComparer<T> comparer)
-        {
-            // handle null cases first
-            if (set1 == null)
-            {
-                return (set2 == null);
-            }
-            else if (set2 == null)
-            {
-                // set1 != null
-                return false;
-            }
-
-            if (AreComparersEqual(set1, set2))
-            {
-                if (set1.Count != set2.Count)
-                    return false;
-
-                return set1.SetEquals(set2);
-            }
-            else
-            {
-                bool found = false;
-                foreach (T item1 in set1)
-                {
-                    found = false;
-                    foreach (T item2 in set2)
-                    {
-                        if (comparer.Compare(item1, item2) == 0)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                        return false;
-                }
-                return true;
-            }
-        }
-
-
         //This is a little frustrating because we can't support more sorted structures
         private static bool AreComparersEqual(SortedSet<T> set1, SortedSet<T> set2)
         {
@@ -1074,24 +1028,6 @@ namespace System.Collections.Generic
             node.Left.IsRed = false;
             node.Right.IsRed = false;
         }
-
-        /// <summary>
-        /// Copies this to an array. Used for DebugView
-        /// </summary>
-        /// <returns></returns>
-        internal T[] ToArray()
-        {
-            int count = Count;
-            if (count == 0)
-            {
-                return Array.Empty<T>();
-            }
-
-            T[] newArray = new T[count];
-            CopyTo(newArray);
-            return newArray;
-        }
-
 
         #endregion
 
@@ -2397,8 +2333,6 @@ namespace System.Collections.Generic
             }
         }
 
-
-
         internal struct ElementCount
         {
             internal int uniqueCount;
@@ -2421,76 +2355,5 @@ namespace System.Collections.Generic
         }
         #endregion
 
-
-    }
-
-    /// <summary>
-    /// A class that generates an IEqualityComparer for this SortedSet. Requires that the definition of
-    /// equality defined by the IComparer for this SortedSet be consistent with the default IEqualityComparer
-    /// for the type T. If not, such an IEqualityComparer should be provided through the constructor.
-    /// </summary>    
-    internal sealed class SortedSetEqualityComparer<T> : IEqualityComparer<SortedSet<T>>
-    {
-        private IComparer<T> _comparer;
-        private IEqualityComparer<T> _eqComparer;
-
-        public SortedSetEqualityComparer() : this(null, null) { }
-
-        public SortedSetEqualityComparer(IComparer<T> comparer) : this(comparer, null) { }
-
-        public SortedSetEqualityComparer(IEqualityComparer<T> memberEqualityComparer) : this(null, memberEqualityComparer) { }
-
-        /// <summary>
-        /// Create a new SetEqualityComparer, given a comparer for member order and another for member equality (these
-        /// must be consistent in their definition of equality)
-        /// </summary>        
-        public SortedSetEqualityComparer(IComparer<T> comparer, IEqualityComparer<T> memberEqualityComparer)
-        {
-            if (comparer == null)
-                _comparer = Comparer<T>.Default;
-            else
-                _comparer = comparer;
-            if (memberEqualityComparer == null)
-                _eqComparer = EqualityComparer<T>.Default;
-            else
-                _eqComparer = memberEqualityComparer;
-        }
-
-
-        // using comparer to keep equals properties in tact; don't want to choose one of the comparers
-        public bool Equals(SortedSet<T> x, SortedSet<T> y)
-        {
-            return SortedSet<T>.SortedSetEquals(x, y, _comparer);
-        }
-        //IMPORTANT: this part uses the fact that GetHashCode() is consistent with the notion of equality in
-        //the set
-        public int GetHashCode(SortedSet<T> obj)
-        {
-            int hashCode = 0;
-            if (obj != null)
-            {
-                foreach (T t in obj)
-                {
-                    hashCode = hashCode ^ (_eqComparer.GetHashCode(t) & 0x7FFFFFFF);
-                }
-            } // else returns hashcode of 0 for null HashSets
-            return hashCode;
-        }
-
-        // Equals method for the comparer itself. 
-        public override bool Equals(Object obj)
-        {
-            SortedSetEqualityComparer<T> comparer = obj as SortedSetEqualityComparer<T>;
-            if (comparer == null)
-            {
-                return false;
-            }
-            return (_comparer == comparer._comparer);
-        }
-
-        public override int GetHashCode()
-        {
-            return _comparer.GetHashCode() ^ _eqComparer.GetHashCode();
-        }
     }
 }

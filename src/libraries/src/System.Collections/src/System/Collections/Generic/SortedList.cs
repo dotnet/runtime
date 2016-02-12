@@ -249,30 +249,18 @@ namespace System.Collections.Generic
         void System.Collections.IDictionary.Add(Object key, Object value)
         {
             if (key == null)
-            {
                 throw new ArgumentNullException("key");
-            }
 
-            if (value == null && !(default(TValue) == null))
+            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
                 throw new ArgumentNullException("value");
 
-            try
-            {
-                TKey tempKey = (TKey)key;
-
-                try
-                {
-                    Add(tempKey, (TValue)value);
-                }
-                catch (InvalidCastException)
-                {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
-                }
-            }
-            catch (InvalidCastException)
-            {
+            if (!(key is TKey))
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), "key");
-            }
+
+            if (!(value is TValue) && value != null)            // null is a valid value for Reference Types
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
+
+            Add((TKey)key, (TValue)value);
         }
 
         // Returns the number of entries in this sorted list.
@@ -629,27 +617,20 @@ namespace System.Collections.Generic
             {
                 if (!IsCompatibleKey(key))
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentException("key");
                 }
 
                 if (value == null && !(default(TValue) == null))
                     throw new ArgumentNullException("value");
 
+                TKey tempKey = (TKey)key;
                 try
                 {
-                    TKey tempKey = (TKey)key;
-                    try
-                    {
-                        this[tempKey] = (TValue)value;
-                    }
-                    catch (InvalidCastException)
-                    {
-                        throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
-                    }
+                    this[tempKey] = (TValue)value;
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), "key");
+                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
                 }
             }
         }
