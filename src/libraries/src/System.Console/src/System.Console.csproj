@@ -136,7 +136,7 @@
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
       <Link>Common\System\IO\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>
