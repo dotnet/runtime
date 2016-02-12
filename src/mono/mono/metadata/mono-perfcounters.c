@@ -498,13 +498,16 @@ mono_determine_physical_ram_available_size (void)
 	return ((guint64) value.t_free * page_size) / 1024;
 #elif defined (__APPLE__)
 	mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
+	mach_port_t host = mach_host_self();
+	vm_size_t page_size;
 	vm_statistics_data_t vmstat;
-	if (KERN_SUCCESS != host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmstat, &count)) {
+	if (KERN_SUCCESS != host_statistics(host, HOST_VM_INFO, (host_info_t)&vmstat, &count)) {
 		g_warning ("Mono was unable to retrieve memory usage!");
 		return 0;
 	}
 
-	return (guint64) vmstat.free_count;
+	host_page_size(host, &page_size);
+	return (guint64) vmstat.free_count * page_size;
 
 #elif defined (HAVE_SYSCONF)
 	guint64 page_size = 0, num_pages = 0;
