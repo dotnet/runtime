@@ -4726,6 +4726,7 @@ Compiler::callInterf    Compiler::optCallInterf(GenTreePtr call)
 bool                Compiler::optNarrowTree(GenTreePtr     tree,
                                             var_types      srct,
                                             var_types      dstt,
+                                            ValueNumPair   vnpNarrow,
                                             bool           doit)
 {
     genTreeOps      oper;
@@ -4754,6 +4755,8 @@ bool                Compiler::optNarrowTree(GenTreePtr     tree,
         noway_assert(doit == false);
         return  false;
     }
+
+    ValueNumPair NoVNPair = ValueNumPair();
 
     if  (kind & GTK_LEAF)
     {
@@ -4868,16 +4871,16 @@ bool                Compiler::optNarrowTree(GenTreePtr     tree,
 
             // Is op2 a small constant than can be narrowed into dstt?
             // if so the result of the GT_AND will also fit into 'dstt' and can be narrowed
-            if ((op2->gtOper == GT_CNS_INT)  &&  optNarrowTree(op2, srct, dstt, false))
+            if ((op2->gtOper == GT_CNS_INT)  &&  optNarrowTree(op2, srct, dstt, NoVNPair, false))
             {               
                 // We will change the type of the tree and narrow op2
                 //
                 if  (doit)
                 {
                     tree->gtType = genActualType(dstt);
-                    tree->ClearVN();
+                    tree->SetVNs(vnpNarrow);
 
-                    optNarrowTree(op2, srct, dstt, true);
+                    optNarrowTree(op2, srct, dstt, NoVNPair, true);
                     // We may also need to cast away the upper bits of op1
                     if (srcSize == 8) 
                     {
@@ -4912,8 +4915,8 @@ COMMON_BINOP:
 
             if (gtIsActiveCSE_Candidate(op1)          ||
                 gtIsActiveCSE_Candidate(op2)          ||
-                !optNarrowTree(op1, srct, dstt, doit) ||
-                !optNarrowTree(op2, srct, dstt, doit)   )
+                !optNarrowTree(op1, srct, dstt, NoVNPair, doit) ||
+                !optNarrowTree(op2, srct, dstt, NoVNPair, doit)   )
             {
                 noway_assert(doit == false);
                 return  false;
@@ -4927,7 +4930,7 @@ COMMON_BINOP:
                     tree->gtFlags &= ~GTF_MUL_64RSLT;
 
                 tree->gtType = genActualType(dstt);
-                tree->ClearVN();
+                tree->SetVNs(vnpNarrow);
             }
 
             return true;
@@ -4940,7 +4943,7 @@ NARROW_IND:
             if  (doit && (dstSize <= genTypeSize(tree->gtType)))
             {
                 tree->gtType = genSignedType(dstt);
-                tree->ClearVN();
+                tree->SetVNs(vnpNarrow);
 
                 /* Make sure we don't mess up the variable type */
                 if  ((oper == GT_LCL_VAR) || (oper == GT_LCL_FLD))
@@ -5003,7 +5006,7 @@ NARROW_IND:
                             // The result type of a GT_CAST is never a small type.
                             // Use genActualType to widen dstt when it is a small types.
                             tree->gtType = genActualType(dstt);
-                            tree->ClearVN();
+                            tree->SetVNs(vnpNarrow);
                         }
                     }
 
@@ -5014,14 +5017,14 @@ NARROW_IND:
 
         case GT_COMMA:
             if (!gtIsActiveCSE_Candidate(op2)  &&
-                optNarrowTree(op2, srct, dstt, doit))
+                optNarrowTree(op2, srct, dstt, vnpNarrow, doit))
             {               
                 /* Simply change the type of the tree */
 
                 if  (doit)
                 {
                     tree->gtType = genActualType(dstt);
-                    tree->ClearVN();
+                    tree->SetVNs(vnpNarrow);
                 }
                 return true;
             }

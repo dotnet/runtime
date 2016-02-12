@@ -710,9 +710,9 @@ OPTIMIZECAST:
                 if  (!tree->gtOverflow()                  &&
                      !gtIsActiveCSE_Candidate(oper)       &&
                      (opts.compFlags & CLFLG_TREETRANS)   &&
-                     optNarrowTree(oper, srcType, dstType, false))
+                     optNarrowTree(oper, srcType, dstType, tree->gtVNPair, false))
                 {
-                    optNarrowTree(oper, srcType, dstType,  true);
+                    optNarrowTree(oper, srcType, dstType,  tree->gtVNPair, true);
                     
                     /* If oper is changed into a cast to TYP_INT, or to a GT_NOP, we may need to discard it */
                     if (oper->gtOper == GT_CAST && oper->CastToType() == genActualType(oper->CastFromType()))
