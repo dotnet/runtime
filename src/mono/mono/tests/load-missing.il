@@ -11,6 +11,10 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern notFoundAssembly
+{
+  .ver 0:0:0:0
+}
 
 .assembly 'load-missing'
 {
@@ -724,4 +728,10 @@
 {
 	.field  public class [t]Missing BrokenField
     .field  public static int32 WorkingField
+}
+
+.class public auto ansi beforefieldinit FieldWithMissingCustomAttribute
+{
+    .field	public object f
+    .custom	instance void class [notFoundAssembly]SomeAttribute::'.ctor'() = (01 00 00 00 ) // ....
 }
