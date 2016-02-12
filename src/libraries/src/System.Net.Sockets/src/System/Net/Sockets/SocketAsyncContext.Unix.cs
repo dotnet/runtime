@@ -590,13 +590,17 @@ namespace System.Net.Sockets
         public void CheckForPriorConnectFailure()
         {
             if (_connectFailed)
+            {
                 throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
+            }
         }
 
         public void RegisterConnectResult(SocketError error)
         {
             if (error != SocketError.Success && error != SocketError.WouldBlock)
+            {
                 _connectFailed = true;
+            }
         }
 
         private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, out bool isStopped)
