@@ -11,6 +11,8 @@
 #ifndef __DBGENG_H__
 #define __DBGENG_H__
 
+#include <cstdarg>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
