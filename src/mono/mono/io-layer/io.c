@@ -1037,8 +1037,11 @@ static void console_close (gpointer handle, gpointer data)
 
 	g_free (console_handle->filename);
 
-	if (fd > 2)
+	if (fd > 2) {
+		if (console_handle->share_info)
+			_wapi_handle_share_release (console_handle->share_info);
 		close (fd);
+	}
 }
 
 static WapiFileType console_getfiletype(void)
@@ -1158,6 +1161,9 @@ static void pipe_close (gpointer handle, gpointer data)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: closing pipe handle %p", __func__, handle);
 
 	/* No filename with pipe handles */
+
+	if (pipe_handle->share_info)
+		_wapi_handle_share_release (pipe_handle->share_info);
 
 	close (fd);
 }
@@ -1630,6 +1636,10 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #endif
 	if (S_ISFIFO (statbuf.st_mode)) {
 		handle_type = WAPI_HANDLE_PIPE;
+		/* maintain invariant that pipes have no filename */
+		file_handle.filename = NULL;
+		g_free (filename);
+		filename = NULL;
 	} else if (S_ISCHR (statbuf.st_mode)) {
 		handle_type = WAPI_HANDLE_CONSOLE;
 	} else {
