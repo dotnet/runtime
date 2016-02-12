@@ -61,6 +61,13 @@ internal static partial class Interop
 
                 Ssl.SetProtocolOptions(innerContext, protocols);
 
+                // The logic in SafeSslHandle.Disconnect is simple because we are doing a quiet
+                // shutdown (we aren't negotating for session close to enable later session
+                // restoration).
+                //
+                // If you find yourself wanting to remove this line to enable bidirectional
+                // close-notify, you'll probably need to rewrite SafeSslHandle.Disconnect().
+                // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
                 Ssl.SslCtxSetQuietShutdown(innerContext);
 
                 Ssl.SetEncryptionPolicy(innerContext, policy);
