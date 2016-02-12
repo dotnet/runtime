@@ -134,12 +134,6 @@
     <Compile Include="$(JsonSources)\JsonGlobals.cs" />
     <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.cs" />
     <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.cs" />
-    <Compile Include="$(JsonSources)\DataContractToObjectConverter.cs" />
-    <Compile Include="$(JsonSources)\ObjectToDataContractConverterHelper.cs" />
-    <Compile Include="$(JsonSources)\JavaScriptObjectDeserializer.cs" />
-    <Compile Include="$(JsonSources)\JavaScriptSerializer.cs" />
-    <Compile Include="$(JsonSources)\JavaScriptDeserializer.cs" />
-    <Compile Include="$(JsonSources)\JavaScriptString.cs" />
     <Compile Include="$(JsonSources)\DateTimeFormat.cs" />
     <Compile Include="$(JsonSources)\EmitTypeInformation.cs" />
     <Compile Include="$(JsonSources)\DataContractJsonSerializerSettings.cs" />
