@@ -1401,8 +1401,8 @@ bitcount (mword d)
 	int count = 0;
 
 #ifdef __GNUC__
-	if (sizeof (mword) == sizeof (unsigned long))
-		count += __builtin_popcountl (d);
+	if (sizeof (mword) == 8)
+		count += __builtin_popcountll (d);
 	else
 		count += __builtin_popcount (d);
 #else
