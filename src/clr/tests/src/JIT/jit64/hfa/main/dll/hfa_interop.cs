@@ -26,7 +26,7 @@ namespace HFATest
         public const string floatType = "f32";
 #endif
 
-        public const string DllName = "hfa" + "_" + hfaType + "_" + floatType + "_" + dllType + ".dll";
+        public const string DllName = "hfa" + "_" + hfaType + "_" + floatType + "_" + dllType;
     }
 
 
