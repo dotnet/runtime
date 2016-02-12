@@ -44,8 +44,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\dll\common.csproj" />
-    <ProjectReference Include="..\dll\hfa_common_nf.csproj" />
-    <ProjectReference Include="..\dll\hfa_interop_nf.csproj" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_interop_cpp.csproj" />
     <ProjectReference Include="..\dll\CMakelists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

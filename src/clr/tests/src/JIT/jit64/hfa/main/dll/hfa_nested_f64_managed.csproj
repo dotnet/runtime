@@ -29,9 +29,10 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType></DebugType>
+    <DefineConstants>$(DefineConstants);NESTED_HFA;FLOAT64</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="hfa_interop_nf.cs" />
+    <Compile Include="hfa_managed.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -44,7 +45,7 @@
     <ProjectLockJson>$(JitPackagesConfigFileDirectory)extra\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="hfa_common_nf.csproj" />
+    <ProjectReference Include="hfa_nested_f64_common.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
