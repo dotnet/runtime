@@ -4576,13 +4576,14 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 }
 
 static MonoObject*
-create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision)
+create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision, MonoError *error)
 {
 	static MonoClass *System_Version = NULL;
 	static MonoMethod *create_version = NULL;
-	MonoError error;
 	MonoObject *result;
 	gpointer args [4];
+
+	mono_error_init (error);
 	
 	if (!System_Version) {
 		System_Version = mono_class_from_name (mono_defaults.corlib, "System", "Version");
@@ -4600,11 +4601,11 @@ create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build,
 	args [1] = &minor;
 	args [2] = &build;
 	args [3] = &revision;
-	result = mono_object_new_checked (domain, System_Version, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	result = mono_object_new_checked (domain, System_Version, error);
+	return_val_if_nok (error, NULL);
 
-	mono_runtime_invoke_checked (create_version, result, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (create_version, result, args, error);
+	return_val_if_nok (error, NULL);
 
 	return result;
 }
@@ -4640,6 +4641,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	}
 
 	for (i = 0; i < count; i++) {
+		MonoObject *version;
 		MonoReflectionAssemblyName *aname;
 		guint32 cols [MONO_ASSEMBLYREF_SIZE];
 
@@ -4658,7 +4660,11 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
 		aname->versioncompat = 1; /* SameMachine (default) */
 		aname->hashalg = ASSEMBLY_HASH_SHA1; /* SHA1 (default) */
-		MONO_OBJECT_SETREF (aname, version, create_version (domain, aname->major, aname->minor, aname->build, aname->revision));
+
+		version = create_version (domain, aname->major, aname->minor, aname->build, aname->revision, &error);
+		mono_error_raise_exception (&error);
+
+		MONO_OBJECT_SETREF (aname, version, version);
 
 		if (create_culture) {
 			gpointer args [2];
@@ -5163,8 +5169,14 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->versioncompat = 1; /* SameMachine (default) */
 	aname->processor_architecture = name->arch;
 
-	if (by_default_version)
-		MONO_OBJECT_SETREF (aname, version, create_version (domain, name->major, name->minor, name->build, name->revision));
+	if (by_default_version) {
+		MonoObject *version;
+
+		version = create_version (domain, name->major, name->minor, name->build, name->revision, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+		MONO_OBJECT_SETREF (aname, version, version);
+	}
 
 	codebase = NULL;
 	if (absolute != NULL && *absolute != '\0') {
