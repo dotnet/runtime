@@ -45,6 +45,13 @@ class Constants {
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
                'jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
+               'jitstress2_jitstressregs1'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '1'],
+               'jitstress2_jitstressregs2'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '2'],
+               'jitstress2_jitstressregs3'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '3'],
+               'jitstress2_jitstressregs4'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '4'],
+               'jitstress2_jitstressregs8'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
+               'jitstress2_jitstressregs0x10' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
+               'jitstress2_jitstressregs0x80' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
                'fx' : ['' : ''], // corefx baseline
                'fxjs1' : ['COMPlus_JitStress' : '1'], 
                'fxjs2' : ['COMPlus_JitStress' : '2']]
@@ -210,6 +217,13 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'forcerelocs':
             case 'jitstress1':
             case 'jitstress2':   
+            case 'jitstress2_jitstressregs1':
+            case 'jitstress2_jitstressregs2':
+            case 'jitstress2_jitstressregs3':
+            case 'jitstress2_jitstressregs4':
+            case 'jitstress2_jitstressregs8':
+            case 'jitstress2_jitstressregs0x10':
+            case 'jitstress2_jitstressregs0x80':
             case 'fx':	
             case 'fxjs1':	            
             case 'fxjs2':
@@ -327,6 +341,23 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
+                        case 'jitstress2_jitstressregs1':
+                        case 'jitstress2_jitstressregs2':
+                        case 'jitstress2_jitstressregs3':
+                        case 'jitstress2_jitstressregs4':
+                        case 'jitstress2_jitstressregs8':
+                        case 'jitstress2_jitstressregs0x10':
+                        case 'jitstress2_jitstressregs0x80':
+                            def displayStr = ''
+                            Constants.jitStressModeScenarios[scenario].each{ k, v -> 
+                                def prefixLength = 'COMPlus_'.length()
+                                def modeName = k.substring(prefixLength, k.length())
+                                displayStr += ' ' + modeName + '=' + v
+                            }                        
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
                         case 'fx':
                         case 'fxjs1':
                         case 'fxjs2':
@@ -418,7 +449,24 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=0x80)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
-                            break                       
+                            break       
+                        case 'jitstress2_jitstressregs1':
+                        case 'jitstress2_jitstressregs2':
+                        case 'jitstress2_jitstressregs3':
+                        case 'jitstress2_jitstressregs4':
+                        case 'jitstress2_jitstressregs8':
+                        case 'jitstress2_jitstressregs0x10':
+                        case 'jitstress2_jitstressregs0x80':
+                            def displayStr = ''
+                            Constants.jitStressModeScenarios[scenario].each{ k, v -> 
+                                def prefixLength = 'COMPlus_'.length()
+                                def modeName = k.substring(prefixLength, k.length())
+                                displayStr += ' ' + modeName + '=' + v
+                            }                        
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break                                   
                         case 'fx':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx Baseline)",
