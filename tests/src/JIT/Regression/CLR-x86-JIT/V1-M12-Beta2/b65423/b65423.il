@@ -14,9 +14,6 @@
 .module 'b1904.exe'
 .class private auto ansi b1904 extends ['mscorlib']System.Object
 {
-  .export 'b1904'
-  {
-  }
   .field private static int32 Count
   .method public static void RunTest() il managed forwardref
   {

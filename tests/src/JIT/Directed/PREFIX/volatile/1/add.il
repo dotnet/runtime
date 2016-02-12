@@ -14,7 +14,7 @@
                         }
 
 
-.class _add {
+.class explicit _add {
 
 .field [0] int32 global0
 .field [4] int32 global1
