@@ -27,6 +27,11 @@ check_type_size(
     "struct in_pktinfo"
     HAVE_IN_PKTINFO
     BUILTIN_TYPES_ONLY)
+
+check_type_size(
+    "struct ip_mreqn"
+    HAVE_IP_MREQN
+    BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /in_pktinfo
 

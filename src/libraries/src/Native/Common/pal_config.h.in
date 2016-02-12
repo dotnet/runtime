@@ -34,6 +34,7 @@
 #cmakedefine01 HAVE_ICANON
 #cmakedefine01 HAVE_TCSANOW
 #cmakedefine01 HAVE_IN_PKTINFO
+#cmakedefine01 HAVE_IP_MREQN
 #cmakedefine01 HAVE_TCP_VAR_H
 #cmakedefine01 HAVE_RT_MSGHDR
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
