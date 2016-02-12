@@ -819,6 +819,7 @@ bool DBG_ShouldCheckStackAlignment()
     if (caMode == CheckAlignment_Uninitialized)
     {
         char* checkAlignmentSettings;
+        bool shouldFreeCheckAlignmentSettings = false;
         if (palEnvironment == nullptr)
         {
             // This function might be called before the PAL environment is initialized.
@@ -828,12 +829,13 @@ bool DBG_ShouldCheckStackAlignment()
         else
         {
             checkAlignmentSettings = EnvironGetenv(PAL_CHECK_ALIGNMENT_MODE);
+            shouldFreeCheckAlignmentSettings = true;
         }
 
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
 
-        if (checkAlignmentSettings)
+        if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
         {
             InternalFree(checkAlignmentSettings);
         }
