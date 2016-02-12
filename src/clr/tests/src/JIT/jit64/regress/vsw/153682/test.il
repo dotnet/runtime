@@ -13,7 +13,7 @@
 }
 .assembly legacy library test {}
 
-.class auto ansi sealed nested public save extends [mscorlib]System.Object
+.class auto ansi sealed public save extends [mscorlib]System.Object
 {
   .field public static class [mscorlib]System.Exception bb
   .method private specialname rtspecialname static 
