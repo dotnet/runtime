@@ -31,15 +31,27 @@ namespace System.Linq
 
         private static IEnumerable<TResult> JoinIterator<TOuter, TInner, TKey, TResult>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey> comparer)
         {
-            Lookup<TKey, TInner> lookup = Lookup<TKey, TInner>.CreateForJoin(inner, innerKeySelector, comparer);
-            foreach (TOuter item in outer)
+            using (IEnumerator<TOuter> e = outer.GetEnumerator())
             {
-                Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), false);
-                if (g != null)
+                if (e.MoveNext())
                 {
-                    for (int i = 0; i < g.count; i++)
+                    Lookup<TKey, TInner> lookup = Lookup<TKey, TInner>.CreateForJoin(inner, innerKeySelector, comparer);
+                    if (lookup.Count != 0)
                     {
-                        yield return resultSelector(item, g.elements[i]);
+                        do
+                        {
+                            TOuter item = e.Current;
+                            Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), false);
+                            if (g != null)
+                            {
+                                int count = g.count;
+                                TInner[] elements = g.elements;
+                                for (int i = 0; i != count; ++i)
+                                {
+                                    yield return resultSelector(item, elements[i]);
+                                }
+                            }
+                        } while (e.MoveNext());
                     }
                 }
             }
