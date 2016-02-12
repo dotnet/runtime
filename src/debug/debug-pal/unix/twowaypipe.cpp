@@ -35,13 +35,12 @@ bool TwoWayPipe::CreateServer(DWORD id)
     GetPipeName(inPipeName, id, "in");
     GetPipeName(outPipeName, id, "out");
 
-    //TODO: REVIEW if S_IRWXU | S_IRWXG is the right access level in prof use
-    if (mkfifo(inPipeName, S_IRWXU | S_IRWXG) == -1)
+    if (mkfifo(inPipeName, S_IRWXU) == -1)
     {
         return false;
     }
 
-    if (mkfifo(outPipeName, S_IRWXU | S_IRWXG) == -1)
+    if (mkfifo(outPipeName, S_IRWXU) == -1)
     {
         remove(inPipeName);
         return false;
