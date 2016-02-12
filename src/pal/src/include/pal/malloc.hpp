@@ -24,10 +24,7 @@ Abstract:
 #include "pal/thread.hpp"
 
 #include <stdarg.h>
-
-#if HAVE_ALLOCA_H
-#include <alloca.h>
-#endif  // HAVE_ALLOCA_H  
+#include <stdlib.h>
 
 extern "C"
 {
