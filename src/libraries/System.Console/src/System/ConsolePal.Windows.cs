@@ -432,6 +432,33 @@ namespace System
             Interop.mincore.SetConsoleTextAttribute(OutputHandle, (short)(ushort)_defaultColors);
         }
 
+        public static int CursorSize
+        {
+            get
+            {
+                Interop.mincore.CONSOLE_CURSOR_INFO cci;
+                if (!Interop.mincore.GetConsoleCursorInfo(OutputHandle, out cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                return cci.dwSize;
+            }
+            set
+            {
+                // Value should be a percentage from [1, 100].
+                if (value < 1 || value > 100)
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_CursorSize);
+                Contract.EndContractBlock();
+
+                Interop.mincore.CONSOLE_CURSOR_INFO cci;
+                if (!Interop.mincore.GetConsoleCursorInfo(OutputHandle, out cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                cci.dwSize = value;
+                if (!Interop.mincore.SetConsoleCursorInfo(OutputHandle, ref cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
+
         public static bool CursorVisible
         {
             get
@@ -518,6 +545,106 @@ namespace System
         public static void Beep()
         {
             Interop.mincore.Beep(BeepFrequencyInHz, BeepDurationInMs);
+        }
+
+        private const int MinBeepFrequency = 37;
+        private const int MaxBeepFrequency = 32767;
+
+        public static void Beep(int frequency, int duration)
+        {
+            if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
+                throw new ArgumentOutOfRangeException("frequency", frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
+            if (duration <= 0)
+                throw new ArgumentOutOfRangeException("duration", duration, SR.ArgumentOutOfRange_NeedPosNum);
+
+            Contract.EndContractBlock();
+            Interop.mincore.Beep(frequency, duration);
+        }
+
+        public unsafe static void MoveBufferArea(int sourceLeft, int sourceTop,
+            int sourceWidth, int sourceHeight, int targetLeft, int targetTop,
+            char sourceChar, ConsoleColor sourceForeColor,
+            ConsoleColor sourceBackColor)
+        {
+            if (sourceForeColor < ConsoleColor.Black || sourceForeColor > ConsoleColor.White)
+                throw new ArgumentException(SR.Arg_InvalidConsoleColor, "sourceForeColor");
+            if (sourceBackColor < ConsoleColor.Black || sourceBackColor > ConsoleColor.White)
+                throw new ArgumentException(SR.Arg_InvalidConsoleColor, "sourceBackColor");
+            Contract.EndContractBlock();
+
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+            Interop.mincore.COORD bufferSize = csbi.dwSize;
+            if (sourceLeft < 0 || sourceLeft > bufferSize.X)
+                throw new ArgumentOutOfRangeException("sourceLeft", sourceLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (sourceTop < 0 || sourceTop > bufferSize.Y)
+                throw new ArgumentOutOfRangeException("sourceTop", sourceTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (sourceWidth < 0 || sourceWidth > bufferSize.X - sourceLeft)
+                throw new ArgumentOutOfRangeException("sourceWidth", sourceWidth, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (sourceHeight < 0 || sourceTop > bufferSize.Y - sourceHeight)
+                throw new ArgumentOutOfRangeException("sourceHeight", sourceHeight, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+
+            // Note: if the target range is partially in and partially out
+            // of the buffer, then we let the OS clip it for us.
+            if (targetLeft < 0 || targetLeft > bufferSize.X)
+                throw new ArgumentOutOfRangeException("targetLeft", targetLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (targetTop < 0 || targetTop > bufferSize.Y)
+                throw new ArgumentOutOfRangeException("targetTop", targetTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+
+            // If we're not doing any work, bail out now (Windows will return
+            // an error otherwise)
+            if (sourceWidth == 0 || sourceHeight == 0)
+                return;
+
+            // Read data from the original location, blank it out, then write
+            // it to the new location.  This will handle overlapping source and
+            // destination regions correctly.
+
+            // Read the old data
+            Interop.mincore.CHAR_INFO[] data = new Interop.mincore.CHAR_INFO[sourceWidth * sourceHeight];
+            bufferSize.X = (short)sourceWidth;
+            bufferSize.Y = (short)sourceHeight;
+            Interop.mincore.COORD bufferCoord = new Interop.mincore.COORD();
+            Interop.mincore.SMALL_RECT readRegion = new Interop.mincore.SMALL_RECT();
+            readRegion.Left = (short)sourceLeft;
+            readRegion.Right = (short)(sourceLeft + sourceWidth - 1);
+            readRegion.Top = (short)sourceTop;
+            readRegion.Bottom = (short)(sourceTop + sourceHeight - 1);
+
+            bool r;
+            fixed (Interop.mincore.CHAR_INFO* pCharInfo = data)
+                r = Interop.mincore.ReadConsoleOutput(OutputHandle, pCharInfo, bufferSize, bufferCoord, ref readRegion);
+            if (!r)
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+            // Overwrite old section
+            Interop.mincore.COORD writeCoord = new Interop.mincore.COORD();
+            writeCoord.X = (short)sourceLeft;
+            Interop.mincore.Color c = ConsoleColorToColorAttribute(sourceBackColor, true);
+            c |= ConsoleColorToColorAttribute(sourceForeColor, false);
+            short attr = (short)c;
+            int numWritten;
+            for (int i = sourceTop; i < sourceTop + sourceHeight; i++)
+            {
+                writeCoord.Y = (short)i;
+                r = Interop.mincore.FillConsoleOutputCharacter(OutputHandle, sourceChar, sourceWidth, writeCoord, out numWritten);
+                Debug.Assert(numWritten == sourceWidth, "FillConsoleOutputCharacter wrote the wrong number of chars!");
+                if (!r)
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                r = Interop.mincore.FillConsoleOutputAttribute(OutputHandle, attr, sourceWidth, writeCoord, out numWritten);
+                if (!r)
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+
+            // Write text to new location
+            Interop.mincore.SMALL_RECT writeRegion = new Interop.mincore.SMALL_RECT();
+            writeRegion.Left = (short)targetLeft;
+            writeRegion.Right = (short)(targetLeft + sourceWidth);
+            writeRegion.Top = (short)targetTop;
+            writeRegion.Bottom = (short)(targetTop + sourceHeight);
+
+            fixed (Interop.mincore.CHAR_INFO* pCharInfo = data)
+                Interop.mincore.WriteConsoleOutput(OutputHandle, pCharInfo, bufferSize, bufferCoord, ref writeRegion);
         }
 
         public static void Clear()
