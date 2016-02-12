@@ -5148,16 +5148,17 @@ ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *rfield)
 }
 
 static void
-fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token)
+fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token, MonoError *error)
 {
 	static MonoMethod *create_culture = NULL;
-	MonoError error;
 	MonoObject *obj;
 	gpointer args [2];
 	guint32 pkey_len;
 	const char *pkey_ptr;
 	gchar *codebase;
 	MonoBoolean assembly_ref = 0;
+
+	mono_error_init (error);
 
 	MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, name->name));
 	aname->major = name->major;
@@ -5172,8 +5173,8 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	if (by_default_version) {
 		MonoObject *version;
 
-		version = create_version (domain, name->major, name->minor, name->build, name->revision, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		version = create_version (domain, name->major, name->minor, name->build, name->revision, error);
+		return_if_nok (error);
 
 		MONO_OBJECT_SETREF (aname, version, version);
 	}
@@ -5220,8 +5221,8 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 		args [0] = mono_string_new (domain, name->culture);
 		args [1] = &assembly_ref;
 
-		obj = mono_runtime_invoke_checked (create_culture, NULL, args, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		obj = mono_runtime_invoke_checked (create_culture, NULL, args, error);
+		return_if_nok (error);
 
 		MONO_OBJECT_SETREF (aname, cultureInfo, obj);
 	}
@@ -5274,20 +5275,19 @@ ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assem
 ICALL_EXPORT void
 ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
 {
+	MonoError error;
 	gchar *absolute;
 	MonoAssembly *mass = assembly->assembly;
 
 	if (g_path_is_absolute (mass->image->name)) {
-		fill_reflection_assembly_name (mono_object_domain (assembly),
-			aname, &mass->aname, mass->image->name, TRUE,
-			TRUE, TRUE);
+		fill_reflection_assembly_name (mono_object_domain (assembly), aname, &mass->aname, mass->image->name, TRUE, TRUE, TRUE, &error);
+		mono_error_set_pending_exception (&error);
 		return;
 	}
 	absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
 
-	fill_reflection_assembly_name (mono_object_domain (assembly),
-		aname, &mass->aname, absolute, TRUE, TRUE,
-		TRUE);
+	fill_reflection_assembly_name (mono_object_domain (assembly), aname, &mass->aname, absolute, TRUE, TRUE, TRUE, &error);
+	mono_error_set_pending_exception (&error);
 
 	g_free (absolute);
 }
@@ -5295,6 +5295,7 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 ICALL_EXPORT void
 ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname, MonoReflectionAssemblyName *aname)
 {
+	MonoError error;
 	char *filename;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	gboolean res;
@@ -5330,11 +5331,11 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 		return;
 	}
 
-	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename,
-		TRUE, FALSE, TRUE);
+	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename, TRUE, FALSE, TRUE, &error);
+	mono_error_set_pending_exception (&error);
 
-	g_free (filename);
 	mono_image_close (image);
+	g_free (filename);
 }
 
 ICALL_EXPORT MonoBoolean
@@ -5536,6 +5537,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 ICALL_EXPORT gboolean
 ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *name, MonoString *assname)
 {
+	MonoError error;
 	MonoAssemblyName aname;
 	MonoDomain *domain = mono_object_domain (name);
 	char *val;
@@ -5550,8 +5552,8 @@ ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *
 		return FALSE;
 	}
 	
-	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined,
-		FALSE, is_token_defined);
+	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined, FALSE, is_token_defined, &error);
+	mono_error_set_pending_exception (&error);
 
 	mono_assembly_name_free (&aname);
 	g_free ((guint8*) aname.public_key);
