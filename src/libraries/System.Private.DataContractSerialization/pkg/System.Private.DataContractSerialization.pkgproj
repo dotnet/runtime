@@ -5,17 +5,10 @@
   <PropertyGroup>
     <!-- Ideally we'd harvest this from the runtime dependencies -->
     <Version>4.1.0</Version>
+    <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Implementation only package -->
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/dnxcore50</TargetPath>
-    </File>
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/netcore50</TargetPath>
-    </File>
-
     <ProjectReference Include="any\System.Private.DataContractSerialization.pkgproj" />
     <ProjectReference Include="aot\System.Private.DataContractSerialization.pkgproj" />
   </ItemGroup>

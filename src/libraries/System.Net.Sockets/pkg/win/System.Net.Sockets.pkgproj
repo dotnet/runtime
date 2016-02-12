@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- bring in both the win32 and winrt implementations,
-         win32 will be used as the dotnet implementation
-         winrt will be used for netcore50 -->
     <ProjectReference Include="..\..\src\System.Net.Sockets.builds">
       <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
     </ProjectReference>
