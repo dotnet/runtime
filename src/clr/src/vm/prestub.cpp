@@ -209,10 +209,11 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
+        SO_INTOLERANT;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
+
     // Is the list active?
     JITNotifications jn(g_pNotificationTable);
     if (jn.IsActive())
