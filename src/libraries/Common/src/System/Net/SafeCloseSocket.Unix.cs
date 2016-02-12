@@ -118,7 +118,7 @@ namespace System.Net.Sockets
 
             public void SetNonBlocking()
             {
-                _asyncContext.SetNonBlocking();
+                AsyncContext.SetNonBlocking();
             }
 
             public SocketAsyncContext AsyncContext
