@@ -115,6 +115,26 @@ public static class XmlDictionaryWriterTest
         }
     }
 
+    [Fact]
+    public static void XmlDictionaryWriter_InvalidUnicodeChar()
+    {
+        using (var ms = new MemoryStream())
+        {
+            var writer = XmlDictionaryWriter.CreateTextWriter(ms);
+            writer.WriteStartDocument();
+            writer.WriteStartElement("data");
+
+            // This is an invalid char. Writing this char shouldn't
+            // throw exception.
+            writer.WriteString("\uDB1B");
+
+            writer.WriteEndElement();
+            writer.WriteEndDocument();
+            writer.Flush();
+            ms.Position = 0;            
+        }
+    }
+
     private static byte[] GetByteArray(int byteSize)
     {
         var bytes = new byte[byteSize];
