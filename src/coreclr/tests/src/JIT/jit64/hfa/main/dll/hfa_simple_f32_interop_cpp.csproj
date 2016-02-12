@@ -29,9 +29,10 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType></DebugType>
+    <DefineConstants>$(DefineConstants);SIMPLE_HFA;FLOAT32;NATIVE_CPP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="hfa_managed_sf.cs" />
+    <Compile Include="hfa_interop.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -44,9 +45,9 @@
     <ProjectLockJson>$(JitPackagesConfigFileDirectory)extra\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="hfa_common_sf.csproj" />
+    <ProjectReference Include="hfa_simple_f32_common.csproj" />
   </ItemGroup>
- <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
   </PropertyGroup> 
 </Project>
