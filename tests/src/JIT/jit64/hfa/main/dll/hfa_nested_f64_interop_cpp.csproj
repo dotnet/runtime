@@ -29,9 +29,10 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType></DebugType>
+    <DefineConstants>$(DefineConstants);NESTED_HFA;FLOAT64;NATIVE_CPP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="hfa_interop_nd.cs" />
+    <Compile Include="hfa_interop.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -40,7 +41,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="hfa_common_nd.csproj" />
+    <ProjectReference Include="hfa_nested_f64_common.csproj" />
     <ProjectReference Include="CMakelists.txt" />
   </ItemGroup>
   <PropertyGroup>

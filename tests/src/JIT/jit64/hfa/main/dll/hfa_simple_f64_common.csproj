@@ -29,9 +29,10 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType></DebugType>
+    <DefineConstants>$(DefineConstants);SIMPLE_HFA;FLOAT64</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="hfa_common_nf.cs" />
+    <Compile Include="hfa_common.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
