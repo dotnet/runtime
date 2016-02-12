@@ -30,6 +30,7 @@ namespace System.Linq.Tests
             object debugView = CreateSystemCore_EnumerableDebugView(source);
             Exception exc = Assert.Throws<TargetInvocationException>(() => GetItems<object>(debugView));
             Assert.NotNull(exc.InnerException);
+            Assert.Equal("System.Linq.SystemCore_EnumerableDebugViewEmptyException", exc.InnerException.GetType().FullName);
             Assert.False(string.IsNullOrEmpty(GetEmptyProperty(exc.InnerException)));
         }
 
@@ -56,6 +57,7 @@ namespace System.Linq.Tests
             object debugView = CreateSystemCore_EnumerableDebugView(source);
             Exception exc = Assert.Throws<TargetInvocationException>(() => GetItems<int>(debugView));
             Assert.NotNull(exc.InnerException);
+            Assert.Equal("System.Linq.SystemCore_EnumerableDebugViewEmptyException", exc.InnerException.GetType().FullName);
             Assert.False(string.IsNullOrEmpty(GetEmptyProperty(exc.InnerException)));
         }
 
