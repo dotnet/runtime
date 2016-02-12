@@ -572,6 +572,13 @@ namespace System.IO
                             expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
                         }
 
+                        // To match Windows, ignore all changes that happen on the root folder itself
+                        if (string.IsNullOrEmpty(expandedName))
+                        {
+                            watcher = null;
+                            continue;
+                        }
+
                         // Determine whether the affected object is a directory (rather than a file).
                         // If it is, we may need to do special processing, such as adding a watch for new 
                         // directories if IncludeSubdirectories is enabled.  Since we're only watching
