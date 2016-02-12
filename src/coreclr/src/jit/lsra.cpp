@@ -4526,7 +4526,9 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
 
     // An optimization for the common case where there is only one candidate -
     // avoid looping over all the other registers
-    regNumber singleReg = REG_NA;
+
+    regNumber singleReg   = REG_NA;
+
     if (genMaxOneBit(candidates))
     {
         regOrderSize = 1;
@@ -4534,45 +4536,50 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
         regOrder = &singleReg;
     }
 #if FEATURE_MULTIREG_ARGS
+#ifdef _TARGET_ARM64_
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
     if (regType == TYP_STRUCT)
     {
-#ifdef _TARGET_ARM64_
-        // For now we can special case this case as it is used to
-        // pass arguments in pairs of consecutive registers
-        //
-        // TODO ARM64 - this is not complete and is really just a workaround
-        //     that allows us to pass 16-byte structs in argment registers 
-        //     Additional work is require to properly reserve the second register
-        //
-        if (genCountBits(candidates) == 2)
-        {
-            // We currently are only expecting to handle setting up argument registers
-            // with this code sequence
-            // So both register bits in candidates should be arg registers
-            //
-            if ((candidates & RBM_ARG_REGS) == candidates)
+        // We currently use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+
+        // TODO: revisit this and remove the limitation that we use two consecutive registers.
+
+        // Make sure that we have two consecutive registers available
+        regMaskTP lowRegBit  = genFindLowestBit(candidates);
+        regMaskTP nextRegBit = lowRegBit << 1;
+        regMaskTP regPairMask = (lowRegBit | nextRegBit);
+        
+        do {
+            // Are there two consecutive register bits available?
+            if ((candidates & regPairMask) == regPairMask)
             {
-                // Make sure that we have two consecutive registers available
-                regMaskTP lowRegBit  = genFindLowestBit(candidates);
-                regMaskTP nextRegBit = lowRegBit << 1;
-                if (candidates == (lowRegBit | nextRegBit))
-                {
-                    // We use the same trick as above when regOrderSize, singleReg and regOrder are set 
-                    regOrderSize = 1;
-                    singleReg = genRegNumFromMask(lowRegBit);
-                    regOrder = &singleReg;
-                }
+                // We use the same trick as above when regOrderSize, singleReg and regOrder are set 
+                regOrderSize = 1;
+                singleReg = genRegNumFromMask(lowRegBit);
+                regOrder = &singleReg;
+                break;
             }
-        }
-#endif // _TARGET_ARM64_
+            // setup the next register pair bit
+            lowRegBit  = nextRegBit;
+            nextRegBit = lowRegBit << 1;  // shift left by one bit
+            regPairMask = (lowRegBit | nextRegBit);
+
+        } while (nextRegBit != 0);  // If we shifted out all of the bits then nextRegBit will become zero
+        // Note that shifting out all of the bits is an error, and we catch it with the following noway_assert
+
+        // Make sure we took the break to exit the while loop            
+        noway_assert(singleReg != REG_NA);
+
         // Unless we setup singleReg we have to issue an NYI error here
         if (singleReg == REG_NA)
         {
             // Need support for MultiReg sized structs
             NYI("Multireg struct - LinearScan::tryAllocateFreeReg");
         }
-
     }
+#endif  // _TARGET_ARM64_
 #endif // FEATURE_MULTIREG_ARGS
     
     for (unsigned i = 0; i < regOrderSize && (candidates != RBM_NONE); i++)
@@ -5025,11 +5032,12 @@ LinearScan::assignCopyReg(RefPosition * refPosition)
     return allocatedReg;
 }
 
-// Assign the given physical register interval to the given interval
-void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
+
+// Check if the interval is already assigned and if it is then unassign the physical record 
+// then set the assignedInterval to 'interval'
+//
+void LinearScan::checkAndAssignInterval( RegRecord * regRec, Interval * interval)
 {
-    regMaskTP assignedRegMask = genRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUG_ARG(dumpTerse));
     if (regRec->assignedInterval != nullptr && regRec->assignedInterval != interval)
     {
         // This is allocated to another interval.  Either it is inactive, or it was allocated as a
@@ -5047,16 +5055,44 @@ void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
         }
         unassignPhysReg(regRec->regNum);
     }
+
     regRec->assignedInterval = interval;
+}
+
+// Assign the given physical register interval to the given interval
+void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
+{
+    regMaskTP assignedRegMask = genRegMask(regRec->regNum);
+    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUG_ARG(dumpTerse));
+
+    checkAndAssignInterval(regRec, interval);
     interval->assignedReg = regRec;
 
 #ifdef _TARGET_ARM_
     if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
     {
-        RegRecord * nextRegRec = getRegisterRecord(REG_NEXT(regRec->regNum));
-        nextRegRec->assignedInterval = interval;
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+
+        checkAndAssignInterval(nextRegRec, interval);
     }
 #endif // _TARGET_ARM_
+
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+    if (interval->registerType == TYP_STRUCT)
+    {
+        // We use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+
+        checkAndAssignInterval(nextRegRec, interval);
+    }
+#endif //  _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_ARGS_OR_RET
 
     interval->physReg = regRec->regNum;
     interval->isActive = true;
@@ -5120,6 +5156,7 @@ LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition, RefP
     }
 }
 
+
 //------------------------------------------------------------------------
 // unassignPhysRegNoSpill: Unassign the given physical register record from
 //                         an active interval, without spilling.
@@ -5147,6 +5184,44 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 }
 
 //------------------------------------------------------------------------
+// checkAndClearInterval: Clear the assignedInterval for the given 
+//                        physical register record
+//
+// Arguments:
+//    regRec           - the physical RegRecord to be unasssigned
+//    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
+//                       or nullptr if we aren't spilling
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    see unassignPhysReg
+//
+void LinearScan::checkAndClearInterval( RegRecord * regRec, RefPosition* spillRefPosition)
+{
+    Interval * assignedInterval = regRec->assignedInterval;
+    assert(assignedInterval != nullptr);
+    regNumber thisRegNum = regRec->regNum;
+
+    if (spillRefPosition == nullptr)
+    {
+        // Note that we can't assert  for the copyReg case
+        //
+        if (assignedInterval->physReg == thisRegNum)
+        {
+            assert(assignedInterval->isActive == false);
+        }
+    }
+    else
+    {
+        assert(spillRefPosition->getInterval() == assignedInterval);
+    }
+
+    regRec->assignedInterval = nullptr;
+}
+
+//------------------------------------------------------------------------
 // unassignPhysReg: Unassign the given physical register record, and spill the
 //                  assignedInterval at the given spillRefPosition, if any.
 //
@@ -5167,25 +5242,34 @@ void LinearScan::unassignPhysReg( RegRecord * regRec, RefPosition* spillRefPosit
 {
     Interval * assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
+    checkAndClearInterval(regRec, spillRefPosition);
     regNumber thisRegNum = regRec->regNum;
-
-    if (spillRefPosition == nullptr)
-    {
-        assert(!assignedInterval->isActive || assignedInterval->physReg != thisRegNum);
-    }
-    else
-    {
-        assert(spillRefPosition->getInterval() == assignedInterval);
-    }
-    regRec->assignedInterval = nullptr;
 
 #ifdef _TARGET_ARM_
     if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
     {
-        RegRecord * nextRegRec = getRegisterRecord(REG_NEXT(regRec->regNum));
-        nextRegRec->assignedInterval = nullptr;
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+        checkAndClearInterval(nextRegRec, spillRefPosition);
     }
 #endif // _TARGET_ARM_
+
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+    // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+    if (assignedInterval->registerType == TYP_STRUCT)
+    {
+
+        // We use two consecutive registers:
+        //    to pass in argument registers or
+        //    to load and the store into the outgoing arg space
+
+        regNumber   nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord * nextRegRec = getRegisterRecord(nextRegNum);
+        checkAndClearInterval(nextRegRec, spillRefPosition);
+    }
+#endif //  _TARGET_ARM64_
+#endif // FEATURE_MULTIREG_ARGS_OR_RET
 
 #ifdef DEBUG
     if (VERBOSE && !dumpTerse)
