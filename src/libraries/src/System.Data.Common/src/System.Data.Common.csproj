@@ -58,5 +58,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
+    <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
