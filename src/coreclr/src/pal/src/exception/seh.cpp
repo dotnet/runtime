@@ -29,10 +29,6 @@ Abstract:
 #include "pal/malloc.hpp"
 #include "signal.hpp"
 
-#if HAVE_ALLOCA_H
-#include "alloca.h"
-#endif
-
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
 #else
