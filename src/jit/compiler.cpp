@@ -383,6 +383,101 @@ histo       loopExitCountTable(DefaultAllocator::Singleton(), loopExitCountBucke
 #endif // COUNT_LOOPS
 
 //------------------------------------------------------------------------
+// getJitGCType: Given the VM's CorInfoGCType convert it to the JIT's var_types
+//
+// Arguments:
+//    gcType    - an enum value that originally came from an element 
+//                of the BYTE[] returned from getClassGClayout()
+//
+// Return Value:
+//    The corresponsing enum value from the JIT's var_types
+//
+// Notes:
+//   The gcLayout of each field of a struct is returned from getClassGClayout()
+//   as a BYTE[] but each BYTE element is actually a CorInfoGCType value
+//   Note when we 'know' that there is only one element in theis array
+//   the JIT will often pass the address of a single BYTE, instead of a BYTE[]
+//
+
+var_types    Compiler::getJitGCType(BYTE gcType)
+{
+    var_types result = TYP_UNKNOWN;
+    CorInfoGCType corInfoType = (CorInfoGCType)gcType;
+
+    if (corInfoType == TYPE_GC_NONE)
+    {
+        result = TYP_I_IMPL;
+    }
+    else if (corInfoType == TYPE_GC_REF)
+    {
+        result = TYP_REF;
+    }
+    else if (corInfoType == TYPE_GC_BYREF)
+    {
+        result = TYP_BYREF;
+    }
+    else
+    {
+        noway_assert(!"Bad value of 'gcType'");
+    }
+    return result;
+}
+
+#if FEATURE_MULTIREG_ARGS
+//------------------------------------------------------------------------
+// getStructGcPtrsFromOp: Given a GenTree node of TYP_STRUCT that represents a pass by value argument
+//                        return the gcPtr layout for the pointers sized fields //
+// Arguments:
+//    op         - the operand of TYP_STRUCT that is passed by value
+//    gcPtrsOut  - an array of BYTES that are written by this method
+//                 they will contain the VM's CorInfoGCType values 
+//                 for each pointer sized field//
+// Return Value:
+//     Two [or more] values are written into the gcPtrs array
+//
+// Note that for ARM64 there will alwys be exactly two pointer sized fields
+
+void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut)
+{
+    assert(op->TypeGet() == TYP_STRUCT);
+
+#ifdef _TARGET_ARM64_
+    if (op->OperGet() == GT_LDOBJ)
+    {
+        CORINFO_CLASS_HANDLE ldObjClass = op->gtLdObj.gtClass;
+
+        int structSize = info.compCompHnd->getClassSize(ldObjClass);
+        assert(structSize <= 2*TARGET_POINTER_SIZE);
+
+        BYTE gcPtrsTmp[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+
+        info.compCompHnd->getClassGClayout(ldObjClass, &gcPtrsTmp[0]);
+
+        gcPtrsOut[0] = gcPtrsTmp[0];
+        gcPtrsOut[1] = gcPtrsTmp[1];
+    }
+    else if (op->OperGet() == GT_LCL_VAR)
+    {
+        GenTreeLclVarCommon* varNode = op->AsLclVarCommon();
+        unsigned   varNum = varNode->gtLclNum;
+        assert(varNum < lvaCount);
+        LclVarDsc* varDsc = &lvaTable[varNum];
+
+        // At this point any TYP_STRUCT LclVar must be a 16-byte pass by valeu argument
+        assert(varDsc->lvSize() == 2 * TARGET_POINTER_SIZE);
+
+        gcPtrsOut[0] = varDsc->lvGcLayout[0];
+        gcPtrsOut[1] = varDsc->lvGcLayout[1];
+    }
+    else
+#endif
+    {
+        noway_assert(!"Unsupported Oper for getStructGcPtrsFromOp");
+    }
+}
+#endif // FEATURE_MULTIREG_ARGS
+
+//------------------------------------------------------------------------
 // argOrReturnTypeForStruct: Get the "primitive" type, if any, that is used to pass or return
 //                           values of the given struct type.
 //
@@ -471,22 +566,7 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
     case 4:
 #endif // !_TARGET_64BIT_
         info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-        if (gcPtr == TYPE_GC_NONE)
-        {
-            useType = TYP_I_IMPL;
-        }
-        else if (gcPtr == TYPE_GC_REF)
-        {
-            useType = TYP_REF;
-        }
-        else if (gcPtr == TYPE_GC_BYREF)
-        {
-            useType = TYP_BYREF;
-        }
-        else
-        {
-            assert(!"Bad value of CorInfoGCType");
-        }
+        useType = getJitGCType(gcPtr);
         break;
 
     default:

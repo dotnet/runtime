@@ -3271,7 +3271,8 @@ struct GenTreeStmt: public GenTree
 
 struct GenTreeLdObj: public GenTreeUnOp
 {
-    CORINFO_CLASS_HANDLE gtClass;   // object being loaded            
+    CORINFO_CLASS_HANDLE gtClass;   // object being loaded   
+                                    // TODO-Cleanup: Consider adding the GC layout information to this node
     GenTreePtr *    gtFldTreeList;  // The list of trees that represents the fields of this struct
 
     GenTreeLdObj(var_types type, GenTreePtr op, CORINFO_CLASS_HANDLE cls) : 

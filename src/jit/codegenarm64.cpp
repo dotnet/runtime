@@ -2616,9 +2616,15 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 if (targetType == TYP_STRUCT)
                 {
                     // At this point any TYP_STRUCT LclVar must be a two register argument
-                    assert(varDsc->lvSize() == 16); 
-                    emit->emitIns_R_S(ins_Load(TYP_I_IMPL), emitTypeSize(TYP_I_IMPL), targetReg, varNum, 0);
-                    emit->emitIns_R_S(ins_Load(TYP_I_IMPL), emitTypeSize(TYP_I_IMPL), REG_NEXT(targetReg), varNum, TARGET_POINTER_SIZE);
+                    assert(varDsc->lvSize() == 2*TARGET_POINTER_SIZE);
+
+                    const BYTE * gcPtrs = varDsc->lvGcLayout;
+
+                    var_types type0 = compiler->getJitGCType(gcPtrs[0]);
+                    var_types type1 = compiler->getJitGCType(gcPtrs[1]);
+
+                    emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), targetReg, varNum, 0);
+                    emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), REG_NEXT(targetReg), varNum, TARGET_POINTER_SIZE);
                 }
                 else // targetType is a normal scalar type and not a TYP_STRUCT
                 {
@@ -3119,8 +3125,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     case GT_PUTARG_STK:
         {
-            noway_assert(targetType != TYP_STRUCT);
-
             // Get argument offset on stack.
             // Here we cross check that argument offset hasn't changed from lowering to codegen since
             // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
@@ -3130,10 +3134,10 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->AsPutArgStk()->gtCall, treeNode);
             assert(curArgTabEntry);
             assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
-#endif
+#endif // DEBUG
 
             GenTreePtr data = treeNode->gtOp.gtOp1;
-            unsigned varNum;            
+            unsigned varNum;   // typically this is the varNum for the Outgoing arg space           
 
 #if FEATURE_FASTTAILCALL
             bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
@@ -3167,15 +3171,48 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 varNum = compiler->lvaOutgoingArgSpaceVar;
             }
 
-            if (data->isContained())
+            // Do we have a TYP_STRUCT argument, if so it must be a 16-byte pass-by-value struct
+            if (targetType == TYP_STRUCT)
             {
-                getEmitter()->emitIns_S_I(ins_Store(targetType), emitTypeSize(targetType), varNum,
-                                          argOffset, (int) data->AsIntConCommon()->IconValue());
+                // We will use two store instructions that each write a register sized value
+
+                // We must have a multi-reg struct that takes two slots
+                assert(curArgTabEntry->numSlots == 2);
+                assert(!data->isContained());  // Impossible to have a contained 16-byte operand
+
+                // We will need to determine the GC type to use for each of the stores
+                // We obtain the gcPtrs values by examining op1 using getStructGcPtrsFromOp()
+
+                BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+
+                compiler->getStructGcPtrsFromOp(data, &gcPtrs[0]);
+
+                var_types type0 = compiler->getJitGCType(gcPtrs[0]);
+                var_types type1 = compiler->getJitGCType(gcPtrs[1]);
+
+                genConsumeReg(data); 
+
+                // Emit two store instructions to store two consecutive registers into the outgoing argument area
+                getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), data->gtRegNum,           varNum, argOffset);
+                getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), REG_NEXT(data->gtRegNum), varNum, argOffset + TARGET_POINTER_SIZE);
             }
-            else
+            else  // a normal non-Struct targetType
             {
-                genConsumeReg(data);
-                getEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, varNum, argOffset);
+                instruction storeIns  = ins_Store(targetType);  
+                emitAttr    storeAttr = emitTypeSize(targetType);
+
+                // If it is contained then data must be the integer constant zero
+                if (data->isContained())
+                {
+                    assert(data->OperGet() == GT_CNS_INT);
+                    assert(data->AsIntConCommon()->IconValue() == 0);
+                    getEmitter()->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNum, argOffset);
+                }
+                else
+                {
+                    genConsumeReg(data);
+                    getEmitter()->emitIns_S_R(storeIns, storeAttr, data->gtRegNum, varNum, argOffset);
+                }
             }
         }
         break;
@@ -3183,15 +3220,28 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_PUTARG_REG:
         if (targetType == TYP_STRUCT)
         {
-            noway_assert((treeNode->gtOp.gtOp1->OperGet() == GT_LDOBJ)   ||
-                         (treeNode->gtOp.gtOp1->OperGet() == GT_LCL_VAR)    );
+            // We will need to determine the GC type to use for each of the stores
+            // We obtain the gcPtrs values by examining op1 using getStructGcPtrsFromOp()
 
-            // Currently we just expect that gtOp1 should have loaded the correct register pair
-            noway_assert(targetReg == treeNode->gtOp.gtOp1->gtRegNum);
+            GenTree *op1 = treeNode->gtOp.gtOp1;
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+
+            compiler->getStructGcPtrsFromOp(op1, &gcPtrs[0]);
+
+            var_types type0 = compiler->getJitGCType(gcPtrs[0]);
+            var_types type1 = compiler->getJitGCType(gcPtrs[1]);
+
+            // If child node is not already in the registers we need, move it
+
+            genConsumeReg(op1);  // for multireg operands
+            if (targetReg != op1->gtRegNum)
+            {
+                inst_RV_RV(ins_Copy(type0), targetReg, op1->gtRegNum, type0);
+                inst_RV_RV(ins_Copy(type1), REG_NEXT(targetReg), REG_NEXT(op1->gtRegNum), type1);
+            }
         }
-        else
+        else  // a normal non-Struct targetType
         {
-            // commas show up here commonly, as part of a nullchk operation
             GenTree *op1 = treeNode->gtOp.gtOp1;
             // If child node is not already in the register we need, move it
             genConsumeReg(op1);
@@ -6270,9 +6320,23 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
 
     CORINFO_CLASS_HANDLE ldObjClass = treeNode->gtLdObj.gtClass;
     int structSize = compiler->info.compCompHnd->getClassSize(ldObjClass);
+
+    assert(structSize <= 2*TARGET_POINTER_SIZE);
+    BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+    compiler->info.compCompHnd->getClassGClayout(ldObjClass, &gcPtrs[0]);
+
+    var_types type0 = compiler->getJitGCType(gcPtrs[0]);
+    var_types type1 = compiler->getJitGCType(gcPtrs[1]);
+
+    bool hasGCpointers = varTypeIsGC(type0) || varTypeIsGC(type1);
+
     noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
 
-    // For a 16-byte structSize we will use a ldp instruction to load two registers
+    // For a 16-byte structSize with GC pointers we will use two ldr instruction to load two registers
+    //             ldr     x2, [x0]
+    //             ldr     x3, [x0]
+    //
+    // For a 16-byte structSize with no GC pointers we will use a ldp instruction to load two registers
     //             ldp     x2, x3, [x0]
     //
     // For a 12-byte structSize we will we will generate two load instructions
@@ -6290,15 +6354,28 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
     int       deferOffset   = 0;
     int       remainingSize = structSize;
     unsigned  structOffset  = 0;
+    var_types nextType      = type0;
 
     // Use the ldp instruction for a struct that is exactly 16-bytes in size
     //             ldp     x2, x3, [x0]
     //
     if (remainingSize == 2*TARGET_POINTER_SIZE)
-    {
-        remainingSize -= TARGET_POINTER_SIZE;
-        remainingSize -= TARGET_POINTER_SIZE;
-        getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, targetReg, REG_NEXT(targetReg), addrReg, structOffset);
+    { 
+        if (hasGCpointers)
+        {
+            // We have GC pointers use two ldr instructions 
+
+            getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), targetReg,           addrReg, structOffset);
+            noway_assert(REG_NEXT(targetReg) != addrReg);
+            getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), REG_NEXT(targetReg), addrReg, structOffset + TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            // Use a ldp instruction 
+
+            getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, targetReg, REG_NEXT(targetReg), addrReg, structOffset);
+        }
+        remainingSize = 0;     // We have completely wrote the 16-byte struct
     }
 
     while (remainingSize > 0)
@@ -6309,30 +6386,50 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
 
             if ((targetReg != addrReg) || (remainingSize == 0))
             {
-                getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, targetReg, addrReg, structOffset);
+                noway_assert(targetReg != addrReg);
+                getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(nextType), targetReg, addrReg, structOffset);
             }
             else
             {
                 deferLoad = true;
-                deferAttr = EA_PTRSIZE;
+                deferAttr = emitTypeSize(nextType);
                 deferOffset = structOffset;
             }
             targetReg = REG_NEXT(targetReg);
             structOffset += TARGET_POINTER_SIZE;
+            nextType = type1;
         }
         else // (remainingSize < TARGET_POINTER_SIZE)
         {
             int loadSize = remainingSize;
-            noway_assert((loadSize == 4) || (loadSize == 2) || (loadSize == 1));
             remainingSize = 0;
 
-            getEmitter()->emitIns_R_R_I(INS_ldr, emitAttr(loadSize), targetReg, addrReg, structOffset);
+            // the left over size is smaller than a pointer and thus can never be a GC type
+            assert(varTypeIsGC(nextType) == false); 
+
+            var_types loadType = TYP_UINT;
+            if (loadSize == 1)
+            {
+                loadType = TYP_UBYTE;
+            }
+            else if (loadSize == 2)
+            {
+                loadType = TYP_USHORT;
+            }
+
+            instruction loadIns  = ins_Load(loadType);
+            emitAttr    loadAttr = emitAttr(loadSize);
+
+            noway_assert(targetReg != addrReg);
+
+            getEmitter()->emitIns_R_R_I(loadIns, loadAttr, targetReg, addrReg, structOffset);
         }
     }
 
     if (deferLoad)
     {
         targetReg = addrReg;
+        noway_assert(targetReg != addrReg);
         getEmitter()->emitIns_R_R_I(INS_ldr, deferAttr, targetReg, addrReg, deferOffset);
     }
     genProduceReg(treeNode);
