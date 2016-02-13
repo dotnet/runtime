@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace System.Data.Common
 {
 
-    class DataRowDbColumn : DbColumn
+    internal class DataRowDbColumn : DbColumn
     {
         private DataColumnCollection schemaColumns;
         private DataRow schemaRow;
