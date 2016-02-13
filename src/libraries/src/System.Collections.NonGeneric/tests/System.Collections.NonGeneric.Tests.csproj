@@ -16,8 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ArrayList\ArrayListTests.TestData.cs" />
-    <Compile Include="ArrayList\ArrayListTests.cs" />
+    <Compile Include="ArrayListTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="CaseInsentiveComparerTests.cs" />
     <Compile Include="CollectionBaseTests.cs" />

@@ -187,6 +187,18 @@ namespace System.Collections.Tests
             return sortedList;
         }
 
+        public static int[] CreateIntArray(int count, int start = 0)
+        {
+            var array = new int[count];
+
+            for (int i = start; i < start + count; i++)
+            {
+                array[i] = i;
+            }
+
+            return array;
+        }
+
         public static void PerformActionOnCustomCulture(Action action, CultureInfo customCulture = null)
         {
             CultureInfo currentCulture = CultureInfo.DefaultThreadCurrentCulture;

@@ -12,7 +12,6 @@
 **
 ===========================================================*/
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -398,8 +397,8 @@ namespace System.Collections
             int newCapacity = _keys.Length == 0 ? 16 : _keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            newCapacity = (int)Math.Min((uint)newCapacity, ArrayList.MaxArrayLength);
-            newCapacity = Math.Max(min, newCapacity);
+            if ((uint)newCapacity > ArrayList.MaxArrayLength) newCapacity = ArrayList.MaxArrayLength;
+            if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }
 

@@ -38,45 +38,50 @@ namespace System.Collections.Tests
         [Fact]
         public static void TestDefaultInvariant_Compare()
         {
-            var cultureNames = new string[]
-            {
-                "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                "zh-CN","zh-HK","zh-TW"
-            };
-
             CultureInfo culture1 = CultureInfo.DefaultThreadCurrentCulture;
-            CultureInfo culture2 = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo culture2 = CultureInfo.DefaultThreadCurrentUICulture;
 
-            var string1 = new string[] { "Apple", "abc", };
-            var string2 = new string[] { "Æble", "ABC" };
-
-            foreach (string cultureName in cultureNames)
+            try
             {
-                CultureInfo culture;
-                try
+                var cultureNames = new string[]
                 {
-                    culture = new CultureInfo(cultureName);
-                }
-                catch (CultureNotFoundException)
+                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
+                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
+                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
+                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
+                    "zh-CN","zh-HK","zh-TW"
+                };
+
+                var string1 = new string[] { "Apple", "abc", };
+                var string2 = new string[] { "Æble", "ABC" };
+
+                foreach (string cultureName in cultureNames)
                 {
-                    continue;
+                    CultureInfo culture;
+                    try
+                    {
+                        culture = new CultureInfo(cultureName);
+                    }
+                    catch (CultureNotFoundException)
+                    {
+                        continue;
+                    }
+
+                    // Set current culture
+                    CultureInfo.DefaultThreadCurrentCulture = culture;
+                    CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+                    // All cultures should sort the same way, irrespective of the thread's culture
+                    Comparer comp = Comparer.DefaultInvariant;
+                    Assert.Equal(1, comp.Compare(string1[0], string2[0]));
+                    Assert.Equal(-1, comp.Compare(string1[1], string2[1]));
                 }
-
-                // Set current culture
-                CultureInfo.DefaultThreadCurrentCulture = culture;
-                CultureInfo.DefaultThreadCurrentUICulture = culture;
-
-                // All cultures should sort the same way, irrespective of the thread's culture
-                Comparer comp = Comparer.DefaultInvariant;
-                Assert.Equal(1, comp.Compare(string1[0], string2[0]));
-                Assert.Equal(-1, comp.Compare(string1[1], string2[1]));
             }
-
-            CultureInfo.DefaultThreadCurrentCulture = culture1;
-            CultureInfo.DefaultThreadCurrentUICulture = culture2;
+            finally
+            {
+                CultureInfo.DefaultThreadCurrentCulture = culture1;
+                CultureInfo.DefaultThreadCurrentUICulture = culture2;
+            }
         }
 
         [Fact]
