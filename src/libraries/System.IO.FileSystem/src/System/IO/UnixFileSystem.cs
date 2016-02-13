@@ -24,9 +24,6 @@ namespace System.IO
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Note: we could consider using sendfile here, but it isn't part of the POSIX spec, and
-            // has varying degrees of support on different systems.
-
             // The destination path may just be a directory into which the file should be copied.
             // If it is, append the filename from the source onto the destination directory
             if (DirectoryExists(destFullPath))
@@ -37,10 +34,10 @@ namespace System.IO
             // Copy the contents of the file from the source to the destination, creating the destination in the process
             const int bufferSize = FileStream.DefaultBufferSize;
             const bool useAsync = false;
-            using (Stream src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync))
-            using (Stream dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
+            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
             {
-                src.CopyTo(dst);
+                Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
