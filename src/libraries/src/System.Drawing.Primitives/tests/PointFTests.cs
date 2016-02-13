@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+
 using Xunit;
 
 namespace System.Drawing.PrimitivesTests
@@ -56,6 +57,12 @@ namespace System.Drawing.PrimitivesTests
             PointF p = new PointF(x, y);
             Assert.Equal(x, p.X);
             Assert.Equal(y, p.Y);
+
+            p.X = 10;
+            Assert.Equal(10, p.X);
+
+            p.Y = -10.123f;
+            Assert.Equal(-10.123, p.Y, 3);
         }
 
         [Theory]
@@ -118,9 +125,29 @@ namespace System.Drawing.PrimitivesTests
         }
 
         [Fact]
-        public void ToStringTest()
+        public static void EqualityTest_NotPointF()
         {
-            PointF p = new PointF(0, 0);
+            var point = new PointF(0, 0);
+            Assert.False(point.Equals(null));
+            Assert.False(point.Equals(0));
+            Assert.False(point.Equals(new Point(0, 0)));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var point = new PointF(10, 10);
+            Assert.Equal(point.GetHashCode(), new PointF(10, 10).GetHashCode());
+            Assert.NotEqual(point.GetHashCode(), new PointF(20, 10).GetHashCode());
+            Assert.NotEqual(point.GetHashCode(), new PointF(10, 20).GetHashCode());
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(5.1, -5.123)]
+        public void ToStringTest(float x, float y)
+        {
+            PointF p = new PointF(x, y);
             Assert.Equal(string.Format(CultureInfo.CurrentCulture, "{{X={0}, Y={1}}}", p.X, p.Y), p.ToString());
         }
     }

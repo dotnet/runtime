@@ -99,6 +99,32 @@ namespace System.Drawing.PrimitivesTest
         }
 
         [Theory]
+        [InlineData(0, 0)]
+        [InlineData(int.MaxValue, int.MinValue)]
+        public static void LocationSetTest(int x, int y)
+        {
+            var point = new Point(x, y);
+            var rect = new Rectangle(10, 10, 10, 10);
+            rect.Location = point;
+            Assert.Equal(point, rect.Location);
+            Assert.Equal(point.X, rect.X);
+            Assert.Equal(point.Y, rect.Y);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(int.MaxValue, int.MinValue)]
+        public static void SizeSetTest(int x, int y)
+        {
+            var size = new Size(x, y);
+            var rect = new Rectangle(10, 10, 10, 10);
+            rect.Size = size;
+            Assert.Equal(size, rect.Size);
+            Assert.Equal(size.Width, rect.Width);
+            Assert.Equal(size.Height, rect.Height);
+        }
+
+        [Theory]
         [InlineData(int.MaxValue, int.MinValue, int.MaxValue, int.MinValue)]
         [InlineData(int.MaxValue, 0, int.MinValue, 0)]
         [InlineData(0, int.MinValue, 0, int.MaxValue)]
@@ -111,6 +137,27 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+        }
+
+        [Fact]
+        public static void EqualityTest_NotRectangle()
+        {
+            var rectangle = new Rectangle(0, 0, 0, 0);
+            Assert.False(rectangle.Equals(null));
+            Assert.False(rectangle.Equals(0));
+            Assert.False(rectangle.Equals(new RectangleF(0, 0, 0, 0)));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var rect1 = new Rectangle(10, 10, 10, 10);
+            var rect2 = new Rectangle(10, 10, 10, 10);
+            Assert.Equal(rect1.GetHashCode(), rect2.GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new Rectangle(20, 10, 10, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new Rectangle(10, 20, 10, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new Rectangle(10, 10, 20, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new Rectangle(10, 10, 10, 20).GetHashCode());
         }
 
         [Theory]
@@ -154,6 +201,8 @@ namespace System.Drawing.PrimitivesTest
             Rectangle rect = new Rectangle(x, y, width, height);
             Rectangle inflatedRect = new Rectangle(x - width, y - height, width + 2 * width, height + 2 * height);
 
+            Assert.Equal(inflatedRect, Rectangle.Inflate(rect, width, height));
+
             rect.Inflate(width, height);
             Assert.Equal(inflatedRect, rect);
 
@@ -175,6 +224,16 @@ namespace System.Drawing.PrimitivesTest
             rect.Intersect(rect);
             Assert.Equal(expectedRect, rect);
             Assert.False(rect.IntersectsWith(expectedRect));
+        }
+
+        [Fact]
+        public static void Intersect_IntersectingRects_Test()
+        {
+            var rect1 = new Rectangle(0, 0, 5, 5);
+            var rect2 = new Rectangle(1, 1, 3, 3);
+            var expected = new Rectangle(1, 1, 3, 3);
+
+            Assert.Equal(expected, Rectangle.Intersect(rect1, rect2));
         }
 
         [Theory]
@@ -216,11 +275,13 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(expectedRect, r1);
         }
 
-        [Fact]
-        public void ToStringTest()
+        [Theory]
+        [InlineData(0, 0, 0, 0)]
+        [InlineData(5, -5, 0, 1)]
+        public void ToStringTest(int x, int y, int width, int height)
         {
-            string expected = "{X=0,Y=0,Width=0,Height=0}";
-            Assert.Equal(expected, Rectangle.Empty.ToString());
+            var r = new Rectangle(x, y, width, height);
+            Assert.Equal(string.Format(CultureInfo.CurrentCulture, "{{X={0},Y={1},Width={2},Height={3}}}", r.X, r.Y, r.Width, r.Height), r.ToString());
         }
     }
 }
