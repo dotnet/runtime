@@ -35,10 +35,6 @@ check_type_size(
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /in_pktinfo
 
-check_include_files(
-    alloca.h
-    HAVE_ALLOCA_H)
-
 check_function_exists(
     stat64
     HAVE_STAT64)
