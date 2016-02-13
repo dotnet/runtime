@@ -903,9 +903,6 @@
   <data name="JsonInvalidBytes" xml:space="preserve">
     <value>Invalid byte encoding.</value>
   </data>
-  <data name="JsonDuplicateMemberInInput" xml:space="preserve">
-    <value>The dictionary cannot be deserialized because the member '{0}' was found more than once in the input.</value>
-  </data>
   <data name="JsonDuplicateMemberNames" xml:space="preserve">
     <value>The data contract type '{0}' is not serializable with DataContractJsonSerializer because the data member '{1}' is duplicated in its type hierarchy.</value>
   </data>
@@ -1088,9 +1085,6 @@
   </data>
   <data name="KeyTypeCannotBeParsedInSimpleDictionary" xml:space="preserve">
     <value>The dictionary of type '{0}' cannot be deserialized as a simple dictionary because its key type '{1}' does not have a public static Parse method.</value>
-  </data>
-  <data name="JsonDuplicateMemberInInput" xml:space="preserve">
-    <value>The data contract type '{0}' cannot be deserialized because the data member '{1}' was found more than once in the input.</value>
   </data>
   <data name="SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser" xml:space="preserve">
     <value>Using surrogates with get-only collection properties is not supported.  Consider removing the surrogate associated with '{0}'.</value>
