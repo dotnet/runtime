@@ -20,7 +20,6 @@
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine01 HAVE_FDS_BITS
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
-#cmakedefine01 HAVE_ALLOCA_H
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_KQUEUE
