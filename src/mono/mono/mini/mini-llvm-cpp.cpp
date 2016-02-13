@@ -28,6 +28,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/DIBuilder.h>
 
 #include "mini-llvm-cpp.h"
 
@@ -215,4 +216,12 @@ void
 mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
 {
 	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
+}
+
+void
+mono_llvm_create_di_compile_unit (LLVMModuleRef module)
+{
+	DIBuilder d(*unwrap(module));
+
+	d.createCompileUnit (0, "X", "Y", "Z", false, "", 0, "", DIBuilder::DebugEmissionKind::FullDebug, true);
 }

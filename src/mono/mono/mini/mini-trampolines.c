@@ -1006,11 +1006,16 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 {
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 	gpointer res;
+	MonoError error;
 
 	trampoline_calls ++;
 
-	res = mono_aot_plt_resolve (aot_module, plt_info_offset, code);
+	res = mono_aot_plt_resolve (aot_module, plt_info_offset, code, &error);
 	if (!res) {
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		if (mono_loader_get_last_error ()) {
 			MonoError error;
 
