@@ -1,13 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{53134B0C-0D57-481B-B84E-D1991E8D54FF}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Numerics</RootNamespace>
     <AssemblyName>System.Numerics.Vectors</AssemblyName>
     <AssemblyVersion>4.1.1.0</AssemblyVersion>
-    <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Numerics.Vectors.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
@@ -19,7 +17,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <!-- Shared -->
+  <ItemGroup>
     <Compile Include="System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -27,10 +26,6 @@
     </Compile>
     <Compile Include="System\Numerics\HashCodeHelper.cs" />
     <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
-    <Compile Include="System\Numerics\Matrix3x2.cs" />
-    <Compile Include="System\Numerics\Matrix4x4.cs" />
-    <Compile Include="System\Numerics\Plane.cs" />
-    <Compile Include="System\Numerics\Quaternion.cs" />
     <Compile Include="System\Numerics\Register.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -41,43 +36,40 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Vector.tt</DependentUpon>
     </Compile>
+    <Compile Include="System\Numerics\Vector_Operations.cs" />
+  </ItemGroup>
+  <!-- Portable version only -->
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Numerics\Matrix3x2.cs" />
+    <Compile Include="System\Numerics\Matrix4x4.cs" />
+    <Compile Include="System\Numerics\Plane.cs" />
+    <Compile Include="System\Numerics\Quaternion.cs" />
     <Compile Include="System\Numerics\Vector2.cs" />
     <Compile Include="System\Numerics\Vector2_Intrinsics.cs" />
     <Compile Include="System\Numerics\Vector3.cs" />
     <Compile Include="System\Numerics\Vector3_Intrinsics.cs" />
     <Compile Include="System\Numerics\Vector4.cs" />
     <Compile Include="System\Numerics\Vector4_Intrinsics.cs" />
-    <Compile Include="System\Numerics\Vector_Operations.cs" />
   </ItemGroup>
-  
   <ItemGroup Condition="'$(TargetGroup)'=='net46'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Numerics" />
-    <Compile Include="System\Numerics\Vector.cs" />
-    <Compile Include="System\Numerics\Vector_Operations.cs" />
-    <Compile Include="System\Numerics\ConstantHelper.cs" />
-    <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
-    <Compile Include="System\Numerics\Register.cs" />
-    <Compile Include="System\Numerics\HashCodeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-    <None Include="System\Numerics\ConstantHelper.tt">
+    <None Include="System\Numerics\GenerationConfig.ttinclude" />
+    <Content Include="System\Numerics\ConstantHelper.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ConstantHelper.cs</LastGenOutput>
-    </None>
-    <None Include="System\Numerics\GenerationConfig.ttinclude" />
-    <None Include="System\Numerics\Register.tt">
+    </Content>
+    <Content Include="System\Numerics\Register.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Register.cs</LastGenOutput>
-    </None>
-    <None Include="System\Numerics\Vector.tt">
+    </Content>
+    <Content Include="System\Numerics\Vector.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Vector.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+    </Content>
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
