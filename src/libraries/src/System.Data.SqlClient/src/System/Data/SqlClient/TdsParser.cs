@@ -3955,7 +3955,7 @@ namespace System.Data.SqlClient
                     {
                         return false;
                     }
-                    if (!stateObj.TrySkipBytes(len * ADP.CharSize))
+                    if (!stateObj.TryReadString(len, out col.baseColumn))
                     {
                         return false;
                     }
