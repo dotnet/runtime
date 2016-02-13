@@ -6,9 +6,7 @@
 #include "pal_networking.h"
 #include "pal_utilities.h"
 
-#if HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #if HAVE_EPOLL
