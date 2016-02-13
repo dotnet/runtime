@@ -51,8 +51,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Data" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <Compile Include="System\Data\Common\DbDataReaderExtensions.Facade.cs" />
   </ItemGroup>
   <ItemGroup>
