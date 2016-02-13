@@ -101,7 +101,7 @@ alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 	if (!for_mature) {
 		sgen_client_degraded_allocation (size);
 		SGEN_ATOMIC_ADD_P (degraded_mode, size);
-		sgen_ensure_free_space (size);
+		sgen_ensure_free_space (size, GENERATION_OLD);
 	} else {
 		if (sgen_need_major_collection (size))
 			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature);
@@ -271,7 +271,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 					 * always loop we will loop endlessly in the case of
 					 * OOM).
 					 */
-					sgen_ensure_free_space (real_size);
+					sgen_ensure_free_space (real_size, GENERATION_NURSERY);
 					if (!degraded_mode)
 						p = (void **)sgen_nursery_alloc (size);
 				}
@@ -288,7 +288,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 				p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				if (!p) {
 					/* See comment above in similar case. */
-					sgen_ensure_free_space (tlab_size);
+					sgen_ensure_free_space (tlab_size, GENERATION_NURSERY);
 					if (!degraded_mode)
 						p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				}

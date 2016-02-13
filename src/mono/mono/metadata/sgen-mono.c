@@ -2738,7 +2738,7 @@ sgen_client_degraded_allocation (size_t size)
 	static int last_major_gc_warned = -1;
 	static int num_degraded = 0;
 
-	if (last_major_gc_warned < gc_stats.major_gc_count) {
+	if (last_major_gc_warned < (int)gc_stats.major_gc_count) {
 		++num_degraded;
 		if (num_degraded == 1 || num_degraded == 3)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
