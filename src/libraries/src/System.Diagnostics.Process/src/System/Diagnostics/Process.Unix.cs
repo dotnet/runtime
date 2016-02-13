@@ -244,6 +244,9 @@ namespace System.Diagnostics
             SetProcessId(childPid);
 
             // Configure the parent's ends of the redirection streams.
+            // We use UTF8 encoding without BOM by-default(instead of Console encoding as on Windows)
+            // as there is no good way to get this information from the native layer
+            // and we do not want to take dependency on Console contract.
             if (startInfo.RedirectStandardInput)
             {
                 Debug.Assert(stdinFd >= 0);
@@ -254,13 +257,13 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdoutFd >= 0);
                 _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
-                    startInfo.StandardOutputEncoding ?? Encoding.UTF8, true, StreamBufferSize);
+                    startInfo.StandardOutputEncoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), true, StreamBufferSize);
             }
             if (startInfo.RedirectStandardError)
             {
                 Debug.Assert(stderrFd >= 0);
                 _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
-                    startInfo.StandardErrorEncoding ?? Encoding.UTF8, true, StreamBufferSize);
+                    startInfo.StandardErrorEncoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), true, StreamBufferSize);
             }
 
             return true;

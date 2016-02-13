@@ -1096,11 +1096,6 @@ namespace System.Diagnostics
             return StartCore(startInfo);
         }
 
-        private static Encoding GetEncoding(int codePage)
-        {
-            return EncodingHelper.GetSupportedConsoleEncoding(codePage);
-        }
-
         /// <devdoc>
         ///    <para>
         ///       Starts a process resource by specifying the name of a
