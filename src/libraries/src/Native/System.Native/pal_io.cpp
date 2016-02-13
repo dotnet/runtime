@@ -22,7 +22,11 @@
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
-
+#if HAVE_FCOPYFILE
+#include <copyfile.h>
+#elif HAVE_SENDFILE
+#include <sys/sendfile.h>
+#endif
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
@@ -896,6 +900,88 @@ extern "C" int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t b
 
     assert(count >= -1 && count <= bufferSize);
     return static_cast<int32_t>(count);
+}
+
+extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
+{
+    int inFd = ToFileDescriptor(sourceFd);
+    int outFd = ToFileDescriptor(destinationFd);
+
+#if HAVE_FCOPYFILE
+    // If fcopyfile is available (OS X), try to use it, as the whole copy 
+    // can be performed in the kernel, without lots of unnecessary copying.
+    return fcopyfile(inFd, outFd, nullptr, COPYFILE_DATA) == 0 ? 0 : -1;
+#else
+#if HAVE_SENDFILE
+    // If sendfile is available (Linux), try to use it, as the whole copy 
+    // can be performed in the kernel, without lots of unnecessary copying.
+    struct stat sourceStat;
+    if (fstat(inFd, &sourceStat) != 0)
+    {
+        return -1;
+    }
+
+    if (sendfile(outFd, inFd, 0, UnsignedCast(sourceStat.st_size)) >= 0)
+    {
+        return 0;
+    }
+
+    if (errno != EINVAL && errno != ENOSYS)
+    {
+        return -1;
+    }
+    // sendfile couldn't be used; fall back to a manual copy below. This could happen
+    // if we're on an old kernel, for example, where sendfile could only be used
+    // with sockets and not regular files.
+#endif // HAVE_SENDFILE
+
+    // Manually read all data from the source and write it to the destination.
+
+    const int BufferLength = 80 * 1024 * sizeof(char);
+    char* buffer = reinterpret_cast<char*>(malloc(BufferLength));
+    if (buffer == nullptr)
+    {
+        return -1;
+    } 
+
+    while (true)
+    {
+        ssize_t bytesRead;
+        while (CheckInterrupted(bytesRead = read(inFd, buffer, BufferLength)));
+        if (bytesRead == -1)
+        {
+            int tmp = errno;
+            free(buffer);
+            errno = tmp;
+            return -1;
+        }
+        if (bytesRead == 0)
+        {
+            break;
+        }
+        assert(bytesRead > 0);
+
+        ssize_t offset = 0;
+        while (bytesRead > 0)
+        {
+            ssize_t bytesWritten;
+            while (CheckInterrupted(bytesWritten = write(outFd, buffer + offset, static_cast<size_t>(bytesRead))));
+            if (bytesWritten == -1)
+            {
+                int tmp = errno;
+                free(buffer);
+                errno = tmp;
+                return -1;
+            }
+            assert(bytesWritten >= 0);
+            bytesRead -= bytesWritten;
+            offset += bytesWritten;
+        }
+    }
+
+    free(buffer);
+    return 0;
+#endif // HAVE_FCOPYFILE
 }
 
 extern "C" intptr_t SystemNative_INotifyInit()

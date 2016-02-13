@@ -177,6 +177,17 @@ check_struct_has_member(
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
 
+check_cxx_source_compiles(
+    "
+    #include <sys/sendfile.h>
+    int main() { int i = sendfile(0, 0, 0, 0); }
+    "
+    HAVE_SENDFILE)
+
+check_function_exists(
+    fcopyfile
+    HAVE_FCOPYFILE)
+
 check_function_exists(
     epoll_create1
     HAVE_EPOLL)

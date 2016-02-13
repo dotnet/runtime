@@ -25,6 +25,8 @@
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_KQUEUE
+#cmakedefine01 HAVE_SENDFILE
+#cmakedefine01 HAVE_FCOPYFILE
 #cmakedefine01 HAVE_GETHOSTBYNAME_R
 #cmakedefine01 HAVE_GETHOSTBYADDR_R
 #cmakedefine01 HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
