@@ -51,9 +51,6 @@
     <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
-      <Link>Common\System\Text\EncodingHelper.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)'!='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -211,6 +208,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleOptions.cs">
       <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
+      <Link>Common\System\Text\ConsoleEncoding.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
+      <Link>Common\System\Text\EncodingHelper.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
