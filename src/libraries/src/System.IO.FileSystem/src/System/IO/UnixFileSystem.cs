@@ -32,20 +32,11 @@ namespace System.IO
             }
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
-            const int bufferSize = FileStream.DefaultBufferSize;
-            const bool useAsync = false;
-            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync))
-            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
+            using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, FileOptions.None))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileStream.DefaultBufferSize, FileOptions.None))
             {
                 Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
-
-            // Now copy over relevant read/write/execute permissions from the source to the destination
-            // Use Stat (not LStat) since permissions for symbolic links are meaninless and defer to permissions on the target
-            Interop.Sys.FileStatus status;
-            Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath);
-            int newMode = status.Mode & (int)Interop.Sys.Permissions.Mask;
-            Interop.CheckIo(Interop.Sys.ChMod(destFullPath, newMode), destFullPath);
         }
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
