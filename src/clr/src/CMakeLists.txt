@@ -88,11 +88,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # This prevents inclusion of standard C compiler headers
   add_compile_options(-nostdinc)
 
-  if(NOT CLR_CMAKE_PLATFORM_DARWIN)
-    # This prevents inclusion of standard C++ compiler headers
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
-  endif(NOT CLR_CMAKE_PLATFORM_DARWIN)
-
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
   set (RC_TO_CPP ${NATIVE_RESOURCE_DIR}/rctocpp.awk)
