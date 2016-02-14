@@ -75,13 +75,12 @@ static void TopologicalSortHelper(BasicBlock* block, Compiler* comp, bool* visit
         }
 #endif
 
-        if (iterators.Top() != ends.Top())
+        if (iterators.TopRef() != ends.TopRef())
         {
             // if the block on TOS still has unreached successors, visit them
-            AllSuccessorIter iter = iterators.Pop();
+            AllSuccessorIter& iter = iterators.TopRef();
             BasicBlock* succ = *iter;
             ++iter;
-            iterators.Push(iter);
             // push the child
 
             if (!visited[succ->bbNum])
