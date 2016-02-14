@@ -855,8 +855,9 @@ void SsaBuilder::AddDefPoint(GenTree* tree, BasicBlock* blk)
     m_pCompiler->lvaTable[lclNum].lvNumSsaNames++;
 #endif
     // Record where the defn happens.
-    m_pCompiler->lvaTable[lclNum].GetPerSsaData(defSsaNum)->m_defLoc.m_blk = blk;
-    m_pCompiler->lvaTable[lclNum].GetPerSsaData(defSsaNum)->m_defLoc.m_tree = tree;
+    LclSsaVarDsc* ssaDef = m_pCompiler->lvaTable[lclNum].GetPerSsaData(defSsaNum);
+    ssaDef->m_defLoc.m_blk = blk;
+    ssaDef->m_defLoc.m_tree = tree;
 
 #ifdef SSA_FEATURE_USEDEF
     SsaVarName key(lclNum, defSsaNum);
