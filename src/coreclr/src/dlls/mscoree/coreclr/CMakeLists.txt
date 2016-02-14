@@ -15,7 +15,7 @@ else()
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
@@ -30,7 +30,7 @@ else()
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
 
         set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
 
     if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # These options are used to force every object to be included even if it's unused.
