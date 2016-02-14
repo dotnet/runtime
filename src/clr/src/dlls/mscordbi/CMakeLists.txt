@@ -1,11 +1,13 @@
 
 # Set the RPATH of mscordbi so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
-if(CLR_CMAKE_PLATFORM_DARWIN)
+if(CORECLR_SET_RPATH)
+  if(CLR_CMAKE_PLATFORM_DARWIN)
     set(CMAKE_INSTALL_RPATH "@loader_path")
-else()
+  else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-endif(CLR_CMAKE_PLATFORM_DARWIN)
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
+endif(CORECLR_SET_RPATH)
 
 set(MSCORDBI_SOURCES
   mscordbi.cpp
