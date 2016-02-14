@@ -30,6 +30,9 @@ JIT/Methodical/varargs/callconv/gc_ctor_il_r/gc_ctor_il_r.sh
 JIT/Methodical/varargs/callconv/val_ctor_il_d/val_ctor_il_d.sh
 JIT/Methodical/varargs/callconv/val_ctor_il_r/val_ctor_il_r.sh
 JIT/Methodical/varargs/misc/Dev10_615402/Dev10_615402.sh
+JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
+JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
+JIT/Performance/CodeQuality/Roslyn/CscBench/CscBench.sh
 JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16423/b16423/b16423.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
