@@ -1172,17 +1172,17 @@ namespace System.Numerics
 
         public override string ToString()
         {
-            return ToString(string.Empty);
+            return BigNumber.FormatBigInteger(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider provider)
         {
-            return ToString(string.Empty, NumberFormatInfo.GetInstance(provider));
+            return BigNumber.FormatBigInteger(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString(string format)
         {
-            return ToString(format, NumberFormatInfo.CurrentInfo);
+            return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(string format, IFormatProvider provider)
@@ -1711,34 +1711,35 @@ namespace System.Numerics
             {
                 return (long)left._sign * right._sign;
             }
-
-            uint[] bits;
+            
             if (trivialLeft)
             {
-                bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
+                uint[] bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
 
             if (trivialRight)
             {
-                bits = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
+                uint[] bits = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
 
             if (left._bits == right._bits)
             {
-                bits = BigIntegerCalculator.Square(left._bits);
+                uint[] bits = BigIntegerCalculator.Square(left._bits);
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
 
             if (left._bits.Length < right._bits.Length)
             {
-                bits = BigIntegerCalculator.Multiply(right._bits, left._bits);
+                uint[] bits = BigIntegerCalculator.Multiply(right._bits, left._bits);
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
-
-            bits = BigIntegerCalculator.Multiply(left._bits, right._bits);
-            return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+            else
+            {
+                uint[] bits = BigIntegerCalculator.Multiply(left._bits, right._bits);
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+            }
         }
 
         public static BigInteger operator /(BigInteger dividend, BigInteger divisor)
@@ -1760,11 +1761,10 @@ namespace System.Numerics
                 // and therefore the bigger one
                 return s_bnZeroInt;
             }
-
-            uint[] bits;
+            
             if (trivialDivisor)
             {
-                bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
+                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
                 return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
             }
 
@@ -1772,9 +1772,11 @@ namespace System.Numerics
             {
                 return s_bnZeroInt;
             }
-
-            bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits);
-            return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+            else
+            {
+                uint[] bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits);
+                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+            }
         }
 
         public static BigInteger operator %(BigInteger dividend, BigInteger divisor)
