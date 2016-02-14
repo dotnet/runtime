@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -102,19 +103,33 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Copy("\0", testFile));
         }
 
-        [Fact]
-        public void CopyFileWithData()
+        public static IEnumerable<object[]> CopyFileWithData_MemberData()
+        {
+            var rand = new Random();
+            foreach (int length in new[] { 0, 1, 3, 4096, 1024 * 80, 1024 * 1024 * 10 })
+            {
+                char[] data = new char[length];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = (char)rand.Next(0, 256);
+                }
+                yield return new object[] { data };
+            }
+        }
+
+        [Theory]
+        [MemberData("CopyFileWithData_MemberData")]
+        public void CopyFileWithData_MemberData(char[] data)
         {
             string testFileSource = GetTestFilePath();
             string testFileDest = GetTestFilePath();
-            char[] data = { 'a', 'A', 'b' };
 
             // Write and copy file
             using (StreamWriter stream = new StreamWriter(File.Create(testFileSource)))
             {
                 stream.Write(data, 0, data.Length);
-                stream.Flush();
             }
+
             Copy(testFileSource, testFileDest);
 
             // Ensure copy transferred written data
