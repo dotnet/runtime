@@ -4015,8 +4015,9 @@ void Compiler::fgValueNumber()
             // We use the VNF_InitVal(i) from here so we know that this value is loop-invariant
             // in all loops.
             ValueNum initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(i));
-            varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_vnPair.SetBoth(initVal);
-            varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_defLoc.m_blk = fgFirstBB;
+            LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
+            ssaDef->m_vnPair.SetBoth(initVal);
+            ssaDef->m_defLoc.m_blk = fgFirstBB;
         }
         else if (info.compInitMem || varDsc->lvMustInit ||
                  (varDsc->lvTracked && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex)))
@@ -4073,8 +4074,9 @@ void Compiler::fgValueNumber()
 #endif
             assert(initVal != ValueNumStore::NoVN);
 
-            varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_vnPair.SetBoth(initVal);
-            varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_defLoc.m_blk = fgFirstBB;
+            LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
+            ssaDef->m_vnPair.SetBoth(initVal);
+            ssaDef->m_defLoc.m_blk = fgFirstBB;
         }
     }
     // Give "Heap" an initial value number (about which we know nothing).
