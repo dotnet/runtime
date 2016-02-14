@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
+
 using Xunit;
 
 namespace System.Drawing.PrimitivesTest
@@ -79,6 +81,32 @@ namespace System.Drawing.PrimitivesTest
         }
 
         [Theory]
+        [InlineData(0, 0)]
+        [InlineData(float.MaxValue, float.MinValue)]
+        public static void LocationSetTest(float x, float y)
+        {
+            var point = new PointF(x, y);
+            var rect = new RectangleF(10, 10, 10, 10);
+            rect.Location = point;
+            Assert.Equal(point, rect.Location);
+            Assert.Equal(point.X, rect.X);
+            Assert.Equal(point.Y, rect.Y);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(float.MaxValue, float.MinValue)]
+        public static void SizeSetTest(float x, float y)
+        {
+            var size = new SizeF(x, y);
+            var rect = new RectangleF(10, 10, 10, 10);
+            rect.Size = size;
+            Assert.Equal(size, rect.Size);
+            Assert.Equal(size.Width, rect.Width);
+            Assert.Equal(size.Height, rect.Height);
+        }
+
+        [Theory]
         [InlineData(float.MaxValue, float.MinValue, float.MinValue, float.MaxValue)]
         [InlineData(float.MaxValue, 0, 0, float.MaxValue)]
         [InlineData(0, float.MinValue, float.MaxValue, 0)]
@@ -90,6 +118,27 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+        }
+        
+        [Fact]
+        public static void EqualityTest_NotRectangleF()
+        {
+            var rectangle = new RectangleF(0, 0, 0, 0);
+            Assert.False(rectangle.Equals(null));
+            Assert.False(rectangle.Equals(0));
+            Assert.False(rectangle.Equals(new Rectangle(0, 0, 0, 0)));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var rect1 = new RectangleF(10, 10, 10, 10);
+            var rect2 = new RectangleF(10, 10, 10, 10);
+            Assert.Equal(rect1.GetHashCode(), rect2.GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new RectangleF(20, 10, 10, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new RectangleF(10, 20, 10, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new RectangleF(10, 10, 20, 10).GetHashCode());
+            Assert.NotEqual(rect1.GetHashCode(), new RectangleF(10, 10, 10, 20).GetHashCode());
         }
 
         [Theory]
@@ -140,6 +189,16 @@ namespace System.Drawing.PrimitivesTest
             Assert.False(rect1.IntersectsWith(expectedRect));
         }
 
+        [Fact]
+        public static void Intersect_IntersectingRects_Test()
+        {
+            var rect1 = new RectangleF(0, 0, 5, 5);
+            var rect2 = new RectangleF(1, 1, 3, 3);
+            var expected = new RectangleF(1, 1, 3, 3);
+
+            Assert.Equal(expected, RectangleF.Intersect(rect1, rect2));
+        }
+
         [Theory]
         [InlineData(0, 0, 0, 0)]
         [InlineData(float.MaxValue, float.MinValue, float.MinValue, float.MaxValue)]
@@ -179,11 +238,13 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(expectedRect, r1);
         }
 
-        [Fact]
-        public void ToStringTest()
+        [Theory]
+        [InlineData(0, 0, 0, 0)]
+        [InlineData(5, -5, 0.2, -1.3)]
+        public void ToStringTest(float x, float y, float width, float height)
         {
-            string expected = "{X=0,Y=0,Width=0,Height=0}";
-            Assert.Equal(expected, RectangleF.Empty.ToString());
+            var r = new RectangleF(x, y, width, height);
+            Assert.Equal(string.Format(CultureInfo.CurrentCulture, "{{X={0},Y={1},Width={2},Height={3}}}", r.X, r.Y, r.Width, r.Height), r.ToString());
         }
     }
 }

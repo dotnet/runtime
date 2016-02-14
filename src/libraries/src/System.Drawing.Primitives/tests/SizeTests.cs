@@ -26,6 +26,12 @@ namespace System.Drawing.PrimitivesTests
             Size s2 = new Size(new Point(width, height));
 
             Assert.Equal(s1, s2);
+
+            s1.Width = 10;
+            Assert.Equal(10, s1.Width);
+
+            s1.Height = -10;
+            Assert.Equal(-10, s1.Height);
         }
 
         [Fact]
@@ -135,6 +141,24 @@ namespace System.Drawing.PrimitivesTests
             Assert.False(p2.Equals(p3));
 
             Assert.Equal(p1.GetHashCode(), p3.GetHashCode());
+        }
+
+        [Fact]
+        public static void EqualityTest_NotSize()
+        {
+            var size = new Size(0, 0);
+            Assert.False(size.Equals(null));
+            Assert.False(size.Equals(0));
+            Assert.False(size.Equals(new SizeF(0, 0)));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var size = new Size(10, 10);
+            Assert.Equal(size.GetHashCode(), new Size(10, 10).GetHashCode());
+            Assert.NotEqual(size.GetHashCode(), new Size(20, 10).GetHashCode());
+            Assert.NotEqual(size.GetHashCode(), new Size(10, 20).GetHashCode());
         }
 
         [Fact]
