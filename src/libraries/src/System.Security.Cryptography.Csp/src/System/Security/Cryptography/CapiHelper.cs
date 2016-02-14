@@ -781,7 +781,7 @@ namespace Internal.NativeCrypto
                 throw new CryptographicException(SR.Format(SR.Argument_InvalidValue, "Encrypted data length is less than 0"));
             }
             byte[] dataTobeDecrypted = new byte[encryptedDataLength];
-            Array.Copy(encryptedData, 0, dataTobeDecrypted, 0, encryptedDataLength);
+            Buffer.BlockCopy(encryptedData, 0, dataTobeDecrypted, 0, encryptedDataLength);
             Array.Reverse(dataTobeDecrypted); //ToDO: Check is this is really needed? To be confirmed with tests
 
             int dwFlags = fOAEP ? (int)CryptDecryptFlags.CRYPT_OAEP : 0;
@@ -814,7 +814,7 @@ namespace Internal.NativeCrypto
 
 
             decryptedData = new byte[decryptedDataLength];
-            Array.Copy(dataTobeDecrypted, 0, decryptedData, 0, decryptedDataLength);
+            Buffer.BlockCopy(dataTobeDecrypted, 0, decryptedData, 0, decryptedDataLength);
             return;
         }
 
@@ -857,7 +857,7 @@ namespace Internal.NativeCrypto
             // key should always be larger than the plaintext key, so use that to determine the buffer size.
             Debug.Assert(cbEncryptedKey >= cbKey);
             pbEncryptedKey = new byte[cbEncryptedKey];
-            Array.Copy(pbKey, 0, pbEncryptedKey, 0, cbKey);
+            Buffer.BlockCopy(pbKey, 0, pbEncryptedKey, 0, cbKey);
 
             // Encrypt for real - the last parameter is the total size of the in/out buffer, while the second to last
             // parameter specifies the size of the plaintext to encrypt.

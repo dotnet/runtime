@@ -194,7 +194,7 @@ namespace System.Data.SqlTypes
 
                     default:
                         buffer = new byte[_lCurLen];
-                        Array.Copy(m_rgbBuf, buffer, (int)_lCurLen);
+                        System.Buffer.BlockCopy(m_rgbBuf, 0, buffer, 0, (int)_lCurLen);
                         break;
                 }
 
@@ -343,7 +343,7 @@ namespace System.Data.SqlTypes
                     default:
                         // ProjectK\Core doesn't support long-typed array indexers
                         Debug.Assert(offset < int.MaxValue);
-                        Array.Copy(m_rgbBuf, checked((int)offset), buffer, offsetInBuffer, count);
+                        System.Buffer.BlockCopy(m_rgbBuf, checked((int)offset), buffer, offsetInBuffer, count);
                         break;
                 }
             }
@@ -409,7 +409,7 @@ namespace System.Data.SqlTypes
                 {
                     // ProjectK\Core doesn't support long-typed array indexers
                     Debug.Assert(offset < int.MaxValue);
-                    Array.Copy(buffer, offsetInBuffer, m_rgbBuf, checked((int)offset), count);
+                    System.Buffer.BlockCopy(buffer, offsetInBuffer, m_rgbBuf, checked((int)offset), count);
 
                     // If the last position that has been written is after
                     // the current data length, reset the length
