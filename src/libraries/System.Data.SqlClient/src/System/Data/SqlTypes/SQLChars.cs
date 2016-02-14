@@ -186,7 +186,7 @@ namespace System.Data.SqlTypes
 
                     default:
                         buffer = new char[_lCurLen];
-                        Array.Copy(m_rgchBuf, buffer, (int)_lCurLen);
+                        Array.Copy(m_rgchBuf, 0, buffer, 0, (int)_lCurLen);
                         break;
                 }
 

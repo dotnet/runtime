@@ -75,7 +75,7 @@ namespace System.Security.Principal
                 if (!Interop.SecurityBase.AllocateLocallyUniqueId(out sourceContext.SourceIdentifier))
                     throw new SecurityException(new Win32Exception().Message);
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
-                Array.Copy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
+                Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
                 // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
                 // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves 

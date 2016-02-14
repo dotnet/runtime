@@ -467,7 +467,7 @@ namespace System.Xml
                         string tmp = new string(charsStart, 0, (int)(chars - charsStart));
                         byte[] newBytes = _encoding != null ? _encoding.GetBytes(tmp) : s_UTF8Encoding.GetBytes(tmp);
                         int toCopy = Math.Min(newBytes.Length, (int)(bytesMax - bytes));
-                        Array.Copy(newBytes, 0, buffer, (int)(bytes - _bytes) + offset, toCopy);
+                        Buffer.BlockCopy(newBytes, 0, buffer, (int)(bytes - _bytes) + offset, toCopy);
 
                         bytes += toCopy;
 

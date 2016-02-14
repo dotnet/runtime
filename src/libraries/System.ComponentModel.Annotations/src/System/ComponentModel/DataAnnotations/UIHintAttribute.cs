@@ -100,7 +100,7 @@ namespace System.ComponentModel.DataAnnotations
                 if (controlParameters != null)
                 {
                     _inputControlParameters = new object[controlParameters.Length];
-                    Array.Copy(controlParameters, _inputControlParameters, controlParameters.Length);
+                    Array.Copy(controlParameters, 0, _inputControlParameters, 0, controlParameters.Length);
                 }
             }
 

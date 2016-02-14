@@ -113,7 +113,7 @@ namespace System.Net.NetworkInformation
                     int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
                     // We want to return a buffer with the actual data we sent out, not including the header data.
                     byte[] dataBuffer = new byte[bytesReceived - dataOffset];
-                    Array.Copy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
+                    Buffer.BlockCopy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
 
                     IPStatus status = isIpv4
                                         ? IcmpV4MessageConstants.MapV4TypeToIPStatus(type, code)

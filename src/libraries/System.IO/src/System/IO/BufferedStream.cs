@@ -134,7 +134,7 @@ namespace System.IO
                 return;
 
             byte[] shadowBuffer = new byte[Math.Min(_bufferSize + _bufferSize, MaxShadowBufferSize)];
-            Array.Copy(_buffer, 0, shadowBuffer, 0, _writePos);
+            Buffer.BlockCopy(_buffer, 0, shadowBuffer, 0, _writePos);
             _buffer = shadowBuffer;
         }
 
@@ -416,7 +416,7 @@ namespace System.IO
 
             if (readbytes > count)
                 readbytes = count;
-            Array.Copy(_buffer, _readPos, array, offset, readbytes);
+            Buffer.BlockCopy(_buffer, _readPos, array, offset, readbytes);
             _readPos += readbytes;
 
             return readbytes;
@@ -683,7 +683,7 @@ namespace System.IO
                 return;
 
             EnsureBufferAllocated();
-            Array.Copy(array, offset, _buffer, _writePos, bytesToWrite);
+            Buffer.BlockCopy(array, offset, _buffer, _writePos, bytesToWrite);
 
             _writePos += bytesToWrite;
             count -= bytesToWrite;
@@ -825,7 +825,7 @@ namespace System.IO
                     if (totalUserbytes <= (_bufferSize + _bufferSize) && totalUserbytes <= MaxShadowBufferSize)
                     {
                         EnsureShadowBufferAllocated();
-                        Array.Copy(array, offset, _buffer, _writePos, count);
+                        Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
                         _stream.Write(_buffer, 0, totalUserbytes);
                         _writePos = 0;
                         return;
@@ -977,7 +977,7 @@ namespace System.IO
                         if (totalUserBytes <= (_bufferSize + _bufferSize) && totalUserBytes <= MaxShadowBufferSize)
                         {
                             EnsureShadowBufferAllocated();
-                            Array.Copy(array, offset, _buffer, _writePos, count);
+                            Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
 
                             await _stream.WriteAsync(_buffer, 0, totalUserBytes, cancellationToken).ConfigureAwait(false);
                             _writePos = 0;

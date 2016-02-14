@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.X509Certificates
                         //  SHA-1 hash of the value of the BIT STRING subjectPublicKey 
                         // (excluding the tag, length, and number of unused bit string bits)
                         byte[] shortSha1 = new byte[8];
-                        Array.Copy(sha1, sha1.Length - 8, shortSha1, 0, shortSha1.Length);
+                        Buffer.BlockCopy(sha1, sha1.Length - 8, shortSha1, 0, shortSha1.Length);
                         shortSha1[0] &= 0x0f;
                         shortSha1[0] |= 0x40;
                         return shortSha1;
