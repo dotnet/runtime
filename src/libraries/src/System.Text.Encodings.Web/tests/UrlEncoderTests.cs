@@ -18,6 +18,17 @@ namespace Microsoft.Framework.WebEncoders
         private static UTF8Encoding _utf8EncodingThrowOnInvalidBytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         [Fact]
+        public void TestSurrogate()
+        {
+            Assert.Equal("%F0%9F%92%A9", System.Text.Encodings.Web.UrlEncoder.Default.Encode("\U0001f4a9"));
+            using (var writer = new StringWriter())
+            {
+                System.Text.Encodings.Web.UrlEncoder.Default.Encode(writer, "\U0001f4a9");
+                Assert.Equal("%F0%9F%92%A9", writer.GetStringBuilder().ToString());
+            }
+        }
+        
+        [Fact]
         public void Ctor_WithTextEncoderSettings()
         {
             // Arrange
