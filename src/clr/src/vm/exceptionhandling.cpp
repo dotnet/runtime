@@ -4691,6 +4691,30 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     }
     while (true);
 
+    // Ensure that the corruption severity is set for exceptions that didn't pass through managed frames
+    // yet and so there is no exception tracker.
+    if (ex.IsFirstPass())
+    {
+        // Get the thread and the thread exception state - they must exist at this point
+        Thread *pCurThread = GetThread();
+        _ASSERTE(pCurThread != NULL);
+
+        ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
+        _ASSERTE(pCurTES != NULL);
+
+        ExceptionTracker* pEHTracker = pCurTES->GetCurrentExceptionTracker();
+        if (pEHTracker == NULL)
+        {
+            CorruptionSeverity severity = NotCorrupting;
+            if (CEHelper::IsProcessCorruptedStateException(ex.ExceptionRecord.ExceptionCode))
+            {
+                severity = ProcessCorrupting;
+            }
+
+            pCurTES->SetLastActiveExceptionCorruptionSeverity(severity);
+        }
+    }
+
     throw ex;
 }
 
