@@ -400,7 +400,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public TypeArray ConcatParams(CType[] prgtype1, CType[] prgtype2)
         {
             CType[] combined = new CType[prgtype1.Length + prgtype2.Length];
-            Array.Copy(prgtype1, combined, prgtype1.Length);
+            Array.Copy(prgtype1, 0, combined, 0, prgtype1.Length);
             Array.Copy(prgtype2, 0, combined, prgtype1.Length, prgtype2.Length);
             return AllocParams(combined);
         }

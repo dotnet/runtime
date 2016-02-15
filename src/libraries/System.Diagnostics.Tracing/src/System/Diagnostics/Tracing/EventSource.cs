@@ -3645,7 +3645,7 @@ namespace System.Diagnostics.Tracing
             if (eventData == null || eventData.Length <= eventAttribute.EventId)
             {
                 EventMetadata[] newValues = new EventMetadata[Math.Max(eventData.Length + 16, eventAttribute.EventId + 1)];
-                Array.Copy(eventData, newValues, eventData.Length);
+                Array.Copy(eventData, 0, newValues, 0, eventData.Length);
                 eventData = newValues;
             }
 
@@ -3684,7 +3684,7 @@ namespace System.Diagnostics.Tracing
             if (eventData.Length - idx > 2)      // allow one wasted slot. 
             {
                 EventMetadata[] newValues = new EventMetadata[idx + 1];
-                Array.Copy(eventData, newValues, newValues.Length);
+                Array.Copy(eventData, 0, newValues, 0, newValues.Length);
                 eventData = newValues;
             }
         }

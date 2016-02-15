@@ -1370,9 +1370,9 @@ namespace System.Xml
             if (_trailByteCount > 0)
             {
                 int actual = Math.Min(_trailByteCount, byteCount);
-                Array.Copy(_trailBytes, 0, buffer, offset, actual);
+                Buffer.BlockCopy(_trailBytes, 0, buffer, offset, actual);
                 _trailByteCount -= actual;
-                Array.Copy(_trailBytes, actual, _trailBytes, 0, _trailByteCount);
+                Buffer.BlockCopy(_trailBytes, actual, _trailBytes, 0, _trailByteCount);
                 return actual;
             }
             XmlNodeType nodeType = _node.NodeType;
@@ -1440,9 +1440,9 @@ namespace System.Xml
                             _trailBytes = new byte[3];
                         _trailByteCount = encoding.GetBytes(chars, 0, charCount, _trailBytes, 0);
                         int actual = Math.Min(_trailByteCount, byteCount);
-                        Array.Copy(_trailBytes, 0, buffer, offset, actual);
+                        Buffer.BlockCopy(_trailBytes, 0, buffer, offset, actual);
                         _trailByteCount -= actual;
-                        Array.Copy(_trailBytes, actual, _trailBytes, 0, _trailByteCount);
+                        Buffer.BlockCopy(_trailBytes, actual, _trailBytes, 0, _trailByteCount);
                         return actual;
                     }
                     else

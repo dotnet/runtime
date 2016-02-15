@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Int32 destDataOffs;
             if (destination.TryGetUnderlyingData(out destDataArr, out destDataOffs))
             {
-                Array.Copy(source, sourceIndex, destDataArr, (int)(destDataOffs + destinationIndex), count);
+                Buffer.BlockCopy(source, sourceIndex, destDataArr, (int)(destDataOffs + destinationIndex), count);
                 return;
             }
 
@@ -194,7 +194,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Int32 srcDataOffs;
             if (source.TryGetUnderlyingData(out srcDataArr, out srcDataOffs))
             {
-                Array.Copy(srcDataArr, (int)(srcDataOffs + sourceIndex), destination, destinationIndex, count);
+                Buffer.BlockCopy(srcDataArr, (int)(srcDataOffs + sourceIndex), destination, destinationIndex, count);
                 return;
             }
 
@@ -245,7 +245,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 Debug.Assert(sourceIndex <= Int32.MaxValue);
                 Debug.Assert(destinationIndex <= Int32.MaxValue);
 
-                Array.Copy(srcDataArr, srcDataOffs + (Int32)sourceIndex, destDataArr, destDataOffs + (Int32)destinationIndex, (Int32)count);
+                Buffer.BlockCopy(srcDataArr, srcDataOffs + (Int32)sourceIndex, destDataArr, destDataOffs + (Int32)destinationIndex, (Int32)count);
                 return;
             }
 
