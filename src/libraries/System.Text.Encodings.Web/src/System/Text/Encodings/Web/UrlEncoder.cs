@@ -51,12 +51,10 @@ namespace System.Text.Encodings.Web
         internal readonly static DefaultUrlEncoder Singleton = new DefaultUrlEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 
         // We perform UTF8 conversion of input, which means that the worst case is
-        // 9 output chars per input char: [input] U+FFFF -> [output] "%XX%YY%ZZ".
-        // We don't need to worry about astral code points since they consume 2 input
-        // chars to produce 12 output chars "%XX%YY%ZZ%WW", which is 6 output chars per input char.
+        // 12 output chars per input surrogate char: [input] U+FFFF U+FFFF -> [output] "%XX%YY%ZZ%WW".
         public override int MaxOutputCharactersPerInputCharacter
         {
-            get { return 9; }
+            get { return 12; }
         }
 
         public DefaultUrlEncoder(TextEncoderSettings filter)
@@ -172,11 +170,13 @@ namespace System.Text.Encodings.Web
             {
                 char highNibble, lowNibble;
                 HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
-                if (bufferLength < 3)
+
+                if (numberOfCharactersWritten + 3 > bufferLength)
                 {
                     numberOfCharactersWritten = 0;
                     return false;
                 }
+
                 *buffer = '%'; buffer++;
                 *buffer = highNibble; buffer++;
                 *buffer = lowNibble; buffer++;

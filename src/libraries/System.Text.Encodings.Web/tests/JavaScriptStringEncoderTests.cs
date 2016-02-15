@@ -14,6 +14,17 @@ namespace Microsoft.Framework.WebEncoders
     public class JavaScriptStringEncoderTests
     {
         [Fact]
+        public void TestSurrogate()
+        {
+            Assert.Equal("\\uD83D\\uDCA9", System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode("\U0001f4a9"));
+            using (var writer = new StringWriter())
+            {
+                System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(writer, "\U0001f4a9");
+                Assert.Equal("\\uD83D\\uDCA9", writer.GetStringBuilder().ToString());
+            }
+        }
+
+        [Fact]
         public void Ctor_WithTextEncoderSettings()
         {
             // Arrange
@@ -133,6 +144,7 @@ namespace Microsoft.Framework.WebEncoders
                     else if (input == "\r") { expected = @"\r"; }
                     else if (input == "\\") { expected = @"\\"; }
                     else if (input == "/") { expected = @"\/"; }
+                    else if (input == "`") { expected = @"\u0060"; }
                     else
                     {
                         bool mustEncode = false;
