@@ -486,7 +486,6 @@ mono_jit_init_version
 mono_jit_parse_options
 mono_jit_set_aot_mode
 mono_jit_set_aot_only
-mono_jit_set_domain
 mono_jit_set_trace_options
 mono_jit_thread_attach
 mono_ldstr

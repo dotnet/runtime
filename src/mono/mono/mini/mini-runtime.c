@@ -825,7 +825,8 @@ mono_get_lmf_addr (void)
 	 * mono_get_lmf_addr, and mono_get_lmf_addr requires the thread to be attached.
 	 */
 
-	mono_jit_thread_attach (NULL);
+	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 
 	if ((jit_tls = mono_native_tls_get_value (mono_jit_tls_id)))
 		return &jit_tls->lmf;
@@ -884,48 +885,119 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /*
- * mono_jit_thread_attach:
+ * mono_jit_thread_attach: called by native->managed wrappers
  *
- * Called by native->managed wrappers. Returns the original domain which needs to be
- * restored, or NULL.
+ * In non-coop mode:
+ *  - @dummy: is NULL
+ *  - @return: the original domain which needs to be restored, or NULL.
+ *
+ * In coop mode:
+ *  - @dummy: contains the original domain
+ *  - @return: a cookie containing current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
  */
-MonoDomain*
-mono_jit_thread_attach (MonoDomain *domain)
+gpointer
+mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 {
 	MonoDomain *orig;
 
-	if (!domain)
-		/*
-		 * Happens when called from AOTed code which is only used in the root
-		 * domain.
-		 */
+	if (!domain) {
+		/* Happens when called from AOTed code which is only used in the root domain. */
 		domain = mono_get_root_domain ();
+	}
+
+	g_assert (domain);
+
+	if (!mono_threads_is_coop_enabled ()) {
+		gboolean attached;
 
 #ifdef MONO_HAVE_FAST_TLS
-	if (!MONO_FAST_TLS_GET (mono_lmf_addr)) {
-		mono_thread_attach (domain);
-		// #678164
-		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-	}
+		attached = MONO_FAST_TLS_GET (mono_lmf_addr) != NULL;
 #else
-	if (!mono_native_tls_get_value (mono_jit_tls_id)) {
-		mono_thread_attach (domain);
-		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-	}
+		attached = mono_native_tls_get_value (mono_jit_tls_id) != NULL;
 #endif
-	orig = mono_domain_get ();
-	if (orig != domain)
-		mono_domain_set (domain, TRUE);
 
-	return orig != domain ? orig : NULL;
+		if (!attached) {
+			mono_thread_attach (domain);
+
+			// #678164
+			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+		}
+
+		orig = mono_domain_get ();
+		if (orig != domain)
+			mono_domain_set (domain, TRUE);
+
+		return orig != domain ? orig : NULL;
+	} else {
+		MonoThreadInfo *info;
+
+		info = mono_thread_info_current_unchecked ();
+		if (!info || !mono_thread_info_is_live (info)) {
+			/* thread state STARTING -> RUNNING */
+			mono_thread_attach (domain);
+
+			// #678164
+			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+
+			*dummy = NULL;
+
+			/* mono_threads_reset_blocking_start returns the current MonoThreadInfo
+			 * if we were in BLOCKING mode */
+			return mono_thread_info_current ();
+		} else {
+			orig = mono_domain_get ();
+
+			/* orig might be null if we did an attach -> detach -> attach sequence */
+
+			if (orig != domain)
+				mono_domain_set (domain, TRUE);
+
+			*dummy = orig;
+
+			/* thread state (BLOCKING|RUNNING) -> RUNNING */
+			return mono_threads_reset_blocking_start (dummy);
+		}
+	}
 }
 
-/* Called by native->managed wrappers */
+/*
+ * mono_jit_thread_detach: called by native->managed wrappers
+ *
+ * In non-coop mode:
+ *  - @cookie: the original domain which needs to be restored, or NULL.
+ *  - @dummy: is NULL
+ *
+ * In coop mode:
+ *  - @cookie: contains current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
+ *  - @dummy: contains the original domain
+ */
 void
-mono_jit_set_domain (MonoDomain *domain)
+mono_jit_thread_detach (gpointer cookie, gpointer *dummy)
 {
-	if (domain)
-		mono_domain_set (domain, TRUE);
+	MonoDomain *domain, *orig;
+
+	if (!mono_threads_is_coop_enabled ()) {
+		orig = (MonoDomain*) cookie;
+
+		if (orig)
+			mono_domain_set (orig, TRUE);
+	} else {
+		orig = (MonoDomain*) *dummy;
+
+		domain = mono_domain_get ();
+		g_assert (domain);
+
+		/* it won't do anything if cookie is NULL
+		 * thread state RUNNING -> (RUNNING|BLOCKING) */
+		mono_threads_reset_blocking_end (cookie, dummy);
+
+		if (orig != domain) {
+			if (!orig)
+				mono_domain_unset ();
+			else
+				mono_domain_set (orig, TRUE);
+		}
+	}
 }
 
 /**
@@ -3777,8 +3849,8 @@ register_icalls (void)
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
-	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
-	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr ptr", TRUE);
+	register_icall (mono_jit_thread_detach, "mono_jit_thread_detach", "void ptr ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);

@@ -7758,7 +7758,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
-	int coop_gc_var, coop_gc_dummy_local;
 
 	sig = m->sig;
 	csig = m->csig;
@@ -7785,30 +7784,22 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		mono_mb_add_local (mb, sig->ret);
 	}
 
-	if (mono_threads_is_coop_enabled ()) {
-		/* local 4, the local to be used when calling the reset_blocking funcs */
-		/* tons of code hardcode 3 to be the return var */
-		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		/* local 5, the local used to get a stack address for suspend funcs */
-		coop_gc_dummy_local = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	}
-
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
 	/*
 	 * Might need to attach the thread to the JIT or change the
 	 * domain for the callback.
+	 *
+	 * Also does the (STARTING|BLOCKING|RUNNING) -> RUNNING thread state transtion
+	 *
+	 * mono_jit_attach ();
 	 */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
 
-	if (mono_threads_is_coop_enabled ()) {
-		/* XXX can we merge reset_blocking_start with JIT_ATTACH above and save one call? */
-		mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
-		mono_mb_emit_icall (mb, mono_threads_reset_blocking_start);
-		mono_mb_emit_stloc (mb, coop_gc_var);
-	}
+	/* <interrupt check> */
+	emit_thread_interrupt_checkpoint (mb);
 
 	/* we first do all conversions */
 	tmp_locals = (int *)alloca (sizeof (int) * sig->param_count);
@@ -7831,8 +7822,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			break;
 		}
 	}
-
-	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->hasthis) {
 		if (target_handle) {
@@ -7860,6 +7849,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			mono_mb_emit_ldarg (mb, i);
 	}
 
+	/* ret = method (...) */
 	mono_mb_emit_managed_call (mb, method, NULL);
 
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
@@ -7938,16 +7928,15 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		}
 	}
 
-	if (mono_threads_is_coop_enabled ()) {
-		/* XXX merge reset_blocking_end with detach */
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
-		mono_mb_emit_icall (mb, mono_threads_reset_blocking_end);
-	}
-
+	/*
+	 * Also does the RUNNING -> (BLOCKING|RUNNING) thread state transition
+	 *
+	 * mono_jit_detach ();
+	 */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
 
+	/* return ret; */
 	if (m->retobj_var) {
 		mono_mb_emit_ldloc (mb, m->retobj_var);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
