@@ -1790,21 +1790,29 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
 
                 // case PAL_SO_IP_DONTFRAGMENT:
 
+#ifdef IP_ADD_SOURCE_MEMBERSHIP
                 case PAL_SO_IP_ADD_SOURCE_MEMBERSHIP:
                     optName = IP_ADD_SOURCE_MEMBERSHIP;
                     return true;
+#endif
 
+#ifdef IP_DROP_SOURCE_MEMBERSHIP
                 case PAL_SO_IP_DROP_SOURCE_MEMBERSHIP:
                     optName = IP_DROP_SOURCE_MEMBERSHIP;
                     return true;
+#endif
 
+#ifdef IP_BLOCK_SOURCE
                 case PAL_SO_IP_BLOCK_SOURCE:
                     optName = IP_BLOCK_SOURCE;
                     return true;
+#endif
 
+#ifdef IP_UNBLOCK_SOURCE
                 case PAL_SO_IP_UNBLOCK_SOURCE:
                     optName = IP_UNBLOCK_SOURCE;
                     return true;
+#endif
 
                 case PAL_SO_IP_PKTINFO:
                     optName = IP_PKTINFO;
