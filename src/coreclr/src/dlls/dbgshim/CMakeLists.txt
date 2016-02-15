@@ -24,11 +24,11 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-if(CLR_CMAKE_PLATFORM_LINUX)
+if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
-endif(CLR_CMAKE_PLATFORM_LINUX)
+endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
 
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
