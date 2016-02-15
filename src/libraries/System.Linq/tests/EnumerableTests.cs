@@ -253,26 +253,6 @@ namespace System.Linq.Tests
             }
         }
 
-        /// <summary>
-        /// Emulation of async collection change.
-        /// It adds a new element to the sequence each time the Count property touched,
-        /// so the further call of CopyTo method will fail.
-        /// </summary>
-        protected class GrowingAfterCountReadCollection : TestCollection<int>
-        {
-            public GrowingAfterCountReadCollection(int[] items) : base(items) { }
-
-            public override int Count
-            {
-                get
-                {
-                    var result = base.Count;
-                    Array.Resize(ref Items, Items.Length + 1);
-                    return result;
-                }
-            }
-        }
-
         protected static IEnumerable<T> ForceNotCollection<T>(IEnumerable<T> source)
         {
             foreach (T item in source) yield return item;
