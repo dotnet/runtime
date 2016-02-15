@@ -15,6 +15,8 @@ namespace System.Linq
             if (count <= 0) return new EmptyPartition<TSource>();
             IPartition<TSource> partition = source as IPartition<TSource>;
             if (partition != null) return partition.Take(count);
+            IList<TSource> sourceList = source as IList<TSource>;
+            if (sourceList != null) return new ListPartition<TSource>(sourceList, 0, count - 1);
             return TakeIterator(source, count);
         }
 
