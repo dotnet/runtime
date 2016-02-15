@@ -211,7 +211,7 @@ namespace System.Data.ProviderBase
                                 }
                             }
 
-                            // if didn't find one, pick the next one in round-robbin fashion
+                            // if didn't find one, pick the next one in round-robin fashion
                             if (idx == s_pendingOpenNonPooled.Length)
                             {
                                 idx = (int)(s_pendingOpenNonPooledNext % s_pendingOpenNonPooled.Length);
@@ -222,7 +222,7 @@ namespace System.Data.ProviderBase
                             }
 
                             // now that we have an antecedent task, schedule our work when it is completed.
-                            // If it is a new slot or a compelted task, this continuation will start right away.
+                            // If it is a new slot or a completed task, this continuation will start right away.
                             newTask = s_pendingOpenNonPooled[idx].ContinueWith((_) =>
                             {
                                 var newConnection = CreateNonPooledConnection(owningConnection, poolGroup, userOptions);
