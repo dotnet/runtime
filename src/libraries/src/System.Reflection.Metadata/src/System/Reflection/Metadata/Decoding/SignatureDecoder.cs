@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 #if SRM
@@ -133,10 +135,14 @@ namespace Roslyn.Reflection.Metadata.Decoding
 
                 case (int)SignatureTypeHandleCode.Class:
                 case (int)SignatureTypeHandleCode.ValueType:
-                    return DecodeTypeDefOrRef(ref blobReader, (SignatureTypeHandleCode)typeCode);
+                    return DecodeTypeHandle(ref blobReader, (SignatureTypeHandleCode)typeCode, allowTypeSpecifications);
 
                 default:
+#if SRM
                     throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureTypeCode, typeCode));
+#else
+                    throw new BadImageFormatException();
+#endif
             }
         }
 
@@ -151,7 +157,11 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 // This method is used for Local signatures and method specs, neither of which can have
                 // 0 elements. Parameter sequences can have 0 elements, but they are handled separately
                 // to deal with the sentinel/varargs case.
+#if SRM
                 throw new BadImageFormatException(SR.SignatureTypeSequenceMustHaveAtLeastOneElement);
+#else
+                throw new BadImageFormatException();
+#endif
             }
 
             var types = ImmutableArray.CreateBuilder<TType>(count);
@@ -298,23 +308,13 @@ namespace Roslyn.Reflection.Metadata.Decoding
 
         private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)
         {
-            TType modifier = DecodeTypeDefOrRefOrSpec(ref blobReader, SignatureTypeHandleCode.Unresolved);
+            TType modifier = DecodeTypeHandle(ref blobReader, SignatureTypeHandleCode.Unresolved, allowTypeSpecifications: true);
             TType unmodifiedType = DecodeType(ref blobReader);
 
             return _provider.GetModifiedType(_metadataReaderOpt, isRequired, modifier, unmodifiedType);
         }
 
-        private TType DecodeTypeDefOrRef(ref BlobReader blobReader, SignatureTypeHandleCode code)
-        {
-            return DecodeTypeHandle(ref blobReader, code, alllowTypeSpecifications: false);
-        }
-
-        private TType DecodeTypeDefOrRefOrSpec(ref BlobReader blobReader, SignatureTypeHandleCode code)
-        {
-            return DecodeTypeHandle(ref blobReader, code, alllowTypeSpecifications: true);
-        }
-
-        private TType DecodeTypeHandle(ref BlobReader blobReader, SignatureTypeHandleCode code, bool alllowTypeSpecifications)
+        private TType DecodeTypeHandle(ref BlobReader blobReader, SignatureTypeHandleCode code, bool allowTypeSpecifications)
         {
             // Force no differentiation of class vs. value type unless the option is enabled.
             // Avoids cost of WinRT projection.
@@ -341,11 +341,15 @@ namespace Roslyn.Reflection.Metadata.Decoding
                         return _provider.GetTypeFromReference(_metadataReaderOpt, typeRef, code);
 
                     case HandleKind.TypeSpecification:
-                        if (!alllowTypeSpecifications)
+                        if (!allowTypeSpecifications)
                         {
+#if SRM
                             // To prevent cycles, the token following (CLASS | VALUETYPE) must not be a type spec.
                             // https://github.com/dotnet/coreclr/blob/8ff2389204d7c41b17eff0e9536267aea8d6496f/src/md/compiler/mdvalidator.cpp#L6154-L6160
                             throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
+#else
+                            throw new BadImageFormatException();
+#endif
                         }
 
                         if (code != SignatureTypeHandleCode.Unresolved)
@@ -367,7 +371,11 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 }
             }
 
+#if SRM
             throw new BadImageFormatException(SR.NotTypeDefOrRefOrSpecHandle);
+#else
+            throw new BadImageFormatException();
+#endif
         }
 
         private void ProjectClassOrValueType(TypeReferenceHandle handle, ref SignatureTypeHandleCode code)
@@ -382,6 +390,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
                 return; 
             }
 
+#if SRM
             TypeReference typeRef = _metadataReaderOpt.GetTypeReference(handle);
             switch (typeRef.SignatureTreatment)
             {
@@ -392,13 +401,19 @@ namespace Roslyn.Reflection.Metadata.Decoding
                     code = SignatureTypeHandleCode.ValueType;
                     break;
             }
+#endif
         }
 
         private void CheckHeader(SignatureHeader header, SignatureKind expectedKind)
         {
             if (header.Kind != expectedKind)
             {
+#if SRM
                 throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureHeader, expectedKind, header.Kind, header.RawValue));
+#else
+                throw new BadImageFormatException();
+#endif
+
             }
         }
 
@@ -407,7 +422,11 @@ namespace Roslyn.Reflection.Metadata.Decoding
             SignatureKind kind = header.Kind;
             if (kind != SignatureKind.Method && kind != SignatureKind.Property)
             {
+#if SRM
                 throw new BadImageFormatException(SR.Format(SR.UnexpectedSignatureHeader2, SignatureKind.Property, SignatureKind.Method, header.Kind, header.RawValue));
+#else
+                throw new BadImageFormatException();
+#endif
             }
         }
     }
