@@ -286,7 +286,6 @@ typedef struct {
 typedef struct {
 	MonoMarshalByRefObject object;
 	gpointer     handle;
-	MonoBoolean  disposed;
 } MonoWaitHandle;
 
 /* This is a copy of System.Runtime.Remoting.Messaging.CallType */
