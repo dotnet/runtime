@@ -1788,6 +1788,7 @@ ProcessFuncletsForGCReporting:
                                 m_sfParent = sfFuncletParent;
                                 m_sfFuncletParent = sfFuncletParent;
                                 m_fProcessNonFilterFunclet = true;
+                                m_fDidFuncletReportGCReferences = false;
                             }
                         }
 #endif // FEATURE_PAL
