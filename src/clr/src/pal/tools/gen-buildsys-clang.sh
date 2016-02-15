@@ -144,6 +144,7 @@ cmake \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
+  "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   "-DCLR_CMAKE_BUILD_TESTS=$build_tests" \
   $cmake_extra_defines \
   "$__UnprocessedCMakeArgs" \
