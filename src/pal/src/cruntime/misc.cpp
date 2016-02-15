@@ -206,7 +206,7 @@ See MSDN for more details.
 --*/
 
 PAL_time_t 
-__cdecl 
+__cdecl
 PAL_mktime(struct PAL_tm *tm)
 {
     time_t result;
@@ -257,6 +257,30 @@ PAL_rand(void)
     LOGEXIT("rand() returning %d\n", ret);
     PERF_EXIT(rand);
     return ret;
+}
+
+
+/*++
+Function:
+
+   time
+
+See MSDN for more details.
+--*/
+PAL_time_t
+__cdecl
+PAL_time(PAL_time_t *tloc)
+{
+    time_t result;
+
+    PERF_ENTRY(time);
+    ENTRY( "time( tloc=%p )\n",tloc );
+
+    result = time(tloc);
+
+    LOGEXIT( "time returning %#lx\n",result );
+    PERF_EXIT(time);
+    return result;
 }
 
 

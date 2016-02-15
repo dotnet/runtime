@@ -41,11 +41,18 @@ extern CRITICAL_SECTION gcsEnvironment;
 Function :
 
     PAL_rand
-    
-    Calls rand and mitigates the difference between RAND_MAX 
+
+    Calls rand and mitigates the difference between RAND_MAX
     on Windows and FreeBSD.
 --*/
 int __cdecl PAL_rand(void);
+
+/*++
+Function :
+
+    PAL_time
+--*/
+PAL_time_t __cdecl PAL_time(PAL_time_t*);
 
 /*++
 Function:
@@ -128,4 +135,3 @@ void MiscUnsetenv(const char *name);
 #endif // __cplusplus
 
 #endif /* __MISC_H_ */
-
