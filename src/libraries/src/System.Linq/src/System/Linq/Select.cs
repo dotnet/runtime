@@ -105,7 +105,7 @@ namespace System.Linq
             }
         }
 
-        internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
+        internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, TResult> _selector;
@@ -165,9 +165,14 @@ namespace System.Linq
                 }
                 return results;
             }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                return _source.Length;
+            }
         }
 
-        internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
+        internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -237,9 +242,14 @@ namespace System.Linq
                 }
                 return results;
             }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                return _source.Count;
+            }
         }
 
-        internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
+        internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -318,6 +328,11 @@ namespace System.Linq
                     results.Add(_selector(_source[i]));
                 }
                 return results;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                return _source.Count;
             }
         }
     }
