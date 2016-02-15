@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Contract.EndContractBlock();
 
             Byte[] underlyingData = new Byte[capacity];
-            Array.Copy(data, offset, underlyingData, 0, length);
+            Buffer.BlockCopy(data, offset, underlyingData, 0, length);
             return new WindowsRuntimeBuffer(underlyingData, 0, length, capacity);
         }
 

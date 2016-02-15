@@ -248,7 +248,7 @@ namespace System.Net
             }
 
             var bufferSegment = new byte[length];
-            Array.Copy(buffer, offset, bufferSegment, 0, length);
+            Buffer.BlockCopy(buffer, offset, bufferSegment, 0, length);
             EventSourceLogging.Log.DebugDumpArray(bufferSegment);
         }
 

@@ -285,7 +285,7 @@ namespace System.Diagnostics.Tracing
             else if (eventSourceIndex >= EventCounterGroup.s_eventCounterGroups.Length)
             {
                 EventCounterGroup[] newEventCounterGroups = new EventCounterGroup[eventSourceIndex + 1];
-                Array.Copy(EventCounterGroup.s_eventCounterGroups, newEventCounterGroups, EventCounterGroup.s_eventCounterGroups.Length);
+                Array.Copy(EventCounterGroup.s_eventCounterGroups, 0, newEventCounterGroups, 0, EventCounterGroup.s_eventCounterGroups.Length);
                 EventCounterGroup.s_eventCounterGroups = newEventCounterGroups;
             }
         }

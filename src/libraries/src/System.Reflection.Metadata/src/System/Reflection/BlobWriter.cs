@@ -108,7 +108,7 @@ namespace Roslyn.Reflection
             BlobUtilities.ValidateRange(Length, start, byteCount);
 
             var result = new byte[byteCount];
-            Array.Copy(_buffer, _start + start, result, 0, byteCount);
+            Buffer.BlockCopy(_buffer, _start + start, result, 0, byteCount);
             return result;
         }
 

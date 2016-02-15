@@ -143,7 +143,7 @@ namespace System.Data.Common
                 }
 
                 // until arrays are 64 bit, we have to do these casts
-                Array.Copy(data, ndataIndex, buffer, bufferIndex, (int)cbytes);
+                Buffer.BlockCopy(data, ndataIndex, buffer, bufferIndex, (int)cbytes);
             }
             catch (Exception e)
             {

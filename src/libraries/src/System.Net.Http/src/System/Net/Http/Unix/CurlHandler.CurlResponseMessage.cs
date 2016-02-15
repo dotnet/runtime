@@ -282,7 +282,7 @@ namespace System.Net.Http
                     if (_remainingDataCount > 0)
                     {
                         int bytesToCopy = Math.Min(count, _remainingDataCount);
-                        Array.Copy(_remainingData, _remainingDataOffset, buffer, offset, bytesToCopy);
+                        Buffer.BlockCopy(_remainingData, _remainingDataOffset, buffer, offset, bytesToCopy);
 
                         _remainingDataOffset += bytesToCopy;
                         _remainingDataCount -= bytesToCopy;

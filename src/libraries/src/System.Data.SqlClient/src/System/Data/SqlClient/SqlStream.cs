@@ -452,7 +452,7 @@ namespace System.Data.SqlClient
                 cb = _cachedBytes[_currentArrayIndex].Length - _currentPosition;
                 if (cb > count)
                     cb = count;
-                Array.Copy(_cachedBytes[_currentArrayIndex], _currentPosition, buffer, offset, cb);
+                Buffer.BlockCopy(_cachedBytes[_currentArrayIndex], _currentPosition, buffer, offset, cb);
 
                 _currentPosition += cb;
                 count -= (int)cb;
