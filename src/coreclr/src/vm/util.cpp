@@ -3282,8 +3282,10 @@ static CrstStatic g_clrNotificationCrst;
 
 void DACRaiseException(TADDR *args, UINT argCount)
 {
-    // The compiler doesn't like try/catch and constract macros together
-    WRAPPER_NO_CONTRACT;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_SO_TOLERANT;
 
     struct Param
     {
