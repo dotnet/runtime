@@ -16,13 +16,18 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
-
+#if HAVE_FCOPYFILE
+#include <copyfile.h>
+#elif HAVE_SENDFILE
+#include <sys/sendfile.h>
+#endif
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
@@ -896,6 +901,132 @@ extern "C" int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t b
 
     assert(count >= -1 && count <= bufferSize);
     return static_cast<int32_t>(count);
+}
+
+#if !HAVE_FCOPYFILE
+// Read all data from inFd and write it to outFd
+static int32_t CopyFile_ReadWrite(int inFd, int outFd)
+{
+    // Allocate a buffer
+    const int BufferLength = 80 * 1024 * sizeof(char);
+    char* buffer = reinterpret_cast<char*>(malloc(BufferLength));
+    if (buffer == nullptr)
+    {
+        return -1;
+    }
+
+    // Repeatedly read from the source and write to the destination
+    while (true)
+    {
+        // Read up to what will fit in our buffer.  We're done if we get back 0 bytes.
+        ssize_t bytesRead;
+        while (CheckInterrupted(bytesRead = read(inFd, buffer, BufferLength)));
+        if (bytesRead == -1)
+        {
+            int tmp = errno;
+            free(buffer);
+            errno = tmp;
+            return -1;
+        }
+        if (bytesRead == 0)
+        {
+            break;
+        }
+        assert(bytesRead > 0);
+
+        // Write what was read.
+        ssize_t offset = 0;
+        while (bytesRead > 0)
+        {
+            ssize_t bytesWritten;
+            while (CheckInterrupted(bytesWritten = write(outFd, buffer + offset, static_cast<size_t>(bytesRead))));
+            if (bytesWritten == -1)
+            {
+                int tmp = errno;
+                free(buffer);
+                errno = tmp;
+                return -1;
+            }
+            assert(bytesWritten >= 0);
+            bytesRead -= bytesWritten;
+            offset += bytesWritten;
+        }
+    }
+
+    free(buffer);
+    return 0;
+}
+#endif // !HAVE_FCOPYFILE
+
+extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
+{
+    int inFd = ToFileDescriptor(sourceFd);
+    int outFd = ToFileDescriptor(destinationFd);
+
+#if HAVE_FCOPYFILE
+    // If fcopyfile is available (OS X), try to use it, as the whole copy 
+    // can be performed in the kernel, without lots of unnecessary copying.
+    // Copy data and metadata.
+    return fcopyfile(inFd, outFd, nullptr, COPYFILE_ALL) == 0 ? 0 : -1;
+#else
+    // Get the stats on the source file.
+    int ret;
+    struct stat_ sourceStat;
+    bool copied = false;
+#if HAVE_SENDFILE
+    while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
+    if (ret != 0)
+    {
+        return -1;
+    }
+
+    // If sendfile is available (Linux), try to use it, as the whole copy 
+    // can be performed in the kernel, without lots of unnecessary copying.
+    if (sendfile(outFd, inFd, 0, UnsignedCast(sourceStat.st_size)) >= 0)
+    {
+        copied = true;
+    }
+    else if (errno != EINVAL && errno != ENOSYS)
+    {
+        return -1;
+    }
+    // sendfile couldn't be used; fall back to a manual copy below. This could happen
+    // if we're on an old kernel, for example, where sendfile could only be used
+    // with sockets and not regular files.
+#endif // HAVE_SENDFILE
+
+    // Manually read all data from the source and write it to the destination.
+    if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
+    {
+        return -1;
+    }
+
+    // Now that the data from the file has been copied, copy over metadata 
+    // from the source file.  First copy the file times.
+    while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
+    if (ret == 0)
+    {
+        struct timeval origTimes[2];
+        origTimes[0].tv_sec = sourceStat.st_atime;
+        origTimes[0].tv_usec = 0;
+        origTimes[1].tv_sec = sourceStat.st_mtime;
+        origTimes[1].tv_usec = 0;
+        while (CheckInterrupted(ret = futimes(outFd, origTimes)));
+    }
+    if (ret != 0)
+    {
+        return -1;
+    }
+
+    // Then copy permissions.
+    while (CheckInterrupted(ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))));
+    if (ret != 0)
+    {
+        return -1;
+    }
+
+    return 0;
+#endif // HAVE_FCOPYFILE
 }
 
 extern "C" intptr_t SystemNative_INotifyInit()
