@@ -106,6 +106,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void TwoArraySelectSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 7),
+                Enumerable.Range(0, 3).ToArray().Select(i => i).Concat(Enumerable.Range(3, 4).ToArray().Select(i => i)));
+        }
+
+        [Fact]
+        public void TwoNonCollectionSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 7),
+                NumberRangeGuaranteedNotCollectionType(0, 3).Concat(NumberRangeGuaranteedNotCollectionType(3, 4).ToArray().Select(i => i)));
+        }
+
+        [Fact]
         public void ThreeEnumerableSources()
         {
             VerifyEquals(
@@ -130,6 +146,18 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void FiveNonCollectionSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 25),
+                NumberRangeGuaranteedNotCollectionType(0, 3)
+                .Concat(NumberRangeGuaranteedNotCollectionType(3, 4))
+                .Concat(NumberRangeGuaranteedNotCollectionType(7, 5))
+                .Concat(NumberRangeGuaranteedNotCollectionType(12, 6))
+                .Concat(NumberRangeGuaranteedNotCollectionType(18, 7)));
+        }
+
+        [Fact]
         public void FiveListSources()
         {
             VerifyEquals(
@@ -141,14 +169,37 @@ namespace System.Linq.Tests
                           .Concat(Enumerable.Range(18, 7).ToList()));
         }
 
+        [Fact]
+        public void ConcatOfConcats()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 20),
+                Enumerable.Concat(
+                    Enumerable.Concat(
+                        Enumerable.Range(0, 4),
+                        Enumerable.Range(4, 6)),
+                    Enumerable.Concat(
+                        Enumerable.Range(10, 3),
+                        Enumerable.Range(13, 7))));
+        }
+
+        [Fact]
+        public void ConcatWithSelf()
+        {
+            IEnumerable<int> source = Enumerable.Repeat(1, 4).Concat(Enumerable.Repeat(1, 5));
+            source = source.Concat(source);
+            VerifyEquals(Enumerable.Repeat(1, 18), source);
+        }
+
         private void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
         {
             Assert.Equal(expected, actual);
             Assert.Equal(expected, actual.ToArray());
+            Assert.Equal(expected, actual.ToList());
             Assert.Equal(expected, actual.Select(i => i).ToArray());
             Assert.Equal(expected, actual.Where(i => true).ToArray());
-            Assert.Equal(expected, actual.ToList());
             Assert.Equal(expected, actual.OrderBy(i => i));
+            Assert.Equal(expected, Enumerable.Empty<int>().Concat(actual));
             Assert.Equal(expected.Count(), actual.Count());
         }
 
