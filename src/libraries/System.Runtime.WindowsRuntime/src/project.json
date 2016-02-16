@@ -2,7 +2,7 @@
   "frameworks": {
     "dotnet5.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23808",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23816",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
     }

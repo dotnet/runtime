@@ -2,10 +2,10 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Linq": "4.0.0",
-        "System.Net.Sockets": "4.1.0-rc3-23808",
+        "System.Net.Sockets": "4.1.0-rc3-23816",
         "System.Runtime.InteropServices.WindowsRuntime": "4.0.0"
       }
     }
