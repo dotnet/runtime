@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
     "System.Globalization": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23808",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23808",
-    "System.Security.Cryptography.Cng": "4.0.0-rc3-23808",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc3-23808",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23816",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23816",
+    "System.Security.Cryptography.Cng": "4.0.0-rc3-23816",
+    "System.Security.Cryptography.Encoding": "4.0.0-rc3-23816",
     "System.Security.Cryptography.X509Certificates.TestData": "1.0.0-prerelease",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"
