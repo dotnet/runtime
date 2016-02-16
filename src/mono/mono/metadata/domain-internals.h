@@ -692,4 +692,7 @@ MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, 
 
 void mono_enable_debug_domain_unload (gboolean enable);
 
+MonoReflectionAssembly *
+mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject *tb, MonoError *error);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

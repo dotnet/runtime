@@ -8419,7 +8419,9 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	for (mod = info->nested; mod; mod = mod->next)
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
-	assembly = mono_domain_try_type_resolve ( mono_domain_get (), fullName->str, NULL);
+	assembly = mono_domain_try_type_resolve_checked ( mono_domain_get (), fullName->str, NULL, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	if (assembly) {
 		if (assembly_is_dynamic (assembly->assembly))
 			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly,
@@ -12824,10 +12826,13 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 static void
 ensure_complete_type (MonoClass *klass)
 {
+	MonoError error;
+
 	if (image_is_dynamic (klass->image) && !klass->wastypebuilder && mono_class_get_ref_info (klass)) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mono_class_get_ref_info (klass);
 
-		mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+		mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 		// Asserting here could break a lot of code
 		//g_assert (klass->wastypebuilder);
@@ -12846,6 +12851,7 @@ ensure_complete_type (MonoClass *klass)
 static gpointer
 resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context)
 {
+	MonoError error;
 	gpointer result = NULL;
 
 	if (strcmp (obj->vtable->klass->name, "String") == 0) {
@@ -12886,7 +12892,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			/* Type is not yet created */
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
 
-			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+			mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 			/*
 			 * Hopefully this has been filled in by calling CreateType() on the
@@ -12911,7 +12918,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		if (!result) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)cb->type;
 
-			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+			mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			result = cb->mhandle;
 		}
 		if (context) {
@@ -12948,7 +12956,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		if (!result) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)fb->typeb;
 
-			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+			mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			result = fb->handle;
 		}
 
@@ -12973,7 +12982,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			result = klass;
 		}
 		else {
-			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+			mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			result = type->data.klass;
 			g_assert (result);
 		}

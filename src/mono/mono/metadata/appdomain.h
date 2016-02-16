@@ -115,6 +115,7 @@ mono_domain_free           (MonoDomain *domain, mono_bool force);
 MONO_API mono_bool
 mono_domain_has_type_resolve (MonoDomain *domain);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 

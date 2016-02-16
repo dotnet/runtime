@@ -581,10 +581,21 @@ MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 {
 	MonoError error;
+	MonoReflectionAssembly *ret = mono_domain_try_type_resolve_checked (domain, name, tb, &error);
+	mono_error_cleanup (&error);
+
+	return ret;
+}
+
+MonoReflectionAssembly *
+mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject *tb, MonoError *error)
+{
+	static MonoMethod *method = NULL;
 	MonoReflectionAssembly *ret;
 	MonoClass *klass;
 	void *params [1];
-	static MonoMethod *method = NULL;
+
+	mono_error_init (error);
 
 	g_assert (domain != NULL && ((name != NULL) || (tb != NULL)));
 
@@ -604,8 +615,8 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 	else
 		*params = tb;
 
-	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, error);
+	return_val_if_nok (error, NULL);
 
 	return ret;
 }
