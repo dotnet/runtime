@@ -5617,7 +5617,7 @@ bool        Compiler::fgMorphCallInline(GenTreePtr node)
     // Prepare to record information about this inline
     CORINFO_METHOD_HANDLE callerHandle = call->gtCall.gtInlineCandidateInfo->ilCallerHandle;
     CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
-    JitInlineResult inlineResult(this, callerHandle, calleeHandle, "fgMorphCallInline");
+    InlineResult inlineResult(this, callerHandle, calleeHandle, "fgMorphCallInline");
 
     // Attempt the inline
     fgMorphCallInlineHelper(call, &inlineResult);
@@ -5655,7 +5655,7 @@ bool        Compiler::fgMorphCallInline(GenTreePtr node)
  *  If failed, undoes any speculative modifications to current method
  */
 
-void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, JitInlineResult* result)
+void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 {
     if  (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
