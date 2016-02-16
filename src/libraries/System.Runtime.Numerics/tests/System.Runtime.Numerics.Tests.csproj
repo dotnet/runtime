@@ -76,34 +76,7 @@
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\subtract.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
-    <Compile Include="Complex\arithmaticOperation_Abs.cs" />
-    <Compile Include="Complex\arithmaticOperation_BinaryDivide_Divide.cs" />
-    <Compile Include="Complex\arithmaticOperation_BinaryMinus_Subtract.cs" />
-    <Compile Include="Complex\arithmaticOperation_BinaryMultiply_Multiply.cs" />
-    <Compile Include="Complex\arithmaticOperation_BinaryPlus_Add.cs" />
-    <Compile Include="Complex\arithmaticOperation_Conjugate.cs" />
-    <Compile Include="Complex\arithmaticOperation_Reciprocal.cs" />
-    <Compile Include="Complex\arithmaticOperation_UnaryMinus_Negate.cs" />
-    <Compile Include="Complex\ComplexTestSupport.cs" />
-    <Compile Include="Complex\ctor.cs" />
-    <Compile Include="Complex\factoryMethod.cs" />
-    <Compile Include="Complex\formattingOperations.cs" />
-    <Compile Include="Complex\implicitExplicitCastOperators.cs" />
-    <Compile Include="Complex\operation_ComparisonHashCode.cs" />
-    <Compile Include="Complex\standardNumericalFunctions_Exp.cs" />
-    <Compile Include="Complex\standardNumericalFunctions_Log.cs" />
-    <Compile Include="Complex\standardNumericalFunctions_Pow.cs" />
-    <Compile Include="Complex\standardNumericalFunctions_Sqrt.cs" />
-    <Compile Include="Complex\staticConstants.cs" />
-    <Compile Include="Complex\trigonometricOperations_ACos.cs" />
-    <Compile Include="Complex\trigonometricOperations_ASin.cs" />
-    <Compile Include="Complex\trigonometricOperations_ATan.cs" />
-    <Compile Include="Complex\trigonometricOperations_Cos.cs" />
-    <Compile Include="Complex\trigonometricOperations_Cosh.cs" />
-    <Compile Include="Complex\trigonometricOperations_Sin.cs" />
-    <Compile Include="Complex\trigonometricOperations_Sinh.cs" />
-    <Compile Include="Complex\trigonometricOperations_Tan.cs" />
-    <Compile Include="Complex\trigonometricOperations_Tanh.cs" />
+    <Compile Include="ComplexTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
