@@ -17,7 +17,7 @@ namespace System.Linq.Tests
                      select x1;
             var q2 = from x2 in new int?[] { 1, 9, null, 4 }
                      select x2;
-                     
+
             Assert.Equal(q1.Concat(q2), q1.Concat(q2));
         }
 
@@ -87,6 +87,93 @@ namespace System.Linq.Tests
         public void SecondNull()
         {
             Assert.Throws<ArgumentNullException>("second", () => Enumerable.Range(0, 0).Concat(null));
+        }
+
+        [Fact]
+        public void TwoEnumerableSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 7),
+                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)));
+        }
+
+        [Fact]
+        public void TwoArraySources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 7),
+                Enumerable.Range(0, 3).ToArray().Concat(Enumerable.Range(3, 4).ToArray()));
+        }
+
+        [Fact]
+        public void ThreeEnumerableSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 12),
+                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)));
+        }
+
+        [Fact]
+        public void FourEnumerableSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 18),
+                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)).Concat(Enumerable.Range(12, 6)));
+        }
+
+        [Fact]
+        public void FiveEnumerableSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 25),
+                Enumerable.Range(0, 3).Concat(Enumerable.Range(3, 4)).Concat(Enumerable.Range(7, 5)).Concat(Enumerable.Range(12, 6)).Concat(Enumerable.Range(18, 7)));
+        }
+
+        [Fact]
+        public void FiveListSources()
+        {
+            VerifyEquals(
+                Enumerable.Range(0, 25),
+                Enumerable.Range(0, 3).ToList()
+                          .Concat(Enumerable.Range(3, 4).ToList())
+                          .Concat(Enumerable.Range(7, 5).ToList())
+                          .Concat(Enumerable.Range(12, 6).ToList())
+                          .Concat(Enumerable.Range(18, 7).ToList()));
+        }
+
+        private void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
+        {
+            Assert.Equal(expected, actual);
+            Assert.Equal(expected, actual.ToArray());
+            Assert.Equal(expected, actual.Select(i => i).ToArray());
+            Assert.Equal(expected, actual.Where(i => true).ToArray());
+            Assert.Equal(expected, actual.ToList());
+            Assert.Equal(expected, actual.OrderBy(i => i));
+            Assert.Equal(expected.Count(), actual.Count());
+        }
+
+        [Fact]
+        public void ManyEmptyConcats()
+        {
+            IEnumerable<int> source = Enumerable.Empty<int>();
+            for (int i = 0; i < 256; i++)
+            {
+                source = source.Concat(Enumerable.Empty<int>());
+            }
+            Assert.Equal(0, source.Count());
+            Assert.Equal(Enumerable.Empty<int>(), source);
+        }
+
+        [Fact]
+        public void ManyNonEmptyConcats()
+        {
+            IEnumerable<int> source = Enumerable.Empty<int>();
+            for (int i = 0; i < 256; i++)
+            {
+                source = source.Concat(Enumerable.Repeat(i, 1));
+            }
+            Assert.Equal(256, source.Count());
+            Assert.Equal(Enumerable.Range(0, 256), source);
         }
     }
 }
