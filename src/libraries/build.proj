@@ -63,7 +63,7 @@
           ContinueOnError="ErrorAndContinue"
           Condition="'$(SkipGatherRestoreDirs)' != 'true'" />
 
-    <Exec Command="$(DnuRestoreCommand) &quot;%(DnuRestoreDir.Identity)&quot;"
+    <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
           StandardOutputImportance="Low"
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue"
