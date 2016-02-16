@@ -280,7 +280,8 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_gc_init ();
 
 	/* contexts use GC handles, so they must be initialized after the GC */
-	mono_context_init (domain);
+	mono_context_init_checked (domain, error);
+	return_if_nok (error);
 	mono_context_set (domain->default_context);
 
 #ifndef DISABLE_SOCKETS
@@ -344,12 +345,23 @@ void
 mono_context_init (MonoDomain *domain)
 {
 	MonoError error;
+	mono_context_init_checked (domain, &error);
+	mono_error_cleanup (&error);
+}
+
+void
+mono_context_init_checked (MonoDomain *domain, MonoError *error)
+{
 	MonoClass *klass;
 	MonoAppContext *context;
 
+	mono_error_init (error);
+
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
+
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
 	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
@@ -521,7 +533,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 		}
 	}
 
-	mono_context_init (data);
+	mono_context_init_checked (data, error);
+	return_val_if_nok (error, NULL);
 
 	data->setup = copy_app_domain_setup (data, setup, error);
 	if (!mono_error_ok (error)) {

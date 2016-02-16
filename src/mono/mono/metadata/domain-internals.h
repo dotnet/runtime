@@ -698,4 +698,7 @@ mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
 
+void
+mono_context_init_checked (MonoDomain *domain, MonoError *error);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
