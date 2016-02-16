@@ -17,7 +17,12 @@ namespace System.Diagnostics
 
         internal static void ValidateDebuggerTypeProxyProperties(object obj)
         {
-            Type proxyType = GetProxyType(obj);
+            ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
+        }
+
+        internal static void ValidateDebuggerTypeProxyProperties(Type type, object obj)
+        {
+            Type proxyType = GetProxyType(type);
 
             // Create an instance of the proxy type, and make sure we can access all of the instance properties 
             // on the type without exception
@@ -30,17 +35,22 @@ namespace System.Diagnostics
 
         internal static Type GetProxyType(object obj)
         {
+            return GetProxyType(obj.GetType());
+        }
+
+        private static Type GetProxyType(Type type)
+        {
             // Get the DebuggerTypeProxyAttibute for obj
             var attrs =
-                obj.GetType().GetTypeInfo().CustomAttributes
+                type.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))
                 .ToArray();
             if (attrs.Length != 1)
             {
                 throw new InvalidOperationException(
-                    string.Format("Expected one DebuggerTypeProxyAttribute on {0}.", obj));
+                    string.Format("Expected one DebuggerTypeProxyAttribute on {0}.", type));
             }
-            var cad = (CustomAttributeData)attrs[0];
+            CustomAttributeData cad = attrs[0];
 
             // Get the proxy type.  As written, this only works if the proxy and the target type
             // have the same generic parameters, e.g. Dictionary<TKey,TValue> and Proxy<TKey,TValue>.
@@ -49,7 +59,7 @@ namespace System.Diagnostics
             Type proxyType = cad.ConstructorArguments[0].ArgumentType == typeof(Type) ?
                 (Type)cad.ConstructorArguments[0].Value :
                 Type.GetType((string)cad.ConstructorArguments[0].Value);
-            var genericArguments = obj.GetType().GenericTypeArguments;
+            var genericArguments = type.GenericTypeArguments;
             if (genericArguments.Length > 0)
             {
                 proxyType = proxyType.MakeGenericType(genericArguments);
@@ -61,7 +71,7 @@ namespace System.Diagnostics
         internal static void ValidateDebuggerDisplayReferences(object obj)
         {
             // Get the DebuggerDisplayAttribute for obj
-            var attrs = 
+            var attrs =
                 obj.GetType().GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
                 .ToArray();
@@ -115,7 +125,7 @@ namespace System.Diagnostics
                 }
 
                 throw new InvalidOperationException(
-                    string.Format("The DebuggerDisplayAttribute for {0} contains the expression \"{1}\".", obj, reference)); 
+                    string.Format("The DebuggerDisplayAttribute for {0} contains the expression \"{1}\".", obj, reference));
             }
         }
 
