@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
-    "System.Buffers": "4.0.0-rc3-23808",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
+    "System.Buffers": "4.0.0-rc3-23816",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -22,7 +22,7 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc3-23808",
+        "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc3-23816",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Globalization": "4.0.10",
         "System.Reflection": "4.0.10",
