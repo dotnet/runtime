@@ -6151,7 +6151,7 @@ namespace System.Data.SqlClient
                 offset += rec.hostName.Length * 2;
 
                 // Only send user/password over if not fSSPI...  If both user/password and SSPI are in login
-                // rec, only SSPI is used.  Confirmed same bahavior as in luxor.
+                // rec, only SSPI is used.  Confirmed same behavior as in luxor.
                 if (rec.useSSPI == false)
                 {
                     WriteShort(offset, _physicalStateObj);  // userName offset
