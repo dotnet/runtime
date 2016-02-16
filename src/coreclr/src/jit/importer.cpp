@@ -15485,11 +15485,11 @@ int   Compiler::impEstimateCallsiteNativeSize(CORINFO_METHOD_INFO *  methInfo)
 /*****************************************************************************
  */
 
-void             Compiler::impCanInlineNative(int              callsiteNativeEstimate,  
-                                              int              calleeNativeSizeEstimate,                                            
-                                              InlInlineHints   inlineHints,
-                                              InlineInfo*      pInlineInfo,     // NULL for static inlining hint for ngen. 
-                                              JitInlineResult* inlineResult)
+void             Compiler::impCanInlineNative(int           callsiteNativeEstimate,
+                                              int           calleeNativeSizeEstimate,
+                                              InlineHints   inlineHints,
+                                              InlineInfo*   pInlineInfo,     // NULL for static inlining hint for ngen.
+                                              InlineResult* inlineResult)
 {
     assert(pInlineInfo != NULL &&  compIsForInlining() ||  // Perform the actual inlining.
            pInlineInfo == NULL && !compIsForInlining()     // Calculate the static inlining hint for ngen.
@@ -15769,8 +15769,8 @@ void             Compiler::impCanInlineNative(int              callsiteNativeEst
 
 void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
                               CORINFO_METHOD_INFO *    methInfo,
-                              bool forceInline,
-                              JitInlineResult* inlineResult)
+                              bool                     forceInline,
+                              InlineResult*            inlineResult)
 {
     unsigned codeSize = methInfo->ILCodeSize;
 
@@ -15902,11 +15902,11 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
  */
 
 void  Compiler::impCheckCanInline(GenTreePtr                call,
-                                             CORINFO_METHOD_HANDLE     fncHandle,
-                                             unsigned                  methAttr,
-                                             CORINFO_CONTEXT_HANDLE    exactContextHnd,
-                                             InlineCandidateInfo    ** ppInlineCandidateInfo,
-                                             JitInlineResult*          inlineResult)
+                                  CORINFO_METHOD_HANDLE     fncHandle,
+                                  unsigned                  methAttr,
+                                  CORINFO_CONTEXT_HANDLE    exactContextHnd,
+                                  InlineCandidateInfo**     ppInlineCandidateInfo,
+                                  InlineResult*             inlineResult)
 {
 #if defined(DEBUG) || MEASURE_INLINING
     ++Compiler::jitCheckCanInlineCallCount;    // This is actually the number of methods that starts the inline attempt.
@@ -15922,7 +15922,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         CORINFO_METHOD_HANDLE fncHandle;
         unsigned methAttr;
         CORINFO_CONTEXT_HANDLE exactContextHnd;
-        JitInlineResult* result;
+        InlineResult* result;
         InlineCandidateInfo ** ppInlineCandidateInfo;
     } param = {0};
 
@@ -16096,7 +16096,7 @@ _exit:
 void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
                                       GenTreePtr    curArgVal,
                                       unsigned      argNum,
-                                      JitInlineResult* inlineResult)
+                                      InlineResult* inlineResult)
 {
     InlArgInfo *  inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
 
@@ -16205,12 +16205,12 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 {
     assert(!compIsForInlining());    
     
-    GenTreePtr             call         = pInlineInfo->iciCall;
-    CORINFO_METHOD_INFO *  methInfo     = &pInlineInfo->inlineCandidateInfo->methInfo; 
-    unsigned               clsAttr      = pInlineInfo->inlineCandidateInfo->clsAttr;
-    InlArgInfo      *      inlArgInfo   = pInlineInfo->inlArgInfo;
-    InlLclVarInfo   *      lclVarInfo   = pInlineInfo->lclVarInfo;   
-    JitInlineResult *      inlineResult = pInlineInfo->inlineResult;
+    GenTreePtr            call         = pInlineInfo->iciCall;
+    CORINFO_METHOD_INFO*  methInfo     = &pInlineInfo->inlineCandidateInfo->methInfo;
+    unsigned              clsAttr      = pInlineInfo->inlineCandidateInfo->clsAttr;
+    InlArgInfo*           inlArgInfo   = pInlineInfo->inlArgInfo;
+    InlLclVarInfo*        lclVarInfo   = pInlineInfo->lclVarInfo;
+    InlineResult*         inlineResult = pInlineInfo->inlineResult;
     
     const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(methInfo);
 
@@ -16838,7 +16838,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     GenTreeCall* call = callNode->AsCall();
     CORINFO_METHOD_HANDLE callerHandle = info.compMethodHnd;
     CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
-    JitInlineResult inlineResult(this, callerHandle, calleeHandle, "impMarkInlineCandidate");
+    InlineResult inlineResult(this, callerHandle, calleeHandle, "impMarkInlineCandidate");
     
     /* Don't inline if not optimized code */
     if  (opts.compDbgCode)
