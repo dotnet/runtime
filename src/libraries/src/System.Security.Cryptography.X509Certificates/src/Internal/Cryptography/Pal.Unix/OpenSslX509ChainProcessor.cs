@@ -267,7 +267,7 @@ namespace Internal.Cryptography.Pal
 
                     X509ChainStatus chainStatus = new X509ChainStatus
                     {
-                        Status = X509ChainStatusFlags.InvalidPolicyConstraints,
+                        Status = X509ChainStatusFlags.NotValidForUsage,
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
 
