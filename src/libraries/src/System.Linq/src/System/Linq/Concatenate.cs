@@ -60,22 +60,12 @@ namespace System.Linq
             Concat3Iterator<TSource> three = first as Concat3Iterator<TSource>;
             if (three != null)
             {
-                return new ConcatNIterator<TSource>(three._first, three._second, three._third, second);
+                return new ConcatNIterator<TSource>(three, second, 3);
             }
 
             // From four+ to one more
-            const int MaxLengthForConcatArray = 64; // arbitrary limit on array size to avoid lots of large array allocations
             ConcatNIterator<TSource> n = (ConcatNIterator<TSource>)first;
-            if (n._sources.Length < MaxLengthForConcatArray)
-            {
-                var sources = new IEnumerable<TSource>[n._sources.Length + 1];
-                Array.Copy(n._sources, 0, sources, 0, n._sources.Length);
-                sources[n._sources.Length] = second;
-                return new ConcatNIterator<TSource>(sources);
-            }
-
-            // Fall back to using the normal two-source concat
-            return new Concat2Iterator<TSource>(first, second);
+            return new ConcatNIterator<TSource>(n, second, n._nextIndex + 1);
         }
 
         private sealed class Concat2Iterator<TSource> : ConcatIterator<TSource>
@@ -95,7 +85,7 @@ namespace System.Linq
                 return new Concat2Iterator<TSource>(_first, _second);
             }
 
-            protected override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource> GetEnumerable(int index)
             {
                 switch (index)
                 {
@@ -125,7 +115,7 @@ namespace System.Linq
                 return new Concat3Iterator<TSource>(_first, _second, _third);
             }
 
-            protected override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource> GetEnumerable(int index)
             {
                 switch (index)
                 {
@@ -139,24 +129,38 @@ namespace System.Linq
 
         private sealed class ConcatNIterator<TSource> : ConcatIterator<TSource>
         {
-            internal readonly IEnumerable<TSource>[] _sources;
+            // To handle chains of >= 4 sources, we chain the concat iterators together and allow
+            // GetEnumerable to fetch enumerables from the previous sources.  This means that rather
+            // than each MoveNext/Current calls having to traverse all of the previous sources, we
+            // only have to traverse all of the previous sources once per chained enumerable.  An
+            // alternative would be to use an array to store all of the enumerables, but this has
+            // a much better memory profile and without much additional run-time cost.
 
-            internal ConcatNIterator(params IEnumerable<TSource>[] sources)
+            private readonly ConcatIterator<TSource> _previousConcat;
+            internal readonly IEnumerable<TSource> _next;
+            internal readonly int _nextIndex;
+
+            internal ConcatNIterator(ConcatIterator<TSource> previousConcat, IEnumerable<TSource> next, int nextIndex)
             {
-                Debug.Assert(sources != null);
-                Debug.Assert(sources.All(s => s != null));
-                Debug.Assert(sources.Length > 3, "Should be using Concat2Iterator or Concat3Iterator");
-                _sources = sources;
+                Debug.Assert(previousConcat != null);
+                Debug.Assert(next != null);
+                Debug.Assert(nextIndex > 0);
+                _previousConcat = previousConcat;
+                _next = next;
+                _nextIndex = nextIndex;
             }
 
             public override Iterator<TSource> Clone()
             {
-                return new ConcatNIterator<TSource>(_sources);
+                return new ConcatNIterator<TSource>(_previousConcat, _next, _nextIndex);
             }
 
-            protected override IEnumerable<TSource> GetEnumerable(int index)
+            internal override IEnumerable<TSource> GetEnumerable(int index)
             {
-                return index < _sources.Length ? _sources[index] : null;
+                return
+                    index < _nextIndex ? _previousConcat.GetEnumerable(index) :
+                    index == _nextIndex ? _next :
+                    null;
             }
         }
 
@@ -174,7 +178,7 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            protected abstract IEnumerable<TSource> GetEnumerable(int index);
+            internal abstract IEnumerable<TSource> GetEnumerable(int index);
 
             public override bool MoveNext()
             {
