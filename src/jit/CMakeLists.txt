@@ -61,6 +61,7 @@ set( JIT_SOURCES
   loopcloning.cpp
   lower.cpp
   lsra.cpp
+  inline.cpp
 )
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
