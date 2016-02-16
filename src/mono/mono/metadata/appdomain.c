@@ -969,14 +969,15 @@ leave:
 }
 
 MonoReflectionAssembly *
-mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly)
+mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error)
 {
-	MonoError error;
 	MonoReflectionAssembly *ret;
 	MonoClass *klass;
 	MonoMethod *method;
 	MonoBoolean isrefonly;
 	gpointer params [3];
+
+	mono_error_init (error);
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
@@ -995,15 +996,14 @@ mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *
 	isrefonly = refonly ? 1 : 0;
 	params [0] = fname;
 	if (requesting) {
-		params[1] = mono_assembly_get_object_checked (domain, requesting, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		params[1] = mono_assembly_get_object_checked (domain, requesting, error);
+		return_val_if_nok (error, NULL);
 	} else
 		params [1] = NULL;
 	params [2] = &isrefonly;
 
-	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, error);
+	return_val_if_nok (error, NULL);
 
 	return ret;
 }
@@ -1012,6 +1012,7 @@ MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting,
 									  gboolean refonly)
 {
+	MonoError error;
 	MonoReflectionAssembly *assembly;
 	MonoDomain *domain = mono_domain_get ();
 	char *aname_str;
@@ -1025,7 +1026,13 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *req
 		g_free (aname_str);
 		return NULL;
 	}
-	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly);
+
+	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly, &error);
+	if (!mono_error_ok (&error)) {
+		g_free (aname_str);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
+
 	g_free (aname_str);
 
 	if (assembly)
@@ -2062,8 +2069,13 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!parsed) {
 		/* This is a parse error... */
-		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
+		if (!refOnly) {
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		}
 		return refass;
 	}
 
@@ -2072,8 +2084,13 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!ass) {
 		/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
-		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
+		if (!refOnly) {
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		}
 		else
 			refass = NULL;
 		if (!refass) {
