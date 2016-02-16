@@ -388,6 +388,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "A260A870BE1145ED71E2BB5AA19463A4FE9DCC41");
         }
 
+        [Fact]
+        public static void ReadInvalidExtension_KeyUsage()
+        {
+            X509KeyUsageExtension keyUsageExtension =
+                new X509KeyUsageExtension(new AsnEncodedData(Array.Empty<byte>()), false);
+
+            Assert.ThrowsAny<CryptographicException>(() => keyUsageExtension.KeyUsages);
+        }
+
         private static void TestKeyUsageExtension(X509KeyUsageFlags flags, bool critical, byte[] expectedDer)
         {
             X509KeyUsageExtension ext = new X509KeyUsageExtension(flags, critical);
