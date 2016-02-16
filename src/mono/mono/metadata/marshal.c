@@ -7221,10 +7221,12 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
 	MonoClass *klass;
+	MonoExceptionClause *clause;
 	int i, argnum, *tmp_locals;
 	int type, param_shift = 0;
 	static MonoMethodSignature *get_last_error_sig = NULL;
 	int coop_gc_stack_dummy, coop_gc_var;
+	int leave_pos;
 
 	memset (&m, 0, sizeof (m));
 	m.mb = mb;
@@ -7267,6 +7269,9 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* local 5, the local to be used when calling the suspend funcs */
 		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+		clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
+		clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 	}
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -7290,6 +7295,14 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		tmp_locals [i] = emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_CONV_IN);
 	}
 
+	if (mono_threads_is_coop_enabled ()) {
+		clause->try_offset = mono_mb_get_label (mb);
+
+		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
+		mono_mb_emit_icall (mb, mono_threads_prepare_blocking);
+		mono_mb_emit_stloc (mb, coop_gc_var);
+	}
+
 	/* push all arguments */
 
 	if (sig->hasthis)
@@ -7298,12 +7311,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	for (i = 0; i < sig->param_count; i++) {
 		emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
 	}			
-
-	if (mono_threads_is_coop_enabled ()) {
-		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
-		mono_mb_emit_icall (mb, mono_threads_prepare_blocking);
-		mono_mb_emit_stloc (mb, coop_gc_var);
-	}
 
 	/* call the native method */
 	if (func_param) {
@@ -7361,9 +7368,20 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}
 
 	if (mono_threads_is_coop_enabled ()) {
+		leave_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+		clause->try_len = mono_mb_get_label (mb) - clause->try_offset;
+		clause->handler_offset = mono_mb_get_label (mb);
+
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
+
+		mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+		mono_mb_patch_branch (mb, leave_pos);
 	}
 
 	/* convert the result */
@@ -7457,6 +7475,10 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_ldloc (mb, 3);
 
 	mono_mb_emit_byte (mb, CEE_RET);
+
+	if (mono_threads_is_coop_enabled ()) {
+		mono_mb_set_clauses (mb, 1, clause);
+	}
 }
 #endif /* DISABLE_JIT */
 
