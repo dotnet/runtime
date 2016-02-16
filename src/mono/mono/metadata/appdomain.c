@@ -436,13 +436,19 @@ mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *co
 }
 
 static MonoAppDomainSetup*
-copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
+copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup, MonoError *error)
 {
-	MonoError error;
-	MonoDomain *caller_domain = mono_domain_get ();
-	MonoClass *ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	MonoAppDomainSetup *copy = (MonoAppDomainSetup*)mono_object_new_checked (domain, ads_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoDomain *caller_domain;
+	MonoClass *ads_class;
+	MonoAppDomainSetup *copy;
+
+	mono_error_init (error);
+
+	caller_domain = mono_domain_get ();
+	ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+
+	copy = (MonoAppDomainSetup*)mono_object_new_checked (domain, ads_class, error);
+	return_val_if_nok (error, NULL);
 
 	mono_domain_set_internal (domain);
 
@@ -480,13 +486,15 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	MonoDomain *data;
 	char *shadow_location;
 
+	mono_error_init (error);
+
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 
 	/* FIXME: pin all those objects */
 	data = mono_domain_create();
 
 	ad = (MonoAppDomain *) mono_object_new_checked (data, adclass, error);
-	if (!mono_error_ok (error)) return NULL;
+	return_val_if_nok (error, NULL);
 	ad->data = data;
 	data->domain = ad;
 	data->friendly_name = g_strdup (friendly_name);
@@ -505,15 +513,22 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 
 	mono_context_init (data);
 
-	data->setup = copy_app_domain_setup (data, setup);
+	data->setup = copy_app_domain_setup (data, setup, error);
+	if (!mono_error_ok (error)) {
+		g_free (data->friendly_name);
+		return NULL;
+	}
+
 	mono_domain_set_options_from_config (data);
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
 
 #ifndef DISABLE_SHADOW_COPY
 	/*FIXME, guard this for when the debugger is not running */
 	shadow_location = get_shadow_assembly_location_base (data, error);
-	if (!mono_error_ok (error))
+	if (!mono_error_ok (error)) {
+		g_free (data->friendly_name);
 		return NULL;
+	}
 
 	g_free (shadow_location);
 #endif
