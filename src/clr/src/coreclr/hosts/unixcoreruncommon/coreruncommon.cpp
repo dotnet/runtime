@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "coreruncommon.h"
+#include <unistd.h>
 
 #define SUCCEEDED(Status) ((Status) >= 0)
 
@@ -66,12 +67,20 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
 
     // Get path to the executable for the current process using
     // platform specific means.
-#if defined(__LINUX__) || !defined(__APPLE__)
-    
-    // On non-Mac OS, return the symlink that will be resolved by GetAbsolutePath
-    // to fetch the entrypoint EXE absolute path, inclusive of filename.
-    entrypointExecutable.assign(symlinkEntrypointExecutable);
-    result = true;
+#if defined(__LINUX__)
+    // On Linux, fetch the entry point EXE absolute path, inclusive of filename.
+    char exe[PATH_MAX];
+    ssize_t res = readlink(symlinkEntrypointExecutable, exe, PATH_MAX - 1);
+    if (res != -1)
+    {
+        exe[res] = '\0';
+        entrypointExecutable.assign(exe);
+        result = true;
+    }
+    else
+    {
+        result = false;
+    }
 #elif defined(__APPLE__)
     
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
@@ -88,7 +97,12 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
             result = true;
         }
     }
- #endif 
+#else
+    // On non-Mac OS, return the symlink that will be resolved by GetAbsolutePath
+    // to fetch the entrypoint EXE absolute path, inclusive of filename.
+    entrypointExecutable.assign(symlinkEntrypointExecutable);
+    result = true;
+#endif 
 
     return result;
 }
@@ -300,12 +314,14 @@ int ExecuteManagedAssembly(
             // Server GC is off by default, while concurrent GC is on by default.
             // Actual checking of these string values is done in coreclr_initialize.
             const char* useServerGc = std::getenv(serverGcVar);
-            if (useServerGc == nullptr) {
+            if (useServerGc == nullptr)
+            {
                 useServerGc = "0";
             }
             
             const char* useConcurrentGc = std::getenv(concurrentGcVar);
-            if (useConcurrentGc == nullptr) {
+            if (useConcurrentGc == nullptr)
+            {
                 useConcurrentGc = "1";
             }
             
