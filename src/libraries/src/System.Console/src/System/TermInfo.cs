@@ -26,7 +26,7 @@ namespace System
             Clear = 5,
             CursorAddress = 10,
             CursorLeft = 14,
-            CursorPositionRequest = 294,
+            CursorPositionReport = 294,
             OrigPairs = 297,
             OrigColors = 298,
             SetAnsiForeground = 359,
