@@ -779,389 +779,6 @@ public:
 
 LinearScanInterface *getLinearScanAllocator(Compiler *comp);
 
-/*****************************************************************************
- *                  Inlining support
- */
-
-
-// Flags lost during inlining.
-    
-#define CORJIT_FLG_LOST_WHEN_INLINING   (CORJIT_FLG_BBOPT |                         \
-                                         CORJIT_FLG_BBINSTR |                       \
-                                         CORJIT_FLG_PROF_ENTERLEAVE |               \
-                                         CORJIT_FLG_DEBUG_EnC |                     \
-                                         CORJIT_FLG_DEBUG_INFO                      \
-                                        )
-
-enum InlInlineHints
-{
-    //Static inline hints are here.
-    InlLooksLikeWrapperMethod = 0x0001,     // The inline candidate looks like it's a simple wrapper method.
-
-    InlArgFeedsConstantTest   = 0x0002,     // One or more of the incoming arguments feeds into a test
-                                            //against a constant.  This is a good candidate for assertion
-                                            //prop.
-
-    InlMethodMostlyLdSt       = 0x0004,     //This method is mostly loads and stores.
-
-    InlMethodContainsCondThrow= 0x0008,     //Method contains a conditional throw, so it does not bloat the
-                                            //code as much.
-    InlArgFeedsRngChk         = 0x0010,     //Incoming arg feeds an array bounds check.  A good assertion
-                                            //prop candidate.
-
-    //Dynamic inline hints are here.  Only put hints that add to the multiplier in here.
-    InlIncomingConstFeedsCond = 0x0100,     //Incoming argument is constant and feeds a conditional.
-    InlAllDynamicHints        = InlIncomingConstFeedsCond
-};
-struct InlineCandidateInfo
-{ 
-    DWORD                 dwRestrictions;   
-    CORINFO_METHOD_INFO   methInfo;     
-    unsigned              methAttr;
-    CORINFO_CLASS_HANDLE  clsHandle;
-    unsigned              clsAttr;  
-    var_types             fncRetType;
-    CORINFO_METHOD_HANDLE ilCallerHandle; //the logical IL caller of this inlinee.
-    CORINFO_CONTEXT_HANDLE exactContextHnd;
-    CorInfoInitClassResult initClassResult;
-};
-
-struct InlArgInfo
-{
-    unsigned    argIsUsed     :1;   // is this arg used at all?
-    unsigned    argIsInvariant:1;   // the argument is a constant or a local variable address
-    unsigned    argIsLclVar   :1;   // the argument is a local variable
-    unsigned    argIsThis     :1;   // the argument is the 'this' pointer
-    unsigned    argHasSideEff :1;   // the argument has side effects
-    unsigned    argHasGlobRef :1;   // the argument has a global ref
-    unsigned    argHasTmp     :1;   // the argument will be evaluated to a temp
-    unsigned    argIsByRefToStructLocal:1;  // Is this arg an address of a struct local or a normed struct local or a field in them?
-    unsigned    argHasLdargaOp:1;   // Is there LDARGA(s) operation on this argument?
-
-    unsigned    argTmpNum;          // the argument tmp number
-    GenTreePtr  argNode;
-    GenTreePtr  argBashTmpNode;     // tmp node created, if it may be replaced with actual arg
-};
-
-struct InlLclVarInfo
-{
-    var_types       lclTypeInfo;
-    typeInfo        lclVerTypeInfo;
-    bool            lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
-};
-
-#ifndef LEGACY_BACKEND
-const unsigned int   MAX_INL_ARGS =      32;     // does not include obj pointer
-const unsigned int   MAX_INL_LCLS =      32;
-#else // LEGACY_BACKEND
-const unsigned int   MAX_INL_ARGS =      10;     // does not include obj pointer
-const unsigned int   MAX_INL_LCLS =      8;
-#endif // LEGACY_BACKEND
-
-// JitInlineResult encapsulates what is known about a particular
-// inline candiate.
-
-class JitInlineResult
-{
-public:
-
-    // Construct a new JitInlineResult.
-    JitInlineResult(Compiler*              compiler,
-                    CORINFO_METHOD_HANDLE  inliner,
-                    CORINFO_METHOD_HANDLE  inlinee,
-                    const char*            context)
-        : inlCompiler(compiler)
-        , inlDecision(InlineDecision::UNDECIDED)
-        , inlInliner(inliner)
-        , inlInlinee(inlinee)
-        , inlReason(nullptr)
-        , inlContext(context)
-        , inlReported(false)
-    {
-        // empty
-    }
-
-    // Translate into CorInfoInline for reporting back to the runtime.
-    // 
-    // Before calling this, the Jit must have made a decision.
-    // Interim states are not meaningful to the runtime.
-    CorInfoInline result() const 
-    { 
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return INLINE_PASS;
-            case InlineDecision::FAILURE:
-                return INLINE_FAIL;
-            case InlineDecision::NEVER:
-                return INLINE_NEVER;
-            default:
-                assert(!"Unexpected: interim inline result");
-                unreached();
-        }
-    }
-
-    // Translate into string for dumping
-    const char* resultString() const 
-    { 
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return "success";
-            case InlineDecision::FAILURE:
-                return "failed this call site";
-            case InlineDecision::NEVER:
-                return "failed this callee";
-            case InlineDecision::CANDIDATE:
-                return "candidate";            
-            case InlineDecision::UNDECIDED:
-                return "undecided";
-            default:
-                assert(!"Unexpected: interim inline result");
-                unreached();
-        }
-    }
-
-    // True if this definitely a failed inline candidate
-    bool isFailure() const 
-    { 
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            case InlineDecision::FAILURE:
-            case InlineDecision::NEVER:
-                return true;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
-    }
-    
-    // True if this is definitely a successful inline candidate
-    bool isSuccess() const 
-    { 
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return true;
-            case InlineDecision::FAILURE:
-            case InlineDecision::NEVER:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
-    }
-
-    // True if this definitely a never inline candidate
-    bool isNever() const 
-    {
-        switch (inlDecision) {
-            case InlineDecision::NEVER:
-                return true;
-            case InlineDecision::FAILURE:
-            case InlineDecision::SUCCESS:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
-   }
-
-    // True if this is still a viable inline candidate
-    // at this stage of the evaluation process. This will
-    // change as more checks are run.
-    bool isCandidate() const 
-    {
-        return !isFailure();
-    }
-    
-    // True if all checks have been made and we know whether
-    // or not this inline happened.
-    bool isDecided() const 
-    {
-        return (isSuccess() || isFailure());
-    }
-    
-    // setCandiate indicates the prospective inline has passed at least
-    // some of the correctness checks and is still a viable inline
-    // candidate, but no decision has been made yet.
-    //
-    // This may be called multiple times as various tests are performed
-    // and the candidate gets closer and closer to actually getting
-    // inlined.
-    void setCandidate(const char* reason) 
-    {
-        assert(!isDecided());
-        setCommon(InlineDecision::CANDIDATE, reason);
-    }
-    
-    // setSuccess means the inline happened.
-    void setSuccess() 
-    {
-        assert(!isFailure());
-        inlDecision = InlineDecision::SUCCESS;
-    }
-
-    // Make an observation, and update internal state appropriately.
-    // 
-    // Caller is expected to call isFailure after this to see whether
-    // more observation is desired.
-    void note(InlineObservation obs)
-    {
-        // Check the impact
-        InlineImpact impact = inlGetImpact(obs);
-
-        // As a safeguard, all fatal impact must be 
-        // reported via noteFatal.
-        assert(impact != InlineImpact::FATAL);
-        noteInternal(obs, impact);
-    }
-
-    // Make an observation where caller knows for certain that this
-    // inline cannot happen, and so there's no point in any further
-    // scrutiny of this inline. Update internal state to mark the
-    // inline result as a failure.
-    void noteFatal(InlineObservation obs)
-    {
-        // Check the impact
-        InlineImpact impact = inlGetImpact(obs);
-
-        // As a safeguard, all fatal impact must be 
-        // reported via noteFatal.
-        assert(impact == InlineImpact::FATAL);
-        noteInternal(obs, impact);
-        assert(isFailure());
-    }
-
-    // Ignore values for now
-    void noteInt(InlineObservation obs, int value)
-    {
-        (void) value;
-        note(obs);
-    }
-
-    // Ignore values for now
-    void noteDouble(InlineObservation obs, double value)
-    {
-        (void) value;
-        note(obs);
-    }
-    
-    // Ensure result is appropriately reported when the result goes
-    // out of scope.
-    ~JitInlineResult() 
-    {
-        report();
-    }
-
-    // The reason for this particular result
-    const char * reason() const { return inlReason; }
-    
-    // setReported indicates that this particular result doesn't need
-    // to be reported back to the runtime, either because the runtime
-    // already knows, or we weren't actually inlining yet.
-    void setReported() { inlReported = true; }
-    
-private:
-
-    // No copying or assignment allowed.
-    JitInlineResult(const JitInlineResult&) = delete;
-    JitInlineResult operator=(const JitInlineResult&) = delete;
-
-    // Handle implications of an inline observation
-    void noteInternal(InlineObservation obs, InlineImpact impact)
-    {
-        // Ignore INFORMATION for now, since policy
-        // is still embedded at the observation sites.
-        if (impact == InlineImpact::INFORMATION)
-        {
-            return;
-        }
-
-        InlineTarget target = inlGetTarget(obs);
-        const char* reason = inlGetDescriptionString(obs);
-        
-        if (target == InlineTarget::CALLEE)
-        {
-            this->setNever(reason);
-        }
-        else 
-        {
-            this->setFailure(reason);
-        }
-    }
-
-    // setFailure means this particular instance can't be inlined.
-    // It can override setCandidate, but not setSuccess
-    void setFailure(const char* reason) 
-    {
-        assert(!isSuccess());
-        setCommon(InlineDecision::FAILURE, reason);
-    }
-    
-    // setNever means this callee can never be inlined anywhere.
-    // It can override setCandidate, but not setSuccess
-    void setNever(const char* reason) 
-    {
-        assert(!isSuccess());
-        setCommon(InlineDecision::NEVER, reason);
-    }
-
-    // Helper for setting decision and reason
-    void setCommon(InlineDecision decision, const char* reason) 
-    {
-        assert(reason != nullptr);
-        assert(decision != InlineDecision::UNDECIDED);
-        inlDecision = decision;
-        inlReason = reason;
-    }
-
-    // Report/log/dump decision as appropriate
-    void report();
-
-    Compiler*               inlCompiler;
-    InlineDecision          inlDecision;
-    CORINFO_METHOD_HANDLE   inlInliner;
-    CORINFO_METHOD_HANDLE   inlInlinee;
-    const char*             inlReason;
-    const char*             inlContext;
-    bool                    inlReported;
-};
-
-struct InlineInfo
-{        
-    Compiler        * InlinerCompiler;  // The Compiler instance for the caller (i.e. the inliner)
-    Compiler        * InlineRoot;       // The Compiler instance that is the root of the inlining tree of which the owner of "this" is a member.
-
-    CORINFO_METHOD_HANDLE fncHandle;
-    InlineCandidateInfo * inlineCandidateInfo;
-
-    JitInlineResult*  inlineResult; 
-
-    GenTreePtr retExpr;      // The return expression of the inlined candidate.
-   
-    CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
-                                                     // impTokenLookupContextHandle in Inlinee's Compiler.
-  
-    unsigned          argCnt;
-    InlArgInfo        inlArgInfo[MAX_INL_ARGS + 1];
-    int               lclTmpNum[MAX_INL_LCLS];    // map local# -> temp# (-1 if unused)
-    InlLclVarInfo     lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1];  // type information from local sig    
-
-    bool              thisDereferencedFirst;
-#ifdef FEATURE_SIMD
-    bool              hasSIMDTypeArgLocalOrReturn;
-#endif // FEATURE_SIMD
-                     
-    GenTree         * iciCall;       // The GT_CALL node to be inlined.
-    GenTree         * iciStmt;       // The statement iciCall is in.
-    BasicBlock      * iciBlock;      // The basic block iciStmt is in.  
-};
-
 // Information about arrays: their element type and size, and the offset of the first element.
 // We label GT_IND's that are array indices with GTF_IND_ARR_INDEX, and, for such nodes,
 // associate an array info via the map retrieved by GetArrayInfoMap().  This information is used,
@@ -3479,27 +3096,27 @@ private:
 
     void                impCanInlineNative(int              callsiteNativeEstimate, 
                                            int              calleeNativeSizeEstimate,
-                                           InlInlineHints   inlineHints,
+                                           InlineHints      inlineHints,
                                            InlineInfo*      pInlineInfo,
-                                           JitInlineResult* inlineResult);
+                                           InlineResult*    inlineResult);
 
     // STATIC inlining decision based on the IL code. 
     void                impCanInlineIL(CORINFO_METHOD_HANDLE  fncHandle,
                                        CORINFO_METHOD_INFO*   methInfo,
                                        bool                   forceInline,
-                                       JitInlineResult*       inlineResult);
+                                       InlineResult*          inlineResult);
 
     void                impCheckCanInline(GenTreePtr              call,
                                           CORINFO_METHOD_HANDLE   fncHandle,
                                           unsigned                methAttr,
                                           CORINFO_CONTEXT_HANDLE  exactContextHnd,
                                           InlineCandidateInfo**   ppInlineCandidateInfo,
-                                          JitInlineResult*        inlineResult);
+                                          InlineResult*           inlineResult);
 
     void                impInlineRecordArgInfo(InlineInfo*       pInlineInfo,
                                                GenTreePtr        curArgVal,
                                                unsigned          argNum,
-                                               JitInlineResult*  inlineResult);
+                                               InlineResult*     inlineResult);
 
     void                impInlineInitVars(InlineInfo*  pInlineInfo);
    
@@ -4916,7 +4533,7 @@ private:
     static int          fgEstimateCallStackSize(GenTreeCall* call);
     GenTreePtr          fgMorphCall         (GenTreeCall*   call);
     bool                fgMorphCallInline   (GenTreePtr     call);
-    void                fgMorphCallInlineHelper(GenTreeCall* call, JitInlineResult* result);
+    void                fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
     GenTreePtr          fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_CONTEXT_HANDLE * ExactContextHnd);
     GenTreePtr          fgMorphLeaf         (GenTreePtr     tree);
     void                fgAssignSetVarDef   (GenTreePtr     tree);
@@ -5024,7 +4641,7 @@ private:
                                                      BYTE *    ilCode,
                                                      DWORD*    depth);
 
-    void                fgInvokeInlineeCompiler(GenTreeCall*   call, JitInlineResult* result);
+    void                fgInvokeInlineeCompiler(GenTreeCall*   call, InlineResult* result);
     void                fgInsertInlineeBlocks (InlineInfo * pInlineInfo);
     GenTreePtr          fgInlinePrependStatements(InlineInfo * inlineInfo);
 
@@ -7657,7 +7274,7 @@ public :
 
     Compiler          * InlineeCompiler;        // The Compiler instance for the inlinee
 
-    JitInlineResult*    compInlineResult;       // The result of importing the inlinee method.
+    InlineResult*       compInlineResult;       // The result of importing the inlinee method.
                                                                                               
     bool                compDoAggressiveInlining;  // If true, mark every method as CORINFO_FLG_FORCEINLINE
     bool                compJmpOpUsed;          // Does the method do a JMP
@@ -8933,7 +8550,7 @@ public:
     static bool             s_compInSamplingMode;
     bool                    compIsMethodForLRSampling;  // Is this the method suitable as a sample for the linear regression?
     int                     compNativeSizeEstimate;     // The estimated native size of this method.
-    InlInlineHints          compInlineeHints;           // Inlining hints from the inline candidate.
+    InlineHints             compInlineeHints;           // Inlining hints from the inline candidate.
 
 #ifdef DEBUG   
     CodeSeqSM               fgCodeSeqSm;                // The code sequence state machine used in the inliner.
