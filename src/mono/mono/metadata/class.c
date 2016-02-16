@@ -1381,11 +1381,11 @@ mono_type_has_exceptions (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_SZARRAY:
-		return type->data.klass->exception_type;
+		return mono_class_has_failure (type->data.klass);
 	case MONO_TYPE_ARRAY:
-		return type->data.array->eklass->exception_type;
+		return mono_class_has_failure (type->data.array->eklass);
 	case MONO_TYPE_GENERICINST:
-		return mono_generic_class_get_class (type->data.generic_class)->exception_type;
+		return mono_class_has_failure (mono_generic_class_get_class (type->data.generic_class));
 	default:
 		return FALSE;
 	}
@@ -1566,7 +1566,7 @@ mono_class_setup_fields (MonoClass *klass)
 
 	if (gtd) {
 		mono_class_setup_fields (gtd);
-		if (gtd->exception_type) {
+		if (mono_class_has_failure (gtd)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return;
 		}
@@ -1581,7 +1581,7 @@ mono_class_setup_fields (MonoClass *klass)
 		mono_class_init (klass->parent);
 		if (!klass->parent->size_inited) {
 			mono_class_setup_fields (klass->parent);
-			if (klass->parent->exception_type) {
+			if (mono_class_has_failure (klass->parent)) {
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				return;
 			}
@@ -1697,7 +1697,7 @@ mono_class_setup_fields (MonoClass *klass)
 				MonoClass *field_class = mono_class_from_mono_type (field->type);
 				if (field_class) {
 					mono_class_setup_fields (field_class);
-					if (field_class->exception_type) {
+					if (mono_class_has_failure (field_class)) {
 						mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 						break;
 					}
@@ -1738,7 +1738,7 @@ mono_class_setup_fields (MonoClass *klass)
 		klass->instance_size = MAX (real_size, klass->instance_size);
 	}
 
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return;
 	mono_class_layout_fields (klass);
 
@@ -1929,7 +1929,7 @@ mono_class_layout_fields (MonoClass *klass)
 
 		if (klass->parent) {
 			mono_class_setup_fields (klass->parent);
-			if (klass->parent->exception_type) {
+			if (mono_class_has_failure (klass->parent)) {
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				return;
 			}
@@ -2187,9 +2187,9 @@ mono_class_setup_methods (MonoClass *klass)
 		MonoClass *gklass = klass->generic_class->container_class;
 
 		mono_class_init (gklass);
-		if (!gklass->exception_type)
+		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
-		if (gklass->exception_type) {
+		if (mono_class_has_failure (gklass)) {
 			/* FIXME make exception_data less opaque so it's possible to dup it here */
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
 			return;
@@ -2370,7 +2370,7 @@ mono_class_get_method_by_index (MonoClass *klass, int index)
 		return m;
 	} else {
 		mono_class_setup_methods (klass);
-		if (klass->exception_type) /*FIXME do proper error handling*/
+		if (mono_class_has_failure (klass)) /*FIXME do proper error handling*/
 			return NULL;
 		g_assert (index >= 0 && index < klass->method.count);
 		return klass->methods [index];
@@ -2392,7 +2392,7 @@ mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method)
 	g_assert (method->klass == gklass);
 
 	mono_class_setup_methods (gklass);
-	g_assert (!gklass->exception_type); /*FIXME do proper error handling*/
+	g_assert (!mono_class_has_failure (gklass)); /*FIXME do proper error handling*/
 
 	for (i = 0; i < gklass->method.count; ++i) {
 		if (gklass->methods [i] == method) {
@@ -2441,7 +2441,7 @@ mono_class_get_vtable_entry (MonoClass *klass, int offset)
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow this error */
 	} else {
 		mono_class_setup_vtable (klass);
-		if (klass->exception_type)
+		if (mono_class_has_failure (klass))
 			return NULL;
 		m = klass->vtable [offset];
 	}
@@ -2487,7 +2487,7 @@ mono_class_setup_properties (MonoClass *klass)
 
 		mono_class_init (gklass);
 		mono_class_setup_properties (gklass);
-		if (gklass->exception_type) {
+		if (mono_class_has_failure (gklass)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
 			return;
 		}
@@ -2519,7 +2519,7 @@ mono_class_setup_properties (MonoClass *klass)
 
 		if (count) {
 			mono_class_setup_methods (klass);
-			if (klass->exception_type)
+			if (mono_class_has_failure (klass))
 				return;
 		}
 
@@ -2620,7 +2620,7 @@ mono_class_setup_events (MonoClass *klass)
 		MonoGenericContext *context = NULL;
 
 		mono_class_setup_events (gklass);
-		if (gklass->exception_type) {
+		if (mono_class_has_failure (gklass)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
 			return;
 		}
@@ -2660,7 +2660,7 @@ mono_class_setup_events (MonoClass *klass)
 
 		if (count) {
 			mono_class_setup_methods (klass);
-			if (klass->exception_type) {
+			if (mono_class_has_failure (klass)) {
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
 				return;
 			}
@@ -2859,7 +2859,7 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 			*res = g_ptr_array_new ();
 		g_ptr_array_add (*res, ic);
 		mono_class_init (ic);
-		if (ic->exception_type) {
+		if (mono_class_has_failure (ic)) {
 			mono_error_set_type_load_class (error, ic, "Error Loading class");
 			return;
 		}
@@ -3294,7 +3294,7 @@ count_virtual_methods (MonoClass *klass)
 
 	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
 		mono_class_setup_methods (klass);
-		if (klass->exception_type)
+		if (mono_class_has_failure (klass))
 			return -1;
 
 		for (i = 0; i < klass->method.count; ++i) {
@@ -3762,11 +3762,11 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 	int i;
 	if (!klass->generic_class) {
 		mono_class_setup_vtable_full (klass, in_setup);
-		return klass->exception_type == 0;
+		return !mono_class_has_failure (klass);
 	}
 
 	mono_class_setup_vtable_full (mono_class_get_generic_type_definition (klass), in_setup);
-	if (klass->generic_class->container_class->exception_type) {
+	if (mono_class_has_failure (klass->generic_class->container_class)) {
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to load generic definition vtable"));
 		return FALSE;
 	}
@@ -3824,7 +3824,7 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		return;
 	}
 
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return;
 
 	if (g_list_find (in_setup, klass))
@@ -4218,7 +4218,7 @@ print_unimplemented_interface_method_info (MonoClass *klass, MonoClass *ic, Mono
 	g_free (method_signature);
 	g_free (type_name);
 	mono_class_setup_methods (klass);
-	if (klass->exception_type) {
+	if (mono_class_has_failure (klass)) {
 		char *name = mono_type_get_full_name (klass);
 		mono_trace_warning (MONO_TRACE_TYPE, "CLASS %s failed to resolve methods\n", name);
 		g_free (name);
@@ -4342,7 +4342,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		mono_class_init (klass->parent);
 		mono_class_setup_vtable_full (klass->parent, in_setup);
 
-		if (klass->parent->exception_type) {
+		if (mono_class_has_failure (klass->parent)) {
 			char *name = mono_type_get_full_name (klass->parent);
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Parent %s failed to load", name));
 			g_free (name);
@@ -4381,7 +4381,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod **tmp;
 
 		mono_class_setup_vtable_full (gklass, in_setup);
-		if (gklass->exception_type != MONO_EXCEPTION_NONE) {
+		if (mono_class_has_failure (gklass)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return;
 		}
@@ -4437,7 +4437,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				
 				mono_class_setup_methods (parent_interface); /*FIXME Just kill this whole chunk of dead code*/
 				TRACE_INTERFACE_VTABLE (printf ("    +++ Inheriting interface %s.%s\n", parent_interface->name_space, parent_interface->name));
-				for (j = 0; j < parent_interface->method.count && !klass->exception_type; j++) {
+				for (j = 0; j < parent_interface->method.count && !mono_class_has_failure (klass); j++) {
 					vtable [interface_offset + j] = parent->vtable [parent_interface_offset + j];
 					TRACE_INTERFACE_VTABLE (printf ("    --- Inheriting: [%03d][(%03d)+(%03d)] => [%03d][(%03d)+(%03d)]\n",
 							parent_interface_offset + j, parent_interface_offset, j,
@@ -4499,7 +4499,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		while ((cm = mono_class_get_virtual_methods (klass, &iter))) {
 			virt_methods = g_slist_prepend (virt_methods, cm);
 		}
-		if (klass->exception_type)
+		if (mono_class_has_failure (klass))
 			goto fail;
 	}
 	
@@ -4514,7 +4514,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		ic_offset = mono_class_interface_offset (klass, ic);
 
 		mono_class_setup_methods (ic);
-		if (ic->exception_type)
+		if (mono_class_has_failure (ic))
 			goto fail;
 		
 		// Check if this interface is explicitly implemented (instead of just inherited)
@@ -4561,7 +4561,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						}
 					}
 					TRACE_INTERFACE_VTABLE (printf ("\n"));
-					if (klass->exception_type)  /*Might be set by check_interface_method_override*/
+					if (mono_class_has_failure (klass))  /*Might be set by check_interface_method_override*/
 						goto fail;
 				}
 				
@@ -4582,7 +4582,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 							}
 							break;
 						}
-						if (klass->exception_type) /*Might be set by check_interface_method_override*/
+						if (mono_class_has_failure (klass)) /*Might be set by check_interface_method_override*/
 							goto fail;
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("\n"));
 					}
@@ -4677,7 +4677,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						break;
 					}
 				}
-				if (k->exception_type)
+				if (mono_class_has_failure (k))
 					goto fail;
 				
 				if (slot >= 0) 
@@ -4852,7 +4852,7 @@ mono_method_get_vtable_slot (MonoMethod *method)
 {
 	if (method->slot == -1) {
 		mono_class_setup_vtable (method->klass);
-		if (method->klass->exception_type)
+		if (mono_class_has_failure (method->klass))
 			return -1;
 		if (method->slot == -1) {
 			MonoClass *gklass;
@@ -4948,7 +4948,7 @@ generic_array_methods (MonoClass *klass)
 	if (generic_array_method_num)
 		return generic_array_method_num;
 	mono_class_setup_methods (klass->parent); /*This is setting up System.Array*/
-	g_assert (!klass->parent->exception_type); /*So hitting this assert is a huge problem*/
+	g_assert (!mono_class_has_failure (klass->parent)); /*So hitting this assert is a huge problem*/
 	for (i = 0; i < klass->parent->method.count; i++) {
 		MonoMethod *m = klass->parent->methods [i];
 		if (!strncmp (m->name, "InternalArray__", 15)) {
@@ -5108,18 +5108,18 @@ mono_class_init (MonoClass *klass)
 	g_assert (klass);
 
 	/* Double-checking locking pattern */
-	if (klass->inited || klass->exception_type)
-		return klass->exception_type == MONO_EXCEPTION_NONE;
+	if (klass->inited || mono_class_has_failure (klass))
+		return !mono_class_has_failure (klass);
 
 	/*g_print ("Init class %s\n", mono_type_get_full_name (klass));*/
 
 	/* We do everything inside the lock to prevent races */
 	mono_loader_lock ();
 
-	if (klass->inited || klass->exception_type) {
+	if (klass->inited || mono_class_has_failure (klass)) {
 		mono_loader_unlock ();
 		/* Somebody might have gotten in before us */
-		return klass->exception_type == MONO_EXCEPTION_NONE;
+		return !mono_class_has_failure (klass);
 	}
 
 	if (klass->init_pending) {
@@ -5139,7 +5139,7 @@ mono_class_init (MonoClass *klass)
 		MonoClass *element_class = klass->element_class;
 		if (!element_class->inited) 
 			mono_class_init (element_class);
-		if (element_class->exception_type != MONO_EXCEPTION_NONE) {
+		if (mono_class_has_failure (element_class)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto leave;
 		}
@@ -5157,9 +5157,9 @@ mono_class_init (MonoClass *klass)
 
 		mono_class_init (gklass);
 		// FIXME: Why is this needed ?
-		if (!gklass->exception_type)
+		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
-		if (gklass->exception_type) {
+		if (mono_class_has_failure (gklass)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Generic Type Defintion failed to init"));
 			goto leave;
 		}
@@ -5192,7 +5192,7 @@ mono_class_init (MonoClass *klass)
 	else
 		if (!klass->size_inited){
 			mono_class_setup_fields (klass);
-			if (klass->exception_type || mono_loader_get_last_error ())
+			if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 				goto leave;
 		}
 				
@@ -5246,7 +5246,7 @@ mono_class_init (MonoClass *klass)
 		klass->has_cctor = gklass->has_cctor;
 
 		mono_class_setup_vtable (gklass);
-		if (gklass->exception_type) {
+		if (mono_class_has_failure (gklass)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto leave;
 		}
@@ -5278,7 +5278,7 @@ mono_class_init (MonoClass *klass)
 					klass->has_cctor = 1;
 			} else {
 				mono_class_setup_methods (klass);
-				if (klass->exception_type)
+				if (mono_class_has_failure (klass))
 					goto leave;
 
 				for (i = 0; i < klass->method.count; ++i) {
@@ -5297,7 +5297,7 @@ mono_class_init (MonoClass *klass)
 		int first_iface_slot;
 		/* This will compute klass->parent->vtable_size for some classes */
 		mono_class_init (klass->parent);
-		if (klass->parent->exception_type) {
+		if (mono_class_has_failure (klass->parent)) {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto leave;
 		}
@@ -5306,7 +5306,7 @@ mono_class_init (MonoClass *klass)
 		if (!klass->parent->vtable_size) {
 			/* FIXME: Get rid of this somehow */
 			mono_class_setup_vtable (klass->parent);
-			if (klass->parent->exception_type) {
+			if (mono_class_has_failure (klass->parent)) {
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				goto leave;
 			}
@@ -5325,7 +5325,7 @@ mono_class_init (MonoClass *klass)
 		mono_security_core_clr_check_inheritance (klass);
 
 	if (mono_loader_get_last_error ()) {
-		if (klass->exception_type == MONO_EXCEPTION_NONE) {
+		if (!mono_class_has_failure (klass)) {
 			set_failure_from_loader_error (klass, mono_loader_get_last_error ());
 		}
 		mono_loader_clear_error ();
@@ -5344,7 +5344,7 @@ mono_class_init (MonoClass *klass)
 
 	mono_loader_unlock ();
 
-	return klass->exception_type == MONO_EXCEPTION_NONE;
+	return !mono_class_has_failure (klass);
 }
 
 /*
@@ -5379,7 +5379,7 @@ mono_class_has_finalizer (MonoClass *klass)
 				 * ignores overrides.
 				 */
 				mono_class_setup_vtable (klass);
-				if (klass->exception_type || mono_loader_get_last_error ())
+				if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 					cmethod = NULL;
 				else
 					cmethod = klass->vtable [finalize_slot];
@@ -6261,7 +6261,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 
 	if (count - pos > 0) {
 		mono_class_setup_vtable (klass->parent);
-		if (klass->parent->exception_type)
+		if (mono_class_has_failure (klass->parent))
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to setup parent interfaces"));
 		else
 			setup_interface_offsets (klass, klass->parent->vtable_size, TRUE);
@@ -6797,7 +6797,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		mono_class_init (eclass);
 	if (!eclass->size_inited)
 		mono_class_setup_fields (eclass);
-	if (eclass->exception_type) /*FIXME we fail the array type, but we have to let other fields be set.*/
+	if (mono_class_has_failure (eclass)) /*FIXME we fail the array type, but we have to let other fields be set.*/
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 
 	klass->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
@@ -6985,7 +6985,7 @@ static MonoClassField *
 mono_class_get_field_idx (MonoClass *klass, int idx)
 {
 	mono_class_setup_fields_locking (klass);
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return NULL;
 
 	while (klass) {
@@ -7067,7 +7067,7 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 	int i;
 
 	mono_class_setup_fields_locking (klass);
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return NULL;
 
 	while (klass) {
@@ -8358,7 +8358,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (!oklass->inited)
 		mono_class_init (oklass);
 
-	if (klass->exception_type || oklass->exception_type)
+	if (mono_class_has_failure (klass) || mono_class_has_failure  (oklass))
 		return FALSE;
 
 	if (mono_type_is_generic_argument (&klass->byval_arg)) {
@@ -9190,7 +9190,7 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 		return NULL;
 	if (!*iter) {
 		mono_class_setup_fields_locking (klass);
-		if (klass->exception_type)
+		if (mono_class_has_failure (klass))
 			return NULL;
 		/* start from the first */
 		if (klass->field.count) {
@@ -9979,7 +9979,7 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 {
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return FALSE;
 
 	mono_loader_lock ();
@@ -10053,7 +10053,7 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 {
 	gpointer exception_data = mono_class_get_exception_data (klass);
 
-	switch (klass->exception_type) {
+	switch (mono_class_get_failure(klass)) {
 	case MONO_EXCEPTION_TYPE_LOAD: {
 		MonoString *name;
 		MonoException *ex;

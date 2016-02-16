@@ -2529,7 +2529,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			 * but keep it just in case for moonlight.
 			 */
 			mono_class_setup_vtable (method->klass);
-			if (method->klass->exception_type != MONO_EXCEPTION_NONE) {
+			if (mono_class_has_failure (method->klass)) {
 				MonoException *fail_exc = mono_class_get_exception_for_failure (method->klass);
 				if (exc)
 					*exc = (MonoObject*)fail_exc;

@@ -1496,4 +1496,18 @@ mono_class_load_from_name (MonoImage *image, const char* name_space, const char 
 MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
+static inline guint8
+mono_class_get_failure (MonoClass *klass)
+{
+	g_assert (klass != NULL);
+	return klass->exception_type;
+}
+
+static inline gboolean
+mono_class_has_failure (MonoClass *klass)
+{
+	g_assert (klass != NULL);
+	return mono_class_get_failure (klass) != MONO_EXCEPTION_NONE;
+}
+
 #endif /* __MONO_METADATA_CLASS_INTERNALS_H__ */

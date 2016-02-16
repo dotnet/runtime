@@ -466,7 +466,7 @@ mono_class_has_default_constructor (MonoClass *klass)
 	int i;
 
 	mono_class_setup_methods (klass);
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return FALSE;
 
 	for (i = 0; i < klass->method.count; ++i) {
@@ -884,7 +884,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 
 	klass = mono_class_from_mono_type (type);
 	mono_class_init (klass);
-	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_loader_get_last_error () || mono_class_has_failure (klass)) {
 		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (NULL, klass))
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
@@ -893,7 +893,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 		return FALSE;
 	}
 
-	if (klass->generic_class && klass->generic_class->container_class->exception_type != MONO_EXCEPTION_NONE) {
+	if (klass->generic_class && mono_class_has_failure (klass->generic_class->container_class)) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
@@ -5959,7 +5959,7 @@ mono_method_verify (MonoMethod *method, int level)
 	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class) {
 		char *method_name = mono_method_full_name (ctx.method, TRUE);
 		char *type = mono_type_get_full_name (ctx.method->klass);
-		if (ctx.method->klass->parent && ctx.method->klass->parent->exception_type != MONO_EXCEPTION_NONE)
+		if (ctx.method->klass->parent && mono_class_has_failure (ctx.method->klass->parent))
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor %s for type %s not calling base type ctor due to a TypeLoadException on base type.", method_name, type));
 		else
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor %s for type %s not calling base type ctor.", method_name, type));

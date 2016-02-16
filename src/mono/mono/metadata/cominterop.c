@@ -899,7 +899,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 	
 	if (!method->klass->methods)
 		mono_class_setup_methods (method->klass);
-	g_assert (!method->klass->exception_type); /*FIXME do proper error handling*/
+	g_assert (!mono_class_has_failure (method->klass)); /*FIXME do proper error handling*/
 
 	sig = mono_method_signature (method);
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);

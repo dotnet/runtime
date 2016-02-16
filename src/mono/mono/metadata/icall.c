@@ -3532,7 +3532,7 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, MonoString *name, g
 	mono_ptr_array_init (tmp_array, 2, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection fields list");
 	
 handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_class_has_failure (klass)) {
 		mono_ptr_array_destroy (tmp_array);
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
@@ -3649,7 +3649,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 		goto loader_error;
 
 	if (is_generic_parameter (&klass->byval_arg))
@@ -3665,7 +3665,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 		goto loader_error;		
 
 	iter = NULL;
@@ -3722,7 +3722,7 @@ loader_error:
 		g_free (method_slots);
 	g_ptr_array_free (array, TRUE);
 
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_class_has_failure (klass)) {
 		*ex = mono_class_get_exception_for_failure (klass);
 	} else {
 		*ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
@@ -3817,7 +3817,7 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	refklass = mono_class_from_mono_type (reftype->type);
 
 	mono_class_setup_methods (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_class_has_failure (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
@@ -3960,7 +3960,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 		goto loader_error;
 
 	iter = NULL;
@@ -4031,7 +4031,7 @@ handle_parent:
 
 
 loader_error:
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
 		mono_error_set_from_loader_error (&error);
@@ -4094,7 +4094,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
 		goto loader_error;
 
 	iter = NULL;
@@ -4175,7 +4175,7 @@ handle_parent:
 	return res;
 
 loader_error:
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
 		mono_error_set_from_loader_error (&error);
@@ -4369,7 +4369,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		MonoClass *klass = mono_type_get_class (type);
 
 		/* need to report exceptions ? */
-		if (throwOnError && klass->exception_type) {
+		if (throwOnError && mono_class_has_failure (klass)) {
 			/* report SecurityException (or others) that occured when loading the assembly */
 			MonoException *exc = mono_class_get_exception_for_failure (klass);
 			mono_loader_clear_error ();
@@ -4978,7 +4978,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 	}
 
 	mono_class_setup_methods (method->klass);
-	if (method->klass->exception_type)
+	if (mono_class_has_failure (method->klass))
 		return NULL;
 	for (i = 0; i < method->klass->method.count; ++i) {
 		if (method->klass->methods [i] == method) {
@@ -4987,7 +4987,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 		}	
 	}
 	mono_class_setup_methods (klass);
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return NULL;
 	g_assert (offset >= 0 && offset < klass->method.count);
 	return klass->methods [offset];
@@ -5478,7 +5478,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 		if (t) {
 			klass = mono_type_get_class (t->type);
-			if ((klass != NULL) && klass->exception_type) {
+			if ((klass != NULL) && mono_class_has_failure (klass)) {
 				/* keep the class in the list */
 				list = g_list_append (list, klass);
 				/* and replace Type with NULL */
@@ -6294,7 +6294,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoStri
 
 	// mono_remote_class_vtable cannot handle errors well, so force any loading error to occur early
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type) {
+	if (mono_class_has_failure (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
