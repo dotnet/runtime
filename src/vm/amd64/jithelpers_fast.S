@@ -186,7 +186,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rax, [r10]
         cmp     rax, r11
         je      DoneShadow_ByRefWriteBarrier
-        mov     r11, INVALIDGCVALUE
+        movabs  r11, INVALIDGCVALUE
         mov     [r10], r11
 
         jmp     DoneShadow_ByRefWriteBarrier
