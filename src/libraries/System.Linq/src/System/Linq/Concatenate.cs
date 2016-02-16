@@ -40,38 +40,14 @@ namespace System.Linq
 
             var concatFirst = first as ConcatIterator<TSource>;
             return concatFirst != null ?
-                UpgradeConcatIterator(concatFirst, second) :
+                concatFirst.Concat(second) :
                 new Concat2Iterator<TSource>(first, second);
-        }
-
-        private static ConcatIterator<TSource> UpgradeConcatIterator<TSource>(ConcatIterator<TSource> first, IEnumerable<TSource> second)
-        {
-            Debug.Assert(first is Concat2Iterator<TSource> || first is Concat3Iterator<TSource> || first is ConcatNIterator<TSource>);
-            Debug.Assert(second != null);
-
-            // Are we upgrading from two sources to three?
-            Concat2Iterator<TSource> two = first as Concat2Iterator<TSource>;
-            if (two != null)
-            {
-                return new Concat3Iterator<TSource>(two._first, two._second, second);
-            }
-
-            // From three to four?
-            Concat3Iterator<TSource> three = first as Concat3Iterator<TSource>;
-            if (three != null)
-            {
-                return new ConcatNIterator<TSource>(three, second, 3);
-            }
-
-            // From four+ to one more
-            ConcatNIterator<TSource> n = (ConcatNIterator<TSource>)first;
-            return new ConcatNIterator<TSource>(n, second, n._nextIndex + 1);
         }
 
         private sealed class Concat2Iterator<TSource> : ConcatIterator<TSource>
         {
-            internal readonly IEnumerable<TSource> _first;
-            internal readonly IEnumerable<TSource> _second;
+            private readonly IEnumerable<TSource> _first;
+            private readonly IEnumerable<TSource> _second;
 
             internal Concat2Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
             {
@@ -83,6 +59,11 @@ namespace System.Linq
             public override Iterator<TSource> Clone()
             {
                 return new Concat2Iterator<TSource>(_first, _second);
+            }
+
+            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
+            {
+                return new Concat3Iterator<TSource>(_first, _second, next);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
@@ -98,9 +79,9 @@ namespace System.Linq
 
         private sealed class Concat3Iterator<TSource> : ConcatIterator<TSource>
         {
-            internal readonly IEnumerable<TSource> _first;
-            internal readonly IEnumerable<TSource> _second;
-            internal readonly IEnumerable<TSource> _third;
+            private readonly IEnumerable<TSource> _first;
+            private readonly IEnumerable<TSource> _second;
+            private readonly IEnumerable<TSource> _third;
 
             internal Concat3Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second, IEnumerable<TSource> third)
             {
@@ -113,6 +94,11 @@ namespace System.Linq
             public override Iterator<TSource> Clone()
             {
                 return new Concat3Iterator<TSource>(_first, _second, _third);
+            }
+
+            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
+            {
+                return new ConcatNIterator<TSource>(this, next, 3);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
@@ -137,8 +123,8 @@ namespace System.Linq
             // a much better memory profile and without much additional run-time cost.
 
             private readonly ConcatIterator<TSource> _previousConcat;
-            internal readonly IEnumerable<TSource> _next;
-            internal readonly int _nextIndex;
+            private readonly IEnumerable<TSource> _next;
+            private readonly int _nextIndex;
 
             internal ConcatNIterator(ConcatIterator<TSource> previousConcat, IEnumerable<TSource> next, int nextIndex)
             {
@@ -155,12 +141,39 @@ namespace System.Linq
                 return new ConcatNIterator<TSource>(_previousConcat, _next, _nextIndex);
             }
 
+            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
+            {
+                return new ConcatNIterator<TSource>(this, next, checked(_nextIndex + 1));
+            }
+
             internal override IEnumerable<TSource> GetEnumerable(int index)
             {
-                return
-                    index < _nextIndex ? _previousConcat.GetEnumerable(index) :
-                    index == _nextIndex ? _next :
-                    null;
+                if (index > _nextIndex)
+                {
+                    return null;
+                }
+
+                // Walk back through the chain of ConcatNIterators looking for the one
+                // that has its _nextIndex equal to index.  If we don't find one, then it
+                // must be prior to any of them, so call GetEnumerable on the previous
+                // Concat3/2Iterator.  This avoids a deep recursive call chain.
+                ConcatNIterator<TSource> current = this;
+                while (true)
+                {
+                    if (index == current._nextIndex)
+                    {
+                        return current._next;
+                    }
+
+                    ConcatNIterator<TSource> prevN = current._previousConcat as ConcatNIterator<TSource>;
+                    if (prevN != null)
+                    {
+                        current = prevN;
+                        continue;
+                    }
+
+                    return current._previousConcat.GetEnumerable(index);
+                }
             }
         }
 
@@ -180,6 +193,8 @@ namespace System.Linq
 
             internal abstract IEnumerable<TSource> GetEnumerable(int index);
 
+            internal abstract ConcatIterator<TSource> Concat(IEnumerable<TSource> next);
+
             public override bool MoveNext()
             {
                 if (state == 1)
@@ -198,7 +213,6 @@ namespace System.Linq
                             return true;
                         }
 
-                        Debug.Assert(state < int.MaxValue);
                         IEnumerable<TSource> next = GetEnumerable(state++ - 1);
                         if (next != null)
                         {
@@ -235,25 +249,14 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                if (onlyIfCheap) return -1;
+
                 int count = 0;
                 for (int i = 0; ; i++)
                 {
                     IEnumerable<TSource> source = GetEnumerable(i);
                     if (source == null) break;
-
-                    ICollection<TSource> c = source as ICollection<TSource>;
-                    checked
-                    {
-                        if (c == null)
-                        {
-                            if (onlyIfCheap) return -1;
-                            count += source.Count();
-                        }
-                        else
-                        {
-                            count += c.Count;
-                        }
-                    }
+                    checked { count += source.Count(); }
                 }
                 return count;
             }
