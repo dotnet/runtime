@@ -10,7 +10,6 @@
 **
 =============================================================================*/
 
-using System;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections
@@ -35,8 +34,6 @@ namespace System.Collections
         {
             get
             {
-                if (_list == null)
-                    _list = new ArrayList();
                 return _list;
             }
         }
@@ -63,7 +60,7 @@ namespace System.Collections
         {
             get
             {
-                return _list == null ? 0 : _list.Count;
+                return _list.Count;
             }
         }
 
