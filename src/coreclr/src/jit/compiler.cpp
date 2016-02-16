@@ -4362,7 +4362,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         if (compIsForInlining())
         {
-            compInlineResult->setNever("Inlinee marked as skipped");
+            compInlineResult->noteFatal(InlineObservation::CALLEE_MARKED_AS_SKIPPED);
         }
         return CORJIT_SKIPPED;
     }
@@ -5079,8 +5079,12 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             (fgBBcount > 5) &&
             !forceInline)
         {
-            compInlineResult->setNever("Too many basic blocks in the inlinee");
-            goto _Next;
+            compInlineResult->note(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+
+            if (compInlineResult->isFailure()) 
+            {
+                goto _Next;
+            }
         }
 
 #ifdef  DEBUG
@@ -5760,7 +5764,7 @@ START:
         {
             // Note that we failed to compile the inlinee, and that
             // there's no point trying to inline it again anywhere else.
-            inlineInfo->inlineResult->setNever("Error compiling inlinee");
+            inlineInfo->inlineResult->noteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
         }
         param.result = __errc;       
     }
