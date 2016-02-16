@@ -32,7 +32,7 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
     <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.Hashtable.cs" />
+    <Compile Include="Performance\Perf.HashTable.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
