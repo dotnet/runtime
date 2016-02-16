@@ -695,4 +695,7 @@ void mono_enable_debug_domain_unload (gboolean enable);
 MonoReflectionAssembly *
 mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject *tb, MonoError *error);
 
+void
+mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

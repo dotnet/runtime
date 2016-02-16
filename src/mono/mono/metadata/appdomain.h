@@ -38,6 +38,7 @@ mono_init_version          (const char *domain_name, const char *version);
 MONO_API MonoDomain*
 mono_get_root_domain       (void);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,
 			    MonoThreadAttachCB attach_cb);

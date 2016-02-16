@@ -223,13 +223,21 @@ create_domain_objects (MonoDomain *domain)
  *
  */
 void
-mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
-		   MonoThreadAttachCB attach_cb)
+mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
 {
 	MonoError error;
+	mono_runtime_init_checked (domain, start_cb, attach_cb, &error);
+	mono_error_cleanup (&error);
+}
+
+void
+mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error)
+{
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *klass;
+
+	mono_error_init (error);
 
 	mono_portability_helpers_init ();
 	
@@ -249,12 +257,14 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_thread_init (start_cb, attach_cb);
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
+
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;

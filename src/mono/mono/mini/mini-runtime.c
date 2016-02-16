@@ -3488,6 +3488,7 @@ mini_llvm_init (void)
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
+	MonoError error;
 	MonoDomain *domain;
 	MonoRuntimeCallbacks callbacks;
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
@@ -3710,7 +3711,8 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
+	mono_runtime_init_checked (domain, mono_thread_start_cb, mono_thread_attach_cb, &error);
+	mono_error_assert_ok (&error);
 	mono_thread_attach (domain);
 #endif
 
