@@ -14,6 +14,10 @@
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.Tasks.Parallel": "4.0.0",
+    "System.Diagnostics.Process": "4.0.0-*",
+    "System.Xml.XmlDocument": "4.0.0-*",
+    "System.Xml.XPath": "4.0.0-*",
+    "System.Xml.XPath.XmlDocument": "4.0.0-*",
     "xunit": "2.1.0",
     "xunit.console.netcore": "1.0.2-prerelease-00128",
     "xunit.runner.utility": "2.1.0"
