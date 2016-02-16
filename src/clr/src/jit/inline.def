@@ -1,0 +1,153 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// Macro template for inline observations
+//
+// INLINE_OBSERVATION(name, type, description, impact, target)
+//
+// name will be used to create an InlineObservation enum member
+//    (enum name prepends scope, eg CALLEE_MARKED_AS_SKIPPED)
+// type is the data type for the observation
+// description is a user string for diagnostics
+// impact is one of the members of InlineImpact
+// target is one of the members of InlineTarget
+//
+// Note: the impact classification is work in progress.
+//
+// Some subset of the FATAL cases here can be refined to SERIOUS,
+// LIMITATION, or PERFORMANCE. While the refined observations may
+// eventually veto inlining, the jit can safely keep making more 
+// observations.
+
+// ------ Initial Sentinel ------- 
+
+INLINE_OBSERVATION(UNUSED_INITIAL,            bool,   "unused initial observation",    FATAL,       CALLEE)
+
+// ------ Callee Fatal ------- 
+
+INLINE_OBSERVATION(BAD_ARGUMENT_NUMBER,       bool,   "invalid argument number",       FATAL,       CALLEE)
+INLINE_OBSERVATION(BAD_LOCAL_NUMBER,          bool,   "invalid local number",          FATAL,       CALLEE)
+INLINE_OBSERVATION(CLASS_INIT_FAILURE,        bool,   "class init failed",             FATAL,       CALLEE)
+INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",             FATAL,       CALLEE)
+INLINE_OBSERVATION(EXCEEDS_THRESHOLD,         bool,   "exceeds profit threshold",      FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_DELEGATE_INVOKE,       bool,   "delegate invoke",               FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_EH,                    bool,   "has exception handling",        FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_ENDFILTER,             bool,   "has endfilter",                 FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_ENDFINALLY,            bool,   "has endfinally",                FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_LEAVE,                 bool,   "has leave"    ,                 FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_MANAGED_VARARGS,       bool,   "managed varargs",               FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_NATIVE_VARARGS,        bool,   "native varargs",                FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",                   FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_NULL_FOR_LDELEM,       bool,   "has null pointer for ldelem",   FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_PINNED_LOCALS,         bool,   "has pinned locals",             FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",               FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_GENERIC_VIRTUAL,        bool,   "generic virtual",               FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",      FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_NATIVE,                 bool,   "is implemented natively",       FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_NOINLINE,               bool,   "noinline per IL/cached result", FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_SYNCHRONIZED,           bool,   "is synchronized",               FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",               FATAL,       CALLEE)
+INLINE_OBSERVATION(LACKS_RETURN,              bool,   "no return opcode",              FATAL,       CALLEE)
+INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",            FATAL,       CALLEE)
+INLINE_OBSERVATION(MARKED_AS_SKIPPED,         bool,   "skipped by complus request",    FATAL,       CALLEE)
+INLINE_OBSERVATION(MAXSTACK_TOO_BIG,          bool,   "maxstack too big"  ,            FATAL,       CALLEE)
+INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLEE)
+INLINE_OBSERVATION(NO_METHOD_INFO,            bool,   "cannot get method info",        FATAL,       CALLEE)
+INLINE_OBSERVATION(RETURN_TYPE_IS_COMPOSITE,  bool,   "has composite return type",     FATAL,       CALLEE)
+INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",         FATAL,       CALLEE)
+INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLEE)
+INLINE_OBSERVATION(STORES_TO_ARGUMENT,        bool,   "stores to argument",            FATAL,       CALLEE)
+INLINE_OBSERVATION(THROW_WITH_INVALID_STACK,  bool,   "throw with invalid stack",      FATAL,       CALLEE)
+INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",            FATAL,       CALLEE)
+INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLEE)
+INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",            FATAL,       CALLEE)
+
+#ifdef FEATURE_LEGACYNETCF
+
+INLINE_OBSERVATION(WP7QUIRK_ADDRESS_TAKEN,    bool,   "WinPhone7 quirk address taken", FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_CONTROL_FLOW,     bool,   "WinPhone7 quirk has ctl flow",  FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_HAS_EH,           bool,   "WinPhone7 quirk has eh",        FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_HAS_FP_ARG,       bool,   "WinPhone7 quirk has float arg", FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_HAS_FP_RET,       bool,   "WinPhone7 quirk has float ret", FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_HAS_LOCALS,       bool,   "WinPhone7 quirk has locals",    FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_IL_TOO_BIG,       bool,   "WinPhone7 quirk il too big",    FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_LDARG_ORDER,      bool,   "WinPhone7 quirk ldarg order",   FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_PREFIX,           bool,   "WinPhone7 quirk has prefix",    FATAL,       CALLEE)
+INLINE_OBSERVATION(WP7QUIRK_THROW,            bool,   "WinPhone7 quirk has throw",     FATAL,       CALLEE)
+
+#endif // FEATURE_LEGACYNETCF
+
+// ------ Callee Performance ------- 
+
+INLINE_OBSERVATION(LDFLD_STATIC_VALUECLASS,   bool,   "ldsfld of value class",         PERFORMANCE, CALLEE)
+INLINE_OBSERVATION(TOO_MANY_BASIC_BLOCKS,     bool,   "too many basic blocks",         PERFORMANCE, CALLEE)
+INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",             PERFORMANCE, CALLEE)
+
+// ------ Callee Information ------- 
+
+INLINE_OBSERVATION(HAS_FORCE_INLINE,          bool,   "has aggressive inline attr",    INFORMATION, CALLEE)
+INLINE_OBSERVATION(MAXSTACK,                  int,    "maxstack",                      INFORMATION, CALLEE)
+INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLEE)
+INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",           INFORMATION, CALLEE)
+INLINE_OBSERVATION(NUMBER_OF_IL_BYTES,        int,    "number of bytes of IL",         INFORMATION, CALLEE)
+INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",              INFORMATION, CALLEE)
+
+// ------ Caller Corectness ------- 
+
+INLINE_OBSERVATION(DEBUG_CODEGEN,             bool,   "debug codegen",                 FATAL,       CALLER)
+INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLER)
+
+// ------ Call Site Correctness ------- 
+
+INLINE_OBSERVATION(ARG_HAS_NULL_THIS,         bool,   "this pointer argument is null", FATAL,       CALLSITE)
+INLINE_OBSERVATION(ARG_HAS_SIDE_EFFECT,       bool,   "argument has side effect",      FATAL,       CALLSITE)
+INLINE_OBSERVATION(ARG_IS_MKREFANY,           bool,   "argument is mkrefany",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(ARG_NO_BASH_TO_INT,        bool,   "argument can't bash to int",    FATAL,       CALLSITE)
+INLINE_OBSERVATION(ARG_NO_BASH_TO_REF,        bool,   "argument can't bash to ref",    FATAL,       CALLSITE)
+INLINE_OBSERVATION(ARG_TYPES_INCOMPATIBLE,    bool,   "argument types incompatible",   FATAL,       CALLSITE)
+INLINE_OBSERVATION(CANT_EMBED_PINVOKE_COOKIE, bool,   "can't embed pinvoke cookie",    FATAL,       CALLSITE)
+INLINE_OBSERVATION(CANT_EMBED_VARARGS_COOKIE, bool,   "can't embed varargs cookie",    FATAL,       CALLSITE)
+INLINE_OBSERVATION(CLASS_INIT_FAILURE_SPEC,   bool,   "speculative class init failed", FATAL,       CALLSITE)
+INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",             FATAL,       CALLSITE)
+INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",             FATAL,       CALLSITE)
+INLINE_OBSERVATION(CONDITIONAL_THROW,         bool,   "conditional throw",             FATAL,       CALLSITE)
+INLINE_OBSERVATION(CROSS_BOUNDARY_CALLI,      bool,   "cross-boundary calli",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(CROSS_BOUNDARY_SECURITY,   bool,   "cross-boundary security check", FATAL,       CALLSITE)
+INLINE_OBSERVATION(EXCEEDS_THRESHOLD,         bool,   "exeeds profit threshold",       FATAL,       CALLSITE)
+INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(GENERIC_DICTIONARY_LOOKUP, bool,   "runtime dictionary lookup",     FATAL,       CALLSITE)
+INLINE_OBSERVATION(HAS_CALL_VIA_LDVIRTFTN,    bool,   "call via ldvirtftn",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(HAS_COMPLEX_HANDLE,        bool,   "complex handle access",         FATAL,       CALLSITE)
+INLINE_OBSERVATION(HAS_LDSTR_RESTRICTION,     bool,   "has ldstr VM restriction",      FATAL,       CALLSITE)
+INLINE_OBSERVATION(IMPLICIT_REC_TAIL_CALL,    bool,   "implicit recursive tail call",  FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_CALL_TO_HELPER,         bool,   "target is helper",              FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_NOT_DIRECT,             bool,   "target not direct",             FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_NOT_DIRECT_MANAGED,     bool,   "target not direct managed",     FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_RECURSIVE_OR_DEEP,      bool,   "recursive or too deep",         FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_VIRTUAL,                bool,   "virtual",                       FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",               FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_WITHIN_CATCH,           bool,   "within catch region",           FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_WITHIN_FILTER,          bool,   "within filterregion",           FATAL,       CALLSITE)
+INLINE_OBSERVATION(LDARGA_NOT_LOCAL_VAR,      bool,   "ldarga not on local var",       FATAL,       CALLSITE)
+INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(LDVIRTFN_ON_NON_VIRTUAL,   bool,   "ldvirtfn on non-virtual",       FATAL,       CALLSITE)
+INLINE_OBSERVATION(NOT_CANDIDATE,             bool,   "not inline candidate",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(REQUIRES_SAME_THIS,        bool,   "requires same this",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLSITE)
+
+// ------ Call Site Peformance ------- 
+
+
+// ------ Call Site Information ------- 
+
+INLINE_OBSERVATION(BENEFIT_MULTIPLIER,        double, "benefit multiplier",            INFORMATION, CALLSITE)
+INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLSITE)
+
+// ------ Final Sentinel ------- 
+
+INLINE_OBSERVATION(UNUSED_FINAL,              bool,   "unused final observation",      FATAL,       CALLEE)
+

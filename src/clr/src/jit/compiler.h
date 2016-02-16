@@ -25,6 +25,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jit.h"
 #include "opcode.h"
 #include "block.h"
+#include "inline.h"
 #include "jiteh.h"
 #include "instr.h"
 #include "regalloc.h"
@@ -857,19 +858,6 @@ const unsigned int   MAX_INL_ARGS =      10;     // does not include obj pointer
 const unsigned int   MAX_INL_LCLS =      8;
 #endif // LEGACY_BACKEND
 
-// InlineDecision describes the various states the jit goes through when
-// evaluating an inline candidate. It is distinct from CorInfoInline
-// because it must capture interal states that don't get reported back
-// to the runtime.
-
-enum class InlineDecision {
-   UNDECIDED = 1,
-   CANDIDATE = 2,
-   SUCCESS = 3,
-   FAILURE = 4,
-   NEVER = 5
-};
-
 // JitInlineResult encapsulates what is known about a particular
 // inline candiate.
 
@@ -1017,7 +1005,96 @@ public:
         assert(!isFailure());
         inlDecision = InlineDecision::SUCCESS;
     }
+
+    // Make an observation, and update internal state appropriately.
+    // 
+    // Caller is expected to call isFailure after this to see whether
+    // more observation is desired.
+    void note(InlineObservation obs)
+    {
+        // Check the impact
+        InlineImpact impact = inlGetImpact(obs);
+
+        // As a safeguard, all fatal impact must be 
+        // reported via noteFatal.
+        assert(impact != InlineImpact::FATAL);
+        noteInternal(obs, impact);
+    }
+
+    // Make an observation where caller knows for certain that this
+    // inline cannot happen, and so there's no point in any further
+    // scrutiny of this inline. Update internal state to mark the
+    // inline result as a failure.
+    void noteFatal(InlineObservation obs)
+    {
+        // Check the impact
+        InlineImpact impact = inlGetImpact(obs);
+
+        // As a safeguard, all fatal impact must be 
+        // reported via noteFatal.
+        assert(impact == InlineImpact::FATAL);
+        noteInternal(obs, impact);
+        assert(isFailure());
+    }
+
+    // Ignore values for now
+    void noteInt(InlineObservation obs, int value)
+    {
+        (void) value;
+        note(obs);
+    }
+
+    // Ignore values for now
+    void noteDouble(InlineObservation obs, double value)
+    {
+        (void) value;
+        note(obs);
+    }
     
+    // Ensure result is appropriately reported when the result goes
+    // out of scope.
+    ~JitInlineResult() 
+    {
+        report();
+    }
+
+    // The reason for this particular result
+    const char * reason() const { return inlReason; }
+    
+    // setReported indicates that this particular result doesn't need
+    // to be reported back to the runtime, either because the runtime
+    // already knows, or we weren't actually inlining yet.
+    void setReported() { inlReported = true; }
+    
+private:
+
+    // No copying or assignment allowed.
+    JitInlineResult(const JitInlineResult&) = delete;
+    JitInlineResult operator=(const JitInlineResult&) = delete;
+
+    // Handle implications of an inline observation
+    void noteInternal(InlineObservation obs, InlineImpact impact)
+    {
+        // Ignore INFORMATION for now, since policy
+        // is still embedded at the observation sites.
+        if (impact == InlineImpact::INFORMATION)
+        {
+            return;
+        }
+
+        InlineTarget target = inlGetTarget(obs);
+        const char* reason = inlGetDescriptionString(obs);
+        
+        if (target == InlineTarget::CALLEE)
+        {
+            this->setNever(reason);
+        }
+        else 
+        {
+            this->setFailure(reason);
+        }
+    }
+
     // setFailure means this particular instance can't be inlined.
     // It can override setCandidate, but not setSuccess
     void setFailure(const char* reason) 
@@ -1033,26 +1110,8 @@ public:
         assert(!isSuccess());
         setCommon(InlineDecision::NEVER, reason);
     }
-    
-    // Report/log/dump decision as appropriate
-    ~JitInlineResult() 
-    {
-        report();
-    }
-    
-    const char * reason() const { return inlReason; }
-    
-    // setReported indicates that this particular result doesn't need
-    // to be reported back to the runtime, either because the runtime
-    // already knows, or we weren't actually inlining yet.
-    void setReported() { inlReported = true; }
-    
-private:
 
-    // No copying or assignment allowed.
-    JitInlineResult(const JitInlineResult&) = delete;
-    JitInlineResult operator=(const JitInlineResult&) = delete;
-
+    // Helper for setting decision and reason
     void setCommon(InlineDecision decision, const char* reason) 
     {
         assert(reason != nullptr);
@@ -1061,6 +1120,7 @@ private:
         inlReason = reason;
     }
 
+    // Report/log/dump decision as appropriate
     void report();
 
     Compiler*               inlCompiler;
