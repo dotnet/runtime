@@ -155,8 +155,8 @@ namespace Mono.Linker.Steps {
 					scope = assembly.MainModule.Import (td).Scope;
 					if (tr.Scope != scope)
 						changes = true;
+					hash.Add (tr, scope);
 				}
-				hash.Add (tr, scope);
 			}
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var et in assembly.MainModule.ExportedTypes) {
