@@ -3,17 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace System.Net.NetworkInformation.Tests
 {
     internal static class FileUtil
     {
+        /// <summary>
+        /// I'm storing the test text assets with their original line endings ('\n').
+        /// The parsing logic depends on Environment.NewLine, so we normalize beforehand.
+        /// </summary>
         public static void NormalizeLineEndings(string source, string normalizedDest)
         {
-            // I'm storing the test text assets with their original line endings ('\n').
-            // The parsing logic depends on Environment.NewLine, so we normalize beforehand.
-            string contents = File.ReadAllText(source);
+            string contents = File.ReadAllText(TestFile(source));
             if (Environment.NewLine == "\r\n")
             {
                 if (!contents.Contains(Environment.NewLine))
@@ -30,6 +31,15 @@ namespace System.Net.NetworkInformation.Tests
             }
 
             File.WriteAllText(normalizedDest, contents);
+        }
+
+        /// <summary>
+        /// Gets a path to the desired test file
+        /// </summary>
+        /// <returns>The correct path to a valid test file</returns>
+        public static string TestFile(string source)
+        {
+            return Path.Combine("NetworkFiles", source);
         }
     }
 }

@@ -15,9 +15,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="..\..\..\Common\tests\Data\TinyAssembly.dll">
+    <None Include="..\..\..\Common\tests\Data\TinyAssembly.dll">
       <Link>Module\TinyAssembly.dll</Link>
-    </Content>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
