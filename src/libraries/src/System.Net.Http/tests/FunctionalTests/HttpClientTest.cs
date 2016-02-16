@@ -66,22 +66,21 @@ namespace System.Net.Http.Functional.Tests
                         responseLogged = true;
                     }
                 });
-            diagnosticListenerObserver.Enable();
 
-            DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
-
-            using (var client = new HttpClient())
+            using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
             {
-                var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                diagnosticListenerObserver.Enable();
+                using (var client = new HttpClient())
+                {
+                    var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                }
+
+                Assert.True(requestLogged, "Request was not logged.");
+                // Poll with a timeout since logging response is not synchronized with returning a response.
+                WaitForTrue(() => responseLogged, TimeSpan.FromSeconds(1), "Response was not logged within 1 second timeout.");
+                Assert.Equal(requestGuid, responseGuid);
+                diagnosticListenerObserver.Disable();
             }
-
-            Assert.True(requestLogged, "Request was not logged.");
-            // Poll with a timeout since logging response is not synchronized with returning a response.
-            WaitForTrue(() => responseLogged, TimeSpan.FromSeconds(1), "Response was not logged within 1 second timeout.");
-            Assert.Equal(requestGuid, responseGuid);
-
-            // No way to unsubscribe, so turn it off so that it doesn't interfere with other tests.
-            diagnosticListenerObserver.Disable(); 
         }
 
         /// <remarks>
@@ -94,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
             bool requestLogged = false;
             bool responseLogged = false;
 
-            DiagnosticListener.AllListeners.Subscribe(new FakeDiagnosticListenerObserver(
+            var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(
                 kvp =>
                 {
                     if (kvp.Key.Equals("System.Net.Http.Request"))
@@ -105,17 +104,20 @@ namespace System.Net.Http.Functional.Tests
                     {
                         responseLogged = true;
                     }
-                }));
+                });
 
-            using (var client = new HttpClient())
+            using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
             {
-                var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
-            }
+                using (var client = new HttpClient())
+                {
+                    var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                }
 
-            Assert.False(requestLogged, "Request was logged while logging disabled.");
-            // TODO: Waiting for one second is not ideal, but how else be reasonably sure that
-            // some logging message hasn't slipped through?
-            WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged while logging disabled.");
+                Assert.False(requestLogged, "Request was logged while logging disabled.");
+                // TODO: Waiting for one second is not ideal, but how else be reasonably sure that
+                // some logging message hasn't slipped through?
+                WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged while logging disabled.");
+            }
         }
 
         private void WaitForTrue(Func<bool> p, TimeSpan timeout, string message)
@@ -138,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
 
             object propertyValue = p.GetValue(obj);
             Assert.NotNull(propertyValue);
-            Assert.IsType<T>(propertyValue);
+            Assert.IsAssignableFrom<T>(propertyValue);
 
             return (T)propertyValue;
         }

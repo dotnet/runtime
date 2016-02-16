@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23808"
+    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23816"
   },
   "frameworks": {
     "dnxcore50": {
