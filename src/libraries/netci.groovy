@@ -236,9 +236,10 @@ branchList.each { branchName ->
             // Archive the results
             Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
 
+            // Use Server GC for Ubuntu/OSX Debug PR build & test
             def serverGCString = ''
                      
-            if (os == 'Ubuntu' && configurationGroup == 'Debug' && isPR){
+            if ((os == 'Ubuntu' || os == 'OSX') && configurationGroup == 'Release' && isPR){
                 serverGCString = '--useServerGC'
             }
             
