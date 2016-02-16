@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -153,6 +155,113 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.NotTimeValid);
                 }
             }
+        }
+
+        [Fact]
+        public static void BuildChain_WithApplicationPolicy_Match()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            using (X509Chain chain = new X509Chain())
+            {
+                // Code Signing
+                chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3"));
+                chain.ChainPolicy.VerificationTime = msCer.NotBefore.AddHours(2);
+                chain.ChainPolicy.VerificationFlags =
+                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                bool valid = chain.Build(msCer);
+                Assert.True(valid, "Chain built validly");
+            }
+        }
+
+        [Fact]
+        public static void BuildChain_WithApplicationPolicy_NoMatch()
+        {
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            using (X509Chain chain = new X509Chain())
+            {
+                // Gibberish.  (Code Signing + ".1")
+                chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3.1"));
+                chain.ChainPolicy.VerificationFlags =
+                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+
+                bool valid = chain.Build(cert);
+                Assert.False(valid, "Chain built validly");
+
+                Assert.InRange(chain.ChainElements.Count, 1, int.MaxValue);
+
+                Assert.NotSame(cert, chain.ChainElements[0].Certificate);
+                Assert.Equal(cert, chain.ChainElements[0].Certificate);
+
+                X509ChainStatus[] chainElementStatus = chain.ChainElements[0].ChainElementStatus;
+                Assert.InRange(chainElementStatus.Length, 1, int.MaxValue);
+                Assert.Contains(chainElementStatus, x => x.Status == X509ChainStatusFlags.NotValidForUsage);
+            }
+        }
+
+        [Fact]
+        public static void BuildChain_WithCertificatePolicy_Match()
+        {
+            using (var cert = new X509Certificate2(TestData.CertWithPolicies))
+            using (X509Chain chain = new X509Chain())
+            {
+                // Code Signing
+                chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.18.19"));
+                chain.ChainPolicy.VerificationFlags =
+                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                bool valid = chain.Build(cert);
+                Assert.True(valid, "Chain built validly");
+            }
+        }
+
+        [Fact]
+        public static void BuildChain_WithCertificatePolicy_NoMatch()
+        {
+            using (var cert = new X509Certificate2(TestData.CertWithPolicies))
+            using (X509Chain chain = new X509Chain())
+            {
+                chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.999"));
+                chain.ChainPolicy.VerificationFlags =
+                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+
+                bool valid = chain.Build(cert);
+                Assert.False(valid, "Chain built validly");
+
+                Assert.InRange(chain.ChainElements.Count, 1, int.MaxValue);
+
+                Assert.NotSame(cert, chain.ChainElements[0].Certificate);
+                Assert.Equal(cert, chain.ChainElements[0].Certificate);
+
+                X509ChainStatus[] chainElementStatus = chain.ChainElements[0].ChainElementStatus;
+                Assert.InRange(chainElementStatus.Length, 1, int.MaxValue);
+                Assert.Contains(chainElementStatus, x => x.Status == X509ChainStatusFlags.NotValidForUsage);
+            }
+        }
+
+        [Fact]
+        public static void SafeX509ChainHandle_InvalidHandle_IsInvalid()
+        {
+            Assert.True(SafeX509ChainHandle.InvalidHandle.IsInvalid);
+        }
+
+        [Fact]
+        public static void SafeX509ChainHandle_InvalidHandle_StaticObject()
+        {
+            SafeX509ChainHandle firstCall = SafeX509ChainHandle.InvalidHandle;
+            SafeX509ChainHandle secondCall = SafeX509ChainHandle.InvalidHandle;
+
+            Assert.Same(firstCall, secondCall);
         }
     }
 }
