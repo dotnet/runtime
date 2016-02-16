@@ -339,6 +339,10 @@ BOOL Init()
 #ifdef FEATURE_CORECLR
 #ifdef FEATURE_PAL
     g_loader = CoreCLRLoader::Create(g_pszExeFile);
+    if (g_loader == NULL)
+    {
+        return FALSE;
+    }
     metaDataGetDispenser = (MetaDataGetDispenserFunc)g_loader->LoadFunction("MetaDataGetDispenser");
     getMetaDataInternalInterface = (GetMetaDataInternalInterfaceFunc)g_loader->LoadFunction("GetMetaDataInternalInterface");
     getMetaDataInternalInterfaceFromPublic = (GetMetaDataInternalInterfaceFromPublicFunc)g_loader->LoadFunction("GetMetaDataInternalInterfaceFromPublic");
