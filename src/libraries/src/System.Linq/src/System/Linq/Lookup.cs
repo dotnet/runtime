@@ -13,12 +13,14 @@ namespace System.Linq
     {
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            return ToLookup(source, keySelector, IdentityFunction<TSource>.Instance, null);
+            return ToLookup(source, keySelector, null);
         }
 
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
         {
-            return ToLookup(source, keySelector, IdentityFunction<TSource>.Instance, comparer);
+            if (source == null) throw Error.ArgumentNull("source");
+            if (keySelector == null) throw Error.ArgumentNull("keySelector");
+            return Lookup<TKey, TSource>.Create(source, keySelector, comparer);
         }
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector)
@@ -44,7 +46,7 @@ namespace System.Linq
 
     public class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IIListProvider<IGrouping<TKey, TElement>>
     {
-        private IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
         private Grouping<TKey, TElement> _lastGrouping;
         private int _count;
@@ -58,6 +60,18 @@ namespace System.Linq
             foreach (TSource item in source)
             {
                 lookup.GetGrouping(keySelector(item), true).Add(elementSelector(item));
+            }
+            return lookup;
+        }
+
+        internal static Lookup<TKey, TElement> Create(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IEqualityComparer<TKey> comparer)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(keySelector != null);
+            Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
+            foreach (TElement item in source)
+            {
+                lookup.GetGrouping(keySelector(item), true).Add(item);
             }
             return lookup;
         }
@@ -182,7 +196,7 @@ namespace System.Linq
             return _count;
         }
 
-        public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
+        public IEnumerator<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             Grouping<TKey, TElement> g = _lastGrouping;
             if (g != null)
