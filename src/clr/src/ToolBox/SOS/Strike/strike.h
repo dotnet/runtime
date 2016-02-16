@@ -76,6 +76,16 @@
 #ifndef PAL_STDCPP_COMPAT
 #include <malloc.h>
 #endif
+
+#ifdef FEATURE_PAL
+#ifndef alloca
+#define alloca  __builtin_alloca
+#endif
+#ifndef _alloca
+#define _alloca __builtin_alloca
+#endif
+#endif // FEATURE_PAL
+
 #include <stddef.h>
 
 #ifndef FEATURE_PAL
@@ -128,4 +138,3 @@ HRESULT SetNGENCompilerFlags(DWORD flags);
 
 
 #endif // __strike_h__
-
