@@ -7,9 +7,9 @@
 
 .assembly extern CSharpPart {}
 
-.assembly ILPart {}
+.assembly jmpwrappers {}
 
-.module ILPart.dll
+.module jmpwrappers.dll
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
