@@ -4589,7 +4589,7 @@ create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build,
 	args [1] = &minor;
 	args [2] = &build;
 	args [3] = &revision;
-	result = mono_object_new_checked (domain, mono_class_get_system_version_class (), &error);
+	result = mono_object_new_checked (domain, mono_class_get_system_version_class (), error);
 	return_val_if_nok (error, NULL);
 
 	mono_runtime_invoke_checked (create_version, result, args, error);
