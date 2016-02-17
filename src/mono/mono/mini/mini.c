@@ -3254,6 +3254,52 @@ mono_insert_safepoints (MonoCompile *cfg)
 
 }
 
+
+static void
+mono_insert_branches_between_bblocks (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+
+	/* Add branches between non-consecutive bblocks */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
+			bb->last_ins->inst_false_bb && bb->next_bb != bb->last_ins->inst_false_bb) {
+			/* we are careful when inverting, since bugs like #59580
+			 * could show up when dealing with NaNs.
+			 */
+			if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
+				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
+				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
+				bb->last_ins->inst_false_bb = tmp;
+
+				bb->last_ins->opcode = mono_reverse_branch_op (bb->last_ins->opcode);
+			} else {
+				MonoInst *inst = (MonoInst *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+				inst->opcode = OP_BR;
+				inst->inst_target_bb = bb->last_ins->inst_false_bb;
+				mono_bblock_add_inst (bb, inst);
+			}
+		}
+	}
+
+	if (cfg->verbose_level >= 4) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *tree = bb->code;
+			g_print ("DUMP BLOCK %d:\n", bb->block_num);
+			if (!tree)
+				continue;
+			for (; tree; tree = tree->next) {
+				mono_print_ins_index (-1, tree);
+			}
+		}
+	}
+
+	/* FIXME: */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		bb->max_vreg = cfg->next_vreg;
+	}
+}
+
 static void
 init_backend (MonoBackend *backend)
 {
@@ -3961,63 +4007,22 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			return cfg;
 	}
 
-	{
-		MonoBasicBlock *bb;
+	if (cfg->gsharedvt)
+		mono_allocate_gsharedvt_vars (cfg);
+
+	if (!COMPILE_LLVM (cfg)) {
 		gboolean need_local_opts;
+		mono_spill_global_vars (cfg, &need_local_opts);
 
-		if (cfg->gsharedvt)
-			mono_allocate_gsharedvt_vars (cfg);
-
-		if (!COMPILE_LLVM (cfg)) {
-			mono_spill_global_vars (cfg, &need_local_opts);
-
-			if (need_local_opts || cfg->compile_aot) {
-				/* To optimize code created by spill_global_vars */
-				mono_local_cprop (cfg);
-				if (cfg->opt & MONO_OPT_DEADCE)
-					mono_local_deadce (cfg);
-			}
-		}
-
-		/* Add branches between non-consecutive bblocks */
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
-				bb->last_ins->inst_false_bb && bb->next_bb != bb->last_ins->inst_false_bb) {
-				/* we are careful when inverting, since bugs like #59580
-				 * could show up when dealing with NaNs.
-				 */
-				if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
-					MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
-					bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
-					bb->last_ins->inst_false_bb = tmp;
-
-					bb->last_ins->opcode = mono_reverse_branch_op (bb->last_ins->opcode);
-				} else {			
-					MonoInst *inst = (MonoInst *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
-					inst->opcode = OP_BR;
-					inst->inst_target_bb = bb->last_ins->inst_false_bb;
-					mono_bblock_add_inst (bb, inst);
-				}
-			}
-		}
-
-		if (cfg->verbose_level >= 4) {
-			for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-				MonoInst *tree = bb->code;	
-				g_print ("DUMP BLOCK %d:\n", bb->block_num);
-				if (!tree)
-					continue;
-				for (; tree; tree = tree->next) {
-					mono_print_ins_index (-1, tree);
-				}
-			}
-		}
-
-		/* FIXME: */
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			bb->max_vreg = cfg->next_vreg;
+		if (need_local_opts || cfg->compile_aot) {
+			/* To optimize code created by spill_global_vars */
+			mono_local_cprop (cfg);
+			if (cfg->opt & MONO_OPT_DEADCE)
+				mono_local_deadce (cfg);
 		}
 	}
+
+	mono_insert_branches_between_bblocks (cfg);
 
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
