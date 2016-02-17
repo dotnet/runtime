@@ -7756,7 +7756,9 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	}
 #else
 	MonoMethodSignature *sig, *csig;
+	MonoExceptionClause *clause;
 	int i, *tmp_locals;
+	int leave_pos;
 	gboolean closed = FALSE;
 
 	sig = m->sig;
@@ -7784,8 +7786,32 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		mono_mb_add_local (mb, sig->ret);
 	}
 
+	/*
+	 * try {
+	 *   mono_jit_attach ();
+	 *
+	 *   <interrupt check>
+	 *
+	 *   ret = method (...);
+	 * } finally {
+	 *   mono_jit_detach ();
+	 * }
+	 *
+	 * return ret;
+	 */
+
+	if (mono_threads_is_coop_enabled ()) {
+		clause = g_new0 (MonoExceptionClause, 1);
+		clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
+	}
+
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
+
+	if (mono_threads_is_coop_enabled ()) {
+		/* try { */
+		clause->try_offset = mono_mb_get_label (mb);
+	}
 
 	/*
 	 * Might need to attach the thread to the JIT or change the
@@ -7928,6 +7954,14 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		}
 	}
 
+	if (mono_threads_is_coop_enabled ()) {
+		leave_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+		/* } finally { */
+		clause->try_len = mono_mb_get_label (mb) - clause->try_offset;
+		clause->handler_offset = mono_mb_get_label (mb);
+	}
+
 	/*
 	 * Also does the RUNNING -> (BLOCKING|RUNNING) thread state transition
 	 *
@@ -7935,6 +7969,15 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	 */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
+
+	if (mono_threads_is_coop_enabled ()) {
+		mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+		/* } [endfinally] */
+		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+		mono_mb_patch_branch (mb, leave_pos);
+	}
 
 	/* return ret; */
 	if (m->retobj_var) {
@@ -7946,6 +7989,10 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		if (!MONO_TYPE_IS_VOID(sig->ret))
 			mono_mb_emit_ldloc (mb, 3);
 		mono_mb_emit_byte (mb, CEE_RET);
+	}
+
+	if (mono_threads_is_coop_enabled ()) {
+		mono_mb_set_clauses (mb, 1, clause);
 	}
 
 	if (closed)
