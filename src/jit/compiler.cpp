@@ -9859,21 +9859,22 @@ void JitInlineResult::report()
 
 #ifdef DEBUG
 
-    const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
-    const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
-    const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
+    if (VERBOSE)
+    {
+        const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
+        const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
+        const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
 
-    JITDUMP(format, inlContext, resultString(), inlReason, caller, callee);
+        JITDUMP(format, inlContext, resultString(), inlReason, caller, callee);
+    }
 
 #endif // DEBUG
 
     if (isDecided()) 
     {
-        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), inlReason, caller, callee));
+        const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
+        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), inlReason));
         COMP_HANDLE comp = inlCompiler->info.compCompHnd;
         comp->reportInliningDecision(inlInliner, inlInlinee, result(), inlReason);
     }
 }
-
-    
-
