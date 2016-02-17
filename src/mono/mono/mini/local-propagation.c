@@ -219,22 +219,28 @@ mono_local_cprop (MonoCompile *cfg)
 			int sregs [MONO_MAX_SRC_REGS];
 			int num_sregs, i;
 
-			if ((ins->dreg != -1) && (ins->dreg < max)) {
-				defs [ins->dreg] = NULL;
+			if (ins->dreg != -1) {
 #if SIZEOF_REGISTER == 4
-				defs [ins->dreg + 1] = NULL;
+				const char *spec = INS_INFO (ins->opcode);
+				if (spec [MONO_INST_DEST] == 'l') {
+					defs [ins->dreg + 1] = NULL;
+					defs [ins->dreg + 2] = NULL;
+				}
 #endif
+				defs [ins->dreg] = NULL;
 			}
 
 			num_sregs = mono_inst_get_src_registers (ins, sregs);
 			for (i = 0; i < num_sregs; ++i) {
 				int sreg = sregs [i];
-				if (sreg < max) {
-					defs [sreg] = NULL;
 #if SIZEOF_REGISTER == 4
+				const char *spec = INS_INFO (ins->opcode);
+				if (spec [MONO_INST_SRC1 + i] == 'l') {
 					defs [sreg + 1] = NULL;
-#endif
+					defs [sreg + 2] = NULL;
 				}
+#endif
+				defs [sreg] = NULL;
 			}
 		}
 
