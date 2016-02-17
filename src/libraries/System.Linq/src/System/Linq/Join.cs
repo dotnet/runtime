@@ -41,7 +41,7 @@ namespace System.Linq
                         do
                         {
                             TOuter item = e.Current;
-                            Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), false);
+                            Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), create: false);
                             if (g != null)
                             {
                                 int count = g.count;

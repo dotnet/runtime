@@ -226,8 +226,8 @@ namespace System.Linq
             if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
             _source = source;
             _keySelector = keySelector;
-            _comparer = comparer;
             _resultSelector = resultSelector;
+            _comparer = comparer;
         }
 
         public IEnumerator<TResult> GetEnumerator()
