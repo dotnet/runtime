@@ -195,7 +195,7 @@ case $OSName in
         elif [ "$ID" == "ubuntu" ]; then
             __TestNugetRuntimeId=ubuntu.14.04-x64
         elif [ "$ID" == "debian" ]; then
-            __TestNugetRuntimeId=debian.8.2-x64
+            __TestNugetRuntimeId=debian.8-x64
         else
             echo "Unsupported Linux distribution '$ID' detected. Configuring as if for Ubuntu."
             __TestNugetRuntimeId=ubuntu.14.04-x64
