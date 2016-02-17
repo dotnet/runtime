@@ -13,17 +13,25 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null) return partition.ElementAt(index);
-            IList<TSource> list = source as IList<TSource>;
-            if (list != null) return list[index];
-            if (index >= 0)
+            if (partition != null)
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                bool found;
+                TSource element = partition.TryGetElementAt(index, out found);
+                if (found) return element;
+            }
+            else
+            {
+                IList<TSource> list = source as IList<TSource>;
+                if (list != null) return list[index];
+                if (index >= 0)
                 {
-                    while (e.MoveNext())
+                    using (IEnumerator<TSource> e = source.GetEnumerator())
                     {
-                        if (index == 0) return e.Current;
-                        index--;
+                        while (e.MoveNext())
+                        {
+                            if (index == 0) return e.Current;
+                            index--;
+                        }
                     }
                 }
             }
@@ -34,7 +42,11 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null) return partition.ElementAtOrDefault(index);
+            if (partition != null)
+            {
+                bool found;
+                return partition.TryGetElementAt(index, out found);
+            }
             if (index >= 0)
             {
                 IList<TSource> list = source as IList<TSource>;

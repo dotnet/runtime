@@ -23,23 +23,23 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NotSingleInstance()
+        public void SingleInstance()
         {
-            Assert.NotSame(GetEmptyPartition<int>(), GetEmptyPartition<int>());
+            Assert.Same(GetEmptyPartition<int>(), GetEmptyPartition<int>());
         }
 
         [Fact]
-        public void SkipNotSame()
+        public void SkipSame()
         {
             var empty = GetEmptyPartition<int>();
-            Assert.NotSame(empty, empty.Skip(2));
+            Assert.Same(empty, empty.Skip(2));
         }
 
         [Fact]
-        public void TakeNotSame()
+        public void TakeSame()
         {
             var empty = GetEmptyPartition<int>();
-            Assert.NotSame(empty, empty.Take(2));
+            Assert.Same(empty, empty.Take(2));
         }
 
         [Fact]

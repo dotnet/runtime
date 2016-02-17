@@ -170,46 +170,32 @@ namespace System.Linq
             return new OrderedPartition<TElement>(this, 0, count - 1);
         }
 
-        public bool TryGetElementAt(int index, out TElement result)
+        public TElement TryGetElementAt(int index, out bool found)
         {
-            if (index == 0) return TryGetFirst(out result);
+            if (index == 0) return TryGetFirst(out found);
             if (index > 0)
             {
                 Buffer<TElement> buffer = new Buffer<TElement>(source);
                 int count = buffer.count;
                 if (index < count)
                 {
-                    result = GetEnumerableSorter().ElementAt(buffer.items, count, index);
-                    return true;
+                    found = true;
+                    return GetEnumerableSorter().ElementAt(buffer.items, count, index);
                 }
             }
-            result = default(TElement);
-            return false;
+            found = false;
+            return default(TElement);
         }
 
-        public TElement ElementAt(int index)
-        {
-            TElement result;
-            if (!TryGetElementAt(index, out result)) throw Error.ArgumentOutOfRange("index");
-            return result;
-        }
-
-        public TElement ElementAtOrDefault(int index)
-        {
-            TElement result;
-            TryGetElementAt(index, out result);
-            return result;
-        }
-
-        private bool TryGetFirst(out TElement result)
+        public TElement TryGetFirst(out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    result = default(TElement);
-                    return false;
+                    found = false;
+                    return default(TElement);
                 }
                 TElement value = e.Current;
                 comparer.SetElement(value);
@@ -218,23 +204,9 @@ namespace System.Linq
                     TElement x = e.Current;
                     if (comparer.Compare(x, true) < 0) value = x;
                 }
-                result = value;
-                return true;
+                found = true;
+                return value;
             }
-        }
-
-        public TElement FirstOrDefault()
-        {
-            TElement result;
-            TryGetFirst(out result);
-            return result;
-        }
-
-        public TElement First()
-        {
-            TElement result;
-            if (!TryGetFirst(out result)) throw Error.NoElements();
-            return result;
         }
 
         public TElement First(Func<TElement, bool> predicate)
@@ -279,58 +251,40 @@ namespace System.Linq
             }
         }
 
-        public TElement Last()
+        public TElement TryGetLast(out bool found)
         {
-            CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    found = false;
+                    return default(TElement);
+                }
+
+                CachingComparer<TElement> comparer = GetComparer();
                 TElement value = e.Current;
                 comparer.SetElement(value);
                 while (e.MoveNext())
                 {
-                    TElement x = e.Current;
-                    if (comparer.Compare(x, false) >= 0) value = x;
+                    TElement current = e.Current;
+                    if (comparer.Compare(current, false) >= 0) value = current;
                 }
+                found = true;
                 return value;
             }
         }
 
-        public TElement LastOrDefault()
+        public TElement TryGetLast(int minIdx, int maxIdx, out bool found)
         {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = source.GetEnumerator())
+            Buffer<TElement> buffer = new Buffer<TElement>(source);
+            int count = buffer.count;
+            if (minIdx >= count)
             {
-                if (!e.MoveNext()) return default(TElement);
-                TElement value = e.Current;
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (comparer.Compare(x, false) >= 0) value = x;
-                }
-                return value;
+                found = false;
+                return default(TElement);
             }
-        }
-
-        public TElement Last(int minIdx, int maxIdx)
-        {
-            Buffer<TElement> buffer = new Buffer<TElement>(source);
-            int count = buffer.count;
-            if (minIdx >= count) throw Error.NoElements();
-            if (maxIdx < count - 1) return GetEnumerableSorter().ElementAt(buffer.items, count, maxIdx);
-            // If we're here, we want the same results we would have got from
-            // Last(), but we've already buffered our source.
-            return Last(buffer);
-        }
-
-        public TElement LastOrDefault(int minIdx, int maxIdx)
-        {
-            Buffer<TElement> buffer = new Buffer<TElement>(source);
-            int count = buffer.count;
-            if (minIdx >= count) return default(TElement);
-            if (maxIdx < count - 1) return GetEnumerableSorter().ElementAt(buffer.items, count, maxIdx);
-            return Last(buffer);
+            found = true;
+            return (maxIdx < count - 1) ? GetEnumerableSorter().ElementAt(buffer.items, count, maxIdx) : Last(buffer);
         }
 
         private TElement Last(Buffer<TElement> buffer)
