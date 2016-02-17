@@ -634,14 +634,9 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    object[] objects = (object[])array;
-                    if (objects == null)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
-                    }
-
                     try
                     {
+                        object[] objects = (object[])array;
                         _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Key; return true; });
                     }
                     catch (ArrayTypeMismatchException)
@@ -823,14 +818,9 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    object[] objects = (object[])array;
-                    if (objects == null)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
-                    }
-
                     try
                     {
+                        object[] objects = (object[])array;
                         _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Value; return true; });
                     }
                     catch (ArrayTypeMismatchException)

@@ -27,12 +27,13 @@ check_type_size(
     "struct in_pktinfo"
     HAVE_IN_PKTINFO
     BUILTIN_TYPES_ONLY)
+
+check_type_size(
+    "struct ip_mreqn"
+    HAVE_IP_MREQN
+    BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /in_pktinfo
-
-check_include_files(
-    alloca.h
-    HAVE_ALLOCA_H)
 
 check_function_exists(
     stat64
@@ -150,6 +151,20 @@ check_cxx_source_compiles(
     "
     HAVE_GNU_STRERROR_R)
 
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/event.h>
+    int main(void)
+    {
+        struct kevent event;
+        void* data;
+        EV_SET(&event, 0, EVFILT_READ, 0, 0, 0, data);
+        return 0;
+    }
+    "
+    KEVENT_HAS_VOID_UDATA)
+
 check_struct_has_member(
     "struct fd_set"
     fds_bits
@@ -161,6 +176,17 @@ check_struct_has_member(
     __fds_bits
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
+
+check_cxx_source_compiles(
+    "
+    #include <sys/sendfile.h>
+    int main() { int i = sendfile(0, 0, 0, 0); }
+    "
+    HAVE_SENDFILE)
+
+check_function_exists(
+    fcopyfile
+    HAVE_FCOPYFILE)
 
 check_function_exists(
     epoll_create1
@@ -235,9 +261,16 @@ check_cxx_source_runs(
 check_prototype_definition(
     getpriority
     "int getpriority(int which, int who)"
-    "0"
+    0
     "sys/resource.h"
     PRIORITY_REQUIRES_INT_WHO)
+
+check_prototype_definition(
+    kevent
+    "int kevent(int kg, const struct kevent* chagelist, int nchanges, struct kevent* eventlist, int nevents, const struct timespec* timeout)"
+    0
+    "sys/types.h;sys/event.h"
+    KEVENT_REQUIRES_INT_PARAMS)
 
 check_cxx_source_compiles(
     "

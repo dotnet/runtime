@@ -262,7 +262,7 @@ namespace Internal.Cryptography.Pal
             // Since the sign bit is set, put a new 0x00 on the end to move that bit from
             // the sign bit to a data bit.
             byte[] newBytes = new byte[bytes.Length + 1];
-            Array.Copy(bytes, 0, newBytes, 0, bytes.Length);
+            Buffer.BlockCopy(bytes, 0, newBytes, 0, bytes.Length);
             return new BigInteger(newBytes);
         }
 

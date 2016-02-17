@@ -14,6 +14,18 @@ namespace Microsoft.Framework.WebEncoders
     public class HtmlEncoderTests
     {
         [Fact]
+        public void TestSurrogate()
+        {
+            Assert.Equal("&#x1F4A9;", System.Text.Encodings.Web.HtmlEncoder.Default.Encode("\U0001f4a9"));
+            
+            using (var writer = new StringWriter())
+            {
+                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(writer, "\U0001f4a9");
+                Assert.Equal("&#x1F4A9;", writer.GetStringBuilder().ToString());
+            }
+        }
+        
+        [Fact]
         public void Ctor_WithTextEncoderSettings()
         {
             // Arrange

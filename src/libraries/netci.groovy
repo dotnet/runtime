@@ -235,6 +235,13 @@ branchList.each { branchName ->
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
             // Archive the results
             Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
+
+            // Use Server GC for Ubuntu/OSX Debug PR build & test
+            def serverGCString = ''
+                     
+            if ((os == 'Ubuntu' || os == 'OSX') && configurationGroup == 'Release' && isPR){
+                serverGCString = '--useServerGC'
+            }
             
             //
             // Then we set up a job that runs the test on the target OS
@@ -292,7 +299,8 @@ branchList.each { branchName ->
                         --os ${osGroup} \\
                         --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
-                        --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/
+                        --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
+                        ${serverGCString}
                     """)
                 }
                 
@@ -346,7 +354,10 @@ branchList.each { branchName ->
                 // Set PR trigger.
                 // Set of OS's that work currently. 
                 if (os in ['OSX', 'Ubuntu', 'OpenSUSE13.2', 'CentOS7.1']) {
-                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
+                    // TODO #6070: Temporarily disabled due to failing globalization tests on OpenSUSE.
+                    if (os != 'OpenSUSE13.2') {
+                        Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test")
+                    }
                 }
                 else {
                     Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configurationGroup} Build and Test", "(?i).*test\\W+${os}.*")

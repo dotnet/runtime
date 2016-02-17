@@ -73,6 +73,9 @@ namespace System.Text.Encodings.Web
 
             _allowedCharacters.ForbidCharacter('\\');
             _allowedCharacters.ForbidCharacter('/');
+            
+            // Forbid GRAVE ACCENT \u0060 character.
+            _allowedCharacters.ForbidCharacter('`'); 
         }
 
         public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
@@ -100,7 +103,7 @@ namespace System.Text.Encodings.Web
         // surrogate pairs in the output.
         public override int MaxOutputCharactersPerInputCharacter
         {
-            get { return 6; } // "\uFFFF" is the longest encoded form 
+            get { return 12; } // "\uFFFF\uFFFF" is the longest encoded form 
         }
 
         static readonly char[] s_b = new char[] { '\\', 'b' };

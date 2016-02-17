@@ -123,6 +123,12 @@ namespace System
             }
         }
 
+        public static int CursorSize
+        {
+            get { return ConsolePal.CursorSize; }
+            set { ConsolePal.CursorSize = value; }
+        }
+
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
@@ -201,6 +207,16 @@ namespace System
             }
         }
 
+        public static void SetWindowPosition(int left, int top)
+        {
+            ConsolePal.SetWindowPosition(left, top);
+        }
+
+        public static void SetWindowSize(int width, int height)
+        {
+            ConsolePal.SetWindowSize(width, height);
+        }
+
         public static int LargestWindowWidth
         {
             get { return ConsolePal.LargestWindowWidth; }
@@ -253,6 +269,21 @@ namespace System
         public static void Beep()
         {
             ConsolePal.Beep();
+        }
+
+        public static void Beep(int frequency, int duration)
+        {
+            ConsolePal.Beep(frequency, duration);
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
+        {
+            ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, ' ', ConsoleColor.Black, BackgroundColor);
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
+        {
+            ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);
         }
 
         public static void Clear()

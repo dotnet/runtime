@@ -1109,6 +1109,7 @@ namespace System.Data.SqlClient
             // can be deleted)
             SqlErrorCollection temp = stateObj.GetFullErrorAndWarningCollection(out breakConnection);
 
+            Debug.Assert(temp != null, "TdsParser::ThrowExceptionAndWarning: null errors collection!");
             Debug.Assert(temp.Count > 0, "TdsParser::ThrowExceptionAndWarning called with no exceptions or warnings!");
             Debug.Assert(_connHandler != null, "TdsParser::ThrowExceptionAndWarning called with null connectionHandler!");
 
@@ -1129,7 +1130,6 @@ namespace System.Data.SqlClient
                 }
             }
 
-            Debug.Assert(temp != null, "TdsParser::ThrowExceptionAndWarning: 0 errors in collection");
             if (temp != null && temp.Count > 0)
             {
                 // Construct the exception now that we've collected all the errors
@@ -6151,7 +6151,7 @@ namespace System.Data.SqlClient
                 offset += rec.hostName.Length * 2;
 
                 // Only send user/password over if not fSSPI...  If both user/password and SSPI are in login
-                // rec, only SSPI is used.  Confirmed same bahavior as in luxor.
+                // rec, only SSPI is used.  Confirmed same behavior as in luxor.
                 if (rec.useSSPI == false)
                 {
                     WriteShort(offset, _physicalStateObj);  // userName offset

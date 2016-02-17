@@ -11,14 +11,13 @@ namespace System.IO.Compression.Tests
 {
     public class Perf_DeflateStream
     {
-        /// <returns></returns>
         private static string CreateCompressedFile(CompressionType type)
         {
-            const int fileSize = 100000000;
+            const int fileSize = 1000000;
             PerfUtils utils = new PerfUtils();
             string filePath = utils.GetTestFilePath() + ".gz";
             switch (type)
-            {    
+            {
                 case CompressionType.CryptoRandom:
                     using (RandomNumberGenerator rand = RandomNumberGenerator.Create())
                     {
@@ -54,7 +53,7 @@ namespace System.IO.Compression.Tests
 
         private static byte[] CreateBytesToCompress(CompressionType type)
         {
-            const int fileSize = 100000000;
+            const int fileSize = 500000;
             byte[] bytes = new byte[fileSize];
             switch (type)
             {
@@ -89,6 +88,14 @@ namespace System.IO.Compression.Tests
             return bytes;
         }
 
+        public enum CompressionType
+        {
+            CryptoRandom = 1,
+            RepeatedSegments = 2,
+            VeryRepetitive = 3,
+            NormalData = 4
+        }
+
         [Benchmark]
         [InlineData(CompressionType.CryptoRandom)]
         [InlineData(CompressionType.RepeatedSegments)]
@@ -103,7 +110,7 @@ namespace System.IO.Compression.Tests
             using (MemoryStream strippedMs = StripHeaderAndFooter.Strip(gzStream))
                 foreach (var iteration in Benchmark.Iterations)
                     using (iteration.StartMeasurement())
-                        for (int i = 0; i < 20000; i++)
+                        for (int i = 0; i < 10000; i++)
                         {
                             using (DeflateStream zip = new DeflateStream(strippedMs, CompressionMode.Decompress, leaveOpen: true))
                             {
@@ -138,13 +145,5 @@ namespace System.IO.Compression.Tests
                 File.Delete(filePath);
             }
         }
-    }
-
-    public enum CompressionType
-    {
-        CryptoRandom = 1,
-        RepeatedSegments = 2,
-        VeryRepetitive = 3,
-        NormalData = 4
     }
 }

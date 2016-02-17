@@ -11,7 +11,6 @@
 **
 ===========================================================*/
 
-using System;
 using System.Globalization;
 using System.Diagnostics.Contracts;
 
@@ -23,12 +22,7 @@ namespace System.Collections
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);
         public static readonly Comparer DefaultInvariant = new Comparer(CultureInfo.InvariantCulture);
 
-        private const String CompareInfoName = "CompareInfo";
-
-        private Comparer()
-        {
-            _compareInfo = null;
-        }
+        private const string CompareInfoName = "CompareInfo";
 
         public Comparer(CultureInfo culture)
         {
@@ -51,13 +45,11 @@ namespace System.Collections
             if (a == b) return 0;
             if (a == null) return -1;
             if (b == null) return 1;
-            if (_compareInfo != null)
-            {
-                String sa = a as String;
-                String sb = b as String;
-                if (sa != null && sb != null)
-                    return _compareInfo.Compare(sa, sb);
-            }
+
+            string sa = a as string;
+            string sb = b as string;
+            if (sa != null && sb != null)
+                return _compareInfo.Compare(sa, sb);
 
             IComparable ia = a as IComparable;
             if (ia != null)

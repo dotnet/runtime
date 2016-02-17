@@ -12,14 +12,14 @@ namespace System.Linq
         public static TSource[] ToArray<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null) throw Error.ArgumentNull("source");
-            IArrayProvider<TSource> arrayProvider = source as IArrayProvider<TSource>;
+            IIListProvider<TSource> arrayProvider = source as IIListProvider<TSource>;
             return arrayProvider != null ? arrayProvider.ToArray() : EnumerableHelpers.ToArray(source);
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null) throw Error.ArgumentNull("source");
-            IListProvider<TSource> listProvider = source as IListProvider<TSource>;
+            IIListProvider<TSource> listProvider = source as IIListProvider<TSource>;
             return listProvider != null ? listProvider.ToList() : new List<TSource>(source);
         }
 

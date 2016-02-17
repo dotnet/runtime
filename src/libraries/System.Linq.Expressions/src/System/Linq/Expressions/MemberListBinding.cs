@@ -63,8 +63,6 @@ namespace System.Linq.Expressions
         ///<paramref name="member" /> does not represent a field or property.-or-The <see cref="P:System.Reflection.FieldInfo.FieldType" /> or <see cref="P:System.Reflection.PropertyInfo.PropertyType" /> of the field or property that <paramref name="member" /> represents does not implement <see cref="T:System.Collections.IEnumerable" />.</exception>
         public static MemberListBinding ListBind(MemberInfo member, params ElementInit[] initializers)
         {
-            ContractUtils.RequiresNotNull(member, "member");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
             return ListBind(member, (IEnumerable<ElementInit>)initializers);
         }
 
@@ -97,8 +95,6 @@ namespace System.Linq.Expressions
         ///<paramref name="propertyAccessor" /> does not represent a property accessor method.-or-The <see cref="P:System.Reflection.PropertyInfo.PropertyType" /> of the property that the method represented by <paramref name="propertyAccessor" /> accesses does not implement <see cref="T:System.Collections.IEnumerable" />.</exception>  
         public static MemberListBinding ListBind(MethodInfo propertyAccessor, params ElementInit[] initializers)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
             return ListBind(propertyAccessor, (IEnumerable<ElementInit>)initializers);
         }
 

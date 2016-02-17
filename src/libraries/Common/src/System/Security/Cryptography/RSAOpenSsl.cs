@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
             }
 
             byte[] plainBytes = new byte[returnValue];
-            Array.Copy(buf, 0, plainBytes, 0, returnValue);
+            Buffer.BlockCopy(buf, 0, plainBytes, 0, returnValue);
             return plainBytes;
         }
 

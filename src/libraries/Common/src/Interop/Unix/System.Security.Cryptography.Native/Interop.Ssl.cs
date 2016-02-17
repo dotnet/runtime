@@ -283,12 +283,18 @@ namespace Microsoft.Win32.SafeHandles
         private void Disconnect()
         {
             Debug.Assert(!IsInvalid, "Expected a valid context in Disconnect");
+
+            // Because we set "quiet shutdown" on the SSL_CTX, SslShutdown is supposed
+            // to always return 1 (completed success).  In "close-notify" shutdown (the
+            // opposite of quiet) there's also 0 (incomplete success) and negative
+            // (probably async IO WANT_READ/WANT_WRITE, but need to check) return codes
+            // to handle.
+            //
+            // If quiet shutdown is ever not set, see
+            // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
+            // for guidance on how to rewrite this method.
             int retVal = Interop.Ssl.SslShutdown(handle);
-            if (retVal < 0)
-            {
-                //TODO (Issue #4031) check this error
-                Interop.Ssl.SslGetError(handle, retVal);
-            }
+            Debug.Assert(retVal == 1);
         }
 
         private SafeSslHandle() : base(IntPtr.Zero, true)

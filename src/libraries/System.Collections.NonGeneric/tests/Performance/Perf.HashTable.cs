@@ -2,31 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
 using Microsoft.Xunit.Performance;
-using System.Collections.Generic;
+
+using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class Perf_HashTable
+    public static class Perf_Hashtable
     {
         public static Hashtable CreateHashtable(int size)
         {
-            Hashtable ht = new Hashtable();
-            Random rand = new Random(341553);
-            while (ht.Count < size)
+            var hash = new Hashtable();
+            var rand = new Random(341553);
+            while (hash.Count < size)
             {
                 int key = rand.Next(400000, int.MaxValue);
-                if (!ht.ContainsKey(key))
-                    ht.Add(key, rand.Next());
+                if (!hash.ContainsKey(key))
+                    hash.Add(key, rand.Next());
             }
-            return ht;
+            return hash;
         }
 
         [Benchmark]
-        public void ctor()
+        public static void Ctor_Empty()
         {
             foreach (var iteration in Benchmark.Iterations)
+            {
                 using (iteration.StartMeasurement())
                 {
                     for (int i = 0; i < 40000; i++)
@@ -37,6 +38,7 @@ namespace System.Collections.Tests
                         new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
                     }
                 }
+            }
         }
 
         [Benchmark]
@@ -44,7 +46,7 @@ namespace System.Collections.Tests
         [InlineData(10000)]
         [InlineData(100000)]
         [InlineData(1000000)]
-        public void GetItem(int size)
+        public static void GetItem(int size)
         {
             Hashtable table = CreateHashtable(size);
 
@@ -75,10 +77,10 @@ namespace System.Collections.Tests
         [InlineData(10000)]
         [InlineData(100000)]
         [InlineData(1000000)]
-        public void SetItem(int size)
+        public static void SetItem(int size)
         {
             Hashtable table = CreateHashtable(size);
-            Random rand = new Random(3453);
+            var rand = new Random(3453);
             int key = rand.Next();
             while (table.Contains(key))
                 key = rand.Next();
@@ -101,7 +103,7 @@ namespace System.Collections.Tests
         [InlineData(10000)]
         [InlineData(100000)]
         [InlineData(1000000)]
-        public void Add(int size)
+        public static void Add(int size)
         {
             Hashtable table = CreateHashtable(size);
             foreach (var iteration in Benchmark.Iterations)

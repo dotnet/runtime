@@ -124,7 +124,7 @@ namespace System.Data.SqlClient.SNI
         {
             SNIPacket packet = new SNIPacket(null);
             packet._data = new byte[_length];
-            Array.Copy(_data, 0, packet._data, 0, _length);
+            Buffer.BlockCopy(_data, 0, packet._data, 0, _length);
             packet._length = _length;
 
             return packet;

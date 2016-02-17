@@ -12,7 +12,6 @@
 **
 ===========================================================*/
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -87,6 +86,7 @@ namespace System.Collections
         {
             Init();
         }
+        
         private void Init()
         {
             _keys = Array.Empty<Object>();

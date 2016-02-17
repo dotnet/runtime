@@ -1,10 +1,11 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
     "Microsoft.Win32.Primitives": "4.0.0",
+    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23816",
     "System.Net.Http": "4.0.0",
-    "System.Net.Primitives": "4.0.11-rc3-23808",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23808",
+    "System.Net.Primitives": "4.0.11-rc3-23816",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23816",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"

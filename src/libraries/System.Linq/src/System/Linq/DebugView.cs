@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,8 +10,11 @@ namespace System.Linq
 {
     // NOTE: DO NOT DELETE THE FOLLOWING DEBUG VIEW TYPES.
     // Although it might be tempting due to them not be referenced anywhere in this library,
-    // Visual Studio currently depends on their existence to enable the "Results" view in 
-    // watch windows.
+    // Visual Studio (and potentially other debuggers) currently depends on their existence to 
+    // enable the "Results" view in watch windows.  Specifically:
+    // - It creates the debug view by name (the view then has the same requirements as other views).
+    // - It looks for the empty exception by name.
+    // - It uses the exception's Empty property by name.
 
     /// <summary>
     /// This class provides the items view for the Enumerable

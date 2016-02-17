@@ -38,7 +38,9 @@
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\SyncTextWriter.cs" />
     <Compile Include="System\IO\Error.cs" />
-    <Compile Include="System\Text\ConsoleEncoding.cs" />
+    <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
+      <Link>Common\System\Text\ConsoleEncoding.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\ConsolePal.Windows.cs" />
@@ -108,6 +110,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsoleInput.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleOutput.cs">
+      <Link>Common\Interop\Windows\Interop.ReadConsoleOutput.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
@@ -132,10 +137,13 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteConsole.cs">
       <Link>Common\Interop\Windows\Interop.WriteConsole.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteConsoleOutput.cs">
+      <Link>Common\Interop\Windows\Interop.WriteConsoleOutput.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
       <Link>Common\System\IO\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>

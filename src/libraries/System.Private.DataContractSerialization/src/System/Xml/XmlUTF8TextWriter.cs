@@ -101,7 +101,7 @@ namespace System.Xml
         new public void SetOutput(Stream stream, bool ownsStream, Encoding encoding)
         {
             Encoding utf8Encoding = null;
-            if (encoding != null && encoding == Encoding.UTF8)
+            if (encoding != null && encoding.CodePage == Encoding.UTF8.CodePage)
             {
                 utf8Encoding = encoding;
                 encoding = null;

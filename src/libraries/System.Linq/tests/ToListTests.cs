@@ -86,10 +86,8 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentNullException>("source", () => source.ToList());
         }
 
-
-        // Later this behaviour can be changed
+        // Generally the optimal approach. Anything that breaks this should be confirmed as not harming performance.
         [Fact]
-        [ActiveIssue(1561)]
         public void ToList_UseCopyToWithICollection()
         {
             TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
@@ -97,21 +95,6 @@ namespace System.Linq.Tests
 
             Assert.Equal(source, resultList);
             Assert.Equal(1, source.CopyToTouched);
-        }
-
-
-        [Fact]
-        [ActiveIssue(1561)]
-        public void ToList_WorkWhenCountChangedAsynchronously()
-        {
-            GrowingAfterCountReadCollection source = new GrowingAfterCountReadCollection(new int[] { 1, 2, 3, 4 });
-            var resultList = source.ToList();
-
-            Assert.True(resultList.Count >= 4);
-            Assert.Equal(1, resultList[0]);
-            Assert.Equal(2, resultList[0]);
-            Assert.Equal(3, resultList[0]);
-            Assert.Equal(4, resultList[0]);
         }
 
         [Theory]

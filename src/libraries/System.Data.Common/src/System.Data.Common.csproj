@@ -27,7 +27,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Data\CommandBehavior.cs" />
     <Compile Include="System\Data\CommandType.cs" />
@@ -51,6 +50,7 @@
     <Compile Include="System\Data\Common\DbProviderFactory.cs" />
     <Compile Include="System\Data\Common\DbTransaction.cs" />
     <Compile Include="System\Data\Common\NameValuePair.cs" />
+    <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskHelpers.cs">
       <Link>Common\System\Threading\Tasks\TaskHelpers.cs</Link>
     </Compile>
@@ -58,12 +58,17 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Data" />
+    <Compile Include="System\Data\Common\DbDataReaderExtensions.Facade.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Data\Common\DbColumn.cs" />
+    <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

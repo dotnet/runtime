@@ -54,6 +54,13 @@ namespace System.Linq.Tests
             Assert.Empty(source.OrderBy(e => e));
         }
 
+        [Fact]
+        public void OrderedCount()
+        {
+            var source = Enumerable.Range(0, 20).Shuffle();
+            Assert.Equal(20, source.OrderBy(i => i).Count());
+        }
+
         //FIXME: This will hang with a larger source. Do we want to deal with that case?
         [Fact]
         public void SurviveBadComparerAlwaysReturnsNegative()
