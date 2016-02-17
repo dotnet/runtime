@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -340,12 +341,31 @@ namespace System.Security.Cryptography
         }
 
         private static readonly SupportedAlgorithm[] s_supportedAlgorithms =
-            new SupportedAlgorithm[]
+            RemoveAlgorithmsUnsupportedByOs(
+                new SupportedAlgorithm[]
+                {
+                    new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
+                    new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
+                    new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
+                    new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
+                }
+            );
+
+        private static SupportedAlgorithm[] RemoveAlgorithmsUnsupportedByOs(SupportedAlgorithm[] supportedAlgorithms)
+        {
+            List<SupportedAlgorithm> filteredSupportedAlgorithms = new List<SupportedAlgorithm>(supportedAlgorithms.Length);
+            foreach (SupportedAlgorithm supportedAlgorithm in supportedAlgorithms)
             {
-                new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
-                new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
-                new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
-                new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
-            };
+                int nid = supportedAlgorithm.Nid;
+                using (SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid))
+                {
+                    if (key != null && !key.IsInvalid)
+                    {
+                        filteredSupportedAlgorithms.Add(supportedAlgorithm);
+                    }
+                }
+            }
+            return filteredSupportedAlgorithms.ToArray();
+        }
     }
 }
