@@ -58,6 +58,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(6153, PlatformID.AnyUnix)]
         [Fact]
         public void DisposeVirtualBehavior()
         {
