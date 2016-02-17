@@ -4,8 +4,12 @@ cmake_minimum_required(VERSION 2.8.12)
 # Set the project name
 project(CoreCLR)
 
-# Enable @rpath support for shared libraries.
-set(MACOSX_RPATH ON)
+set(CORECLR_SET_RPATH ON)
+
+if(CORECLR_SET_RPATH)
+    # Enable @rpath support for shared libraries.
+    set(MACOSX_RPATH ON)
+endif(CORECLR_SET_RPATH)
 
 if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
     cmake_policy(SET CMP0042 NEW)
