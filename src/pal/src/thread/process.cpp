@@ -2374,7 +2374,7 @@ CreateProcessModules(
     ssize_t read;
 
     char vmmapCommand[100];
-    int chars = snprintf(vmmapCommand, sizeof(vmmapCommand), "/usr/bin/vmmap -interleaved %d", dwProcessId);
+    int chars = snprintf(vmmapCommand, sizeof(vmmapCommand), "/usr/bin/vmmap -interleaved %d -wide", dwProcessId);
     _ASSERTE(chars > 0 && chars <= sizeof(vmmapCommand));
 
     FILE *vmmapFile = popen(vmmapCommand, "r");
