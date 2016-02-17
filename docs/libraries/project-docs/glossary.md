@@ -162,6 +162,15 @@ Windows Forms is in maintenance mode now. That means new features will generally
 
 **Also referred to as**: WPF, Avalon
 
+Introduced in .NET Framework 3.0, Windows Presentation Foundation (WPF) was a new API for creating desktop applications. Like Windows Forms, WPF is event-driven. However, instead of using GDI/GDI+ for drawing applications, WPF used DirectX. Using DirectX allowed WPF applications to use the GPU for rendering, freeing the CPU for other tasks. WPF also introduced XAML (which would become the corner-stone of Microsoft GUI logic).
+
+There have been many attempts at OSS and/or cross-platform version of WPF or WPF-like libraries (None of which are indorsed by Microsoft):
+
+* [CSHTML5](http://www.cshtml5.com/): A product to compile WPF/.NET Framework applications into HTML5/CSS3/ECMAScript5 applications.
+* [WPFLight](https://github.com/ronnycsharp/WPFLight): An OSS project to create WPF on top of XNA/MonoGame.
+* [Perspex](https://github.com/Perspex/Perspex): A cross-platform UI framework based on WPF.
+* [Granular](https://github.com/yuvaltz/Granular): A OSS project to allow WPF applications to run in the browser.
+
 ### DirectX
 
 **Also referred to as**: DX
