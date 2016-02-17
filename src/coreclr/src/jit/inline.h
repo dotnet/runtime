@@ -117,14 +117,14 @@ public:
 
     // Construct a new InlineResult.
     InlineResult(Compiler*              compiler,
-                    CORINFO_METHOD_HANDLE  inliner,
-                    CORINFO_METHOD_HANDLE  inlinee,
-                    const char*            context)
+                 CORINFO_METHOD_HANDLE  inliner,
+                 CORINFO_METHOD_HANDLE  inlinee,
+                 const char*            context)
         : inlCompiler(compiler)
         , inlDecision(InlineDecision::UNDECIDED)
+        , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
         , inlInliner(inliner)
         , inlInlinee(inlinee)
-        , inlReason(nullptr)
         , inlContext(context)
         , inlReported(false)
     {
@@ -236,23 +236,29 @@ public:
         return (isSuccess() || isFailure());
     }
 
-    // setCandiate indicates the prospective inline has passed at least
+    // noteCandidate indicates the prospective inline has passed at least
     // some of the correctness checks and is still a viable inline
     // candidate, but no decision has been made yet.
     //
     // This may be called multiple times as various tests are performed
     // and the candidate gets closer and closer to actually getting
     // inlined.
-    void setCandidate(const char* reason)
+    void noteCandidate(InlineObservation obs)
     {
         assert(!isDecided());
-        setCommon(InlineDecision::CANDIDATE, reason);
+
+        // Check the impact, it should be INFORMATION
+        InlineImpact impact = inlGetImpact(obs);
+        assert(impact == InlineImpact::INFORMATION);
+
+        // Update the status
+        setCommon(InlineDecision::CANDIDATE, obs);
     }
 
-    // setSuccess means the inline happened.
-    void setSuccess()
+    // noteSuccess means the inline happened.
+    void noteSuccess()
     {
-        assert(!isFailure());
+        assert(isCandidate());
         inlDecision = InlineDecision::SUCCESS;
     }
 
@@ -309,7 +315,10 @@ public:
     }
 
     // The reason for this particular result
-    const char * reason() const { return inlReason; }
+    const char * reasonString() const 
+    { 
+        return inlGetDescriptionString(inlObservation); 
+    }
 
     // setReported indicates that this particular result doesn't need
     // to be reported back to the runtime, either because the runtime
@@ -333,41 +342,40 @@ private:
         }
 
         InlineTarget target = inlGetTarget(obs);
-        const char* reason = inlGetDescriptionString(obs);
 
         if (target == InlineTarget::CALLEE)
         {
-            this->setNever(reason);
+            this->setNever(obs);
         }
         else
         {
-            this->setFailure(reason);
+            this->setFailure(obs);
         }
     }
 
     // setFailure means this particular instance can't be inlined.
     // It can override setCandidate, but not setSuccess
-    void setFailure(const char* reason)
+    void setFailure(InlineObservation obs)
     {
         assert(!isSuccess());
-        setCommon(InlineDecision::FAILURE, reason);
+        setCommon(InlineDecision::FAILURE, obs);
     }
 
     // setNever means this callee can never be inlined anywhere.
     // It can override setCandidate, but not setSuccess
-    void setNever(const char* reason)
+    void setNever(InlineObservation obs)
     {
         assert(!isSuccess());
-        setCommon(InlineDecision::NEVER, reason);
+        setCommon(InlineDecision::NEVER, obs);
     }
 
     // Helper for setting decision and reason
-    void setCommon(InlineDecision decision, const char* reason)
+    void setCommon(InlineDecision decision, InlineObservation obs)
     {
-        assert(reason != nullptr);
+        // assert(inlIsValidObservation(obs));
         assert(decision != InlineDecision::UNDECIDED);
         inlDecision = decision;
-        inlReason = reason;
+        inlObservation = obs;
     }
 
     // Report/log/dump decision as appropriate
@@ -375,9 +383,9 @@ private:
 
     Compiler*               inlCompiler;
     InlineDecision          inlDecision;
+    InlineObservation       inlObservation;
     CORINFO_METHOD_HANDLE   inlInliner;
     CORINFO_METHOD_HANDLE   inlInlinee;
-    const char*             inlReason;
     const char*             inlContext;
     bool                    inlReported;
 };
