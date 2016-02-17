@@ -2652,6 +2652,7 @@ mono_codegen (MonoCompile *cfg)
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 	{
 		MonoJumpInfo *ji;
+		MonoError error;
 		gpointer target;
 
 		for (ji = cfg->patch_info; ji; ji = ji->next) {
@@ -2669,7 +2670,8 @@ mono_codegen (MonoCompile *cfg)
 			if (ji->type == MONO_PATCH_INFO_NONE)
 				continue;
 
-			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors);
+			target = mono_resolve_patch_target_checked (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, &error);
+			mono_error_raise_exception (&error); /* FIXME: don't raise here */
 			mono_arch_patch_code_new (cfg, cfg->domain, cfg->native_code, ji, target);
 		}
 	}
@@ -4443,7 +4445,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 #endif
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 			for (tmp = jlist->list; tmp; tmp = tmp->next) {
-				gpointer target = mono_resolve_patch_target (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE);
+				MonoError error;
+				gpointer target = mono_resolve_patch_target_checked (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE, &error);
+				mono_error_raise_exception (&error); /* FIXME: don't raise here */
 				mono_arch_patch_code_new (NULL, target_domain, (guint8 *)tmp->data, &patch_info, target);
 			}
 #else
