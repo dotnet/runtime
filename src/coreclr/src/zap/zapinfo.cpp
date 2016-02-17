@@ -4597,9 +4597,10 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection);
 }
 
-CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method)
+CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
+                                          bool * pMustExpand)
 {
-    return m_pEEJitInfo->getIntrinsicID(method);
+    return m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
 bool ZapInfo::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)

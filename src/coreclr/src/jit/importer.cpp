@@ -2880,7 +2880,14 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
                                        bool                     readonlyCall,
                                        CorInfoIntrinsics *      pIntrinsicID)
 {
+    bool mustExpand = false;
+#if COR_JIT_EE_VERSION > 460
+    CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
+#else
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method);
+#endif
+    *pIntrinsicID = intrinsicID;
+
 #ifndef _TARGET_ARM_
     genTreeOps interlockedOperator;
 #endif
@@ -2888,31 +2895,26 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
-        *pIntrinsicID = intrinsicID;
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
     }
 #ifdef _TARGET_64BIT_ 
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr)
     {
         // must be done regardless of DbgCode and MinOpts
-        *pIntrinsicID = intrinsicID;
         return gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL));
     }
 #endif
 
+    GenTreePtr retNode = nullptr;
+
     //
     // We disable the inlining of instrinsics for MinOpts.
     //
-    if  (opts.compDbgCode || opts.MinOpts())
+    if (!mustExpand && (opts.compDbgCode || opts.MinOpts()))
     {
         *pIntrinsicID = CORINFO_INTRINSIC_Illegal;
-        return nullptr;
+        return retNode;
     }
-
-    *pIntrinsicID = intrinsicID;
-
-    if (intrinsicID < 0 || CORINFO_INTRINSIC_Count <= intrinsicID)
-        return nullptr;
 
     // Currently we don't have CORINFO_INTRINSIC_Exp because it does not
     // seem to work properly for Infinity values, we don't do
@@ -3012,8 +3014,7 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
                     break;
 
                 default:
-                    assert(!"Unsupport number of args for Math Instrinsic");
-                    return nullptr;
+                    NO_WAY("Unsupported number of args for Math Instrinsic");
             }
         }
         
@@ -3023,7 +3024,8 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
             op1->gtFlags |= GTF_CALL;
         }
 #endif
-        return op1;
+        retNode = op1;
+        break;
 
 
 #ifdef _TARGET_XARCH_
@@ -3063,7 +3065,8 @@ InterlockedBinOpCommon:
 
         op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
         op1->gtFlags |= GTF_GLOB_EFFECT;
-        return op1;
+        retNode = op1;
+        break;
 #endif // _TARGET_XARCH_
 
     case CORINFO_INTRINSIC_MemoryBarrier:
@@ -3072,7 +3075,8 @@ InterlockedBinOpCommon:
 
         op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
         op1->gtFlags |= GTF_GLOB_EFFECT;
-        return op1;
+        retNode = op1;
+        break;
 
 #ifdef _TARGET_XARCH_
         // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
@@ -3093,7 +3097,8 @@ InterlockedBinOpCommon:
                 GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
 
             node->gtCmpXchg.gtOpLocation->gtFlags |= GTF_DONT_CSE;
-            return node;
+            retNode = node;
+            break;
         }
 #endif
 
@@ -3111,22 +3116,26 @@ InterlockedBinOpCommon:
             op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(offsetof(CORINFO_String, stringLen), TYP_I_IMPL));
             op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
         }
-        return op1;
+        retNode = op1;
+        break;
         
     case CORINFO_INTRINSIC_StringGetChar:
         op2 = impPopStack().val;
         op1 = impPopStack().val;
         op1 = gtNewIndexRef(TYP_CHAR, op1, op2);
         op1->gtFlags |= GTF_INX_STRING_LAYOUT;
-        return op1;
+        retNode = op1;
+        break;
     
     case CORINFO_INTRINSIC_InitializeArray:
-        return impInitializeArrayIntrinsic(sig);
+        retNode = impInitializeArrayIntrinsic(sig);
+        break;
 
     case CORINFO_INTRINSIC_Array_Address:
     case CORINFO_INTRINSIC_Array_Get:
     case CORINFO_INTRINSIC_Array_Set:
-        return impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, intrinsicID);
+        retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, intrinsicID);
+        break;
 
     case CORINFO_INTRINSIC_GetTypeFromHandle:
         op1 = impStackTop(0).val;
@@ -3136,10 +3145,10 @@ InterlockedBinOpCommon:
             op1 = impPopStack().val;
             // Change call to return RuntimeType directly.
             op1->gtType = TYP_REF;
-            return op1;
+            retNode = op1;
         }
         // Call the regular function.
-        return NULL;
+        break;
 
     case CORINFO_INTRINSIC_RTH_GetValueInternal:
         op1 = impStackTop(0).val;
@@ -3162,10 +3171,10 @@ InterlockedBinOpCommon:
             assert(op1->IsList());
             assert(op1->gtOp.gtOp2 == nullptr);
             op1 = op1->gtOp.gtOp1;
-            return op1;
+            retNode = op1;
         }
         // Call the regular function.
-        return NULL;
+        break;
 
 #ifndef LEGACY_BACKEND
     case CORINFO_INTRINSIC_Object_GetType:
@@ -3177,13 +3186,28 @@ InterlockedBinOpCommon:
         // Set also the EXCEPTION flag because the native implementation of 
         // CORINFO_INTRINSIC_Object_GetType intrinsic can throw NullReferenceException.
         op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
-        return op1;
+        retNode = op1;
+        break;
 #endif
 
     default:
         /* Unknown intrinsic */
-        return nullptr;
+        break;
     }
+
+    if (mustExpand)
+    {
+        if (retNode == nullptr)
+        {
+            NO_WAY("JIT must expand the intrinsic!");
+        }
+        else if (IsIntrinsicImplementedByUserCall(intrinsicID))
+        {
+            NO_WAY("JIT must not implement the intrinsic by a user call!");
+        }
+    }
+
+    return retNode;
 }
 
 /*****************************************************************************/
