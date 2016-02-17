@@ -2951,13 +2951,13 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
             assert(consume <= 1);
             if (consume == 1)
             {
-                Interval * srcInterval = stack->Top().interval;
+                Interval * srcInterval = stack->TopRef().interval;
                 if (srcInterval->relatedInterval == nullptr)
                 {
                     // Preference the source to the dest, unless this is a non-last-use localVar.
                     // Note that the last-use info is not correct, but it is a better approximation than preferencing
                     // the source to the dest, if the source's lifetime extends beyond the dest.
-                    if (!srcInterval->isLocalVar || (stack->Top().treeNode->gtFlags & GTF_VAR_DEATH) != 0)
+                    if (!srcInterval->isLocalVar || (stack->TopRef().treeNode->gtFlags & GTF_VAR_DEATH) != 0)
                     {
                         srcInterval->assignRelatedInterval(varDefInterval);
                     }
@@ -3036,7 +3036,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         // we don't want the def of the copy to kill the lclVar register, if it is assigned the same register
         // (which is actually what we hope will happen).
         JITDUMP("Setting putarg_reg as a pass-through of a non-last use lclVar\n");
-        Interval * srcInterval = stack->Top().interval;
+        Interval * srcInterval = stack->TopRef().interval;
         assert(srcInterval->isLocalVar);
         prefSrcInterval = srcInterval;
         isSpecialPutArg = true;
