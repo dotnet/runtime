@@ -3,6 +3,7 @@ setlocal EnableDelayedExpansion EnableExtensions
 
 set __ThisScriptShort=%0
 set __ThisScriptFull="%~f0"
+set __ThisScriptPath="%~dp0"
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
@@ -251,7 +252,7 @@ REM ===
 REM === Restore Build Tools
 REM ===
 REM =========================================================================================
-call %~dp0init-tools.cmd 
+call %__ThisScriptPath%init-tools.cmd  
 
 REM =========================================================================================
 REM ===
