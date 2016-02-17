@@ -2,10 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="any\System.Private.DataContractSerialization.pkgproj" />
-    <Project Include="aot\System.Private.DataContractSerialization.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
     <Project Include="System.Private.DataContractSerialization.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
