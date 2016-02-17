@@ -23,6 +23,7 @@
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
+#include <limits.h>
 #if HAVE_FCOPYFILE
 #include <copyfile.h>
 #elif HAVE_SENDFILE
@@ -393,7 +394,7 @@ extern "C" int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else
     // Otherwise, use pipe.
     while (CheckInterrupted(result = pipe(pipeFds)));
-    
+
     // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
     if ((flags & O_CLOEXEC) != 0 && result == 0)
     {
@@ -964,7 +965,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     int outFd = ToFileDescriptor(destinationFd);
 
 #if HAVE_FCOPYFILE
-    // If fcopyfile is available (OS X), try to use it, as the whole copy 
+    // If fcopyfile is available (OS X), try to use it, as the whole copy
     // can be performed in the kernel, without lots of unnecessary copying.
     // Copy data and metadata.
     return fcopyfile(inFd, outFd, nullptr, COPYFILE_ALL) == 0 ? 0 : -1;
@@ -974,21 +975,46 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     struct stat_ sourceStat;
     bool copied = false;
 #if HAVE_SENDFILE
+    // If sendfile is available (Linux), try to use it, as the whole copy
+    // can be performed in the kernel, without lots of unnecessary copying.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
     if (ret != 0)
     {
         return -1;
     }
 
-    // If sendfile is available (Linux), try to use it, as the whole copy 
-    // can be performed in the kernel, without lots of unnecessary copying.
-    if (sendfile(outFd, inFd, 0, UnsignedCast(sourceStat.st_size)) >= 0)
+
+    // We use `auto' here to adapt the type of `size' depending on the running platform.
+    // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
+    // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
+    // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
+    auto size = UnsignedCast(sourceStat.st_size);
+
+    // Note that per man page for large files, you have to iterate until the
+    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+    while (size > 0)
+    {
+        ssize_t sent = sendfile(outFd, inFd, nullptr, (size >= SSIZE_MAX ? SSIZE_MAX : static_cast<size_t>(size)));
+        if (sent < 0)
+        {
+            if (errno != EINVAL && errno != ENOSYS)
+            {
+                return -1;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            assert(UnsignedCast(sent) <= size);
+            size -= UnsignedCast(sent);
+        }
+    }
+    if (size == 0)
     {
         copied = true;
-    }
-    else if (errno != EINVAL && errno != ENOSYS)
-    {
-        return -1;
     }
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
@@ -1001,7 +1027,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
         return -1;
     }
 
-    // Now that the data from the file has been copied, copy over metadata 
+    // Now that the data from the file has been copied, copy over metadata
     // from the source file.  First copy the file times.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
     if (ret == 0)
