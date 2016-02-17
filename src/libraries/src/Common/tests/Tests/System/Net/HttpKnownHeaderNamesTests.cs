@@ -30,11 +30,18 @@ namespace Tests.System.Net
         public void TryGetHeaderName_AllHttpKnownHeaderNamesPublicStringConstants_Found(string constant)
         {
             char[] key = constant.ToCharArray();
-            string name;
 
-            Assert.True(HttpKnownHeaderNames.TryGetHeaderName(key, 0, key.Length, out name));
-            Assert.NotNull(name);
-            Assert.Equal(constant, name);
+            string name1;
+            Assert.True(HttpKnownHeaderNames.TryGetHeaderName(key, 0, key.Length, out name1));
+            Assert.NotNull(name1);
+            Assert.Equal(constant, name1);
+
+            string name2;
+            Assert.True(HttpKnownHeaderNames.TryGetHeaderName(key, 0, key.Length, out name2));
+            Assert.NotNull(name2);
+            Assert.Equal(constant, name2);
+
+            Assert.Same(name1, name2);
         }
 
         public static IEnumerable<object[]> HttpKnownHeaderNamesPublicStringConstants
@@ -44,7 +51,7 @@ namespace Tests.System.Net
                 string[] constants = typeof(HttpKnownHeaderNames)
                     .GetTypeInfo()
                     .DeclaredFields
-                    .Where(f => f.IsStatic && f.IsPublic && f.FieldType == typeof(string))
+                    .Where(f => f.IsLiteral && f.IsStatic && f.IsPublic && f.FieldType == typeof(string))
                     .Select(f => (string)f.GetValue(null))
                     .ToArray();
 
