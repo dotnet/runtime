@@ -12,7 +12,7 @@ using System.Data;
 
 namespace System.Data.Common
 {
-    public abstract class DbParameterCollection :
+    public abstract class DbParameterCollection : IDataParameterCollection,
         ICollection, IEnumerable, IList
     {
         protected DbParameterCollection() : base()
@@ -42,6 +42,18 @@ namespace System.Data.Common
         abstract public object SyncRoot
         {
             get;
+        }
+
+        object IDataParameterCollection.this[string parameterName]
+        {
+            get
+            {
+                return GetParameter(parameterName);
+            }
+            set
+            {
+                SetParameter(parameterName, (DbParameter)value);
+            }
         }
 
         object IList.this[int index]
