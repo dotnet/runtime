@@ -1269,6 +1269,7 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 const char *
 get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGenericContainer *container)
 {
+	MonoError error;
 	const char *start = ptr;
 	guint32 type;
 	MonoType *t;
@@ -1323,23 +1324,12 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 	}
 
 	default:
-		t = mono_metadata_parse_type_full (m, container, 0, start, &ptr);
+		t = mono_metadata_parse_type_checked (m, container, 0, FALSE, start, &ptr, &error);
 		if (t) {
 			*result = dis_stringify_type (m, t, is_def);
 		} else {
-			GString *err = g_string_new ("@!#$<InvalidType>$#!@");
-			if (container)
-				t = mono_metadata_parse_type_full (m, NULL, 0, start, &ptr);
-			if (t) {
-				char *name = dis_stringify_type (m, t, is_def);
-				g_warning ("Encountered a generic type inappropriate for its context");
-				g_string_append (err, " // ");
-				g_string_append (err, name);
-				g_free (name);
-			} else {
-				g_warning ("Encountered an invalid type");
-			}
-			*result = g_string_free (err, FALSE);
+			*result = g_strdup_printf ("Invalid type due to %s", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
 		}
 
 		break;
