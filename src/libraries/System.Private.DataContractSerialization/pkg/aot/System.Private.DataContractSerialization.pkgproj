@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Private.DataContractSerialization.builds" />
+    <ProjectReference Include="..\..\src\System.Private.DataContractSerialization.csproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
