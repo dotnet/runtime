@@ -132,14 +132,14 @@ void PROCAbort();
 
 /*++
 Function:
-  PROCShutdownProcess
+  PROCNotifyProcessShutdown
   
   Calls the abort handler to do any shutdown cleanup. Call be
   called from the unhandled native exception handler.
 
 (no return value)
 --*/
-void PROCShutdownProcess();
+void PROCNotifyProcessShutdown();
 
 /*++
 Function:
