@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Runtime.CoreCLR-x64": "1.0.0",
+    "Microsoft.NETCore.Runtime.CoreCLR-x86": "1.0.0",
+    "Microsoft.NETCore.Runtime.CoreCLR-arm": "1.0.0"
+  },
+  "frameworks": {
+    "netcore50": {}
+  }
+}
