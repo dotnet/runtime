@@ -59,7 +59,7 @@ namespace System.Linq
             Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
             foreach (TSource item in source)
             {
-                lookup.GetGrouping(keySelector(item), true).Add(elementSelector(item));
+                lookup.GetGrouping(keySelector(item), create: true).Add(elementSelector(item));
             }
             return lookup;
         }
@@ -71,7 +71,7 @@ namespace System.Linq
             Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
             foreach (TElement item in source)
             {
-                lookup.GetGrouping(keySelector(item), true).Add(item);
+                lookup.GetGrouping(keySelector(item), create: true).Add(item);
             }
             return lookup;
         }
@@ -82,7 +82,7 @@ namespace System.Linq
             foreach (TElement item in source)
             {
                 TKey key = keySelector(item);
-                if (key != null) lookup.GetGrouping(key, true).Add(item);
+                if (key != null) lookup.GetGrouping(key, create: true).Add(item);
             }
             return lookup;
         }
@@ -103,7 +103,7 @@ namespace System.Linq
         {
             get
             {
-                Grouping<TKey, TElement> grouping = GetGrouping(key, false);
+                Grouping<TKey, TElement> grouping = GetGrouping(key, create: false);
                 if (grouping != null) return grouping;
                 return Array.Empty<TElement>();
             }
@@ -111,7 +111,7 @@ namespace System.Linq
 
         public bool Contains(TKey key)
         {
-            return GetGrouping(key, false) != null;
+            return GetGrouping(key, create: false) != null;
         }
 
         public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator()
