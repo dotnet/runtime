@@ -62,6 +62,16 @@
   <ItemGroup>
     <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
+    <Compile Include="System\Data\DataRowVersion.cs" />
+    <Compile Include="System\Data\DataTable.cs" />
+    <Compile Include="System\Data\IDataParameter.cs" />
+    <Compile Include="System\Data\IDataParameterCollection.cs" />
+    <Compile Include="System\Data\IDataReader.cs" />
+    <Compile Include="System\Data\IDataRecord.cs" />
+    <Compile Include="System\Data\IDbCommand.cs" />
+    <Compile Include="System\Data\IDbConnection.cs" />
+    <Compile Include="System\Data\IDbDataParameter.cs" />
+    <Compile Include="System\Data\IDbTransaction.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
