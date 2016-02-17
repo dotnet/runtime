@@ -351,38 +351,51 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             End If
         End Function
 
-        Private ReadOnly s_GetMetadataTokenSentinel As Func(Of MemberInfo, Integer) = Function(mi)
-                                                                                          Throw New InvalidOperationException()
-                                                                                      End Function
-        Private s_GetMetadataToken As Func(Of MemberInfo, Integer) = s_GetMetadataTokenSentinel
+        ' s_MemberEquivalence will replace itself with one version or another
+        ' depending on what works at run time
+        Private s_MemberEquivalence As Func(Of MethodBase, MethodBase, Boolean) =
+            Function(m1, m2)
+                Try
+                    ' See if MetadataToken property is available.
+                    Dim MemberInfo As Type = GetType(MethodBase)
+                    Dim [property] As PropertyInfo = MemberInfo.GetProperty("MetadataToken", GetType(Integer), Array.Empty(Of Type)())
+
+                    If ([property] IsNot Nothing AndAlso [property].CanRead) Then
+                        ' Function(parameter1, parameter2) parameter1.MetadataToken = parameter2.MetadataToken
+                        Dim parameter1 As ParameterExpression = Expression.Parameter(MemberInfo)
+                        Dim parameter2 As ParameterExpression = Expression.Parameter(MemberInfo)
+                        Dim memberEquivalence As Func(Of MethodBase, MethodBase, Boolean) = Expression.Lambda(Of Func(Of MethodBase, MethodBase, Boolean))(
+                                            Expression.Equal(
+                                                Expression.Property(parameter1, [property]),
+                                                Expression.Property(parameter2, [property])),
+                                                {parameter1, parameter2}).Compile()
+
+                        Dim result As Boolean = memberEquivalence(m1, m2)
+                        ' it worked, so publish it
+                        s_MemberEquivalence = memberEquivalence
+
+                        Return result
+                    End If
+                Catch
+                    ' Platform might not allow access to the property
+                End Try
+
+                ' MetadataToken is not available in some contexts. Looks like this is one of those cases.
+                ' fallback to "IsEquivalentTo"
+                Dim fallbackMemberEquivalence As Func(Of MethodBase, MethodBase, Boolean) = Function(m1param, m2param) m1param.IsEquivalentTo(m2param)
+
+                ' fallback must work 
+                s_MemberEquivalence = fallbackMemberEquivalence
+                Return fallbackMemberEquivalence(m1, m2)
+            End Function
+
 
         <System.Runtime.CompilerServices.ExtensionAttribute()>
         Public Function HasSameMetadataDefinitionAs(mi1 As MethodBase, mi2 As MethodBase) As Boolean
 #If UNSUPPORTEDAPI Then
             return (mi1.MetadataToken = mi2.MetadataToken) AndAlso mi1.Module.Equals(mi2.Module)
 #Else
-            If Not mi1.Module.Equals(mi2.Module) Then
-                Return False
-            End If
-
-            If s_GetMetadataToken Is s_GetMetadataTokenSentinel Then
-                ' See if MetadataToken property Is available.
-                Dim memberInfo As Type = GetType(MemberInfo)
-                Dim prop As PropertyInfo = memberInfo.GetProperty("MetadataToken", GetType(Integer), Array.Empty(Of Type)())
-
-                If prop Is Nothing OrElse Not prop.CanRead Then
-                    s_GetMetadataToken = Nothing
-                Else
-                    Dim parameter As ParameterExpression = Expression.Parameter(memberInfo)
-                    s_GetMetadataToken = Expression.Lambda(Of Func(Of MemberInfo, Integer))(Expression.Property(parameter, prop), {parameter}).Compile()
-                End If
-            End If
-
-            If s_GetMetadataToken IsNot Nothing Then
-                Return s_GetMetadataToken(mi1) = s_GetMetadataToken(mi2)
-            End If
-
-            Return mi1.IsEquivalentTo(mi2)
+            Return mi1.Module.Equals(mi2.Module) AndAlso s_MemberEquivalence(mi1, mi2)
 #End If
         End Function
 
