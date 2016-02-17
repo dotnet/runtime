@@ -16,7 +16,7 @@ class Driver
 
 		ProcessStartInfo psi = new ProcessStartInfo () {
 			FileName = "find",
-			Arguments = "/ -maxdepth 4",
+			Arguments = "../.. -maxdepth 3", // this test should be run from mono/tests, so that will list all files in the repo
 			UseShellExecute = false,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
