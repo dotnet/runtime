@@ -88,6 +88,12 @@ public:
         return data[tosIndex-1];
     }
 
+    T& TopRef()
+    {
+        assert(tosIndex > 0);
+        return data[tosIndex-1];
+    }
+
     // return the i'th from the top
     T Index(int idx)
     {

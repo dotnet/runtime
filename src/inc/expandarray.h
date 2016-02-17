@@ -149,6 +149,13 @@ class ExpandArrayStack: public ExpandArray<T>
         return this->m_members[m_used-1];
     }
 
+    // Requires Size() > 0
+    T& TopRef()
+    {
+        assert(Size() > 0);
+        return this->m_members[m_used-1];
+    }
+
     // Requires that "idx" < "m_used" (asserting this in debug), and returns
     // "Get(idx)" (which is covered, by the invariant that all indices in "[0..m_used)" are
     // covered).
