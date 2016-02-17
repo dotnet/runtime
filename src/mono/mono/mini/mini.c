@@ -2711,6 +2711,42 @@ compute_reachable (MonoBasicBlock *bb)
 	}
 }
 
+static void mono_bb_ordering (MonoCompile *cfg)
+{
+	int dfn = 0;
+	/* Depth-first ordering on basic blocks */
+	cfg->bblocks = (MonoBasicBlock **)mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
+
+	cfg->max_block_num = cfg->num_bblocks;
+
+	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+	if (cfg->num_bblocks != dfn + 1) {
+		MonoBasicBlock *bb;
+
+		cfg->num_bblocks = dfn + 1;
+
+		/* remove unreachable code, because the code in them may be 
+		 * inconsistent  (access to dead variables for example) */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			bb->flags &= ~BB_VISITED;
+		compute_reachable (cfg->bb_entry);
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			if (bb->flags & BB_EXCEPTION_HANDLER)
+				compute_reachable (bb);
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			if (!(bb->flags & BB_VISITED)) {
+				if (cfg->verbose_level > 1)
+					g_print ("found unreachable code in BB%d\n", bb->block_num);
+				bb->code = bb->last_ins = NULL;
+				while (bb->out_count)
+					mono_unlink_bblock (cfg, bb, bb->out_bb [0]);
+			}
+		}
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			bb->flags &= ~BB_VISITED;
+	}
+}
+
 static void
 mono_handle_out_of_line_bblock (MonoCompile *cfg)
 {
@@ -3301,7 +3337,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	MonoMethodSignature *sig;
 	MonoError err;
 	MonoCompile *cfg;
-	int dfn, i, code_size_ratio;
+	int i, code_size_ratio;
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
@@ -3741,38 +3777,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	mono_threads_safepoint ();
 
-	/* Depth-first ordering on basic blocks */
-	cfg->bblocks = (MonoBasicBlock **)mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
-
-	cfg->max_block_num = cfg->num_bblocks;
-
-	dfn = 0;
-	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
-	if (cfg->num_bblocks != dfn + 1) {
-		MonoBasicBlock *bb;
-
-		cfg->num_bblocks = dfn + 1;
-
-		/* remove unreachable code, because the code in them may be 
-		 * inconsistent  (access to dead variables for example) */
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			bb->flags &= ~BB_VISITED;
-		compute_reachable (cfg->bb_entry);
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			if (bb->flags & BB_EXCEPTION_HANDLER)
-				compute_reachable (bb);
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			if (!(bb->flags & BB_VISITED)) {
-				if (cfg->verbose_level > 1)
-					g_print ("found unreachable code in BB%d\n", bb->block_num);
-				bb->code = bb->last_ins = NULL;
-				while (bb->out_count)
-					mono_unlink_bblock (cfg, bb, bb->out_bb [0]);
-			}
-		}
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			bb->flags &= ~BB_VISITED;
-	}
+	mono_bb_ordering (cfg);
 
 	if (((cfg->num_varinfo > 2000) || (cfg->num_bblocks > 1000)) && !cfg->compile_aot) {
 		/* 
