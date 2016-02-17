@@ -173,9 +173,9 @@ namespace System.Net.NetworkInformation
         {
             byte[] newAddr = new byte[_addressLength];
 
-            // Array.Copy only supports int and long while addressLength is uint (see IpAdapterAddresses).
+            // Buffer.BlockCopy only supports int while addressLength is uint (see IpAdapterAddresses).
             // Will throw OverflowException if addressLength > Int32.MaxValue.
-            Array.Copy(_physicalAddress, 0, newAddr, 0, checked((int)_addressLength));
+            Buffer.BlockCopy(_physicalAddress, 0, newAddr, 0, checked((int)_addressLength));
             return new PhysicalAddress(newAddr);
         }
 

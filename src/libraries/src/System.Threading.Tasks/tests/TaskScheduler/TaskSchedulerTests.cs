@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 using System.Collections.Generic;
-using System.Security;
-// TPL namespaces
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Security;
+using System.Reflection;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -290,6 +289,48 @@ namespace System.Threading.Tasks.Tests
                () => { TaskScheduler.FromCurrentSynchronizationContext(); });
         }
 
+        [Fact]
+        public static void GetTaskSchedulersForDebugger_ReturnsDefaultScheduler()
+        {
+            MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
+            TaskScheduler[] foundSchedulers = getTaskSchedulersForDebuggerMethod.Invoke(null, null) as TaskScheduler[];
+            Assert.NotNull(foundSchedulers);
+            Assert.Contains(TaskScheduler.Default, foundSchedulers);
+        }
+
+        [ConditionalFact("DebuggerIsAttached")]
+        public static void GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers()
+        {
+            MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
+
+            var cesp = new ConcurrentExclusiveSchedulerPair();
+            TaskScheduler[] foundSchedulers = getTaskSchedulersForDebuggerMethod.Invoke(null, null) as TaskScheduler[];
+            Assert.NotNull(foundSchedulers);
+            Assert.Contains(TaskScheduler.Default, foundSchedulers);
+            Assert.Contains(cesp.ConcurrentScheduler, foundSchedulers);
+            Assert.Contains(cesp.ExclusiveScheduler, foundSchedulers);
+
+            GC.KeepAlive(cesp);
+        }
+
+        [ConditionalFact("DebuggerIsAttached")]
+        public static void GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers()
+        {
+            var nonExecutingScheduler = new BuggyTaskScheduler(faultQueues: false);
+
+            Task[] queuedTasks =
+                (from i in Enumerable.Range(0, 10)
+                 select Task.Factory.StartNew(() => { }, CancellationToken.None, TaskCreationOptions.None, nonExecutingScheduler)).ToArray();
+
+            MethodInfo getScheduledTasksForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetScheduledTasksForDebugger");
+            Task[] foundTasks = getScheduledTasksForDebuggerMethod.Invoke(nonExecutingScheduler, null) as Task[];
+            Assert.Superset(new HashSet<Task>(queuedTasks), new HashSet<Task>(foundTasks));
+
+            GC.KeepAlive(nonExecutingScheduler);
+        }
+
+        private static bool DebuggerIsAttached { get { return Debugger.IsAttached; } }
+
         #region Helper Methods / Helper Classes
 
         // Buggy task scheduler to make sure that we handle QueueTask()/TryExecuteTaskInline()
@@ -297,13 +338,16 @@ namespace System.Threading.Tasks.Tests
         [SecuritySafeCritical]
         public class BuggyTaskScheduler : TaskScheduler
         {
+            private readonly ConcurrentQueue<Task> _tasks = new ConcurrentQueue<Task>();
+
             private bool _faultQueues;
             [SecurityCritical]
             protected override void QueueTask(Task task)
             {
                 if (_faultQueues)
                     throw new InvalidOperationException("I don't queue tasks!");
-                // else do nothing -- still a pretty buggy scheduler!!
+                // else do nothing other than store the task -- still a pretty buggy scheduler!!
+                _tasks.Enqueue(task);
             }
 
             [SecurityCritical]
@@ -315,7 +359,7 @@ namespace System.Threading.Tasks.Tests
             [SecurityCritical]
             protected override IEnumerable<Task> GetScheduledTasks()
             {
-                return null;
+                return _tasks;
             }
 
             public BuggyTaskScheduler()

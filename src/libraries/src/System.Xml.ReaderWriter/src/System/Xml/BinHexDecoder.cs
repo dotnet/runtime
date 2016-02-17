@@ -176,7 +176,7 @@ namespace System.Xml
             if (bytesDecoded < bytes.Length)
             {
                 byte[] tmp = new byte[bytesDecoded];
-                Array.Copy(bytes, 0, tmp, 0, bytesDecoded);
+                Buffer.BlockCopy(bytes, 0, tmp, 0, bytesDecoded);
                 bytes = tmp;
             }
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,141 +10,24 @@
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ArrayList\AdapterTests.cs" />
-    <Compile Include="ArrayList\AddRangeTests.cs" />
-    <Compile Include="ArrayList\AddTests.cs" />
-    <Compile Include="ArrayList\BinarySearchTests.cs" />
-    <Compile Include="ArrayList\ClearTests.cs" />
-    <Compile Include="ArrayList\CloneTests.cs" />
-    <Compile Include="ArrayList\ContainsTests.cs" />
-    <Compile Include="ArrayList\CopyToTests.cs" />
-    <Compile Include="ArrayList\CtorTests.cs" />
-    <Compile Include="ArrayList\DerivedClassTests.cs" />
-    <Compile Include="ArrayList\FixedSizeTests.cs" />
-    <Compile Include="ArrayList\GetEnumeratorTests.cs" />
-    <Compile Include="ArrayList\GetSetRangeTests.cs" />
-    <Compile Include="ArrayList\IndexOfTests.cs" />
-    <Compile Include="ArrayList\InsertRangeTests.cs" />
-    <Compile Include="ArrayList\InsertTests.cs" />
-    <Compile Include="ArrayList\LastIndexOfTests.cs" />
-    <Compile Include="ArrayList\PropertyCapacityTests.cs" />
-    <Compile Include="ArrayList\PropertyCountTests.cs" />
-    <Compile Include="ArrayList\PropertyIsFixedSizeTests.cs" />
-    <Compile Include="ArrayList\PropertyIsReadOnlyTests.cs" />
-    <Compile Include="ArrayList\PropertyIsSynchronizedTests.cs" />
-    <Compile Include="ArrayList\PropertyItemTests.cs" />
-    <Compile Include="ArrayList\PropertySyncRootTests.cs" />
-    <Compile Include="ArrayList\ReadOnlyTests.cs" />
-    <Compile Include="ArrayList\RemoveAtTests.cs" />
-    <Compile Include="ArrayList\RemoveRangeTests.cs" />
-    <Compile Include="ArrayList\RemoveTests.cs" />
-    <Compile Include="ArrayList\RepeatTests.cs" />
-    <Compile Include="ArrayList\ReverseTests.cs" />
-    <Compile Include="ArrayList\SortTests.cs" />
-    <Compile Include="ArrayList\SynchronizedTests.cs" />
-    <Compile Include="ArrayList\ToArrayTests.cs" />
-    <Compile Include="ArrayList\TrimToSizeTests.cs" />
-    <Compile Include="ArrayList\WrapperTests.cs" />
-    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_ctor.cs" />
-    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_CultureInfo.cs" />
-    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_Default.cs" />
-    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_DefaultInvariant.cs" />
-    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_Object.cs" />
-    <Compile Include="CollectionBase\CollectionBase_AllMethods.cs" />
-    <Compile Include="CollectionBase\CollectionBase_Capacity.cs" />
-    <Compile Include="CollectionBase\CollectionBase_ctor.cs" />
-    <Compile Include="CollectionBase\CollectionBase_ctor_int.cs" />
-    <Compile Include="CollectionBase\CollectionBase_OnMethods.cs" />
-    <Compile Include="CollectionsUtil\CollectionsUtilTests.cs" />
-    <Compile Include="Comparer\Comparer_CaseInsensitive.cs" />
-    <Compile Include="Comparer\Comparer_DefaultInvariant.cs" />
-    <Compile Include="Comparer\Comparer_Objects.cs" />
-    <Compile Include="DictionaryBase\DictionaryBase_OnMethods.cs" />
-    <Compile Include="DictionaryBase\DictionaryBase_UnitTests.cs" />
-    <Compile Include="Hashtable\AddStressTests.cs" />
-    <Compile Include="Hashtable\AddStressTestsInputData.cs" />
-    <Compile Include="Hashtable\AddTests.cs" />
-    <Compile Include="Hashtable\ClearTests.cs" />
-    <Compile Include="Hashtable\CloneTests.cs" />
-    <Compile Include="Hashtable\ContainsKeyTests.cs" />
-    <Compile Include="Hashtable\ContainsTests.cs" />
-    <Compile Include="Hashtable\ContainsValueTests.cs" />
-    <Compile Include="Hashtable\CopyToTests.cs" />
-    <Compile Include="Hashtable\CtorTests.cs" />
-    <Compile Include="Hashtable\GetEnumeratorTests.cs" />
-    <Compile Include="Hashtable\PropertyCountTests.cs" />
-    <Compile Include="Hashtable\PropertyEqualityComparerTests.cs" />
-    <Compile Include="Hashtable\PropertyIsFixedSizeTests.cs" />
-    <Compile Include="Hashtable\PropertyIsReadOnlyTests.cs" />
-    <Compile Include="Hashtable\PropertyIsSynchronizedTests.cs" />
-    <Compile Include="Hashtable\PropertyItemTests.cs" />
-    <Compile Include="Hashtable\PropertyItemThreadSafety.cs" />
-    <Compile Include="Hashtable\PropertyKeysTests.cs" />
-    <Compile Include="Hashtable\PropertySyncRootTests.cs" />
-    <Compile Include="Hashtable\PropertyValuesTests.cs" />
-    <Compile Include="Hashtable\RemoveTests.cs" />
-    <Compile Include="Hashtable\SynchronizedTests.cs" />
-    <Compile Include="Queue\Queue_Clear.cs" />
-    <Compile Include="Queue\Queue_Clone.cs" />
-    <Compile Include="Queue\Queue_Contains.cs" />
-    <Compile Include="Queue\Queue_ctor.cs" />
-    <Compile Include="Queue\Queue_ctor_int.cs" />
-    <Compile Include="Queue\Queue_ctor_int_float.cs" />
-    <Compile Include="Queue\Queue_Dequeue.cs" />
-    <Compile Include="Queue\Queue_Enqueue.cs" />
-    <Compile Include="Queue\Queue_get_Count.cs" />
-    <Compile Include="Queue\Queue_get_SyncRoot.cs" />
-    <Compile Include="Queue\Queue_Peek.cs" />
-    <Compile Include="Queue\Queue_Synchronized.cs" />
-    <Compile Include="Queue\Queue_ToArray.cs" />
-    <Compile Include="Queue\Queue_TrimToSize.cs" />
-    <Compile Include="ReadOnlyCollectionBase\ReadOnlyCollectionBaseTests.cs" />
-    <Compile Include="SortedList\ClearTests.cs" />
-    <Compile Include="SortedList\CloneTests.cs" />
-    <Compile Include="SortedList\ContainsKeyTests.cs" />
-    <Compile Include="SortedList\ContainsValueTests.cs" />
-    <Compile Include="SortedList\CtorDictionaryIComparerTests.cs" />
-    <Compile Include="SortedList\CtorDictionaryTests.cs" />
-    <Compile Include="SortedList\CtorIComparerIntTests.cs" />
-    <Compile Include="SortedList\CtorIComparerTests.cs" />
-    <Compile Include="SortedList\CtorTests.cs" />
-    <Compile Include="SortedList\GetByIndexITests.cs" />
-    <Compile Include="SortedList\GetEnumeratorTests.cs" />
-    <Compile Include="SortedList\GetKeyListTests.cs" />
-    <Compile Include="SortedList\GetKeyTests.cs" />
-    <Compile Include="SortedList\GetObjectTests.cs" />
-    <Compile Include="SortedList\GetValueListTests.cs" />
-    <Compile Include="SortedList\IndexOfKeyTests.cs" />
-    <Compile Include="SortedList\IndexOfValueTests.cs" />
-    <Compile Include="SortedList\MultiMethodsTests.cs" />
-    <Compile Include="SortedList\PropertyCapacityTests.cs" />
-    <Compile Include="SortedList\PropertyCountTests.cs" />
-    <Compile Include="SortedList\PropertyIsFixedSizeTests.cs" />
-    <Compile Include="SortedList\PropertyIsReadOnlyTests.cs" />
-    <Compile Include="SortedList\PropertyIsSynchronizedTests.cs" />
-    <Compile Include="SortedList\PropertyKeysTests.cs" />
-    <Compile Include="SortedList\PropertySyncRootTests.cs" />
-    <Compile Include="SortedList\PropertyValuesTests.cs" />
-    <Compile Include="SortedList\RemoveAtTests.cs" />
-    <Compile Include="SortedList\RemoveTests.cs" />
-    <Compile Include="SortedList\SetCapacityTests.cs" />
-    <Compile Include="SortedList\SetObjectObjectTests.cs" />
-    <Compile Include="SortedList\SynchronizedTests.cs" />
-    <Compile Include="SortedList\TrimToSizeTests.cs" />
-    <Compile Include="SortedList\WrapperTests.cs" />
-    <Compile Include="Stack\StackBasicTests.cs" />
-    <Compile Include="Stack\Stack_Clone.cs" />
-    <Compile Include="Stack\Stack_Contains_obj.cs" />
-    <Compile Include="Stack\Stack_get_SyncRoot.cs" />
-    <Compile Include="Stack\Stack_ToArray.cs" />
-    <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="ArrayListTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="CaseInsentiveComparerTests.cs" />
+    <Compile Include="CollectionBaseTests.cs" />
+    <Compile Include="CollectionsUtilTests.cs" />
+    <Compile Include="ComparerTests.cs" />
+    <Compile Include="DictionaryBaseTests.cs" />
+    <Compile Include="HashtableTests.cs" />
+    <Compile Include="QueueTests.cs" />
+    <Compile Include="ReadOnlyCollectionBaseTests.cs" />
+    <Compile Include="SortedListTests.cs" />
+    <Compile Include="StackTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

@@ -19,7 +19,7 @@
     },
     "net45":{
       "dependencies": {
-        "Microsoft.TargetingPack.NetFramework.v4.5": "1.0.1",
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1",
       }
     }
   }

@@ -170,7 +170,7 @@ namespace System.IO
                 return;
 
             Byte[] shadowBuffer = new Byte[Math.Min(_bufferSize + _bufferSize, MaxShadowBufferSize)];
-            Array.Copy(_buffer, 0, shadowBuffer, 0, _writePos);
+            Buffer.BlockCopy(_buffer, 0, shadowBuffer, 0, _writePos);
             _buffer = shadowBuffer;
         }
 
@@ -485,7 +485,7 @@ namespace System.IO
 
             if (readBytes > count)
                 readBytes = count;
-            Array.Copy(_buffer, _readPos, array, offset, readBytes);
+            Buffer.BlockCopy(_buffer, _readPos, array, offset, readBytes);
             _readPos += readBytes;
 
             return readBytes;
@@ -842,7 +842,7 @@ namespace System.IO
                 return;
 
             EnsureBufferAllocated();
-            Array.Copy(array, offset, _buffer, _writePos, bytesToWrite);
+            Buffer.BlockCopy(array, offset, _buffer, _writePos, bytesToWrite);
 
             _writePos += bytesToWrite;
             count -= bytesToWrite;
@@ -986,7 +986,7 @@ namespace System.IO
                     if (totalUserBytes <= (_bufferSize + _bufferSize) && totalUserBytes <= MaxShadowBufferSize)
                     {
                         EnsureShadowBufferAllocated();
-                        Array.Copy(array, offset, _buffer, _writePos, count);
+                        Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
                         _stream.Write(_buffer, 0, totalUserBytes);
                         _writePos = 0;
                         return;

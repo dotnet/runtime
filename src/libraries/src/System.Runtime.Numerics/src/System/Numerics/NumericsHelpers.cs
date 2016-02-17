@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Numerics
 {
@@ -19,7 +16,6 @@ namespace System.Numerics
         [FieldOffset(0)]
         public ulong uu;
     }
-
 
     internal static class NumericsHelpers
     {

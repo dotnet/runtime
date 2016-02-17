@@ -215,6 +215,7 @@ namespace System.Linq.Tests
         {
             Record[] source = null;
             Assert.Throws<ArgumentNullException>("source", () => source.GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
+            Assert.Throws<ArgumentNullException>("source", () => source.GroupBy(e => e.Name, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -252,6 +253,7 @@ namespace System.Linq.Tests
             };
 
             Assert.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, e => e.Score, new AnagramEqualityComparer()));
+            Assert.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -579,6 +581,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void GroupingWithElementSelectorToArray()
+        {
+            Record[] source = new Record[]
+            {
+                new Record{ Name = "Tim", Score = 55 },
+                new Record{ Name = "Chris", Score = 49 },
+                new Record{ Name = "Robert", Score = -100 },
+                new Record{ Name = "Chris", Score = 24 },
+                new Record{ Name = "Prakash", Score = 9 },
+                new Record{ Name = "Tim", Score = 25 }
+            };
+
+            IGrouping<string, int>[] groupedArray = source.GroupBy(r => r.Name, e => e.Score).ToArray();
+            Assert.Equal(4, groupedArray.Length);
+            Assert.Equal(source.GroupBy(r => r.Name, e => e.Score), groupedArray);
+        }
+
+        [Fact]
         public void GroupingWithResultsToArray()
         {
             Record[] source = new Record[]
@@ -594,6 +614,24 @@ namespace System.Linq.Tests
             IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, (r, e) => e).ToArray();
             Assert.Equal(4, groupedArray.Length);
             Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedArray);
+        }
+
+        [Fact]
+        public void GroupingWithElementSelectorAndResultsToArray()
+        {
+            Record[] source = new Record[]
+            {
+                new Record{ Name = "Tim", Score = 55 },
+                new Record{ Name = "Chris", Score = 49 },
+                new Record{ Name = "Robert", Score = -100 },
+                new Record{ Name = "Chris", Score = 24 },
+                new Record{ Name = "Prakash", Score = 9 },
+                new Record{ Name = "Tim", Score = 25 }
+            };
+
+            IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, e => e, (r, e) => e).ToArray();
+            Assert.Equal(4, groupedArray.Length);
+            Assert.Equal(source.GroupBy(r => r.Name, e => e, (r, e) => e), groupedArray);
         }
 
         [Fact]
@@ -615,6 +653,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void GroupingWithElementSelectorToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IGrouping<string, int>> groupedList = source.GroupBy(r => r.Name, e => e.Score).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name, e => e.Score), groupedList);
+        }
+
+        [Fact]
         public void GroupingWithResultsToList()
         {
             Record[] source = new Record[]
@@ -630,6 +686,124 @@ namespace System.Linq.Tests
             List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, (r, e) => e).ToList();
             Assert.Equal(4, groupedList.Count);
             Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedList);
+        }
+
+        [Fact]
+        public void GroupingWithElementSelectorAndResultsToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, e => e, (r, e) => e).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name, e => e, (r, e) => e), groupedList);
+        }
+
+        [Fact]
+        public void GroupingCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name).Count());
+        }
+
+        [Fact]
+        public void GroupingWithElementSelectorCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name, e => e.Score).Count());
+        }
+
+        [Fact]
+        public void GroupingWithResultsCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name, (r, e) => e).Count());
+        }
+
+        [Fact]
+        public void GroupingWithElementSelectorAndResultsCount()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            Assert.Equal(4, source.GroupBy(r => r.Name, e=> e, (r, e) => e).Count());
+        }
+
+        [Fact]
+        public void EmptyGroupingToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i).ToArray());
+        }
+
+        [Fact]
+        public void EmptyGroupingToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i).ToList());
+        }
+
+        [Fact]
+        public void EmptyGroupingCount()
+        {
+            Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i).Count());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).ToArray());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).ToList());
+        }
+
+        [Fact]
+        public void EmptyGroupingWithResultCount()
+        {
+            Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).Count());
         }
     }
 }

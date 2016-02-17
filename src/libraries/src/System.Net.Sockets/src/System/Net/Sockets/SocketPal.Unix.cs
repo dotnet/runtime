@@ -747,9 +747,19 @@ namespace System.Net.Sockets
                 return handle.AsyncContext.Connect(socketAddress, socketAddressLen, -1);
             }
 
+            handle.AsyncContext.CheckForPriorConnectFailure();
+
             SocketError errorCode;
             bool completed = TryStartConnect(handle.FileDescriptor, socketAddress, socketAddressLen, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
+            if (completed)
+            {
+                handle.AsyncContext.RegisterConnectResult(errorCode);
+                return errorCode;
+            }
+            else
+            {
+                return SocketError.WouldBlock;
+            }
         }
 
         public static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)

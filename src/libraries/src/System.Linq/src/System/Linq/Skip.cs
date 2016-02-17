@@ -16,15 +16,8 @@ namespace System.Linq
             IPartition<TSource> partition = source as IPartition<TSource>;
             if (partition != null) return partition.Skip(count);
             IList<TSource> sourceList = source as IList<TSource>;
-            return sourceList != null ? SkipList(sourceList, count) : SkipIterator<TSource>(source, count);
-        }
-
-        private static IEnumerable<TSource> SkipList<TSource>(IList<TSource> source, int count)
-        {
-            while (count < source.Count)
-            {
-                yield return source[count++];
-            }
+            if (sourceList != null) return new ListPartition<TSource>(sourceList, count, int.MaxValue);
+            return SkipIterator(source, count);
         }
 
         private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)

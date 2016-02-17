@@ -171,7 +171,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Subtract(uint* left, int leftLength,
+        private unsafe static void Subtract(uint* left, int leftLength, 
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
         {

@@ -74,7 +74,7 @@
 
   <ItemGroup>
     <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
-      <ExpectedPrerelease>rc3-23808</ExpectedPrerelease>
+      <ExpectedPrerelease>rc3-23816</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="^(?i)Microsoft\.TargetingPack\.(NetFramework.%2A|Private\.WinRT)$">
       <ExpectedVersion>1.0.1</ExpectedVersion>
@@ -102,17 +102,6 @@
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/pkg" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(SkipGatherRestoreDirs)' == 'true'">
-    <!-- workaround to address issue where DNX won't recurse directories under a project.json
-         https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/pkg/**/project.json" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/src/**/project.json" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/ref/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/tests/*/project.json" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/*/*/netcore50aot/project.json" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)/src/Common/tests/**/project.json" />
-  </ItemGroup>
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
@@ -129,7 +118,7 @@
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configFile $(NuGetConfigPath)</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
   </PropertyGroup>
 
   <!-- Create a collection of all project.json files for dependency updates. -->

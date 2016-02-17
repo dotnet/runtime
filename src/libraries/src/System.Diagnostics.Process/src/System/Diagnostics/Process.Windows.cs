@@ -666,6 +666,12 @@ namespace System.Diagnostics
             return ret;
         }
 
+        private static Encoding GetEncoding(int codePage)
+        {
+            Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
+            return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
+        }
+
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------

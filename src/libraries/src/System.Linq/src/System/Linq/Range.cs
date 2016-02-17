@@ -18,7 +18,7 @@ namespace System.Linq
             return new RangeIterator(start, count);
         }
 
-        private sealed class RangeIterator : Iterator<int>, IArrayProvider<int>, IListProvider<int>, IPartition<int>
+        private sealed class RangeIterator : Iterator<int>, IPartition<int>
         {
             private readonly int _start;
             private readonly int _end;
@@ -79,6 +79,11 @@ namespace System.Linq
                 }
 
                 return list;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                return _end - _start;
             }
 
             public IPartition<int> Skip(int count)

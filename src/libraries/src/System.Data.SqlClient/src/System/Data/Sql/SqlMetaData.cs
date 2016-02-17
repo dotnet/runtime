@@ -942,7 +942,7 @@ namespace Microsoft.SqlServer.Server
                     {
                         byte[] rgbValue = value.Value;
                         byte[] rgbNewValue = new byte[MaxLength];
-                        Array.Copy(rgbValue, 0, rgbNewValue, 0, rgbValue.Length);
+                        Buffer.BlockCopy(rgbValue, 0, rgbNewValue, 0, rgbValue.Length);
                         Array.Clear(rgbNewValue, rgbValue.Length, rgbNewValue.Length - rgbValue.Length);
                         return new SqlBinary(rgbNewValue);
                     }
@@ -963,7 +963,7 @@ namespace Microsoft.SqlServer.Server
             {
                 byte[] rgbValue = value.Value;
                 byte[] rgbNewValue = new byte[MaxLength];
-                Array.Copy(rgbValue, 0, rgbNewValue, 0, (int)MaxLength);
+                Buffer.BlockCopy(rgbValue, 0, rgbNewValue, 0, (int)MaxLength);
                 value = new SqlBinary(rgbNewValue);
             }
 
@@ -1040,7 +1040,7 @@ namespace Microsoft.SqlServer.Server
                         if (value.MaxLength < MaxLength)
                         {
                             byte[] rgbNew = new byte[MaxLength];
-                            Array.Copy(value.Buffer, 0, rgbNew, 0, (int)oldLength);
+                            Buffer.BlockCopy(value.Buffer, 0, rgbNew, 0, (int)oldLength);
                             value = new SqlBytes(rgbNew);
                         }
 
@@ -1380,7 +1380,7 @@ namespace Microsoft.SqlServer.Server
                     if (value.Length < MaxLength)
                     {
                         byte[] rgbNewValue = new byte[MaxLength];
-                        Array.Copy(value, 0, rgbNewValue, 0, value.Length);
+                        Buffer.BlockCopy(value, 0, rgbNewValue, 0, value.Length);
                         Array.Clear(rgbNewValue, value.Length, (int)rgbNewValue.Length - value.Length);
                         return rgbNewValue;
                     }
@@ -1400,7 +1400,7 @@ namespace Microsoft.SqlServer.Server
             if (value.Length > MaxLength && Max != MaxLength)
             {
                 byte[] rgbNewValue = new byte[MaxLength];
-                Array.Copy(value, 0, rgbNewValue, 0, (int)MaxLength);
+                Buffer.BlockCopy(value, 0, rgbNewValue, 0, (int)MaxLength);
                 value = rgbNewValue;
             }
 

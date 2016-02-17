@@ -38,8 +38,9 @@ usage()
     echo "                                      default: detect current OS"
     echo
     echo "Execution options:"
-    echo "    --restrict-proj <regex>       Run test projects that match regex"
-    echo "                                  default: .* (all projects)"
+    echo "    --restrict-proj <regex>           Run test projects that match regex"
+    echo "                                      default: .* (all projects)"
+    echo "    --useServerGC                     Enable Server GC for this test run"
     echo
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
@@ -246,6 +247,8 @@ coreclr_code_coverage()
 
 # Parse arguments
 
+((serverGC = 0))
+
 while [[ $# > 0 ]]
 do
     opt="$1"
@@ -282,6 +285,9 @@ do
         ;;
         --coreclr-src)
         CoreClrSrc=$2
+        ;;
+        --useServerGC)
+        ((serverGC = 1))
         ;;
         *)
         ;;
@@ -329,6 +335,8 @@ if [ "$CoreClrObjs" == "" ]
 then
     CoreClrObjs="$ProjectRoot/bin/obj/$OS.x64.$ConfigurationGroup"
 fi
+
+export CORECLR_SERVER_GC="$serverGC"
 
 
 create_test_overlay

@@ -125,8 +125,6 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="P:ListInitExpression.NodeType"/> property equal to ListInit and the <see cref="P:ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         public static ListInitExpression ListInit(NewExpression newExpression, params Expression[] initializers)
         {
-            ContractUtils.RequiresNotNull(newExpression, "newExpression");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
             return ListInit(newExpression, initializers as IEnumerable<Expression>);
         }
 
@@ -160,12 +158,6 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="P:ListInitExpression.NodeType"/> property equal to ListInit and the <see cref="P:ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo addMethod, params Expression[] initializers)
         {
-            if (addMethod == null)
-            {
-                return ListInit(newExpression, initializers as IEnumerable<Expression>);
-            }
-            ContractUtils.RequiresNotNull(newExpression, "newExpression");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
             return ListInit(newExpression, addMethod, initializers as IEnumerable<Expression>);
         }
 

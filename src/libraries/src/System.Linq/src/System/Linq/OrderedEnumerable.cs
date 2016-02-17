@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    internal abstract class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>, IArrayProvider<TElement>, IListProvider<TElement>, IPartition<TElement>
+    internal abstract class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>, IPartition<TElement>
     {
         internal IEnumerable<TElement> source;
 
@@ -63,6 +63,13 @@ namespace System.Linq
             return list;
         }
 
+        public int GetCount(bool onlyIfCheap)
+        {
+            IIListProvider<TElement> listProv = source as IIListProvider<TElement>;
+            if (listProv != null) return listProv.GetCount(onlyIfCheap);
+            return !onlyIfCheap || source is ICollection<TElement> || source is ICollection ? source.Count() : -1;
+        }
+
         internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
         {
             Buffer<TElement> buffer = new Buffer<TElement>(source);
@@ -100,6 +107,31 @@ namespace System.Linq
                 ++minIdx;
             }
             return array;
+        }
+
+        internal List<TElement> ToList(int minIdx, int maxIdx)
+        {
+            Buffer<TElement> buffer = new Buffer<TElement>(source);
+            int count = buffer.count;
+            if (count <= minIdx) return new List<TElement>();
+            if (count <= maxIdx) maxIdx = count - 1;
+            if (minIdx == maxIdx) return new List<TElement>(1) { GetEnumerableSorter().ElementAt(buffer.items, count, minIdx) };
+            int[] map = SortedMap(buffer, minIdx, maxIdx);
+            List<TElement> list = new List<TElement>(maxIdx - minIdx + 1);
+            while (minIdx <= maxIdx)
+            {
+                list.Add(buffer.items[map[minIdx]]);
+                ++minIdx;
+            }
+            return list;
+        }
+
+        internal int GetCount(int minIdx, int maxIdx, bool onlyIfCheap)
+        {
+            int count = GetCount(onlyIfCheap);
+            if (count <= 0) return count;
+            if (count <= minIdx) return 0;
+            return (count <= maxIdx? count : maxIdx + 1) - minIdx;
         }
 
         private EnumerableSorter<TElement> GetEnumerableSorter()

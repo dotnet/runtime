@@ -1,12 +1,13 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23808",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
+    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23816",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
-    "System.Net.Primitives": "4.0.11-rc3-23808",
+    "System.Net.Primitives": "4.0.11-rc3-23816",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23808",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23816",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",

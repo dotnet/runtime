@@ -12,8 +12,6 @@
 **
 ===========================================================*/
 
-using System;
-using System.Runtime;
 using System.Security;
 using System.Diagnostics;
 #if FEATURE_NETCORE
@@ -379,7 +377,7 @@ namespace System.Collections
                 int newCapacity = _items.Length == 0 ? _defaultCapacity : _items.Length * 2;
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > ArrayList.MaxArrayLength) newCapacity = ArrayList.MaxArrayLength;
+                if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
                 if (newCapacity < min) newCapacity = min;
                 Capacity = newCapacity;
             }
@@ -1270,10 +1268,6 @@ namespace System.Collections
                 private int _initialStartIndex; // for reset
                 private int _initialCount;      // for reset
                 private bool _firstCall;        // firstCall to MoveNext
-
-                private IListWrapperEnumWrapper()
-                {
-                }
 
                 internal IListWrapperEnumWrapper(IListWrapper listWrapper, int startIndex, int count)
                 {

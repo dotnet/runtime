@@ -11,9 +11,7 @@ namespace System.Numerics
         public static uint Gcd(uint left, uint right)
         {
             // Executes the classic Euclidean algorithm.
-
             // https://en.wikipedia.org/wiki/Euclidean_algorithm
-
             while (right != 0)
             {
                 uint temp = left % right;
@@ -27,7 +25,6 @@ namespace System.Numerics
         public static ulong Gcd(ulong left, ulong right)
         {
             // Same as above, but for 64-bit values.
-
             while (right > 0xFFFFFFFF)
             {
                 ulong temp = left % right;
@@ -100,7 +97,7 @@ namespace System.Numerics
                 {
                     ulong q, r, s, t;
 
-                    // odd iteration
+                    // Odd iteration
                     q = x / y;
 
                     if (q > 0xFFFFFFFF)
@@ -123,7 +120,7 @@ namespace System.Numerics
                     if (x == b)
                         break;
 
-                    // even iteration
+                    // Even iteration
                     q = y / x;
 
                     if (q > 0xFFFFFFFF)
@@ -163,7 +160,7 @@ namespace System.Numerics
 
                     if (iteration % 2 == 1)
                     {
-                        // ensure left is larger than right
+                        // Ensure left is larger than right
                         BitsBuffer temp = left;
                         left = right;
                         right = temp;
@@ -238,7 +235,7 @@ namespace System.Numerics
                     break;
             }
 
-            // use all the bits but one, see [hac] 14.58 (ii)
+            // Use all the bits but one, see [hac] 14.58 (ii)
             int z = LeadingZeros((uint)xh);
 
             x = ((xh << 32 + z) | (xm << z) | (xl >> 32 - z)) >> 1;

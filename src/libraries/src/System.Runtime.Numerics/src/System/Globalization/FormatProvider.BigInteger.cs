@@ -2,26 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Security;
-using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace System.Globalization
 {
     internal partial class FormatProvider
     {
         [SecurityCritical]
-        internal static String FormatBigInteger(int precision, int scale, bool sign, String format, NumberFormatInfo numberFormatInfo, char[] digits, int startIndex)
+        internal static string FormatBigInteger(int precision, int scale, bool sign, string format, NumberFormatInfo numberFormatInfo, char[] digits, int startIndex)
         {
             unsafe
             {
                 int maxDigits;
-                char fmt = FormatProvider.Number.ParseFormatSpecifier(format, out maxDigits);
+                char fmt = Number.ParseFormatSpecifier(format, out maxDigits);
 
                 fixed (char* overrideDigits = digits)
                 {
@@ -39,7 +33,7 @@ namespace System.Globalization
 
         [SecurityCritical]
         internal static bool TryStringToBigInteger(
-            String s,
+            string s,
             NumberStyles styles,
             NumberFormatInfo numberFormatInfo,
             StringBuilder receiver,  // Receives the decimal digits
@@ -60,7 +54,7 @@ namespace System.Globalization
                 // to something that will AV.
                 numberBuffer.overrideDigits = (char*)0x1;
             }
-            if (!FormatProvider.Number.TryStringToNumber(s, styles, ref numberBuffer, receiver, numberFormatInfo, parseDecimal: false))
+            if (!Number.TryStringToNumber(s, styles, ref numberBuffer, receiver, numberFormatInfo, parseDecimal: false))
             {
                 precision = default(int);
                 scale = default(int);

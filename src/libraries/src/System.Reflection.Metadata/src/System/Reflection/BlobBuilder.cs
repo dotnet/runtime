@@ -305,7 +305,7 @@ namespace Roslyn.Reflection
                         break;
                     }
 
-                    Array.Copy(chunk._buffer, Math.Max(start - chunkStartPosition, 0), result, resultOffset, bytesToCopy);
+                    Buffer.BlockCopy(chunk._buffer, Math.Max(start - chunkStartPosition, 0), result, resultOffset, bytesToCopy);
 
                     resultOffset += bytesToCopy;
                 }

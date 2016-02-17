@@ -1207,6 +1207,112 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void X509ChainElementCollection_IndexerVsEnumerator()
+        {
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (X509Chain chain = new X509Chain())
+            {
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                // Halfway between microsoftDotCom's NotBefore and NotAfter
+                // This isn't a boundary condition test.
+                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                bool valid = chain.Build(microsoftDotCom);
+                Assert.True(valid, "Precondition: Chain built validly");
+
+                int position = 0;
+
+                foreach (X509ChainElement chainElement in chain.ChainElements)
+                {
+                    X509ChainElement indexerElement = chain.ChainElements[position];
+
+                    Assert.NotNull(chainElement);
+                    Assert.NotNull(indexerElement);
+
+                    Assert.Same(indexerElement, chainElement);
+                    position++;
+                }
+            }
+        }
+
+        [Fact]
+        public static void X509ExtensionCollection_OidIndexer_ByOidValue()
+        {
+            const string SubjectKeyIdentifierOidValue = "2.5.29.14";
+
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X509ExtensionCollection extensions = cert.Extensions;
+                // Stable index can be counted on by ExtensionsTests.ReadExtensions().
+                X509Extension skidExtension = extensions[1];
+
+                // Precondition: We've found the SKID extension.
+                Assert.Equal(SubjectKeyIdentifierOidValue, skidExtension.Oid.Value);
+
+                X509Extension byValue = extensions[SubjectKeyIdentifierOidValue];
+                Assert.Same(skidExtension, byValue);
+            }
+        }
+
+        [Fact]
+        public static void X509ExtensionCollection_OidIndexer_ByOidFriendlyName()
+        {
+            const string SubjectKeyIdentifierOidValue = "2.5.29.14";
+
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X509ExtensionCollection extensions = cert.Extensions;
+                // Stable index can be counted on by ExtensionsTests.ReadExtensions().
+                X509Extension skidExtension = extensions[1];
+
+                // Precondition: We've found the SKID extension.
+                Assert.Equal(SubjectKeyIdentifierOidValue, skidExtension.Oid.Value);
+
+                // The friendly name of "Subject Key Identifier" is localized, but
+                // we can use the invariant form to ask for the friendly name to ask
+                // for the extension by friendly name.
+                X509Extension byFriendlyName = extensions[new Oid(SubjectKeyIdentifierOidValue).FriendlyName];
+                Assert.Same(skidExtension, byFriendlyName);
+            }
+        }
+
+        [Fact]
+        public static void X509ExtensionCollection_OidIndexer_NoMatchByValue()
+        {
+            const string RsaOidValue = "1.2.840.113549.1.1.1";
+
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X509ExtensionCollection extensions = cert.Extensions;
+
+                X509Extension byValue = extensions[RsaOidValue];
+                Assert.Null(byValue);
+            }
+        }
+
+        [Fact]
+        public static void X509ExtensionCollection_OidIndexer_NoMatchByFriendlyName()
+        {
+            const string RsaOidValue = "1.2.840.113549.1.1.1";
+
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                X509ExtensionCollection extensions = cert.Extensions;
+
+                // While "RSA" is actually invariant, this just guarantees that we're doing
+                // the system-preferred lookup.
+                X509Extension byFriendlyName = extensions[new Oid(RsaOidValue).FriendlyName];
+                Assert.Null(byFriendlyName);
+            }
+        }
+
         private static void TestExportSingleCert(X509ContentType ct)
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))

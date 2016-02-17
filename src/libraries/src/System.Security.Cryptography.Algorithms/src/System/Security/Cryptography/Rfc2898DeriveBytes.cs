@@ -125,13 +125,13 @@ namespace System.Security.Cryptography
             {
                 if (cb >= size)
                 {
-                    Array.Copy(_buffer, _startIndex, password, 0, size);
+                    Buffer.BlockCopy(_buffer, _startIndex, password, 0, size);
                     _startIndex = _endIndex = 0;
                     offset += size;
                 }
                 else
                 {
-                    Array.Copy(_buffer, _startIndex, password, 0, cb);
+                    Buffer.BlockCopy(_buffer, _startIndex, password, 0, cb);
                     _startIndex += cb;
                     return password;
                 }
@@ -145,14 +145,14 @@ namespace System.Security.Cryptography
                 int remainder = cb - offset;
                 if (remainder > BlockSize)
                 {
-                    Array.Copy(T_block, 0, password, offset, BlockSize);
+                    Buffer.BlockCopy(T_block, 0, password, offset, BlockSize);
                     offset += BlockSize;
                 }
                 else
                 {
-                    Array.Copy(T_block, 0, password, offset, remainder);
+                    Buffer.BlockCopy(T_block, 0, password, offset, remainder);
                     offset += remainder;
-                    Array.Copy(T_block, remainder, _buffer, _startIndex, BlockSize - remainder);
+                    Buffer.BlockCopy(T_block, remainder, _buffer, _startIndex, BlockSize - remainder);
                     _endIndex += (BlockSize - remainder);
                     return password;
                 }

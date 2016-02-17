@@ -6,31 +6,31 @@ using System.Collections.Generic;
 
 namespace System.Data.Common
 {
-    public class DbColumn
+    public abstract class DbColumn
     {
-        public virtual bool AllowDBNull { get; set; }
-        public virtual string BaseCatalogName { get; set; }
-        public virtual string BaseColumnName { get; set; }
-        public virtual string BaseSchemaName { get; set; }
-        public virtual string BaseServerName { get; set; }
-        public virtual string BaseTableName { get; set; }
-        public virtual string ColumnName { get; set; }
-        public virtual int ColumnOrdinal { get; set; }
-        public virtual int ColumnSize { get; set; }
-        public virtual bool IsAliased { get; set; }
-        public virtual bool IsAutoIncrement { get; set; }
-        public virtual bool IsExpression { get; set; }
-        public virtual bool IsHidden { get; set; }
-        public virtual bool IsIdentity { get; set; }
-        public virtual bool IsKey { get; set; }
-        public virtual bool IsLong { get; set; }
-        public virtual bool IsReadOnly { get; set; }
-        public virtual bool IsUnique { get; set; }
-        public virtual int NumericPrecision { get; set; }
-        public virtual int NumericScale { get; set; }
-        public virtual string UdtAssemblyQualifiedName { get; set; }
-        public virtual Type DataType { get; set; }
-        public virtual string DataTypeName { get; set; }
+        public bool? AllowDBNull { get; protected set; }
+        public string BaseCatalogName { get; protected set; }
+        public string BaseColumnName { get; protected set; }
+        public string BaseSchemaName { get; protected set; }
+        public string BaseServerName { get; protected set; }
+        public string BaseTableName { get; protected set; }
+        public string ColumnName { get; protected set; }
+        public int? ColumnOrdinal { get; protected set; }
+        public int? ColumnSize { get; protected set; }
+        public bool? IsAliased { get; protected set; }
+        public bool? IsAutoIncrement { get; protected set; }
+        public bool? IsExpression { get; protected set; }
+        public bool? IsHidden { get; protected set; }
+        public bool? IsIdentity { get; protected set; }
+        public bool? IsKey { get; protected set; }
+        public bool? IsLong { get; protected set; }
+        public bool? IsReadOnly { get; protected set; }
+        public bool? IsUnique { get; protected set; }
+        public int? NumericPrecision { get; protected set; }
+        public int? NumericScale { get; protected set; }
+        public string UdtAssemblyQualifiedName { get; protected set; }
+        public Type DataType { get; protected set; }
+        public string DataTypeName { get; protected set; }
         public virtual object this[string property]
         {
             get

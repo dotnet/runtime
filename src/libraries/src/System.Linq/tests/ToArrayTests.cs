@@ -107,10 +107,8 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentNullException>("source", () => source.ToArray());
         }
 
-
-        // Later this behaviour can be changed
+        // Generally the optimal approach. Anything that breaks this should be confirmed as not harming performance.
         [Fact]
-        [ActiveIssue(1561)]
         public void ToArray_UseCopyToWithICollection()
         {
             TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
@@ -118,21 +116,6 @@ namespace System.Linq.Tests
 
             Assert.Equal(source, resultArray);
             Assert.Equal(1, source.CopyToTouched);
-        }
-
-
-        [Fact]
-        [ActiveIssue(1561)]
-        public void ToArray_WorkWhenCountChangedAsynchronously()
-        {
-            GrowingAfterCountReadCollection source = new GrowingAfterCountReadCollection(new int[] { 1, 2, 3, 4 });
-            var resultArray = source.ToArray();
-
-            Assert.True(resultArray.Length >= 4);
-            Assert.Equal(1, resultArray[0]);
-            Assert.Equal(2, resultArray[0]);
-            Assert.Equal(3, resultArray[0]);
-            Assert.Equal(4, resultArray[0]);
         }
 
         [Fact]

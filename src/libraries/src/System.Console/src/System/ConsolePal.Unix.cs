@@ -131,6 +131,12 @@ namespace System
             }
         }
 
+        public static int CursorSize
+        {
+            get { return 100; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public static string Title
         {
             get { throw new PlatformNotSupportedException(); }
@@ -154,6 +160,11 @@ namespace System
             {
                 WriteStdoutAnsiString(TerminalFormatStrings.Instance.Bell);
             }
+        }
+
+        public static void Beep(int frequency, int duration)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public static void Clear()
@@ -242,6 +253,16 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
+        public static void SetWindowPosition(int left, int top)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void SetWindowSize(int width, int height)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static bool CursorVisible
         {
             get { throw new PlatformNotSupportedException(); }
@@ -290,9 +311,7 @@ namespace System
                 return;
 
             // Get the cursor position request format string.
-            string cpr = TerminalFormatStrings.Instance.CursorPositionRequest;
-            if (string.IsNullOrEmpty(cpr))
-                return;
+            Debug.Assert(!string.IsNullOrEmpty(TerminalFormatStrings.CursorPositionReport));
 
             // Synchronize with all other stdin readers.  We need to do this in case multiple threads are
             // trying to read/write concurrently, and to minimize the chances of resulting conflicts.
@@ -301,8 +320,8 @@ namespace System
             // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
             lock (StdInReader) 
             {
-                // Write out the cursor position request.
-                WriteStdoutAnsiString(cpr);
+                // Write out the cursor position report request.
+                WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
 
                 // Read the response.  There's a race condition here if the user is typing,
                 // or if other threads are accessing the console; there's relatively little
@@ -340,6 +359,16 @@ namespace System
                 // Find the ending 'R'
                 ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R');
             }
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
@@ -627,14 +656,15 @@ namespace System
             public readonly string CursorAddress;
             /// <summary>The format string to use to move the cursor to the left.</summary>
             public readonly string CursorLeft;
-            /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
+            /// <summary>The ANSI-compatible string for the Cursor Position report request.</summary>
             /// <remarks>
-            /// This should be <see cref="KnownCursorPositionRequest"/>, but we use the format string as a way to 
-            /// guess whether the terminal will actually support the request/response protocol.
+            /// This should really be in user string 7 in the terminfo file, but some terminfo databases
+            /// are missing it.  As this is defined to be supported by any ANSI-compatible terminal,
+            /// we assume it's available; doing so means CursorTop/Left will work even if the terminfo database
+            /// doesn't contain it (as appears to be the case with e.g. screen and tmux on Ubuntu), at the risk
+            /// of outputting the sequence on some terminal that's not compatible.
             /// </remarks>
-            public readonly string CursorPositionRequest;
-            /// <summary>Well-known CPR format.</summary>
-            private const string KnownCursorPositionRequest = "\x1B[6n";
+            public const string CursorPositionReport = "\x1B[6n";
             /// <summary>
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
@@ -667,9 +697,9 @@ namespace System
 
                 Title = GetTitle(db);
 
-                CursorPositionRequest = db.GetString(TermInfo.WellKnownStrings.CursorPositionRequest) == KnownCursorPositionRequest ?
-                    KnownCursorPositionRequest :
-                    string.Empty;
+                Debug.WriteLineIf(db.GetString(TermInfo.WellKnownStrings.CursorPositionReport) != CursorPositionReport,
+                    "Getting the cursor position will only work if the terminal supports the CPR sequence," +
+                    "but the terminfo database does not contain an entry for it.");
 
                 int maxColors = db.GetNumber(TermInfo.WellKnownNumbers.MaxColors);
                 MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none

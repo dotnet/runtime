@@ -64,8 +64,6 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="MemberMemberBinding"/> that has the <see cref="P:MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/> and the <see cref="P:MemberBinding.Member"/> and <see cref="P:MemberMemberBindings.Bindings"/> properties set to the specified values.</returns>
         public static MemberMemberBinding MemberBind(MemberInfo member, params MemberBinding[] bindings)
         {
-            ContractUtils.RequiresNotNull(member, "member");
-            ContractUtils.RequiresNotNull(bindings, "bindings");
             return MemberBind(member, (IEnumerable<MemberBinding>)bindings);
         }
 
@@ -98,8 +96,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static MemberMemberBinding MemberBind(MethodInfo propertyAccessor, params MemberBinding[] bindings)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
-            return MemberBind(GetProperty(propertyAccessor), bindings);
+            return MemberBind(propertyAccessor, (IEnumerable<MemberBinding>)bindings);
         }
 
         /// <summary>
