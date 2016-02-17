@@ -493,26 +493,6 @@ typedef long time_t;
 typedef DWORD (PALAPI *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
 
-
-/******************* Tracing Initialization *******************************/
-
-#if defined(__LINUX__)
-
-// Constructor priority is set to 200, which allows for constructors to
-// guarantee that they run before or after this constructor by setting
-// their priority appropriately.
-
-// Priority values must be greater than 100.  The lower the value,
-// the higher the priority.
-static
-void
-__attribute__((__unused__))
-__attribute__((constructor (200)))
-PAL_InitializeTracing(void);
-
-#endif
-
-
 /******************* PAL-Specific Entrypoints *****************************/
 
 PALIMPORT
