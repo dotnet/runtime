@@ -143,7 +143,14 @@ namespace System.Linq
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                return new ConcatNIterator<TSource>(this, next, checked(_nextIndex + 1));
+                if (_nextIndex == int.MaxValue - 2)
+                {
+                    // In the unlikely case of this many concatenations, if we produced a ConcatNIterator
+                    // with int.MaxValue then state would overflow before it matched it's index.
+                    // So we use the naïve approach of just having a left and right sequence.
+                    return new Concat2Iterator<TSource>(this, next);
+                }
+                return new ConcatNIterator<TSource>(this, next, _nextIndex + 1);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
