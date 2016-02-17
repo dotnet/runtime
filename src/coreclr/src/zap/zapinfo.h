@@ -746,7 +746,8 @@ public:
                                unsigned * pOffsetOfIndirection,
                                unsigned * pOffsetAfterIndirection);
 
-    CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method);
+    CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
+                                     bool * pMustExpand = NULL);
     bool isInSIMDModule(CORINFO_CLASS_HANDLE classHnd);
     CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
     BOOL pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
