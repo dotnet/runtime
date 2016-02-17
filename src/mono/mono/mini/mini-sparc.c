@@ -1561,6 +1561,7 @@ else { \
 static guint32*
 emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer data)
 {
+	MonoError error;
 	gpointer target;
 
 	/* FIXME: This only works if the target method is already compiled */
@@ -1570,7 +1571,8 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 		patch_info.type = patch_type;
 		patch_info.data.target = data;
 
-		target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &patch_info, FALSE);
+		target = mono_resolve_patch_target_checked (cfg->method, cfg->domain, NULL, &patch_info, FALSE, &error);
+		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		/* FIXME: Add optimizations if the target is close enough */
 		sparc_set (code, target, sparc_o7);
@@ -3672,6 +3674,7 @@ mono_arch_register_lowlevel_calls (void)
 void
 mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
+	MonoError error;
 	MonoJumpInfo *patch_info;
 
 	/* FIXME: Move part of this to arch independent code */
@@ -3679,7 +3682,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		unsigned char *ip = patch_info->ip.i + code;
 		gpointer target;
 
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+		target = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
+		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_NONE:

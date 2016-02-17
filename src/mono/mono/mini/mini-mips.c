@@ -4675,6 +4675,7 @@ void
 mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
+	MonoError error;
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
@@ -4708,7 +4709,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			/* from OP_AOTCONST : lui + addiu */
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+			target = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
+			mono_error_raise_exception (&error); /* FIXME: don't raise here */
 			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
 			continue;
 #if 0
@@ -4721,7 +4723,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 			/* everything is dealt with at epilog output time */
 			continue;
 		default:
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+			target = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
+			mono_error_raise_exception (&error); /* FIXME: don't raise here */
 			mips_patch ((guint32 *)(void *)ip, (guint32)target);
 			break;
 		}
