@@ -111,6 +111,7 @@ typedef struct MonoAotOptions {
 	gboolean log_generics;
 	gboolean log_instances;
 	gboolean gen_seq_points_file;
+	char *gen_seq_points_file_path;
 	gboolean direct_pinvoke;
 	gboolean direct_icalls;
 	gboolean no_direct_calls;
@@ -6760,7 +6761,12 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
+		} else if (str_begins_with (arg, "gen-seq-points-file=")) {
+			debug_options.gen_seq_points_compact_data = TRUE;
+			opts->gen_seq_points_file = TRUE;
+			opts->gen_seq_points_file_path = g_strdup (arg + strlen ("gen-seq-points-file="));;
 		} else if (str_begins_with (arg, "gen-seq-points-file")) {
+			debug_options.gen_seq_points_compact_data = TRUE;
 			opts->gen_seq_points_file = TRUE;
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
@@ -8600,8 +8606,9 @@ emit_exception_info (MonoAotCompile *acfg)
 	}
 
 	if (seq_points_to_file) {
-		char *seq_points_aot_file;
-		mono_image_get_aot_seq_point_path (acfg->image, &seq_points_aot_file);
+		char *seq_points_aot_file = acfg->aot_opts.gen_seq_points_file_path ? acfg->aot_opts.gen_seq_points_file_path
+			: g_strdup_printf("%s%s", acfg->image->name, SEQ_POINT_AOT_EXT);
+		printf("%s\n", seq_points_aot_file);
 		mono_seq_point_data_write (&sp_data, seq_points_aot_file);
 		mono_seq_point_data_free (&sp_data);
 		g_free (seq_points_aot_file);
