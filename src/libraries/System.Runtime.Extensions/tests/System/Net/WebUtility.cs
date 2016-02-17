@@ -19,7 +19,8 @@ namespace System.Net.Tests
             yield return new object[] { "&#144308;", char.ConvertFromUtf32(144308) };
         }
 
-        [Theory, MemberData("HtmlDecode_TestData")]
+        [Theory]
+        [MemberData("HtmlDecode_TestData")]
         public static void HtmlDecode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.HtmlDecode(value));
@@ -38,7 +39,8 @@ namespace System.Net.Tests
             yield return new object[] { char.ConvertFromUtf32(144308), "&#144308;" }; // Default strict settings
         }
 
-        [Theory, MemberData("HtmlEncode_TestData")]
+        [Theory]
+        [MemberData("HtmlEncode_TestData")]
         public static void HtmlEncode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.HtmlEncode(value));
@@ -52,7 +54,8 @@ namespace System.Net.Tests
             yield return new object[] { null, null };
         }
 
-        [Theory, MemberData("UrlDecode_TestData")]
+        [Theory]
+        [MemberData("UrlDecode_TestData")]
         public static void UrlDecode(string encodedValue, string expected)
         {
             Assert.Equal(expected, WebUtility.UrlDecode(encodedValue));
@@ -66,7 +69,8 @@ namespace System.Net.Tests
             yield return new object[] { null, null };
         }
 
-        [Theory, MemberData("UrlEncode_TestData")]
+        [Theory]
+        [MemberData("UrlEncode_TestData")]
         public static void UrlEncode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.UrlEncode(value));
@@ -81,16 +85,11 @@ namespace System.Net.Tests
             string encoded = WebUtility.UrlEncode(value);
             Assert.Equal(value, WebUtility.UrlDecode(encoded));
         }
-
-        public static IEnumerable<object[]> Url_DecodeToBytes_TestData()
+        
+        [Fact]
+        public static void UrlDecodeToBytes_NullEncodedValue_ReturnsNull()
         {
-            yield return new object[] { null, 0, 0, null };
-        }
-
-        [Theory, MemberData("Url_DecodeToBytes_TestData")]
-        public static void UrlDecodeToBytes(byte[] encodedValue, int offset, int count, byte[] expected)
-        {
-            Assert.Equal(expected, WebUtility.UrlDecodeToBytes(encodedValue, offset, count));
+            Assert.Null(WebUtility.UrlDecodeToBytes(null, 0, 0));
         }
 
         [Fact]
@@ -110,10 +109,10 @@ namespace System.Net.Tests
             yield return new object[] { null, 0, 0, null };
         }
 
-        [Theory, MemberData("Url_EncodeToBytes_TestData")]
-        public static void UrlEncodeToBytes(byte[] value, int offset, int count, byte[] expected)
+        [Theory]
+        public static void UrlEncodeToBytes_NullValue_ReturnsNull()
         {
-            Assert.Equal(expected, WebUtility.UrlEncodeToBytes(value, offset, count));
+            Assert.Null(WebUtility.UrlEncodeToBytes(null, 0, 0));
         }
 
         [Fact]
