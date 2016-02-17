@@ -764,7 +764,8 @@ public:
             unsigned * pOffsetAfterIndirection
             );
 
-    CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method);
+    CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
+                                     bool * pMustExpand = NULL);
 
     bool isInSIMDModule(CORINFO_CLASS_HANDLE classHnd);
 
