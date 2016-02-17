@@ -52,9 +52,13 @@ class Constants {
                'jitstress2_jitstressregs8'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
                'jitstress2_jitstressregs0x10' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
                'jitstress2_jitstressregs0x80' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
-               'fx' : ['' : ''], // corefx baseline
-               'fxjs1' : ['COMPlus_JitStress' : '1'], 
-               'fxjs2' : ['COMPlus_JitStress' : '2']]
+               'corefx_baseline' : ['' : ''], // corefx baseline
+               'corefx_jitstress1' : ['COMPlus_JitStress' : '1'], 
+               'corefx_jitstress2' : ['COMPlus_JitStress' : '2'],
+               'corefx_jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'corefx_jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
+               'corefx_jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'corefx_jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
+               'corefx_jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'corefx_jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
+               'corefx_jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80']]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -77,8 +81,25 @@ def static setMachineAffinity(def job, def os, def architecture) {
 }
 
 def static isCorefxTesting(def scenario) {
-    return scenario.substring(0,2) == 'fx'
+    def corefx_prefix = 'corefx_'
+    if (scenario.length() < corefx_prefix.length()) {
+        return
+    }
+    return scenario.substring(0,corefx_prefix.length()) == corefx_prefix
 }
+
+def static getStressModeDisplayName(def scenario) {
+    def displayStr = ''
+    Constants.jitStressModeScenarios[scenario].each{ k, v -> 
+        def prefixLength = 'COMPlus_'.length()
+        if (k.length() >= prefixLength) {
+            def modeName = k.substring(prefixLength, k.length())
+            displayStr += ' ' + modeName + '=' + v
+        }
+    }   
+    return displayStr
+}
+
 
 // Generates the string for creating a file that sets environment variables
 // that makes it possible to run stress modes.  Writes the script to a file called
@@ -224,9 +245,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'jitstress2_jitstressregs8':
             case 'jitstress2_jitstressregs0x10':
             case 'jitstress2_jitstressregs0x80':
-            case 'fx':	
-            case 'fxjs1':	            
-            case 'fxjs2':
+            case 'corefx_baseline': 
+            case 'corefx_jitstress1':               
+            case 'corefx_jitstress2':
+            case 'corefx_jitstressregs1':
+            case 'corefx_jitstressregs2':
+            case 'corefx_jitstressregs3':
+            case 'corefx_jitstressregs4':
+            case 'corefx_jitstressregs8':
+            case 'corefx_jitstressregs0x10':
+            case 'corefx_jitstressregs0x80':
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 Utilities.addPeriodicTrigger(job, '@daily')
                 break
@@ -348,20 +376,25 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
-                            def displayStr = ''
-                            Constants.jitStressModeScenarios[scenario].each{ k, v -> 
-                                def prefixLength = 'COMPlus_'.length()
-                                def modeName = k.substring(prefixLength, k.length())
-                                displayStr += ' ' + modeName + '=' + v
-                            }                        
+                            def displayStr = getStressModeDisplayName(scenario)  
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
-                        case 'fx':
-                        case 'fxjs1':
-                        case 'fxjs2':
-                            // No Linux support is needed now
+                        case 'corefx_baseline':
+                        case 'corefx_jitstress1':
+                        case 'corefx_jitstress2':
+                        case 'corefx_jitstressregs1':
+                        case 'corefx_jitstressregs2':
+                        case 'corefx_jitstressregs3':
+                        case 'corefx_jitstressregs4':
+                        case 'corefx_jitstressregs8':
+                        case 'corefx_jitstressregs0x10':
+                        case 'corefx_jitstressregs0x80':
+                            def displayName = 'CoreFx' + getStressModeDisplayName(scenario)                                                    
+                            assert (os == 'Windows_NT') || (os in Constants.crossList)
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayName})",
+                               "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                          
                         default:
                             println("Unknown scenario: ${scenario}");
@@ -457,29 +490,24 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
-                            def displayStr = ''
-                            Constants.jitStressModeScenarios[scenario].each{ k, v -> 
-                                def prefixLength = 'COMPlus_'.length()
-                                def modeName = k.substring(prefixLength, k.length())
-                                displayStr += ' ' + modeName + '=' + v
-                            }                        
+                            def displayStr = getStressModeDisplayName(scenario)
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                                   
-                        case 'fx':
+                        case 'corefx_baseline':
+                        case 'corefx_jitstress1':
+                        case 'corefx_jitstress2':
+                        case 'corefx_jitstressregs1':
+                        case 'corefx_jitstressregs2':
+                        case 'corefx_jitstressregs3':
+                        case 'corefx_jitstressregs4':
+                        case 'corefx_jitstressregs8':
+                        case 'corefx_jitstressregs0x10':
+                        case 'corefx_jitstressregs0x80':
+                            def displayName = 'CoreFx ' + getStressModeDisplayName(scenario)
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
-                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx Baseline)",
-                               "(?i).*test\\W+${os}\\W+${scenario}.*")
-                            break                                                   
-                        case 'fxjs1':
-                            assert (os == 'Windows_NT') || (os in Constants.crossList)
-                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=1)",
-                               "(?i).*test\\W+${os}\\W+${scenario}.*")
-                            break                       
-                        case 'fxjs2':
-                            assert (os == 'Windows_NT') || (os in Constants.crossList)
-                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - CoreFx JitStress=2)",
+                            Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayName})",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                       
                         default:
@@ -590,7 +618,8 @@ combinedScenarios.each { scenario ->
                         
                         // Since these are just execution time differences,
                         // skip platforms that don't execute the tests here (Windows_NT only)
-                        if (os != 'Windows_NT' || isBuildOnly) {
+                        def isEnabledOS = os == 'Windows_NT' || os == 'Ubuntu'
+                        if (!isEnabledOS || isBuildOnly) {
                             return
                         }
                         
@@ -600,10 +629,6 @@ combinedScenarios.each { scenario ->
                         }
                         
                         enableCorefxTesting = isCorefxTesting(scenario)
-                        // Only enable non-PR testing once PR testing works well.
-                        if (enableCorefxTesting && !isPR) {
-                            return
-                        }
                     }
                     else {
                         // Skip scenarios
@@ -780,21 +805,45 @@ combinedScenarios.each { scenario ->
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
-                                    // On other OS's we skipmscorlib but run the pal tests
-                                    if ((architecture == 'x64') && ((os == 'Ubuntu') || (os == 'OSX')))
-                                    {
+                                    if (!enableCorefxTesting) {
+                                        // On other OS's we skipmscorlib but run the pal tests
+                                        if ((architecture == 'x64') && ((os == 'Ubuntu') || (os == 'OSX')))
+                                        {
+                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+                                        }
+                                        else
+                                        {
+                                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                        }
+                                        buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
+                                    
+                                        // Basic archiving of the build
+                                        Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
+                                        // And pal tests
+                                        Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
+                                    }
+                                    else {
+                                        // Corefx stress testing                                        
+                                        assert os == 'Ubuntu'
+                                        assert architecture == 'x64'
+                                        assert lowerConfiguration == 'checked'
+                                        
+                                        // Build coreclr and move it to clr directory
                                         buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+                                        buildCommands += "rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr"
+                                        
+                                        // Get corefx
+                                        buildCommands += "git clone https://github.com/dotnet/corefx fx"
+                                        
+                                        // Build and text corefx
+                                        buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
+                                        buildCommands += "cd fx; HOME=\$WORKSPACE/fx_home ./build.sh /p:ConfigurationGroup=${lowerConfiguration} /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+
+                                        // Archive and process test result
+                                        Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
+                                        Utilities.setJobTimeout(newJob, 360)
+                                        Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
                                     }
-                                    else
-                                    {
-                                        buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
-                                    }
-                                    buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
-                                
-                                    // Basic archiving of the build
-                                    Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
-                                    // And pal tests
-                                    Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                                     break
                                 case 'arm64':
                                     // We don't run the cross build except on Ubuntu
