@@ -45,7 +45,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         mov     rax, [r10]
         cmp     rax, r11
         je      DoneShadow
-        mov     r11, INVALIDGCVALUE
+        movabs  r11, INVALIDGCVALUE
         mov     [r10], r11
 
         jmp     DoneShadow
