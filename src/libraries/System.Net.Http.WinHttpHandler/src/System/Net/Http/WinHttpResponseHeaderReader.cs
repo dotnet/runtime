@@ -65,18 +65,7 @@ namespace System.Net.Http
                 int valueLength = startIndex + length - colonIndex - 1;
                 CharArrayHelpers.Trim(_buffer, ref valueStartIndex, ref valueLength);
 
-                if (valueLength == 0)
-                {
-                    value = string.Empty;
-                }
-                else
-                {
-                    // If it's a known header value, use the known value instead of allocating a new string.
-                    if (!TryGetKnownHeaderValue(name, _buffer, valueStartIndex, valueLength, out value))
-                    {
-                        value = new string(_buffer, valueStartIndex, valueLength);
-                    }
-                }
+                value = GetHeaderValue(name, _buffer, valueStartIndex, valueLength);
 
                 return true;
             }
@@ -139,10 +128,17 @@ namespace System.Net.Http
             return false;
         }
 
-        private static bool TryGetKnownHeaderValue(string name, char[] array, int startIndex, int length, out string value)
+        private static string GetHeaderValue(string name, char[] array, int startIndex, int length)
         {
             Debug.Assert(name != null);
             CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
+
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
+            // If it's a known header value, use the known value instead of allocating a new string.
 
             // Do a really quick reference equals check to see if name is the same object as
             // HttpKnownHeaderNames.ContentEncoding, in which case the value is very likely to
@@ -151,18 +147,15 @@ namespace System.Net.Http
             {
                 if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Gzip, array, startIndex, length))
                 {
-                    value = Gzip;
-                    return true;
+                    return Gzip;
                 }
                 else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Deflate, array, startIndex, length))
                 {
-                    value = Deflate;
-                    return true;
+                    return Deflate;
                 }
             }
 
-            value = null;
-            return false;
+            return new string(array, startIndex, length);
         }
     }
 }
