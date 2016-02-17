@@ -4196,6 +4196,19 @@ void mono_time_track_end (double *time, GTimer *timer)
 	g_timer_destroy (timer);
 }
 
+void mono_update_jit_stats (MonoCompile *cfg)
+{
+	mono_jit_stats.allocate_var += cfg->stat_allocate_var;
+	mono_jit_stats.locals_stack_size += cfg->stat_locals_stack_size;
+	mono_jit_stats.basic_blocks += cfg->stat_basic_blocks;
+	mono_jit_stats.max_basic_blocks = MAX (cfg->stat_basic_blocks, mono_jit_stats.max_basic_blocks);
+	mono_jit_stats.cil_code_size += cfg->stat_cil_code_size;
+	mono_jit_stats.regvars += cfg->stat_n_regvars;
+	mono_jit_stats.inlineable_methods += cfg->stat_inlineable_methods;
+	mono_jit_stats.inlined_methods += cfg->stat_inlined_methods;
+	mono_jit_stats.code_reallocs += cfg->stat_code_reallocs;
+}
+
 /*
  * mono_jit_compile_method_inner:
  *
@@ -4421,15 +4434,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	 * Update global stats while holding a lock, instead of doing many
 	 * InterlockedIncrement operations during JITting.
 	 */
-	mono_jit_stats.allocate_var += cfg->stat_allocate_var;
-	mono_jit_stats.locals_stack_size += cfg->stat_locals_stack_size;
-	mono_jit_stats.basic_blocks += cfg->stat_basic_blocks;
-	mono_jit_stats.max_basic_blocks = MAX (cfg->stat_basic_blocks, mono_jit_stats.max_basic_blocks);
-	mono_jit_stats.cil_code_size += cfg->stat_cil_code_size;
-	mono_jit_stats.regvars += cfg->stat_n_regvars;
-	mono_jit_stats.inlineable_methods += cfg->stat_inlineable_methods;
-	mono_jit_stats.inlined_methods += cfg->stat_inlined_methods;
-	mono_jit_stats.code_reallocs += cfg->stat_code_reallocs;
+	mono_update_jit_stats (cfg);
 
 	mono_destroy_compile (cfg);
 
