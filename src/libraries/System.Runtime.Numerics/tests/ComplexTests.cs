@@ -13,29 +13,12 @@ namespace System.Numerics.Tests
     public partial class ComplexTests
     {
         private static Random s_random = new Random(-55);
-
-        public static readonly double[] s_validDoubleValues = new double[]
-        {
-            double.MinValue,
-            -1,
-            0,
-            double.Epsilon,
-            1,
-            double.MaxValue,
-        };
-
+        
         public static readonly double[] s_invalidDoubleValues = new double[]
         {
             double.NegativeInfinity,
             double.PositiveInfinity,
             double.NaN
-        };
-
-        public static double[] s_phaseTypicalValues = new double[]
-        {
-            -Math.PI/2,
-            0,
-            Math.PI/2
         };
 
         public static string[] s_supportedStandardNumericFormats = new string[] { "C", "E", "F", "G", "N", "P", "R" };
@@ -63,26 +46,93 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(Complex.ImaginaryOne, 1, Math.PI / 2);
         }
 
-        public static IEnumerable<object[]> Ctor_Double_Double_TestData()
+        public static IEnumerable<object[]> Primitives_2_TestData()
         {
-            foreach (double real in s_validDoubleValues)
-            {
-                foreach (double imaginary in s_validDoubleValues)
-                {
-                    yield return new object[] { real, imaginary };
-                }
-            }
+            yield return new object[] { 0, 0 };
+            yield return new object[] { 1, 0 };
+            yield return new object[] { -1, 0 };
+            yield return new object[] { 0, 1 };
+            yield return new object[] { 0, -1 };
+        }
 
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() };
+        public static IEnumerable<object[]> Random_2_TestData()
+        {
+            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() }; // First quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() }; // Second quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() }; // Third quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() }; // Fourth quadrant
+        }
 
-            // Invalid values
+        public static IEnumerable<object[]> Random_4_TestData()
+        {
+            // First quadrant, first quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
+            // First quadrant, second quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
+            // First quadrant, third quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
+            // First quadrant, fourth quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
+            // Second quadrant, second quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
+            // Second quadrant, third quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
+            // Second quadrant, fouth quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
+            // Third quadrant, third quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
+            // Third quadrant, fourth quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
+            // Fourth quadrant, fourth quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
+        }
+
+        public static IEnumerable<object[]> SmallRandom_2_TestData()
+        {
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // First quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() }; // Second quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() }; // Third quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() }; // Fourth quadrant
+        }
+
+        public static IEnumerable<object[]> SmallRandom_4_TestData()
+        {
+            // First quadrant, first quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
+            // First quadrant, second quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
+            // First quadrant, third quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
+            // First quadrant, fourth quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
+            // Second quadrant, second quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
+            // Second quadrant, third quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
+            // Second quadrant, fouth quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
+            // Third quadrant, third quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
+            // Third quadrant, fourth quadrant
+            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
+            // Fourth quadrant, fourth quadrant
+            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
+        }
+
+        public static IEnumerable<object[]> Boundaries_2_TestData()
+        {
+            yield return new object[] { double.MaxValue, 0 };
+            yield return new object[] { double.MinValue, 0 };
+
+            yield return new object[] { 0, double.MaxValue };
+            yield return new object[] { 0, double.MinValue };
+
+            yield return new object[] { double.MaxValue, double.MaxValue };
+            yield return new object[] { double.MinValue, double.MinValue };
+        }
+
+        public static IEnumerable<object[]> Invalid_2_TestData()
+        {
             foreach (double invalidReal in s_invalidDoubleValues)
             {
                 yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
@@ -96,58 +146,50 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Ctor_Double_Double_TestData")]
+        public static IEnumerable<object[]> Invalid_4_TestData()
+        {
+            foreach (double invalidReal in s_invalidDoubleValues)
+            {
+                yield return new object[] { invalidReal, SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // Invalid real
+                yield return new object[] { invalidReal, SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() }; // Invalid real
+                foreach (double invalidImaginary in s_invalidDoubleValues)
+                {
+                    yield return new object[] { SmallRandomPositiveDouble(), invalidImaginary, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // Invalid imaginary
+                    yield return new object[] { SmallRandomPositiveDouble(), invalidImaginary, SmallRandomPositiveDouble(), SmallRandomNegativeDouble() }; // Invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // Invalid real, invalid imaginary
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Random_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void Ctor_Double_Double(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
             VerifyRealImaginaryProperties(complex, real, imaginary);
         }
-
-        public static IEnumerable<object[]> Abs_TestData()
+        
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Random_2_TestData")]
+        [MemberData("Boundaries_2_TestData")]
+        public static void Abs(double real, double imaginary)
         {
-            yield return new object[] { 0, 0, 0 };
-            yield return new object[] { 1, 0, 1 };
-            yield return new object[] { 0, 1, 1 };
+            double expected = Math.Sqrt(real * real + imaginary * imaginary);
+            Abs_Advanced(real, imaginary, expected);
+        }
 
-            // First quadrant
-            double randomReal = RandomPositiveDouble();
-            double randomImaginary = RandomPositiveDouble();
-            yield return new object[] { randomReal, randomImaginary, Math.Sqrt(randomReal * randomReal + randomImaginary * randomImaginary) };
-
-            // Second quadrant
-            randomReal = RandomNegativeDouble();
-            randomImaginary = RandomPositiveDouble();
-            yield return new object[] { randomReal, randomImaginary, Math.Sqrt(randomReal * randomReal + randomImaginary * randomImaginary) };
-
-            // Third quadrant
-            randomReal = RandomNegativeDouble();
-            randomImaginary = RandomNegativeDouble();
-            yield return new object[] { randomReal, randomImaginary, Math.Sqrt(randomReal * randomReal + randomImaginary * randomImaginary) };
-
-            // Fourth quadrant
-            randomReal = RandomPositiveDouble();
-            randomImaginary = RandomNegativeDouble();
-            yield return new object[] { randomReal, randomImaginary, Math.Sqrt(randomReal * randomReal + randomImaginary * randomImaginary) };
-
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0, double.MaxValue };
-            yield return new object[] { double.MinValue, 0, double.MaxValue };
-
-            yield return new object[] { 0, double.MaxValue, double.MaxValue };
-            yield return new object[] { 0, double.MinValue, double.MaxValue };
-
-            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity };
-            yield return new object[] { double.MinValue, double.MinValue, double.PositiveInfinity };
-
+        public static IEnumerable<object[]> Abs_Advanced_TestData()
+        {
             // Invalid values
-            randomReal = RandomPositiveDouble();
-            randomImaginary = RandomPositiveDouble();
             foreach (double invalidReal in s_invalidDoubleValues)
             {
-                yield return new object[] { invalidReal, randomReal, Math.Abs(invalidReal) }; // Invalid real
+                yield return new object[] { invalidReal, RandomPositiveDouble(), Math.Abs(invalidReal) }; // Invalid real
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
-                    yield return new object[] { randomImaginary, invalidImaginary, Math.Abs(invalidImaginary) }; // Invalid imaginary
+                    yield return new object[] { RandomPositiveDouble(), invalidImaginary, Math.Abs(invalidImaginary) }; // Invalid imaginary
                     yield return new object[] { invalidReal, invalidImaginary, (double.IsInfinity(invalidReal) || double.IsInfinity(invalidImaginary)) ? double.PositiveInfinity : double.NaN }; // Invalid real, invalid imaginary
                 }
             }
@@ -155,37 +197,23 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NaN, 0, double.NaN };  // Regression test: Complex.Abs() is inconsistent on NaN / Complex
         }
 
-        [Theory, MemberData("Abs_TestData")]
-        public static void Abs(double real, double imaginary, double expected)
+        [Theory]
+        [MemberData("Abs_Advanced_TestData")]
+        public static void Abs_Advanced(double real, double imaginary, double expected)
         {
             var complex = new Complex(real, imaginary);
             double abs = Complex.Abs(complex);
 
             Assert.True((abs.Equals(expected) || IsDiffTolerable(abs, expected)),
-                string.Format("Abs ({0}, {1}) Actual: {2}, Expected: {3}", real, imaginary, abs, expected));
+                string.Format("Abs({0}, {1}) Actual: {2}, Expected: {3}", real, imaginary, abs, expected));
 
             double absNegative = Complex.Abs(-complex);
             Assert.True(absNegative.Equals(abs),
-                string.Format("Abs ({0}, {1}) = {2} != Abs(-neg)={3}", real, imaginary, abs, absNegative));
+                string.Format("Abs({0}, {1}) = {2} != Abs(-neg)={3}", real, imaginary, abs, absNegative));
         }
 
         public static IEnumerable<object[]> ACos_Basic_TestData()
         {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { 0, double.MaxValue };
             yield return new object[] { 0, double.MinValue };
@@ -193,7 +221,10 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [Theory, MemberData("ACos_Basic_TestData")]
+        [Theory]
+        [MemberData("ACos_Basic_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void ACos_Basic(double real, double imaginary)
         {
             // Formula used in the feature: arccos(z) = -iln(z + iSqrt(value*value-1))
@@ -244,54 +275,18 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 0, RandomPositiveDouble(), RandomPositiveDouble() }; // 0 + x = x
             yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), 0, 0 }; // x + 0 = x
 
-            // First quadrant, first quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            // First quadrant, second quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-            // First quadrant, third quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // First quadrant, fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Second quadrant, second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-            // Second quadrant, third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Third quadrant, third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Third quadrant, fourth quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant, fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { double.MaxValue, double.MaxValue, RandomPositiveDouble(), RandomPositiveDouble() };
             yield return new object[] { double.MaxValue, double.MaxValue, RandomNegativeDouble(), RandomNegativeDouble() };
 
             yield return new object[] { double.MinValue, double.MinValue, RandomPositiveDouble(), RandomPositiveDouble() };
             yield return new object[] { double.MinValue, double.MinValue, RandomNegativeDouble(), RandomNegativeDouble() };
-
-            // Invalid real
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NaN, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-
-            // Invalid imaginary
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NaN, RandomPositiveDouble(), RandomPositiveDouble() };
         }
 
-        [Theory, MemberData("Add_TestData")]
+        [Theory]
+        [MemberData("Add_TestData")]
+        [MemberData("Random_4_TestData")]
+        [MemberData("Invalid_4_TestData")]
         public static void Add(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -310,25 +305,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> ASin_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("ASin_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void ASin_Basic(double real, double imaginary)
         {
             // Formula used in the feature: arcsin(z) = -iln(iz + Sqrt(1-z*z))
@@ -372,25 +351,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> ATan_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 }; // Undefined - NaN should be propagated
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 }; // Undefined - NaN should be propagated
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("ATan_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void ATan_Basic(double real, double imaginary)
         {
             // Formula used in the feature: Atan(z) = (i/2) * (log(1-iz) - log(1+iz))
@@ -430,58 +393,13 @@ namespace System.Numerics.Tests
             Complex result = Complex.Atan(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
-
-        public static IEnumerable<object[]> Conjugate_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MinValue, 0 };
-
-            yield return new object[] { 0, double.MaxValue };
-            yield return new object[] { 0, double.MinValue };
-
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
-
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
-                yield return new object[] { invalidReal, RandomNegativeDouble() }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { RandomPositiveDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { RandomNegativeDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary };
-                }
-            }
-        }
-
-        [Theory, MemberData("Conjugate_TestData")]
+        
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Boundaries_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
+        [MemberData("Random_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void Conjugate(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -491,25 +409,9 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(result, complex.Magnitude, -complex.Phase);
         }
 
-        public static IEnumerable<object[]> Cos_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("Cos_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Cos_Basic(double real, double imaginary)
         {
             // The product formula: cos (x+iy) = cos(x)*cosh(y) - isin(x)sinh(y)
@@ -530,7 +432,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, double.PositiveInfinity, double.NaN };
             yield return new object[] { 0, double.MinValue, double.PositiveInfinity, double.NaN };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.NegativeInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, double.NegativeInfinity };
             yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.NegativeInfinity };
 
             // Invalid values
@@ -564,25 +466,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Cosh_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("Cosh_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Cosh_Basic(double real, double imaginary)
         {
             // The product formula: cosh (x+iy) = cosh(x)*cos(y) + isinh(x)*sin(y) 
@@ -602,7 +488,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, Math.Cos(double.MaxValue), 0 };
             yield return new object[] { 0, double.MinValue, Math.Cos(double.MinValue), 0 };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, double.PositiveInfinity };
             yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.PositiveInfinity };
 
             // Invalid values
@@ -645,51 +531,15 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 1, 10, 50 }; // i / x
             yield return new object[] { 10, 50, 0, 1 }; // x / i
 
-            // First quadrant, first quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // First quadrant, second quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // First quadrant, third quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // First quadrant, fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Second quadrant, second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant, third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Third quadrant, third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Third quadrant, fourth quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant, fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { double.MaxValue, double.MaxValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
             yield return new object[] { double.MinValue, double.MinValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-
-            // Invalid real values
-            yield return new object[] { double.PositiveInfinity, SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            yield return new object[] { double.PositiveInfinity, SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-
-            yield return new object[] { double.NegativeInfinity, SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            yield return new object[] { double.NegativeInfinity, SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-
-            yield return new object[] { double.NaN, SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-
-            // Invalid imaginary values
-            yield return new object[] { SmallRandomPositiveDouble(), double.PositiveInfinity, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            yield return new object[] { SmallRandomPositiveDouble(), double.PositiveInfinity, SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
-            yield return new object[] { SmallRandomPositiveDouble(), double.NegativeInfinity, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            yield return new object[] { SmallRandomPositiveDouble(), double.NegativeInfinity, SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
-            yield return new object[] { SmallRandomPositiveDouble(), double.NaN, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
         }
 
-        [Theory, MemberData("Divide_TestData")]
+        [Theory]
+        [MemberData("Divide_TestData")]
+        [MemberData("SmallRandom_4_TestData")]
+        [MemberData("Invalid_4_TestData")]
         public static void Divide(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var dividend = new Complex(realLeft, imaginaryLeft);
@@ -818,7 +668,7 @@ namespace System.Numerics.Tests
                 }
             }
         }
-        
+
         private static void Equals(Complex complex1, object obj, bool expected, bool expectedEquals)
         {
             if (obj is Complex)
@@ -829,11 +679,11 @@ namespace System.Numerics.Tests
 
                 Assert.False(expected == (complex1 != complex2), string.Format("c1:{0} != c2{1} is not '{2}' as expected", complex1, complex2, !expected));
                 Assert.False(expected == (complex2 != complex1), string.Format("c2:{0} != c1{1} is not '{2}' as expected", complex2, complex1, !expected));
-                
+
                 Assert.True(expectedEquals == complex1.Equals(complex2), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, complex2, expectedEquals));
                 Assert.True(expectedEquals == complex2.Equals(complex1), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex2, complex1, expectedEquals));
 
-                Assert.True(expectedEquals == complex1.GetHashCode().Equals(complex2.GetHashCode()), 
+                Assert.True(expectedEquals == complex1.GetHashCode().Equals(complex2.GetHashCode()),
                     string.Format("{0}.GetHashCode().Equals({1}.GetHashCode()) is not '{2}' as expected", complex1, complex2, expectedEquals));
             }
             Assert.True(expected == complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
@@ -841,21 +691,6 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Exp_TestData()
         {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { double.MinValue, 0 };
 
@@ -866,14 +701,17 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [Theory, MemberData("Exp_TestData")]
+        [Theory]
+        [MemberData("Exp_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Exp(double real, double imaginary)
         {
             Complex expected;
             // Special case the complex {double.MaxValue, double.MaxValue)
             if (real == double.MaxValue && imaginary == double.MaxValue)
             {
-                expected = new Complex(Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity);
+                expected = new Complex(double.PositiveInfinity, double.PositiveInfinity);
             }
             else
             {
@@ -912,38 +750,23 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> FromPolarCoordinates_TestData()
         {
-            foreach (double magnitude in s_validDoubleValues)
-            {
-                foreach (double phase in s_phaseTypicalValues)
-                {
-                    yield return new object[] { magnitude, phase };
-                }
-            }
+            yield return new object[] { RandomPositiveDouble(), -Math.PI / 2 };
+            yield return new object[] { RandomPositiveDouble(), 0 };
+            yield return new object[] { RandomPositiveDouble(), Math.PI / 2 };
 
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositivePhase() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositivePhase() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativePhase() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativePhase() };
-
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
-                yield return new object[] { invalidReal, RandomNegativeDouble() }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { RandomPositiveDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { RandomNegativeDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary }; // Invalid real, invalid imaginary
-                }
-            }
+            yield return new object[] { RandomNegativeDouble(), -Math.PI / 2 };
+            yield return new object[] { RandomNegativeDouble(), 0 };
+            yield return new object[] { RandomNegativeDouble(), Math.PI / 2 };
+            
+            yield return new object[] { RandomPositiveDouble(), RandomPositivePhase() }; // First quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomPositivePhase() }; // Second quadrant
+            yield return new object[] { RandomNegativeDouble(), RandomNegativePhase() }; // Third quadrant
+            yield return new object[] { RandomPositiveDouble(), RandomNegativePhase() }; // Fourth quadrant
         }
 
-        [Theory, MemberData("FromPolarCoordinates_TestData")]
+        [Theory]
+        [MemberData("FromPolarCoordinates_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void FromPolarCoordinates(double magnitude, double phase)
         {
             Complex complex = Complex.FromPolarCoordinates(magnitude, phase);
@@ -968,49 +791,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void Log()
+        public static IEnumerable<object[]> Log_TestData()
         {
-            // This is not InlineData, to workaround a niche bug, that mainly occurs on non Windows platforms.
-            // This bug moves test values around to different intermediate memory locations, causing true assertions to be false.
-            // Moving these methods into a method, not an iterator fixes this.
-            Log(Complex.One, Complex.Zero, true);
-            Log(Complex.One, Complex.ImaginaryOne, true);
-
-            var positivePositiveComplex = new Complex(SmallRandomPositiveDouble(), SmallRandomPositiveDouble());
-            var positiveNegativeComplex = new Complex(SmallRandomPositiveDouble(), SmallRandomNegativeDouble());
-            var negativePositiveComplex = new Complex(SmallRandomNegativeDouble(), SmallRandomPositiveDouble());
-            var negativeNegativeComplex = new Complex(SmallRandomNegativeDouble(), SmallRandomNegativeDouble());
-
-            // First quadrant, first quadrant
-            Log(positivePositiveComplex, positivePositiveComplex, true);
-            // First quadrant, second quadrant
-            Log(positivePositiveComplex, negativePositiveComplex, true);
-            // First quadrant, third quadrant
-            Log(positivePositiveComplex, negativeNegativeComplex, true);
-            // First quadrant, fourth quadrant
-            Log(positivePositiveComplex, positiveNegativeComplex, true);
-            // Second quadrant, second quadrant
-            Log(negativePositiveComplex, negativePositiveComplex, true);
-            // Second quadrant, third quadrant
-            Log(negativePositiveComplex, negativeNegativeComplex, true);
-            // Second quadrant, fourth quadrant
-            Log(negativePositiveComplex, positiveNegativeComplex, true);
-            // Third quadrant, third quadrant
-            Log(negativeNegativeComplex, negativeNegativeComplex, true);
-            // Third quadrant, fourth quadrant
-            Log(negativeNegativeComplex, positiveNegativeComplex, true);
-            // Fourth quadrant, fouth quadrant
-            Log(positiveNegativeComplex, positiveNegativeComplex, true);
+            yield return new object[] { 1, 0, 0, 0 };
+            yield return new object[] { 1, 0, 0, 1 };
 
             // Boundary values
-            Log(new Complex(double.MaxValue, 0), Complex.One, false);
-            Log(new Complex(double.MinValue, 0), Complex.One, false);
-            Log(new Complex(0, double.MaxValue), Complex.ImaginaryOne, false);
-            Log(new Complex(0, double.MinValue), Complex.ImaginaryOne, false);
+            yield return new object[] { double.MaxValue, 0, 1, 0 };
+            yield return new object[] { double.MinValue, 0, 1, 0 };
+            yield return new object[] { 0, double.MaxValue, 0, 1 };
+            yield return new object[] { 0, double.MinValue, 0, 1 };
         }
-        
-        private static void Log(Complex complex1, Complex complex2, bool extended)
+
+        [Theory]
+        [MemberData("Log_TestData")]
+        [MemberData("SmallRandom_4_TestData")]
+        public static void Log(double real1, double imaginary1, double real2, double imaginary2)
         {
+            var complex1 = new Complex(real1, imaginary1);
+            var complex2 = new Complex(real2, imaginary2);
             if (complex1 == Complex.Zero)
             {
                 return;
@@ -1018,7 +817,7 @@ namespace System.Numerics.Tests
 
             VerifyLog10(complex1);
             VerifyLogWithBase(complex1);
-            if (extended)
+            if (real1 != double.MaxValue && real1 != double.MinValue && imaginary1 != double.MaxValue && imaginary1 != double.MinValue)
             {
                 VerifyLogWithMultiply(complex1, complex2);
                 VerifyLogWithPowerMinusOne(complex1);
@@ -1120,51 +919,15 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 1, RandomPositiveDouble(), RandomPositivePhase() }; // i * x
             yield return new object[] { RandomPositiveDouble(), RandomPositivePhase(), 0, 1 }; // x * i
 
-            // First quadrant, first quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // First quadrant, second quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // First quadrant, third quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // First quadrant, fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Second quadrant, second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant, third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Third quadrant, third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-            // Third quadrant, fourth quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant, fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble(), SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { double.MaxValue, double.MaxValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
             yield return new object[] { double.MinValue, double.MinValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-
-            // Invalid real
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NaN, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-
-            // Invalid imaginary
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NaN, RandomPositiveDouble(), RandomPositiveDouble() };
         }
 
-        [Theory, MemberData("Multiply_TestData")]
+        [Theory]
+        [MemberData("Multiply_TestData")]
+        [MemberData("SmallRandom_4_TestData")]
+        [MemberData("Invalid_4_TestData")]
         public static void Multiply(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -1181,41 +944,11 @@ namespace System.Numerics.Tests
             result = Complex.Multiply(left, right);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
-
-        public static IEnumerable<object[]> Negate_TestData()
-        {
-            foreach (double real in s_validDoubleValues)
-            {
-                foreach (double imaginary in s_validDoubleValues)
-                {
-                    yield return new object[] { real, imaginary };
-                }
-            }
-
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() };
-
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
-                yield return new object[] { invalidReal, RandomNegativeDouble() }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { RandomPositiveDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { RandomNegativeDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary }; // Invalid real, invalid imaginary
-                }
-            }
-        }
-
-        [Theory, MemberData("Negate_TestData")]
+        
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Random_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void Negate(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1226,30 +959,11 @@ namespace System.Numerics.Tests
             result = Complex.Negate(complex);
             VerifyRealImaginaryProperties(result, -complex.Real, -complex.Imaginary);
         }
-
-        public static IEnumerable<object[]> Pow_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() };
-
-            // Boundary values
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
-        }
-
-        [Theory, MemberData("Pow_TestData")]
+        
+        [Theory]
+        [MemberData("Boundaries_2_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         private static void Pow(double real, double imaginary)
         {
             Pow_Complex_Double(real, imaginary);
@@ -1298,15 +1012,11 @@ namespace System.Numerics.Tests
             VerifyPow_Complex_Complex(real, imaginary, 1, 0);
             VerifyPow_Complex_Complex(real, imaginary, 0, 1);
             VerifyPow_Complex_Complex(real, imaginary, 0, -1);
-
-            // First quadrant
-            VerifyPow_Complex_Complex(real, imaginary, SmallRandomPositiveDouble(), SmallRandomPositiveDouble());
-            // Second quadrant
-            VerifyPow_Complex_Complex(real, imaginary, SmallRandomNegativeDouble(), SmallRandomPositiveDouble());
-            // Third quadrant
-            VerifyPow_Complex_Complex(real, imaginary, SmallRandomNegativeDouble(), SmallRandomNegativeDouble());
-            // Fourth quadrant
-            VerifyPow_Complex_Complex(real, imaginary, SmallRandomPositiveDouble(), SmallRandomNegativeDouble());
+            
+            VerifyPow_Complex_Complex(real, imaginary, SmallRandomPositiveDouble(), SmallRandomPositiveDouble()); // First quadrant
+            VerifyPow_Complex_Complex(real, imaginary, SmallRandomNegativeDouble(), SmallRandomPositiveDouble()); // Second quadrant
+            VerifyPow_Complex_Complex(real, imaginary, SmallRandomNegativeDouble(), SmallRandomNegativeDouble()); // Third quadrant
+            VerifyPow_Complex_Complex(real, imaginary, SmallRandomPositiveDouble(), SmallRandomNegativeDouble()); // Fourth quadrant
         }
 
         private static void VerifyPow_Complex_Complex(double realValue, double imaginaryValue, double realPower, double imaginaryPower)
@@ -1330,47 +1040,12 @@ namespace System.Numerics.Tests
             }
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
-
-        public static IEnumerable<object[]> Reciprocal_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MinValue, 0 };
-
-            yield return new object[] { 0, double.MaxValue };
-            yield return new object[] { 0, double.MinValue };
-
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
-
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { RandomPositiveDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary };
-                }
-            }
-        }
-
-        [Theory, MemberData("Reciprocal_TestData")]
+        
+        [Theory]
+        [MemberData("Boundaries_2_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void Reciprocal(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1389,25 +1064,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expected.Real, expected.Imaginary);
         }
 
-        public static IEnumerable<object[]> Sin_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("Sin_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Sin_Basic(double real, double imaginary)
         {
             // The product formula: sin (x+iy) = sin(x)*cosh(y) + icos(x)sinh(y)
@@ -1427,7 +1086,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, double.NaN, double.PositiveInfinity };
             yield return new object[] { 0, double.MinValue, double.NaN, double.NegativeInfinity };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, double.PositiveInfinity };
             yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.PositiveInfinity };
 
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1456,21 +1115,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Sinh_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // Positive, positive
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() }; // Positive, negative
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() }; // Negative, positive
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() }; // Negative, Negative
-        }
-
-        [Theory, MemberData("Sinh_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Sinh_Basic(double real, double imaginary)
         {
             // The product formula: sinh (x+iy) = sinh(x)*cos(y) + icosh(x)*sin(y)
@@ -1490,7 +1137,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, 0, Math.Sin(double.MaxValue) };
             yield return new object[] { 0, double.MinValue, 0, Math.Sin(double.MinValue) };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, double.PositiveInfinity };
             yield return new object[] { double.MinValue, double.MinValue, double.PositiveInfinity, double.NegativeInfinity };
 
             // Invalid values
@@ -1525,27 +1172,6 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), 0, 0 }; // x - 0 = x
             yield return new object[] { 0, 0, RandomPositiveDouble(), RandomPositiveDouble() }; // 0 - x = -x
 
-            // First quadrant, first quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            // First quadrant, second quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-            // First quadrant, third quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // First quadrant, fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Second quadrant, second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-            // Second quadrant, third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // Second quadrant, fouth quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Third quadrant, third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-            // Third quadrant, fourth quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant, fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble(), RandomNegativeDouble() };
-
             // Boundary values
             yield return new object[] { double.MaxValue, double.MaxValue, RandomPositiveDouble(), RandomPositiveDouble() };
             yield return new object[] { double.MinValue, double.MinValue, RandomPositiveDouble(), RandomPositiveDouble() };
@@ -1556,27 +1182,12 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble(), double.MinValue, double.MinValue };
             yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), double.MaxValue, double.MaxValue };
             yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble(), double.MinValue, double.MinValue };
-
-            // Invalid real
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble(), RandomPositiveDouble() };
-
-            yield return new object[] { double.NaN, RandomPositiveDouble(), RandomPositiveDouble(), RandomPositiveDouble() };
-
-            // Invalid imaginary
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomPositiveDouble() };
-            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, RandomPositiveDouble(), RandomNegativeDouble() };
-
-            yield return new object[] { RandomPositiveDouble(), double.NaN, RandomPositiveDouble(), RandomPositiveDouble() };
         }
 
-        [Theory, MemberData("Subtract_TestData")]
+        [Theory]
+        [MemberData("Subtract_TestData")]
+        [MemberData("Random_4_TestData")]
+        [MemberData("Invalid_4_TestData")]
         public static void Subtract(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
@@ -1615,25 +1226,9 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tan_Basic_TestData()
-        {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("Tan_Basic_TestData")]
+        [Theory]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Tan_Basic(double real, double imaginary)
         {
             double scale = Math.Cosh(2 * imaginary);
@@ -1683,24 +1278,16 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tanh_Basic_TestData()
         {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 1, 0 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 0, 1 };
-            yield return new object[] { 0, -1 };
-
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() }; // Positive, positive
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() }; // Positive, negative
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() }; // Negative, positive
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() }; // Negative, Negative
-
             // Boundary values
             yield return new object[] { double.MaxValue, 0 };
             yield return new object[] { double.MaxValue, double.MaxValue };
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [Theory, MemberData("Tanh_Basic_TestData")]
+        [Theory]
+        [MemberData("Tanh_Basic_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
         public static void Tanh_Basic(double real, double imaginary)
         {
             // The product formula: cosh (x+iy) = sinh (x+iy) / cosh (x+iy)
@@ -1739,55 +1326,12 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> ToString_TestData()
-        {
-            yield return new object[] { Complex.Zero.Real, Complex.Zero.Imaginary };
-            yield return new object[] { Complex.One.Real, Complex.One.Imaginary };
-            yield return new object[] { Complex.ImaginaryOne.Real, Complex.ImaginaryOne.Imaginary };
-            yield return new object[] { (-Complex.One).Real, (-Complex.One).Imaginary };
-            yield return new object[] { (-Complex.ImaginaryOne).Real, (-Complex.ImaginaryOne).Imaginary };
-
-            // First quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { RandomNegativeDouble(), RandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { RandomPositiveDouble(), RandomNegativeDouble() };
-
-            // First quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-            // Second quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomPositiveDouble() };
-            // Third quadrant
-            yield return new object[] { SmallRandomNegativeDouble(), SmallRandomNegativeDouble() };
-            // Fourth quadrant
-            yield return new object[] { SmallRandomPositiveDouble(), SmallRandomNegativeDouble() };
-
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MinValue, 0 };
-
-            yield return new object[] { 0, double.MaxValue };
-            yield return new object[] { 0, double.MinValue };
-
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
-
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, RandomPositiveDouble() }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { RandomNegativeDouble(), invalidImaginary }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary }; // Invalid real, invalid imaginary
-                }
-            }
-        }
-
-        [Theory, MemberData("ToString_TestData")]
+        [Theory]
+        [MemberData("Boundaries_2_TestData")]
+        [MemberData("Primitives_2_TestData")]
+        [MemberData("Random_2_TestData")]
+        [MemberData("SmallRandom_2_TestData")]
+        [MemberData("Invalid_2_TestData")]
         public static void ToString(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1820,288 +1364,118 @@ namespace System.Numerics.Tests
             yield return new object[] { 0 };
             yield return new object[] { 1 };
             yield return new object[] { sbyte.MaxValue };
-
-            yield return new object[] { (sbyte)s_random.Next(sbyte.MinValue, 0) };
-            yield return new object[] { (sbyte)s_random.Next(1, sbyte.MaxValue) };
         }
 
-        [Theory, MemberData("Cast_SByte_TestData")]
+        [Theory]
+        [InlineData(sbyte.MinValue)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(sbyte.MaxValue)]
         public static void Cast_SByte(sbyte value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != sbyte.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != sbyte.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_Int16_TestData()
-        {
-            yield return new object[] { short.MinValue };
-            yield return new object[] { -1 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { short.MaxValue };
-
-            yield return new object[] { (short)s_random.Next(1, short.MaxValue) };
-            yield return new object[] { (short)s_random.Next(short.MinValue, 0) };
-        }
-
-        [Theory, MemberData("Cast_Int16_TestData")]
+        
+        [Theory]
+        [InlineData(short.MinValue)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(short.MaxValue)]
         public static void Cast_Int16(short value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != short.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != short.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_Int32_TestData()
-        {
-            yield return new object[] { int.MinValue };
-            yield return new object[] { -1 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { int.MaxValue };
-
-            int positveInt = (int)RandomPositiveValue(int.MaxValue);
-            yield return new object[] { positveInt };
-            yield return new object[] { -positveInt };
-        }
-
-        [Theory, MemberData("Cast_Int32_TestData")]
+        
+        [Theory]
+        [InlineData(int.MinValue)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(int.MaxValue)]
         public static void Cast_Int32(int value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != int.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != int.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
 
-        public static IEnumerable<object[]> Cast_Int64_TestData()
-        {
-            yield return new object[] { long.MinValue };
-            yield return new object[] { -1 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { long.MaxValue };
-
-            long positiveLong = (long)RandomPositiveValue(long.MaxValue);
-            yield return new object[] { positiveLong };
-            yield return new object[] { -positiveLong };
-        }
-
-        [Theory, MemberData("Cast_Int64_TestData")]
+        [Theory]
+        [InlineData(long.MinValue)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(long.MaxValue)]
         public static void Cast_Int64(long value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != long.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != long.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_Byte_TestData()
-        {
-            yield return new object[] { byte.MinValue };
-            yield return new object[] { 1 };
-            yield return new object[] { byte.MaxValue };
-
-            yield return new object[] { (byte)s_random.Next(1, byte.MaxValue) };
-        }
-
-        [Theory, MemberData("Cast_Byte_TestData")]
+        
+        [Theory]
+        [InlineData(byte.MinValue)]
+        [InlineData(1)]
+        [InlineData(byte.MaxValue)]
         public static void Cast_Byte(byte value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != byte.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != byte.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
 
-        public static IEnumerable<object[]> Cast_UInt16_TestData()
-        {
-            yield return new object[] { ushort.MinValue };
-            yield return new object[] { 1 };
-            yield return new object[] { ushort.MaxValue };
-
-            yield return new object[] { (ushort)s_random.Next(1, ushort.MaxValue) };
-        }
-
-        [Theory, MemberData("Cast_UInt16_TestData")]
+        [Theory]
+        [InlineData(ushort.MinValue)]
+        [InlineData(1)]
+        [InlineData(ushort.MaxValue)]
         public static void Cast_UInt16(ushort value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != ushort.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != ushort.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_UInt32_TestData()
-        {
-            yield return new object[] { uint.MinValue };
-            yield return new object[] { 1 };
-            yield return new object[] { uint.MaxValue };
-
-            yield return new object[] { (uint)RandomPositiveValue(uint.MaxValue) };
-        }
-
-        [Theory, MemberData("Cast_UInt32_TestData")]
+        
+        [Theory]
+        [InlineData(uint.MinValue)]
+        [InlineData(1)]
+        [InlineData(uint.MaxValue)]
         public static void Cast_UInt32(uint value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != uint.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != uint.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_UInt64_TestData()
-        {
-            yield return new object[] { ulong.MinValue };
-            yield return new object[] { 1 };
-            yield return new object[] { ulong.MaxValue };
-
-            yield return new object[] { (ulong)RandomPositiveValue(ulong.MaxValue) };
-        }
-
-        [Theory, MemberData("Cast_UInt64_TestData")]
+        
+        [Theory]
+        [InlineData(ulong.MinValue)]
+        [InlineData(1)]
+        [InlineData(ulong.MaxValue)]
         public static void Cast_UInt64(ulong value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != ulong.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != ulong.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
 
-        public static IEnumerable<object[]> Cast_Single_TestData()
-        {
-            yield return new object[] { float.MinValue };
-            yield return new object[] { -1 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { float.MaxValue };
-
-            float positiveFloat = (float)RandomPositiveValue(float.MaxValue);
-            yield return new object[] { positiveFloat };
-            yield return new object[] { -positiveFloat };
-        }
-
-        [Theory, MemberData("Cast_Single_TestData")]
+        [Theory]
+        [InlineData(float.MinValue)]
+        [InlineData(-1.234f)]
+        [InlineData(0)]
+        [InlineData(1.234f)]
+        [InlineData(float.MaxValue)]
         public static void Cast_Single(float value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != float.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != float.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
-
-        public static IEnumerable<object[]> Cast_Double_TestData()
-        {
-            yield return new object[] { double.MinValue };
-            yield return new object[] { -1 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { double.MaxValue };
-
-            yield return new object[] { RandomPositiveDouble() };
-            yield return new object[] { RandomNegativeDouble() };
-        }
-
-        [Theory, MemberData("Cast_Double_TestData")]
+        
+        [Theory]
+        [InlineData(double.MinValue)]
+        [InlineData(-1.234)]
+        [InlineData(0)]
+        [InlineData(1.234)]
+        [InlineData(double.MaxValue)]
         public static void Cast_Double(double value)
         {
             Complex complex = value;
             VerifyRealImaginaryProperties(complex, value, 0);
-
-            if (value != double.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, value + 1, 0);
-            }
-            if (value != double.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, value - 1, 0);
-            }
         }
 
         public static IEnumerable<object[]> Cast_BigInteger_TestData()
@@ -2121,17 +1495,6 @@ namespace System.Numerics.Tests
         {
             Complex complex = (Complex)value;
             VerifyRealImaginaryProperties(complex, (double)value, 0);
-
-            if (value != (BigInteger)double.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, (double)(value + 1), 0);
-            }
-            if (value != (BigInteger)double.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, (double)(value - 1), 0);
-            }
         }
 
         public static IEnumerable<object[]> Cast_Decimal_TestData()
@@ -2157,17 +1520,6 @@ namespace System.Numerics.Tests
         {
             Complex complex = (Complex)value;
             VerifyRealImaginaryProperties(complex, (double)value, 0);
-
-            if (value != decimal.MaxValue)
-            {
-                Complex addition = complex + 1;
-                VerifyRealImaginaryProperties(addition, (double)(value + 1), 0);
-            }
-            if (value != decimal.MinValue)
-            {
-                Complex minus = complex - 1;
-                VerifyRealImaginaryProperties(minus, (double)(value - 1), 0);
-            }
         }
         
         private static double SmallRandomPositiveDouble()
@@ -2206,33 +1558,7 @@ namespace System.Numerics.Tests
             randomDouble %= mult;
             return randomDouble;
         }
-
-        private static bool IsDiffTolerable(double d1, double d2)
-        {
-            if (double.IsInfinity(d1))
-            {
-                return AreSameInfinity(d1, d2 * 10);
-            }
-            else if (double.IsInfinity(d2))
-            {
-                return AreSameInfinity(d1 * 10, d2);
-            }
-            else
-            {
-                double diffRatio = (d1 - d2) / d1;
-                diffRatio *= Math.Pow(10, 6);
-                diffRatio = Math.Abs(diffRatio);
-                return (diffRatio < 1);
-            }
-        }
-
-        private static bool AreSameInfinity(double d1, double d2)
-        {
-            return
-                double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
-                double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
-        }
-
+        
         private static void VerifyRealImaginaryProperties(Complex complex, double real, double imaginary, [CallerLineNumber] int lineNumber = 0)
         {
             Assert.True(real.Equals(complex.Real) || IsDiffTolerable(complex.Real, real),
@@ -2267,5 +1593,28 @@ namespace System.Numerics.Tests
             Assert.True(phase.Equals(complex.Phase) || IsDiffTolerable(complex.Phase, phase),
                 string.Format("Failure at line {0}. Expected phase: {1}. Actual phase: {2}", lineNumber, phase, complex.Phase));
         }
+
+        private static bool IsDiffTolerable(double d1, double d2)
+        {
+            if (double.IsInfinity(d1))
+            {
+                return AreSameInfinity(d1, d2 * 10);
+            }
+            if (double.IsInfinity(d2))
+            {
+                return AreSameInfinity(d1 * 10, d2);
+            }
+            double diffRatio = (d1 - d2) / d1;
+            diffRatio *= Math.Pow(10, 6);
+            return Math.Abs(diffRatio) < 1;
+        }
+
+        private static bool AreSameInfinity(double d1, double d2)
+        {
+            return
+                double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
+                double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
+        }
     }
 }
+    
