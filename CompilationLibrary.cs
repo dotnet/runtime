@@ -25,10 +25,10 @@ namespace Microsoft.Extensions.DependencyModel
             new PackageCompilationAssemblyResolver()
         });
 
-        public IEnumerable<string> ResolveReferencePaths(CompilationLibrary compilationLibrary)
+        public IEnumerable<string> ResolveReferencePaths()
         {
             var assemblies = new List<string>();
-            if (!DefaultResolver.TryResolveAssemblyPaths(compilationLibrary, assemblies))
+            if (!DefaultResolver.TryResolveAssemblyPaths(this, assemblies))
             {
                 throw new InvalidOperationException($"Can not find compilation library location for package '{PackageName}'");
             }
