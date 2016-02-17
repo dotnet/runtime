@@ -8608,7 +8608,6 @@ emit_exception_info (MonoAotCompile *acfg)
 	if (seq_points_to_file) {
 		char *seq_points_aot_file = acfg->aot_opts.gen_seq_points_file_path ? acfg->aot_opts.gen_seq_points_file_path
 			: g_strdup_printf("%s%s", acfg->image->name, SEQ_POINT_AOT_EXT);
-		printf("%s\n", seq_points_aot_file);
 		mono_seq_point_data_write (&sp_data, seq_points_aot_file);
 		mono_seq_point_data_free (&sp_data);
 		g_free (seq_points_aot_file);
