@@ -206,6 +206,8 @@ Function:
 VOID TLSCleanup()
 {
     SPINLOCKDestroy(&free_threads_spinlock);
+
+    pthread_key_delete(thObjKey);
 }
 
 /*++
