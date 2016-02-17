@@ -2708,7 +2708,7 @@ $__RealName
 
         PROLOG_PUSH         {r0}
 
-        PROLOG_WITH_TRANSITION_BLOCK 0x4, {true}, DoNotPushArgRegs
+        PROLOG_WITH_TRANSITION_BLOCK 0x4, {false}, DoNotPushArgRegs
 
         ; Load the helper arguments
         ldr         r5, [sp,#(__PWTB_TransitionBlock+10*4)] ; pModule
