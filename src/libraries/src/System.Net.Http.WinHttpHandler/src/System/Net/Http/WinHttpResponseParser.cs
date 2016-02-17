@@ -49,15 +49,7 @@ namespace System.Net.Http
             int reasonPhraseLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_STATUS_TEXT, buffer);
             if (reasonPhraseLength > 0)
             {
-                string reasonPhrase;
-
-                // If it's a known reason phrase, use the known reason phrase instead of allocating a new string.
-                if (!TryGetKnownReasonPhrase(response.StatusCode, buffer, 0, reasonPhraseLength, out reasonPhrase))
-                {
-                    reasonPhrase = new string(buffer, 0, reasonPhraseLength);
-                }
-
-                response.ReasonPhrase = reasonPhrase; // It's OK if this is null.
+                response.ReasonPhrase = GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength);
             }
 
             // Create response stream and wrap it in a StreamContent object.
@@ -260,29 +252,18 @@ namespace System.Net.Http
             return result;
         }
 
-        private static bool TryGetKnownReasonPhrase(
-            HttpStatusCode statusCode,
-            char[] array,
-            int startIndex,
-            int length,
-            out string reasonPhrase)
+        private static string GetReasonPhrase(HttpStatusCode statusCode, char[] buffer, int bufferLength)
         {
-            CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
+            CharArrayHelpers.DebugAssertArrayInputs(buffer, 0, bufferLength);
+            Debug.Assert(bufferLength > 0);
 
-            reasonPhrase = HttpStatusDescription.Get(statusCode);
+            // If it's a known reason phrase, use the known reason phrase instead of allocating a new string.
 
-            if (reasonPhrase == null)
-            {
-                return false;
-            }
+            string knownReasonPhrase = HttpStatusDescription.Get(statusCode);
 
-            if (CharArrayHelpers.EqualsOrdinal(reasonPhrase, array, startIndex, length))
-            {
-                return true;
-            }
-
-            reasonPhrase = null;
-            return false;
+            return (knownReasonPhrase != null && CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, buffer, 0, bufferLength)) ?
+                knownReasonPhrase :
+                new string(buffer, 0, bufferLength);
         }
 
         private static void ParseResponseHeaders(
