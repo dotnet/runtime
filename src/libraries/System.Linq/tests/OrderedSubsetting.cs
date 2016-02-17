@@ -378,5 +378,75 @@ namespace System.Linq.Tests
             while (enumerator.MoveNext()) { }
             Assert.False(enumerator.MoveNext());
         }
+
+        [Fact]
+        public void Select()
+        {
+            Assert.Equal(new[] { 0, 2, 4, 6, 8 }, Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2));
+        }
+
+        [Fact]
+        public void SelectForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void SelectElementAt()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(6, source.ElementAt(2));
+            Assert.Equal(8, source.ElementAtOrDefault(3));
+            Assert.Equal(0, source.ElementAtOrDefault(8));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-2));
+        }
+
+        [Fact]
+        public void SelectFirst()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(2, source.First());
+            Assert.Equal(2, source.FirstOrDefault());
+            source = source.Skip(20);
+            Assert.Equal(0, source.FirstOrDefault());
+            Assert.Throws<InvalidOperationException>(() => source.First());
+        }
+
+        [Fact]
+        public void SelectLast()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(10, source.Last());
+            Assert.Equal(10, source.LastOrDefault());
+            source = source.Skip(20);
+            Assert.Equal(0, source.LastOrDefault());
+            Assert.Throws<InvalidOperationException>(() => source.Last());
+        }
+
+        [Fact]
+        public void SelectArray()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(new[] { 2, 4, 6, 8, 10 }, source.ToArray());
+        }
+
+        [Fact]
+        public void SelectList()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(new[] { 2, 4, 6, 8, 10 }, source.ToList());
+        }
+
+        [Fact]
+        public void SelectCount()
+        {
+            var source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
+            Assert.Equal(5, source.Count());
+            source = Enumerable.Range(0, 9).Shuffle().OrderBy(i => i).Skip(1).Take(1000).Select(i => i * 2);
+            Assert.Equal(8, source.Count());
+        }
     }
 }

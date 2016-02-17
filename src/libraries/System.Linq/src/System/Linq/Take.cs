@@ -12,7 +12,7 @@ namespace System.Linq
         public static IEnumerable<TSource> Take<TSource>(this IEnumerable<TSource> source, int count)
         {
             if (source == null) throw Error.ArgumentNull("source");
-            if (count <= 0) return new EmptyPartition<TSource>();
+            if (count <= 0) return EmptyPartition<TSource>.Instance;
             IPartition<TSource> partition = source as IPartition<TSource>;
             if (partition != null) return partition.Take(count);
             IList<TSource> sourceList = source as IList<TSource>;

@@ -263,5 +263,61 @@ namespace System.Linq.Tests
     
             Assert.Equal(expected, source.ToArray());
         }
+
+        [Fact]
+        public void ConstantTimeCountPartitionSelectSameTypeToArray()
+        {
+            var source = Enumerable.Range(0, 100).Select(i => i * 2).Skip(1).Take(5);
+            Assert.Equal(new[] { 2, 4, 6, 8, 10 }, source.ToArray());
+        }
+
+        [Fact]
+        public void ConstantTimeCountPartitionSelectDiffTypeToArray()
+        {
+            var source = Enumerable.Range(0, 100).Select(i => i.ToString()).Skip(1).Take(5);
+            Assert.Equal(new[] { "1", "2", "3", "4", "5" }, source.ToArray());
+        }
+
+        [Fact]
+        public void ConstantTimeCountEmptyPartitionSelectSameTypeToArray()
+        {
+            var source = Enumerable.Range(0, 100).Select(i => i * 2).Skip(1000);
+            Assert.Empty(source.ToArray());
+        }
+
+        [Fact]
+        public void ConstantTimeCountEmptyPartitionSelectDiffTypeToArray()
+        {
+            var source = Enumerable.Range(0, 100).Select(i => i.ToString()).Skip(1000);
+            Assert.Empty(source.ToArray());
+        }
+
+        [Fact]
+        public void NonConstantTimeCountPartitionSelectSameTypeToArray()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i * 2).Skip(1).Take(5);
+            Assert.Equal(new[] { 2, 4, 6, 8, 10 }, source.ToArray());
+        }
+
+        [Fact]
+        public void NonConstantTimeCountPartitionSelectDiffTypeToArray()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i.ToString()).Skip(1).Take(5);
+            Assert.Equal(new[] { "1", "2", "3", "4", "5" }, source.ToArray());
+        }
+
+        [Fact]
+        public void NonConstantTimeCountEmptyPartitionSelectSameTypeToArray()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i * 2).Skip(1000);
+            Assert.Empty(source.ToArray());
+        }
+
+        [Fact]
+        public void NonConstantTimeCountEmptyPartitionSelectDiffTypeToArray()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i.ToString()).Skip(1000);
+            Assert.Empty(source.ToArray());
+        }
     }
 }
