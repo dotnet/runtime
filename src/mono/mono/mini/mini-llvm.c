@@ -3440,6 +3440,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		break;
 	case LLVMArgVtypeRetAddr:
 	case LLVMArgVtypeByRef:
+		if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->ret))) {
+			/* Some opcodes like STOREX_MEMBASE access these by value */
+			g_assert (addresses [call->inst.dreg]);
+			values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
+		}
 		break;
 	case LLVMArgScalarRetAddr:
 		/* Normal scalar returned using a vtype return argument */
