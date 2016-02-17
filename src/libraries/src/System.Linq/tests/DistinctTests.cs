@@ -123,7 +123,7 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             string[] source = null;
-            
+
             Assert.Throws<ArgumentNullException>("source", () => source.Distinct());
         }
 
@@ -198,6 +198,41 @@ namespace System.Linq.Tests
             // Don't insist on this behaviour, but check its correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ToArray()
+        {
+            int?[] source = { 1, 1, 1, 2, 2, 2, null, null };
+            int?[] expected = { 1, 2, null };
+
+            Assert.Equal(expected, source.Distinct().ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            int?[] source = { 1, 1, 1, 2, 2, 2, null, null };
+            int?[] expected = { 1, 2, null };
+
+            Assert.Equal(expected, source.Distinct().ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            int?[] source = { 1, 1, 1, 2, 2, 2, null, null };
+            Assert.Equal(3, source.Distinct().Count());
+        }
+
+        [Fact]
+        public void RepeatEnumerating()
+        {
+            int?[] source = { 1, 1, 1, 2, 2, 2, null, null };
+
+            var result = source.Distinct();
+
+            Assert.Equal(result, result);
         }
     }
 }

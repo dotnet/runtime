@@ -94,6 +94,34 @@ namespace System.Linq
             _slots = newSlots;
         }
 
+        internal TElement[] ToArray()
+        {
+#if DEBUG
+            Debug.Assert(!_haveRemoved, "Optimised ToArray cannot be called if Remove has been called.");
+#endif
+            TElement[] array = new TElement[_count];
+            for (int i = 0; i != array.Length; ++i)
+                array[i] = _slots[i].value;
+            return array;
+        }
+
+        internal List<TElement> ToList()
+        {
+#if DEBUG
+            Debug.Assert(!_haveRemoved, "Optimised ToList cannot be called if Remove has been called.");
+#endif
+            int count = _count;
+            List<TElement> list = new List<TElement>(count);
+            for (int i = 0; i != count; ++i)
+                list.Add(_slots[i].value);
+            return list;
+        }
+
+        internal int Count
+        {
+            get { return _count; }
+        }
+
         internal int InternalGetHashCode(TElement value)
         {
             // Handle comparer implementations that throw when passed null
