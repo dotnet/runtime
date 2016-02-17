@@ -19,90 +19,30 @@ namespace System.Linq
         {
             if (first == null) throw Error.ArgumentNull("first");
             if (second == null) throw Error.ArgumentNull("second");
-            return new UnionIterator<TSource>(first, second, comparer);
+            UnionIterator<TSource> union = first as UnionIterator<TSource>;
+            return union != null && EquivalentEqualityComparers(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
-        private sealed class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private static bool EquivalentEqualityComparers<TSource>(IEqualityComparer<TSource> x, IEqualityComparer<TSource> y)
         {
-            private readonly IEnumerable<TSource> _first;
-            private readonly IEnumerable<TSource> _second;
-            private readonly IEqualityComparer<TSource> _comparer;
-            private Set<TSource> _set;
-            private IEnumerator<TSource> _enumerator;
+            if (ReferenceEquals(x, y)) return true;
+            if (x == null) return y.Equals(EqualityComparer<TSource>.Default);
+            if (y == null) return x.Equals(EqualityComparer<TSource>.Default);
+            return x.Equals(y);
+        }
 
-            public UnionIterator(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+        private abstract class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        {
+            internal readonly IEqualityComparer<TSource> _comparer;
+            private IEnumerator<TSource> _enumerator;
+            private Set<TSource> _set;
+
+            public UnionIterator(IEqualityComparer<TSource> comparer)
             {
-                Debug.Assert(first != null);
-                Debug.Assert(second != null);
-                _first = first;
-                _second = second;
                 _comparer = comparer;
             }
 
-            public override Iterator<TSource> Clone()
-            {
-                return new UnionIterator<TSource>(_first, _second, _comparer);
-            }
-
-            private bool GetNext()
-            {
-                while (_enumerator.MoveNext())
-                {
-                    TSource element = _enumerator.Current;
-                    if (_set.Add(element))
-                    {
-                        current = element;
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            public override bool MoveNext()
-            {
-                switch(state)
-                {
-                    case 1:
-                        _enumerator = _first.GetEnumerator();
-                        if (_enumerator.MoveNext())
-                        {
-                            state = 2;
-                        }
-                        else
-                        {
-                            _enumerator.Dispose();
-                            _enumerator = _second.GetEnumerator();
-                            if (!_enumerator.MoveNext())
-                            {
-                                Dispose();
-                                return false;
-                            }
-                            state = 3;
-                        }
-                        TSource element = _enumerator.Current;
-                        _set = new Set<TSource>(_comparer);
-                        _set.Add(element);
-                        current = element;
-                        return true;
-                    case 2:
-                        if (GetNext())
-                            return true;
-                        _enumerator.Dispose();
-                        _enumerator = _second.GetEnumerator();
-                        state = 3;
-                        goto case 3;
-                    case 3:
-                        if (GetNext())
-                            return true;
-                        break;
-                }
-
-                Dispose();
-                return false;
-            }
-
-            public override void Dispose()
+            public override sealed void Dispose()
             {
                 if (_enumerator != null)
                 {
@@ -114,14 +54,89 @@ namespace System.Linq
                 base.Dispose();
             }
 
+            internal abstract IEnumerable<TSource> GetEnumerable(int index);
+
+            internal abstract UnionIterator<TSource> Union(IEnumerable<TSource> next);
+
+            protected void SetEnumerator(IEnumerator<TSource> enumerator)
+            {
+                if (_enumerator != null)
+                    _enumerator.Dispose();
+
+                _enumerator = enumerator;
+            }
+
+            protected void StoreFirst()
+            {
+                Set<TSource> set = new Set<TSource>(_comparer);
+                TSource element = _enumerator.Current;
+                set.Add(element);
+                current = element;
+                _set = set;
+            }
+
+            protected bool GetNext()
+            {
+                Set<TSource> set = _set;
+                while (_enumerator.MoveNext())
+                {
+                    TSource element = _enumerator.Current;
+                    if (set.Add(element))
+                    {
+                        current = element;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public sealed override bool MoveNext()
+            {
+                if (state == 1)
+                {
+                    for (IEnumerable<TSource> enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(state - 1))
+                    {
+                        IEnumerator<TSource> enumerator = enumerable.GetEnumerator();
+                        ++state;
+                        if (enumerator.MoveNext())
+                        {
+                            SetEnumerator(enumerator);
+                            StoreFirst();
+                            return true;
+                        }
+                    }
+                }
+                else if (state > 0)
+                {
+                    for (;;)
+                    {
+                        if (GetNext())
+                            return true;
+                        IEnumerable<TSource> enumerable = GetEnumerable(state - 1);
+                        if (enumerable == null)
+                            break;
+                        SetEnumerator(enumerable.GetEnumerator());
+                        ++state;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
             private Set<TSource> FillSet()
             {
                 Set<TSource> set = new Set<TSource>(_comparer);
-                foreach (TSource element in _first)
-                    set.Add(element);
-                foreach (TSource element in _second)
-                    set.Add(element);
-                return set;
+                for (int index = 0; ; ++index)
+                {
+                    IEnumerable<TSource> enumerable = GetEnumerable(index);
+                    if (enumerable == null)
+                        return set;
+
+                    foreach (TSource item in enumerable)
+                        set.Add(item);
+                }
             }
 
             public TSource[] ToArray()
@@ -137,6 +152,98 @@ namespace System.Linq
             public int GetCount(bool onlyIfCheap)
             {
                 return onlyIfCheap ? -1 : FillSet().Count;
+            }
+        }
+
+        private sealed class UnionIterator2<TSource> : UnionIterator<TSource>
+        {
+            private readonly IEnumerable<TSource> _first;
+            private readonly IEnumerable<TSource> _second;
+
+            public UnionIterator2(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
+                : base(comparer)
+            {
+                Debug.Assert(first != null);
+                Debug.Assert(second != null);
+                _first = first;
+                _second = second;
+            }
+
+            public override Iterator<TSource> Clone()
+            {
+                return new UnionIterator2<TSource>(_first, _second, _comparer);
+            }
+
+            internal override IEnumerable<TSource> GetEnumerable(int index)
+            {
+                Debug.Assert(index >= 0 && index <= 2);
+                switch (index)
+                {
+                    case 0:
+                        return _first;
+                    case 1:
+                        return _second;
+                    default:
+                        return null;
+                }
+            }
+
+            internal override UnionIterator<TSource> Union(IEnumerable<TSource> next)
+            {
+                return new UnionIteratorN<TSource>(this, next, 2);
+            }
+        }
+
+        private sealed class UnionIteratorN<TSource> : UnionIterator<TSource>
+        {
+            private readonly UnionIterator<TSource> _previous;
+            private readonly IEnumerable<TSource> _next;
+            private readonly int _nextIndex;
+
+            public UnionIteratorN(UnionIterator<TSource> previous, IEnumerable<TSource> next, int nextIndex)
+                : base(previous._comparer)
+            {
+                Debug.Assert(previous != null);
+                Debug.Assert(next != null);
+                Debug.Assert(nextIndex > 1);
+                _previous = previous;
+                _next = next;
+                _nextIndex = nextIndex;
+            }
+
+            public override Iterator<TSource> Clone()
+            {
+                return new UnionIteratorN<TSource>(_previous, _next, _nextIndex);
+            }
+
+            internal override IEnumerable<TSource> GetEnumerable(int index)
+            {
+                if (index > _nextIndex) return null;
+                UnionIteratorN<TSource> union = this;
+                while (index < union._nextIndex)
+                {
+                    UnionIterator<TSource> previous = union._previous;
+                    union = previous as UnionIteratorN<TSource>;
+                    if (union == null)
+                    {
+                        Debug.Assert(index == 0 || index == 1);
+                        Debug.Assert(EquivalentEqualityComparers(_comparer, previous._comparer));
+                        return previous.GetEnumerable(index);
+                    }
+                }
+                return union._next;
+            }
+
+            internal override UnionIterator<TSource> Union(IEnumerable<TSource> next)
+            {
+                if (_nextIndex == int.MaxValue - 2)
+                {
+                    // In the unlikely case of this many unions, if we produced a UnionIteratorN
+                    // with int.MaxValue then state would overflow before it matched it's index.
+                    // So we use the naïve approach of just having a left and right sequence.
+                    return new UnionIterator2<TSource>(this, next, _comparer);
+                }
+                return new UnionIteratorN<TSource>(this, next, _nextIndex + 1);
             }
         }
     }
