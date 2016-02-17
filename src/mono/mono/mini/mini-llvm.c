@@ -8004,8 +8004,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	emit_dbg_info (&aot_module, filename, cu_name);
 	emit_aot_file_info (&aot_module);
 
-	mono_llvm_create_di_compile_unit (aot_module.lmodule);
-
 	/*
 	 * Replace GOT entries for directly callable methods with the methods themselves.
 	 * It would be easier to implement this by predefining all methods before compiling
