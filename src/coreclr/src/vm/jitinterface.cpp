@@ -8934,7 +8934,8 @@ CORINFO_MODULE_HANDLE CEEInfo::getMethodModule (CORINFO_METHOD_HANDLE methodHnd)
 }
 
 /*********************************************************************/
-CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd)
+CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
+                                          bool * pMustExpand)
 {
     CONTRACTL {
         SO_TOLERANT;
@@ -8946,6 +8947,11 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd)
     CorInfoIntrinsics result = CORINFO_INTRINSIC_Illegal;
 
     JIT_TO_EE_TRANSITION();
+
+    if (pMustExpand != NULL)
+    {
+        *pMustExpand = false;
+    }
 
     MethodDesc* method = GetMethod(methodHnd);
 

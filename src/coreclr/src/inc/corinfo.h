@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* b26841f8-74d6-4fc9-9d81-6500cd662549 */
-    0xb26841f8,
-    0x74d6,
-    0x4fc9,
-    { 0x9d, 0x81, 0x65, 0x00, 0xcd, 0x66, 0x25, 0x49 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 13accf3d-12d7-4fd4-bc65-d73578b1a474 */
+    0x13accf3d,
+    0x12d7,
+    0x4fd4,
+    { 0xbc, 0x65, 0xd7, 0x35, 0x78, 0xb1, 0xa4, 0x74 }
 };
 
 #else
@@ -2426,9 +2426,17 @@ public:
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
+    // *pMustExpand tells whether or not JIT must expand the intrinsic.
+#if COR_JIT_EE_VERSION > 460
+    virtual CorInfoIntrinsics getIntrinsicID(
+            CORINFO_METHOD_HANDLE       method,
+            bool*                       pMustExpand = NULL      /* OUT */
+            ) = 0;
+#else
     virtual CorInfoIntrinsics getIntrinsicID(
             CORINFO_METHOD_HANDLE       method
             ) = 0;
+#endif
 
     // Is the given module the System.Numerics.Vectors module?
     // This defaults to false.
