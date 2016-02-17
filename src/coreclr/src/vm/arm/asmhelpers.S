@@ -1311,7 +1311,7 @@ DelayLoad_Helper\suffix:
 
         push         {r0}
 
-        PROLOG_WITH_TRANSITION_BLOCK 0x4, 1, DoNotPushArgRegs
+        PROLOG_WITH_TRANSITION_BLOCK 0x4, 0, DoNotPushArgRegs
 
         // Load the helper arguments
         ldr         r5, [sp,#(__PWTB_TransitionBlock+10*4)] // pModule
