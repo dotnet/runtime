@@ -4184,6 +4184,18 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 	return jinfo;
 }
 
+GTimer *mono_time_track_start ()
+{
+	return g_timer_new ();
+}
+
+void mono_time_track_end (double *time, GTimer *timer)
+{
+	g_timer_stop (timer);
+	*time += g_timer_elapsed (timer, NULL);
+	g_timer_destroy (timer);
+}
+
 /*
  * mono_jit_compile_method_inner:
  *
@@ -4317,14 +4329,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		return NULL;
 	}
 
-	jit_timer = g_timer_new ();
-
+	jit_timer = mono_time_track_start ();
 	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0, -1);
-	prof_method = cfg->method;
+	mono_time_track_end (&mono_jit_stats.jit_time, jit_timer);
 
-	g_timer_stop (jit_timer);
-	mono_jit_stats.jit_time += g_timer_elapsed (jit_timer, NULL);
-	g_timer_destroy (jit_timer);
+	prof_method = cfg->method;
 
 	switch (cfg->exception_type) {
 	case MONO_EXCEPTION_NONE:

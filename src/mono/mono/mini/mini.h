@@ -3009,6 +3009,9 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 void mono_cfg_set_exception (MonoCompile *cfg, int type);
 void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
 
+GTimer *mono_time_track_start (void);
+void mono_time_track_end (double *time, GTimer *timer);
+
 gboolean mini_type_is_reference (MonoType *type);
 gboolean mini_type_is_vtype (MonoType *t) MONO_LLVM_INTERNAL;
 gboolean mini_type_var_is_vt (MonoType *type) MONO_LLVM_INTERNAL;
