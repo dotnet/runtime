@@ -205,8 +205,8 @@ mono_local_cprop (MonoCompile *cfg)
 	int initial_max_vregs = cfg->next_vreg;
 
 	max = cfg->next_vreg;
-	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg + 1);
-	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * cfg->next_vreg + 1);
+	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
+	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * cfg->next_vreg);
 	cfg->cbb = bb_opt = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
