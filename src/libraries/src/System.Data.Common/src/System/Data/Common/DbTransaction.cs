@@ -11,7 +11,7 @@ using System.Data;
 
 namespace System.Data.Common
 {
-    public abstract class DbTransaction :
+    public abstract class DbTransaction : IDbTransaction,
         IDisposable
     {
         protected DbTransaction() : base()
@@ -35,6 +35,14 @@ namespace System.Data.Common
         abstract public IsolationLevel IsolationLevel
         {
             get;
+        }
+
+        IDbConnection IDbTransaction.Connection
+        {
+            get
+            {
+                return DbConnection;
+            }
         }
 
         abstract public void Commit();
