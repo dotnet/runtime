@@ -242,7 +242,7 @@ Initialize(
         // Initialize the environment.
         if (FALSE == MiscInitialize())
         {
-            goto done;
+            goto CLEANUP0;
         }
 
         // Initialize debug channel settings before anything else.
@@ -250,7 +250,7 @@ Initialize(
         // MiscInitialize.
         if (FALSE == DBG_init_channels())
         {
-            goto done;
+            goto CLEANUP0;
         }
 
 #if _DEBUG
@@ -270,6 +270,7 @@ Initialize(
             // We can continue if this fails; we'll just have problems if
             // we use large numbers of threads or have many open files.
         }
+
 
         /* initialize the shared memory infrastructure */
         if (!SHMInitialize())
@@ -572,6 +573,7 @@ CLEANUP1a:
 CLEANUP1:
     SHMCleanup();
 CLEANUP0:
+    TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:

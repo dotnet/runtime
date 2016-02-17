@@ -227,7 +227,7 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         restore_signal(code, &g_previous_sigill);
     }
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 }
 
 /*++
@@ -274,7 +274,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
         restore_signal(code, &g_previous_sigfpe);
     }
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 }
 
 /*++
@@ -344,7 +344,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         restore_signal(code, &g_previous_sigsegv);
     }
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 }
 
 /*++
@@ -392,7 +392,7 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
         PROCAbort();
     }
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 }
 
 /*++
@@ -447,7 +447,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         restore_signal(code, &g_previous_sigbus);
     }
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 }
 
 /*++
@@ -465,7 +465,7 @@ static void sigint_handler(int code, siginfo_t *siginfo, void *context)
 {
     TRACE("SIGINT signal; chaining to previous sigaction\n");
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 
     // Restore the original or default handler and resend signal
     restore_signal(code, &g_previous_sigint);
@@ -487,7 +487,7 @@ static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
 {
     TRACE("SIGQUIT signal; chaining to previous sigaction\n");
 
-    PROCShutdownProcess();
+    PROCNotifyProcessShutdown();
 
     // Restore the original or default handler and resend signal
     restore_signal(code, &g_previous_sigquit);
@@ -554,7 +554,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
     if (status != 0)
     {
-        PROCShutdownProcess();
+        PROCNotifyProcessShutdown();
 
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second, 
