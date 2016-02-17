@@ -1476,7 +1476,7 @@ bool ValueNumStore::SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind
 bool ValueNumStore::FixedPointMapSelsTopHasValue(ValueNum map, ValueNum index)
 {
     if (m_fixedPointMapSels.Size() == 0) return false;
-    VNDefFunc2Arg top = m_fixedPointMapSels.Top();
+    VNDefFunc2Arg& top = m_fixedPointMapSels.TopRef();
     return top.m_func == VNF_MapSelect
         && top.m_arg0 == map
         && top.m_arg1 == index;
