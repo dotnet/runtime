@@ -1050,6 +1050,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
+    Public Delegate Function SiteDelegate0(ByVal site As CallSite, ByVal instance As Object) As Object
+    Public Delegate Function SiteDelegate1(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object) As Object
+    Public Delegate Function SiteDelegate2(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object) As Object
+    Public Delegate Function SiteDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
+    Public Delegate Function SiteDelegate4(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object) As Object
+    Public Delegate Function SiteDelegate5(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object) As Object
+    Public Delegate Function SiteDelegate6(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object) As Object
+    Public Delegate Function SiteDelegate7(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object, ByRef arg6 As Object) As Object
+
     Friend Class IDOUtils
 
         Private Sub New()
@@ -1271,15 +1280,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Public Shared Function ConvertToObject(ByVal valueExpression As Expression) As Expression
             Return If(valueExpression.Type.Equals(GetType(Object)), valueExpression, Expression.Convert(valueExpression, GetType(Object)))
         End Function
-
-        Friend Delegate Function SiteDelegate0(ByVal site As CallSite, ByVal instance As Object) As Object
-        Friend Delegate Function SiteDelegate1(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object) As Object
-        Friend Delegate Function SiteDelegate2(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object) As Object
-        Friend Delegate Function SiteDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
-        Friend Delegate Function SiteDelegate4(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object) As Object
-        Friend Delegate Function SiteDelegate5(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object) As Object
-        Friend Delegate Function SiteDelegate6(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object) As Object
-        Friend Delegate Function SiteDelegate7(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object, ByRef arg6 As Object) As Object
 
         Public Shared Function CreateRefCallSiteAndInvoke(
                 ByVal action As CallSiteBinder,
