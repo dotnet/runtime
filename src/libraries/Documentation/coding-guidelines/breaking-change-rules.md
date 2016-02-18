@@ -19,8 +19,12 @@ Breaking Change Rules
 ### Property, Field, Parameter and Return Values
 &#10003; **Allowed**
 * Increasing the range of accepted values for a property or parameter if the member _is not_ `virtual`
+ 
+ > Note that the range can only increase to the extent that it does not impact the static type. e.g. it is OK to remove `if (x > 10) throw new ArgumentOutOfRangeException("x")`, but it is not OK to change the type of `x` from `int` to `long`.
 
-* Returning a more derived type for a property, field, return or `out` value
+* Returning a value of a more derived type for a property, field, return or `out` value
+
+ > Note, again, that the static type cannot change. e.g. it is OK to return a `string` instance where an `object` was returned previously, but it is not OK to change the return type from `object` to `string`.
 
 &#10007; **Disallowed**  
 * Increasing the range of accepted values for a property or parameter if the member _is_ `virtual`   
