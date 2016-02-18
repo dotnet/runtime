@@ -13,6 +13,7 @@
 // InlineTarget -- enum, target of a particular observation
 // InlineImpact -- enum, impact of a particular observation
 // InlineObservation -- enum, facts observed when considering an inline
+// InlineContext -- class, remembers what inlines happened
 // InlineResult -- class, accumulates observations and makes a decision
 // InlineCandidateInfo -- struct, detailed information needed for inlining
 // InlArgInfo -- struct, information about a candidate's argument
@@ -115,6 +116,42 @@ InlineTarget inlGetTarget(InlineObservation obs);
 // Get the impact of this observation
 
 InlineImpact inlGetImpact(InlineObservation obs);
+
+// InlineContext tracks the inline history in a method.
+//
+// Notes:
+//
+// InlineContexts form a tree with the root method as the root and
+// inlines as children. Nested inlines are represented as granchildren
+// and so on.
+//
+// Leaves in the tree represent successful inlines of leaf methods.
+// In DEBUG builds we also keep track of failed inline attempts.
+//
+// During inlining, all statements in the IR refer back to the
+// InlineContext that is responsible for those statements existing.
+// This makes it possible to detect recursion and to keep track of the
+// depth of each inline attempt.
+
+struct InlineContext
+{
+    // Default constructor, suitable for root instance
+    InlineContext();
+
+    InlineContext*        inlParent;      // logical caller (parent)
+    InlineContext*        inlChild;       // first child
+    InlineContext*        inlSibling;     // next child of the parent
+    IL_OFFSETX            inlOffset;      // call site location within parent
+    BYTE*                 inlCode;        // address of IL buffer for the method
+    InlineObservation     inlObservation; // what lead to this inline
+
+#ifdef DEBUG
+    CORINFO_METHOD_HANDLE inlCallee;     // handle to the method
+
+   // Dump this entry and all descendants
+   void Dump(Compiler* compiler, int indent = 0);
+#endif
+};
 
 // InlineResult summarizes what is known about the viability of a
 // particular inline candiate.
@@ -316,6 +353,12 @@ public:
     ~InlineResult()
     {
         report();
+    }
+
+    // The observation leading to this particular result
+    InlineObservation getObservation() const
+    {
+        return inlObservation;
     }
 
     // The reason for this particular result

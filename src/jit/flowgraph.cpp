@@ -21317,7 +21317,7 @@ void Compiler::fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt*
  * Also return the depth.
  */
 
-bool          Compiler::fgIsUnboundedInlineRecursion(inlExpPtr               expLst,
+bool          Compiler::fgIsUnboundedInlineRecursion(InlineContext*          inlineContext,
                                                      BYTE*                   ilCode,
                                                      DWORD*                  finalDepth)
 {
@@ -21325,11 +21325,11 @@ bool          Compiler::fgIsUnboundedInlineRecursion(inlExpPtr               exp
     DWORD depth = 0;
     bool result = false;
 
-    for (; expLst != nullptr; expLst = expLst->ixlParent)
+    for (; inlineContext != nullptr; inlineContext = inlineContext->inlParent)
     {
         // Hard limit just to catch pathological cases
         depth++;
-        if  ((expLst->ixlCode == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
+        if  ((inlineContext->inlCode == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
         {
            result = true;
            break;
@@ -21360,10 +21360,10 @@ void                Compiler::fgInline()
     noway_assert(block != nullptr);
 
     // Set the root inline context on all statements
-    inlExpLst* expDsc = new (this, CMK_Inlining) inlExpLst();
+    InlineContext* rootContext = new (this, CMK_Inlining) InlineContext;
 
 #if defined(DEBUG)
-    expDsc->methodName = info.compFullName;
+    rootContext->inlCallee = info.compMethodHnd;
 #endif
 
     for (; block != nullptr; block = block->bbNext)
@@ -21372,7 +21372,7 @@ void                Compiler::fgInline()
              stmt;
              stmt = stmt->gtNextStmt)
         {
-           stmt->gtInlineExpList = expDsc;
+            stmt->gtInlineContext = rootContext;
         }
     }
 
@@ -21462,7 +21462,7 @@ void                Compiler::fgInline()
     if  (verbose || (fgInlinedCount > 0 && fgPrintInlinedMethods))
     {
        printf("**************** Inline Tree\n");
-       expDsc->Dump();
+       rootContext->Dump(this);
     }
 
 #endif // DEBUG
@@ -21761,10 +21761,11 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
 
-    DWORD inlineDepth = 0;
-    BYTE * candidateIL = inlineCandidateInfo->methInfo.ILCode;
-    inlExpPtr expList = inlineInfo.iciStmt->gtStmt.gtInlineExpList;
-    if (fgIsUnboundedInlineRecursion(expList, candidateIL, &inlineDepth))
+    DWORD          inlineDepth = 0;
+    BYTE*          candidateIL = inlineCandidateInfo->methInfo.ILCode;
+    InlineContext* inlineContext = inlineInfo.iciStmt->gtStmt.gtInlineContext;
+
+    if (fgIsUnboundedInlineRecursion(inlineContext, candidateIL, &inlineDepth))
     {
 #ifdef DEBUG
         if (verbose)
@@ -21990,23 +21991,23 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 #endif // defined(DEBUG) || MEASURE_INLINING
 
     //
-    // Obtain an inlExpLst struct and update the gtInlineExpList field in the inlinee's statements
+    // Obtain the current InlineContext and link in a new child for the callee
     //
-    inlExpLst* expDsc = new (this, CMK_Inlining) inlExpLst;
-    inlExpLst *parentLst = iciStmt->gtStmt.gtInlineExpList;
-    noway_assert(parentLst != nullptr);
-    BYTE *parentIL = pInlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    expDsc->ixlCode = parentIL;
-    expDsc->ixlParent = parentLst;
+    InlineContext* calleeContext = new (this, CMK_Inlining) InlineContext;
+    InlineContext* parentContext = iciStmt->gtStmt.gtInlineContext;
+    noway_assert(parentContext != nullptr);
+    BYTE* calleeIL = pInlineInfo->inlineCandidateInfo->methInfo.ILCode;
+    calleeContext->inlCode = calleeIL;
+    calleeContext->inlParent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
-    expDsc->ixlSibling = parentLst->ixlChild;
-    parentLst->ixlChild = expDsc;
-    expDsc->ixlChild = nullptr;
-    expDsc->ilOffset = iciStmt->AsStmt()->gtStmtILoffsx;
+    calleeContext->inlSibling = parentContext->inlChild;
+    parentContext->inlChild = calleeContext;
+    calleeContext->inlChild = nullptr;
+    calleeContext->inlOffset = iciStmt->AsStmt()->gtStmtILoffsx;
+    calleeContext->inlObservation = pInlineInfo->inlineResult->getObservation();
 #ifdef DEBUG
-    expDsc->methodName = eeGetMethodFullName(pInlineInfo->fncHandle);
-    expDsc->depth = parentLst->depth + 1;
+    calleeContext->inlCallee = pInlineInfo->fncHandle;
 #endif
 
     for (block = InlineeCompiler->fgFirstBB;
@@ -22017,7 +22018,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
              stmt;
              stmt = stmt->gtNextStmt)
         {
-            stmt->gtInlineExpList = expDsc;
+            stmt->gtInlineContext = calleeContext;
         }
     }
 

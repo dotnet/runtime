@@ -5696,7 +5696,8 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 
         // Try and recover the reason left behind when the jit decided
         // this call was not a candidate.
-        InlineObservation priorObservation = static_cast<InlineObservation>(call->gtInlineObservation);
+        InlineObservation priorObservation = call->gtInlineObservation;
+
         if (inlIsValidObservation(priorObservation))
         {
             currentObservation = priorObservation;
