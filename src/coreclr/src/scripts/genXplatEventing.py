@@ -465,7 +465,7 @@ def generateSanityTest(sClrEtwAllMan,testDir):
 
     if not testDir:
         return
-    print('Generting Event Logging Tests')
+    print('Generating Event Logging Tests')
 
     if not os.path.exists(testDir):
         os.makedirs(testDir)
@@ -605,7 +605,7 @@ def generateEtmDummyHeader(sClrEtwAllMan,clretwdummy):
     if not clretwdummy:
         return
 
-    print(' Generting  Dummy Event Headers')
+    print(' Generating Dummy Event Headers')
     tree           = DOM.parse(sClrEtwAllMan)
 
     incDir = os.path.dirname(os.path.realpath(clretwdummy))
@@ -632,7 +632,7 @@ def generatePlformIndependentFiles(sClrEtwAllMan,incDir,etmDummyFile):
     if not incDir:
         return
 
-    print(' Generting Event Headers')
+    print(' Generating Event Headers')
     if not os.path.exists(incDir):
         os.makedirs(incDir)
 

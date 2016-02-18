@@ -6044,7 +6044,6 @@ CoCreateGuid(OUT GUID * pguid);
 #define free          PAL_free
 #define mkstemp       PAL_mkstemp
 #define rename        PAL_rename
-#define unlink        PAL_unlink
 #define _strdup       PAL__strdup
 #define _getcwd       PAL__getcwd
 #define _open         PAL__open
