@@ -1632,19 +1632,6 @@ WCHAR *CreateMethodTableName(TADDR mt, TADDR cmt = NULL);
 void isRetAddr(DWORD_PTR retAddr, DWORD_PTR* whereCalled);
 DWORD_PTR GetValueFromExpression (___in __in_z const char *const str);
 
-#ifndef FEATURE_PAL
-// ensure we always allocate on the process heap
-FORCEINLINE void* __cdecl operator new(size_t size) throw()
-{ return HeapAlloc(GetProcessHeap(), 0, size); }
-FORCEINLINE void __cdecl operator delete(void* pObj) throw()
-{ HeapFree(GetProcessHeap(), 0, pObj); }
-
-FORCEINLINE void* __cdecl operator new[](size_t size) throw()
-{ return HeapAlloc(GetProcessHeap(), 0, size); }
-FORCEINLINE void __cdecl operator delete[](void* pObj) throw()
-{ HeapFree(GetProcessHeap(), 0, pObj); }
-#endif
-
 enum ModuleHeapType
 {
     ModuleHeapType_ThunkHeap,

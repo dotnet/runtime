@@ -83,6 +83,17 @@ const UINT kcMaxRevertedRejitData = 10;
 
 #ifndef FEATURE_PAL
 
+// ensure we always allocate on the process heap
+void* __cdecl operator new(size_t size) throw()
+{ return HeapAlloc(GetProcessHeap(), 0, size); }
+void __cdecl operator delete(void* pObj) throw()
+{ HeapFree(GetProcessHeap(), 0, pObj); }
+
+void* __cdecl operator new[](size_t size) throw()
+{ return HeapAlloc(GetProcessHeap(), 0, size); }
+void __cdecl operator delete[](void* pObj) throw()
+{ HeapFree(GetProcessHeap(), 0, pObj); }
+
 /**********************************************************************\
 * Here we define types and functions that support custom COM           *
 * activation rules, as defined by the CIOptions enum.                  *
