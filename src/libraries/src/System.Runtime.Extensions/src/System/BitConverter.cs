@@ -347,7 +347,7 @@ namespace System
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0)
                 ThrowStartIndexArgumentOutOfRange();
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_GenericPositive);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_GenericPositive);
             if (startIndex > value.Length - length)
                 ThrowValueArgumentTooSmall();
             Contract.EndContractBlock();
@@ -360,7 +360,7 @@ namespace System
             if (length > (int.MaxValue / 3))
             {
                 // (Int32.MaxValue / 3) == 715,827,882 Bytes == 699 MB
-                throw new ArgumentOutOfRangeException("length", SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, (int.MaxValue / 3)));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, (int.MaxValue / 3)));
             }
 
             int chArrayLength = length * 3;

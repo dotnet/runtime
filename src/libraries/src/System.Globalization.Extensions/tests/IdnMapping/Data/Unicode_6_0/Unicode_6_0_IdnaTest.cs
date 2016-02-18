@@ -50,7 +50,7 @@ namespace System.Globalization.Tests
                 case "B":
                     return IdnType.Both;
                 default:
-                    throw new ArgumentOutOfRangeException("idnType", "Unknown idnType");
+                    throw new ArgumentOutOfRangeException(nameof(idnType), "Unknown idnType");
             }
         }
 

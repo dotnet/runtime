@@ -24,7 +24,7 @@ namespace System.Text.Encodings.Web
         // It is true that this type cannot be extended by all CLS compliant languages. 
         // Having said that, if I marked the type as non-CLS all methods that take it as parameter will now have to be marked CLSCompliant(false), 
         // yet consumption of concrete encoders is totally CLS compliant, 
-        // as it’s mainly to be done by calling helper methods in TextEncoderExtensions class, 
+        // as it?s mainly to be done by calling helper methods in TextEncoderExtensions class, 
         // and so I think the warning is a bit too aggressive.  
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace System.Text.Encodings.Web
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             unsafe
@@ -222,11 +222,11 @@ namespace System.Text.Encodings.Web
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
@@ -275,11 +275,11 @@ namespace System.Text.Encodings.Web
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
@@ -416,11 +416,11 @@ namespace System.Text.Encodings.Web
         {
             if (startIndex < 0 || startIndex > actualInputLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex");
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
             if (characterCount < 0 || characterCount > (actualInputLength - startIndex))
             {
-                throw new ArgumentOutOfRangeException("characterCount");
+                throw new ArgumentOutOfRangeException(nameof(characterCount));
             }
         }
 

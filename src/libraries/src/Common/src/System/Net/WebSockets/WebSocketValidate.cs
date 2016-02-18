@@ -27,7 +27,7 @@ namespace System.Net.WebSockets
         {
             if (string.IsNullOrWhiteSpace(subProtocol))
             {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, "subProtocol");
+                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
             }
 
             string invalidChar = null;
@@ -54,7 +54,7 @@ namespace System.Net.WebSockets
             if (invalidChar != null)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar),
-                    "subProtocol");
+nameof(subProtocol));
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_ReasonNotNull,
                     statusDescription,
                     WebSocketCloseStatus.Empty),
-                    "statusDescription");
+nameof(statusDescription));
             }
 
             int closeStatusCode = (int)closeStatus;
@@ -78,7 +78,7 @@ namespace System.Net.WebSockets
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,
                     closeStatusCode),
-                    "closeStatus");
+nameof(closeStatus));
             }
 
             int length = 0;
@@ -92,7 +92,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusDescription,
                     statusDescription,
                     WebSocketValidate.MaxControlFramePayloadLength),
-                    "statusDescription");
+nameof(statusDescription));
             }
         }
 

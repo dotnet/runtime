@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions
             RegexReplacement repl;
 
             if (replacement == null)
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
 
             if (_regex == null)
                 throw new NotSupportedException(SR.NoResultOnFailed);
@@ -185,7 +185,7 @@ namespace System.Text.RegularExpressions
         static internal Match Synchronized(Match inner)
         {
             if (inner == null)
-                throw new ArgumentNullException("inner");
+                throw new ArgumentNullException(nameof(inner));
 
             int numgroups = inner._matchcount.Length;
 

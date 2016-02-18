@@ -446,7 +446,7 @@ namespace System
             {
                 // Value should be a percentage from [1, 100].
                 if (value < 1 || value > 100)
-                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_CursorSize);
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_CursorSize);
                 Contract.EndContractBlock();
 
                 Interop.mincore.CONSOLE_CURSOR_INFO cci;
@@ -529,9 +529,9 @@ namespace System
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (value.Length > MaxConsoleTitleLength)
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_ConsoleTitleTooLong);
                 Contract.EndContractBlock();
 
                 if (!Interop.mincore.SetConsoleTitle(value))
@@ -553,9 +553,9 @@ namespace System
         public static void Beep(int frequency, int duration)
         {
             if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
-                throw new ArgumentOutOfRangeException("frequency", frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
+                throw new ArgumentOutOfRangeException(nameof(frequency), frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
             if (duration <= 0)
-                throw new ArgumentOutOfRangeException("duration", duration, SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(duration), duration, SR.ArgumentOutOfRange_NeedPosNum);
 
             Contract.EndContractBlock();
             Interop.mincore.Beep(frequency, duration);
@@ -567,28 +567,28 @@ namespace System
             ConsoleColor sourceBackColor)
         {
             if (sourceForeColor < ConsoleColor.Black || sourceForeColor > ConsoleColor.White)
-                throw new ArgumentException(SR.Arg_InvalidConsoleColor, "sourceForeColor");
+                throw new ArgumentException(SR.Arg_InvalidConsoleColor, nameof(sourceForeColor));
             if (sourceBackColor < ConsoleColor.Black || sourceBackColor > ConsoleColor.White)
-                throw new ArgumentException(SR.Arg_InvalidConsoleColor, "sourceBackColor");
+                throw new ArgumentException(SR.Arg_InvalidConsoleColor, nameof(sourceBackColor));
             Contract.EndContractBlock();
 
             Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             Interop.mincore.COORD bufferSize = csbi.dwSize;
             if (sourceLeft < 0 || sourceLeft > bufferSize.X)
-                throw new ArgumentOutOfRangeException("sourceLeft", sourceLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(sourceLeft), sourceLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (sourceTop < 0 || sourceTop > bufferSize.Y)
-                throw new ArgumentOutOfRangeException("sourceTop", sourceTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(sourceTop), sourceTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (sourceWidth < 0 || sourceWidth > bufferSize.X - sourceLeft)
-                throw new ArgumentOutOfRangeException("sourceWidth", sourceWidth, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(sourceWidth), sourceWidth, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (sourceHeight < 0 || sourceTop > bufferSize.Y - sourceHeight)
-                throw new ArgumentOutOfRangeException("sourceHeight", sourceHeight, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(sourceHeight), sourceHeight, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
             // Note: if the target range is partially in and partially out
             // of the buffer, then we let the OS clip it for us.
             if (targetLeft < 0 || targetLeft > bufferSize.X)
-                throw new ArgumentOutOfRangeException("targetLeft", targetLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(targetLeft), targetLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (targetTop < 0 || targetTop > bufferSize.Y)
-                throw new ArgumentOutOfRangeException("targetTop", targetTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(targetTop), targetTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
             // If we're not doing any work, bail out now (Windows will return
             // an error otherwise)
@@ -693,9 +693,9 @@ namespace System
             // here!  But it looks slightly expensive to compute them.  Let
             // Windows calculate them, then we'll give a nice error message.
             if (left < 0 || left >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (top < 0 || top >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             Contract.EndContractBlock();
 
             IntPtr hConsole = OutputHandle;
@@ -708,9 +708,9 @@ namespace System
                 int errorCode = Marshal.GetLastWin32Error();
                 Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
                 if (left < 0 || left >= csbi.dwSize.X)
-                    throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                    throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
                 if (top < 0 || top >= csbi.dwSize.Y)
-                    throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                    throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -751,9 +751,9 @@ namespace System
             Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             Interop.mincore.SMALL_RECT srWindow = csbi.srWindow;
             if (width < srWindow.Right + 1 || width >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("width", width, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
+                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
             if (height < srWindow.Bottom + 1 || height >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("height", height, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
+                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
 
             Interop.mincore.COORD size = new Interop.mincore.COORD();
             size.X = (short)width;
@@ -851,10 +851,10 @@ namespace System
             // Check for arithmetic underflows & overflows.
             int newRight = left + srWindow.Right - srWindow.Left + 1;
             if (left < 0 || newRight > csbi.dwSize.X || newRight < 0)
-                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleWindowPos);
+                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleWindowPos);
             int newBottom = top + srWindow.Bottom - srWindow.Top + 1;
             if (top < 0 || newBottom > csbi.dwSize.Y || newBottom < 0)
-                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleWindowPos);
+                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleWindowPos);
 
             // Preserve the size, but move the position.
             srWindow.Bottom -= (short)(srWindow.Top - top);
@@ -870,9 +870,9 @@ namespace System
         public static unsafe void SetWindowSize(int width, int height)
         {
             if (width <= 0)
-                throw new ArgumentOutOfRangeException("width", width, SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
             if (height <= 0)
-                throw new ArgumentOutOfRangeException("height", height, SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
 
             // Get the position of the current console window
             Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
@@ -886,14 +886,14 @@ namespace System
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
             {
                 if (csbi.srWindow.Left >= short.MaxValue - width)
-                    throw new ArgumentOutOfRangeException("width", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                    throw new ArgumentOutOfRangeException(nameof(width), SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.X = (short)(csbi.srWindow.Left + width);
                 resizeBuffer = true;
             }
             if (csbi.dwSize.Y < csbi.srWindow.Top + height)
             {
                 if (csbi.srWindow.Top >= short.MaxValue - height)
-                    throw new ArgumentOutOfRangeException("height", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                    throw new ArgumentOutOfRangeException(nameof(height), SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
                 size.Y = (short)(csbi.srWindow.Top + height);
                 resizeBuffer = true;
             }
@@ -921,9 +921,9 @@ namespace System
                 // Try to give a better error message here
                Interop.mincore.COORD bounds = Interop.mincore.GetLargestConsoleWindowSize(OutputHandle);
                 if (width > bounds.X)
-                    throw new ArgumentOutOfRangeException("width", width, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.X));
+                    throw new ArgumentOutOfRangeException(nameof(width), width, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.X));
                 if (height > bounds.Y)
-                    throw new ArgumentOutOfRangeException("height", height, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.Y));
+                    throw new ArgumentOutOfRangeException(nameof(height), height, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.Y));
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }

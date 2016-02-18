@@ -59,7 +59,7 @@ namespace System.Xml.XPath
         public XPathDocument(XmlReader reader, XmlSpace space)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
 
             LoadFromReader(reader, space);
         }
@@ -117,7 +117,7 @@ namespace System.Xml.XPath
             int initialDepth;
 
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
 
             // Determine line number provider
             lineInfo = reader as IXmlLineInfo;

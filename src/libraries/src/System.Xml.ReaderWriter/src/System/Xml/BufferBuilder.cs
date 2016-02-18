@@ -121,7 +121,7 @@ namespace System.Xml
 
                 if (value < 0 || value > _length)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 if (value == 0)
                 {
@@ -188,7 +188,7 @@ namespace System.Xml
                 {
                     return;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (count == 0)
             {
@@ -196,11 +196,11 @@ namespace System.Xml
             }
             if (start < 0)
             {
-                throw new ArgumentOutOfRangeException("start");
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
             if (count < 0 || start + count > value.Length)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (_length + count <= MaxStringBuilderLength)
@@ -247,7 +247,7 @@ namespace System.Xml
                 {
                     return;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (count == 0)
             {
@@ -255,11 +255,11 @@ namespace System.Xml
             }
             if (start < 0)
             {
-                throw new ArgumentOutOfRangeException("start");
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
             if (count < 0 || start + count > value.Length)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (_length + count <= MaxStringBuilderLength)
             {

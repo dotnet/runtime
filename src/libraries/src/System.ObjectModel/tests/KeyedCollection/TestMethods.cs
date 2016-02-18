@@ -1570,7 +1570,7 @@ namespace System.Collections.ObjectModel.Tests
         {
             if (dictionary == null)
             {
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
             }
             if (expectedKeys.Length != expectedItems.Length)
             {

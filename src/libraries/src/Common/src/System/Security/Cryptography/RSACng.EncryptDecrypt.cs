@@ -47,10 +47,10 @@ namespace System.Security.Cryptography
         private byte[] EncryptOrDecrypt(byte[] data, RSAEncryptionPadding padding, EncryptOrDecryptAction encryptOrDecrypt)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             unsafe
             {

@@ -240,7 +240,7 @@ namespace System.Numerics
         public BigInteger(byte[] value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             int byteCount = value.Length;
@@ -385,7 +385,7 @@ namespace System.Numerics
         internal BigInteger(uint[] value, bool negative)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             int len;
@@ -423,7 +423,7 @@ namespace System.Numerics
         private BigInteger(uint[] value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             int dwordCount = value.Length;
             bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & 0x80000000) == 0x80000000);
@@ -793,7 +793,7 @@ namespace System.Numerics
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
             if (exponent.Sign < 0)
-                throw new ArgumentOutOfRangeException("exponent", SR.ArgumentOutOfRange_MustBeNonNeg);
+                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
             Contract.EndContractBlock();
 
             value.AssertValid();
@@ -827,7 +827,7 @@ namespace System.Numerics
         public static BigInteger Pow(BigInteger value, int exponent)
         {
             if (exponent < 0)
-                throw new ArgumentOutOfRangeException("exponent", SR.ArgumentOutOfRange_MustBeNonNeg);
+                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
             Contract.EndContractBlock();
 
             value.AssertValid();
@@ -998,7 +998,7 @@ namespace System.Numerics
             if (obj == null)
                 return 1;
             if (!(obj is BigInteger))
-                throw new ArgumentException(SR.Argument_MustBeBigInt, "obj");
+                throw new ArgumentException(SR.Argument_MustBeBigInt, nameof(obj));
             return CompareTo((BigInteger)obj);
         }
 

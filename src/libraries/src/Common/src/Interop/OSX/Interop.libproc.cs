@@ -313,7 +313,7 @@ internal static partial class Interop
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid");
+                throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
             // Get the process information for the specified pid
@@ -336,13 +336,13 @@ internal static partial class Interop
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid");
+                throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
             // Negative TIDs are invalid
             if (thread < 0)
             {
-                throw new ArgumentOutOfRangeException("thread");
+                throw new ArgumentOutOfRangeException(nameof(thread));
             }
 
             // Get the thread information for the specified thread in the specified process
@@ -357,7 +357,7 @@ internal static partial class Interop
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid");
+                throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
             int result = 0;
@@ -429,7 +429,7 @@ internal static partial class Interop
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid", SR.NegativePidNotSupported);
+                throw new ArgumentOutOfRangeException(nameof(pid), SR.NegativePidNotSupported);
             }
 
             // The path is a fixed buffer size, so use that and trim it after
@@ -474,7 +474,7 @@ internal static partial class Interop
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid", SR.NegativePidNotSupported);
+                throw new ArgumentOutOfRangeException(nameof(pid), SR.NegativePidNotSupported);
             }
 
             rusage_info_v3 info = new rusage_info_v3();

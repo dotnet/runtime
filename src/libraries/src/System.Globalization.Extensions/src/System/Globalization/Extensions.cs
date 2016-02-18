@@ -14,7 +14,7 @@ namespace System.Globalization
         {
             if (compareInfo == null)
             {
-                throw new ArgumentNullException("compareInfo");
+                throw new ArgumentNullException(nameof(compareInfo));
             }
 
             if (options == CompareOptions.Ordinal)
@@ -29,7 +29,7 @@ namespace System.Globalization
 
             if ((options & CultureAwareComparer.ValidCompareMaskOffFlags) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidFlag, "options");
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
             return new CultureAwareComparer(compareInfo, options);
@@ -72,7 +72,7 @@ namespace System.Globalization
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
             Contract.EndContractBlock();
 

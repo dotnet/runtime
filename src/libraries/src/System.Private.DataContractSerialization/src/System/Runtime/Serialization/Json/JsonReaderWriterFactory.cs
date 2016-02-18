@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             return CreateJsonReader(buffer, 0, buffer.Length, null, quotas, null);

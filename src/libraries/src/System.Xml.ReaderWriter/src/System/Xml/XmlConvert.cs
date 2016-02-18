@@ -327,7 +327,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
@@ -336,7 +336,7 @@ namespace System.Xml
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
@@ -353,11 +353,11 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", SR.Xml_EmptyName);
+                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
             }
 
             // parse name
@@ -377,7 +377,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             int colonPosition = -1;
@@ -404,11 +404,11 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", SR.Xml_EmptyLocalName);
+                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
             }
 
             int end = ValidateNames.ParseNCName(name, 0);
@@ -437,7 +437,7 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
@@ -460,7 +460,7 @@ namespace System.Xml
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
@@ -472,7 +472,7 @@ namespace System.Xml
         {
             if (publicId == null)
             {
-                throw new ArgumentNullException("publicId");
+                throw new ArgumentNullException(nameof(publicId));
             }
 
             // returns the position of invalid character or -1
@@ -491,7 +491,7 @@ namespace System.Xml
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             // returns the position of invalid character or -1
@@ -761,7 +761,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (s.Length != 1)
             {
@@ -964,7 +964,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
@@ -975,7 +975,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -984,7 +984,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }

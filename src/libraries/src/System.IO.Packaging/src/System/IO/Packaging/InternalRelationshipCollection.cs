@@ -416,20 +416,20 @@ namespace System.IO.Packaging
         private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id, bool parsing)
         {
             if (targetUri == null)
-                throw new ArgumentNullException("targetUri");
+                throw new ArgumentNullException(nameof(targetUri));
 
             if (relationshipType == null)
-                throw new ArgumentNullException("relationshipType");
+                throw new ArgumentNullException(nameof(relationshipType));
 
             ThrowIfInvalidRelationshipType(relationshipType);
 
             //Verify if the Enum value is valid
             if (targetMode < TargetMode.Internal || targetMode > TargetMode.External)
-                throw new ArgumentOutOfRangeException("targetMode");
+                throw new ArgumentOutOfRangeException(nameof(targetMode));
 
             // don't accept absolute Uri's if targetMode is Internal.
             if (targetMode == TargetMode.Internal && targetUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.RelationshipTargetMustBeRelative, "targetUri");
+                throw new ArgumentException(SR.RelationshipTargetMustBeRelative, nameof(targetUri));
 
             // don't allow relationships to relationships
             //  This check should be made for following cases
@@ -447,7 +447,7 @@ namespace System.IO.Packaging
                 if (resolvedUri != null)
                 {
                     if (PackUriHelper.IsRelationshipPartUri(resolvedUri))
-                        throw new ArgumentException(SR.RelationshipToRelationshipIllegal, "targetUri");
+                        throw new ArgumentException(SR.RelationshipToRelationshipIllegal, nameof(targetUri));
                 }
             }
 

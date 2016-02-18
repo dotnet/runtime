@@ -89,7 +89,7 @@ namespace System.IO.Pipes
         {
             if (pipeName == null)
             {
-                throw new ArgumentNullException("pipeName");
+                throw new ArgumentNullException(nameof(pipeName));
             }
             if (pipeName.Length == 0)
             {
@@ -97,11 +97,11 @@ namespace System.IO.Pipes
             }
             if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous)) != 0)
             {
-                throw new ArgumentOutOfRangeException("options", SR.ArgumentOutOfRange_OptionsInvalid);
+                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
             if (inBufferSize < 0)
             {
-                throw new ArgumentOutOfRangeException("inBufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(inBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             ValidateMaxNumberOfServerInstances(maxNumberOfServerInstances);
             // inheritability will always be None since this private constructor is only called from other constructors from which
@@ -109,7 +109,7 @@ namespace System.IO.Pipes
             // doesnt.
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability", SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
+                throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
             }
 
             Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode,
@@ -123,11 +123,11 @@ namespace System.IO.Pipes
         {
             if (safePipeHandle == null)
             {
-                throw new ArgumentNullException("safePipeHandle");
+                throw new ArgumentNullException(nameof(safePipeHandle));
             }
             if (safePipeHandle.IsInvalid)
             {
-                throw new ArgumentException(SR.Argument_InvalidHandle, "safePipeHandle");
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
             }
             ValidateHandleIsPipe(safePipeHandle);
             

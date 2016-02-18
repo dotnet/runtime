@@ -217,7 +217,7 @@ namespace Internal.Cryptography.Pal
         internal static void ValidateOidValue(string keyValue)
         {
             if (keyValue == null)
-                throw new ArgumentNullException("keyValue");
+                throw new ArgumentNullException(nameof(keyValue));
 
             int len = keyValue.Length;
             if (len < 2)

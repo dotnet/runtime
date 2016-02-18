@@ -383,7 +383,7 @@ namespace System.Security.AccessControl
         {
             if (privilegeName == null)
             {
-                throw new ArgumentNullException("privilegeName");
+                throw new ArgumentNullException(nameof(privilegeName));
             }
             Contract.EndContractBlock();
 

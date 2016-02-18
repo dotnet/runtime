@@ -69,7 +69,7 @@ namespace System
         {
             if (character > '\xff')
             {
-                throw new ArgumentOutOfRangeException("character");
+                throw new ArgumentOutOfRangeException(nameof(character));
             }
             char[] chars = new char[3];
             int pos = 0;
@@ -81,7 +81,7 @@ namespace System
         {
             if ((index < 0) || (index >= pattern.Length))
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))

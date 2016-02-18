@@ -772,7 +772,7 @@ namespace System.Data.SqlTypes
         private static void ValidateSqlCompareOptions(SqlCompareOptions compareOptions)
         {
             if ((compareOptions & x_iValidSqlCompareOptionMask) != compareOptions)
-                throw new ArgumentOutOfRangeException("compareOptions");
+                throw new ArgumentOutOfRangeException(nameof(compareOptions));
         }
 
         public static CompareOptions CompareOptionsFromSqlCompareOptions(SqlCompareOptions compareOptions)

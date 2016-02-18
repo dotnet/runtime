@@ -32,7 +32,7 @@ namespace System.Net.Http.Headers
             // The amount of seconds for 'delta' must be in the range 0..2^31
             if (delta.TotalSeconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("delta");
+                throw new ArgumentOutOfRangeException(nameof(delta));
             }
 
             _delta = delta;

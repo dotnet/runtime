@@ -27,7 +27,7 @@ namespace System.Net.Http
 #if !PHONE
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 #endif
                 CheckDisposed();
@@ -66,7 +66,7 @@ namespace System.Net.Http
             {
                 if (((int)value < 0) || ((int)value > 999))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 CheckDisposed();
 
@@ -136,7 +136,7 @@ namespace System.Net.Http
 
             if (((int)statusCode < 0) || ((int)statusCode > 999))
             {
-                throw new ArgumentOutOfRangeException("statusCode");
+                throw new ArgumentOutOfRangeException(nameof(statusCode));
             }
 
             _statusCode = statusCode;

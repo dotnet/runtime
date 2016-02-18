@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
 
             Stream incomingStream = stream;

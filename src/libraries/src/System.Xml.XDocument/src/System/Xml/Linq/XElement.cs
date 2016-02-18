@@ -53,7 +53,7 @@ namespace System.Xml.Linq
         /// </param>
         public XElement(XName name)
         {
-            if (name == null) throw new ArgumentNullException("name");
+            if (name == null) throw new ArgumentNullException(nameof(name));
             this.name = name;
         }
 
@@ -122,7 +122,7 @@ namespace System.Xml.Linq
         /// </param>
         public XElement(XStreamingElement other)
         {
-            if (other == null) throw new ArgumentNullException("other");
+            if (other == null) throw new ArgumentNullException(nameof(other));
             name = other.name;
             AddContentSkipNotify(other.content);
         }
@@ -205,7 +205,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Name);
                 name = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Name);
@@ -246,7 +246,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 RemoveNodes();
                 Add(value);
             }
@@ -412,7 +412,7 @@ namespace System.Xml.Linq
         /// <returns>An <see cref="XNamespace"/> for the namespace bound to the prefix</returns>
         public XNamespace GetNamespaceOfPrefix(string prefix)
         {
-            if (prefix == null) throw new ArgumentNullException("prefix");
+            if (prefix == null) throw new ArgumentNullException(nameof(prefix));
             if (prefix.Length == 0) throw new ArgumentException(SR.Format(SR.Argument_InvalidPrefix, prefix));
             if (prefix == "xmlns") return XNamespace.Xmlns;
             string namespaceName = GetNamespaceOfPrefixInScope(prefix, null);
@@ -428,7 +428,7 @@ namespace System.Xml.Linq
         /// <returns>The namespace prefix string</returns>
         public string GetPrefixOfNamespace(XNamespace ns)
         {
-            if (ns == null) throw new ArgumentNullException("ns");
+            if (ns == null) throw new ArgumentNullException(nameof(ns));
             string namespaceName = ns.NamespaceName;
             bool hasInScopeNamespace = false;
             XElement e = this;
@@ -670,7 +670,7 @@ namespace System.Xml.Linq
         /// </returns>
         public static XElement Load(XmlReader reader, LoadOptions options)
         {
-            if (reader == null) throw new ArgumentNullException("reader");
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
             if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
             XElement e = new XElement(reader, options);
             reader.MoveToContent();
@@ -935,7 +935,7 @@ namespace System.Xml.Linq
         /// </param>
         public void Save(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
@@ -1035,7 +1035,7 @@ namespace System.Xml.Linq
         /// </exception>
         public void SetValue(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             Value = GetStringValue(value);
         }
 
@@ -1047,7 +1047,7 @@ namespace System.Xml.Linq
         /// </param>
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
             new ElementWriter(writer).WriteElement(this);
         }
 
@@ -1093,7 +1093,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator bool (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToBoolean(element.Value.ToLowerInvariant());
         }
 
@@ -1136,7 +1136,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator int (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToInt32(element.Value);
         }
 
@@ -1179,7 +1179,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator uint (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToUInt32(element.Value);
         }
 
@@ -1222,7 +1222,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator long (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToInt64(element.Value);
         }
 
@@ -1265,7 +1265,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator ulong (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToUInt64(element.Value);
         }
 
@@ -1308,7 +1308,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator float (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToSingle(element.Value);
         }
 
@@ -1351,7 +1351,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator double (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToDouble(element.Value);
         }
 
@@ -1394,7 +1394,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator decimal (XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToDecimal(element.Value);
         }
 
@@ -1437,7 +1437,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTime(XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return DateTime.Parse(element.Value, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
         }
 
@@ -1480,7 +1480,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTimeOffset(XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToDateTimeOffset(element.Value);
         }
 
@@ -1523,7 +1523,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator TimeSpan(XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToTimeSpan(element.Value);
         }
 
@@ -1566,7 +1566,7 @@ namespace System.Xml.Linq
         [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator Guid(XElement element)
         {
-            if (element == null) throw new ArgumentNullException("element");
+            if (element == null) throw new ArgumentNullException(nameof(element));
             return XmlConvert.ToGuid(element.Value);
         }
 
@@ -1607,7 +1607,7 @@ namespace System.Xml.Linq
         /// </param>
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null) throw new ArgumentNullException("reader");
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
             if (parent != null || annotations != null || content != null || lastAttr != null) throw new InvalidOperationException(SR.InvalidOperation_DeserializeInstance);
             if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
             ReadElementFrom(reader, LoadOptions.None);

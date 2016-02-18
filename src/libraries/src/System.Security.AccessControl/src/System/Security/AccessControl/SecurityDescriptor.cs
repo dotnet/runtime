@@ -260,19 +260,19 @@ namespace System.Security.AccessControl
         {
             if (binaryForm == null)
             {
-                throw new ArgumentNullException("binaryForm");
+                throw new ArgumentNullException(nameof(binaryForm));
             }
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset",
+                throw new ArgumentOutOfRangeException(nameof(offset),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (binaryForm.Length - offset < BinaryLength)
             {
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
             Contract.EndContractBlock();
@@ -478,7 +478,7 @@ namespace System.Security.AccessControl
 
             if (binaryForm == null)
             {
-                throw new ArgumentNullException("binaryForm");
+                throw new ArgumentNullException(nameof(binaryForm));
             }
 
             if (offset < 0)
@@ -487,7 +487,7 @@ namespace System.Security.AccessControl
                 // Offset must not be negative
                 //
 
-                throw new ArgumentOutOfRangeException("offset",
+                throw new ArgumentOutOfRangeException(nameof(offset),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
@@ -498,7 +498,7 @@ namespace System.Security.AccessControl
             if (binaryForm.Length - offset < HeaderLength)
             {
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                      SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
@@ -508,7 +508,7 @@ namespace System.Security.AccessControl
 
             if (binaryForm[offset + 0] != Revision)
             {
-                throw new ArgumentOutOfRangeException("binaryForm",
+                throw new ArgumentOutOfRangeException(nameof(binaryForm),
                      SR.AccessControl_InvalidSecurityDescriptorRevision);
             }
             Contract.EndContractBlock();
@@ -539,7 +539,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                      SR.AccessControl_InvalidSecurityDescriptorSelfRelativeForm,
-                    "binaryForm");
+nameof(binaryForm));
             }
 
             //
@@ -629,7 +629,7 @@ namespace System.Security.AccessControl
         {
             if (sddlForm == null)
             {
-                throw new ArgumentNullException("sddlForm");
+                throw new ArgumentNullException(nameof(sddlForm));
             }
             Contract.EndContractBlock();
 
@@ -656,7 +656,7 @@ namespace System.Security.AccessControl
                     {
                         throw new ArgumentException(
                              SR.ArgumentException_InvalidSDSddlForm,
-                            "sddlForm");
+nameof(sddlForm));
                     }
                     else if (error == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
                     {
@@ -666,7 +666,7 @@ namespace System.Security.AccessControl
                     {
                         throw new ArgumentException(
                              SR.AccessControl_InvalidSidInSDDLString,
-                            "sddlForm");
+nameof(sddlForm));
                     }
                     else if (error != Interop.mincore.Errors.ERROR_SUCCESS)
                     {
@@ -847,7 +847,7 @@ namespace System.Security.AccessControl
                      isContainer ?
                         SR.AccessControl_MustSpecifyContainerAcl :
                         SR.AccessControl_MustSpecifyLeafObjectAcl,
-                    "systemAcl");
+nameof(systemAcl));
             }
 
             if (discretionaryAcl != null &&
@@ -857,7 +857,7 @@ namespace System.Security.AccessControl
                      isContainer ?
                         SR.AccessControl_MustSpecifyContainerAcl :
                         SR.AccessControl_MustSpecifyLeafObjectAcl,
-                    "discretionaryAcl");
+nameof(discretionaryAcl));
             }
 
             _isContainer = isContainer;
@@ -869,7 +869,7 @@ namespace System.Security.AccessControl
                      isDS ?
                         SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                         SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-                    "systemAcl");
+nameof(systemAcl));
             }
 
             if (discretionaryAcl != null &&
@@ -879,7 +879,7 @@ namespace System.Security.AccessControl
                     isDS ?
                         SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                         SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-                    "discretionaryAcl");
+nameof(discretionaryAcl));
             }
 
             _isDS = isDS;
@@ -950,7 +950,7 @@ namespace System.Security.AccessControl
         {
             if (rawSecurityDescriptor == null)
             {
-                throw new ArgumentNullException("rawSecurityDescriptor");
+                throw new ArgumentNullException(nameof(rawSecurityDescriptor));
             }
             Contract.EndContractBlock();
 
@@ -1075,7 +1075,7 @@ namespace System.Security.AccessControl
                              this.IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
-                            "value");
+nameof(value));
                     }
 
                     if (value.IsDS != this.IsDS)
@@ -1084,7 +1084,7 @@ namespace System.Security.AccessControl
                             this.IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-                            "value");
+nameof(value));
                     }
                 }
 
@@ -1124,7 +1124,7 @@ namespace System.Security.AccessControl
                              this.IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
-                            "value");
+nameof(value));
                     }
 
                     if (value.IsDS != this.IsDS)
@@ -1133,7 +1133,7 @@ namespace System.Security.AccessControl
                              this.IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-                            "value");
+nameof(value));
                     }
                 }
 
@@ -1211,7 +1211,7 @@ namespace System.Security.AccessControl
         {
             if (sid == null)
             {
-                throw new ArgumentNullException("sid");
+                throw new ArgumentNullException(nameof(sid));
             }
             Contract.EndContractBlock();
 
@@ -1225,7 +1225,7 @@ namespace System.Security.AccessControl
         {
             if (sid == null)
             {
-                throw new ArgumentNullException("sid");
+                throw new ArgumentNullException(nameof(sid));
             }
             Contract.EndContractBlock();
 

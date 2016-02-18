@@ -35,7 +35,7 @@ namespace System.Net.Http.Headers
 
             if ((quality < 0) || (quality > 1))
             {
-                throw new ArgumentOutOfRangeException("quality");
+                throw new ArgumentOutOfRangeException(nameof(quality));
             }
 
             _value = value;
