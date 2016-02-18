@@ -6,7 +6,7 @@ usage()
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
-    echo "BuildArch can be: x64, arm"
+    echo "BuildArch can be: x64, x86, arm, arm64"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -166,10 +166,39 @@ __rootbinpath="$__scriptpath/bin"
 __msbuildpackageid="Microsoft.Build.Mono.Debug"
 __msbuildpackageversion="14.1.0.0-prerelease"
 __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
-__BuildArch=x64
 __buildmanaged=false
 __buildnative=false
 __TestNugetRuntimeId=win7-x64
+
+# Use uname to determine what the CPU is.
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
+case $CPUName in
+    i686)
+        __BuildArch=x86
+        ;;
+
+    x86_64)
+        __BuildArch=x64
+        ;;
+
+    armv7l)
+        __BuildArch=arm
+        ;;
+
+    aarch64)
+        __BuildArch=arm64
+        ;;
+
+    *)
+        echo "Unknown CPU $CPUName detected, configuring as if for x64"
+        __BuildArch=x64
+        ;;
+esac
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -254,14 +283,22 @@ for i in "$@"
         native)
             __buildnative=true
             ;;
+        x86)
+            __BuildArch=x86
+            ;;
+
         x64)
             __BuildArch=x64
-            __MSBuildBuildArch=x64
             ;;
+
         arm)
             __BuildArch=arm
-            __MSBuildBuildArch=arm
             ;;
+
+        arm64)
+            __BuildArch=arm64
+            ;;
+
         debug)
             __BuildType=Debug
             ;;
