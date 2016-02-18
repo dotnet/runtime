@@ -74,11 +74,6 @@
 #include "perfmap.h"
 #endif
 
-#ifdef MDIL
-#include <mdil.h>
-#endif
-#include "tritonstress.h"
-
 #include "argdestination.h"
 
 #ifdef CROSSGEN_COMPILE
@@ -564,11 +559,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             pDomain->ToCompilationDomain()->AddDependency(&spec, pAssemblyHolder);
         }
 
-#ifdef MDIL
-        if (GetAppDomain()->IsMDILCompilationDomain())
-            TritonStressStartup(LogToSvcLogger);
-#endif
-
         // Kind of a workaround - if we could have loaded this assembly via normal load,
 
         *pHandle = CORINFO_ASSEMBLY_HANDLE(pAssembly);
@@ -627,11 +617,6 @@ static HRESULT LoadAssemblyByIAssemblyNameWorker(
 
         pAssembly = spec.LoadAssembly(FILE_LOADED);
     }
-
-#ifdef MDIL
-    if (GetAppDomain()->IsMDILCompilationDomain())
-        TritonStressStartup(LogToSvcLogger);
-#endif
 
     //
     // Return the module handle
