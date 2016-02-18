@@ -249,56 +249,6 @@ class ZapInfo
                           CORINFO_ACCESS_FLAGS accessFlags,
                           BOOL fAllowThunk);
 
-
-#ifdef MDIL
-    ULONG                       m_headerSize;           // header size of the current method
-    SArray<CORINFO_EH_CLAUSE>   m_exceptionClauses;     // temporary buffer for the exception table of one method
-    ULONG                       m_codeSize;             // code size of the current method
-    ULONG                       m_xcptnsCount;          // exception count of the current method
-
-    void PublishCompiledMethod_MDIL(BYTE *pCode, ULONG cCode);
-
-    typedef DWORD   FlavorSet;
-
-    struct MDILGenericMethodDesc
-    {
-        static const int        MAX_TYPE_ARGS = 20;         // we intend to give up compiling to MDIL after that
-        BYTE                    arity;
-        FlavorSet               flavorSet[MAX_TYPE_ARGS];   // set of CorElementType this inst applies to
-        ULONG                   mdilCodeOffs;               // offset into the mdil code buffer    
-        ULONG                   mdilCodeSize;
-        ULONG                   debugInfoOffs;              // offset into the debug info buffer
-        ULONG                   debugInfoSize;
-        MDILGenericMethodDesc  *next;
-    };
-
-    static int __cdecl CmpMDILGenericMethodDesc(const void *p1, const void *p2);
-
-    struct MDILInstHeader
-    {
-        WORD                    m_instCount;                // number of method bodies
-        BYTE                    m_flags;                    // flags - no flags yet
-        BYTE                    m_arity;                    // number of type args
-    };
-
-    void SetMDILGenericMethodDesc(CORINFO_METHOD_HANDLE methodHandle, MDILGenericMethodDesc *pGMD);
-
-    static bool ArgFlavorsMatchExcept(FlavorSet fs1[], FlavorSet fs2[], unsigned arity, unsigned argToIgnore);
-
-    void allocMem_MDIL( ULONG               hotCodeSize,    /* IN */
-                        ULONG               coldCodeSize,   /* IN */
-                        ULONG               roDataSize,     /* IN */
-                        ULONG               xcptnsCount,    /* IN */    
-                        CorJitAllocMemFlag  flag,           /* IN */
-                        void **             hotCodeBlock,   /* OUT */
-                        void **             coldCodeBlock,  /* OUT */
-                        void **             roDataBlock     /* OUT */);
-
-    void setEHinfo_MDIL(unsigned EHnumber,
-                        const CORINFO_EH_CLAUSE *clause);
-
-#endif
-
 public:
 #ifdef BINDER
     void PublishCompiledMethod(mdToken methodDefToken, CORINFO_METHOD_HANDLE methodHandle)
@@ -556,11 +506,6 @@ public:
                        CORINFO_ACCESS_FLAGS   flags,
                        CORINFO_FIELD_INFO    *pResult);
 
-#ifdef MDIL
-    virtual DWORD getFieldOrdinal(CORINFO_MODULE_HANDLE  tokenScope,
-                                            unsigned               fieldToken);
-#endif
-
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
     // ICorClassInfo
@@ -630,25 +575,7 @@ public:
     BOOL areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2);
-#ifdef  MDIL
-    unsigned getNumTypeParameters(CORINFO_METHOD_HANDLE method);
-
-    CorElementType getTypeOfTypeParameter(CORINFO_METHOD_HANDLE method, unsigned index);
-    CORINFO_CLASS_HANDLE getTypeParameter(CORINFO_METHOD_HANDLE method, bool classTypeParameter, unsigned index);
-    unsigned getStructTypeToken(InlineContext *inlineContext, CORINFO_ARG_LIST_HANDLE argList);
-    unsigned getEnclosingClassToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method);
-    InlineContext * computeInlineContext(InlineContext *outerContext, unsigned inlinedMethodToken, unsigned constraintTypeToken, CORINFO_METHOD_HANDLE methHnd);
-    unsigned translateToken(InlineContext *inlineContext, CORINFO_MODULE_HANDLE scopeHnd, unsigned token);
-    CorInfoType getFieldElementType(unsigned fieldToken, CORINFO_MODULE_HANDLE scope, CORINFO_METHOD_HANDLE methHnd);
-    unsigned getCurrentMethodToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method);
-    unsigned getStubMethodFlags(CORINFO_METHOD_HANDLE method);
-#endif
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
-#ifdef  MDIL
-    virtual unsigned getTypeTokenForFieldOrMethod(
-        unsigned fieldOrMethodToken);
-    virtual unsigned getTokenForType(CORINFO_CLASS_HANDLE  cls);
-#endif
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE  cls);
     CorInfoType getChildType (CORINFO_CLASS_HANDLE       clsHnd,
                               CORINFO_CLASS_HANDLE       *clsRet);
@@ -664,16 +591,6 @@ public:
     // ICorModuleInfo
 
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
-
-#ifdef MDIL
-    // Given a field or method token metaTOK return its parent token
-    // we still need this in MDIL, for example for static field access we need the 
-    // token of the enclosing type
-    unsigned getMemberParent(CORINFO_MODULE_HANDLE  scopeHnd, unsigned metaTOK);
-
-    // given a token representing an MD array of structs, get the element type token
-    unsigned getArrayElementToken(CORINFO_MODULE_HANDLE  scopeHnd, unsigned metaTOK);
-#endif
 
     void findSig(CORINFO_MODULE_HANDLE module, unsigned sigTOK,
                  CORINFO_CONTEXT_HANDLE context,

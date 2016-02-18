@@ -4261,33 +4261,6 @@ void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
         pSm->Start(this);
     }
 
-#ifdef FEATURE_LEGACYNETCF
-
-    // NetCF had some strict restrictions on inlining.  Specifically they
-    // would only inline methods that fit a specific pattern of loading
-    // arguments inorder, starting with zero, with no skipping, but not
-    // needing to load all of them.  Then a 'body' section that could do
-    // anything besides control flow.  And a final ending ret opcode.
-    // Lastly they did not allow starg or ldarga.
-    // These simplifications allowed them to skip past the ldargs, when
-    // inlining, and just use the caller's EE stack as the callee's EE
-    // stack, after optionally popping a few 'arguments' from the end.
-    //
-    // stateNetCFQuirks is a simple state machine to track that state
-    // and allow us to match those restrictions.
-    // State -1 means we're not tracking (no quirks mode)
-    // State 0 though 0x0000FFFF tracks what the *next* ldarg should be
-    //    to match the pattern
-    // State 0x00010000 and above means we are in the 'body' section and
-    //    thus no more ldarg's are allowed.
-    int stateNetCFQuirks = -1;
-    if (compIsForInlining() && (opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS))
-    {
-        stateNetCFQuirks = 0;
-    }
-
-#endif // FEATURE_LEGACYNETCF
-    
     while (codeAddr < codeEndp)
     {
         unsigned    sz;
@@ -4302,20 +4275,6 @@ DECODE_OPCODE:
 
         if (opcode >= CEE_COUNT)
             BADCODE3("Illegal opcode", ": %02X", (int) opcode);
-
-#ifdef FEATURE_LEGACYNETCF
-
-        // If this is the first non-ldarg, then transition states
-        if ((0 == (stateNetCFQuirks & 0x10000)) && 
-            ((opcode < CEE_LDARG_0) || (opcode > CEE_LDARG_3)) &&
-            (opcode != CEE_LDARG_S) && (opcode != CEE_LDARG) && (opcode != CEE_PREFIX1))
-        {
-            // Maximum number of arguments is 2^16 - 1
-            // so this value will never line up with any ldarg
-            stateNetCFQuirks = 0x10000;
-        }
-
-#endif // FEATURE_LEGACYNETCF
 
         if ((opcode >= CEE_LDARG_0 && opcode <= CEE_STLOC_S) ||
             (opcode >= CEE_LDARG   && opcode <= CEE_STLOC))
@@ -4432,19 +4391,6 @@ DECODE_OPCODE:
             if (codeAddr > codeEndp - sz)
                 goto TOO_FAR;
 
-#ifdef FEATURE_LEGACYNETCF
-
-            if (compIsForInlining()) 
-            {
-                if (stateNetCFQuirks >= 0)
-                {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_CONTROL_FLOW);
-                    return;
-                }
-            }
-
-#endif // FEATURE_LEGACYNETCF
-
             /* Compute the target address of the jump */
 
             jmpDist = (sz==1) ? getI1LittleEndian(codeAddr)
@@ -4479,17 +4425,6 @@ DECODE_OPCODE:
 
             if (compIsForInlining())
             {
-
-#ifdef FEATURE_LEGACYNETCF
-
-                if (stateNetCFQuirks >= 0)
-                {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_CONTROL_FLOW);
-                    return;
-                }
-
-#endif // FEATURE_LEGACYNETCF
-
                 compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_SWITCH);
                 return;
             }
@@ -4547,20 +4482,6 @@ DECODE_OPCODE:
         case CEE_TAILCALL:
             if (codeAddr >= codeEndp)
                 goto TOO_FAR;
-
-#ifdef FEATURE_LEGACYNETCF
-
-            if (compIsForInlining())
-            {
-                if (stateNetCFQuirks >= 0)
-                {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_PREFIX);
-                    return;
-                }
-            }
-
-#endif // FEATURE_LEGACYNETCF
-
             break;
 
         case CEE_STARG:
@@ -4573,20 +4494,6 @@ DECODE_OPCODE:
 
         // Other opcodes that we know inliner won't handle.
         case CEE_THROW:
-
-#ifdef FEATURE_LEGACYNETCF
-
-            if (compIsForInlining())
-            {
-                if (stateNetCFQuirks >= 0)
-                {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_THROW);
-                    return;
-                }
-            }
-
-#endif // FEATURE_LEGACYNETCF
-
             if (seenJump)
                 break;
         case CEE_ISINST:
@@ -4747,41 +4654,11 @@ ARG_PUSH:
             if (compIsForInlining())
             {
                 pushedStack.pushArgument(varNum);
-
-#ifdef FEATURE_LEGACYNETCF
-
-                if (stateNetCFQuirks >= 0)
-                {
-                    unsigned expectedVarNum = (unsigned)stateNetCFQuirks;
-                    stateNetCFQuirks++;
-                    if (varNum != expectedVarNum)
-                    {
-                        compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_LDARG_ORDER);
-                        return;
-                    }
-                }
-
-#endif // FEATURE_LEGACYNETCF
-
-            }   
+            }
 
             break;
 
 ADDR_TAKEN:
-
-#ifdef FEATURE_LEGACYNETCF
-
-            if (compIsForInlining())
-            {
-                if (stateNetCFQuirks >= 0)
-                {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_ADDRESS_TAKEN);
-                    return;
-                }
-            }
-
-#endif // FEATURE_LEGACYNETCF
-
             noway_assert(sz == sizeof(BYTE) || sz == sizeof(WORD));
             if (codeAddr > codeEndp - sz)
                 goto TOO_FAR;
@@ -5629,19 +5506,6 @@ GOT_ENDP:
             noway_assert(jmpAddr != DUMMY_INIT(BAD_IL_OFFSET));
             curBBdesc->bbJumpOffs = jmpAddr;
             break;
-
-#ifdef FEATURE_LEGACYNETCF
-        case BBJ_EHFILTERRET:
-            if (opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS)
-            {
-                // NetCF incorrectly allowed sequence of endfilter instructions at the end of the filter. Ignore the redundant endfilter instructions.
-                while (codeAddr + 1 < codeEndp && getU1LittleEndian(codeAddr) == CEE_PREFIX1 && getU1LittleEndian(codeAddr+1) == (CEE_ENDFILTER & 0xFF))
-                    codeAddr += 2;
-
-                nxtBBoffs = (IL_OFFSET)(codeAddr - codeBegp);
-            }
-            break;
-#endif
 
         default:
             break;

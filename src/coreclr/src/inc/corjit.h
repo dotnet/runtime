@@ -68,7 +68,6 @@ enum CorJitResult
     CORJIT_INTERNALERROR =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 3),
     CORJIT_SKIPPED       =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 4),
     CORJIT_RECOVERABLEERROR =  MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 5),
-    CORJIT_SKIPMDIL      =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)
 };
 
 
@@ -121,33 +120,9 @@ enum CorJitFlag
 
 #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
-#if defined(MDIL)
-
-    CORJIT_FLG_MDIL                = 0x00004000, // Generate MDIL code instead of machine code
-
-    // Safe to overlap with CORJIT_FLG_MAKEFINALCODE below. Not used by the JIT, used internally by NGen only.
-    CORJIT_FLG_MINIMAL_MDIL        = 0x00008000, // Generate MDIL code suitable for use to bind other assemblies.
-
-    // Safe to overlap with CORJIT_FLG_READYTORUN below. Not used by the JIT, used internally by NGen only.
-    CORJIT_FLG_NO_MDIL             = 0x00010000, // Generate an MDIL section but no code or CTL. Not used by the JIT, used internally by NGen only.
-
-#else // defined(MDIL)
-
     CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
-
-#if defined(FEATURE_INTERPRETER)
-
     CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
-
-#endif // defined(FEATURE_INTERPRETER)
-
-#if defined(FEATURE_READYTORUN_COMPILER)
-
     CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
-
-#endif // defined(FEATURE_READYTORUN_COMPILER)
-
-#endif // !defined(MDIL)
 
     CORJIT_FLG_PROF_ENTERLEAVE     = 0x00020000, // Instrument prologues/epilogues
     CORJIT_FLG_PROF_REJIT_NOPS     = 0x00040000, // Insert NOPs to ensure code is re-jitable
