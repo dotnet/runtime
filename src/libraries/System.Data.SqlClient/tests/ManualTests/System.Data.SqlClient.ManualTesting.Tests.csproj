@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <!--UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms-->
+    <UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
