@@ -188,7 +188,7 @@ namespace System.Linq
         public IEnumerator<TResult> GetEnumerator()
         {
             Lookup<TKey, TElement> lookup = Lookup<TKey, TElement>.Create(_source, _keySelector, _elementSelector, _comparer);
-            return lookup.ApplyResultSelector(_resultSelector);
+            return lookup.ApplyResultSelector(_resultSelector).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -233,7 +233,7 @@ namespace System.Linq
         public IEnumerator<TResult> GetEnumerator()
         {
             Lookup<TKey, TSource> lookup = Lookup<TKey, TSource>.Create(_source, _keySelector, _comparer);
-            return lookup.ApplyResultSelector(_resultSelector);
+            return lookup.ApplyResultSelector(_resultSelector).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
