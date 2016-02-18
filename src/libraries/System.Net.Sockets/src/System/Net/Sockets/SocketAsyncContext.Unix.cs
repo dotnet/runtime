@@ -21,13 +21,6 @@ namespace System.Net.Sockets
     //     - It might make sense to change _closeLock to a ReaderWriterLockSlim that is
     //       acquired for read by all public methods before attempting a completion and
     //       acquired for write by Close() and HandlEvents()
-    // - Audit event-related code for the possibility of GCHandle recycling issues
-    //     - There is a potential issue with handle recycling in event loop processing
-    //       if the processing of an event races with the close of a GCHandle
-    //     - It may be necessary for the event loop thread to do all file descriptor
-    //       unregistration in order to avoid this. If so, this would probably happen
-    //       by adding a flag that indicates that the event loop is processing events and
-    //       a queue of contexts to unregister once processing completes.
     //
     // NOTE: the publicly-exposed asynchronous methods should match the behavior of
     //       Winsock overlapped sockets as closely as possible. Especially important are
@@ -410,7 +403,7 @@ namespace System.Net.Sockets
             Debug.Assert(Monitor.IsEntered(_queueLock));
             Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None);
 
-            if (!_asyncEngineToken.IsAllocated)
+            if (!_asyncEngineToken.WasAllocated)
             {
                 _asyncEngineToken = new SocketAsyncEngine.Token(this);
             }
@@ -434,17 +427,17 @@ namespace System.Net.Sockets
 
             Interop.Sys.SocketEvents events = _registeredEvents & ~Interop.Sys.SocketEvents.Read;
 
-                Interop.Error errorCode;
+            Interop.Error errorCode;
             bool unregistered = _asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode);
-                if (unregistered)
-                {
-                    _registeredEvents = events;
-                }
-                else
-                {
-                    Debug.Fail(string.Format("UnregisterRead failed: {0}", errorCode));
-                }
+            if (unregistered)
+            {
+                _registeredEvents = events;
             }
+            else
+            {
+                Debug.Fail(string.Format("UnregisterRead failed: {0}", errorCode));
+            }
+        }
 
         private void CloseInner()
         {
@@ -456,15 +449,15 @@ namespace System.Net.Sockets
 
             // Drain queues
 
-            acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
-            sendQueue = _sendQueue.Stop();
-            receiveQueue = _receiveQueue.Stop();
+                acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
+                sendQueue = _sendQueue.Stop();
+                receiveQueue = _receiveQueue.Stop();
 
-            // Freeing the token will prevent any future event delivery.  This socket will be runregistered
-            // from the event port automatically by the OS when it's closed.
-            _asyncEngineToken.Free();
+                // Freeing the token will prevent any future event delivery.  This socket will be unregistered
+                // from the event port automatically by the OS when it's closed.
+                _asyncEngineToken.Free();
 
-            // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
+                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
             // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
