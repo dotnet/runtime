@@ -479,7 +479,7 @@ namespace System.Numerics.Tests
             VerifySingleExplicitCastFromBigInteger(Single.MaxValue, bigInteger);
 
             // Single Explicit Cast from BigInteger: Random value > Single.MaxValue
-            bigInteger = GenerateRandomBigIntegerGreaterThan(Single.MaxValue * 2, s_random);
+            bigInteger = GenerateRandomBigIntegerGreaterThan((double)Single.MaxValue * 2, s_random);
             VerifySingleExplicitCastFromBigInteger(Single.PositiveInfinity, bigInteger);
 
             // Single Explicit Cast from BigInteger: value < Single.MaxValue but can not be accurately represented in a Single
