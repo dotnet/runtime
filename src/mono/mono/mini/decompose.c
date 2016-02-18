@@ -471,6 +471,33 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		}
 		break;
 
+	case OP_DIV_IMM:
+	case OP_REM_IMM:
+	case OP_IDIV_IMM:
+	case OP_IDIV_UN_IMM:
+	case OP_IREM_UN_IMM:
+		if (cfg->backend->need_div_check) {
+			int reg1 = alloc_ireg (cfg);
+			/* b == 0 */
+			if (ins->inst_imm == 0) {
+				// FIXME: Optimize this
+				MONO_EMIT_NEW_ICONST (cfg, reg1, 0);
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, reg1, 0);
+				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
+			}
+			if ((ins->opcode == OP_DIV_IMM || ins->opcode == OP_IDIV_IMM || ins->opcode == OP_REM_IMM || ins->opcode == OP_IREM_IMM) &&
+				(ins->inst_imm == -1)) {
+					/* b == -1 && a == 0x80000000 */
+					MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg1, 0x80000000);
+					MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "OverflowException");
+			}
+			MONO_EMIT_NEW_BIALU_IMM (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->inst_imm);
+			NULLIFY_INS (ins);
+		} else {
+			emulate = TRUE;
+		}
+		break;
+
 	default:
 		emulate = TRUE;
 		break;
