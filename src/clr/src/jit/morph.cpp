@@ -5615,9 +5615,7 @@ bool        Compiler::fgMorphCallInline(GenTreePtr node)
     GenTreeCall* call = node->AsCall();
 
     // Prepare to record information about this inline
-    CORINFO_METHOD_HANDLE callerHandle = call->gtCall.gtInlineCandidateInfo->ilCallerHandle;
-    CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
-    InlineResult inlineResult(this, callerHandle, calleeHandle, "fgMorphCallInline");
+    InlineResult inlineResult(this, call, "fgMorphCallInline");
 
     // Attempt the inline
     fgMorphCallInlineHelper(call, &inlineResult);
@@ -5692,6 +5690,19 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 
     if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0)
     {
+        InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
+
+#ifdef DEBUG
+
+        // Try and recover the reason left behind when the jit decided
+        // this call was not a candidate.
+        InlineObservation priorObservation = static_cast<InlineObservation>(call->gtInlineObservation);
+        if (inlIsValidObservation(priorObservation))
+        {
+            currentObservation = priorObservation;
+        }
+#endif
+
         result->noteFatal(InlineObservation::CALLSITE_NOT_CANDIDATE);
         return;
     }
