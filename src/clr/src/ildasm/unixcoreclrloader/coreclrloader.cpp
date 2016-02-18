@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <stdio.h>
+#include <assert.h>
 #include "dlfcn.h"
 #include "coreclrloader.h"
 #include "coreruncommon.h"
@@ -11,12 +12,15 @@ using namespace std;
 void *CoreCLRLoader::LoadFunction(const char *funcName)
 {
     void *func = nullptr;
-    if (coreclrLib == nullptr) {
+    if (coreclrLib == nullptr)
+    {
         fprintf(stderr, "Error: coreclr should be loaded before loading a function: %s\n", funcName);
     }
-    else {
+    else
+    {
         func = dlsym(coreclrLib, funcName);
-        if (func == nullptr) {
+        if (func == nullptr)
+        {
             fprintf(stderr, "Error: cannot find %s in coreclr\n", funcName);
         }
     }
@@ -26,7 +30,12 @@ void *CoreCLRLoader::LoadFunction(const char *funcName)
 CoreCLRLoader* CoreCLRLoader::Create(const char *exePath)
 {
     string absolutePath, coreClrPath;
-    GetAbsolutePath(exePath, absolutePath);
+    bool success = GetAbsolutePath(exePath, absolutePath);
+    if (!success)
+    {
+        success = GetEntrypointExecutableAbsolutePath(absolutePath);
+        assert(success);
+    }
     GetDirectory(absolutePath.c_str(), coreClrPath);
     coreClrPath.append("/");
     coreClrPath.append(coreClrDll);
@@ -63,7 +72,8 @@ CoreCLRLoader* CoreCLRLoader::Create(const char *exePath)
 
 int CoreCLRLoader::Finish()
 {
-  if (hostHandle != 0) {
+  if (hostHandle != 0)
+  {
       shutdownCoreCLR(hostHandle, domainId);
       delete this;
   }
