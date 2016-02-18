@@ -4384,7 +4384,7 @@ DECODE_OPCODE:
                 noway_assert(codeAddr < codeEndp - sz);
                 if ((OPCODE) getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
-                    compInlineeHints = (InlInlineHints)(compInlineeHints | InlLooksLikeWrapperMethod);
+                    compInlineeHints = (InlineHints)(compInlineeHints | InlLooksLikeWrapperMethod);
 #ifdef DEBUG
                     //printf("CALL->RET pattern found in %s\n", info.compFullName);
 #endif
@@ -4693,13 +4693,13 @@ INL_HANDLE_COMPARE:
                             unsigned slot0 = pushedStack.getSlot0();
                             if (fgStack::isArgument(slot0))
                             {
-                                compInlineeHints = (InlInlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                                compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
                                 //Check for the double whammy of an incoming constant argument feeding a
                                 //constant test.
                                 varNum = fgStack::slotTypeToArgNum(slot0);
                                 if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                                 {
-                                    compInlineeHints = (InlInlineHints)(compInlineeHints
+                                    compInlineeHints = (InlineHints)(compInlineeHints
                                                                         | InlIncomingConstFeedsCond);
                                 }
                             }
@@ -4715,13 +4715,13 @@ INL_HANDLE_COMPARE:
                 if ((fgStack::isConstant(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isConstant(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlInlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
                 }
                 //Arg feeds range check
                 if ((fgStack::isArrayLen(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isArrayLen(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlInlineHints)(compInlineeHints | InlArgFeedsRngChk);
+                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsRngChk);
                 }
 
                 //Check for an incoming arg that's a constant.
@@ -4730,7 +4730,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot0);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlInlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
                     }
                 }
                 if (fgStack::isArgument(slot1))
@@ -4738,7 +4738,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot1);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlInlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
                     }
                 }
             }
@@ -4956,7 +4956,7 @@ TOO_FAR:
     //This allows for CALL, RET, and one more non-ld/st instruction.
     if ((opts.instrCount - ldStCount) < 4 || ((double)ldStCount/(double)opts.instrCount) > .90)
     {
-        compInlineeHints = (InlInlineHints)(compInlineeHints | InlMethodMostlyLdSt);
+        compInlineeHints = (InlineHints)(compInlineeHints | InlMethodMostlyLdSt);
     }
 
     if (pSm)
@@ -21869,8 +21869,8 @@ Compiler::fgWalkResult      Compiler::fgDebugCheckInlineCandidates(GenTreePtr* p
 #endif // DEBUG
 
 
-void       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call,
-                                             JitInlineResult* inlineResult)
+void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
+                                             InlineResult* inlineResult)
 {
     noway_assert(call->gtOper == GT_CALL);
     noway_assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
