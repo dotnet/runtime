@@ -45,7 +45,7 @@ static const InlineImpact InlineImpacts[] =
 // Return Value:
 //    true if the observation is valid
 
-static bool inlIsValidObservation(InlineObservation obs)
+bool inlIsValidObservation(InlineObservation obs)
 {
     return((obs > InlineObservation::CALLEE_UNUSED_INITIAL) &&
            (obs < InlineObservation::CALLEE_UNUSED_FINAL));
@@ -153,6 +153,68 @@ const char* inlGetImpactString(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
+// InlineResult: Construct an InlineResult to evaluate a particular call
+// for inlining.
+//
+// Arguments
+//   compiler - the compiler instance examining an call for ininling
+//   call     - the call in question
+//   context  - descrptive string to describe the context of the decision
+
+InlineResult::InlineResult(Compiler*    compiler,
+                           GenTreeCall* call,
+                           const char*  context)
+    : inlCompiler(compiler)
+    , inlDecision(InlineDecision::UNDECIDED)
+    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    , inlCall(call)
+    , inlCaller(nullptr)
+    , inlCallee(nullptr)
+    , inlContext(context)
+    , inlReported(false)
+{
+    // Get method handle for caller
+    inlCaller = inlCompiler->info.compMethodHnd;
+
+    // Get method handle for callee, if known
+    if (inlCall->gtCall.gtCallType == CT_USER_FUNC)
+    {
+        inlCallee = call->gtCall.gtCallMethHnd;
+    }
+}
+
+//------------------------------------------------------------------------
+// InlineResult: Construct an InlineResult to evaluate a particular 
+// method as a possible inline candidate.
+//
+// Notes:
+//   Used only during prejitting to try and pre-identify methods
+//   that cannot be inlined, to help subsequent jit throughput.
+//
+//   We use the inlCallee member to track the method since logically
+//   it is the callee here.
+//
+// Arguments
+//   compiler - the compiler instance doing the prejitting
+//   method   - the method in question
+//   context  - descrptive string to describe the context of the decision
+
+InlineResult::InlineResult(Compiler*              compiler,
+                           CORINFO_METHOD_HANDLE  method,
+                           const char*            context)
+    : inlCompiler(compiler)
+    , inlDecision(InlineDecision::UNDECIDED)
+    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    , inlCall(nullptr)
+    , inlCaller(nullptr)
+    , inlCallee(method)
+    , inlContext(context)
+    , inlReported(false)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
 // report: Dump, log, and report information about an inline decision.
 //
 // Notes:
@@ -178,22 +240,33 @@ void InlineResult::report()
 
 #ifdef DEBUG
 
+    // Optionally dump the result
     if (VERBOSE)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
-        const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
-        const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
+        const char* caller = (inlCaller == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCaller);
+        const char* callee = (inlCallee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCallee);
 
         JITDUMP(format, inlContext, resultString(), reasonString(), caller, callee);
     }
 
+    // If the inline failed, leave information on the call so we can
+    // later recover what observation lead to the failure.
+    if (isFailure() && (inlCall != nullptr))
+    {
+        // compiler should have revoked candidacy on the call by now
+        assert((inlCall->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+
+        inlCall->gtInlineObservation = static_cast<unsigned>(inlObservation);
+    }
+
 #endif // DEBUG
 
-    if (isDecided()) 
+    if (isDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
         JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), reasonString()));
         COMP_HANDLE comp = inlCompiler->info.compCompHnd;
-        comp->reportInliningDecision(inlInliner, inlInlinee, result(), reasonString());
+        comp->reportInliningDecision(inlCaller, inlCallee, result(), reasonString());
     }
 }

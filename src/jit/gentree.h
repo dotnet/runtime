@@ -2507,6 +2507,12 @@ struct GenTreeCall final : public GenTree
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
+#ifdef DEBUG
+    // For non-inline candidates, track the first observation
+    // that blocks candidacy.
+    unsigned gtInlineObservation;
+#endif
+
     GenTreeCall(var_types type) : 
         GenTree(GT_CALL, type) 
     {

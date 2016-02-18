@@ -88,6 +88,14 @@ enum class InlineObservation
 #undef INLINE_OBSERVATION
 };
 
+#ifdef DEBUG
+
+// Sanity check the observation value
+
+bool inlIsValidObservation(InlineObservation obs);
+
+#endif // DEBUG
+
 // Get a string describing this observation
 
 const char* inlGetDescriptionString(InlineObservation obs);
@@ -115,21 +123,17 @@ class InlineResult
 {
 public:
 
-    // Construct a new InlineResult.
+    // Construct a new InlineResult to help evaluate a
+    // particular call for inlining.
     InlineResult(Compiler*              compiler,
-                 CORINFO_METHOD_HANDLE  inliner,
-                 CORINFO_METHOD_HANDLE  inlinee,
-                 const char*            context)
-        : inlCompiler(compiler)
-        , inlDecision(InlineDecision::UNDECIDED)
-        , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
-        , inlInliner(inliner)
-        , inlInlinee(inlinee)
-        , inlContext(context)
-        , inlReported(false)
-    {
-        // empty
-    }
+                 GenTreeCall*           call,
+                 const char*            context);
+
+    // Construct a new InlineResult to evaluate a particular
+    // method to see if it is inlineable.
+    InlineResult(Compiler*              compiler,
+                 CORINFO_METHOD_HANDLE  method,
+                 const char*            context);
 
     // Translate into CorInfoInline for reporting back to the runtime.
     //
@@ -315,9 +319,9 @@ public:
     }
 
     // The reason for this particular result
-    const char * reasonString() const 
-    { 
-        return inlGetDescriptionString(inlObservation); 
+    const char * reasonString() const
+    {
+        return inlGetDescriptionString(inlObservation);
     }
 
     // setReported indicates that this particular result doesn't need
@@ -372,7 +376,7 @@ private:
     // Helper for setting decision and reason
     void setCommon(InlineDecision decision, InlineObservation obs)
     {
-        // assert(inlIsValidObservation(obs));
+        assert(inlIsValidObservation(obs));
         assert(decision != InlineDecision::UNDECIDED);
         inlDecision = decision;
         inlObservation = obs;
@@ -384,8 +388,9 @@ private:
     Compiler*               inlCompiler;
     InlineDecision          inlDecision;
     InlineObservation       inlObservation;
-    CORINFO_METHOD_HANDLE   inlInliner;
-    CORINFO_METHOD_HANDLE   inlInlinee;
+    GenTreeCall*            inlCall;
+    CORINFO_METHOD_HANDLE   inlCaller;
+    CORINFO_METHOD_HANDLE   inlCallee;
     const char*             inlContext;
     bool                    inlReported;
 };
