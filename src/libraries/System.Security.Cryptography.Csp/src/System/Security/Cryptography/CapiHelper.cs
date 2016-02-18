@@ -412,7 +412,10 @@ namespace Internal.NativeCrypto
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
                         pb = new byte[cb];
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
-                        retStr = Encoding.ASCII.GetString(pb);
+                        // GetProviderParameterWorker allocated the null character, we want to not interpret that.
+                        Debug.Assert(cb > 0);
+                        Debug.Assert(pb[cb - 1] == 0);
+                        retStr = Encoding.ASCII.GetString(pb, 0, cb - 1);
                     }
                     break;
                 default:
