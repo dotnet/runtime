@@ -3786,7 +3786,7 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		const unsigned char *target;
 		MonoError error;
 
-		target = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
 		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		if (patch_info->type == MONO_PATCH_INFO_NONE)

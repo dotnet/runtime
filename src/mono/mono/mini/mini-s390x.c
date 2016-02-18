@@ -5393,8 +5393,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 		unsigned char *ip = patch_info->ip.i + code;
 		gconstpointer target = NULL;
 
-		target = mono_resolve_patch_target_checked (method, domain, code, 
-													patch_info, run_cctors, &error);
+		target = mono_resolve_patch_target (method, domain, code, 
+											patch_info, run_cctors, &error);
 		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		switch (patch_info->type) {

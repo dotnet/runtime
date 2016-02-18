@@ -1064,7 +1064,7 @@ resolve_patch (MonoCompile *cfg, MonoJumpInfoType type, gconstpointer target)
 	ji.type = type;
 	ji.data.target = target;
 
-	res = mono_resolve_patch_target_checked (cfg->method, cfg->domain, NULL, &ji, FALSE, &error);
+	res = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &ji, FALSE, &error);
 	mono_error_assert_ok (&error);
 
 	return res;
@@ -3210,7 +3210,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 						 * FIXME: Some trampolines might have
 						 * their own calling convention on some platforms.
 						 */
-						target = mono_resolve_patch_target_checked (cfg->method, cfg->domain, NULL, abs_ji, FALSE, &error);
+						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, &error);
 						mono_error_assert_ok (&error);
 						LLVMAddGlobalMapping (ctx->module->ee, callee, target);
 					}

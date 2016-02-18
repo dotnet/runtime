@@ -1571,7 +1571,7 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 		patch_info.type = patch_type;
 		patch_info.data.target = data;
 
-		target = mono_resolve_patch_target_checked (cfg->method, cfg->domain, NULL, &patch_info, FALSE, &error);
+		target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &patch_info, FALSE, &error);
 		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		/* FIXME: Add optimizations if the target is close enough */
@@ -3682,7 +3682,7 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		unsigned char *ip = patch_info->ip.i + code;
 		gpointer target;
 
-		target = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
 		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		switch (patch_info->type) {

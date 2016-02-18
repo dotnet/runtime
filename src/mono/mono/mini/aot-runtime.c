@@ -1881,7 +1881,7 @@ init_amodule_got (MonoAotModule *amodule)
 		} else if (ji->type == MONO_PATCH_INFO_AOT_MODULE) {
 			amodule->shared_got [i] = amodule;
 		} else {
-			amodule->shared_got [i] = mono_resolve_patch_target_checked (NULL, mono_get_root_domain (), NULL, ji, FALSE, &error);
+			amodule->shared_got [i] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, ji, FALSE, &error);
 			mono_error_assert_ok (&error);
 		}
 	}
@@ -4136,7 +4136,7 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 					ji->type = MONO_PATCH_INFO_ABS;
 					ji->data.target = jinfo;
 				}
-				addr = mono_resolve_patch_target_checked (method, domain, code, ji, TRUE, &error);
+				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE, &error);
 				mono_error_raise_exception (&error); /* FIXME: don't raise here */
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					addr = mono_create_ftnptr (domain, addr);
@@ -4648,7 +4648,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 		}
 		no_ftnptr = TRUE;
 	} else {
-		target = (guint8 *)mono_resolve_patch_target_checked (NULL, mono_domain_get (), NULL, &ji, TRUE, error);
+		target = (guint8 *)mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE, error);
 		if (!mono_error_ok (error)) {
 			mono_mempool_destroy (mp);
 			return NULL;
@@ -4950,7 +4950,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				/* Hopefully the code doesn't have patches which need method or 
 				 * domain to be set.
 				 */
-				target = mono_resolve_patch_target_checked (NULL, NULL, (guint8 *)code, ji, FALSE, &error);
+				target = mono_resolve_patch_target (NULL, NULL, (guint8 *)code, ji, FALSE, &error);
 				mono_error_assert_ok (&error);
 				g_assert (target);
 			}

@@ -1355,7 +1355,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 }
 
 gpointer
-mono_resolve_patch_target_checked (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error)
+mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error)
 {
 	unsigned char *ip = patch_info->ip.i + code;
 	gconstpointer target = NULL;
@@ -1728,17 +1728,6 @@ mono_resolve_patch_target_checked (MonoMethod *method, MonoDomain *domain, guint
 	}
 
 	return (gpointer)target;
-}
-
-gpointer
-mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors)
-{
-	MonoError error;
-	gpointer res;
-
-	res = mono_resolve_patch_target_checked (method, domain, code, patch_info, run_cctors, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return res;
 }
 
 void
