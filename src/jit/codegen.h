@@ -90,8 +90,8 @@ private:
                                                         else
                                                             return REG_SPBASE; }
 
-    static emitJumpKind genJumpKindForOper(genTreeOps cmp, bool isUnsigned);
-
+    enum CompareKind { CK_SIGNED, CK_UNSIGNED, CK_LOGICAL };
+    static emitJumpKind genJumpKindForOper(genTreeOps cmp, CompareKind compareKind);
 
     // For a given compare oper tree, returns the conditions to use with jmp/set in 'jmpKind' array. 
     // The corresponding elements of jmpToTrueLabel indicate whether the target of the jump is to the
