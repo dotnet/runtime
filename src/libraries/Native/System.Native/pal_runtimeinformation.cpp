@@ -26,14 +26,17 @@ extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
 /* Returns an int representing the OS Architecture:
  0 - x86
  1 - x64
- 2 - ARM */
+ 2 - ARM
+ 3 - ARM64 */
 extern "C" int32_t SystemNative_GetUnixArchitecture()
 {
-#if defined(ARM)
+#if defined(_ARM_)
     return ARCH_ARM;
-#elif defined(X64)
+#elif defined(_ARM64_)
+    return ARCH_ARM64;
+#elif defined(_AMD64_)
     return ARCH_X64;
-#elif defined(X86)
+#elif defined(_X86_)
     return ARCH_X86;
 #error Unidentified Architecture
 #endif
