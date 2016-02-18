@@ -506,6 +506,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_DIV_IMM:
 	case OP_REM_IMM:
 	case OP_IDIV_IMM:
+	case OP_IREM_IMM:
 	case OP_IDIV_UN_IMM:
 	case OP_IREM_UN_IMM:
 		if (cfg->backend->need_div_check) {
