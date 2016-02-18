@@ -2353,6 +2353,19 @@ ResetWriteWatch(
 }
 
 /*++
+Function :
+    ReserveMemoryFromExecutableAllocator
+
+    This function is used to reserve a region of virual memory (not commited)
+    that is located close to the coreclr library. The memory comes from the virtual
+    address range that is managed by ExecutableMemoryAllocator.
+--*/
+void* ReserveMemoryFromExecutableAllocator(SIZE_T allocationSize)
+{
+    return g_executableMemoryAllocator.AllocateMemory(allocationSize);
+}
+
+/*++
 Function:
     ExecutableMemoryAllocator::Initialize()
 
