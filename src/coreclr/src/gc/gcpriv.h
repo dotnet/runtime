@@ -2922,7 +2922,7 @@ public:
 
 #ifdef SHORT_PLUGS
     PER_HEAP_ISOLATED
-    float short_plugs_pad_ratio;
+    double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
 #ifdef BIT64
