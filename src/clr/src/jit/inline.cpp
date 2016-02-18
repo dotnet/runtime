@@ -184,7 +184,7 @@ void InlineResult::report()
         const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
         const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
 
-        JITDUMP(format, inlContext, resultString(), inlReason, caller, callee);
+        JITDUMP(format, inlContext, resultString(), reasonString(), caller, callee);
     }
 
 #endif // DEBUG
@@ -192,8 +192,8 @@ void InlineResult::report()
     if (isDecided()) 
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
-        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), inlReason));
+        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), reasonString()));
         COMP_HANDLE comp = inlCompiler->info.compCompHnd;
-        comp->reportInliningDecision(inlInliner, inlInlinee, result(), inlReason);
+        comp->reportInliningDecision(inlInliner, inlInlinee, result(), reasonString());
     }
 }

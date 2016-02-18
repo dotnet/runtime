@@ -15773,7 +15773,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
                  threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
 
        // Still a viable candidate....update status
-       inlineResult->setCandidate("Native size estimate within threshold");
+       inlineResult->noteCandidate(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
     }
 
 #undef NATIVE_CALL_SIZE_MULTIPLIER
@@ -15843,8 +15843,10 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
 
     if (forceInline) 
     {
+        // This looks a bit redundant; it's because we haven't yet
+        // extracted policy from observation....
         inlineResult->note(InlineObservation::CALLEE_HAS_FORCE_INLINE);
-        inlineResult->setCandidate("Inline is a force inline");
+        inlineResult->noteCandidate(InlineObservation::CALLEE_HAS_FORCE_INLINE);
         return;
     }       
  
@@ -15873,7 +15875,7 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     }
 
     // Still a viable candidate...
-    inlineResult->setCandidate("impCanInlineIL");
+    inlineResult->noteCandidate(InlineObservation::CALLEE_CAN_INLINE_IL);
 }
 
 /*****************************************************************************
@@ -16059,7 +16061,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
 
         *(pParam->ppInlineCandidateInfo) = pInfo;
 
-        pParam->result->setCandidate("impCheckCanInline");
+        pParam->result->noteCandidate(InlineObservation::CALLEE_CHECK_CAN_INLINE_IL);
   
 _exit:
         ;
@@ -16172,7 +16174,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
     // This doesn't mean that other information or other args
     // will not prevent inlining of this method.
     //
-    inlineResult->setCandidate("impInlineRecordArgInfo");
+    inlineResult->noteCandidate(InlineObservation::CALLSITE_ARGS_OK);
 }
 
 /*****************************************************************************
@@ -16517,7 +16519,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
 
-    inlineResult->setCandidate("impInlineInitVars");
+    inlineResult->noteCandidate(InlineObservation::CALLSITE_LOCALS_OK);
 }
 
 
