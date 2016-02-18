@@ -196,7 +196,7 @@ namespace System.Linq
             return _count;
         }
 
-        public IEnumerator<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
+        public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             Grouping<TKey, TElement> g = _lastGrouping;
             if (g != null)
