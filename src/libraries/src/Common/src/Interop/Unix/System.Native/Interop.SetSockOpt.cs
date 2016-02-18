@@ -11,6 +11,23 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetSockOpt")]
-        internal static extern unsafe Error SetSockOpt(int socket, SocketOptionLevel optionLevel, SocketOptionName optionName, byte* optionValue, int optionLen);
+        internal static extern unsafe Error DangerousSetSockOpt(int socket, SocketOptionLevel optionLevel, SocketOptionName optionName, byte* optionValue, int optionLen);
+
+        internal static unsafe Error SetSockOpt(SafeHandle socket, SocketOptionLevel optionLevel, SocketOptionName optionName, byte* optionValue, int optionLen)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousSetSockOpt((int)socket.DangerousGetHandle(), optionLevel, optionName, optionValue, optionLen);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
     }
 }
