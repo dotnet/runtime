@@ -27,6 +27,9 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\System\CharArrayHelpers.cs">
+      <Link>Common\System\CharArrayHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
@@ -42,9 +45,17 @@
     <Compile Include="..\src\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+    </Compile>
     <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
+    <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
+    <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">
       <Link>Common\System\Runtime\InteropServices\SafeHeapHandle.cs</Link>
     </Compile>
