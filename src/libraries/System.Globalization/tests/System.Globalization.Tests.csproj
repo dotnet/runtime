@@ -27,14 +27,7 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="TextInfo.cs" />
-    <Compile Include="CompareInfo\compareinfo.cs" />
-    <Compile Include="CompareInfo\CompareInfoCompare.cs" />
-    <Compile Include="CompareInfo\CompareInfoCompare2.cs" />
-    <Compile Include="CompareInfo\CompareInfoIndexOf.cs" />
-    <Compile Include="CompareInfo\CompareInfoIndexOf2.cs" />
-    <Compile Include="CompareInfo\CompareInfoIsPrefix.cs" />
-    <Compile Include="CompareInfo\CompareInfoIsSuffix.cs" />
-    <Compile Include="CompareInfo\CompareInfoLastIndexOf.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
