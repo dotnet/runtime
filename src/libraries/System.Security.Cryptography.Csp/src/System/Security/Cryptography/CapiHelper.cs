@@ -357,9 +357,11 @@ namespace Internal.NativeCrypto
             bool retVal = false;
             string retStr = null;
 
-            switch (keyParam)
+            try
             {
-                case Constants.CLR_EXPORTABLE:
+                switch (keyParam)
+                {
+                    case Constants.CLR_EXPORTABLE:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
                         //If implementation type is not HW
@@ -385,27 +387,28 @@ namespace Internal.NativeCrypto
                             //Assumption HW keys are not exportable.
                             retVal = false;
                         }
+
+                        break;
                     }
-                    break;
-                case Constants.CLR_REMOVABLE:
+                    case Constants.CLR_REMOVABLE:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_REMOVABLE);
+                        break;
                     }
-                    break;
-                case Constants.CLR_HARDWARE:
-                case Constants.CLR_PROTECTED:
+                    case Constants.CLR_HARDWARE:
+                    case Constants.CLR_PROTECTED:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptGetProvParamFlags.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_HARDWARE);
+                        break;
                     }
-                    break;
-                case Constants.CLR_ACCESSIBLE:
+                    case Constants.CLR_ACCESSIBLE:
                     {
                         retVal = Interop.CryptGetUserKey(safeProvHandle, keyNumber, ref safeKeyHandle) ? true : false;
+                        break;
                     }
-                    break;
-                case Constants.CLR_UNIQUE_CONTAINER:
+                    case Constants.CLR_UNIQUE_CONTAINER:
                     {
                         returnType = 1;
                         byte[] pb = null;
@@ -416,13 +419,18 @@ namespace Internal.NativeCrypto
                         Debug.Assert(cb > 0);
                         Debug.Assert(pb[cb - 1] == 0);
                         retStr = Encoding.ASCII.GetString(pb, 0, cb - 1);
+                        break;
                     }
-                    break;
-                default:
+                    default:
                     {
                         Debug.Assert(false);
                         break;
                     }
+                }
+            }
+            finally
+            {
+                safeKeyHandle.Dispose();
             }
             if (returnType == 0)
             {
@@ -442,7 +450,6 @@ namespace Internal.NativeCrypto
         {
             int hr = S_OK;
             VerifyValidHandle(safeProvHandle);
-            safeKeyHandle = SafeKeyHandle.InvalidHandle;
             if (!Interop.CryptGetUserKey(safeProvHandle, keySpec, ref safeKeyHandle))
             {
                 hr = GetErrorCode();
