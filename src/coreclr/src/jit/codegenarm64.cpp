@@ -1367,7 +1367,8 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
     getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regGSConst, regGSValue);
 
     BasicBlock  *gsCheckBlk = genCreateTempLabel();
-    inst_JMP(genJumpKindForOper(GT_EQ, false), gsCheckBlk);
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, gsCheckBlk);
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
     genDefineTempLabel(gsCheckBlk);
 }
@@ -2427,7 +2428,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             
             if (divisorOp->IsZero())
             {
-                genJumpToThrowHlpBlk(genJumpKindForOper(GT_EQ, false), SCK_DIV_BY_ZERO);
+                emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+                genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
                 // We don't need to generate the sdiv/udiv instruction
             }
             else
@@ -2458,11 +2460,14 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     {   
                         // Check if the divisor is zero throw a DivideByZeroException
                         emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, 0);
-                        genJumpToThrowHlpBlk(genJumpKindForOper(GT_EQ, false), SCK_DIV_BY_ZERO);
+                        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+                        genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
 
                         // Check if the divisor is not -1 branch to 'sdivLabel'
                         emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, -1);
-                        inst_JMP(genJumpKindForOper(GT_NE, false), sdivLabel);
+
+                        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+                        inst_JMP(jmpNotEqual, sdivLabel);
                         // If control flow continues past here the 'divisorReg' is known to be -1
                     }
                     
@@ -2475,7 +2480,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         // this will set the Z and V flags only when dividendReg is MinInt
                         //
                         emit->emitIns_R_R_R(INS_adds, cmpSize, REG_ZR, dividendReg, dividendReg);
-                        inst_JMP(genJumpKindForOper(GT_NE, false), sdivLabel);     // goto sdiv if the Z flag is clear
+                        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+                        inst_JMP(jmpNotEqual, sdivLabel);                  // goto sdiv if the Z flag is clear
                         genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN);   // if the V flags is set throw ArithmeticException
                     }
 
@@ -2492,7 +2498,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     if (!divisorOp->isContainedIntOrIImmed())
                     {                        
                         emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, 0);
-                        genJumpToThrowHlpBlk(genJumpKindForOper(GT_EQ, false), SCK_DIV_BY_ZERO);
+                        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+                        genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
                     }
 
                     genCodeForBinary(treeNode);         // Generate the udiv instruction
@@ -2945,28 +2952,15 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
             // is governed by a flag NOT by the inherent type of the node
-            // TODO-XArch-CQ: Check if we can use the currently set flags.
             emitJumpKind jumpKind[2];
             bool branchToTrueLabel[2];
             genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
 
-            BasicBlock* skipLabel = nullptr;
             if (jumpKind[0] != EJ_NONE)
             {
-                BasicBlock *jmpTarget;
-                if (branchToTrueLabel[0])
-                {
-                    jmpTarget = compiler->compCurBB->bbJumpDest;
-                }
-                else
-                {
-                    // This case arises only for ordered GT_EQ right now
-                    assert((cmp->gtOper == GT_EQ) && ((cmp->gtFlags & GTF_RELOP_NAN_UN) == 0));
-                    skipLabel = genCreateTempLabel();
-                    jmpTarget = skipLabel;
-                }
-
-                inst_JMP(jumpKind[0], jmpTarget);
+                // On Arm64 the branches will always branch to the true label
+                assert(branchToTrueLabel[0]);
+                inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
             }
 
             if (jumpKind[1] != EJ_NONE)
@@ -2975,9 +2969,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 assert(branchToTrueLabel[1]);
                 inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
             }
-
-            if (skipLabel != nullptr)
-                genDefineTempLabel(skipLabel);
         }
         break;
 
@@ -2992,7 +2983,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             BasicBlock* skipLabel = genCreateTempLabel();
 
-            inst_JMP(genJumpKindForOper(GT_EQ, false), skipLabel);
+            emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+            inst_JMP(jmpEqual, skipLabel);
             // emit the call to the EE-helper that stops for GC (or other reasons)
 
             genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
@@ -3595,7 +3587,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
         getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
 
         BasicBlock  *   esp_check = genCreateTempLabel();
-        inst_JMP(genJumpKindForOper(GT_EQ, false), esp_check);
+        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+        inst_JMP(jmpEqual, esp_check);
         getEmitter()->emitIns(INS_BREAKPOINT);
         genDefineTempLabel(esp_check);
     }
@@ -3636,7 +3629,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
         genConsumeRegAndCopy(size, targetReg);
         endLabel = genCreateTempLabel();
         getEmitter()->emitIns_R_R(INS_TEST, easz, targetReg, targetReg);
-        inst_JMP(genJumpKindForOper(GT_EQ, false), endLabel);
+        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+        inst_JMP(jmpEqual, endLabel);
 
         // Compute the size of the block to allocate and perform alignment.
         // If the method has no PSPSym and compInitMem=true, we can reuse targetReg as regcnt,
@@ -3775,7 +3769,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
         // Therefore we need to subtract 16 from regcnt here.
         assert(genIsValidIntReg(regCnt));
         inst_RV_IV(INS_subs, regCnt, 16, emitActualTypeSize(type));
-        inst_JMP(genJumpKindForOper(GT_NE, false), loop);
+        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+        inst_JMP(jmpNotEqual, loop);
     }
     else
     {
@@ -3835,7 +3830,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
         getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, CORINFO_PAGE_SIZE);
 
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
-        inst_JMP(genJumpKindForOper(GT_LT, true), done);
+        emitJumpKind jmpLTU = genJumpKindForOper(GT_LT, CK_UNSIGNED);
+        inst_JMP(jmpLTU, done);
         
         // Update SP to be at the next page of stack that we will tickle
         getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
@@ -4397,13 +4393,13 @@ CodeGen::genRangeCheck(GenTreePtr  oper)
         //  constant operand in the second position
         src1 = arrLen;
         src2 = arrIndex;
-        jmpKind = genJumpKindForOper(GT_LE, true);  // unsigned compare
+        jmpKind = genJumpKindForOper(GT_LE, CK_UNSIGNED);
     }
     else
     {
         src1 = arrIndex;
         src2 = arrLen;
-        jmpKind = genJumpKindForOper(GT_GE, true);  // unsigned compare
+        jmpKind = genJumpKindForOper(GT_GE, CK_UNSIGNED);
     }
 
     GenTreeIntConCommon* intConst = nullptr;
@@ -4511,7 +4507,8 @@ CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_8BYTE, tmpReg, arrReg, offset);  // a 4 BYTE sign extending load
     emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
     
-    genJumpToThrowHlpBlk(genJumpKindForOper(GT_GE, true), SCK_RNGCHK_FAIL);
+    emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
+    genJumpToThrowHlpBlk(jmpGEU, SCK_RNGCHK_FAIL);
     
     genProduceReg(arrIndex);
 }
@@ -5755,33 +5752,36 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode *lea)
 
 /*****************************************************************************
  *  The condition to use for (the jmp/set for) the given type of compare operation are
- *  returned in 'jmpKind' array.  The corresponding elements of jmpToTrueLabel indicate
- *  the branch target when the condition being true.
- *
- *  jmpToTrueLabel[i]= true  implies branch to the target when the compare operation is true. 
- *  jmpToTrueLabel[i]= false implies branch to the target when the compare operation is false.
+ *  returned in 'jmpKind' array.  
+ *  If only one branch is necessary the value of jmpKind[1] will be EJ_NONE
+ *  On Arm64 both branches will always branch to the true label
  */
 // static
 void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree, 
                                           emitJumpKind  jmpKind[2], 
                                           bool          jmpToTrueLabel[2])
 {
-    // Except for BEQ (ordered GT_EQ) both jumps are to the true label.
+    // On Arm64 both branches will always branch to the true label
     jmpToTrueLabel[0] = true;
     jmpToTrueLabel[1] = true;
 
     // For integer comparisons just use genJumpKindForOper
     if (!varTypeIsFloating(cmpTree->gtOp.gtOp1->gtEffectiveVal()))
     {
-        jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, (cmpTree->gtFlags & GTF_UNSIGNED) != 0);
+        CompareKind compareKind = ((cmpTree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+        jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, compareKind);
         jmpKind[1] = EJ_NONE;
     }
-    else
+    else  // We have a Floating Point Compare operation
     {
         assert(cmpTree->OperIsCompare());
 
         // For details on this mapping, see the ARM64 Condition Code 
         // table at section C1.2.3 in the ARMV8 architecture manual
+        //
+
+        // We must check the GTF_RELOP_NAN_UN to find out
+        // if we need to branch when we have a NaN operand.
         //
         if ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
@@ -5822,7 +5822,7 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
                 unreached();
             }
         }
-        else
+        else  // ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) == 0)
         {
             // Do not branch if we have an NaN, unordered
             switch (cmpTree->gtOper)
@@ -5965,7 +5965,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         {
             // We only need to check for a negative value in sourceReg
             emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, 0);
-            genJumpToThrowHlpBlk(genJumpKindForOper(GT_LT, false), SCK_OVERFLOW);
+            emitJumpKind jmpLTS = genJumpKindForOper(GT_LT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpLTS, SCK_OVERFLOW);
             if (dstType == TYP_ULONG)
             {
                 // cast to TYP_ULONG:
@@ -5982,7 +5983,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
 
             noway_assert(castInfo.typeMask != 0);
             emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
-            genJumpToThrowHlpBlk(genJumpKindForOper(GT_NE, false), SCK_OVERFLOW);
+            emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpNotEqual, SCK_OVERFLOW);
         }
         else
         {
@@ -6005,7 +6007,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
             }
 
-            genJumpToThrowHlpBlk(genJumpKindForOper(GT_GT, false), SCK_OVERFLOW);
+            emitJumpKind jmpGTS = genJumpKindForOper(GT_GT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpGTS, SCK_OVERFLOW);
 
             // Compare with the MIN
 
@@ -6020,7 +6023,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
             }
 
-            genJumpToThrowHlpBlk(genJumpKindForOper(GT_LT, false), SCK_OVERFLOW);
+            emitJumpKind jmpLTS = genJumpKindForOper(GT_LT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpLTS, SCK_OVERFLOW);
         }
         ins = INS_mov;
     }
@@ -6339,7 +6343,8 @@ CodeGen::genCkfinite(GenTreePtr treeNode)
     emit->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, expMask);
 
     // If exponent is all 1's, throw ArithmeticException
-    genJumpToThrowHlpBlk(genJumpKindForOper(GT_EQ, false), SCK_ARITH_EXCPN);
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    genJumpToThrowHlpBlk(jmpEqual, SCK_ARITH_EXCPN);
 
     // if it is a finite value copy it to targetReg
     if (treeNode->gtRegNum != fpReg)

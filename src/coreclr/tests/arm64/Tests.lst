@@ -8075,7 +8075,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2c
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151
+Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
 [attributector.exe_2053]
 RelativePath=CoreMangLib\cti\system\resources\satellitecontractversionattribute\AttributeCtor\AttributeCtor.exe
 WorkingDir=CoreMangLib\cti\system\resources\satellitecontractversionattribute\AttributeCtor
@@ -13836,7 +13836,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2b
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151
+Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
 [ldfldahack.exe_5577]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack
@@ -19177,7 +19177,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987;REL_PASS
 [_il_relconv_i8_i.exe_3892]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i\_il_relconv_i8_i.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i
@@ -20654,7 +20654,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987
+Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987;REL_PASS
 [weakreferenceisaliveb_psc.exe_2559]
 RelativePath=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC\WeakReferenceIsAliveb_PSC.exe
 WorkingDir=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC
@@ -26450,7 +26450,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b12399\b12399
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [int16iconvertibletoboolean.exe_1323]
 RelativePath=CoreMangLib\cti\system\int16\Int16IConvertibleToBoolean\Int16IConvertibleToBoolean.exe
 WorkingDir=CoreMangLib\cti\system\int16\Int16IConvertibleToBoolean
@@ -34234,7 +34234,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2a
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151
+Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
 [b15222.exe_4865]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15222\b15222\b15222.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15222\b15222
