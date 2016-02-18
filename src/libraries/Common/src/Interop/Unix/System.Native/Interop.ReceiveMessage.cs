@@ -11,6 +11,23 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReceiveMessage")]
-        internal static extern unsafe Error ReceiveMessage(int socket, MessageHeader* messageHeader, SocketFlags flags, long* received);
+        private static extern unsafe Error DangerousReceiveMessage(int socket, MessageHeader* messageHeader, SocketFlags flags, long* received);
+
+        internal static unsafe Error ReceiveMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* received)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousReceiveMessage((int)socket.DangerousGetHandle(), messageHeader, flags, received);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
     }
 }
