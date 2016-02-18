@@ -7,9 +7,7 @@
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
-    <GenerateRunScript>false</GenerateRunScript> 
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -31,10 +29,13 @@
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
     <DebugType>None</DebugType>
-    <Optimize>True</Optimize>
+    <Optimize></Optimize>
+    <NoLogo>True</NoLogo>
+    <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="csattr.cs" />
+    <Compile Include="sin.cs" />
+    <ProjectReference Include="sinlib_il_r.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
