@@ -32,11 +32,26 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
+      <Link>ProductionCode\Common\System\Net\HttpStatusDescription.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
+      <Link>ProductionCode\Common\System\Net\HttpVersion.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\HttpEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Internal\HttpStatusDescription.cs">
-      <Link>ProductionCode\Internal\HttpStatusDescription.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Internal\ICloneable.cs">
       <Link>ProductionCode\Internal\ICloneable.cs</Link>
@@ -323,22 +338,6 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
-
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
-      <Link>ProductionCode\HttpKnownHeaderNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>Common\System\Net\HttpVersion.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
-      <Link>Common\System\Net\Logging\HttpEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
