@@ -27,7 +27,6 @@
     <PCHCompile>$(ZapSrcDirectory)\common.cpp</PCHCompile>
     <PCHObject>common.obj</PCHObject>
     <PCHOutput>common.pch</PCHOutput>
-    <MDILGenerator Condition="'$(BuildForCoreSystem)' == 'true' and '$(TargetArch)'=='arm'">true</MDILGenerator>
   </PropertyGroup>
   <!--Leaf Project Items-->
   <ItemGroup>
