@@ -2278,7 +2278,7 @@ size_t      gc_heap::gc_last_ephemeral_decommit_time = 0;
 size_t      gc_heap::gc_gen0_desired_high;
 
 #ifdef SHORT_PLUGS
-float       gc_heap::short_plugs_pad_ratio = 0;
+double       gc_heap::short_plugs_pad_ratio = 0;
 #endif //SHORT_PLUGS
 
 #if defined(BIT64)
@@ -4361,8 +4361,8 @@ gc_heap::compute_new_ephemeral_size()
 #endif //RESPECT_LARGE_ALIGNMENT
 
 #ifdef SHORT_PLUGS
-    total_ephemeral_size = Align ((size_t)((float)total_ephemeral_size * short_plugs_pad_ratio) + 1);
-    total_ephemeral_size += Align (min_obj_size);
+    total_ephemeral_size = Align ((size_t)((double)total_ephemeral_size * short_plugs_pad_ratio) + 1);
+    total_ephemeral_size += Align (DESIRED_PLUG_LENGTH);
 #endif //SHORT_PLUGS
 
     dprintf (3, ("total ephemeral size is %Ix, padding %Ix(%Ix)", 
@@ -9837,10 +9837,7 @@ gc_heap::init_semi_shared()
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef SHORT_PLUGS
-    {
-        size_t max_num_objects_in_plug = (size_t)DESIRED_PLUG_LENGTH / Align(min_obj_size);
-        short_plugs_pad_ratio = (float)(max_num_objects_in_plug + 1) / (float)max_num_objects_in_plug;
-    }
+    short_plugs_pad_ratio = (double)DESIRED_PLUG_LENGTH / (double)(DESIRED_PLUG_LENGTH - Align (min_obj_size));
 #endif //SHORT_PLUGS
 
     ret = 1;
