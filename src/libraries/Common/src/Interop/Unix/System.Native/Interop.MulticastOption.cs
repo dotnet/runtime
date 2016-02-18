@@ -32,15 +32,83 @@ internal static partial class Interop
         }
        
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4MulticastOption")]
-        internal static extern unsafe Error GetIPv4MulticastOption(int socket, MulticastOption multicastOption, IPv4MulticastOption* option);
+        private static extern unsafe Error DangerousGetIPv4MulticastOption(int socket, MulticastOption multicastOption, IPv4MulticastOption* option);
+
+        internal static unsafe Error GetIPv4MulticastOption(SafeHandle socket, MulticastOption multicastOption, IPv4MulticastOption* option)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousGetIPv4MulticastOption((int)socket.DangerousGetHandle(), multicastOption, option);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv4MulticastOption")]
-        internal static extern unsafe Error SetIPv4MulticastOption(int socket, MulticastOption multicastOption, IPv4MulticastOption* option);
+        private static extern unsafe Error DangerousSetIPv4MulticastOption(int socket, MulticastOption multicastOption, IPv4MulticastOption* option);
+
+        internal static unsafe Error SetIPv4MulticastOption(SafeHandle socket, MulticastOption multicastOption, IPv4MulticastOption* option)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousSetIPv4MulticastOption((int)socket.DangerousGetHandle(), multicastOption, option);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv6MulticastOption")]
-        internal static extern unsafe Error GetIPv6MulticastOption(int socket, MulticastOption multicastOption, IPv6MulticastOption* option);
+        private static extern unsafe Error DangerousGetIPv6MulticastOption(int socket, MulticastOption multicastOption, IPv6MulticastOption* option);
+
+        internal static unsafe Error GetIPv6MulticastOption(SafeHandle socket, MulticastOption multicastOption, IPv6MulticastOption* option)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousGetIPv6MulticastOption((int)socket.DangerousGetHandle(), multicastOption, option);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv6MulticastOption")]
-        internal static extern unsafe Error SetIPv6MulticastOption(int socket, MulticastOption multicastOption, IPv6MulticastOption* option);
+        private static extern unsafe Error DangerousSetIPv6MulticastOption(int socket, MulticastOption multicastOption, IPv6MulticastOption* option);
+
+        internal static unsafe Error SetIPv6MulticastOption(SafeHandle socket, MulticastOption multicastOption, IPv6MulticastOption* option)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousSetIPv6MulticastOption((int)socket.DangerousGetHandle(), multicastOption, option);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
     }
 }
