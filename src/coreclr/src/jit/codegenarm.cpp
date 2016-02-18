@@ -27,6 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfoencoder.h"
 #endif
 
+
 // Get the register assigned to the given node
 
 regNumber CodeGenInterface::genGetAssignedReg(GenTreePtr tree)
@@ -1467,7 +1468,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             BasicBlock* skipLabel = genCreateTempLabel();
 
-            inst_JMP(genJumpKindForOper(GT_EQ, true), skipLabel);
+            inst_JMP(genJumpKindForOper(GT_EQ, false), skipLabel);
             // emit the call to the EE-helper that stops for GC (or other reasons)
 
             genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
@@ -1669,15 +1670,17 @@ CodeGen::genRangeCheck(GenTreePtr  oper)
 
     if (arrIdx->isContainedIntOrIImmed())
     {
+        // To encode using a cmp immediate, we place the 
+        //  constant operand in the second position
         src1 = arrLen;
         src2 = arrIdx;
-        jmpKind = EJ_jbe;
+        jmpKind = genJumpKindForOper(GT_LE, true);  // unsigned compare
     }
     else
     {
         src1 = arrIdx;
         src2 = arrLen;
-        jmpKind = EJ_jae;
+        jmpKind = genJumpKindForOper(GT_GE, true);  // unsigned compare
     }
 
     genConsumeIfReg(src1);

@@ -70,11 +70,7 @@ enum emitJumpKind
 {
     EJ_NONE,
 
-#if defined(_TARGET_XARCH_)
     #define JMP_SMALL(en, rev, ins)           EJ_##en,
-#elif defined(_TARGET_ARMARCH_)
-    #define JMP_SMALL(en, rev, ins, condcode) EJ_##en,
-#endif
     #include "emitjmps.h"
 
     EJ_COUNT
