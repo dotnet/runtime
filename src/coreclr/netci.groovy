@@ -190,11 +190,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     case 'x64':
                     case 'x86':
                         if (isFlowJob || os == 'Windows_NT' || !(os in Constants.crossList)) {
-                            // default gets a push trigger for everything, except for x64 Release - 
-                            // we use Pri 1 for that situation
-                            if (architecture != 'x64' && configuration != 'Release') {
-                                Utilities.addGithubPushTrigger(job)
-                            }
+                            Utilities.addGithubPushTrigger(job)
                         }
                         break
                     case 'arm':
