@@ -639,25 +639,6 @@ nameof(value),
                 error is HttpRequestException && error.InnerException != null ? error.InnerException : error);
         }
 
-        private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader, EasyRequest state)
-        {
-            if (!responseHeader.StartsWith(CurlResponseParseUtils.HttpPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            // Clear the header if status line is recieved again. This signifies that there are multiple response headers (like in redirection).
-            response.Headers.Clear();
-            response.Content.Headers.Clear();
-
-            CurlResponseParseUtils.ReadStatusLine(response, responseHeader);
-            state._isRedirect = state._handler.AutomaticRedirection &&
-                         (response.StatusCode == HttpStatusCode.Redirect ||
-                         response.StatusCode == HttpStatusCode.RedirectKeepVerb ||
-                         response.StatusCode == HttpStatusCode.RedirectMethod) ;
-            return true;
-        }
-
         private static void HandleRedirectLocationHeader(EasyRequest state, string locationValue)
         {
             Debug.Assert(state._isRedirect);
