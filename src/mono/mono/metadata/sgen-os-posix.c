@@ -197,7 +197,6 @@ int
 sgen_thread_handshake (BOOL suspend)
 {
 	int count, result;
-	SgenThreadInfo *info;
 	int signum = suspend ? suspend_signal_num : restart_signal_num;
 
 	MonoNativeThreadId me = mono_native_thread_id_get ();
@@ -219,7 +218,7 @@ sgen_thread_handshake (BOOL suspend)
 		} else {
 			info->client_info.skip = 1;
 		}
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_SAFE_END
 
 	sgen_wait_for_suspend_ack (count);
 

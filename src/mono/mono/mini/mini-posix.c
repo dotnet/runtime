@@ -326,7 +326,6 @@ per_thread_profiler_hit (void *ctx)
 
 MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
-	MonoThreadInfo *info;
 	int old_errno = errno;
 	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
@@ -348,7 +347,7 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 
 			mono_threads_add_async_job (info, MONO_SERVICE_REQUEST_SAMPLE);
 			mono_threads_pthread_kill (info, profiling_signal_in_use);
-		} END_FOREACH_THREAD_SAFE;
+		} FOREACH_THREAD_SAFE_END
 	}
 
 	mono_thread_info_set_is_async_context (TRUE);

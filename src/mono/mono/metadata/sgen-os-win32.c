@@ -123,7 +123,6 @@ sgen_wait_for_suspend_ack (int count)
 int
 sgen_thread_handshake (BOOL suspend)
 {
-	SgenThreadInfo *info;
 	SgenThreadInfo *current = mono_thread_info_current ();
 	int count = 0;
 
@@ -142,7 +141,7 @@ sgen_thread_handshake (BOOL suspend)
 				continue;
 		}
 		++count;
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_SAFE_END
 	return count;
 }
 

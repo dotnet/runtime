@@ -526,15 +526,13 @@ sgen_init_tlab_info (SgenThreadInfo* info)
 void
 sgen_clear_tlabs (void)
 {
-	SgenThreadInfo *info;
-
 	FOREACH_THREAD (info) {
 		/* A new TLAB will be allocated when the thread does its first allocation */
 		*info->tlab_start_addr = NULL;
 		*info->tlab_next_addr = NULL;
 		*info->tlab_temp_end_addr = NULL;
 		*info->tlab_real_end_addr = NULL;
-	} END_FOREACH_THREAD
+	} FOREACH_THREAD_END
 }
 
 void
