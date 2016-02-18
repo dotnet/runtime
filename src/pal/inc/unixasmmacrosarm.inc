@@ -125,7 +125,7 @@ C_FUNC(\Name\()_End):
 // d2
 // d1
 // d0                          <- __PWTB_FloatArgumentRegisters
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 0, pushArgRegs = 0
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0
 
         __PWTB_FloatArgumentRegisters = \extraLocals
         __PWTB_SaveFPArgs = \saveFpArgs
@@ -134,13 +134,13 @@ C_FUNC(\Name\()_End):
                 .if ((__PWTB_FloatArgumentRegisters % 8) != 0)
                 __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 4
                 .endif
-                
-                __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters + 8 * 8 + 8 // 8 floating point registers
-        .else                
+
+                __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters + 8 * 8 + 4 // 8 floating point registers + padding
+        .else
                 .if ((__PWTB_FloatArgumentRegisters % 8) == 0)
                 __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 4
                 .endif
-                
+
                 __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
         .endif
 
@@ -153,12 +153,12 @@ C_FUNC(\Name\()_End):
         PUSH_CALLEE_SAVED_REGISTERS
         
         alloc_stack     __PWTB_StackAlloc
-        
+
         .if (__PWTB_SaveFPArgs == 1)
                 add r6, sp, #(__PWTB_FloatArgumentRegisters)
                 vstm r6, {d0-d7}
         .endif
-        
+
         CHECK_STACK_ALIGNMENT
         
         END_PROLOGUE
@@ -171,7 +171,7 @@ C_FUNC(\Name\()_End):
         POP_CALLEE_SAVED_REGISTERS
         free_stack 16
         bx lr
-                
+
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
@@ -180,10 +180,10 @@ C_FUNC(\Name\()_End):
                 add r6, sp, #(__PWTB_FloatArgumentRegisters)
                 vldm r6, {d0-d7}
         .endif
-        
+
         free_stack __PWTB_StackAlloc
         POP_CALLEE_SAVED_REGISTERS
-        POP_ARGUMENT_REGISTERS        
+        POP_ARGUMENT_REGISTERS
         
 .endm
 
