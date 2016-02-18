@@ -258,7 +258,7 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
 
     BasicBlock  *gsCheckBlk = genCreateTempLabel();
-    inst_JMP(genJumpKindForOper(GT_EQ, true), gsCheckBlk);
+    inst_JMP(genJumpKindForOper(GT_EQ, false), gsCheckBlk);
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
     genDefineTempLabel(gsCheckBlk);
 }
@@ -2267,7 +2267,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             BasicBlock* skipLabel = genCreateTempLabel();
 
-            inst_JMP(genJumpKindForOper(GT_EQ, true), skipLabel);
+            inst_JMP(genJumpKindForOper(GT_EQ, false), skipLabel);
 
             // emit the call to the EE-helper that stops for GC (or other reasons)
             assert(treeNode->gtRsvdRegs != RBM_NONE);
@@ -2878,7 +2878,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
 
         BasicBlock  *   esp_check = genCreateTempLabel();
-        inst_JMP(genJumpKindForOper(GT_EQ, true), esp_check);
+        inst_JMP(genJumpKindForOper(GT_EQ, false), esp_check);
         getEmitter()->emitIns(INS_BREAKPOINT);
         genDefineTempLabel(esp_check);
     }
