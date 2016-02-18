@@ -18,6 +18,11 @@
   <ItemGroup>
     <Compile Include="CompareInfo.cs" />
     <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.LastIndexOf.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoData.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs" />
