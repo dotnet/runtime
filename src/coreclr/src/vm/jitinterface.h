@@ -550,20 +550,6 @@ public:
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
 
-#ifdef  MDIL
-    unsigned getNumTypeParameters(CORINFO_METHOD_HANDLE method);
-
-    CorElementType getTypeOfTypeParameter(CORINFO_METHOD_HANDLE method, unsigned index);
-    CORINFO_CLASS_HANDLE getTypeParameter(CORINFO_METHOD_HANDLE method, bool classTypeParameter, unsigned index);
-    unsigned getStructTypeToken(InlineContext *inlineContext, CORINFO_ARG_LIST_HANDLE argList);
-    unsigned getEnclosingClassToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method);
-    InlineContext * computeInlineContext(InlineContext *outerContext, unsigned inlinedMethodToken, unsigned constraintTypeToken, CORINFO_METHOD_HANDLE method);
-    unsigned translateToken(InlineContext *inlineContext, CORINFO_MODULE_HANDLE scopeHnd, unsigned token);
-    CorInfoType getFieldElementType(unsigned fieldToken, CORINFO_MODULE_HANDLE scope, CORINFO_METHOD_HANDLE methHnd);
-    unsigned getCurrentMethodToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method);
-    unsigned getStubMethodFlags(CORINFO_METHOD_HANDLE method);
-#endif
-
     // "System.Int32" ==> CORINFO_TYPE_INT..
     CorInfoType getTypeForPrimitiveValueClass(
             CORINFO_CLASS_HANDLE        cls
@@ -645,16 +631,6 @@ public:
                        CORINFO_FIELD_INFO    *pResult
                       );
     static CorInfoHelpFunc getSharedStaticsHelper(FieldDesc * pField, MethodTable * pFieldMT);
-
-#ifdef MDIL
-    virtual DWORD getFieldOrdinal(CORINFO_MODULE_HANDLE  tokenScope,
-                                            unsigned               fieldToken);
-
-    unsigned getMemberParent(CORINFO_MODULE_HANDLE  scopeHnd, unsigned metaTOK);
-
-    // given a token representing an MD array of structs, get the element type token
-    unsigned getArrayElementToken(CORINFO_MODULE_HANDLE  scopeHnd, unsigned metaTOK);
-#endif
 
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
@@ -783,13 +759,6 @@ public:
     BOOL shouldEnforceCallvirtRestriction(
             CORINFO_MODULE_HANDLE   scope);
 
-#ifdef  MDIL
-    virtual unsigned getTypeTokenForFieldOrMethod(
-            unsigned                fieldOrMethodToken
-            );
-
-    virtual unsigned getTokenForType(CORINFO_CLASS_HANDLE  cls);
-#endif
     // Check constraints on method type arguments (only).
     // The parent class should be checked separately using satisfiesClassConstraints(parent).
     BOOL satisfiesMethodConstraints(

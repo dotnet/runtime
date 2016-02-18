@@ -721,119 +721,7 @@ BOOL CEEInfo::shouldEnforceCallvirtRestriction(
        
 }
 
-#ifdef  MDIL
-unsigned CEEInfo::getStructTypeToken(InlineContext *inlineContext, CORINFO_ARG_LIST_HANDLE argList)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-unsigned CEEInfo::getTypeTokenForFieldOrMethod(
-        unsigned fieldOrMethodToken)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-unsigned CEEInfo::getTokenForType(CORINFO_CLASS_HANDLE  cls)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-
-unsigned CEEInfo::getEnclosingClassToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-InlineContext * CEEInfo::computeInlineContext(InlineContext *outerContext, unsigned inlinedMethodToken, unsigned constraintTypeToken, CORINFO_METHOD_HANDLE method)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"should not be reachable");
-    return NULL;
-}
-
-unsigned CEEInfo::translateToken(InlineContext *inlineContext, CORINFO_MODULE_HANDLE scopeHnd, unsigned token)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"should not be reachable");
-    return token;
-}
-
-CorInfoType CEEInfo::getFieldElementType(unsigned fieldToken, CORINFO_MODULE_HANDLE scope, CORINFO_METHOD_HANDLE methHnd)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"should not be reachable");
-    return CORINFO_TYPE_INT;
-}
-
-unsigned CEEInfo::getCurrentMethodToken(InlineContext *inlineContext, CORINFO_METHOD_HANDLE method)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-unsigned CEEInfo::getStubMethodFlags(CORINFO_METHOD_HANDLE method)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    MethodDesc *pMD = GetMethod(method);
-    assert(pMD->IsILStub());
-
-    DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
-    
-    unsigned flags;
-    
-    if (pDMD->IsReverseStub())
-    {
-        if (pDMD->IsStatic())
-            flags = ICompactLayoutWriter::SF_REVERSE_PINVOKE;
-        else
-            flags = ICompactLayoutWriter::SF_COM_TO_CLR;
-    }
-    else
-    {
-        if (pDMD->IsDelegateStub())
-            flags = ICompactLayoutWriter::SF_DELEGATE_PINVOKE;
-        else if (pDMD->IsCALLIStub())
-            flags = ICompactLayoutWriter::SF_CALLI_PINVOKE;
-        else if (pDMD->IsCLRToCOMStub())
-            flags = ICompactLayoutWriter::SF_CLR_TO_COM;
-        else
-            flags = ICompactLayoutWriter::SF_PINVOKE;
-    }
-
-    // We save the signature with all stubs for now although we strictly need it only for reverse
-    // P/Invoke and COM->CLR. The size increase is negligible and it is a bit cleaner (i.e. all
-    // DynamicMethodDesc's will have their signature just as they do when we JIT).
-    flags |= ICompactLayoutWriter::SF_NEEDS_STUB_SIGNATURE;
-
-    if (pDMD->HasCopyCtorArgs())
-        flags |= ICompactLayoutWriter::SF_HAS_COPY_CONSTRUCTED_ARGS;
-
-    flags |= (pDMD->GetNativeStackArgSize() << 16);
-
-    return flags;
-}
-
-#endif // MDIL
-
-#if defined(MDIL) || defined(FEATURE_READYTORUN_COMPILER)
+#ifdef FEATURE_READYTORUN_COMPILER
 
 // Returns true if assemblies are in the same version bubble
 // Right now each assembly is in its own version bubble.
@@ -872,19 +760,7 @@ static bool IsInSameVersionBubble(MethodDesc* pCurMD, MethodDesc *pTargetMD)
 
 }
 
-static bool IsVersionResilientCompilation()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain())
-        return true;
-#endif
-
-    return IsReadyToRunCompilation();
-}
-
-#endif // MDIL || FEATURE_READYTORUN_COMPILER
+#endif // FEATURE_READYTORUN_COMPILER
 
 
 /*********************************************************************/
@@ -902,37 +778,30 @@ CorInfoCanSkipVerificationResult CEEInfo::canSkipVerification(
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef MDIL
-    // We always want to verify IL when generating MDIL
-    // The return value is already initialized to CORINFO_VERIFICATION_CANNOT_SKIP.
-    if (!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain())
-#endif
-    {
-        Assembly * pAssem = GetModule(moduleHnd)->GetAssembly();
+    Assembly * pAssem = GetModule(moduleHnd)->GetAssembly();
 
 #ifdef _DEBUG
-        if (g_pConfig->IsVerifierOff())
-        {
-            canSkipVerif = CORINFO_VERIFICATION_CAN_SKIP;
-        }
-        else
+    if (g_pConfig->IsVerifierOff())
+    {
+        canSkipVerif = CORINFO_VERIFICATION_CAN_SKIP;
+    }
+    else
 #endif // _DEBUG
-        {
-            //
-            // fQuickCheckOnly is set only by calls from Zapper::CompileAssembly
-            // because that allows us make a determination for the most
-            // common full trust scenarios (local machine) without actually
-            // resolving policy and bringing in a whole list of assembly
-            // dependencies.
-            //
-            // The scenario of interest here is determing whether or not an
-            // assembly MVID comparison is enough when loading an NGEN'd
-            // assembly or if a full binary hash comparison must be done.
-            //
+    {
+        //
+        // fQuickCheckOnly is set only by calls from Zapper::CompileAssembly
+        // because that allows us make a determination for the most
+        // common full trust scenarios (local machine) without actually
+        // resolving policy and bringing in a whole list of assembly
+        // dependencies.
+        //
+        // The scenario of interest here is determing whether or not an
+        // assembly MVID comparison is enough when loading an NGEN'd
+        // assembly or if a full binary hash comparison must be done.
+        //
 
-            DomainAssembly * pAssembly = pAssem->GetDomainAssembly();
-            canSkipVerif = Security::JITCanSkipVerification(pAssembly);
-        }
+        DomainAssembly * pAssembly = pAssem->GetDomainAssembly();
+        canSkipVerif = Security::JITCanSkipVerification(pAssembly);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -1925,14 +1794,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             pResult->accessCalloutHelper.numArgs = 2;
 
             pResult->accessCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-#ifdef MDIL
-            pResult->accessCalloutHelper.args[0].token = 0;
-#endif
-
             pResult->accessCalloutHelper.args[1].Set(CORINFO_FIELD_HANDLE(pField));
-#ifdef MDIL
-            pResult->accessCalloutHelper.args[1].token = pResolvedToken->token;  
-#endif
 
             if (IsCompilingForNGen())
             {
@@ -1955,19 +1817,12 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->accessCalloutHelper.numArgs = 3;
 
                 pResult->accessCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-#ifdef MDIL
-                pResult->accessCalloutHelper.args[0].token = 0;
-#endif
-
 
                 /* REVISIT_TODO Wed 4/8/2009
                  * This field handle is not useful on its own.  We also need to embed the enclosing class
                  * handle.
                  */
                 pResult->accessCalloutHelper.args[1].Set(CORINFO_FIELD_HANDLE(pField));
-#ifdef MDIL
-                pResult->accessCalloutHelper.args[1].token = pResolvedToken->token;  
-#endif
 
                 pResult->accessCalloutHelper.args[2].Set(runtimeChecks);
 
@@ -1983,146 +1838,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     }
 
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() && !isVerifyOnly())
-    {
-        pResult->offset += (GetRandomInt(1) == 0) ? 4 : 8;
-
-        // we want to disallow the rare cases for MDIL because
-        // - they are not as well tested
-        // - we are not as sure about versioning wrt to VM or library changes
-        // - and they are supposed to very rare in application code
-        // for those cases where they do occur, we'll fall back to jitting
-        switch (pResult->fieldAccessor)
-        {
-        // these are the common cases that we want to allow
-        case    CORINFO_FIELD_INSTANCE:                 // regular instance field at given offset from this-ptr
-        case    CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER: // static field accessed using the "shared static" helper (arguments are ModuleID + ClassID)
-        case    CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER: // static field access using the "generic static" helper (argument is MethodTable *)
-        case    CORINFO_FIELD_INTRINSIC_ZERO:           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
-        case    CORINFO_FIELD_INTRINSIC_EMPTY_STRING:   // intrinsic emptry string (String.Empty)
-            break;
-
-        // these are the rare cases that we want do disallow
-        case    CORINFO_FIELD_STATIC_RVA_ADDRESS:       // RVA field at given address
-        case    CORINFO_FIELD_INSTANCE_HELPER:          // instance field accessed using helper (arguments are this, FieldDesc * and the value)
-        case    CORINFO_FIELD_INSTANCE_ADDR_HELPER:     // instance field accessed using address-of helper (arguments are this and FieldDesc *)
-        case    CORINFO_FIELD_STATIC_ADDRESS:           // field at given address
-        case    CORINFO_FIELD_STATIC_ADDR_HELPER:       // static field accessed using address-of helper (argument is FieldDesc *)
-        case    CORINFO_FIELD_STATIC_TLS:               // unmanaged TLS access
-        default:
-            pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
-            break;
-        }
-    }
-#endif
     EE_TO_JIT_TRANSITION();
 }
-
-#ifdef MDIL
-DWORD CEEInfo::getFieldOrdinal(CORINFO_MODULE_HANDLE  tokenScope,
-                               unsigned               fieldToken)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"should not be reachable");
-    return 0;
-}
-
-// Given a field or method token metaTOK return return its parent token
-unsigned GetMemberParent(Module * module, unsigned metaTOK)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-
-    if (TypeFromToken(metaTOK) == mdtMethodSpec)
-    {
-        PCCOR_SIGNATURE pSig;
-        ULONG cSig;
-        mdMemberRef GenericMemberRef;
-        IfFailThrow(module->GetMDImport()->GetMethodSpecProps(metaTOK, &GenericMemberRef, &pSig, &cSig));
-        
-        _ASSERTE(TypeFromToken(GenericMemberRef) == mdtMethodDef || TypeFromToken(GenericMemberRef) == mdtMemberRef);
-        metaTOK = GenericMemberRef;
-    }
-
-
-    // Extended to extract parent class of a member-ref, method-def or field-def
-
-    if (TypeFromToken(metaTOK) == mdtMemberRef)
-    {
-        IfFailThrow(module->GetMDImport()->GetParentOfMemberRef(metaTOK, &metaTOK));
-        
-        // For varargs, a memberref can point to a methodDef, so we
-        if (TypeFromToken(metaTOK) == mdtMethodDef)
-        {
-            IfFailThrow(module->GetMDImport()->GetParentToken(metaTOK, &metaTOK));
-        }
-    }
-    else if (TypeFromToken(metaTOK) == mdtMethodDef || TypeFromToken(metaTOK) == mdtFieldDef)
-    {
-        IfFailThrow(module->GetMDImport()->GetParentToken(metaTOK,&metaTOK));
-    }
-
-    if ((TypeFromToken(metaTOK) == mdtTypeDef  ||
-             TypeFromToken(metaTOK) == mdtTypeRef  ||
-             TypeFromToken(metaTOK) == mdtTypeSpec ||
-             TypeFromToken(metaTOK) == mdtModuleRef))
-    {
-        return metaTOK;
-    }
-    else
-    {
-        COMPlusThrowHR(COR_E_INVALIDPROGRAM);
-    }
-}
-
-// Given a field or method token metaTOK return its parent token
-// we still need this in MDIL, for example for static field access we need the 
-// token of the enclosing type
-unsigned CEEInfo::getMemberParent(CORINFO_MODULE_HANDLE scopeHnd, unsigned metaTOK)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    unsigned result = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (IsDynamicScope(scopeHnd))
-    {
-        // this shouldn't happen in an MDIL compile
-        _ASSERTE(!"NYI");
-        COMPlusThrowHR(COR_E_INVALIDPROGRAM);
-    }
-    else
-    {
-        Module* module = GetModule(scopeHnd);
-        result = GetMemberParent(module, metaTOK);
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-// given a token representing an MD array of structs, get the element type token
-unsigned CEEInfo::getArrayElementToken(CORINFO_MODULE_HANDLE  scopeHnd, unsigned metaTOK)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // this shouldn't happen in an MDIL compile
-    _ASSERTE(!"NYI");
-    return 0;
-}
-#endif
 
 //---------------------------------------------------------------------------------------
 // 
@@ -2503,10 +2220,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
     TypeHandle VMClsHnd(clsHnd);
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
-
-#ifdef MDIL
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || isVerifyOnly());
-#endif
 
     if (pMT == g_TypedReferenceMT)
     {
@@ -2936,27 +2649,6 @@ void CEEInfo::embedGenericHandle(
 
         pResult->lookup.constLookup.handle = pResult->compileTimeHandle;
         pResult->lookup.constLookup.accessType = IAT_VALUE;
-#ifdef  MDIL
-        MethodDesc *pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-        if (pContextMD != NULL)
-        {
-            if (pContextMD->HasMethodInstantiation())
-            {
-                pResult->lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
-            }
-            // If we've got a vtable extra argument, go through that
-            else if (pContextMD->IsStatic() || pContextMD->GetMethodTable()->IsValueType())
-            {
-                pResult->lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
-            }
-            // If we've got an object, go through its vtable
-            else
-            {
-                _ASSERTE(!pContextMD->IsStatic() && !pContextMD->GetMethodTable()->IsValueType());
-                pResult->lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
-            }
-        }
-#endif
     }
     
     EE_TO_JIT_TRANSITION();
@@ -3910,10 +3602,6 @@ size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#ifdef MDIL
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || isVerifyOnly());
-#endif
-
     size_t result = 0;
 
     JIT_TO_EE_TRANSITION_LEAF();
@@ -4215,28 +3903,6 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     TypeHandle typeToInitTH = (pFD != NULL) ? pFD->GetEnclosingMethodTable() : GetTypeFromContext(context);
 
-#ifdef MDIL
-    Assembly *pInitializationTargetAssembly = typeToInitTH.GetModule()->GetAssembly();
-    bool initAssemblyIsCurrentlyCompilingAssembly = false;
-
-    // ASSERT that initClass is only being called for types in
-    // 1. Application assemblies
-    // 2. Type's in framework assemblies which have non-versionable methods.
-    // This is done by observing that the MDIL Compiler JIT only calls initClass with pMD specified
-    // and never with pFD specified, and that either pMD is an application assembly method, or method that
-    // is itself marked as non-versionable. To allow this assert to work when tests are compiling
-    // framework assemblies to MDIL, the assembly currently being compiled is also permitted to have 
-    // types on which initClass is called.
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain())
-    {
-        _ASSERTE(pFD == NULL);
-        
-        CompilationDomain *compDomain = GetAppDomain()->ToCompilationDomain();
-        initAssemblyIsCurrentlyCompilingAssembly = IsInSameVersionBubble(compDomain->GetTargetAssembly(),pInitializationTargetAssembly);
-        _ASSERTE(initAssemblyIsCurrentlyCompilingAssembly);
-    }
-#endif // MDIL
-
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
     BOOL fMethodDomainNeutral = methodBeingCompiled->IsDomainNeutral() || methodBeingCompiled->IsZapped() || IsCompilingForNGen();
@@ -4246,13 +3912,7 @@ CorInfoInitClassResult CEEInfo::initClass(
     // This should be the most common early-out case.
     if (fMethodDomainNeutral)
     {
-#ifdef MDIL
-        // Only check to see if a class is PreInited if running initClass on something within the same versioning bubble as
-        // the assembly being compiled when working with MDIL. If not compiling for MDIL, checking for pre-initialization is always safe.
-        if ((!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || initAssemblyIsCurrentlyCompilingAssembly) && pTypeToInitMT->IsClassPreInited())
-#else
         if (pTypeToInitMT->IsClassPreInited())
-#endif
         {
             result = CORINFO_INITCLASS_NOT_REQUIRED;
             goto exit;
@@ -4260,9 +3920,6 @@ CorInfoInitClassResult CEEInfo::initClass(
     }
     else
     {
-#ifdef MDIL
-        _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain());
-#endif
 #ifdef CROSSGEN_COMPILE
         _ASSERTE(FALSE);
 #else // CROSSGEN_COMPILE
@@ -4548,124 +4205,6 @@ CORINFO_METHOD_HANDLE CEEInfo::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE m
 
     return result;
 }
-
-#ifdef MDIL
-/*********************************************************************/
-unsigned CEEInfo::getNumTypeParameters(CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    unsigned result = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    result = pMD->GetNumGenericClassArgs() + pMD->GetNumGenericMethodArgs();
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-CorElementType CEEInfo::getTypeOfTypeParameter(CORINFO_METHOD_HANDLE methHnd, unsigned index)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorElementType result = ELEMENT_TYPE_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    MethodTable *pMT = pMD->GetMethodTable();
-    TypeHandle th = TypeHandle();
-    if (index < pMD->GetNumGenericClassArgs())
-    {
-        th = pMT->GetInstantiation()[index];
-    }
-    else
-    {
-        InstantiatedMethodDesc *pIMD = pMD->AsInstantiatedMethodDesc();
-        th = pIMD->GetMethodInstantiation()[index-pMD->GetNumGenericClassArgs()];
-    }
-    
-    result = th.GetInternalCorElementType();
-
-    switch (result)
-    {
-    case    ELEMENT_TYPE_VALUETYPE:
-        if (Nullable::IsNullableType(th))
-        {
-            result = (CorElementType)0x17;
-            if (th.IsCanonicalSubtype())
-                result = (CorElementType)0x1f;
-        }
-        else if (th.IsCanonicalSubtype())
-            result = (CorElementType)0x1e;
-        break;
-
-    case    ELEMENT_TYPE_I:
-    case    ELEMENT_TYPE_U:
-#if defined(_WIN64)
-        result = (CorElementType)(result - (ELEMENT_TYPE_I - ELEMENT_TYPE_I8));
-#else
-        result = (CorElementType)(result - (ELEMENT_TYPE_I - ELEMENT_TYPE_I4));
-#endif
-        break;
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-/*********************************************************************/
-CORINFO_CLASS_HANDLE CEEInfo::getTypeParameter(CORINFO_METHOD_HANDLE methHnd, bool classTypeParameter, unsigned index)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    TypeHandle th = TypeHandle();
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    MethodTable *pMT = pMD->GetMethodTable();
-    if (classTypeParameter && index >= pMD->GetNumGenericClassArgs())
-    {
-        classTypeParameter = false;
-        index -= pMD->GetNumGenericClassArgs();
-    }
-    if (classTypeParameter)
-    {
-        _ASSERTE(index < pMD->GetNumGenericClassArgs());
-        th = pMT->GetInstantiation()[index];
-    }
-    else
-    {
-        _ASSERTE(index < pMD->GetNumGenericMethodArgs());
-        InstantiatedMethodDesc *pIMD = pMD->AsInstantiatedMethodDesc();
-        th = pIMD->GetMethodInstantiation()[index];
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return CORINFO_CLASS_HANDLE(th.AsPtr());
-}
-#endif
 
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
@@ -5270,14 +4809,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
         pAccessHelper->numArgs = 2;
 
         pAccessHelper->args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-#ifdef MDIL
-        pAccessHelper->args[0].token = 0;
-#endif
-
         pAccessHelper->args[1].Set(CORINFO_CLASS_HANDLE(pCalleeForSecurity.AsPtr()));
-#ifdef MDIL
-        pAccessHelper->args[1].token = pResolvedToken->token;
-#endif
 
         if (IsCompilingForNGen())
         {
@@ -5304,14 +4836,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
             pAccessHelper->numArgs = 3;
 
             pAccessHelper->args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-#ifdef MDIL
-            pAccessHelper->args[0].token = 0;
-#endif
-
             pAccessHelper->args[1].Set(CORINFO_CLASS_HANDLE(pCalleeForSecurity.AsPtr()));
-#ifdef MDIL
-            pAccessHelper->args[1].token = pResolvedToken->token;
-#endif
             pAccessHelper->args[2].Set(runtimeChecks);
 
             if (IsCompilingForNGen())
@@ -5368,18 +4893,6 @@ void CEEInfo::getCallInfo(
     if (pMD == g_pPrepareConstrainedRegionsMethod && !isVerifyOnly())
     {
         MethodDesc * methodFromContext = GetMethodFromContext(pResolvedToken->tokenContext);
-
-#ifdef MDIL
-        // This shouldn't occur in WP8 applications. However, as a safety valve
-        // fall back to jitting the current method if this assumption is wrong ....
-        // Also, we let CER in mscorlib slip through; that way we have less noise when comparing
-        // native images generated by the binder and coregen/crossgen.
-        if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() &&
-            (methodFromContext == NULL || !methodFromContext->GetModule()->IsSystem()) )
-        {
-            COMPlusThrowNonLocalized(kNotSupportedException, W("MDIL does not support CER regions"));
-        }
-#endif
 
         if (methodFromContext != NULL && methodFromContext->IsIL())
         {
@@ -5489,8 +5002,8 @@ void CEEInfo::getCallInfo(
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
             // important that they 'match', so we fix exactType here.
-#if defined(MDIL) || defined(FEATURE_READYTORUN_COMPILER)
-            if (IsVersionResilientCompilation() && 
+#ifdef FEATURE_READYTORUN_COMPILER
+            if (IsReadyToRunCompilation() &&
                 !isVerifyOnly() && 
                 !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD))
             {
@@ -5548,7 +5061,7 @@ void CEEInfo::getCallInfo(
     {
         bool devirt;
 
-#if defined(MDIL) || defined(FEATURE_READYTORUN_COMPILER)
+#ifdef FEATURE_READYTORUN_COMPILER
 
         // if we are generating version resilient code
         // AND
@@ -5557,7 +5070,7 @@ void CEEInfo::getCallInfo(
         // These rules are related to the "inlining rules" as far as the
         // boundaries of a version bubble are concerned.
 
-        if (IsVersionResilientCompilation() &&
+        if (IsReadyToRunCompilation() &&
             !isVerifyOnly() &&
             !IsInSameVersionBubble((MethodDesc*)callerHandle, pTargetMD)
            )
@@ -5933,13 +5446,7 @@ void CEEInfo::getCallInfo(
                 pResult->callsiteCalloutHelper.numArgs = 2;
 
                 pResult->callsiteCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-#ifdef MDIL 
-                pResult->callsiteCalloutHelper.args[0].token = 0;
-#endif
                 pResult->callsiteCalloutHelper.args[1].Set(CORINFO_METHOD_HANDLE(pCalleeForSecurity));
-#ifdef  MDIL
-                pResult->callsiteCalloutHelper.args[1].token = pResolvedToken->token;
-#endif
 
                 //We now embed open instantiations in a few places for security callouts (since you can only
                 //do the security check on the open instantiation).  We throw these methods out in
@@ -5999,22 +5506,6 @@ void CEEInfo::getCallInfo(
                         pResult->callsiteCalloutHelper.args[1].Set(CORINFO_METHOD_HANDLE(pCalleeForSecurity));
                         pResult->callsiteCalloutHelper.args[2].Set(CORINFO_CLASS_HANDLE(calleeTypeForSecurity.AsPtr()));
                         pResult->callsiteCalloutHelper.args[3].Set(runtimeChecks);
-
-#ifdef MDIL 
-                        pResult->callsiteCalloutHelper.args[0].token = 0;
-                        pResult->callsiteCalloutHelper.args[1].token = pResolvedToken->token;
-
-                        if (flags & CORJIT_FLG_MDIL)
-                        {
-                            // Only bother with the lookup if the JIT really needs it
-                            pResult->callsiteCalloutHelper.args[2].token = getMemberParent(pResolvedToken->tokenScope, pResolvedToken->token);
-                        }
-                        else
-                        {
-                            pResult->callsiteCalloutHelper.args[2].token = 0;
-                        }
-
-#endif
 
                         if (IsCompilingForNGen())
                         {
@@ -6188,10 +5679,6 @@ unsigned CEEInfo::getClassDomainID (CORINFO_CLASS_HANDLE clsHnd,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#ifdef MDIL
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || isVerifyOnly());
-#endif
-
     unsigned result = 0;
 
     if (ppIndirection != NULL)
@@ -6290,15 +5777,6 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
     }
     else
 #endif // FEATURE_COMINTEROP
-
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain())
-    {
-        // always return the standard slow helper for MDIL compiles
-        result = CORINFO_HELP_NEWFAST;
-    }
-    else
-#endif
     {
         result = getNewHelperStatic(pMT);
     }
@@ -6420,17 +5898,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelper (CORINFO_CLASS_HANDLE arrayClsHnd)
 
     TypeHandle arrayType(arrayClsHnd);
 
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain())
-    {
-        // always return the same helper for MDIL compiles
-        result = CORINFO_HELP_NEWARR_1_DIRECT;
-    }
-    else
-#endif
-    {
-        result = getNewArrHelperStatic(arrayType);
-    }
+    result = getNewArrHelperStatic(arrayType);
 
     _ASSERTE(result != CORINFO_HELP_UNDEF);
 
@@ -6514,11 +5982,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 
     if (isVerifyOnly())
         return fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY;
-
- #ifdef MDIL
-    // we should never be called for an MDIL compile
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain());
-#endif
 
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
@@ -7363,11 +6826,6 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     // Precondition: ftn is a method in mscorlib in the System.Threading.Interlocked class
     _ASSERTE(ftn->GetModule()->IsSystem());
     _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__INTERLOCKED));
-#ifndef MDIL
-    //binder doesn't have class names available currently
-    _ASSERTE(strcmp(ftn->GetMethodTable()->GetClass()->GetDebugClassName(), "System.Threading.Interlocked") == 0);
-#endif
-
 
     // We are only interested if ftn's token and CompareExchange<T> token match
     if (ftn->GetMemberDef() != MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
@@ -7890,11 +7348,11 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
             else
             {
-#if defined(MDIL) || defined(FEATURE_READYTORUN_COMPILER)
+#ifdef FEATURE_READYTORUN_COMPILER
                 // No inlinining for version resilient code except if in the same version bubble
                 // If this condition changes, please make the corresponding change
                 // in getCallInfo, too.
-                if (IsVersionResilientCompilation() &&
+                if (IsReadyToRunCompilation() &&
                     !isVerifyOnly() &&
                     !IsInSameVersionBubble(pCaller, pCallee)
                    )
@@ -9015,12 +8473,6 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 
     _ASSERTE(MethodTable::GetVtableOffset() < 256);  // a rough sanity check
 
-#ifdef MDIL
-    // we could get here when we don't de-virtualize a call-virt to a non-virtual method (while generating MDIL)
-    // however, the when generating MDIL the jit should never ask for slot numbers; instead it should just
-    // emit the proper MDIL symbol and leave it to the binder to resolve it to a method table slot
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || isVerifyOnly());
-#endif
     // better be in the vtable
     _ASSERTE(method->GetSlot() < method->GetMethodTable()->GetNumVirtuals());
 
@@ -9277,12 +8729,6 @@ unsigned CEEInfo::getFieldOffset (CORINFO_FIELD_HANDLE fieldHnd)
         result += sizeof(Object);
     }
 
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() && !isVerifyOnly())
-    {
-        result += (GetRandomInt(1) == 0) ? 4 : 8;
-    }
-#endif
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -9635,11 +9081,6 @@ CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
     CorInfoType result = CORINFO_TYPE_UNDEF;
 
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() && !isVerifyOnly())
-        return result;
-#endif
-
 #ifdef FEATURE_HFA
     JIT_TO_EE_TRANSITION();
 
@@ -9726,10 +9167,6 @@ BOOL CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
-
-#ifdef MDIL
-    _ASSERTE(!SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() || isVerifyOnly());
-#endif
 
     BOOL result = FALSE;
 
@@ -11569,14 +11006,6 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
 
-#ifdef MDIL
-    if (SystemDomain::GetCurrentDomain()->IsMDILCompilationDomain() && !isVerifyOnly())
-    {
-        result = (void *)0xBAADF00D;
-        goto Done;
-    }
-#endif // MDIL
-
     MethodTable* pMT = field->GetEnclosingMethodTable();
 
     _ASSERTE(!pMT->ContainsGenericVariables());
@@ -11601,10 +11030,6 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     }
 
     result = field->GetStaticAddressHandle(base);
-
-#ifdef MDIL
-Done: ;
-#endif // MDIL
 
     EE_TO_JIT_TRANSITION();
 
@@ -12624,12 +12049,7 @@ void ThrowExceptionForJit(HRESULT res)
         case CORJIT_INTERNALERROR:
             COMPlusThrow(kInvalidProgramException, (UINT) IDS_EE_JIT_COMPILER_ERROR);
             break;   
-#endif            
-        // If we are aborting compilation to do an operation which can't be compiled into
-        // MDIL, there is no need to surface a managed visible exception.  
-        case CORJIT_SKIPMDIL:
-            ThrowHR(COR_E_UNSUPPORTEDMDIL);
-            break;
+#endif
 
         case CORJIT_BADCODE:
         default:                    
