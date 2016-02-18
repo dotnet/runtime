@@ -92,7 +92,7 @@ private:
 
     static emitJumpKind genJumpKindForOper(genTreeOps cmp, bool isUnsigned);
 
-#ifdef _TARGET_XARCH_
+
     // For a given compare oper tree, returns the conditions to use with jmp/set in 'jmpKind' array. 
     // The corresponding elements of jmpToTrueLabel indicate whether the target of the jump is to the
     // 'true' label or a 'false' label.  
@@ -101,11 +101,11 @@ private:
     // branch to on compare condition being true.  'false' label corresponds to the target to
     // branch to on condition being false.
     static void genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
+
 #if !defined(_TARGET_64BIT_)
     static void genJumpKindsForTreeLongHi(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
     static void genJumpKindsForTreeLongLo(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
 #endif //!defined(_TARGET_64BIT_)
-#endif // _TARGET_XARCH_
 
     static bool         genShouldRoundFP();
 

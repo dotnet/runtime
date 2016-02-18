@@ -33,7 +33,7 @@ const instruction       emitJumpKindInstructions[] =
 {
     INS_nop,
 
-    #define JMP_SMALL(en, rev, ins, condcode) INS_##ins,
+    #define JMP_SMALL(en, rev, ins) INS_##ins,
     #include "emitjmps.h"
 };
 
@@ -41,7 +41,7 @@ const emitJumpKind      emitReverseJumpKinds[] =
 {
     EJ_NONE,
 
-    #define JMP_SMALL(en, rev, ins, condcode) EJ_##rev,
+    #define JMP_SMALL(en, rev, ins) EJ_##rev,
     #include "emitjmps.h"
 };
 

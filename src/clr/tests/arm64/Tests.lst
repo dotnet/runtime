@@ -1684,7 +1684,7 @@ WorkingDir=JIT\Methodical\NaN\cond32_il_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [operandtypeinlinetype.exe_1907]
 RelativePath=CoreMangLib\cti\system\reflection\emit\operandtype\OperandTypeInlineType\OperandTypeInlineType.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\operandtype\OperandTypeInlineType
@@ -5807,7 +5807,7 @@ WorkingDir=JIT\Methodical\NaN\cond64_il_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [_reltailjump_cs.exe_3683]
 RelativePath=JIT\Methodical\Boxing\misc\_reltailjump_cs\_reltailjump_cs.exe
 WorkingDir=JIT\Methodical\Boxing\misc\_reltailjump_cs
@@ -7396,7 +7396,7 @@ WorkingDir=CoreMangLib\cti\system\math\MathSinh
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=RT;EXPECTED_PASS;ISSUE_3105
 [opcodesthrow.exe_1883]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesThrow\OpCodesThrow.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesThrow
@@ -10476,7 +10476,7 @@ WorkingDir=JIT\Methodical\NaN\cond32_il_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [b85317.exe_5669]
 RelativePath=JIT\Regression\VS-ia64-JIT\M00\b85317\b85317\b85317.exe
 WorkingDir=JIT\Regression\VS-ia64-JIT\M00\b85317\b85317
@@ -11225,7 +11225,7 @@ WorkingDir=JIT\Methodical\NaN\cond64_il_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [seq_funcptr_gc_r.exe_3964]
 RelativePath=JIT\Methodical\explicit\funcptr\seq_funcptr_gc_r\seq_funcptr_gc_r.exe
 WorkingDir=JIT\Methodical\explicit\funcptr\seq_funcptr_gc_r
@@ -13703,7 +13703,7 @@ WorkingDir=Regressions\common\AboveStackLimit
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_3032
+Categories=RT;EXPECTED_PASS;ISSUE_3032;DBG_FAIL;ISSUE_5814
 [b14617.exe_5517]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-M01\b14617\b14617\b14617.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-M01\b14617\b14617
@@ -15278,7 +15278,7 @@ WorkingDir=CoreMangLib\cti\system\math\MathSin
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=RT;EXPECTED_PASS;ISSUE_3105
 [sbyte_cs_d.exe_4376]
 RelativePath=JIT\Methodical\MDArray\DataTypes\sbyte_cs_d\sbyte_cs_d.exe
 WorkingDir=JIT\Methodical\MDArray\DataTypes\sbyte_cs_d
@@ -21109,7 +21109,7 @@ WorkingDir=JIT\Methodical\NaN\comp32_il_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [b57492.exe_5294]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57492\b57492\b57492.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57492\b57492
@@ -23531,7 +23531,7 @@ WorkingDir=JIT\Methodical\NaN\comp64_il_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [_relexplicit3.exe_3995]
 RelativePath=JIT\Methodical\explicit\misc\_relexplicit3\_relexplicit3.exe
 WorkingDir=JIT\Methodical\explicit\misc\_relexplicit3
@@ -26030,7 +26030,7 @@ WorkingDir=CoreMangLib\cti\system\math\MathSign7
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=RT;EXPECTED_PASS;ISSUE_3105
 [booleaniconvertibletosbyte.exe_387]
 RelativePath=CoreMangLib\cti\system\boolean\BooleanIConvertibleToSByte\BooleanIConvertibleToSByte.exe
 WorkingDir=CoreMangLib\cti\system\boolean\BooleanIConvertibleToSByte
@@ -32141,7 +32141,7 @@ WorkingDir=CoreMangLib\cti\system\double\DoubleCompareTo1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=RT;EXPECTED_PASS;ISSUE_3105
 [b70808.exe_5371]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b70808\b70808\b70808.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b70808\b70808
@@ -34199,7 +34199,7 @@ WorkingDir=JIT\Methodical\NaN\comp32_il_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [textelementenumeratorelementindex.exe_1217]
 RelativePath=CoreMangLib\cti\system\globalization\textelementenumerator\TextElementEnumeratorElementIndex\TextElementEnumeratorElementIndex.exe
 WorkingDir=CoreMangLib\cti\system\globalization\textelementenumerator\TextElementEnumeratorElementIndex
@@ -35641,7 +35641,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b53994\b53994
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [b07411.exe_5023]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b07411\b07411\b07411.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b07411\b07411
@@ -40163,7 +40163,7 @@ WorkingDir=JIT\Methodical\NaN\comp64_il_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3105
+Categories=JIT;EXPECTED_PASS;ISSUE_3105
 [tailcall_av.exe_4593]
 RelativePath=JIT\Methodical\tailcall_v4\tailcall_AV\tailcall_AV.exe
 WorkingDir=JIT\Methodical\tailcall_v4\tailcall_AV
@@ -40499,7 +40499,7 @@ WorkingDir=Regressions\coreclr\0099\AboveStackLimit
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_3032
+Categories=RT;EXPECTED_PASS;ISSUE_3032;DBG_FAIL;ISSUE_5814
 [b565808.exe_5560]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\b565808\b565808\b565808.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\b565808\b565808
@@ -40849,7 +40849,7 @@ WorkingDir=CoreMangLib\cti\system\math\MathSign2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=RT;EXPECTED_PASS;ISSUE_3105
 [threadstartdouble_2.exe_198]
 RelativePath=baseservices\threading\paramthreadstart\ThreadStartDouble_2\ThreadStartDouble_2.exe
 WorkingDir=baseservices\threading\paramthreadstart\ThreadStartDouble_2
