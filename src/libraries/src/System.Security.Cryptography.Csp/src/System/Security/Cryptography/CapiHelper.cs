@@ -244,6 +244,7 @@ namespace Internal.NativeCrypto
             else //Get the default provider name
             {
                 providerName = GetDefaultProvider(providerType);
+                cspParameters.ProviderName = providerName;
                 safeProvHandle.ReleaseProvider = false;
             }
             // look to see if the user specified that we should pass
