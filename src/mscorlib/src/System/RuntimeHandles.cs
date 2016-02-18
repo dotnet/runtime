@@ -1196,6 +1196,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static extern internal uint GetSpecialSecurityFlags(IRuntimeMethodInfo method);
 
+#if !FEATURE_CORECLR
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static extern internal void PerformSecurityCheck(Object obj, RuntimeMethodHandleInternal method, RuntimeType parent, uint invocationFlags);
@@ -1207,6 +1208,7 @@ namespace System
             GC.KeepAlive(method);
             return;
         }
+#endif //!FEATURE_CORECLR
         #endregion
 
         [System.Security.SecuritySafeCritical]  // auto-generated
