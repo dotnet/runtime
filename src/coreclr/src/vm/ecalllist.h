@@ -575,7 +575,9 @@ FCFuncStart(gRuntimeMethodHandle)
     QCFuncElement("GetCallerType", RuntimeMethodHandle::GetCallerType)
     FCFuncElement("GetLoaderAllocator", RuntimeMethodHandle::GetLoaderAllocator)
     FCFuncElement("GetSpecialSecurityFlags", ReflectionInvocation::GetSpecialSecurityFlags)
+#ifndef FEATURE_CORECLR
     FCFuncElement("PerformSecurityCheck", ReflectionInvocation::PerformSecurityCheck)
+#endif // FEATURE_CORECLR
 FCFuncEnd()
 
 FCFuncStart(gCOMDefaultBinderFuncs)
