@@ -80,5 +80,63 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal<byte>(exported, exported2);
             }
         }
+
+        [Fact]
+        public static void RSAParametersToBlob_PublicOnly()
+        {
+            byte[] blob;
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(TestData.RSA1024Params);
+                blob = rsa.ExportCspBlob(false);
+            }
+
+            RSAParameters exported;
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportCspBlob(blob);
+
+                Assert.True(rsa.PublicOnly);
+
+                exported = rsa.ExportParameters(false);
+            }
+
+            RSAParameters expected = new RSAParameters
+            {
+                Modulus = TestData.RSA1024Params.Modulus,
+                Exponent = TestData.RSA1024Params.Exponent,
+            };
+
+            ImportExport.AssertKeyEquals(ref expected, ref exported);
+        }
+
+        [Fact]
+        public static void RSAParametersToBlob_PublicPrivate()
+        {
+            byte[] blob;
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(TestData.RSA1024Params);
+                blob = rsa.ExportCspBlob(true);
+            }
+
+            RSAParameters exported;
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportCspBlob(blob);
+
+                Assert.False(rsa.PublicOnly);
+
+                exported = rsa.ExportParameters(true);
+            }
+
+            RSAParameters expected = TestData.RSA1024Params;
+
+            ImportExport.AssertKeyEquals(ref expected, ref exported);
+        }
     }
 }
