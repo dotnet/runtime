@@ -686,6 +686,15 @@ FCIMPL3(LPVOID, COMString::Replace, StringObject* thisRefUNSAFE, CLR_CHAR oldCha
     }
 
     //Perf: If no replacements required, return initial reference
+    
+    // Do it if the chars are the same...
+    
+    if ((WCHAR)oldChar == (WCHAR)newChar)
+    {
+        return thisRefUNSAFE;
+    }
+    
+    // Or if the old char isn't found.
     oldBuffer = thisRef->GetBuffer();
     length = thisRef->GetStringLength();
 
