@@ -481,21 +481,27 @@ VOID Frame::Pop(Thread *pThread)
     m_Next = NULL;
 }
 
-#ifdef FEATURE_PAL     
-Frame::~Frame()        
+#if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+void Frame::PopIfChained()
 {      
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
     if (m_Next != NULL)
     {
+        GCX_COOP();
         // When the frame is destroyed, make sure it is no longer in the
         // frame chain managed by the Thread.
-        Thread* pThread = GetThread();
-        if (pThread != NULL && pThread->GetFrame() == this)
-        {
-            Pop(pThread);
-        }
+        Pop();
     }
 }      
-#endif // FEATURE_PAL
+#endif // FEATURE_PAL && !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
