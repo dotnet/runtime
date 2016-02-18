@@ -131,7 +131,7 @@ branchList.each { branchName ->
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            Utilities.setMachineAffinity(newJob, os)
+            Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
             // Add the unit test results
@@ -230,7 +230,7 @@ branchList.each { branchName ->
             }
 
             // Set the affinity.  All of these run on Windows currently.
-            Utilities.setMachineAffinity(newBuildJob, 'Windows_NT')
+            Utilities.setMachineAffinity(newBuildJob, 'Windows_NT', 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
             // Archive the results
