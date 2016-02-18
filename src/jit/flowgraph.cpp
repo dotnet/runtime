@@ -4871,8 +4871,8 @@ TOO_FAR:
                 if (verbose)
                 {
                     printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
-                       compInlineResult->isNever() ? "INLINE_NEVER" : "INLINE_FAIL",
-                       compInlineResult->reason());
+                       compInlineResult->resultString(),
+                       compInlineResult->reasonString());
                 }
 #endif
 
@@ -4886,7 +4886,7 @@ TOO_FAR:
        {
           // This method's IL was small enough that we didn't use the size model to estimate
           // inlinability. Note that as the latest candidate reason.
-          compInlineResult->setCandidate("below ALWAYS_INLINE size");
+          compInlineResult->noteCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
        }
     }
 
@@ -21928,7 +21928,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                inlineCandidateInfo->methInfo.ILCodeSize,
                inlineDepth,
                info.compFullName,
-               inlineResult->reason());
+               inlineResult->reasonString());
     }
 
     if (verbose)
@@ -21942,7 +21942,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 #endif
 
     // We inlined...
-    inlineResult->setSuccess();
+    inlineResult->noteSuccess();
 }
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
