@@ -312,26 +312,6 @@ CorUnix::InternalOpen(
 
 
 /*++
-PAL_unlink
-
-Wrapper function for unlink.
-
-Input parameters:
-
-szPath = a symbolic link or a hard link to a file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int
-__cdecl
-PAL_unlink(const char *szPath)
-{
-    return unlink(szPath);
-}
-
-
-/*++
 InternalDeleteFile
 
 Wrapper that does the same thing as unlink, except that
