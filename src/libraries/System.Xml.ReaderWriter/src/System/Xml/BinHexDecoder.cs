@@ -45,19 +45,19 @@ namespace System.Xml
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             }
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
             if (startPos < 0)
             {
-                throw new ArgumentOutOfRangeException("startPos");
+                throw new ArgumentOutOfRangeException(nameof(startPos));
             }
             if (chars.Length - startPos < len)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             if (len == 0)
@@ -84,19 +84,19 @@ namespace System.Xml
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
             if (startPos < 0)
             {
-                throw new ArgumentOutOfRangeException("startPos");
+                throw new ArgumentOutOfRangeException(nameof(startPos));
             }
             if (str.Length - startPos < len)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             if (len == 0)
@@ -146,7 +146,7 @@ namespace System.Xml
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             }
 
             int len = chars.Length;

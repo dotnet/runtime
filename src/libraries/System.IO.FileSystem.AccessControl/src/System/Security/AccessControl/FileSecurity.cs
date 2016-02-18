@@ -180,7 +180,7 @@ namespace System.Security.AccessControl
         internal static int AccessMaskFromRights(FileSystemRights fileSystemRights, AccessControlType controlType)
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
-                throw new ArgumentOutOfRangeException("fileSystemRights", SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
+                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
             Contract.EndContractBlock();
 
             if (controlType == AccessControlType.Allow)
@@ -291,7 +291,7 @@ namespace System.Security.AccessControl
         private static int AccessMaskFromRights(FileSystemRights fileSystemRights)
         {
             if (fileSystemRights < (FileSystemRights)0 || fileSystemRights > FileSystemRights.FullControl)
-                throw new ArgumentOutOfRangeException("fileSystemRights", SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
+                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, "FileSystemRights"));
             Contract.EndContractBlock();
 
             return (int)fileSystemRights;
@@ -343,7 +343,7 @@ namespace System.Security.AccessControl
             switch (errorCode)
             {
                 case Interop.mincore.Errors.ERROR_INVALID_NAME:
-                    exception = new ArgumentException(SR.Argument_InvalidName, "name");
+                    exception = new ArgumentException(SR.Argument_InvalidName, nameof(name));
                     break;
 
                 case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
@@ -485,7 +485,7 @@ namespace System.Security.AccessControl
         public bool RemoveAccessRule(FileSystemAccessRule rule)
         {
             if (rule == null)
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             Contract.EndContractBlock();
 
             // If the rule to be removed matches what is there currently then
@@ -532,7 +532,7 @@ namespace System.Security.AccessControl
         public void RemoveAccessRuleSpecific(FileSystemAccessRule rule)
         {
             if (rule == null)
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             Contract.EndContractBlock();
 
             // If the rule to be removed matches what is there currently then

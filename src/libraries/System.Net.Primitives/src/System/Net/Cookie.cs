@@ -753,7 +753,7 @@ namespace System.Net
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _version = value;
                 if (value > 0 && _cookieVariant < CookieVariant.Rfc2109)

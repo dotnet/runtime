@@ -436,7 +436,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (validationContext == null)
             {
-                throw new ArgumentNullException("validationContext");
+                throw new ArgumentNullException(nameof(validationContext));
             }
 
             var result = IsValid(value, validationContext);
@@ -506,7 +506,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (validationContext == null)
             {
-                throw new ArgumentNullException("validationContext");
+                throw new ArgumentNullException(nameof(validationContext));
             }
 
             ValidationResult result = GetValidationResult(value, validationContext);

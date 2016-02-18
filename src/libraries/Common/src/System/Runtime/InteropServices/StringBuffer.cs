@@ -50,12 +50,12 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                if (index >= _length) throw new ArgumentOutOfRangeException("index");
+                if (index >= _length) throw new ArgumentOutOfRangeException(nameof(index));
                 return CharPointer[index];
             }
             set
             {
-                if (index >= _length) throw new ArgumentOutOfRangeException("index");
+                if (index >= _length) throw new ArgumentOutOfRangeException(nameof(index));
                 CharPointer[index] = value;
             }
         }
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public bool StartsWith(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (_length < (ulong)value.Length) return false;
             return SubstringEquals(value, startIndex: 0, count: value.Length);
         }
@@ -149,9 +149,9 @@ namespace System.Runtime.InteropServices
         public unsafe bool SubstringEquals(string value, ulong startIndex = 0, int count = -1)
         {
             if (value == null) return false;
-            if (count < -1) throw new ArgumentOutOfRangeException("count");
+            if (count < -1) throw new ArgumentOutOfRangeException(nameof(count));
             ulong realCount = count == -1 ? _length - startIndex : (ulong)count;
-            if (startIndex + realCount > _length) throw new ArgumentOutOfRangeException("count");
+            if (startIndex + realCount > _length) throw new ArgumentOutOfRangeException(nameof(count));
 
             int length = value.Length;
 
@@ -204,7 +204,7 @@ namespace System.Runtime.InteropServices
         /// </exception>
         public void Append(StringBuffer value, ulong startIndex = 0, ulong count = 0)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (count == 0) return;
             value.CopyTo(
                 bufferIndex: startIndex,
@@ -219,9 +219,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public unsafe void CopyTo(ulong bufferIndex, StringBuffer destination, ulong destinationIndex, ulong count)
         {
-            if (destination == null) throw new ArgumentNullException("destination");
-            if (destinationIndex > destination._length) throw new ArgumentOutOfRangeException("destinationIndex");
-            if (_length < bufferIndex + count) throw new ArgumentOutOfRangeException("count");
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            if (destinationIndex > destination._length) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
+            if (_length < bufferIndex + count) throw new ArgumentOutOfRangeException(nameof(count));
 
             if (count == 0) return;
             ulong lastIndex = destinationIndex + (ulong)count;
@@ -240,11 +240,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public unsafe void CopyFrom(ulong bufferIndex, string source, int sourceIndex = 0, int count = -1)
         {
-            if (source == null) throw new ArgumentNullException("source");
-            if (bufferIndex > _length) throw new ArgumentOutOfRangeException("bufferIndex");
-            if (sourceIndex < 0 || sourceIndex > source.Length) throw new ArgumentOutOfRangeException("sourceIndex");
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (bufferIndex > _length) throw new ArgumentOutOfRangeException(nameof(bufferIndex));
+            if (sourceIndex < 0 || sourceIndex > source.Length) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             if (count < 0) count = source.Length - sourceIndex;
-            if (source.Length - count < sourceIndex) throw new ArgumentOutOfRangeException("count");
+            if (source.Length - count < sourceIndex) throw new ArgumentOutOfRangeException(nameof(count));
 
             if (count == 0) return;
             ulong lastIndex = bufferIndex + (ulong)count;
@@ -297,11 +297,11 @@ namespace System.Runtime.InteropServices
         /// </exception>
         public unsafe string Substring(ulong startIndex, int count = -1)
         {
-            if (_length > 0 && startIndex > _length - 1) throw new ArgumentOutOfRangeException("startIndex");
-            if (count < -1) throw new ArgumentOutOfRangeException("count");
+            if (_length > 0 && startIndex > _length - 1) throw new ArgumentOutOfRangeException(nameof(startIndex));
+            if (count < -1) throw new ArgumentOutOfRangeException(nameof(count));
 
             ulong realCount = count == -1 ? _length - startIndex : (ulong)count;
-            if (realCount > int.MaxValue || startIndex + realCount > _length) throw new ArgumentOutOfRangeException("count");
+            if (realCount > int.MaxValue || startIndex + realCount > _length) throw new ArgumentOutOfRangeException(nameof(count));
             if (realCount == 0) return string.Empty;
 
             // The buffer could be bigger than will fit into a string, but the substring might fit. As the starting

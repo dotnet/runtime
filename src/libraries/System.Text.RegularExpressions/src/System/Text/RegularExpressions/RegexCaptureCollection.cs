@@ -64,7 +64,7 @@ namespace System.Text.RegularExpressions
                 return _group;
 
             if (i >= _capcount || i < 0)
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
 
             // first time a capture is accessed, compute them all
             if (_captures == null)
@@ -92,7 +92,7 @@ namespace System.Text.RegularExpressions
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             for (int i = arrayIndex, j = 0; j < Count; i++, j++)
             {

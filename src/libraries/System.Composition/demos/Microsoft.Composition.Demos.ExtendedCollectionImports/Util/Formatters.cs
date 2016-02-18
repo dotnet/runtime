@@ -13,7 +13,7 @@ namespace Microsoft.Composition.Demos.ExtendedCollectionImports.Util
         public static string Format(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (value is string)
                 return "\"" + value + "\"";

@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (!(value.Length*8).IsLegalSize(s_legalKeySizes))
                     throw new ArgumentException(SR.Cryptography_InvalidKeySize);

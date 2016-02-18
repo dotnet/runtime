@@ -27,7 +27,7 @@ namespace System.Net.Http
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 CheckDisposedOrStarted();
 
@@ -49,7 +49,7 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request", SR.net_http_handler_norequest);
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
             SetOperationStarted();
             return _innerHandler.SendAsync(request, cancellationToken);

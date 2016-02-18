@@ -30,7 +30,7 @@ namespace Windows.UI.Xaml.Media.Animation
         {
             if (timeSpan < TimeSpan.Zero)
             {
-                throw new ArgumentOutOfRangeException("timeSpan");
+                throw new ArgumentOutOfRangeException(nameof(timeSpan));
             }
 
             KeyTime keyTime = new KeyTime();

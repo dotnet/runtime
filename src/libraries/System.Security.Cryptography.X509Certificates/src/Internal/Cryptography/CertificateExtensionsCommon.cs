@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal
             where T : AsymmetricAlgorithm
         {
             if (certificate == null)
-                throw new ArgumentNullException("certificate");
+                throw new ArgumentNullException(nameof(certificate));
 
             string oidValue = GetExpectedOidValue<T>();
             PublicKey publicKey = certificate.PublicKey;
@@ -40,7 +40,7 @@ namespace Internal.Cryptography.Pal
             where T : AsymmetricAlgorithm
         {
             if (certificate == null)
-                throw new ArgumentNullException("certificate");
+                throw new ArgumentNullException(nameof(certificate));
 
             string oidValue = GetExpectedOidValue<T>();
             if (!certificate.HasPrivateKey || oidValue != certificate.PublicKey.Oid.Value)

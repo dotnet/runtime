@@ -332,17 +332,17 @@ namespace System.Collections.Specialized
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_MultiRank, "array");
+                throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < _entriesArray.Count)
@@ -414,7 +414,7 @@ namespace System.Collections.Specialized
             int n = _entriesArray.Count;
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             object[] allValues = (object[])Array.CreateInstance(type, n);
 
@@ -580,17 +580,17 @@ namespace System.Collections.Specialized
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_MultiRank, "array");
+                    throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
                 }
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < _coll.Count)

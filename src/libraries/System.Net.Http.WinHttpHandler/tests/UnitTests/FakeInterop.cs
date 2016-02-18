@@ -610,7 +610,7 @@ internal static partial class Interop
         {
             if (handle == null)
             {
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
             }
             
             var fakeHandle = (FakeSafeWinHttpHandle)handle;

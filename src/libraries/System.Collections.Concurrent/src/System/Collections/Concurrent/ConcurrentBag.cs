@@ -70,7 +70,7 @@ namespace System.Collections.Concurrent
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection", SR.ConcurrentBag_Ctor_ArgumentNullException);
+                throw new ArgumentNullException(nameof(collection), SR.ConcurrentBag_Ctor_ArgumentNullException);
             }
             Initialize(collection);
         }
@@ -436,12 +436,12 @@ namespace System.Collections.Concurrent
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array", SR.ConcurrentBag_CopyTo_ArgumentNullException);
+                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
             }
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException
-                    ("index", SR.ConcurrentBag_CopyTo_ArgumentOutOfRangeException);
+                    (nameof(index), SR.ConcurrentBag_CopyTo_ArgumentOutOfRangeException);
             }
 
             // Short path if the bag is empty
@@ -489,7 +489,7 @@ namespace System.Collections.Concurrent
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array", SR.ConcurrentBag_CopyTo_ArgumentNullException);
+                throw new ArgumentNullException(nameof(array), SR.ConcurrentBag_CopyTo_ArgumentNullException);
             }
 
             bool lockTaken = false;

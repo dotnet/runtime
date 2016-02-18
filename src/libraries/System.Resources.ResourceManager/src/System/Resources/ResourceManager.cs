@@ -17,7 +17,7 @@ namespace System.Resources
         {
             if (null == resourceSource)
             {
-                throw new ArgumentNullException("resourceSource");
+                throw new ArgumentNullException(nameof(resourceSource));
             }
 
             // Portable libraries resources are indexed under the the type full name 
@@ -29,11 +29,11 @@ namespace System.Resources
         {
             if (null == baseName)
             {
-                throw new ArgumentNullException("baseName");
+                throw new ArgumentNullException(nameof(baseName));
             }
             if (null == assembly)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             _resourcesSubtree = baseName;
@@ -59,7 +59,7 @@ namespace System.Resources
         {
             if (null == name)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (WinRTInterop.Callbacks.IsAppxModel() && _resourceMap == null)

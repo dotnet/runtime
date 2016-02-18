@@ -33,9 +33,9 @@ namespace Internal.Cryptography
         public CngSymmetricAlgorithmCore(string algorithm, ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
             if (keyName == null)
-                throw new ArgumentNullException("keyName");
+                throw new ArgumentNullException(nameof(keyName));
             if (provider == null)
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
 
             _algorithm = algorithm;
             _outer = outer;
@@ -128,19 +128,19 @@ namespace Internal.Cryptography
         private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
         {
             if (rgbKey == null)
-                throw new ArgumentNullException("rgbKey");
+                throw new ArgumentNullException(nameof(rgbKey));
 
             byte[] key = rgbKey.CloneByteArray();
 
             long keySize = key.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(_outer.LegalKeySizes))
-                throw new ArgumentException(SR.Cryptography_InvalidKeySize, "rgbKey");
+                throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
             if (_outer.IsWeakKey(key))
                 throw new CryptographicException(SR.Cryptography_WeakKey);
 
             if (rgbIV != null && rgbIV.Length != _outer.BlockSize.BitSizeToByteSize())
-                throw new ArgumentException(SR.Cryptography_InvalidIVSize, "rgbIV");
+                throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
 
             if (rgbIV == null && _outer.Mode != CipherMode.ECB)
                 throw new CryptographicException(SR.Cryptography_MissingIV);

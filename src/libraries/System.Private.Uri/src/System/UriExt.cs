@@ -302,10 +302,10 @@ namespace System
         public string GetComponents(UriComponents components, UriFormat format)
         {
             if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
-                throw new ArgumentOutOfRangeException("components", components, SR.net_uri_NotJustSerialization);
+                throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
 
             if ((format & ~UriFormat.SafeUnescaped) != 0)
-                throw new ArgumentOutOfRangeException("format");
+                throw new ArgumentOutOfRangeException(nameof(format));
 
             if (IsNotAbsoluteUri)
             {
@@ -497,7 +497,7 @@ namespace System
         public static string UnescapeDataString(string stringToUnescape)
         {
             if ((object)stringToUnescape == null)
-                throw new ArgumentNullException("stringToUnescape");
+                throw new ArgumentNullException(nameof(stringToUnescape));
 
             if (stringToUnescape.Length == 0)
                 return string.Empty;
@@ -532,7 +532,7 @@ namespace System
         public static string EscapeUriString(string stringToEscape)
         {
             if ((object)stringToEscape == null)
-                throw new ArgumentNullException("stringToEscape");
+                throw new ArgumentNullException(nameof(stringToEscape));
 
             if (stringToEscape.Length == 0)
                 return string.Empty;
@@ -552,7 +552,7 @@ namespace System
         public static string EscapeDataString(string stringToEscape)
         {
             if ((object)stringToEscape == null)
-                throw new ArgumentNullException("stringToEscape");
+                throw new ArgumentNullException(nameof(stringToEscape));
 
             if (stringToEscape.Length == 0)
                 return string.Empty;
@@ -761,7 +761,7 @@ namespace System
                 return new string(dest, 0, position);
             }
             else
-                throw new ArgumentOutOfRangeException("format");
+                throw new ArgumentOutOfRangeException(nameof(format));
         }
 
         //
@@ -826,14 +826,14 @@ namespace System
                     return GetUnescapedParts(uriComponents, uriFormat);
 
                 default:
-                    throw new ArgumentOutOfRangeException("uriFormat");
+                    throw new ArgumentOutOfRangeException(nameof(uriFormat));
             }
         }
 
         public bool IsBaseOf(Uri uri)
         {
             if ((object)uri == null)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
 
             if (!IsAbsoluteUri)
                 return false;

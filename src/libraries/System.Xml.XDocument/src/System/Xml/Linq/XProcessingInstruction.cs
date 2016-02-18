@@ -26,7 +26,7 @@ namespace System.Xml.Linq
         /// </exception>
         public XProcessingInstruction(string target, string data)
         {
-            if (data == null) throw new ArgumentNullException("data");
+            if (data == null) throw new ArgumentNullException(nameof(data));
             ValidateName(target);
             this.target = target;
             this.data = data;
@@ -39,7 +39,7 @@ namespace System.Xml.Linq
         /// <param name="other">XML processing instruction to copy from.</param>
         public XProcessingInstruction(XProcessingInstruction other)
         {
-            if (other == null) throw new ArgumentNullException("other");
+            if (other == null) throw new ArgumentNullException(nameof(other));
             this.target = other.target;
             this.data = other.data;
         }
@@ -65,7 +65,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
                 data = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
@@ -115,7 +115,7 @@ namespace System.Xml.Linq
         /// </param>
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteProcessingInstruction(target, data);
         }
 

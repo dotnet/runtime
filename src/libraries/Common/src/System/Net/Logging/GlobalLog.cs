@@ -113,7 +113,7 @@ namespace System.Net
         {
             if ((source & ThreadKinds.SourceMask) != source || source == ThreadKinds.Unknown)
             {
-                throw new ArgumentException("Must specify the thread source.", "source");
+                throw new ArgumentException("Must specify the thread source.", nameof(source));
             }
 
             if (ThreadKindStack.Count == 0)

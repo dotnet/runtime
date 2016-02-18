@@ -46,7 +46,7 @@ namespace System.Diagnostics
             // Negative PIDs aren't valid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid");
+                throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
             ProcessInfo procInfo = new ProcessInfo()
@@ -126,7 +126,7 @@ namespace System.Diagnostics
                 case Interop.libproc.ThreadRunState.TH_STATE_WAITING:
                     return System.Diagnostics.ThreadState.Standby;
                 default:
-                    throw new ArgumentOutOfRangeException("state");
+                    throw new ArgumentOutOfRangeException(nameof(state));
             }
         }
 

@@ -130,7 +130,7 @@ namespace System.Net
         {
             if (perDomainCapacity != Int32.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity))
             {
-                throw new ArgumentOutOfRangeException("perDomainCapacity", SR.Format(SR.net_cookie_capacity_range, "PerDomainCapacity", 0, capacity));
+                throw new ArgumentOutOfRangeException(nameof(perDomainCapacity), SR.Format(SR.net_cookie_capacity_range, "PerDomainCapacity", 0, capacity));
             }
             _maxCookiesPerDomain = perDomainCapacity;
             if (maxCookieSize <= 0)
@@ -151,7 +151,7 @@ namespace System.Net
             {
                 if (value <= 0 || (value < _maxCookiesPerDomain && _maxCookiesPerDomain != Int32.MaxValue))
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.Format(SR.net_cookie_capacity_range, "Capacity", 0, _maxCookiesPerDomain));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.net_cookie_capacity_range, "Capacity", 0, _maxCookiesPerDomain));
                 }
                 if (value < _maxCookies)
                 {
@@ -183,7 +183,7 @@ namespace System.Net
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _maxCookieSize = value;
             }
@@ -202,7 +202,7 @@ namespace System.Net
             {
                 if (value <= 0 || (value > _maxCookies && value != Int32.MaxValue))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 if (value < _maxCookiesPerDomain)
                 {
@@ -218,7 +218,7 @@ namespace System.Net
         {
             if (cookie == null)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
 
             if (cookie.Domain.Length == 0)
@@ -546,7 +546,7 @@ namespace System.Net
         {
             if (cookies == null)
             {
-                throw new ArgumentNullException("cookies");
+                throw new ArgumentNullException(nameof(cookies));
             }
             foreach (Cookie c in cookies)
             {
@@ -625,11 +625,11 @@ namespace System.Net
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (cookie == null)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
             Cookie new_cookie = cookie.Clone();
             new_cookie.VerifySetDefaults(new_cookie.Variant, uri, IsLocalDomain(uri.Host), _fqdnMyDomain, true, true);
@@ -641,11 +641,11 @@ namespace System.Net
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (cookies == null)
             {
-                throw new ArgumentNullException("cookies");
+                throw new ArgumentNullException(nameof(cookies));
             }
 
             bool isLocalDomain = IsLocalDomain(uri.Host);
@@ -744,7 +744,7 @@ namespace System.Net
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             return InternalGetCookies(uri);
         }
@@ -938,7 +938,7 @@ namespace System.Net
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             string dummy;
             return GetCookieHeader(uri, out dummy);
@@ -968,11 +968,11 @@ namespace System.Net
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (cookieHeader == null)
             {
-                throw new ArgumentNullException("cookieHeader");
+                throw new ArgumentNullException(nameof(cookieHeader));
             }
             CookieCutter(uri, null, cookieHeader, true); // Will throw on error
         }

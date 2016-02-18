@@ -1148,7 +1148,7 @@ namespace Internal.NativeCrypto
         public static int ObjToHashAlgId(Object hashAlg)
         {
             if (hashAlg == null)
-                throw new ArgumentNullException("hashAlg");
+                throw new ArgumentNullException(nameof(hashAlg));
 
             String hashAlgString = hashAlg as String;
             if (hashAlgString != null)

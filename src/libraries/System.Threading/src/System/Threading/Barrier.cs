@@ -137,7 +137,7 @@ namespace System.Threading
         #region Properties
 
         /// <summary>
-        /// Gets the number of participants in the barrier that haven’t yet signaled
+        /// Gets the number of participants in the barrier that haven?t yet signaled
         /// in the current phase.
         /// </summary>
         /// <remarks>
@@ -206,7 +206,7 @@ namespace System.Threading
             // the count must be non negative value
             if (participantCount < 0 || participantCount > MAX_PARTICIPANTS)
             {
-                throw new ArgumentOutOfRangeException("participantCount", participantCount, SR.Barrier_ctor_ArgumentOutOfRange);
+                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount, SR.Barrier_ctor_ArgumentOutOfRange);
             }
             _currentTotalCount = (int)participantCount;
             _postPhaseAction = postPhaseAction;
@@ -309,12 +309,12 @@ namespace System.Threading
 
             if (participantCount < 1)
             {
-                throw new ArgumentOutOfRangeException("participantCount", participantCount,
+                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
                     SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
             }
             else if (participantCount > MAX_PARTICIPANTS) //overflow
             {
-                throw new ArgumentOutOfRangeException("participantCount",
+                throw new ArgumentOutOfRangeException(nameof(participantCount),
                         SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
             }
 
@@ -335,7 +335,7 @@ namespace System.Threading
                 GetCurrentTotal(currentTotal, out current, out total, out sense);
                 if (participantCount + total > MAX_PARTICIPANTS) //overflow
                 {
-                    throw new ArgumentOutOfRangeException("participantCount",
+                    throw new ArgumentOutOfRangeException(nameof(participantCount),
                         SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
                 }
 
@@ -415,7 +415,7 @@ namespace System.Threading
             // Validate input
             if (participantCount < 1)
             {
-                throw new ArgumentOutOfRangeException("participantCount", participantCount,
+                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
                     SR.Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange);
             }
 
@@ -436,7 +436,7 @@ namespace System.Threading
 
                 if (total < participantCount)
                 {
-                    throw new ArgumentOutOfRangeException("participantCount",
+                    throw new ArgumentOutOfRangeException(nameof(participantCount),
                         SR.Barrier_RemoveParticipants_ArgumentOutOfRange);
                 }
                 if (total - participantCount < current)
@@ -555,7 +555,7 @@ namespace System.Threading
             Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new System.ArgumentOutOfRangeException("timeout", timeout,
+                throw new System.ArgumentOutOfRangeException(nameof(timeout), timeout,
                     SR.Barrier_SignalAndWait_ArgumentOutOfRange);
             }
             return SignalAndWait((int)timeout.TotalMilliseconds, cancellationToken);
@@ -610,7 +610,7 @@ namespace System.Threading
 
             if (millisecondsTimeout < -1)
             {
-                throw new System.ArgumentOutOfRangeException("millisecondsTimeout", millisecondsTimeout,
+                throw new System.ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout,
                     SR.Barrier_SignalAndWait_ArgumentOutOfRange);
             }
 

@@ -17,7 +17,7 @@ namespace System
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Contract.EndContractBlock();
 
@@ -34,7 +34,7 @@ namespace System
 
                 case Interop.ERROR_INVALID_PARAMETER:
                 case Interop.ERROR_NO_UNICODE_TRANSLATION:
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
+                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
 
                 case Interop.ERROR_NOT_ENOUGH_MEMORY:
                     throw new OutOfMemoryException(SR.Arg_OutOfMemoryException);
@@ -51,7 +51,7 @@ namespace System
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Contract.EndContractBlock();
 
@@ -67,7 +67,7 @@ namespace System
                  iLength < 0)
             {
                 if (lastError == Interop.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
+                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
 
                 // We shouldn't really be able to get here..., guessing length is
                 // a trivial math function...
@@ -110,7 +110,7 @@ namespace System
                     case Interop.ERROR_INVALID_PARAMETER:
                     case Interop.ERROR_NO_UNICODE_TRANSLATION:
                         // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
-                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
+                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(value));
 
                     case Interop.ERROR_NOT_ENOUGH_MEMORY:
                         throw new OutOfMemoryException(SR.Arg_OutOfMemoryException);

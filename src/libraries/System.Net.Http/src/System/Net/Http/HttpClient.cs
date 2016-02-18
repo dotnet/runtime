@@ -67,7 +67,7 @@ namespace System.Net.Http
             {
                 if (value != s_infiniteTimeout && (value <= TimeSpan.Zero || value > s_maxTimeout))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 CheckDisposedOrStarted();
                 _timeout = value;
@@ -81,11 +81,11 @@ namespace System.Net.Http
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 if (value > HttpContent.MaxBufferSize)
                 {
-                    throw new ArgumentOutOfRangeException("value", value,
+                    throw new ArgumentOutOfRangeException(nameof(value), value,
                         string.Format(System.Globalization.CultureInfo.InvariantCulture,
                         SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
                 }
@@ -337,7 +337,7 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
             CheckDisposed();
             CheckRequestMessage(request);

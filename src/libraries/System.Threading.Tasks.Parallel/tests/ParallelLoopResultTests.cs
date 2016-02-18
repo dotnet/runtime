@@ -969,7 +969,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             {
                 if (partitionCount <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("partitionCount");
+                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
                 }
                 IEnumerator<TSource>[] partitions
                     = new IEnumerator<TSource>[partitionCount];

@@ -141,13 +141,13 @@ namespace System.Net.Security
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             BufferAsyncResult bufferResult = asyncResult as BufferAsyncResult;
             if (bufferResult == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), "asyncResult");
+                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
             }
 
             if (Interlocked.Exchange(ref _nestedRead, 0) == 0)
@@ -183,13 +183,13 @@ namespace System.Net.Security
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             LazyAsyncResult lazyResult = asyncResult as LazyAsyncResult;
             if (lazyResult == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), "asyncResult");
+                throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
             }
 
             if (Interlocked.Exchange(ref _nestedWrite, 0) == 0)
@@ -300,22 +300,22 @@ namespace System.Net.Security
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (count > buffer.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count", SR.net_offset_plus_count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
 

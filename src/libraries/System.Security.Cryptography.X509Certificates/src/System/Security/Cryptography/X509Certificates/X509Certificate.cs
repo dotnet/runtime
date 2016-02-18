@@ -34,9 +34,9 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullArray, "rawData");
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
             if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, "keyStorageFlags");
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             Pal = CertificatePal.FromBlob(rawData, password, keyStorageFlags);
         }
@@ -65,9 +65,9 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, "keyStorageFlags");
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             Pal = CertificatePal.FromFile(fileName, password, keyStorageFlags);
         }

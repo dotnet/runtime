@@ -1295,7 +1295,7 @@ namespace System.Threading.Tasks.Tests
             {
                 if (partitionCount <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("partitionCount");
+                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
                 }
                 IEnumerator<TSource>[] partitions
                     = new IEnumerator<TSource>[partitionCount];

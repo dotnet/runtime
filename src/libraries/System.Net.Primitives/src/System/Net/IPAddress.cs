@@ -110,7 +110,7 @@ namespace System.Net
         {
             if (newAddress < 0 || newAddress > 0x00000000FFFFFFFF)
             {
-                throw new ArgumentOutOfRangeException("newAddress");
+                throw new ArgumentOutOfRangeException(nameof(newAddress));
             }
 
             PrivateAddress = (uint)newAddress;
@@ -125,12 +125,12 @@ namespace System.Net
         {
             if (address == null)
             {
-                throw new ArgumentNullException("address");
+                throw new ArgumentNullException(nameof(address));
             }
 
             if (address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
-                throw new ArgumentException(SR.dns_bad_ip_address, "address");
+                throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
             }
 
             _numbers = new ushort[NumberOfLabels];
@@ -144,7 +144,7 @@ namespace System.Net
             //           addresses we could implement some more robust checking here
             if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
             {
-                throw new ArgumentOutOfRangeException("scopeid");
+                throw new ArgumentOutOfRangeException(nameof(scopeid));
             }
 
             PrivateScopeId = (uint)scopeid;
@@ -167,11 +167,11 @@ namespace System.Net
         {
             if (address == null)
             {
-                throw new ArgumentNullException("address");
+                throw new ArgumentNullException(nameof(address));
             }
             if (address.Length != IPAddressParserStatics.IPv4AddressBytes && address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
-                throw new ArgumentException(SR.dns_bad_ip_address, "address");
+                throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
             }
 
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
@@ -288,7 +288,7 @@ namespace System.Net
                 //           addresses we could implement some more robust checking here
                 if (value < 0 || value > 0x00000000FFFFFFFF)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 PrivateScopeId = (uint)value;
@@ -361,7 +361,7 @@ namespace System.Net
         {
             if (address == null)
             {
-                throw new ArgumentNullException("address");
+                throw new ArgumentNullException(nameof(address));
             }
 
             if (address.IsIPv6)

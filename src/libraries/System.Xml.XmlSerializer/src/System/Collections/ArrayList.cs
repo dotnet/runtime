@@ -47,9 +47,9 @@ namespace System.Collections
         public static Array ToArray(IList list, Type type)
         {
             if (list == null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Array array = Array.CreateInstance(type, list.Count);
             list.CopyTo(array, 0);
             return array;

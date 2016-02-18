@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 _chainPolicy = value;
             }
         }
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.X509Certificates
             lock (_syncRoot)
             {
                 if (certificate == null)
-                    throw new ArgumentException(SR.Cryptography_InvalidContextHandle, "certificate");
+                    throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
                 Reset();
 
