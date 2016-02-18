@@ -28,7 +28,7 @@ namespace System.Net.Sockets
             {
                 if (Volatile.Read(ref _asyncContext) == null)
                 {
-                    Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this, SocketAsyncEngine.Instance), null);
+                    Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null);
                 }
 
                 return _asyncContext;
