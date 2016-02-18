@@ -894,6 +894,7 @@ namespace Internal.NativeCrypto
                 throw hr.ToCryptographicException();
             }
 
+            hKey.PublicOnly = isPublic;
             safeKeyHandle = hKey;
 
             return;
