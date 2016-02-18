@@ -223,13 +223,21 @@ create_domain_objects (MonoDomain *domain)
  *
  */
 void
-mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
-		   MonoThreadAttachCB attach_cb)
+mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
 {
 	MonoError error;
+	mono_runtime_init_checked (domain, start_cb, attach_cb, &error);
+	mono_error_cleanup (&error);
+}
+
+void
+mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error)
+{
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *klass;
+
+	mono_error_init (error);
 
 	mono_portability_helpers_init ();
 	
@@ -249,12 +257,14 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_thread_init (start_cb, attach_cb);
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
+
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;
@@ -270,7 +280,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_gc_init ();
 
 	/* contexts use GC handles, so they must be initialized after the GC */
-	mono_context_init (domain);
+	mono_context_init_checked (domain, error);
+	return_if_nok (error);
 	mono_context_set (domain->default_context);
 
 #ifndef DISABLE_SOCKETS
@@ -334,12 +345,23 @@ void
 mono_context_init (MonoDomain *domain)
 {
 	MonoError error;
+	mono_context_init_checked (domain, &error);
+	mono_error_cleanup (&error);
+}
+
+void
+mono_context_init_checked (MonoDomain *domain, MonoError *error)
+{
 	MonoClass *klass;
 	MonoAppContext *context;
 
+	mono_error_init (error);
+
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, error);
+	return_if_nok (error);
+
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
 	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
@@ -436,13 +458,19 @@ mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *co
 }
 
 static MonoAppDomainSetup*
-copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
+copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup, MonoError *error)
 {
-	MonoError error;
-	MonoDomain *caller_domain = mono_domain_get ();
-	MonoClass *ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	MonoAppDomainSetup *copy = (MonoAppDomainSetup*)mono_object_new_checked (domain, ads_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoDomain *caller_domain;
+	MonoClass *ads_class;
+	MonoAppDomainSetup *copy;
+
+	mono_error_init (error);
+
+	caller_domain = mono_domain_get ();
+	ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+
+	copy = (MonoAppDomainSetup*)mono_object_new_checked (domain, ads_class, error);
+	return_val_if_nok (error, NULL);
 
 	mono_domain_set_internal (domain);
 
@@ -480,13 +508,15 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	MonoDomain *data;
 	char *shadow_location;
 
+	mono_error_init (error);
+
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 
 	/* FIXME: pin all those objects */
 	data = mono_domain_create();
 
 	ad = (MonoAppDomain *) mono_object_new_checked (data, adclass, error);
-	if (!mono_error_ok (error)) return NULL;
+	return_val_if_nok (error, NULL);
 	ad->data = data;
 	data->domain = ad;
 	data->friendly_name = g_strdup (friendly_name);
@@ -503,17 +533,25 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 		}
 	}
 
-	mono_context_init (data);
+	mono_context_init_checked (data, error);
+	return_val_if_nok (error, NULL);
 
-	data->setup = copy_app_domain_setup (data, setup);
+	data->setup = copy_app_domain_setup (data, setup, error);
+	if (!mono_error_ok (error)) {
+		g_free (data->friendly_name);
+		return NULL;
+	}
+
 	mono_domain_set_options_from_config (data);
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
 
 #ifndef DISABLE_SHADOW_COPY
 	/*FIXME, guard this for when the debugger is not running */
 	shadow_location = get_shadow_assembly_location_base (data, error);
-	if (!mono_error_ok (error))
+	if (!mono_error_ok (error)) {
+		g_free (data->friendly_name);
 		return NULL;
+	}
 
 	g_free (shadow_location);
 #endif
@@ -566,10 +604,21 @@ MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 {
 	MonoError error;
+	MonoReflectionAssembly *ret = mono_domain_try_type_resolve_checked (domain, name, tb, &error);
+	mono_error_cleanup (&error);
+
+	return ret;
+}
+
+MonoReflectionAssembly *
+mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject *tb, MonoError *error)
+{
+	static MonoMethod *method = NULL;
 	MonoReflectionAssembly *ret;
 	MonoClass *klass;
 	void *params [1];
-	static MonoMethod *method = NULL;
+
+	mono_error_init (error);
 
 	g_assert (domain != NULL && ((name != NULL) || (tb != NULL)));
 
@@ -589,8 +638,8 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 	else
 		*params = tb;
 
-	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, error);
+	return_val_if_nok (error, NULL);
 
 	return ret;
 }
@@ -954,14 +1003,15 @@ leave:
 }
 
 MonoReflectionAssembly *
-mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly)
+mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error)
 {
-	MonoError error;
 	MonoReflectionAssembly *ret;
 	MonoClass *klass;
 	MonoMethod *method;
 	MonoBoolean isrefonly;
 	gpointer params [3];
+
+	mono_error_init (error);
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
@@ -980,15 +1030,14 @@ mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *
 	isrefonly = refonly ? 1 : 0;
 	params [0] = fname;
 	if (requesting) {
-		params[1] = mono_assembly_get_object_checked (domain, requesting, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		params[1] = mono_assembly_get_object_checked (domain, requesting, error);
+		return_val_if_nok (error, NULL);
 	} else
 		params [1] = NULL;
 	params [2] = &isrefonly;
 
-	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, error);
+	return_val_if_nok (error, NULL);
 
 	return ret;
 }
@@ -997,6 +1046,7 @@ MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting,
 									  gboolean refonly)
 {
+	MonoError error;
 	MonoReflectionAssembly *assembly;
 	MonoDomain *domain = mono_domain_get ();
 	char *aname_str;
@@ -1010,7 +1060,13 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *req
 		g_free (aname_str);
 		return NULL;
 	}
-	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly);
+
+	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly, &error);
+	if (!mono_error_ok (&error)) {
+		g_free (aname_str);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
+
 	g_free (aname_str);
 
 	if (assembly)
@@ -2047,8 +2103,13 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!parsed) {
 		/* This is a parse error... */
-		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
+		if (!refOnly) {
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		}
 		return refass;
 	}
 
@@ -2057,8 +2118,13 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!ass) {
 		/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
-		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
+		if (!refOnly) {
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		}
 		else
 			refass = NULL;
 		if (!refass) {

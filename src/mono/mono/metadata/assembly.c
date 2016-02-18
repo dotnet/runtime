@@ -2511,6 +2511,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
+	MonoError error;
 	MonoAssembly *res;
 	MonoAssemblyName *aname, base_name;
 	MonoAssemblyName mapped_aname;
@@ -2570,7 +2571,15 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 		res->in_gac = TRUE;
 	else {
 		MonoDomain *domain = mono_domain_get ();
-		MonoReflectionAssembly *refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), NULL, FALSE);
+		MonoReflectionAssembly *refasm;
+
+		refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), NULL, FALSE, &error);
+		if (!mono_error_ok (&error)) {
+			g_free (fullname);
+			mono_assembly_name_free (aname);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		}
+
 		if (refasm)
 			res = refasm->assembly;
 	}
