@@ -18,7 +18,7 @@ namespace System.IO.Compression.Tests
         public static async Task OverlappingReadAsync()
         {
             byte[] buffer = new byte[32];
-            string testFilePath = Path.Combine("GZTestData", "Canterbury", "GZcompressed", "alice29.txt" + ".gz");
+            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
             using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
             using (var unzip = new DeflateStream(readStream, CompressionMode.Decompress, true))
             {
@@ -40,10 +40,10 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task OverlappingFlushAsync()
+        public static async Task OverlappingFlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
-            string testFilePath = Path.Combine("GZTestData", "Canterbury", "alice29.txt");
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
             using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
             {
                 buffer = origStream.ToArray();
@@ -74,10 +74,65 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public static async Task OverlappingFlushAsync_DuringWriteAsync()
+        {
+            byte[] buffer = null;
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
+            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            {
+                buffer = origStream.ToArray();
+            }
+
+            using (var writeStream = new ManualSyncMemoryStream(false))
+            using (var zip = new DeflateStream(writeStream, CompressionMode.Compress))
+            {
+                Task task = null;
+                try
+                {
+                    task = zip.WriteAsync(buffer, 0, buffer.Length);
+                    Assert.True(writeStream.WriteHit);
+                    Assert.Throws<InvalidOperationException>(() => { zip.FlushAsync(); }); // "overlapping flushes"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    writeStream.manualResetEvent.Set();
+                    // The original WriteAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task OverlappingFlushAsync_DuringReadAsync()
+        {
+            byte[] buffer = new byte[32];
+            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
+            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
+            using (var unzip = new DeflateStream(readStream, CompressionMode.Decompress, true))
+            {
+                Task task = null;
+                try
+                {
+                    task = unzip.ReadAsync(buffer, 0, 32);
+                    Assert.True(readStream.ReadHit);
+                    Assert.Throws<InvalidOperationException>(() => { unzip.FlushAsync(); }); // "overlapping read"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    readStream.manualResetEvent.Set();
+                    // The original ReadAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
         public static async Task OverlappingWriteAsync()
         {
             byte[] buffer = null;
-            string testFilePath = Path.Combine("GZTestData", "Canterbury", "alice29.txt");
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
             using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
             {
                 buffer = origStream.ToArray();
