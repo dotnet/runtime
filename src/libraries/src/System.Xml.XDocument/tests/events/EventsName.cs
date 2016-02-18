@@ -15,7 +15,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XElement("element"), (XName)"newName" },
             new object[] { new XElement("parent", new XElement("child", "child text")), (XName)"{b}newName" },
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XElement toChange, XName newName)
         {
             XElement original = new XElement(toChange);

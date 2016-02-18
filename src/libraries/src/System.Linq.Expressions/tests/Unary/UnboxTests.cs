@@ -11,12 +11,12 @@ namespace System.Linq.Expressions.Tests
     public class UnboxTests
     {
         [Theory]
-        [MemberData("UnboxableFromObject")]
-        [MemberData("NullableUnboxableFromObject")]
-        [MemberData("UnboxableFromIComparable")]
-        [MemberData("NullableUnboxableFromIComparable")]
-        [MemberData("UnboxableFromIComparableT")]
-        [MemberData("NullableUnboxableFromIComparableT")]
+        [MemberData(nameof(UnboxableFromObject))]
+        [MemberData(nameof(NullableUnboxableFromObject))]
+        [MemberData(nameof(UnboxableFromIComparable))]
+        [MemberData(nameof(NullableUnboxableFromIComparable))]
+        [MemberData(nameof(UnboxableFromIComparableT))]
+        [MemberData(nameof(NullableUnboxableFromIComparableT))]
         public void CanUnbox(object value, Type type, Type boxedType)
         {
             Expression expression = Expression.Constant(value, boxedType);
@@ -27,12 +27,12 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("UnboxableFromObject")]
-        [MemberData("NullableUnboxableFromObject")]
-        [MemberData("UnboxableFromIComparable")]
-        [MemberData("NullableUnboxableFromIComparable")]
-        [MemberData("UnboxableFromIComparableT")]
-        [MemberData("NullableUnboxableFromIComparableT")]
+        [MemberData(nameof(UnboxableFromObject))]
+        [MemberData(nameof(NullableUnboxableFromObject))]
+        [MemberData(nameof(UnboxableFromIComparable))]
+        [MemberData(nameof(NullableUnboxableFromIComparable))]
+        [MemberData(nameof(UnboxableFromIComparableT))]
+        [MemberData(nameof(NullableUnboxableFromIComparableT))]
         public void CanUnboxFromMake(object value, Type type, Type boxedType)
         {
             Expression expression = Expression.Constant(value, boxedType);
@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("NullableTypes")]
+        [MemberData(nameof(NullableTypes))]
         public void NullNullable(Type type)
         {
             UnaryExpression unbox = Expression.Unbox(Expression.Default(typeof(object)), type);

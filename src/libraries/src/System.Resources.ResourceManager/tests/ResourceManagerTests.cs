@@ -21,7 +21,7 @@ namespace System.Resources.Tests
         }
 
         [Theory]
-        [MemberData("EnglishResourceData")]
+        [MemberData(nameof(EnglishResourceData))]
         public static void GetString_Basic(string key, string expectedValue)
         {
             ResourceManager resourceManager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
@@ -30,7 +30,7 @@ namespace System.Resources.Tests
         }
 
         [Theory]
-        [MemberData("EnglishResourceData")]
+        [MemberData(nameof(EnglishResourceData))]
         public static void GetString_FromResourceType(string key, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);

@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Tests
     public class OpAssign
     {
         [Theory]
-        [MemberData("AssignAndEquivalentMethods")]
+        [MemberData(nameof(AssignAndEquivalentMethods))]
         public void AssignmentEquivalents(MethodInfo nonAssign, MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withoutAssignment = (Func<Expression, Expression, Expression>)nonAssign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -66,7 +66,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignAndEquivalentMethods")]
+        [MemberData(nameof(AssignAndEquivalentMethods))]
         public void AssignmentEquivalentsWithMemberAccess(MethodInfo nonAssign, MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withoutAssignment = (Func<Expression, Expression, Expression>)nonAssign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -99,7 +99,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignAndEquivalentMethods")]
+        [MemberData(nameof(AssignAndEquivalentMethods))]
         public void AssignmentEquivalentsWithIndexAccess(MethodInfo nonAssign, MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withoutAssignment = (Func<Expression, Expression, Expression>)nonAssign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public void AssignmentReducable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public void CannotAssignToNonWritable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -153,7 +153,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public void AssignmentWithMemberAccessReducable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public void AssignmentWithIndexAccessReducable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public static void ThrowsOnLeftUnreadable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethods")]
+        [MemberData(nameof(AssignmentMethods))]
         public static void ThrowsOnRightUnreadable(MethodInfo assign, Type type)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
@@ -215,7 +215,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("AssignmentMethodsWithoutTypes")]
+        [MemberData(nameof(AssignmentMethodsWithoutTypes))]
         public void ThrowIfNoSuchBinaryOperation(MethodInfo assign)
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));

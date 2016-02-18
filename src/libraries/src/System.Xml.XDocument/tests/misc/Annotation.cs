@@ -12,7 +12,7 @@ namespace System.Xml.Linq.Tests
     public class Annotations
     {
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddStringAnnotation(XObject xo)
         {
             const string expected = "test string";
@@ -25,7 +25,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddIntAnnotation(XObject xo)
         {
             const int expected = 123456;
@@ -37,7 +37,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddIntAndStringAnnotation(XObject xo)
         {
             const string expectedStr = "<!@@63784sgdh111>";
@@ -52,7 +52,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddRemoveGetAnnotation(XObject xo)
         {
             string str1 = "<!@@63784sgdh111>";
@@ -73,7 +73,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveAnnotationWithoutAdding(XObject xo)
         {
             xo.RemoveAnnotations<string>();
@@ -84,7 +84,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddIntRemoveStringGetIntAnnotation(XObject xo)
         {
             const int num = 123456;
@@ -95,7 +95,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddMultipleStringAnnotations(XObject xo)
         {
             const string str1 = "<!@@63784sgdh111>";
@@ -107,7 +107,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveAnnotationTwice(XObject xo)
         {
             xo.RemoveAnnotations<object>();
@@ -116,7 +116,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddGenericAnnotation(XObject xo)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
@@ -130,7 +130,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveGenericAnnotation(XObject xo)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
@@ -140,7 +140,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddInheritedAnnotation(XObject xo)
         {
             A a = new A();
@@ -158,7 +158,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveInheritedAnnotation(XObject xo)
         {
             A a = new A();
@@ -181,7 +181,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddNull(XObject xo)
         {
             Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation(null));
@@ -190,7 +190,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveNull(XObject xo)
         {
             Assert.Throws<ArgumentNullException>("type", () => xo.RemoveAnnotations(null));
@@ -198,7 +198,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void GetAllNull(XObject xo)
         {
             Assert.Throws<ArgumentNullException>("type", () => xo.Annotations(null));
@@ -206,7 +206,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void GetOneNull(XObject xo)
         {
             Assert.Throws<ArgumentNullException>("type", () => xo.Annotation(null));
@@ -214,7 +214,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddNullString(XObject xo)
         {
             Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation((string)null));
@@ -223,7 +223,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddAnnotationWithSameClassNameButDifferentNamespace(XObject xo)
         {
             DifferentNamespace.A a1 = new DifferentNamespace.A();
@@ -242,7 +242,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveAnnotationWithSameClassNameButDifferentNamespace(XObject xo)
         {
             DifferentNamespace.A a1 = new DifferentNamespace.A();
@@ -262,7 +262,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveAnnotationsOfDifferentTypesAndDifferentXObjects(XObject xo)
         {
             AddAnnotation(xo);
@@ -275,7 +275,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveTwiceAnnotationsOfDifferentTypesAndDifferentXObjects(XObject xo)
         {
             foreach (Type type in GetTypes())
@@ -290,7 +290,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddTwiceRemoveOnceAnnotationsOfDifferentTypesAndDifferentXObjects(XObject xo)
         {
             AddAnnotation(xo);
@@ -362,7 +362,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void AddAnnotationsAndRemoveOfTypeObject(XObject xo)
         {
             AddAnnotation(xo);
@@ -371,7 +371,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void EnumerateAnnotationsWithoutAdding(XObject xo)
         {
             Assert.Null(xo.Annotation(typeof(object)));
@@ -382,7 +382,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveAnnotationsUsingTypeObject(XObject xo)
         {
             AddAnnotation(xo);
@@ -391,7 +391,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetXObjects")]
+        [MemberData(nameof(GetXObjects))]
         public void RemoveTwiceAnnotationsWithoutAddingUsingTypeObject(XObject xo)
         {
             RemoveAnnotations<object>(xo);

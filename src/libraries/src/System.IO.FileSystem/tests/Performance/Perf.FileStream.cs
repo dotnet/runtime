@@ -56,7 +56,7 @@ namespace System.IO.Tests
         /// If the bufferSize == 1, calls ReadByte instead of the traditional Read.
         /// </summary>
         [Benchmark]
-        [MemberData("ReadWriteTestParameters")]
+        [MemberData(nameof(ReadWriteTestParameters))]
         public async Task Read(bool useAsync, int bufferSize, int totalSize)
         {
             byte[] bytes = new byte[bufferSize];
@@ -95,7 +95,7 @@ namespace System.IO.Tests
         /// If the bufferSize == 1, calls WriteByte instead of the traditional Write.
         /// </summary>
         [Benchmark]
-        [MemberData("ReadWriteTestParameters")]
+        [MemberData(nameof(ReadWriteTestParameters))]
         public async Task Write(bool useAsync, int bufferSize, int totalSize)
         {
             byte[] bytes = CreateBytesToWrite(bufferSize);

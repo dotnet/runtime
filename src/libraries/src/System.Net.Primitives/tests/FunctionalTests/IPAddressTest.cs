@@ -58,7 +58,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("AddressBytesAndFamilies")]
+        [MemberData(nameof(AddressBytesAndFamilies))]
         public static void Ctor_Bytes_Success(byte[] address, AddressFamily expectedFamily)
         {
             IPAddress ip = new IPAddress(address);
@@ -81,7 +81,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("IPv6AddressBytesAndScopeIds")]
+        [MemberData(nameof(IPv6AddressBytesAndScopeIds))]
         public static void Ctor_BytesScopeId_Success(byte[] address, long scopeId)
         {
             IPAddress ip = new IPAddress(address, scopeId);

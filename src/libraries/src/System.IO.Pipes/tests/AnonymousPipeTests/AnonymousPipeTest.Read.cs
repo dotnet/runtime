@@ -33,7 +33,7 @@ namespace System.IO.Pipes.Tests
     public abstract class AnonymousPipeTest_Read : PipeTest_Read
     {
         [Theory]
-        [MemberData("AsyncReadWriteChain_MemberData")]
+        [MemberData(nameof(AsyncReadWriteChain_MemberData))]
         public async Task AsyncReadWriteChain_CopyToAsync(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];

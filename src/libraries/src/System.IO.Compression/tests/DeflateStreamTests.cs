@@ -683,7 +683,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task RoundtripCompressDecompress(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -708,7 +708,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task RoundTripWithFlush(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -737,7 +737,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task WriteAfterFlushing(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -772,7 +772,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task FlushBeforeFirstWrites(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
