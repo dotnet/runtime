@@ -11,6 +11,7 @@
     <ProjectGuid>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">netcore50</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == ''">win7</PackageTargetRuntime>
