@@ -64,21 +64,6 @@ INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",     
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLEE)
 INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",            FATAL,       CALLEE)
 
-#ifdef FEATURE_LEGACYNETCF
-
-INLINE_OBSERVATION(WP7QUIRK_ADDRESS_TAKEN,    bool,   "WinPhone7 quirk address taken", FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_CONTROL_FLOW,     bool,   "WinPhone7 quirk has ctl flow",  FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_HAS_EH,           bool,   "WinPhone7 quirk has eh",        FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_HAS_FP_ARG,       bool,   "WinPhone7 quirk has float arg", FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_HAS_FP_RET,       bool,   "WinPhone7 quirk has float ret", FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_HAS_LOCALS,       bool,   "WinPhone7 quirk has locals",    FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_IL_TOO_BIG,       bool,   "WinPhone7 quirk il too big",    FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_LDARG_ORDER,      bool,   "WinPhone7 quirk ldarg order",   FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_PREFIX,           bool,   "WinPhone7 quirk has prefix",    FATAL,       CALLEE)
-INLINE_OBSERVATION(WP7QUIRK_THROW,            bool,   "WinPhone7 quirk has throw",     FATAL,       CALLEE)
-
-#endif // FEATURE_LEGACYNETCF
-
 // ------ Callee Performance ------- 
 
 INLINE_OBSERVATION(LDFLD_STATIC_VALUECLASS,   bool,   "ldsfld of value class",         PERFORMANCE, CALLEE)

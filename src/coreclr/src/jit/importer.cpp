@@ -11558,10 +11558,6 @@ DO_LDFTN:
                 // and the field it is reading, thus it is now unverifiable to not immediately precede with
                 // ldtoken <filed token>, and we now check accessibility
                 if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) &&
-#ifdef FEATURE_LEGACYNETCF
-                    // Obfluscators are producing non-standard patterns that are causing old phone apps to fail
-                    !(opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS) &&
-#endif
                     (info.compCompHnd->getIntrinsicID(callInfo.hMethod) == CORINFO_INTRINSIC_InitializeArray))
                 {
                     if (prevOpcode != CEE_LDTOKEN)
@@ -15875,48 +15871,6 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         inlineResult->noteFatal(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
         return;
     }
-
-#ifdef FEATURE_LEGACYNETCF
-
-    // Check for NetCF quirks mode and the NetCF restrictions
-    if (opts.eeFlags & CORJIT_FLG_NETCF_QUIRKS)
-    {
-       if (codeSize > 16)
-       {
-          compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_IL_TOO_BIG);
-          return;
-       }
-
-       if (methInfo->EHcount)
-       {
-          compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_HAS_EH);
-          return;
-       }
-
-       if (methInfo->locals.numArgs > 0)
-       {
-          compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_HAS_LOCALS);
-          return;
-       }
-
-       if (methInfo->args.retType == CORINFO_TYPE_FLOAT)
-       {
-          compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_HAS_FP_RET);
-          return;
-       }
-
-       CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
-       for(unsigned i = methInfo->args.numArgs; i > 0; --i, argLst = info.compCompHnd->getArgNext(argLst))
-       {
-           if (TYP_FLOAT == eeGetArgType(argLst, &methInfo->args))
-           {
-               compInlineResult->noteFatal(InlineObservation::CALLEE_WP7QUIRK_HAS_FP_ARG);
-               return;
-           }
-       }
-    }
-
-#endif // FEATURE_LEGACYNETCF
 
     // Still a viable candidate...
     inlineResult->setCandidate("impCanInlineIL");
