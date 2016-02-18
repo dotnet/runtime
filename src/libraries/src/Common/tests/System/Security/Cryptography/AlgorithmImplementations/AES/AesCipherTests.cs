@@ -161,7 +161,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        [ActiveIssue(3952, PlatformID.AnyUnix)]
         public static void VerifyInPlaceDecryption()
         {
             byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
