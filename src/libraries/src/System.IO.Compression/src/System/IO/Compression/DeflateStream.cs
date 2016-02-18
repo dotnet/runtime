@@ -207,7 +207,24 @@ namespace System.IO.Compression
             Interlocked.Increment(ref _asyncOperations);
             try
             {
-                await base.FlushAsync(cancellationToken).ConfigureAwait(false);
+                EnsureNotDisposed();
+                // Make sure to only "flush" when we actually had some input:
+                if (_wroteBytes)
+                {
+                    // Compress any bytes left:
+                    await WriteDeflaterOutputAsync(cancellationToken);
+
+                    // Pull out any bytes left inside deflater:
+                    bool flushSuccessful;
+                    do
+                    {
+                        int compressedBytes;
+                        flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                        if (flushSuccessful)
+                            await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false) ;
+                        Debug.Assert(flushSuccessful == (compressedBytes > 0));
+                    } while (flushSuccessful);
+                }
             }
             finally
             {
@@ -474,7 +491,7 @@ namespace System.IO.Compression
             // Make sure to only "flush" when we actually had some input:
             if (_wroteBytes)
             {
-                // Compress any bytes left:                        
+                // Compress any bytes left:
                 WriteDeflaterOutput();
 
                 // Pull out any bytes left inside deflater:
@@ -489,7 +506,7 @@ namespace System.IO.Compression
                 } while (flushSuccessful);
             }
         }
-        
+
         // This is called by Dispose:
         private void PurgeBuffers(bool disposing)
         {
@@ -601,7 +618,16 @@ namespace System.IO.Compression
             Interlocked.Increment(ref _asyncOperations);
             try
             {
-                await base.WriteAsync(array, offset, count, cancellationToken).ConfigureAwait(false);
+                EnsureNotDisposed();
+
+                await WriteDeflaterOutputAsync(cancellationToken);
+
+                // Pass new bytes through deflater
+                _deflater.SetInput(array, offset, count);
+
+                await WriteDeflaterOutputAsync(cancellationToken);
+
+                _wroteBytes = true;
             }
             finally
             {
@@ -609,6 +635,18 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Writes the bytes that have already been deflated
+        /// </summary>
+        private async Task WriteDeflaterOutputAsync(CancellationToken cancellationToken)
+        {
+            while (!_deflater.NeedsInput())
+            {
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                if (compressedBytes > 0)
+                    await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }
 
