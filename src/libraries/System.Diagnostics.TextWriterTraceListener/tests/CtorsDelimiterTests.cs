@@ -55,7 +55,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Theory]
-        [MemberData("TestNames")]
+        [MemberData(nameof(TestNames))]
         public void TestConstructorWithStreamAndName(string testName)
         {
             var target = new DelimitedListTraceListener(FileStream.Null, testName);
@@ -65,7 +65,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Theory]
-        [MemberData("TestNames")]
+        [MemberData(nameof(TestNames))]
         public void TestConstructorWithWriterAndName(string testName)
         {
             StreamWriter testWriter = StreamWriter.Null;

@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [MemberData("StaticHttpMethods")]
+        [MemberData(nameof(StaticHttpMethods))]
         public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(HttpMethod method)
         {
             Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());

@@ -60,7 +60,7 @@ namespace System.Net.Http.Tests
         }
 
         #region StatusCode
-        [Theory, MemberData("ValidStatusCodeLines")]
+        [Theory, MemberData(nameof(ValidStatusCodeLines))]
         public void ReadStatusLine_ValidStatusCode_ResponseMessageValueSet(string statusLine, HttpStatusCode expectedCode, string expectedPhrase)
         {
             HttpResponseMessage response = new HttpResponseMessage();
@@ -69,14 +69,14 @@ namespace System.Net.Http.Tests
             Assert.Equal<string>(expectedPhrase, response.ReasonPhrase);
         }
 
-        [Theory, MemberData("InvalidStatusCodeLines")]
+        [Theory, MemberData(nameof(InvalidStatusCodeLines))]
         public void ReadStatusLine_InvalidStatusCode_ThrowsHttpRequestException(string statusLine, HttpStatusCode expectedCode, string phrase)
         {
             HttpResponseMessage response = new HttpResponseMessage();
             Assert.Throws<HttpRequestException>(() => CurlResponseParseUtils.ReadStatusLine(response, statusLine));
         }
 
-        [Theory, MemberData("StatusCodeVersionLines")]
+        [Theory, MemberData(nameof(StatusCodeVersionLines))]
         public void ReadStatusLine_ValidStatusCodeLine_ResponseMessageVersionSet(string statusLine, int major, int minor)
         {
             HttpResponseMessage response = new HttpResponseMessage();
@@ -124,7 +124,7 @@ namespace System.Net.Http.Tests
             Assert.Null(CurlResponseParseUtils.ReadHeaderName(string.Empty, out index));
         }
 
-        [Theory, MemberData("InvalidHeaderLines")]
+        [Theory, MemberData(nameof(InvalidHeaderLines))]
         public void ReadHeaderName_InvalidHeaderLine_ThrowsHttpRequestException(string headerLine)
         {
             int index;

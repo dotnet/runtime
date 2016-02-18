@@ -10,8 +10,8 @@ namespace System.Linq.Parallel.Tests
     public partial class ParallelQueryCombinationTests
     {
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Aggregate_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -25,8 +25,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void All_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -36,8 +36,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Any_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -47,8 +47,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Average_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -58,8 +58,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Contains_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -69,8 +69,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Count_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -83,8 +83,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ElementAt_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -94,8 +94,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ElementAtOrDefault_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -106,8 +106,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void First_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -118,8 +118,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void FirstOrDefault_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -130,8 +130,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ForAll_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -141,8 +141,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Last_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -153,8 +153,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void LastOrDefault_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -165,8 +165,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Max_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -176,8 +176,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Min_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -187,8 +187,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void SequenceEqual_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -199,8 +199,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Single_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -211,8 +211,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void SingleOrDefault_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -223,8 +223,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void Sum_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -234,8 +234,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ToArray_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -245,8 +245,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ToDictionary_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -257,8 +257,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ToList_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -268,8 +268,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("UnaryOperators")]
-        [MemberData("BinaryOperators")]
+        [MemberData(nameof(UnaryOperators))]
+        [MemberData(nameof(BinaryOperators))]
         public static void ToLookup_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
         {
             CancellationTokenSource cs = new CancellationTokenSource();

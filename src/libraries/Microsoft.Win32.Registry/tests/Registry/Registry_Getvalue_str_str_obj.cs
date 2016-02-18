@@ -38,7 +38,7 @@ namespace Microsoft.Win32.RegistryTests
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }
 
         [Theory]
-        [MemberData("TestValueTypes")]
+        [MemberData(nameof(TestValueTypes))]
         public void TestGetValueWithValueTypes(string valueName, object testValue)
         {
             TestRegistryKey.SetValue(valueName, testValue);
@@ -70,7 +70,7 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Theory]
-        [MemberData("TestRegistryKeys")]
+        [MemberData(nameof(TestRegistryKeys))]
         public static void GetValueFromDifferentKeys(RegistryKey key, string valueName, bool useSeparator)
         {
             const int expectedValue = 11;
@@ -94,7 +94,7 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Theory]
-        [MemberData("TestRegistryKeys")]
+        [MemberData(nameof(TestRegistryKeys))]
         public static void GetDefaultValueFromDifferentKeys(RegistryKey key, string valueName, bool useSeparator)
         {
             // We ignore valueName because we test against default value

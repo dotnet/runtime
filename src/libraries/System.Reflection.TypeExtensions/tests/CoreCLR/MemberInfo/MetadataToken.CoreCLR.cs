@@ -35,7 +35,7 @@ namespace System.Reflection.TypeExtensions.Tests
         }
 
         [Theory]
-        [MemberData("MembersWithExpectedTableIndex")]
+        [MemberData(nameof(MembersWithExpectedTableIndex))]
         public void SuccessImpliesNonNilWithCorrectTable(MemberInfo member, int expectedTableIndex)
         {
 

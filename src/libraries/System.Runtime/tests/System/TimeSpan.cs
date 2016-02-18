@@ -65,7 +65,7 @@ public static unsafe class TimeSpanTests
         Assert.Equal(new TimeSpan(0, 0, 0, 0, ts.Milliseconds), spanRes);
     }
 
-    [Theory, MemberData("TimeSpanTestData")]
+    [Theory, MemberData(nameof(TimeSpanTestData))]
     public static void ParseExactTest(string inputTimeSpan, string format, TimeSpan expectedTimeSpan)
     {
         TimeSpan actualTimeSpan = TimeSpan.ParseExact(inputTimeSpan, format, new CultureInfo("en-US"));
@@ -87,7 +87,7 @@ public static unsafe class TimeSpanTests
         }
     }
 
-    [Theory, MemberData("TimeSpanTestData_IncorrectFormat")]
+    [Theory, MemberData(nameof(TimeSpanTestData_IncorrectFormat))]
     public static void ParseExactTest_Exception(string inputTimeSpan, string format, Type expectedException)
     {
         Assert.Throws(expectedException, () => TimeSpan.ParseExact(inputTimeSpan, format, new CultureInfo("en-US")));

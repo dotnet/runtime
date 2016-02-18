@@ -31,7 +31,7 @@ namespace System.Net.Sockets.Tests
 */
         };
 
-        [Theory, MemberData("DualModeSuccessInputs")]
+        [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
         {
             using (new Socket(socketType, protocolType))
@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory, MemberData("DualModeFailureInputs")]
+        [Theory, MemberData(nameof(DualModeFailureInputs))]
         public void DualMode_Failure(SocketType socketType, ProtocolType protocolType)
         {
             Assert.Throws<SocketException>(() => new Socket(socketType, protocolType));
@@ -52,7 +52,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp },
         };
 
-        [Theory, MemberData("CtorSuccessInputs")]
+        [Theory, MemberData(nameof(CtorSuccessInputs))]
         public void Ctor_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             using (new Socket(addressFamily, socketType, protocolType))
@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Tests
 */
         };
 
-        [Theory, MemberData("CtorFailureInputs")]
+        [Theory, MemberData(nameof(CtorFailureInputs))]
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             Assert.Throws<SocketException>(() => new Socket(addressFamily, socketType, protocolType));

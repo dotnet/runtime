@@ -20,7 +20,7 @@ namespace System.Linq.Parallel.Tests
         // All
         //
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void All_AllFalse(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -29,14 +29,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void All_AllFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             All_AllFalse(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void All_AllTrue(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -47,14 +47,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void All_AllTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             All_AllTrue(labeled, count);
         }
 
         [Theory]
-        [MemberData("OnlyOneData", (object)(new int[] { 2, 16 }))]
+        [MemberData(nameof(OnlyOneData), (object)(new int[] { 2, 16 }))]
         public static void All_OneFalse(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("OnlyOneData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(OnlyOneData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void All_OneFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             All_OneFalse(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("OnlyOneData", (object)(new int[] { 2, 16 }))]
+        [MemberData(nameof(OnlyOneData), (object)(new int[] { 2, 16 }))]
         public static void All_OneTrue(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -79,14 +79,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("OnlyOneData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(OnlyOneData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void All_OneTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             All_OneTrue(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void All_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -96,7 +96,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void All_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.All(x => { throw new DeliberateTestException(); }));
