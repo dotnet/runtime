@@ -17,9 +17,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CspParametersTests.cs" />
     <Compile Include="ImportExportCspBlob.cs" />
     <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
     <Compile Include="RSACryptoServiceProviderProvider.cs" />
+    <Compile Include="RSACryptoServiceProviderTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>

@@ -199,7 +199,7 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            return _mode != CompressionMode.Compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
+            return _mode != CompressionMode.Compress || !_wroteBytes ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
         }
 
         private async Task FlushAsyncCore(CancellationToken cancellationToken)
@@ -207,7 +207,21 @@ namespace System.IO.Compression
             Interlocked.Increment(ref _asyncOperations);
             try
             {
-                await base.FlushAsync(cancellationToken).ConfigureAwait(false);
+                // Compress any bytes left:
+                await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+
+                // Pull out any bytes left inside deflater:
+                bool flushSuccessful;
+                do
+                {
+                    int compressedBytes;
+                    flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                    if (flushSuccessful)
+                    {
+                        await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+                    }
+                    Debug.Assert(flushSuccessful == (compressedBytes > 0));
+                } while (flushSuccessful);
             }
             finally
             {
@@ -464,7 +478,9 @@ namespace System.IO.Compression
             {
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
                 if (compressedBytes > 0)
+                {
                     _stream.Write(_buffer, 0, compressedBytes);
+                }
             }
         }
 
@@ -474,7 +490,7 @@ namespace System.IO.Compression
             // Make sure to only "flush" when we actually had some input:
             if (_wroteBytes)
             {
-                // Compress any bytes left:                        
+                // Compress any bytes left:
                 WriteDeflaterOutput();
 
                 // Pull out any bytes left inside deflater:
@@ -484,12 +500,14 @@ namespace System.IO.Compression
                     int compressedBytes;
                     flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
                     if (flushSuccessful)
+                    {
                         _stream.Write(_buffer, 0, compressedBytes);
+                    }
                     Debug.Assert(flushSuccessful == (compressedBytes > 0));
                 } while (flushSuccessful);
             }
         }
-        
+
         // This is called by Dispose:
         private void PurgeBuffers(bool disposing)
         {
@@ -601,7 +619,14 @@ namespace System.IO.Compression
             Interlocked.Increment(ref _asyncOperations);
             try
             {
-                await base.WriteAsync(array, offset, count, cancellationToken).ConfigureAwait(false);
+                await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+
+                // Pass new bytes through deflater
+                _deflater.SetInput(array, offset, count);
+
+                await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+
+                _wroteBytes = true;
             }
             finally
             {
@@ -609,6 +634,20 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Writes the bytes that have already been deflated
+        /// </summary>
+        private async Task WriteDeflaterOutputAsync(CancellationToken cancellationToken)
+        {
+            while (!_deflater.NeedsInput())
+            {
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                if (compressedBytes > 0)
+                {
+                    await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
     }
 }
 
