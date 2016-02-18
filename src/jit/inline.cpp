@@ -9,7 +9,7 @@
 
 // Lookup table for inline description strings
 
-static const char* InlineDescriptions[] = 
+static const char* InlineDescriptions[] =
 {
 #define INLINE_OBSERVATION(name, type, description, impact, target) description,
 #include "inline.def"
@@ -95,7 +95,7 @@ InlineTarget inlGetTarget(InlineObservation obs)
 const char* inlGetTargetstring(InlineObservation obs)
 {
     InlineTarget t = inlGetTarget(obs);
-    switch (t) 
+    switch (t)
     {
     case InlineTarget::CALLER:
         return "caller";
@@ -135,7 +135,7 @@ InlineImpact inlGetImpact(InlineObservation obs)
 const char* inlGetImpactString(InlineObservation obs)
 {
     InlineImpact i = inlGetImpact(obs);
-    switch (i) 
+    switch (i)
     {
     case InlineImpact::FATAL:
         return "correctness -- fatal";
@@ -152,3 +152,48 @@ const char* inlGetImpactString(InlineObservation obs)
     }
 }
 
+//------------------------------------------------------------------------
+// report: Dump, log, and report information about an inline decision.
+//
+// Notes:
+//
+//    Called (automatically via the InlineResult dtor) when the inliner
+//    is done evaluating a candidate.
+//
+//    Dumps state of the inline candidate, and if a decision was reached
+//    sends it to the log and reports the decision back to the EE.
+//
+//    All this can be suppressed if desired by calling setReported() before
+//    the InlineResult goes out of scope.
+
+void InlineResult::report()
+{
+    // User may have suppressed reporting via setReported(). If so, do nothing.
+    if (inlReported)
+    {
+        return;
+    }
+
+    inlReported = true;
+
+#ifdef DEBUG
+
+    if (VERBOSE)
+    {
+        const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
+        const char* caller = (inlInliner == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInliner);
+        const char* callee = (inlInlinee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlInlinee);
+
+        JITDUMP(format, inlContext, resultString(), inlReason, caller, callee);
+    }
+
+#endif // DEBUG
+
+    if (isDecided()) 
+    {
+        const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
+        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), inlReason));
+        COMP_HANDLE comp = inlCompiler->info.compCompHnd;
+        comp->reportInliningDecision(inlInliner, inlInlinee, result(), inlReason);
+    }
+}
