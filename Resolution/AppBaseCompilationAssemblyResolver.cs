@@ -37,9 +37,20 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            if (!string.Equals(library.LibraryType, "package", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(library.LibraryType, "project", StringComparison.OrdinalIgnoreCase) &&
+            var isProject = string.Equals(library.LibraryType, "project", StringComparison.OrdinalIgnoreCase);
+
+            if (!isProject &&
+                !string.Equals(library.LibraryType, "package", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(library.LibraryType, "referenceassembly", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var refsPath = Path.Combine(_basePath, "refs");
+            var hasRefs = _fileSystem.Directory.Exists(refsPath);
+
+            // Resolving packages and reference assebmlies requires refs folder to exist
+            if (!isProject && !hasRefs)
             {
                 return false;
             }
@@ -48,9 +59,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             {
                 _basePath
             };
-
-            var refsPath = Path.Combine(_basePath, "refs");
-            var hasRefs = _fileSystem.Directory.Exists(refsPath);
 
             if (hasRefs)
             {
