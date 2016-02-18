@@ -598,6 +598,12 @@ dump_table_method (MonoImage *m)
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
 		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob, &error);
+		if (!mono_error_ok (&error)) {
+			fprintf (output,"%d: failed to parse due to %s\n", i, mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+			continue;
+		}
+
 		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
 		sig = dis_stringify_method_signature (m, method, i, method_container ? method_container : type_container, FALSE);
                 impl_flags = get_method_impl_flags (cols [MONO_METHOD_IMPLFLAGS]);
