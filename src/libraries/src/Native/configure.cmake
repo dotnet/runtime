@@ -7,9 +7,12 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-#CMake does not include /usr/local/include into the include search path
-#thus add it manually. This is required on FreeBSD.
+# CMake does not add some platform-specific include search paths,
+# thus we add them manually.
+# FreeBSD
 include_directories(SYSTEM /usr/local/include)
+# NetBSD
+include_directories(SYSTEM /usr/pkg/include)
 
 # in_pktinfo: Find whether this struct exists
 check_include_files(
@@ -23,6 +26,7 @@ else ()
 endif ()
 
 set(CMAKE_EXTRA_INCLUDE_FILES ${SOCKET_INCLUDES})
+
 check_type_size(
     "struct in_pktinfo"
     HAVE_IN_PKTINFO
@@ -32,6 +36,7 @@ check_type_size(
     "struct ip_mreqn"
     HAVE_IP_MREQN
     BUILTIN_TYPES_ONLY)
+
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /in_pktinfo
 
@@ -196,13 +201,45 @@ check_function_exists(
     kqueue
     HAVE_KQUEUE)
 
-check_function_exists(
-    gethostbyname_r
-    HAVE_GETHOSTBYNAME_R)
+check_cxx_source_compiles(
+     "
+     #include <sys/types.h>
+     #include <netdb.h>
 
-check_function_exists(
-    gethostbyaddr_r
-    HAVE_GETHOSTBYADDR_R)
+     int main()
+     {
+         const void* addr;
+         socklen_t len;
+         int type;
+         struct hostent* result;
+         char* buffer;
+         size_t buflen;
+         struct hostent** entry;
+         int* error;
+         gethostbyaddr_r(addr,  len, type, result, buffer, buflen, entry, error);
+         return 0;
+     }
+     "
+     HAVE_GETHOSTBYADDR_R)
+
+check_cxx_source_compiles(
+     "
+     #include <sys/types.h>
+     #include <netdb.h>
+
+     int main()
+     {
+         const char* hostname;
+         struct hostent* result;
+         char* buffer;
+         size_t buflen;
+         struct hostent** entry;
+         int* error;
+         gethostbyname_r(hostname, result, buffer, buflen, entry, error);
+         return 0;
+     }
+     "
+     HAVE_GETHOSTBYNAME_R)
 
 set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)
 set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 0)

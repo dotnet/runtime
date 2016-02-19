@@ -18,10 +18,14 @@ using System.Reflection;
 [assembly:AssemblyTrademarkAttribute("TM")]
 // Product
 [assembly:AssemblyProductAttribute("The greatest product EVER")]
-public class Test
+
+namespace System.Diagnostics.Tests
 {
-  public static void Main()
-  {
-  }
+    public class Test
+    {
+        public static void Main()
+        {
+        }
+    }
 }
 

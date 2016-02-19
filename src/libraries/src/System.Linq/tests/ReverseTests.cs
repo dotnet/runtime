@@ -60,14 +60,40 @@ namespace System.Linq.Tests
 
             Assert.Equal(q.Reverse(), q.Reverse());
         }
-        
+
         [Fact]
         public void SomeRepeatedElements()
         {
             int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
             int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
-            
+
             Assert.Equal(expected, source.Reverse());
+        }
+
+        [Fact]
+        public void ToArray()
+        {
+            int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
+            int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
+
+            Assert.Equal(expected, source.Reverse().ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
+            int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
+
+            Assert.Equal(expected, source.Reverse().ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
+
+            Assert.Equal(9, source.Reverse().Count());
         }
 
         [Fact]
@@ -77,6 +103,14 @@ namespace System.Linq.Tests
             // Don't insist on this behaviour, but check its correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void RepeatEnumerating()
+        {
+            var reverse = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 }.Reverse();
+
+            Assert.Equal(reverse, reverse);
         }
     }
 }
