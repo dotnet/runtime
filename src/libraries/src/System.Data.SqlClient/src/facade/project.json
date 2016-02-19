@@ -1,6 +1,6 @@
 {
     "frameworks": {
-        "net46": {
+        "net45": {
             "dependencies": {
                 "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
             }
