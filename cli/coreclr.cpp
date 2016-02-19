@@ -9,7 +9,7 @@
 static pal::dll_t g_coreclr = nullptr;
 
 // Prototype of the coreclr_initialize function from coreclr.dll
-typedef pal::hresult_t(*coreclr_initialize_fn)(
+typedef pal::hresult_t(__stdcall *coreclr_initialize_fn)(
     const char* exePath,
     const char* appDomainFriendlyName,
     int propertyCount,
@@ -19,12 +19,12 @@ typedef pal::hresult_t(*coreclr_initialize_fn)(
     unsigned int* domainId);
 
 // Prototype of the coreclr_shutdown function from coreclr.dll
-typedef pal::hresult_t(*coreclr_shutdown_fn)(
+typedef pal::hresult_t(__stdcall *coreclr_shutdown_fn)(
     coreclr::host_handle_t hostHandle,
     unsigned int domainId);
 
 // Prototype of the coreclr_execute_assembly function from coreclr.dll
-typedef pal::hresult_t(*coreclr_execute_assembly_fn)(
+typedef pal::hresult_t(__stdcall *coreclr_execute_assembly_fn)(
     coreclr::host_handle_t hostHandle,
     unsigned int domainId,
     int argc,
