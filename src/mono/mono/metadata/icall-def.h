@@ -210,9 +210,6 @@ ICALL(PROCESS_10, "ProcessName_internal(intptr)", ves_icall_System_Diagnostics_P
 ICALL(PROCESS_13, "ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal)
 #endif /* !DISABLE_PROCESS_HANDLING */
 
-ICALL_TYPE(SFRAME, "System.Diagnostics.StackFrame", SFRAME_1)
-ICALL(SFRAME_1, "GetILOffsetFromFile", ves_icall_System_StackFrame_GetILOffsetFromFile)
-
 ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
 
