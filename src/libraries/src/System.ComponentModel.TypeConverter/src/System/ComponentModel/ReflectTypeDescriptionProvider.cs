@@ -147,7 +147,7 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             // Check the cached TypeConverter dictionary for an exact match of the given type.

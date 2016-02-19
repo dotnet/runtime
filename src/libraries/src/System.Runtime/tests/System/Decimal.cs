@@ -777,7 +777,7 @@ public static class DecimalTests
         }
     }
 
-    [Theory, MemberData("DecimalTestData")]
+    [Theory, MemberData(nameof(DecimalTestData))]
     public static void TestGetBits(decimal input, int[] expectedBits)
     {
         int[] actualsBits = decimal.GetBits(input);

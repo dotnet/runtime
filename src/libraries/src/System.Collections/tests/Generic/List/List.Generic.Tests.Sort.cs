@@ -22,7 +22,7 @@ namespace System.Collections.Tests
         #region Sort
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -35,7 +35,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -53,7 +53,7 @@ namespace System.Collections.Tests
         #region Sort(IComparer)
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_IComparer_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -66,7 +66,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_IComparer_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -84,7 +84,7 @@ namespace System.Collections.Tests
         #region Sort(Comparison)
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_Comparison_WithoutDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -98,7 +98,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_Comparison_WithDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -117,7 +117,7 @@ namespace System.Collections.Tests
         #region Sort(int, int, IComparer<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_intintIComparer_WithoutDuplicates(int count)
         {
             List<T> unsortedList = GenericListFactory(count);
@@ -133,7 +133,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes_GreaterThanOne")]
+        [MemberData(nameof(ValidCollectionSizes_GreaterThanOne))]
         public void Sort_intintIComparer_WithDuplicates(int count)
         {
             List<T> unsortedList = GenericListFactory(count);
@@ -150,7 +150,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Sort_intintIComparer_NegativeRange_ThrowsArgumentOutOfRangeException(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -176,7 +176,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Sort_intintIComparer_InvalidRange_ThrowsArgumentException(int count)
         {
             List<T> list = GenericListFactory(count);

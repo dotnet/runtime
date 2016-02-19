@@ -119,15 +119,15 @@ namespace System.Net.WebSockets
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (!uri.IsAbsoluteUri)
             {
-                throw new ArgumentException(SR.net_uri_NotAbsolute, "uri");
+                throw new ArgumentException(SR.net_uri_NotAbsolute, nameof(uri));
             }
             if (uri.Scheme != UriScheme.Ws && uri.Scheme != UriScheme.Wss)
             {
-                throw new ArgumentException(SR.net_WebSockets_Scheme, "uri");
+                throw new ArgumentException(SR.net_WebSockets_Scheme, nameof(uri));
             }
 
             // Check that we have not started already
@@ -185,7 +185,7 @@ namespace System.Net.WebSockets
                         "Text",
                         "CloseOutputAsync");
 
-                throw new ArgumentException(errorMessage, "messageType");
+                throw new ArgumentException(errorMessage, nameof(messageType));
             }
 
             WebSocketValidate.ValidateArraySegment<byte>(buffer, "buffer");

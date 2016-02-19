@@ -23,7 +23,7 @@ namespace System.Collections.ObjectModel
         {
             if (dictionary == null)
             {
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
             }
             Contract.EndContractBlock();
             _dictionary = dictionary;
@@ -183,7 +183,7 @@ namespace System.Collections.ObjectModel
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             return key is TKey;
         }
@@ -264,7 +264,7 @@ namespace System.Collections.ObjectModel
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
@@ -279,7 +279,7 @@ namespace System.Collections.ObjectModel
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < Count)
@@ -425,7 +425,7 @@ namespace System.Collections.ObjectModel
             {
                 if (collection == null)
                 {
-                    throw new ArgumentNullException("collection");
+                    throw new ArgumentNullException(nameof(collection));
                 }
                 _collection = collection;
             }
@@ -532,7 +532,7 @@ namespace System.Collections.ObjectModel
             {
                 if (collection == null)
                 {
-                    throw new ArgumentNullException("collection");
+                    throw new ArgumentNullException(nameof(collection));
                 }
                 _collection = collection;
             }
@@ -639,7 +639,7 @@ namespace System.Collections.ObjectModel
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)

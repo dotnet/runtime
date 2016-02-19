@@ -143,7 +143,7 @@ namespace System.Xml
 
                 if ((uint)value > (uint)NewLineHandling.None)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _newLineHandling = value;
             }
@@ -162,7 +162,7 @@ namespace System.Xml
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _newLineChars = value;
             }
@@ -195,7 +195,7 @@ namespace System.Xml
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _indentChars = value;
             }
@@ -244,7 +244,7 @@ namespace System.Xml
 
                 if ((uint)value > (uint)ConformanceLevel.Document)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _conformanceLevel = value;
             }
@@ -276,7 +276,7 @@ namespace System.Xml
                 CheckReadOnly("NamespaceHandling");
                 if ((uint)value > (uint)(NamespaceHandling.OmitDuplicates))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _namespaceHandling = value;
             }
@@ -326,7 +326,7 @@ namespace System.Xml
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             XmlWriter writer;
@@ -373,7 +373,7 @@ namespace System.Xml
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             XmlWriter writer;
@@ -402,7 +402,7 @@ namespace System.Xml
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             return AddConformanceWrapper(output);

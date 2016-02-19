@@ -34,7 +34,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("TestDebuggerAttributes_Inputs")]
+        [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes(object obj)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
@@ -42,7 +42,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("TestDebuggerAttributes_Inputs")]
+        [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes_Null(object obj)
         {
             Type proxyType = DebuggerAttributes.GetProxyType(obj);

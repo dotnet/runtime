@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Tests
     public class NoParameterBlockTests : SharedBlockTests
     {
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void SingleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void DoubleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -59,7 +59,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void TripleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void QuadrupleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void QuintupleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -170,7 +170,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void SextupleElementBlock(object value)
         {
             Type type = value.GetType();
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("BlockSizes")]
+        [MemberData(nameof(BlockSizes))]
         public void NullExpressionInExpressionList(int size)
         {
             List<Expression> expressionList = Enumerable.Range(0, size).Select(i => (Expression)Expression.Constant(1)).ToList();
@@ -223,7 +223,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("BlockSizes")]
+        [MemberData(nameof(BlockSizes))]
         public void UnreadableExpressionInExpressionList(int size)
         {
             List<Expression> expressionList = Enumerable.Range(0, size).Select(i => (Expression)Expression.Constant(1)).ToList();
@@ -241,7 +241,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ObjectAssignableConstantValuesAndSizes")]
+        [MemberData(nameof(ObjectAssignableConstantValuesAndSizes))]
         public void BlockExplicitType(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("BlockSizes")]
+        [MemberData(nameof(BlockSizes))]
         public void BlockInvalidExplicitType(int blockSize)
         {
             ConstantExpression constant = Expression.Constant(0);
@@ -264,7 +264,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void InvalidExpressionIndex(object value, int blockSize)
         {
             BlockExpression block = Expression.Block(PadBlock(blockSize - 1, Expression.Constant(value, value.GetType())));
@@ -280,7 +280,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void ResultPropertyFromParams(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void ResultPropertyFromEnumerable(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void VariableCountZeroOnNonVariableAcceptingForms(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         [ActiveIssue(3883)]
         public void RewriteToSameWithSameValues(object value, int blockSize)
         {
@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void CanFindItems(object value, int blockSize)
         {
             ConstantExpression[] values = new ConstantExpression[blockSize];
@@ -345,7 +345,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void IdentifyNonAbsentItemAsAbsent(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -358,7 +358,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void ExpressionsEnumerable(object value, int blockSize)
         {
             ConstantExpression[] values = new ConstantExpression[blockSize];
@@ -374,7 +374,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void UpdateWithExpressionsReturnsSame(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -386,7 +386,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValuesAndSizes")]
+        [MemberData(nameof(ConstantValuesAndSizes))]
         public void Visit(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -398,7 +398,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ObjectAssignableConstantValuesAndSizes")]
+        [MemberData(nameof(ObjectAssignableConstantValuesAndSizes))]
         public void VisitTyped(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());

@@ -22,9 +22,9 @@ namespace System.Buffers
         internal DefaultArrayPool(int maxLength, int arraysPerBucket)
         {
             if (maxLength <= 0)
-                throw new ArgumentOutOfRangeException("maxLength");
+                throw new ArgumentOutOfRangeException(nameof(maxLength));
             if (arraysPerBucket <= 0)
-                throw new ArgumentOutOfRangeException("arraysPerBucket");
+                throw new ArgumentOutOfRangeException(nameof(arraysPerBucket));
 
             // Our bucketing algorithm has a minimum length of 16
             if (maxLength < MinimumArrayLength)
@@ -39,7 +39,7 @@ namespace System.Buffers
         public override T[] Rent(int minimumLength)
         {
             if (minimumLength <= 0)
-                throw new ArgumentOutOfRangeException("minimumLength");
+                throw new ArgumentOutOfRangeException(nameof(minimumLength));
                 
             var log = ArrayPoolEventSource.Log;
 
@@ -93,7 +93,7 @@ namespace System.Buffers
         public override void Return(T[] buffer, bool clearArray = false)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             // If we can tell that the buffer was allocated, drop it. Otherwise, check if we have space in the pool
             int bucket = Utilities.SelectBucketIndex(buffer.Length);

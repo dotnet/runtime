@@ -23,7 +23,7 @@ namespace System.Text.Internal
         {
             if(allowedCharacters == null)
             {
-                throw new ArgumentNullException("allowedCharacters");
+                throw new ArgumentNullException(nameof(allowedCharacters));
             }
             _allowedCharacters = allowedCharacters;
         }

@@ -24,7 +24,7 @@ namespace System.IO
         internal static WinRtToNetFxStreamAdapter Create(Object windowsRuntimeStream)
         {
             if (windowsRuntimeStream == null)
-                throw new ArgumentNullException("windowsRuntimeStream");
+                throw new ArgumentNullException(nameof(windowsRuntimeStream));
 
             bool canRead = windowsRuntimeStream is IInputStream;
             bool canWrite = windowsRuntimeStream is IOutputStream;
@@ -380,7 +380,7 @@ namespace System.IO
 
                 default:
                     {
-                        throw new ArgumentException("origin");
+                        throw new ArgumentException(nameof(origin));
                     }
             }
         }
@@ -389,7 +389,7 @@ namespace System.IO
         public override void SetLength(Int64 value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_CannotResizeStreamToNegative);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_CannotResizeStreamToNegative);
             Contract.EndContractBlock();
 
             IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
@@ -428,7 +428,7 @@ namespace System.IO
             // stream lives in an ASTA compartment. The completion handler is invoked on a pool thread, i.e. in MTA.
             // That handler needs to fetch the results from the async IO operation, which requires a cross-compartment call from MTA into ASTA.
             // But because the ASTA thread is busy waiting this call will deadlock.
-            // (Recall that although WaitOne pumps COM, ASTA specifically schedules calls on the outermost “idle” pump only.)
+            // (Recall that although WaitOne pumps COM, ASTA specifically schedules calls on the outermost ?idle? pump only.)
             //
             // The solution is to make sure that:
             //  - In cases where main thread is waiting for the async IO to complete:
@@ -442,13 +442,13 @@ namespace System.IO
             // operation wrapping a BeginRead/EndRead pair, or by an actual async operation based on the old Begin/End pattern.
 
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
@@ -486,7 +486,7 @@ namespace System.IO
 #endif
         {
             if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
 
             Contract.EndContractBlock();
 
@@ -495,7 +495,7 @@ namespace System.IO
 
             StreamOperationAsyncResult streamAsyncResult = asyncResult as StreamOperationAsyncResult;
             if (streamAsyncResult == null)
-                throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, "asyncResult");
+                throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, nameof(asyncResult));
 
             streamAsyncResult.Wait();
 
@@ -532,13 +532,13 @@ namespace System.IO
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
@@ -604,13 +604,13 @@ namespace System.IO
             // and instead using a custom implementation of IAsyncResult.
 
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
@@ -647,7 +647,7 @@ namespace System.IO
 #endif
         {
             if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
 
             Contract.EndContractBlock();
 
@@ -656,7 +656,7 @@ namespace System.IO
 
             StreamOperationAsyncResult streamAsyncResult = asyncResult as StreamOperationAsyncResult;
             if (streamAsyncResult == null)
-                throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, "asyncResult");
+                throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, nameof(asyncResult));
 
             streamAsyncResult.Wait();
 
@@ -686,13 +686,13 @@ namespace System.IO
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);

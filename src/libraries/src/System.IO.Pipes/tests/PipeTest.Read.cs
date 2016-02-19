@@ -277,7 +277,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [MemberData("AsyncReadWriteChain_MemberData")]
+        [MemberData(nameof(AsyncReadWriteChain_MemberData))]
         public async Task AsyncReadWriteChain_ReadWrite(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
             var writeBuffer = new byte[writeBufferSize];

@@ -21,7 +21,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XComment("Comment"), new XText("\t") },
             new object[] { new XText(" "), XElement.Parse(@"<a></a>") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode toReplace, XNode newValue)
         {
             XDocument xDoc = new XDocument(toReplace);
@@ -48,7 +48,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XComment("Comment"), new XText("\t") },
             new object[] { new XText("\t"), XElement.Parse(@"<a></a>") }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode toReplace, XNode newValue)
         {
             XElement xElem = new XElement("root", toReplace);
@@ -78,7 +78,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XProcessingInstruction("PI", "Data") },
             new object[] { new XComment("Comment") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode toReplace)
         {
             XNode newValue = new XText(" ");
@@ -108,7 +108,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XComment("Comment") },
             new object[] { new XText("") }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode toReplace)
         {
             XNode newValue = new XText("text");
@@ -187,7 +187,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() }
         };
-        [Theory, MemberData("ExecuteXAttributeVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXAttributeVariationParams))]
         public void ExecuteXAttributeVariation(XAttribute[] content)
         {
             XElement xElem = new XElement("root", content);
@@ -226,7 +226,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() },
             new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) } }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XObject[] toReplace)
         {
             XNode newValue = new XText("text");

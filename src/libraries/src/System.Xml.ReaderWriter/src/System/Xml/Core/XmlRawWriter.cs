@@ -141,7 +141,7 @@ namespace System.Xml
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             WriteString(XmlUntypedStringConverter.Instance.ToString(value, resolver));
         }

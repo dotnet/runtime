@@ -24,7 +24,7 @@ namespace Internal.Cryptography
         public static string ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (oid == null)
-                throw new ArgumentNullException("oid");
+                throw new ArgumentNullException(nameof(oid));
 
             string mappedName;
             bool shouldUseCache = ShouldUseCache(oidGroup);
@@ -63,7 +63,7 @@ namespace Internal.Cryptography
         public static string ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (friendlyName == null)
-                throw new ArgumentNullException("friendlyName");
+                throw new ArgumentNullException(nameof(friendlyName));
             if (friendlyName.Length == 0)
                 return null;
 

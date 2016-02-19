@@ -11,24 +11,24 @@ namespace System.Linq.Expressions.Tests
     public class PreIncrementAssignTests : IncDecAssignTests
     {
         [Theory]
-        [MemberData("Int16sAndIncrements")]
-        [MemberData("NullableInt16sAndIncrements")]
-        [MemberData("UInt16sAndIncrements")]
-        [MemberData("NullableUInt16sAndIncrements")]
-        [MemberData("Int32sAndIncrements")]
-        [MemberData("NullableInt32sAndIncrements")]
-        [MemberData("UInt32sAndIncrements")]
-        [MemberData("NullableUInt32sAndIncrements")]
-        [MemberData("Int64sAndIncrements")]
-        [MemberData("NullableInt64sAndIncrements")]
-        [MemberData("UInt64sAndIncrements")]
-        [MemberData("NullableUInt64sAndIncrements")]
-        [MemberData("DecimalsAndIncrements")]
-        [MemberData("NullableDecimalsAndIncrements")]
-        [MemberData("SinglesAndIncrements")]
-        [MemberData("NullableSinglesAndIncrements")]
-        [MemberData("DoublesAndIncrements")]
-        [MemberData("NullableDoublesAndIncrements")]
+        [MemberData(nameof(Int16sAndIncrements))]
+        [MemberData(nameof(NullableInt16sAndIncrements))]
+        [MemberData(nameof(UInt16sAndIncrements))]
+        [MemberData(nameof(NullableUInt16sAndIncrements))]
+        [MemberData(nameof(Int32sAndIncrements))]
+        [MemberData(nameof(NullableInt32sAndIncrements))]
+        [MemberData(nameof(UInt32sAndIncrements))]
+        [MemberData(nameof(NullableUInt32sAndIncrements))]
+        [MemberData(nameof(Int64sAndIncrements))]
+        [MemberData(nameof(NullableInt64sAndIncrements))]
+        [MemberData(nameof(UInt64sAndIncrements))]
+        [MemberData(nameof(NullableUInt64sAndIncrements))]
+        [MemberData(nameof(DecimalsAndIncrements))]
+        [MemberData(nameof(NullableDecimalsAndIncrements))]
+        [MemberData(nameof(SinglesAndIncrements))]
+        [MemberData(nameof(NullableSinglesAndIncrements))]
+        [MemberData(nameof(DoublesAndIncrements))]
+        [MemberData(nameof(NullableDoublesAndIncrements))]
         public void ReturnsCorrectValues(Type type, object value, object result)
         {
             ParameterExpression variable = Expression.Variable(type);
@@ -41,24 +41,24 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("Int16sAndIncrements")]
-        [MemberData("NullableInt16sAndIncrements")]
-        [MemberData("UInt16sAndIncrements")]
-        [MemberData("NullableUInt16sAndIncrements")]
-        [MemberData("Int32sAndIncrements")]
-        [MemberData("NullableInt32sAndIncrements")]
-        [MemberData("UInt32sAndIncrements")]
-        [MemberData("NullableUInt32sAndIncrements")]
-        [MemberData("Int64sAndIncrements")]
-        [MemberData("NullableInt64sAndIncrements")]
-        [MemberData("UInt64sAndIncrements")]
-        [MemberData("NullableUInt64sAndIncrements")]
-        [MemberData("DecimalsAndIncrements")]
-        [MemberData("NullableDecimalsAndIncrements")]
-        [MemberData("SinglesAndIncrements")]
-        [MemberData("NullableSinglesAndIncrements")]
-        [MemberData("DoublesAndIncrements")]
-        [MemberData("NullableDoublesAndIncrements")]
+        [MemberData(nameof(Int16sAndIncrements))]
+        [MemberData(nameof(NullableInt16sAndIncrements))]
+        [MemberData(nameof(UInt16sAndIncrements))]
+        [MemberData(nameof(NullableUInt16sAndIncrements))]
+        [MemberData(nameof(Int32sAndIncrements))]
+        [MemberData(nameof(NullableInt32sAndIncrements))]
+        [MemberData(nameof(UInt32sAndIncrements))]
+        [MemberData(nameof(NullableUInt32sAndIncrements))]
+        [MemberData(nameof(Int64sAndIncrements))]
+        [MemberData(nameof(NullableInt64sAndIncrements))]
+        [MemberData(nameof(UInt64sAndIncrements))]
+        [MemberData(nameof(NullableUInt64sAndIncrements))]
+        [MemberData(nameof(DecimalsAndIncrements))]
+        [MemberData(nameof(NullableDecimalsAndIncrements))]
+        [MemberData(nameof(SinglesAndIncrements))]
+        [MemberData(nameof(NullableSinglesAndIncrements))]
+        [MemberData(nameof(DoublesAndIncrements))]
+        [MemberData(nameof(NullableDoublesAndIncrements))]
         public void AssignsCorrectValues(Type type, object value, object result)
         {
             ParameterExpression variable = Expression.Variable(type);
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("IncrementOverflowingValues")]
+        [MemberData(nameof(IncrementOverflowingValues))]
         public void OverflowingValuesThrow(object value)
         {
             ParameterExpression variable = Expression.Variable(value.GetType());
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("UnincrementableAndUndecrementableTypes")]
+        [MemberData(nameof(UnincrementableAndUndecrementableTypes))]
         public void InvalidOperandType(Type type)
         {
             ParameterExpression variable = Expression.Variable(type);

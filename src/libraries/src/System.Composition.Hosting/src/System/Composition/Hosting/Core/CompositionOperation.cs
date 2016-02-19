@@ -51,7 +51,7 @@ namespace System.Composition.Hosting.Core
         public void AddNonPrerequisiteAction(Action action)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             if (_nonPrerequisiteActions == null)
                 _nonPrerequisiteActions = new List<Action>();

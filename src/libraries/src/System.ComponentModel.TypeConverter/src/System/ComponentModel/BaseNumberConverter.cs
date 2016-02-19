@@ -118,7 +118,7 @@ namespace System.ComponentModel
         {
             if (destinationType == null)
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == typeof(string) && value != null && this.TargetType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))

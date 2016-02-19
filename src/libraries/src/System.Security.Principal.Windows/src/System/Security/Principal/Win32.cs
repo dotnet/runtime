@@ -86,7 +86,7 @@ namespace System.Security.Principal
 
             if (Revision != SecurityIdentifier.Revision)
             {
-                throw new ArgumentException(SR.IdentityReference_InvalidSidRevision, "binaryForm");
+                throw new ArgumentException(SR.IdentityReference_InvalidSidRevision, nameof(binaryForm));
             }
 
             //
@@ -98,7 +98,7 @@ namespace System.Security.Principal
             if (SubAuthorityCount < 0 ||
                 SubAuthorityCount > SecurityIdentifier.MaxSubAuthorities)
             {
-                throw new ArgumentException(SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, SecurityIdentifier.MaxSubAuthorities), "binaryForm");
+                throw new ArgumentException(SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, SecurityIdentifier.MaxSubAuthorities), nameof(binaryForm));
             }
 
             //

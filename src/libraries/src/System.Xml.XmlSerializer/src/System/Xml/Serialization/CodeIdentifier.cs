@@ -142,7 +142,7 @@ namespace System.Xml.Serialization
         internal static void CheckValidIdentifier(string ident)
         {
             if (!Globals.IsValidLanguageIndependentIdentifier(ident))
-                throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), "ident");
+                throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), nameof(ident));
         }
 
         internal static string GetCSharpName(string name)

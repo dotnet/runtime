@@ -110,7 +110,7 @@ namespace System.IO
                             case '>':
                             case '<':
                             case '\"':
-                                if (checkInvalidCharacters) throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                if (checkInvalidCharacters) throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
                                 foundTilde = false;
                                 break;
                             case '~':
@@ -146,7 +146,7 @@ namespace System.IO
                                 break;
 
                             default:
-                                if (checkInvalidCharacters && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                if (checkInvalidCharacters && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
                                 break;
                         }
                     }

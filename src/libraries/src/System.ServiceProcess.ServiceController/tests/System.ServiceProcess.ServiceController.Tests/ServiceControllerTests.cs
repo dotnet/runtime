@@ -85,7 +85,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void ConstructWithServiceName()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -95,7 +95,7 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(ServiceType.Win32OwnProcess, controller.ServiceType);
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void ConstructWithDisplayName()
         {
             var controller = new ServiceController(_testService.TestServiceDisplayName);
@@ -105,7 +105,7 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(ServiceType.Win32OwnProcess, controller.ServiceType);
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void ConstructWithMachineName()
         {
             var controller = new ServiceController(_testService.TestServiceName, _testService.TestMachineName);
@@ -117,7 +117,7 @@ namespace System.ServiceProcess.Tests
             Assert.Throws<ArgumentException>(() => { var c = new ServiceController(_testService.TestServiceName, ""); });
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void ControlCapabilities()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -126,7 +126,7 @@ namespace System.ServiceProcess.Tests
             Assert.False(controller.CanShutdown);
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void StartWithArguments()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -147,7 +147,7 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(string.Join(",", args), argsString);
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void StopAndStart()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -165,7 +165,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void PauseAndContinue()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -183,14 +183,14 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void WaitForStatusTimeout()
         {
             var controller = new ServiceController(_testService.TestServiceName);
             Assert.Throws<System.ServiceProcess.TimeoutException>(() => controller.WaitForStatus(ServiceControllerStatus.Paused, TimeSpan.Zero));
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void GetServices()
         {
             bool foundTestService = false;
@@ -206,7 +206,7 @@ namespace System.ServiceProcess.Tests
             Assert.True(foundTestService, "Test service was not enumerated with all services");
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void GetDevices()
         {
             var devices = ServiceController.GetDevices();
@@ -220,7 +220,7 @@ namespace System.ServiceProcess.Tests
             Assert.All(devices, device => Assert.NotEqual(0, (int)(device.ServiceType & SERVICE_TYPE_DRIVER)));
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void Dependencies()
         {
             // The test service creates a number of dependent services, each of which is depended on
@@ -254,7 +254,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact("RunningWithElevatedPrivileges")]
+        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
         public void ServicesStartMode()
         {
             var controller = new ServiceController(_testService.TestServiceName);

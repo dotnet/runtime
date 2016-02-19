@@ -41,27 +41,27 @@ namespace System.Security.AccessControl
         {
             if ( identity == null )
             {
-                throw new ArgumentNullException( "identity" );
+                throw new ArgumentNullException( nameof(identity));
             }
 
             if ( accessMask == 0 )
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-                    "accessMask" );
+nameof(accessMask));
             }
 
             if ( inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit) )
             {
                 throw new ArgumentOutOfRangeException(
-                    "inheritanceFlags",
+nameof(inheritanceFlags),
                     SR.Format( SR.Argument_InvalidEnumValue, inheritanceFlags, "InheritanceFlags" ));
             }
 
             if ( propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly) )
             {
                 throw new ArgumentOutOfRangeException(
-                    "propagationFlags",
+nameof(propagationFlags),
                     SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
             }
             Contract.EndContractBlock();
@@ -70,7 +70,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_MustBeIdentityReferenceType,
-                    "identity");
+nameof(identity));
             }
 
             _identity = identity;
@@ -144,21 +144,21 @@ namespace System.Security.AccessControl
                 type != AccessControlType.Deny )
             {
                 throw new ArgumentOutOfRangeException(
-                    "type",
+nameof(type),
                      SR.ArgumentOutOfRange_Enum );
             }
 
             if ( inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit) )
             {
                 throw new ArgumentOutOfRangeException(
-                    "inheritanceFlags",
+nameof(inheritanceFlags),
                     SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "InheritanceFlags"));
             }
 
             if ( propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly) )
             {
                 throw new ArgumentOutOfRangeException(
-                    "propagationFlags",
+nameof(propagationFlags),
                     SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
             }
             Contract.EndContractBlock();
@@ -261,12 +261,12 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                      SR.Arg_EnumAtLeastOneFlag ,
-                    "auditFlags" );
+nameof(auditFlags));
             }
             else if (( auditFlags & ~( AuditFlags.Success | AuditFlags.Failure )) != 0 )
             {
                 throw new ArgumentOutOfRangeException(
-                    "auditFlags",
+nameof(auditFlags),
                      SR.ArgumentOutOfRange_Enum );
             }
 

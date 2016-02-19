@@ -50,11 +50,11 @@ namespace System.IO
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             if (encoding == null)
             {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
             if (!output.CanWrite)
             {
@@ -149,7 +149,7 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             OutStream.Write(buffer, 0, buffer.Length);
@@ -193,7 +193,7 @@ namespace System.IO
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             }
 
             byte[] bytes = _encoding.GetBytes(chars, 0, chars.Length);
@@ -363,7 +363,7 @@ namespace System.IO
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             int len = _encoding.GetByteCount(value);

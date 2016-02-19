@@ -74,7 +74,7 @@ namespace System.Collections.Specialized
         {
             if (col == null)
             {
-                throw new ArgumentNullException("col");
+                throw new ArgumentNullException(nameof(col));
             }
 
             this.Comparer = col.Comparer;
@@ -142,7 +142,7 @@ namespace System.Collections.Specialized
         {
             if (c == null)
             {
-                throw new ArgumentNullException("c");
+                throw new ArgumentNullException(nameof(c));
             }
 
             InvalidateCachedArrays();
@@ -183,17 +183,17 @@ namespace System.Collections.Specialized
         {
             if (dest == null)
             {
-                throw new ArgumentNullException("dest");
+                throw new ArgumentNullException(nameof(dest));
             }
 
             if (dest.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_MultiRank, "dest");
+                throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (dest.Length - index < Count)

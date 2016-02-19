@@ -36,10 +36,10 @@ namespace System.Security.Cryptography
         public static bool Exists(string keyName, CngProvider provider, CngKeyOpenOptions options)
         {
             if (keyName == null)
-                throw new ArgumentNullException("keyName");
+                throw new ArgumentNullException(nameof(keyName));
 
             if (provider == null)
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
 
             using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
             {

@@ -24,7 +24,7 @@ namespace System.IO
         public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directorySecurity == null)
-                throw new ArgumentNullException("directorySecurity");
+                throw new ArgumentNullException(nameof(directorySecurity));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPath(directoryInfo.FullName);
@@ -44,7 +44,7 @@ namespace System.IO
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
             if (fileSecurity == null)
-                throw new ArgumentNullException("fileSecurity");
+                throw new ArgumentNullException(nameof(fileSecurity));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPath(fileInfo.FullName);
@@ -68,7 +68,7 @@ namespace System.IO
             SafeFileHandle handle = fileStream.SafeFileHandle;
 
             if (fileSecurity == null)
-                throw new ArgumentNullException("fileSecurity");
+                throw new ArgumentNullException(nameof(fileSecurity));
             Contract.EndContractBlock();
 
             if (handle.IsClosed)

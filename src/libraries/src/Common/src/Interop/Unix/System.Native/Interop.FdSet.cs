@@ -50,7 +50,7 @@ internal static partial class Interop
 
         private static void ThrowInvalidFileDescriptor(int fd)
         {
-            throw new ArgumentOutOfRangeException("fd", fd, SR.net_InvalidSocketHandle);
+            throw new ArgumentOutOfRangeException(nameof(fd), fd, SR.net_InvalidSocketHandle);
         }
     }
 }

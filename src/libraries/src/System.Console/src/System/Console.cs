@@ -185,7 +185,7 @@ namespace System
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
                 ConsolePal.WindowWidth = value;
             }
@@ -201,7 +201,7 @@ namespace System
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
                 ConsolePal.WindowHeight = value;
             }
@@ -254,12 +254,12 @@ namespace System
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 if (value.Length > MaxConsoleTitleLength)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_ConsoleTitleTooLong);
                 }
 
                 ConsolePal.Title = value;
@@ -295,9 +295,9 @@ namespace System
         {
             // Basic argument validation.  The PAL implementation may provide further validation.
             if (left < 0 || left >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
             if (top < 0 || top >= short.MaxValue)
-                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
             ConsolePal.SetCursorPosition(left, top);
         }

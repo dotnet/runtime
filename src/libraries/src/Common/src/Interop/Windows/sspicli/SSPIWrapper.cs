@@ -603,7 +603,7 @@ namespace System.Net
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, "ContextAttribute"), "contextAttribute");
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, "ContextAttribute"), nameof(contextAttribute));
             }
 
             SafeHandle sspiHandle = null;

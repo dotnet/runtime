@@ -29,7 +29,7 @@ namespace Internal.Reflection.Core.Execution.Binder
         {
             if (match == null || match.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_EmptyArray, "match");
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
             }
 
             MethodBase[] candidates = (MethodBase[])match.Clone();
@@ -720,12 +720,12 @@ namespace Internal.Reflection.Core.Execution.Binder
             if (indexes != null && !Contract.ForAll(indexes, delegate (Type t) { return t != null; }))
             {
                 Exception e;  // Written this way to pass the Code Contracts style requirements.
-                e = new ArgumentNullException("indexes");
+                e = new ArgumentNullException(nameof(indexes));
                 throw e;
             }
             if (match == null || match.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_EmptyArray, "match");
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
             }
 
             PropertyInfo[] candidates = (PropertyInfo[])match.Clone();

@@ -136,7 +136,7 @@ namespace System.Net
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.SSPIInvalidHandleType, handleType.FullName), "handleType");
+                    throw new ArgumentException(SR.Format(SR.SSPIInvalidHandleType, handleType.FullName), nameof(handleType));
                 }
             }
             fixed (byte* bufferPtr = buffer)

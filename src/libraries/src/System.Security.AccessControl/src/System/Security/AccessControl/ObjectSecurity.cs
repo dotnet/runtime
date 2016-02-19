@@ -81,7 +81,7 @@ namespace System.Security.AccessControl
         {
             if ( securityDescriptor == null )
             {
-                throw new ArgumentNullException( "securityDescriptor" );
+                throw new ArgumentNullException( nameof(securityDescriptor));
             }
             Contract.EndContractBlock();
 
@@ -366,7 +366,7 @@ namespace System.Security.AccessControl
         {
             if ( identity == null )
             {
-                throw new ArgumentNullException( "identity" );
+                throw new ArgumentNullException( nameof(identity));
             }
             Contract.EndContractBlock();
 
@@ -410,7 +410,7 @@ namespace System.Security.AccessControl
         {
             if ( identity == null )
             {
-                throw new ArgumentNullException( "identity" );
+                throw new ArgumentNullException( nameof(identity));
             }
             Contract.EndContractBlock();
 
@@ -431,7 +431,7 @@ namespace System.Security.AccessControl
         {
             if ( identity == null )
             {
-                throw new ArgumentNullException( "identity" );
+                throw new ArgumentNullException( nameof(identity));
             }
             Contract.EndContractBlock();
 
@@ -452,7 +452,7 @@ namespace System.Security.AccessControl
         {
             if ( identity == null )
             {
-                throw new ArgumentNullException( "identity" );
+                throw new ArgumentNullException( nameof(identity));
             }
             Contract.EndContractBlock();
 
@@ -595,14 +595,14 @@ namespace System.Security.AccessControl
         {
             if ( sddlForm == null )
             {
-                throw new ArgumentNullException( "sddlForm" );
+                throw new ArgumentNullException( nameof(sddlForm));
             }
 
             if (( includeSections & AccessControlSections.All ) == 0 )
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "includeSections" );
+nameof(includeSections));
             }
             Contract.EndContractBlock();
 
@@ -645,14 +645,14 @@ namespace System.Security.AccessControl
         {
             if ( binaryForm == null )
             {
-                throw new ArgumentNullException( "binaryForm" );
+                throw new ArgumentNullException( nameof(binaryForm));
             }
 
             if (( includeSections & AccessControlSections.All ) == 0 )
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "includeSections" );
+nameof(includeSections));
             }
             Contract.EndContractBlock();
 
@@ -679,14 +679,14 @@ namespace System.Security.AccessControl
         {
             if ( rule == null )
             {
-                throw new ArgumentNullException( "rule" );
+                throw new ArgumentNullException( nameof(rule));
             }
 
             if ( !this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType, 
-                    "rule");
+nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -706,14 +706,14 @@ namespace System.Security.AccessControl
         {
             if ( rule == null )
             {
-                throw new ArgumentNullException( "rule" );
+                throw new ArgumentNullException( nameof(rule));
             }
 
             if ( !this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()) )
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType, 
-                    "rule");
+nameof(rule));
             }
             Contract.EndContractBlock();
 

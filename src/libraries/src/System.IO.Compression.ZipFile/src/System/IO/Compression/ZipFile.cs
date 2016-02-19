@@ -186,7 +186,7 @@ namespace System.IO.Compression
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException("mode");
+                    throw new ArgumentOutOfRangeException(nameof(mode));
             }
 
             // Surpress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
@@ -397,7 +397,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry’s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -433,7 +433,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry’s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -469,7 +469,7 @@ namespace System.IO.Compression
         public static void ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Encoding entryNameEncoding)
         {
             if (sourceArchiveFileName == null)
-                throw new ArgumentNullException("sourceArchiveFileName");
+                throw new ArgumentNullException(nameof(sourceArchiveFileName));
 
             using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
             {

@@ -79,7 +79,7 @@ namespace System.IO.Packaging
         internal ContentType(string contentType)
         {
             if (contentType == null)
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
 
             if (contentType.Length == 0)
             {

@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Tests
             new object[] { 5, WebSocketMessageType.Close, true, WebSocketCloseStatus.NormalClosure, "normal" },
         };
 
-        [Theory, MemberData("ConstructorData")]
+        [Theory, MemberData(nameof(ConstructorData))]
         public void ConstructorTest_Success(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string closeStatusDescription)
         {
             var wsrr = new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeStatusDescription);

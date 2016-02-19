@@ -101,11 +101,11 @@ namespace System.Security.AccessControl
 
             if (createByName && name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             else if (!createByName && handle == null)
             {
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
             }
 
             error = Win32.GetSecurityInfo(resourceType, name, handle, includeSections, out rawSD);
@@ -141,7 +141,7 @@ namespace System.Security.AccessControl
                     {
                         exception = new ArgumentException(
                              SR.Argument_InvalidName,
-                            "name");
+nameof(name));
                     }
                     else if (error == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
                     {
@@ -279,7 +279,7 @@ namespace System.Security.AccessControl
                         {
                             exception = new ArgumentException(
                                  SR.Argument_InvalidName,
-                                "name");
+nameof(name));
                         }
                         else if (error == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                         {
@@ -339,7 +339,7 @@ namespace System.Security.AccessControl
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
 
@@ -361,7 +361,7 @@ namespace System.Security.AccessControl
         {
             if (handle == null)
             {
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
             }
             Contract.EndContractBlock();
 

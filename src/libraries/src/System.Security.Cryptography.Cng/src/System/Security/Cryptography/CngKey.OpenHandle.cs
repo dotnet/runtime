@@ -25,9 +25,9 @@ namespace System.Security.Cryptography
         public static CngKey Open(SafeNCryptKeyHandle keyHandle, CngKeyHandleOpenOptions keyHandleOpenOptions)
         {
             if (keyHandle == null)
-                throw new ArgumentNullException("keyHandle");
+                throw new ArgumentNullException(nameof(keyHandle));
             if (keyHandle.IsClosed || keyHandle.IsInvalid)
-                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "keyHandle");
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(keyHandle));
 
             SafeNCryptKeyHandle keyHandleCopy = keyHandle.Duplicate();
 
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                 }
                 else if (key.IsEphemeral && !openingEphemeralKey)
                 {
-                    throw new ArgumentException(SR.Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag, "keyHandleOpenOptions");
+                    throw new ArgumentException(SR.Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag, nameof(keyHandleOpenOptions));
                 }
             }
             catch

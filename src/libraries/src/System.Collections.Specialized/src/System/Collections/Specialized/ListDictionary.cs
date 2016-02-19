@@ -34,7 +34,7 @@ namespace System.Collections.Specialized
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
                 DictionaryNode node = _head;
                 if (_comparer == null)
@@ -67,7 +67,7 @@ namespace System.Collections.Specialized
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
                 _version++;
                 DictionaryNode last = null;
@@ -167,7 +167,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             _version++;
             DictionaryNode last = null;
@@ -207,7 +207,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             for (DictionaryNode node = _head; node != null; node = node.next)
             {
@@ -223,9 +223,9 @@ namespace System.Collections.Specialized
         public void CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Length - index < _count)
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
@@ -251,7 +251,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             _version++;
             DictionaryNode last = null;
@@ -384,9 +384,9 @@ namespace System.Collections.Specialized
             void ICollection.CopyTo(Array array, int index)
             {
                 if (array == null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 for (DictionaryNode node = _list._head; node != null; node = node.next)
                 {
                     array.SetValue(_isKeys ? node.key : node.value, index);
