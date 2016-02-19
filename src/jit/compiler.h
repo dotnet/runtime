@@ -4637,9 +4637,9 @@ private:
 
     unsigned            fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    static bool         fgIsUnboundedInlineRecursion(inlExpPtr expLst,
-                                                     BYTE *    ilCode,
-                                                     DWORD*    depth);
+    static bool         fgIsUnboundedInlineRecursion(InlineContext* context,
+                                                     BYTE*          ilCode,
+                                                     DWORD*         depth);
 
     void                fgInvokeInlineeCompiler(GenTreeCall*   call, InlineResult* result);
     void                fgInsertInlineeBlocks (InlineInfo * pInlineInfo);
