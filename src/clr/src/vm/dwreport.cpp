@@ -214,15 +214,6 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
     CONTRACTL_END;
     
     WCHAR wszDACName[] = MAIN_DAC_MODULE_NAME_W W(".dll");
-    WCHAR wszDACPath[MAX_LONGPATH];
-    DWORD dwSize = 0;
-
-    if ((FAILED(::GetCORSystemDirectoryInternal(wszDACPath, NumItems(wszDACPath), &dwSize))) || 
-        (wcscat_s(wszDACPath, _countof(wszDACPath), wszDACName) != 0))
-    {
-        return FALSE;
-    }
-
     WerModuleHolder hWerModule(WER_MODULE_NAME_W);
 
 #ifdef FEATURE_CORESYSTEM
@@ -250,8 +241,23 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
     {
        return FALSE;
     }
+    HRESULT hr = S_OK;
 
-    HRESULT hr = (*pFnWerRegisterRuntimeExceptionModule)(wszDACPath, (PDWORD)g_pMSCorEE);
+    EX_TRY
+    {
+        PathString wszDACPath;
+        if (SUCCEEDED(::GetCORSystemDirectoryInternaL(wszDACPath)))
+        {
+            wszDACPath.Append(wszDACName);
+            hr = (*pFnWerRegisterRuntimeExceptionModule)(wszDACPath, (PDWORD)g_pMSCorEE);
+        }
+        else {
+            hr = E_FAIL;
+        }
+
+    }
+    EX_CATCH_HRESULT(hr);
+    
     if (FAILED(hr))
     {
         STRESS_LOG0(LF_STARTUP, 
@@ -562,9 +568,9 @@ HRESULT DwCheckCompany(                 // S_OK or error.
 //   None
 //------------------------------------------------------------------------------
 int DwGetAppDescription(                // Number of characters written.
-    __in_z LPWSTR wszFilePath,          // Path to the executable.
-    __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
-    int     cchBuf)                     // Size of buf, wide chars.
+    __in_z LPCWSTR wszFilePath,          // Path to the executable.
+    SString& pBuf // Put description here.
+    )                     // Size of buf, wide chars.
 {
     CONTRACTL
     {
@@ -663,8 +669,17 @@ int DwGetAppDescription(                // Number of characters written.
     }
 
     // Copy back the description.
-    size = (int)size > cchBuf-1 ? cchBuf-1 : size;
-    wcsncpy_s(pBuf, cchBuf, fileDescription, size);
+    EX_TRY
+    {
+        wcsncpy_s(pBuf.OpenUnicodeBuffer(size), size, fileDescription, size);
+        pBuf.CloseBuffer(size);
+    }
+        EX_CATCH
+    {
+        size = 0;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+    
 
     return size;
 } // int DwGetAppDescription()
@@ -685,7 +700,7 @@ int DwGetAppDescription(                // Number of characters written.
 //   None
 //------------------------------------------------------------------------------
 int DwGetAssemblyVersion(               // Number of characters written.
-    __in_z LPWSTR  wszFilePath,         // Path to the executable.
+    __in_z LPCWSTR  wszFilePath,         // Path to the executable.
     __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
     int cchBuf)                     // Size of buf, wide chars.
 {
@@ -1469,88 +1484,99 @@ BOOL RunWatson(
     memset(&startupInfo, 0, sizeof(STARTUPINFOW));
     startupInfo.cb = sizeof(STARTUPINFOW);
 
-
-    WCHAR watsonAppName[MAX_LONGPATH];
-    WCHAR watsonCommandLine[MAX_LONGPATH+1];
-
+    HRESULT hr = S_OK;
+    PathString watsonAppName;
+    PathString watsonCommandLine;
+    EX_TRY
     {
-#if !defined(FEATURE_CORECLR)
-        // Use the version of DW20.exe that lives in the system directory.
-        DWORD ret;
-
-        if (FAILED(GetCORSystemDirectoryInternal(watsonAppName, NumItems(watsonAppName), &ret)))
+        do
         {
-            return false;
-        }
-        if (wcsncat_s(watsonAppName, NumItems(watsonAppName), kWatsonImageNameOnVista, _TRUNCATE) != 0)
+
+
+        
+
         {
-            return false;
-        }
-#else // FEATURE_CORECLR
-        HKEYHolder hKey;
-        // Look for key \\HKLM\Software\Microsoft\PCHealth\ErrorReporting\DW\Installed"
-        DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE,
-                                    kWatsonPath,
-                                    0,
-                                    KEY_READ | kWatsonRegKeyOptions,
-                                    &hKey);
+    #if !defined(FEATURE_CORECLR)
+            // Use the version of DW20.exe that lives in the system directory.
+            DWORD ret;
 
-        if (ERROR_SUCCESS != ret)
+            if (FAILED(GetCORSystemDirectoryInternaL(watsonAppName)))
+            {
+                hr = E_FAIL;
+                break;
+            }
+            watsonCommandLine.Set(watsonAppName);
+            watsonCommandLine.Append(kWatsonImageNameOnVista);
+
+    #else // FEATURE_CORECLR
+            HKEYHolder hKey;
+            // Look for key \\HKLM\Software\Microsoft\PCHealth\ErrorReporting\DW\Installed"
+            DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                                        kWatsonPath,
+                                        0,
+                                        KEY_READ | kWatsonRegKeyOptions,
+                                        &hKey);
+
+            if (ERROR_SUCCESS != ret)
+            {
+                hr = E_FAIL;
+                break;
+            }
+
+
+            // Look in ...\DW\Installed for dw0200 (dw0201 on ia64).  This will be
+            //  the full path to the executable.
+
+            ClrRegReadString(hKey, kWatsonValue, watsonAppName);
+
+    #endif // ! FEATURE_CORECLR
+
+            COUNT_T len = watsonCommandLine.GetCount();
+            WCHAR* buffer = watsonCommandLine.OpenUnicodeBuffer(len);
+            _snwprintf_s(buffer,
+                       len,
+                       _TRUNCATE,
+                       W("dw20.exe -x -s %lu"),
+                       PtrToUlong(hWatsonSharedMemory));
+            watsonCommandLine.CloseBuffer();
+
+        }
+        } while (false);
+    }
+    EX_CATCH_HRESULT(hr);
+
+
+    if (hr != S_OK)
+    {
+        return false;
+    }
+
         {
-            return false;
+            BOOL ret = WszCreateProcess(watsonAppName,
+                                        watsonCommandLine,
+                                        NULL,
+                                        NULL,
+                                        TRUE,
+                                        NULL,
+                                        NULL,
+                                        NULL,
+                                        &startupInfo,
+                                        &processInformation);
+
+            if (FALSE == ret)
+            {
+                //
+                // Watson failed to start up.
+                //
+                // This can happen if e.g. Watson wasn't installed on the machine.
+                //
+                 return  E_FAIL;
+                 
+            }
+
         }
-
-
-        // Look in ...\DW\Installed for dw0200 (dw0201 on ia64).  This will be
-        //  the full path to the executable.
-        DWORD size = NumItems(watsonAppName);
-        ret = WszRegQueryValueEx(hKey,
-                                    kWatsonValue,
-                                    NULL,
-                                    NULL,
-                                    reinterpret_cast< LPBYTE >(watsonAppName),
-                                    &size);
 
     
-        if (ERROR_SUCCESS != ret)
-        {
-            return false;
-        }
-#endif // ! FEATURE_CORECLR
-
-        _snwprintf_s(watsonCommandLine,
-                   NumItems(watsonCommandLine)-1,
-                   _TRUNCATE,
-                   W("dw20.exe -x -s %lu"),
-                   PtrToUlong(hWatsonSharedMemory));
-        watsonCommandLine[NumItems(watsonCommandLine) - 1] = W('\0');
-    }
-
-
-    {
-        BOOL ret = WszCreateProcess(watsonAppName,
-                                    watsonCommandLine,
-                                    NULL,
-                                    NULL,
-                                    TRUE,
-                                    NULL,
-                                    NULL,
-                                    NULL,
-                                    &startupInfo,
-                                    &processInformation);
-
-        if (FALSE == ret)
-        {
-            //
-            // Watson failed to start up.
-            //
-            // This can happen if e.g. Watson wasn't installed on the machine.
-            //
-            HRESULT hr = HRESULT_FROM_GetLastErrorNA();
-            return false;
-        }
-
-    }
 
     // Wait for watson to finish.
     //
@@ -2426,9 +2452,11 @@ FaultReportResult DoFaultReportWorker(      // Was Watson attempted, successful?
     pWatsonSharedMemory->bfmsoctdsLetRun = offerFlags;
 
     {
+        PathString wzModuleFileName;
         DWORD dwRet = WszGetModuleFileName(NULL,
-	                                       pWatsonSharedMemory->wzModuleFileName,
-	                                       NumItems(pWatsonSharedMemory->wzModuleFileName));
+	                                       wzModuleFileName);
+        BaseBucketParamsManager::CopyStringToBucket(pWatsonSharedMemory->wzModuleFileName, NumItems(pWatsonSharedMemory->wzModuleFileName), wzModuleFileName);
+        
         _ASSERTE(0 != dwRet);
         if (0 == dwRet)
         {
@@ -2455,24 +2483,24 @@ FaultReportResult DoFaultReportWorker(      // Was Watson attempted, successful?
     // do this just by using the executable name.
     //
     {
-        WCHAR   buf[_MAX_PATH];         // Buffer for path for description.
-        WCHAR   *pName = buf;           // Pointer to filename or description.
+        PathString   buf;         // Buffer for path for description.
+        LPCWSTR   pName ;           // Pointer to filename or description.
         int     size;                   // Size of description.
         HMODULE hModule;                // Handle to module.
         DWORD   result;                 // Return code
 
         // Get module name.
         hModule = WszGetModuleHandle(NULL);
-        result = WszGetModuleFileName(hModule, buf, NumItems(buf));
+        result = WszGetModuleFileName(hModule, buf);
 
         if (result == 0)
         {   // Couldn't get module name.  This should never happen.
-            wcscpy_s(buf, COUNTOF(buf), W("<<unknown>>"));
+            pName = W("<<unknown>>");
         }
         else
         {   // re-use the buf for pathname and description.
-            size = DwGetAppDescription(buf, buf, NumItems(buf));
-
+            size = DwGetAppDescription(buf, buf);
+            pName = buf.GetUnicode();
             // If the returned size was zero, buf wasn't changed, and still contains the path.
             //  find just the filename part.
             if (size == 0)

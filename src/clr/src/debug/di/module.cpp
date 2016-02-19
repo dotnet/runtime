@@ -2568,8 +2568,9 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
 #ifndef FEATURE_PAL
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<_MAX_PATH> ssBuf;
+            IfFailThrow(GetHModuleDirectory(GetModuleInst(), ssBuf));
             IfFailThrow(FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
-                                               GetHModuleDirectory(GetModuleInst(), ssBuf).GetUnicode(),
+                                               ssBuf.GetUnicode(),
                                                IID_ISymUnmanagedBinder,
                                                (void**)&pBinder,
                                                NULL));

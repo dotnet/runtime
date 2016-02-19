@@ -2471,10 +2471,9 @@ HRESULT CorHost2::ExecuteMain(
         AppDomain *pDomain = GetAppDomain();
         _ASSERTE(pDomain);
 
-        WCHAR wzExeFileName[_MAX_PATH];
-        DWORD cchExeFileName = _MAX_PATH;
-        cchExeFileName = WszGetModuleFileName(nullptr, wzExeFileName, cchExeFileName);
-        if (cchExeFileName == _MAX_PATH)
+        PathString wzExeFileName;
+         
+        if (WszGetModuleFileName(nullptr, wzExeFileName) == 0)
             IfFailThrow(E_UNEXPECTED);
 
         LPWSTR wzExeSimpleFileName = nullptr;

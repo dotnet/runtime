@@ -530,11 +530,11 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnBadExit))
         {
             // Workaround for aspnet
-            WCHAR  wszFilename[_MAX_PATH];
+            PathString  wszFilename;
             bool bShouldAssert = true;
-            if (WszGetModuleFileName(NULL, wszFilename, _MAX_PATH))
+            if (WszGetModuleFileName(NULL, wszFilename))
             {
-                _wcslwr_s(wszFilename, COUNTOF(wszFilename));
+                wszFilename.LowerCase();
                 
                 if (wcsstr(wszFilename, W("aspnet_compiler"))) 
                 {

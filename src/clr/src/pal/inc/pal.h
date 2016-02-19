@@ -1172,6 +1172,19 @@ typedef enum _GET_FILEEX_INFO_LEVELS {
   GetFileExInfoStandard
 } GET_FILEEX_INFO_LEVELS;
 
+typedef enum _FINDEX_INFO_LEVELS {
+    FindExInfoStandard,
+    FindExInfoBasic,
+    FindExInfoMaxInfoLevel
+} FINDEX_INFO_LEVELS;
+
+typedef enum _FINDEX_SEARCH_OPS {
+    FindExSearchNameMatch,
+    FindExSearchLimitToDirectories,
+    FindExSearchLimitToDevices,
+    FindExSearchMaxSearchOp
+} FINDEX_SEARCH_OPS;
+
 typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
     DWORD      dwFileAttributes;
     FILETIME   ftCreationTime;

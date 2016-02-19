@@ -1823,50 +1823,41 @@ HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
 HMODULE ShimProcess::GetDacModule()
 {
     HModuleHolder hDacDll;
-    WCHAR wszAccessDllPath[MAX_LONGPATH];
+    PathString wszAccessDllPath;
 
 #ifdef FEATURE_PAL
-    if (!PAL_GetPALDirectoryW(wszAccessDllPath, _countof(wszAccessDllPath)))
+    if (!PAL_GetPALDirectoryWrapper(wszAccessDllPath))
     {
         ThrowLastError();
     }
-    wcscat_s(wszAccessDllPath, _countof(wszAccessDllPath), MAKEDLLNAME_W(W("mscordaccore")));
+    PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
 #else
     //
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //
 
-    if (!WszGetModuleFileName(GetModuleInst(), wszAccessDllPath, NumItems(wszAccessDllPath)))
+    if (!WszGetModuleFileName(GetModuleInst(), wszAccessDllPath))
     {
         ThrowLastError();
     }
 
-    PWSTR pPathTail = wcsrchr(wszAccessDllPath, DIRECTORY_SEPARATOR_CHAR_W);
-    if (!pPathTail)
+	if (!SUCCEEDED(CopySystemDirectory(wszAccessDllPath, wszAccessDllPath)))
     {
         ThrowHR(E_INVALIDARG);
     }
-    pPathTail++;
 
     // Dac Dll is named:
     //   mscordaccore.dll  <-- coreclr
     //   mscordacwks.dll   <-- desktop
     PCWSTR eeFlavor = 
 #if defined(FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
-        W("core");    
+        W("mscordaccore.dll");
 #else
-        W("wks");    
+        W("mscordacwks.dll");
 #endif
-
-    if (_snwprintf_s(pPathTail, 
-                     _countof(wszAccessDllPath) + (wszAccessDllPath - pPathTail),
-                     NumItems(wszAccessDllPath) - (pPathTail - wszAccessDllPath),
-                     MAKEDLLNAME_W(W("mscordac%s")), 
-                     eeFlavor) <= 0)
-    {
-        ThrowHR(E_INVALIDARG);
-    }
+    
 #endif // FEATURE_PAL
+    wszAccessDllPath.Append(eeFlavor);
 
     hDacDll.Assign(WszLoadLibrary(wszAccessDllPath));
     if (!hDacDll)
