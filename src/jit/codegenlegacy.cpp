@@ -3487,10 +3487,12 @@ regMaskTP           CodeGen::WriteBarrier(GenTreePtr tgt,
 void                CodeGen::genJccLongHi(genTreeOps   cmp,
                                           BasicBlock * jumpTrue,
                                           BasicBlock * jumpFalse,
-                                          bool         unsOper )
+                                          bool         isUnsigned )
 {
     if (cmp != GT_NE)
+    {
         jumpFalse->bbFlags |= BBF_JMP_TARGET|BBF_HAS_LABEL;
+    }
 
     switch (cmp)
     {
@@ -3504,7 +3506,7 @@ void                CodeGen::genJccLongHi(genTreeOps   cmp,
 
     case GT_LT:
     case GT_LE:
-        if (unsOper)
+        if (isUnsigned)
         {
             inst_JMP(EJ_ja , jumpFalse);
             inst_JMP(EJ_jb , jumpTrue);
@@ -3518,7 +3520,7 @@ void                CodeGen::genJccLongHi(genTreeOps   cmp,
 
     case GT_GE:
     case GT_GT:
-        if (unsOper)
+        if (isUnsigned)
         {
             inst_JMP(EJ_jb , jumpFalse);
             inst_JMP(EJ_ja , jumpTrue);
@@ -3583,12 +3585,14 @@ void            CodeGen::genJccLongLo(genTreeOps  cmp,
 */
 
 void                CodeGen::genJccLongHi(genTreeOps   cmp,
-    BasicBlock * jumpTrue,
-    BasicBlock * jumpFalse,
-    bool         unsOper)
+                                          BasicBlock * jumpTrue,
+                                          BasicBlock * jumpFalse,
+                                          bool         isUnsigned)
 {
     if (cmp != GT_NE)
+    {
         jumpFalse->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
+    }
 
     switch (cmp)
     {
@@ -3602,7 +3606,7 @@ void                CodeGen::genJccLongHi(genTreeOps   cmp,
 
     case GT_LT:
     case GT_LE:
-        if (unsOper)
+        if (isUnsigned)
         {
             inst_JMP(EJ_hi, jumpFalse);
             inst_JMP(EJ_lo, jumpTrue);
@@ -3616,7 +3620,7 @@ void                CodeGen::genJccLongHi(genTreeOps   cmp,
 
     case GT_GE:
     case GT_GT:
-        if (unsOper)
+        if (isUnsigned)
         {
             inst_JMP(EJ_lo, jumpFalse);
             inst_JMP(EJ_hi, jumpTrue);
@@ -3640,8 +3644,8 @@ void                CodeGen::genJccLongHi(genTreeOps   cmp,
 */
 
 void            CodeGen::genJccLongLo(genTreeOps  cmp,
-    BasicBlock* jumpTrue,
-    BasicBlock* jumpFalse)
+                                      BasicBlock* jumpTrue,
+                                      BasicBlock* jumpFalse)
 {
     switch (cmp)
     {
@@ -15326,8 +15330,8 @@ USE_SAR_FOR_CAST:
                     genComputeRegPair(op1, REG_PAIR_NONE, RBM_ALLINT & ~needReg, RegSet::FREE_REG);
                     regPair = op1->gtRegPair;
 
-                    // Do we need to set the sign-flag, or can be check if it
-                    // set, and not do this "test" if so.
+                    // Do we need to set the sign-flag, or can we checked if it is set?
+                    // and not do this "test" if so.
 
                     if (op1->gtFlags & GTF_REG_VAL)
                     {
