@@ -563,6 +563,7 @@ regMaskTP           CodeGenInterface::genGetRegMask(GenTreePtr tree)
     return regMask;
 }
 
+
 /*****************************************************************************
 *           TRACKING OF FLAGS
 *****************************************************************************/
@@ -2443,67 +2444,137 @@ FOUND_AM:
     return  true;
 }
 
-
-
 /*****************************************************************************
- *  The condition to use for (the jmp/set for) the given type of operation
- *
- *  In case of amd64, this routine should be used when there is no gentree available
- *  and one needs to generate jumps based on integer comparisons.  When gentree is
- *  available always use its overloaded version.
- *  
- */
+*  The condition to use for (the jmp/set for) the given type of operation
+*
+*  In case of amd64, this routine should be used when there is no gentree available
+*  and one needs to generate jumps based on integer comparisons.  When gentree is
+*  available always use its overloaded version.
+*
+*/
 
 // static
-emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps   cmp,
-                                                  bool         isUnsigned)
+emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind compareKind)
 {
     const static
-    BYTE            genJCCinsSgn[] =
+    BYTE            genJCCinsSigned[] =
     {
+#if defined(_TARGET_XARCH_)
         EJ_je,      // GT_EQ
         EJ_jne,     // GT_NE
         EJ_jl,      // GT_LT
         EJ_jle,     // GT_LE
         EJ_jge,     // GT_GE
         EJ_jg,      // GT_GT
+#elif defined(_TARGET_ARMARCH_)
+        EJ_eq,      // GT_EQ
+        EJ_ne,      // GT_NE
+        EJ_lt,      // GT_LT
+        EJ_le,      // GT_LE
+        EJ_ge,      // GT_GE
+        EJ_gt,      // GT_GT
+#endif
     };
 
     const static
-    BYTE            genJCCinsUns[] =       /* unsigned comparison */
+    BYTE            genJCCinsUnsigned[] =       /* unsigned comparison */
     {
+#if defined(_TARGET_XARCH_)
         EJ_je,      // GT_EQ
         EJ_jne,     // GT_NE
         EJ_jb,      // GT_LT
         EJ_jbe,     // GT_LE
         EJ_jae,     // GT_GE
         EJ_ja,      // GT_GT
+#elif defined(_TARGET_ARMARCH_)
+        EJ_eq,      // GT_EQ
+        EJ_ne,      // GT_NE
+        EJ_lo,      // GT_LT
+        EJ_ls,      // GT_LE
+        EJ_hs,      // GT_GE
+        EJ_hi,      // GT_GT
+#endif
     };
 
-    assert(genJCCinsSgn[GT_EQ - GT_EQ] == EJ_je );
-    assert(genJCCinsSgn[GT_NE - GT_EQ] == EJ_jne);
-    assert(genJCCinsSgn[GT_LT - GT_EQ] == EJ_jl );
-    assert(genJCCinsSgn[GT_LE - GT_EQ] == EJ_jle);
-    assert(genJCCinsSgn[GT_GE - GT_EQ] == EJ_jge);
-    assert(genJCCinsSgn[GT_GT - GT_EQ] == EJ_jg );
+    const static
+    BYTE            genJCCinsLogical[] =       /* logical operation */
+    {
+#if defined(_TARGET_XARCH_)
+        EJ_je,      // GT_EQ   (Z == 1)
+        EJ_jne,     // GT_NE   (Z == 0)
+        EJ_js,      // GT_LT   (S == 1)
+        EJ_NONE,    // GT_LE
+        EJ_jns,     // GT_GE   (S == 0)
+        EJ_NONE,    // GT_GT
+#elif defined(_TARGET_ARMARCH_)
+        EJ_eq,      // GT_EQ   (Z == 1)
+        EJ_ne,      // GT_NE   (Z == 0)
+        EJ_mi,      // GT_LT   (N == 1)
+        EJ_NONE,    // GT_LE
+        EJ_pl,      // GT_GE   (N == 0)
+        EJ_NONE,    // GT_GT
+#endif
+    };
 
-    assert(genJCCinsUns[GT_EQ - GT_EQ] == EJ_je );
-    assert(genJCCinsUns[GT_NE - GT_EQ] == EJ_jne);
-    assert(genJCCinsUns[GT_LT - GT_EQ] == EJ_jb );
-    assert(genJCCinsUns[GT_LE - GT_EQ] == EJ_jbe);
-    assert(genJCCinsUns[GT_GE - GT_EQ] == EJ_jae);
-    assert(genJCCinsUns[GT_GT - GT_EQ] == EJ_ja );
+#if defined(_TARGET_XARCH_)
+    assert(genJCCinsSigned[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsSigned[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsSigned[GT_LT - GT_EQ] == EJ_jl);
+    assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_jle);
+    assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_jge);
+    assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_jg);
 
+    assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsUnsigned[GT_LT - GT_EQ] == EJ_jb);
+    assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_jbe);
+    assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_jae);
+    assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_ja);
+
+    assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsLogical[GT_LT - GT_EQ] == EJ_js);
+    assert(genJCCinsLogical[GT_GE - GT_EQ] == EJ_jns);
+#elif defined(_TARGET_ARMARCH_)
+    assert(genJCCinsSigned[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsSigned[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsSigned[GT_LT - GT_EQ] == EJ_lt);
+    assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_le);
+    assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_ge);
+    assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_gt);
+
+    assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsUnsigned[GT_LT - GT_EQ] == EJ_lo);
+    assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_ls);
+    assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_hs);
+    assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_hi);
+
+    assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsLogical[GT_LT - GT_EQ] == EJ_mi);
+    assert(genJCCinsLogical[GT_GE - GT_EQ] == EJ_pl);
+#else
+    assert(!"unknown arch");
+#endif
     assert(GenTree::OperIsCompare(cmp));
 
-    if (isUnsigned)
+    emitJumpKind result = EJ_COUNT;
+
+    if (compareKind == CK_UNSIGNED)
     {
-        return (emitJumpKind) genJCCinsUns[cmp - GT_EQ];
+        result = (emitJumpKind)genJCCinsUnsigned[cmp - GT_EQ];
     }
-    else
+    else if (compareKind == CK_SIGNED)
     {
-        return (emitJumpKind) genJCCinsSgn[cmp - GT_EQ];
+        result = (emitJumpKind)genJCCinsSigned[cmp - GT_EQ];
     }
+    else if (compareKind == CK_LOGICAL)
+    {
+        result = (emitJumpKind)genJCCinsLogical[cmp - GT_EQ];
+    }
+    assert(result != EJ_COUNT);
+    return result;
 }
 
 /*****************************************************************************
@@ -2637,27 +2708,30 @@ void            CodeGen::genCheckOverflow(GenTreePtr tree)
 #ifdef _TARGET_ARM64_
     if (tree->OperGet() == GT_MUL)
     {
-        jumpKind = EJ_jne;
+        jumpKind = EJ_ne;
     }
     else
 #endif
     {
-        bool  isUnsignedOverflow = ((tree->gtFlags & GTF_UNSIGNED) != 0);  
+        bool  isUnsignedOverflow = ((tree->gtFlags & GTF_UNSIGNED) != 0);
 
-        if (isUnsignedOverflow)
+#if defined(_TARGET_XARCH_)
+
+        jumpKind = isUnsignedOverflow ? EJ_jb : EJ_jo;
+
+#elif defined(_TARGET_ARMARCH_)
+
+        jumpKind = isUnsignedOverflow ? EJ_lo : EJ_vs;
+
+        if (jumpKind == EJ_lo)
         {
-            jumpKind = EJ_jb;
-#ifdef _TARGET_ARMARCH_
             if ((tree->OperGet() != GT_SUB) && (tree->gtOper != GT_ASG_SUB))
             {
-                jumpKind =  EJ_jae;
+                jumpKind =  EJ_hs;
             }
-#endif
         }
-        else
-        {
-            jumpKind = EJ_jo;
-        }
+
+#endif // defined(_TARGET_ARMARCH_)
     }
 
     // Jump to the block which will throw the expection
@@ -10885,8 +10959,8 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
     clab_nostop = genCreateTempLabel();
 
     /* Generate the conditional jump */
-
-    inst_JMP(genJumpKindForOper(GT_EQ, true), clab_nostop);
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, clab_nostop);
 
 #ifdef _TARGET_ARM_
     // The helper preserves the return value on ARM
