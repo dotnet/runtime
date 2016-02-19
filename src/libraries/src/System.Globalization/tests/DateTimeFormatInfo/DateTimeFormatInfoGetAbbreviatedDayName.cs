@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -28,8 +29,7 @@ namespace System.Globalization.Tests
         // Call GetAbbreviatedDayName on en-us culture DateTimeFormatInfo instance
         // Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
         [Theory]
-        [InlineData("en-us")]
-        [InlineData("fr-FR")]
+        [MemberData("LocalesToCheck")]
         public void PosTest2(string localeName)
         {
             CultureInfo culture = new CultureInfo(localeName);
@@ -37,6 +37,17 @@ namespace System.Globalization.Tests
 
             DateTimeFormatInfo info = culture.DateTimeFormat;
             VerificationHelper(info, expected);
+        }
+
+        public static IEnumerable<object[]> LocalesToCheck()
+        {
+            yield return new object[] { "en-US" };
+
+            // When dotnet/corefx#2103 is addressed, we should also check fr-FR (and we can move back to InlineData)
+            if (!PlatformDetection.IsUbuntu1510)
+            {
+                yield return new object[] { "fr-FR" };
+            }
         }
 
         // PosTest4: Call GetAbbreviatedDayName on DateTimeFormatInfo instance created from ctor
