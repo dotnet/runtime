@@ -2686,6 +2686,7 @@ protected :
                                              CORINFO_SIG_INFO *     sig,
                                              int                    memberRef,
                                              bool                   readonlyCall,
+                                             bool                   tailCall,
                                              CorInfoIntrinsics *    pIntrinsicID);
     GenTreePtr          impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                 CORINFO_SIG_INFO *      sig,
