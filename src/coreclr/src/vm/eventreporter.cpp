@@ -47,8 +47,8 @@ EventReporter::EventReporter(EventReporterType type)
     m_eventType = type;
 
     HMODULE hModule = WszGetModuleHandle(NULL);
-    WCHAR appPath[MAX_LONGPATH];
-    DWORD ret = WszGetModuleFileName(hModule, appPath, NumItems(appPath));
+    PathString appPath;
+    DWORD ret = WszGetModuleFileName(hModule, appPath);
 
     fBufferFull = FALSE;
 
@@ -65,7 +65,7 @@ EventReporter::EventReporter(EventReporterType type)
     if (ret != 0)
     {
         // If app name has a '\', consider the part after that; otherwise consider whole name.
-        WCHAR* appName =  wcsrchr(appPath, W('\\'));
+        LPCWSTR appName =  wcsrchr(appPath, W('\\'));
         appName = appName ? appName+1 : appPath;
         m_Description.Append(appName);
         m_Description.Append(W("\n"));
@@ -808,8 +808,8 @@ void EventReporter::GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * p
     _ASSERTE(hModRuntime != NULL);
 
     // Get the path to the runtime
-    WCHAR runtimePath[MAX_LONGPATH];
-    DWORD ret = WszGetModuleFileName(hModRuntime, runtimePath, NumItems(runtimePath));
+    PathString runtimePath;
+    DWORD ret = WszGetModuleFileName(hModRuntime, runtimePath);
     if (ret != 0)
     {
         // Got the path - get the file version from the path

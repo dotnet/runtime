@@ -302,7 +302,6 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // 
 // Arguments:
 //    pBuffer - output string buffer
-//    pcchBuffer - the number of characters of the string buffer
 //
 // Return Value:
 //    S_OK on success, else detailed error code.
@@ -310,39 +309,19 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD *pcchBuffer)
+HRESULT GetCurrentModuleFileName(SString& pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if ((pBuffer == NULL) || (pcchBuffer == NULL))
-    {
-        return E_INVALIDARG;
-    }
+   
+    DWORD ret = WszGetModuleFileName(NULL, pBuffer);
 
-    // Get the appname to look up in the exclusion or inclusion list.
-    WCHAR appPath[MAX_LONGPATH + 2];
-
-    DWORD ret = WszGetModuleFileName(NULL, appPath, NumItems(appPath));
-
-    if ((ret == NumItems(appPath)) || (ret == 0))
+    if (ret == 0)
     {   
-        // The module file name exceeded maxpath, or GetModuleFileName failed.
         return E_UNEXPECTED;
     }
 
-    // Pick off the part after the path.
-    WCHAR* appName =  wcsrchr(appPath, W('\\'));
-
-    // If no backslash, use the whole name; if there is a backslash, skip it.
-    appName = appName ? appName+1 : appPath;
-
-    if (*pcchBuffer < wcslen(appName))
-    {
-        *pcchBuffer = static_cast<DWORD>(wcslen(appName)) + 1; 
-        return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    }
-
-    wcscpy_s(pBuffer, *pcchBuffer, appName);
+    
     return S_OK;
 }
 
@@ -383,11 +362,10 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
         return FALSE;
     }
 
-    WCHAR wszAppName[MAX_LONGPATH];
-    DWORD cchAppName = NumItems(wszAppName);
-
+    PathString wszAppName;
+    
     // Get the appname to look up in the exclusion or inclusion list.
-    if (GetCurrentModuleFileName(wszAppName, &cchAppName) != S_OK)
+    if (GetCurrentModuleFileName(wszAppName) != S_OK)
     {
         // Assume it is not on the exclusion list if we cannot find the module's filename.
         return FALSE;
@@ -552,12 +530,11 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
             BOOL fAuto = FALSE;
 
             // Get the appname to look up in DebugApplications key.
-            WCHAR wzAppName[MAX_LONGPATH];
-            DWORD cchAppName = NumItems(wzAppName);
+            PathString wzAppName;
             long iValue;
 
             // Check DebugApplications setting
-            if ((SUCCEEDED(GetCurrentModuleFileName(wzAppName, &cchAppName))) &&
+            if ((SUCCEEDED(GetCurrentModuleFileName(wzAppName))) &&
                 (
                     GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
                     GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsKey, wzAppName, &iValue, TRUE) ||

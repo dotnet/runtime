@@ -2244,9 +2244,9 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     if (!CORDebuggerAttached())
     {
         #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("COMPlus_DbgAttachOnStartup")
-
+        PathString temp;
         // We explicitly just check the env because we don't want a switch this invasive to be global.
-        DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL, 0) > 0;
+        DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;
 
         if (fAttach)
         {
@@ -15166,8 +15166,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     } hEnsureCleanup(this);
 
     DWORD dwStrLen = 0;
-    SString szExeNamePathString;
-    WCHAR * szExeName = szExeNamePathString.OpenUnicodeBuffer(MAX_LONGPATH);
+    SString szExeName;
     int i;
 
     // all fields in the object can be zero initialized.
@@ -15216,15 +15215,14 @@ HRESULT Debugger::InitAppDomainIPC(void)
 
     // also initialize the process name
     dwStrLen = WszGetModuleFileName(NULL,
-                                    szExeName,
-                                    MAX_LONGPATH);
+                                    szExeName);
 
-    szExeNamePathString.CloseBuffer(dwStrLen);
+    
     // If we couldn't get the name, then use a nice default.
     if (dwStrLen == 0)
     {
-        wcscpy_s(szExeName, COUNTOF(szExeName), W("<NoProcessName>"));
-        dwStrLen = (DWORD)wcslen(szExeName);
+        szExeName.Set(W("<NoProcessName>"));
+        dwStrLen = szExeName.GetCount();
     }
 
     // If we got the name, copy it into a buffer. dwStrLen is the
