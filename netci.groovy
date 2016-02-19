@@ -53,6 +53,7 @@ class Constants {
                'jitstress2_jitstressregs0x10' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
                'jitstress2_jitstressregs0x80' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
                'corefx_baseline' : ['' : ''], // corefx baseline
+               'corefx_minopts' : ['COMPlus_JitMinOpts' : '1'],
                'corefx_jitstress1' : ['COMPlus_JitStress' : '1'], 
                'corefx_jitstress2' : ['COMPlus_JitStress' : '2'],
                'corefx_jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'corefx_jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
@@ -242,6 +243,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'jitstress2_jitstressregs0x10':
             case 'jitstress2_jitstressregs0x80':
             case 'corefx_baseline': 
+            case 'corefx_minopts':
             case 'corefx_jitstress1':               
             case 'corefx_jitstress2':
             case 'corefx_jitstressregs1':
@@ -290,7 +292,8 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'Ubuntu':
                 case 'OSX':
                     // Triggers on the non-flow jobs aren't necessary here
-                    if (!isFlowJob) {
+                    // Corefx testing uses non-flow jobs.
+                    if (!isFlowJob && !isCorefxTesting(scenario)) {
                         break
                     }
                     switch (scenario) {
@@ -378,6 +381,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break
                         case 'corefx_baseline':
+                        case 'corefx_minopts':
                         case 'corefx_jitstress1':
                         case 'corefx_jitstress2':
                         case 'corefx_jitstressregs1':
@@ -492,6 +496,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
                             break                                   
                         case 'corefx_baseline':
+                        case 'corefx_minopts':
                         case 'corefx_jitstress1':
                         case 'corefx_jitstress2':
                         case 'corefx_jitstressregs1':
@@ -831,9 +836,18 @@ combinedScenarios.each { scenario ->
                                         // Get corefx
                                         buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                         
+                                        // Set environment variable
+                                        def setEnvVar = ''
+                                        def envVars = Constants.jitStressModeScenarios[scenario]
+                                        envVars.each{ VarName, Value   ->
+                                            if (VarName != '') {
+                                                setEnvVar += " ${VarName}=${Value}"
+                                            }
+                                        }
+                                                
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
-                                        buildCommands += "cd fx; HOME=\$WORKSPACE/fx_home ./build.sh /p:ConfigurationGroup=${lowerConfiguration} /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        buildCommands += "cd fx; HOME=\$WORKSPACE/fx_home ${setEnvVar} ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
