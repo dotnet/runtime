@@ -152,13 +152,8 @@ const char* inlGetImpactString(InlineObservation obs)
     }
 }
 
-
 //------------------------------------------------------------------------
-// InlieContext: default constructor
-//
-// Notes: use for the root instance. We set inlCode to nullptr here
-// (rather than the IL buffer address of the root method) to preserve
-// existing behavior, which is to allow one recursive inline.
+// InlineContext: default constructor
 
 InlineContext::InlineContext()
     : inlParent(nullptr)
@@ -169,12 +164,133 @@ InlineContext::InlineContext()
     , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
 #ifdef DEBUG
     , inlCallee(nullptr)
+    , inlTreeID(0)
+    , inlSuccess(true)
 #endif
 {
     // Empty
 }
 
+//------------------------------------------------------------------------
+// newRoot: construct an InlineContext for the root method
+//
+// Arguments:
+//   compiler - compiler doing the inlining
+//
+// Return Value:
+//    InlineContext for use as the root context
+//
+// Notes:
+//    We leave inlCode as nullptr here (rather than the IL buffer
+//    address of the root method) to preserve existing behavior, which
+//    is to allow one recursive inline.
+
+InlineContext* InlineContext::newRoot(Compiler* compiler)
+{
+    InlineContext* rootContext = new (compiler, CMK_Inlining) InlineContext;
+
+#if defined(DEBUG)
+    rootContext->inlCallee = compiler->info.compMethodHnd;
+#endif
+
+    return rootContext;
+}
+
+//------------------------------------------------------------------------
+// newSuccess: construct an InlineContext for a successful inline
+// and link it into the context tree
+//
+// Arguments:
+//    compiler   - compiler doing the inlining
+//    stmt       - statement containing call being inlined
+//    inlineInfo - information about this inline
+//
+// Return Value:
+//    A new InlineContext for statements brought into the method by
+//    this inline.
+
+InlineContext* InlineContext::newSuccess(Compiler*   compiler,
+                                         InlineInfo* inlineInfo)
+{
+    InlineContext* calleeContext = new (compiler, CMK_Inlining) InlineContext;
+
+    GenTree*       stmt          = inlineInfo->iciStmt;
+    BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
+    InlineContext* parentContext = stmt->gtStmt.gtInlineContext;
+
+    noway_assert(parentContext != nullptr);
+
+    calleeContext->inlCode = calleeIL;
+    calleeContext->inlParent = parentContext;
+    // Push on front here will put siblings in reverse lexical
+    // order which we undo in the dumper
+    calleeContext->inlSibling = parentContext->inlChild;
+    parentContext->inlChild = calleeContext;
+    calleeContext->inlChild = nullptr;
+    calleeContext->inlOffset = stmt->AsStmt()->gtStmtILoffsx;
+    calleeContext->inlObservation = inlineInfo->inlineResult->getObservation();
 #ifdef DEBUG
+    calleeContext->inlCallee = inlineInfo->fncHandle;
+    calleeContext->inlTreeID = inlineInfo->inlineResult->getCall()->gtTreeID;
+#endif
+
+    return calleeContext;
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// newFailure: construct an InlineContext for a failing inline
+// and link it into the context tree
+//
+// Arguments:
+//    compiler     - compiler doing the inlining
+//    stmt         - statement containing the attempted inline
+//    inlineResult - inlineResult for the attempt
+//
+// Return Value:
+//
+//    A new InlineContext for diagnostic purposes, or nullptr if
+//    the desired context could not be created.
+
+InlineContext* InlineContext::newFailure(Compiler*     compiler,
+                                         GenTree*      stmt,
+                                         InlineResult* inlineResult)
+{
+    // Check for a parent context first. We may insert new statements
+    // between the caller and callee that do not pick up either's
+    // context, and these statements may have calls that we later
+    // examine and fail to inline.
+    //
+    // See fgInlinePrependStatements for examples.
+
+    InlineContext* parentContext = stmt->gtStmt.gtInlineContext;
+
+    if (parentContext == nullptr)
+    {
+        // Assume for now this is a failure to inline a call in a
+        // statement inserted between caller and callee. Just ignore
+        // it for the time being.
+
+        return nullptr;
+    }
+
+    InlineContext* failedContext = new (compiler, CMK_Inlining) InlineContext;
+
+    failedContext->inlParent = parentContext;
+    // Push on front here will put siblings in reverse lexical
+    // order which we undo in the dumper
+    failedContext->inlSibling = parentContext->inlChild;
+    parentContext->inlChild = failedContext;
+    failedContext->inlChild = nullptr;
+    failedContext->inlOffset = stmt->AsStmt()->gtStmtILoffsx;
+    failedContext->inlObservation = inlineResult->getObservation();
+    failedContext->inlCallee = inlineResult->getCallee();
+    failedContext->inlSuccess = false;
+    failedContext->inlTreeID = inlineResult->getCall()->gtTreeID;
+
+    return failedContext;
+}
 
 //------------------------------------------------------------------------
 // Dump: Dump an InlineContext entry and all descendants to stdout
@@ -191,7 +307,18 @@ void InlineContext::Dump(Compiler* compiler, int indent)
         inlSibling->Dump(compiler, indent);
     }
 
-    const char* calleeName = compiler->eeGetMethodFullName(inlCallee);
+    // We may not know callee name in some of the failing cases
+    const char* calleeName = nullptr;
+
+    if (inlCallee == nullptr)
+    {
+        assert(!inlSuccess);
+        calleeName = "<unknown>";
+    }
+    else
+    {
+        calleeName = compiler->eeGetMethodFullName(inlCallee);
+    }
 
     // Dump this node
     if (inlParent == nullptr)
@@ -201,8 +328,9 @@ void InlineContext::Dump(Compiler* compiler, int indent)
     }
     else
     {
-        // Successful inline
+        // Inline attempt.
         const char* inlineReason = inlGetDescriptionString(inlObservation);
+        const char* inlineResult = inlSuccess ? "" : "FAILED: ";
 
         for (int i = 0; i < indent; i++)
         {
@@ -211,12 +339,12 @@ void InlineContext::Dump(Compiler* compiler, int indent)
 
         if (inlOffset == BAD_IL_OFFSET)
         {
-            printf("[IL=????] [%s] %s\n", inlineReason, calleeName);
+            printf("[IL=???? TR=%06u] [%s%s] %s\n", inlTreeID, inlineResult, inlineReason, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(inlOffset);
-            printf("[IL=%04d] [%s] %s\n", offset, inlineReason, calleeName);
+            printf("[IL=%04d TR=%06u] [%s%s] %s\n", offset, inlTreeID, inlineResult, inlineReason, calleeName);
         }
     }
 
@@ -264,17 +392,17 @@ InlineResult::InlineResult(Compiler*    compiler,
 // InlineResult: Construct an InlineResult to evaluate a particular
 // method as a possible inline candidate.
 //
+// Arguments:
+//    compiler - the compiler instance doing the prejitting
+//    method   - the method in question
+//    context  - descrptive string to describe the context of the decision
+//
 // Notes:
-//   Used only during prejitting to try and pre-identify methods
-//   that cannot be inlined, to help subsequent jit throughput.
+//    Used only during prejitting to try and pre-identify methods that
+//    cannot be inlined, to help subsequent jit throughput.
 //
-//   We use the inlCallee member to track the method since logically
-//   it is the callee here.
-//
-// Arguments
-//   compiler - the compiler instance doing the prejitting
-//   method   - the method in question
-//   context  - descrptive string to describe the context of the decision
+//    We use the inlCallee member to track the method since logically
+//    it is the callee here.
 
 InlineResult::InlineResult(Compiler*              compiler,
                            CORINFO_METHOD_HANDLE  method,
@@ -295,7 +423,6 @@ InlineResult::InlineResult(Compiler*              compiler,
 // report: Dump, log, and report information about an inline decision.
 //
 // Notes:
-//
 //    Called (automatically via the InlineResult dtor) when the inliner
 //    is done evaluating a candidate.
 //
