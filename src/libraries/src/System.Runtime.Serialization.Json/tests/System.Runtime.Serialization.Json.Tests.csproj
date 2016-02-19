@@ -14,7 +14,9 @@
   <ItemGroup>
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
     <Compile Include="DataContractJsonSerializer.cs" />
+    <Compile Include="DataContractJsonSerializer.CoreCLR.cs" />
     <Compile Include="Performance\DcjsDeserializationTests.cs" />
     <Compile Include="Performance\DcjsSerializationTests.cs" />
   </ItemGroup>
