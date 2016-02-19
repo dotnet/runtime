@@ -4970,7 +4970,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             if (opts.eeFlags & CORJIT_FLG_PREJIT)
             {
                 // Cache inlining hint during NGen to avoid touching bodies of non-inlineable methods at runtime
-                InlineResult trialResult(this, nullptr, methodHnd, "prejit1");
+                InlineResult trialResult(this, methodHnd, "prejit1");
                 impCanInlineIL(methodHnd, methodInfo, forceInline, &trialResult);
                 if (trialResult.isFailure())
                 {
@@ -5016,7 +5016,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID); 
 
             int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);
-            InlineResult trialResult(this, nullptr, methodHnd, "prejit2");
+            InlineResult trialResult(this, methodHnd, "prejit2");
             
             impCanInlineNative(callsiteNativeSizeEstimate, 
                                compNativeSizeEstimate,
