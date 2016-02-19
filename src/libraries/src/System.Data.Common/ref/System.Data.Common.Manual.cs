@@ -79,4 +79,8 @@ namespace System.Data.Common
         }
     }
 
+    public partial interface IDbColumnSchemaGenerator
+    {
+        System.Collections.ObjectModel.ReadOnlyCollection<DbColumn> GetColumnSchema();
+    }
 }
