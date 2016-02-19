@@ -290,7 +290,8 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'Ubuntu':
                 case 'OSX':
                     // Triggers on the non-flow jobs aren't necessary here
-                    if (!isFlowJob) {
+					// Corefx testing uses a single non-flow job like Windows coreclr testing.
+                    if (!isFlowJob && !isCorefxTesting(scenario)) {
                         break
                     }
                     switch (scenario) {
@@ -798,6 +799,11 @@ combinedScenarios.each { scenario ->
                         case 'CentOS7.1':
                         case 'RHEL7.2':
                         case 'OpenSUSE13.2':
+						
+							// Ubuntu and OSX coreclr testing uses a different build flow.
+							if (os in Constants.crossList && !enableCorefxTesting) {
+								break;
+							}
                             switch (architecture) {
                                 case 'x64':
                                 case 'x86':
