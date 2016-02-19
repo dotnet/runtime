@@ -2955,13 +2955,11 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             emitJumpKind jumpKind[2];
             bool branchToTrueLabel[2];
             genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
+            assert(jumpKind[0] != EJ_NONE);
 
-            if (jumpKind[0] != EJ_NONE)
-            {
-                // On Arm64 the branches will always branch to the true label
-                assert(branchToTrueLabel[0]);
-                inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
-            }
+            // On Arm64 the branches will always branch to the true label
+            assert(branchToTrueLabel[0]);
+            inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
 
             if (jumpKind[1] != EJ_NONE)
             {
@@ -5750,12 +5748,25 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode *lea)
     genProduceReg(lea);
 }
 
-/*****************************************************************************
- *  The condition to use for (the jmp/set for) the given type of compare operation are
- *  returned in 'jmpKind' array.  
- *  If only one branch is necessary the value of jmpKind[1] will be EJ_NONE
- *  On Arm64 both branches will always branch to the true label
- */
+//-------------------------------------------------------------------------------------------
+// genJumpKindsForTree:  Determine the number and kinds of conditional branches
+//                       necessary to implement the given GT_CMP node
+//
+// Arguments:
+//   cmpTree           - (input) The GenTree node that is used to set the Condition codes
+//                     - The GenTree Relop node that was used to set the Condition codes
+//   jmpKind[2]        - (output) One or two conditional branch instructions
+//   jmpToTrueLabel[2] - (output) On Arm64 both branches will always branch to the true label
+//
+// Return Value:
+//    Sets the proper values into the array elements of jmpKind[] and jmpToTrueLabel[] 
+//
+// Assumptions:
+//    At least one conditional branch instruction will be returned.
+//    Typically only one conditional branch is needed 
+//     and the second jmpKind[] value is set to EJ_NONE
+//-------------------------------------------------------------------------------------------
+
 // static
 void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree, 
                                           emitJumpKind  jmpKind[2], 
@@ -5864,14 +5875,26 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
     }
 }
 
-// Generate code to materialize a condition into a register
-// (the condition codes must already have been appropriately set)
+//-------------------------------------------------------------------------------------------
+// genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
+//                   corresponding to a binary Relational operator result.
+//
+// Arguments:
+//   dstReg          - The target register to set to 1 or 0
+//   tree            - The GenTree Relop node that was used to set the Condition codes
+//
+// Return Value:     none
+//
+// Notes:
+//    A full 64-bit value of either 1 or 0 is setup in the 'dstReg'
+//-------------------------------------------------------------------------------------------
 
 void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 {
     emitJumpKind jumpKind[2];
     bool branchToTrueLabel[2];
     genJumpKindsForTree(tree, jumpKind, branchToTrueLabel);
+    assert(jumpKind[0] != EJ_NONE);
 
     // Set the reg according to the flags
     inst_SET(jumpKind[0], dstReg);
@@ -5965,8 +5988,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         {
             // We only need to check for a negative value in sourceReg
             emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, 0);
-            emitJumpKind jmpLTS = genJumpKindForOper(GT_LT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpLTS, SCK_OVERFLOW);
+            emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
             if (dstType == TYP_ULONG)
             {
                 // cast to TYP_ULONG:
@@ -6007,8 +6030,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
             }
 
-            emitJumpKind jmpGTS = genJumpKindForOper(GT_GT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpGTS, SCK_OVERFLOW);
+            emitJumpKind jmpGT = genJumpKindForOper(GT_GT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpGT, SCK_OVERFLOW);
 
             // Compare with the MIN
 
@@ -6023,8 +6046,8 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
             }
 
-            emitJumpKind jmpLTS = genJumpKindForOper(GT_LT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpLTS, SCK_OVERFLOW);
+            emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
+            genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
         }
         ins = INS_mov;
     }
