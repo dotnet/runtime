@@ -37,51 +37,51 @@ namespace System.Data.Common
             {
                 switch (property)
                 {
-                    case "AllowDBNull":
+                    case nameof(AllowDBNull):
                         return AllowDBNull;
-                    case "BaseCatalogName":
+                    case nameof(BaseCatalogName):
                         return BaseCatalogName;
-                    case "BaseColumnName":
+                    case nameof(BaseColumnName):
                         return BaseColumnName;
-                    case "BaseSchemaName":
+                    case nameof(BaseSchemaName):
                         return BaseSchemaName;
-                    case "BaseServerName":
+                    case nameof(BaseServerName):
                         return BaseServerName;
-                    case "BaseTableName":
+                    case nameof(BaseTableName):
                         return BaseTableName;
-                    case "ColumnName":
+                    case nameof(ColumnName):
                         return ColumnName;
-                    case "ColumnOrdinal":
+                    case nameof(ColumnOrdinal):
                         return ColumnOrdinal;
-                    case "ColumnSize":
+                    case nameof(ColumnSize):
                         return ColumnSize;
-                    case "IsAliased":
+                    case nameof(IsAliased):
                         return IsAliased;
-                    case "IsAutoIncrement":
+                    case nameof(IsAutoIncrement):
                         return IsAutoIncrement;
-                    case "IsExpression":
+                    case nameof(IsExpression):
                         return IsExpression;
-                    case "IsHidden":
+                    case nameof(IsHidden):
                         return IsHidden;
-                    case "IsIdentity":
+                    case nameof(IsIdentity):
                         return IsIdentity;
-                    case "IsKey":
+                    case nameof(IsKey):
                         return IsKey;
-                    case "IsLong":
+                    case nameof(IsLong):
                         return IsLong;
-                    case "IsReadOnly":
+                    case nameof(IsReadOnly):
                         return IsReadOnly;
-                    case "IsUnique":
+                    case nameof(IsUnique):
                         return IsUnique;
-                    case "NumericPrecision":
+                    case nameof(NumericPrecision):
                         return NumericPrecision;
-                    case "NumericScale":
+                    case nameof(NumericScale):
                         return NumericScale;
-                    case "UdtAssemblyQualifiedName":
+                    case nameof(UdtAssemblyQualifiedName):
                         return UdtAssemblyQualifiedName;
-                    case "DataType":
+                    case nameof(DataType):
                         return DataType;
-                    case "DataTypeName":
+                    case nameof(DataTypeName):
                         return DataTypeName;
                     default:
                         return null;
