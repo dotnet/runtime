@@ -8,102 +8,17 @@ Note that the library implementation CoreFX (System.Collections, System.IO, Syst
 Build Status
 ------------
 
-<table>
-  <tr>
-    <th width="9%" />
-    <th width="13%">Debian 8.2</th> 
-    <th width="13%">Ubuntu 14.04</th>
-    <th width="13%">Centos 7.1</th>
-    <th width="13%">OpenSuSE 13.2</th>
-    <th width="13%">Windows</th>
-    <th width="13%">Mac OS X</th>
-    <th width="13%">FreeBSD</th>
-  </tr>
-  <tr>
-    <td><b>Debug</b></td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_debian8.2">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_debian8.2/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_ubuntu">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_ubuntu/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_centos7.1">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_centos7.1/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_opensuse13.2">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_opensuse13.2/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_windows_nt">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_windows_nt/badge/icon" alt="Build status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/arm64_cross_debug_windows_nt">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/arm64_cross_debug_windows_nt.svg?label=arm64" alt="Arm64 status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_osx">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_osx/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_freebsd">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_freebsd/badge/icon" alt="Build status" />
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td><b>Release</b></td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_debian8.2">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_debian8.2/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_ubuntu">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_ubuntu/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_centos7.1">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_centos7.1/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_opensuse13.2">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_opensuse13.2/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_windows_nt">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_windows_nt/badge/icon" alt="Build status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/arm64_cross_release_windows_nt">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/arm64_cross_release_windows_nt.svg?label=arm64" alt="Arm64 status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_osx">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_osx/badge/icon" alt="Build status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_freebsd">
-        <img src="http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_freebsd/badge/icon" alt="Build status" />
-      </a>
-    </td>
-   </tr>
-</table>
+|   | Debug | Release |
+|---|:-----:|:-------:|
+|**CentOS 7.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_centos7.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_centos7.1)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_centos7.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_centos7.1)|
+|**Debian 8.2**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_debian8.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_debian8.2)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_debian8.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_debian8.2)|
+|**FreeBSD 10.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_freebsd.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_freebsd)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_freebsd.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_freebsd)|
+|**openSUSE 13.2**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_opensuse13.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_opensuse13.2)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_opensuse13.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_opensuse13.2)|
+|**OS X 10.11**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_osx.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_osx)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_osx.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_osx)|
+|**Red Hat 7.2**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_rhel7.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_rhel7.2)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_rhel7.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_rhel7.2)|
+|**Ubuntu 14.04**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_ubuntu.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_ubuntu)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_ubuntu.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_ubuntu)|
+|**Ubuntu 15.10**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_ubuntu15.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_ubuntu15.10)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_ubuntu15.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_ubuntu15.10)|
+|**Windows 8.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/debug_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/debug_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/arm64_cross_debug_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/arm64_cross_debug_windows_nt)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/release_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/release_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/arm64_cross_release_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/arm64_cross_release_windows_nt)|
 
 Get .NET Core
 -------------
