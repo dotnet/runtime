@@ -77,6 +77,8 @@ namespace pal
         #define SHARED_API
     #endif
 
+    #define STDMETHODCALLTYPE __stdcall
+
     typedef wchar_t char_t;
     typedef std::wstring string_t;
     typedef std::wstringstream stringstream_t;
@@ -106,6 +108,11 @@ namespace pal
     #else
         #define SHARED_API
     #endif
+
+    #define __cdecl    /* nothing */
+    #define __stdcall  /* nothing */
+    #define __fastcall /* nothing */
+    #define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
     typedef std::string string_t;
