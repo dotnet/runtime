@@ -152,6 +152,83 @@ const char* inlGetImpactString(InlineObservation obs)
     }
 }
 
+
+//------------------------------------------------------------------------
+// InlieContext: default constructor
+//
+// Notes: use for the root instance. We set inlCode to nullptr here
+// (rather than the IL buffer address of the root method) to preserve
+// existing behavior, which is to allow one recursive inline.
+
+InlineContext::InlineContext()
+    : inlParent(nullptr)
+    , inlChild(nullptr)
+    , inlSibling(nullptr)
+    , inlOffset(BAD_IL_OFFSET)
+    , inlCode(nullptr)
+    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+#ifdef DEBUG
+    , inlCallee(nullptr)
+#endif
+{
+    // Empty
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// Dump: Dump an InlineContext entry and all descendants to stdout
+//
+// Arguments:
+//    compiler - compiler instance doing inlining
+//    indent   - indentation level for this node
+
+void InlineContext::Dump(Compiler* compiler, int indent)
+{
+    // Handle fact that siblings are in reverse order.
+    if (inlSibling != nullptr)
+    {
+        inlSibling->Dump(compiler, indent);
+    }
+
+    const char* calleeName = compiler->eeGetMethodFullName(inlCallee);
+
+    // Dump this node
+    if (inlParent == nullptr)
+    {
+        // Root method
+        printf("Inlines into %s\n", calleeName);
+    }
+    else
+    {
+        // Successful inline
+        const char* inlineReason = inlGetDescriptionString(inlObservation);
+
+        for (int i = 0; i < indent; i++)
+        {
+            printf(" ");
+        }
+
+        if (inlOffset == BAD_IL_OFFSET)
+        {
+            printf("[IL=????] [%s] %s\n", inlineReason, calleeName);
+        }
+        else
+        {
+            IL_OFFSET offset = jitGetILoffs(inlOffset);
+            printf("[IL=%04d] [%s] %s\n", offset, inlineReason, calleeName);
+        }
+    }
+
+    // Recurse to first child
+    if (inlChild != nullptr)
+    {
+        inlChild->Dump(compiler, indent + 2);
+    }
+}
+
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // InlineResult: Construct an InlineResult to evaluate a particular call
 // for inlining.
@@ -184,7 +261,7 @@ InlineResult::InlineResult(Compiler*    compiler,
 }
 
 //------------------------------------------------------------------------
-// InlineResult: Construct an InlineResult to evaluate a particular 
+// InlineResult: Construct an InlineResult to evaluate a particular
 // method as a possible inline candidate.
 //
 // Notes:
@@ -257,7 +334,7 @@ void InlineResult::report()
         // compiler should have revoked candidacy on the call by now
         assert((inlCall->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
 
-        inlCall->gtInlineObservation = static_cast<unsigned>(inlObservation);
+        inlCall->gtInlineObservation = inlObservation;
     }
 
 #endif // DEBUG

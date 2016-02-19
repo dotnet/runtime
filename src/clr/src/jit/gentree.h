@@ -2336,6 +2336,7 @@ struct GenTreeColon: public GenTreeOp
 
 /* gtCall   -- method call      (GT_CALL) */
 typedef class fgArgInfo *  fgArgInfoPtr;
+enum class InlineObservation;
 
 struct GenTreeCall final : public GenTree
 {
@@ -2505,7 +2506,7 @@ struct GenTreeCall final : public GenTree
 #ifdef DEBUG
     // For non-inline candidates, track the first observation
     // that blocks candidacy.
-    unsigned gtInlineObservation;
+    InlineObservation gtInlineObservation;
 #endif
 
     GenTreeCall(var_types type) : 
@@ -3170,15 +3171,13 @@ struct GenTreeRetExpr: public GenTree
 
 /* gtStmt   -- 'statement expr' (GT_STMT) */
 
+struct InlineContext;
+
 struct GenTreeStmt: public GenTree
 {
-    GenTreePtr      gtStmtExpr;     // root of the expression tree
-    GenTreePtr      gtStmtList;     // first node (for forward walks)
-
-    inlExpPtr       gtInlineExpList; // The inline expansion list of this statement.
-                                     // This is a list of CORINFO_METHOD_HANDLEs 
-                                     // that shows the history of inline expansion 
-                                     // which leads to this statement. 
+    GenTreePtr      gtStmtExpr;      // root of the expression tree
+    GenTreePtr      gtStmtList;      // first node (for forward walks)
+    InlineContext*  gtInlineContext; // The inline context for this statement.
   
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     IL_OFFSETX      gtStmtILoffsx;   // instr offset (if available)
@@ -3248,7 +3247,7 @@ struct GenTreeStmt: public GenTree
         : GenTree(GT_STMT, TYP_VOID)
         , gtStmtExpr(expr)
         , gtStmtList(nullptr)
-        , gtInlineExpList(nullptr)
+        , gtInlineContext(nullptr)
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
         , gtStmtILoffsx(offset)
 #endif
