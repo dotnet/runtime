@@ -13,11 +13,19 @@
 
 #include "twowaypipe.h"
 
-#define PIPE_NAME_FORMAT_STR "/tmp/clr-debug-pipe-%d-%s"
+#define PIPE_NAME_FORMAT_STR "/tmp/clr-debug-pipe-%llu-%d-%s"
 
 static void GetPipeName(char *name, DWORD id, const char *suffix)
 {
-    int chars = _snprintf(name, PATH_MAX, PIPE_NAME_FORMAT_STR, id, suffix);
+    UINT64 uniqueTimeValue;
+    BOOL ret = GetUniqueTimeValueForProcess(id, &uniqueTimeValue);
+
+    // If GetUniqueTimeValueForProcess failed for some reason, it shouldn't have
+    // modified uniqueTimeValue. We expect that anyone else making the pipe name
+    // will also fail and thus will also try to use 0 as the time value.
+    _ASSERTE(ret == TRUE || uniqueTimeValue == 0);
+
+    int chars = _snprintf(name, PATH_MAX, PIPE_NAME_FORMAT_STR, uniqueTimeValue, id, suffix);
     _ASSERTE(chars > 0 && chars < PATH_MAX);
 }
 
