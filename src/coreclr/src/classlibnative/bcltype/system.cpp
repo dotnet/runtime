@@ -218,34 +218,19 @@ FCIMPL1(Object*, SystemNative::_GetEnvironmentVariable, StringObject* strVarUNSA
 
     HELPER_METHOD_FRAME_BEGIN_RET_2(refRetVal, strVar);
 
-    // We loop round getting the length of the env var and then trying to copy
-    // the value into a managed string. Usually we'll go through this loop
-    // precisely once, but the caution is ncessary in case the variable mutates
-    // beneath us.
-    int len, newLen;
+    int len;
 
     // Get the length of the environment variable.
-    WCHAR dummy;    // prefix complains if pass a null ptr in, so rely on the final length parm instead
-    len = WszGetEnvironmentVariable(strVar->GetBuffer(), &dummy, 0);
+    PathString envPath;    // prefix complains if pass a null ptr in, so rely on the final length parm instead
+    len = WszGetEnvironmentVariable(strVar->GetBuffer(), envPath);
 
-    while (len != 0)
+    if (len != 0)
     {
         // Allocate the string.
         refRetVal = StringObject::NewString(len);
-
-        // Get the value.
-        newLen = WszGetEnvironmentVariable(strVar->GetBuffer(), refRetVal->GetBuffer(), len);
-        if (newLen != (len - 1))
-        {
-            // The envvar changed, need to do this again. Let GC collect the
-            // string we just allocated.
-            refRetVal = NULL;
-
-            // Go back and try again.
-            len = newLen;
-        }
-        else
-            break;
+ 
+        wcscpy_s(refRetVal->GetBuffer(), len + 1, envPath);
+        
     }
 
     HELPER_METHOD_FRAME_END();
@@ -297,15 +282,15 @@ FCIMPL0(StringObject*, SystemNative::_GetModuleFileName)
     }
     else
     {
-        SString wszFilePathString;
+        PathString wszFilePathString;
 
-        WCHAR * wszFile = wszFilePathString.OpenUnicodeBuffer(MAX_LONGPATH);
-        DWORD lgth = WszGetModuleFileName(NULL, wszFile, MAX_LONGPATH);
+       
+        DWORD lgth = WszGetModuleFileName(NULL, wszFilePathString);
         if (!lgth)
         {
             COMPlusThrowWin32();
         }
-        wszFilePathString.CloseBuffer(lgth);
+       
 
         refRetVal = StringObject::NewString(wszFilePathString.GetUnicode());
     }

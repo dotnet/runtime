@@ -1386,10 +1386,12 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     HRESULT hr = E_FAIL;
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    WCHAR CoreClrFolder[MAX_LONGPATH + 1];
+    PathString CoreClrFolderHolder;
     extern HINSTANCE g_hThisInst;
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_LONGPATH))
+    if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
+        DWORD len = CoreClrFolderHolder.GetCount();
+        WCHAR* CoreClrFolder = CoreClrFolderHolder.OpenUnicodeBuffer(len);
         WCHAR *filePtr = wcsrchr(CoreClrFolder, DIRECTORY_SEPARATOR_CHAR_W);
         if (filePtr)
         {
@@ -1401,6 +1403,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                 hr = S_OK;
             }
         }
+        CoreClrFolderHolder.CloseBuffer();
     }
 #else
     hr = g_pCLRRuntime->LoadLibrary(pwzJitName, phJit);

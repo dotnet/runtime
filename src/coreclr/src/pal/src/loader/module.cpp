@@ -541,6 +541,7 @@ GetModuleFileNameW(
     if (name_length >= (INT)nSize)
     {
         TRACE("Buffer too small (%u) to copy module's file name (%u).\n", nSize, name_length);
+        retval = (INT)nSize;
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         goto done;
     }

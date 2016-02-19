@@ -38,6 +38,7 @@
         <CppCompile Include="$(UtilCodeSrcDir)\SString.cpp" />
         <CppCompile Include="$(UtilCodeSrcDir)\SString_COM.cpp" />
         <CppCompile Include="$(UtilCodeSrcDir)\FString.cpp" />
+        <CppCompile Include="$(UtilCodeSrcDir)\longfilepathwrappers.cpp" />
         
         <CppCompile Include="$(UtilCodeSrcDir)\NamespaceUtil.cpp" />
         <CppCompile Include="$(UtilCodeSrcDir)\MakePath.cpp" />

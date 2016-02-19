@@ -641,10 +641,16 @@ STDAPI LoadLibraryShimInternal(
     LPVOID pvReserved,
     HMODULE *phModDll);
 
+STDAPI GetCORSystemDirectoryInternaL(
+    SString& pBuffer
+      );
+
+//LONGPATH:TODO: Remove this once Desktop usage has been removed 
 STDAPI GetCORSystemDirectoryInternal(
-    __out_ecount_part_opt(cchBuffer, *pdwLength) LPWSTR pBuffer, 
-                                                 DWORD  cchBuffer,
-    __out_opt                                    DWORD* pdwLength);
+    __out_ecount_part_opt(cchBuffer, *pdwLength) LPWSTR pBuffer,
+    DWORD  cchBuffer,
+    __out_opt DWORD* pdwLength
+    );
 
 STDAPI GetCORVersionInternal(
     __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer, 
@@ -656,7 +662,7 @@ STDAPI GetRequestedRuntimeInfoInternal(LPCWSTR pExe,
                                LPCWSTR pConfigurationFile, 
                                DWORD startupFlags,
                                DWORD runtimeInfoFlags, 
-                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory, 
+                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
                                DWORD dwDirectory, 
                                __out_opt DWORD *pdwDirectoryLength, 
                                __out_ecount_opt(cchBuffer) LPWSTR pVersion, 

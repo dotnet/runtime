@@ -58,7 +58,7 @@ BOOL IsWatsonEnabled();
 BOOL RegisterOutOfProcessWatsonCallbacks();
 
 int DwGetAssemblyVersion(               // Number of characters written.
-    __in_z LPWSTR  wszFilePath,         // Path to the executable.
+    __in_z LPCWSTR  wszFilePath,         // Path to the executable.
     __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
     int cchBuf);
 

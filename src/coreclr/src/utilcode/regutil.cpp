@@ -16,6 +16,7 @@
 #include "utilcode.h"
 #include "mscoree.h"
 #include "sstring.h"
+#include "ex.h"
 
 #define COMPLUS_PREFIX W("COMPlus_")
 #define LEN_OF_COMPLUS_PREFIX 8
@@ -74,34 +75,38 @@ LPWSTR REGUTIL::EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS)
 
     FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
-    for (;;)
-    {
-        DWORD len = WszGetEnvironmentVariable(buff, 0, 0);
-        if (len == 0)
-        {
-            return NULL;
-        }
+   
+    NewArrayHolder<WCHAR> ret = NULL;
+    HRESULT hr = S_OK;
+    DWORD Len;
+    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
+    EX_TRY
+    { 
+        PathString temp;
 
-        // If we can't get memory to return the string, then will simply pretend we didn't find it.
-        NewArrayHolder<WCHAR> ret(new (nothrow) WCHAR [len]); 
-        if (ret == NULL)
+        Len = WszGetEnvironmentVariable(buff, temp);
+        if (Len != 0)
         {
-            return NULL;
-        }
-    
-        DWORD actualLen = WszGetEnvironmentVariable(buff, ret, len);
-        if (actualLen == 0)
-        {
-            return NULL;
-        }
-
-        if (actualLen < len)
-        {
-            return ret.Extract(); 
-        }
-
-        // Variable was changed by other thread - retry 
+            ret = temp.GetCopyOfUnicodeString();
+        }    
+            
     }
+    EX_CATCH_HRESULT(hr);
+    END_SO_INTOLERANT_CODE
+
+    if (hr != S_OK)
+    {
+        SetLastError(hr);
+    }
+       
+    if(ret != NULL)
+    {
+        return ret.Extract();
+    }
+        
+    return NULL;
+        
+   
 }
 
 #ifdef ALLOW_REGISTRY

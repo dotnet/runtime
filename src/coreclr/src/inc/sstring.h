@@ -625,6 +625,9 @@ private:
     UTF8 *OpenUTF8Buffer(COUNT_T maxSingleCharCount);
     ANSI *OpenANSIBuffer(COUNT_T maxSingleCharCount);
 
+    //Returns the unicode string, the caller is reponsible for lifetime of the string
+    WCHAR *GetCopyOfUnicodeString();
+
     // Get the max size that can be passed to OpenUnicodeBuffer without causing allocations.
     COUNT_T GetUnicodeAllocation();
 
@@ -1009,9 +1012,11 @@ typedef InlineSString<32>  SmallStackSString;
 #ifdef _DEBUG
 // This is a smaller version for debug builds to exercise the buffer allocation path
 typedef InlineSString<32> PathString;
+typedef InlineSString<2 * 32> LongPathString;
 #else
 // Set it to the current MAX_PATH
 typedef InlineSString<260> PathString;
+typedef InlineSString<2 * 260> LongPathString;
 #endif
 
 // ================================================================================
