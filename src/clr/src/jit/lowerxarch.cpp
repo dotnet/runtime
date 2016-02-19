@@ -2417,8 +2417,7 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround
         // an explicit check is made here.
         //
-        // TODO-x86: Right now lowering of virst stub dispatch call is a NYI.  Once it is implemented, we should
-        // take a relook at this.
+        // On x86, direct VSD is done via a relative branch, and in fact it MUST be contained.
         MakeSrcContained(indirTree, addr);
     }
     else if (addr->OperGet() == GT_LEA)
