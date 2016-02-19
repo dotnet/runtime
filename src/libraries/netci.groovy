@@ -24,7 +24,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'FreeBSD' : 'ubuntu.14.04-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'ubuntu.14.04-x64',
-                             'RHEL7.2': 'rhel.7.2-x64']
+                             'RHEL7.2': 'rhel.7-x64']
 
 def branchList = ['master', 'rc2', 'pr']
 
