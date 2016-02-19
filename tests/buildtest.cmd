@@ -156,7 +156,7 @@ if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see h
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildCleanBuildArgs% %__msbuildExtraArgs%
+set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs%
 
 if not defined __BuildSequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
@@ -204,7 +204,7 @@ if not exist "%__NativeTestIntermediatesDir%\install.vcxproj" (
 )
 
 set __BuildLogRootName=Tests_Native
-call :msbuild "%__NativeTestIntermediatesDir%\install.vcxproj" /p:Configuration=%__BuildType% /p:Platform=%__BuildArch%
+call :msbuild "%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildCleanBuildArgs% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch%
 if errorlevel 1 exit /b 1
 
 REM endlocal to rid us of environment changes from vcvarsall.bat
@@ -230,7 +230,7 @@ if not defined VSINSTALLDIR (
     exit /b 1
 )
 
-set __msbuildManagedBuildArgs=
+set __msbuildManagedBuildArgs=%__msbuildCleanBuildArgs%
 
 if defined __crossgen (
     echo Building tests with CrossGen enabled.
