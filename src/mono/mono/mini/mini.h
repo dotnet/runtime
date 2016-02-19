@@ -3164,6 +3164,11 @@ void mono_cross_helpers_run (void);
  * Signal handling
  */
 
+#ifdef DISABLE_HW_TRAPS
+ // Signal handlers not available
+#define MONO_ARCH_NEED_DIV_CHECK 1
+#endif
+
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler) ;
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler) ;
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
