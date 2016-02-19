@@ -2457,7 +2457,7 @@ FOUND_AM:
 emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind compareKind)
 {
     const static
-        BYTE            genJCCinsSgn[] =
+    BYTE            genJCCinsSigned[] =
     {
 #if defined(_TARGET_XARCH_)
         EJ_je,      // GT_EQ
@@ -2477,7 +2477,7 @@ emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind co
     };
 
     const static
-        BYTE            genJCCinsUns[] =       /* unsigned comparison */
+    BYTE            genJCCinsUnsigned[] =       /* unsigned comparison */
     {
 #if defined(_TARGET_XARCH_)
         EJ_je,      // GT_EQ
@@ -2497,7 +2497,7 @@ emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind co
     };
 
     const static
-        BYTE            genJCCinsLog[] =       /* logical operation */
+    BYTE            genJCCinsLogical[] =       /* logical operation */
     {
 #if defined(_TARGET_XARCH_)
         EJ_je,      // GT_EQ   (Z == 1)
@@ -2517,43 +2517,43 @@ emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind co
     };
 
 #if defined(_TARGET_XARCH_)
-    assert(genJCCinsSgn[GT_EQ - GT_EQ] == EJ_je);
-    assert(genJCCinsSgn[GT_NE - GT_EQ] == EJ_jne);
-    assert(genJCCinsSgn[GT_LT - GT_EQ] == EJ_jl);
-    assert(genJCCinsSgn[GT_LE - GT_EQ] == EJ_jle);
-    assert(genJCCinsSgn[GT_GE - GT_EQ] == EJ_jge);
-    assert(genJCCinsSgn[GT_GT - GT_EQ] == EJ_jg);
+    assert(genJCCinsSigned[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsSigned[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsSigned[GT_LT - GT_EQ] == EJ_jl);
+    assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_jle);
+    assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_jge);
+    assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_jg);
 
-    assert(genJCCinsUns[GT_EQ - GT_EQ] == EJ_je);
-    assert(genJCCinsUns[GT_NE - GT_EQ] == EJ_jne);
-    assert(genJCCinsUns[GT_LT - GT_EQ] == EJ_jb);
-    assert(genJCCinsUns[GT_LE - GT_EQ] == EJ_jbe);
-    assert(genJCCinsUns[GT_GE - GT_EQ] == EJ_jae);
-    assert(genJCCinsUns[GT_GT - GT_EQ] == EJ_ja);
+    assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsUnsigned[GT_LT - GT_EQ] == EJ_jb);
+    assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_jbe);
+    assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_jae);
+    assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_ja);
 
-    assert(genJCCinsLog[GT_EQ - GT_EQ] == EJ_je);
-    assert(genJCCinsLog[GT_NE - GT_EQ] == EJ_jne);
-    assert(genJCCinsLog[GT_LT - GT_EQ] == EJ_js);
-    assert(genJCCinsLog[GT_GE - GT_EQ] == EJ_jns);
+    assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_jne);
+    assert(genJCCinsLogical[GT_LT - GT_EQ] == EJ_js);
+    assert(genJCCinsLogical[GT_GE - GT_EQ] == EJ_jns);
 #elif defined(_TARGET_ARMARCH_)
-    assert(genJCCinsSgn[GT_EQ - GT_EQ] == EJ_eq);
-    assert(genJCCinsSgn[GT_NE - GT_EQ] == EJ_ne);
-    assert(genJCCinsSgn[GT_LT - GT_EQ] == EJ_lt);
-    assert(genJCCinsSgn[GT_LE - GT_EQ] == EJ_le);
-    assert(genJCCinsSgn[GT_GE - GT_EQ] == EJ_ge);
-    assert(genJCCinsSgn[GT_GT - GT_EQ] == EJ_gt);
+    assert(genJCCinsSigned[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsSigned[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsSigned[GT_LT - GT_EQ] == EJ_lt);
+    assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_le);
+    assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_ge);
+    assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_gt);
 
-    assert(genJCCinsUns[GT_EQ - GT_EQ] == EJ_eq);
-    assert(genJCCinsUns[GT_NE - GT_EQ] == EJ_ne);
-    assert(genJCCinsUns[GT_LT - GT_EQ] == EJ_lo);
-    assert(genJCCinsUns[GT_LE - GT_EQ] == EJ_ls);
-    assert(genJCCinsUns[GT_GE - GT_EQ] == EJ_hs);
-    assert(genJCCinsUns[GT_GT - GT_EQ] == EJ_hi);
+    assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsUnsigned[GT_LT - GT_EQ] == EJ_lo);
+    assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_ls);
+    assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_hs);
+    assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_hi);
 
-    assert(genJCCinsLog[GT_EQ - GT_EQ] == EJ_eq);
-    assert(genJCCinsLog[GT_NE - GT_EQ] == EJ_ne);
-    assert(genJCCinsLog[GT_LT - GT_EQ] == EJ_mi);
-    assert(genJCCinsLog[GT_GE - GT_EQ] == EJ_pl);
+    assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_eq);
+    assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_ne);
+    assert(genJCCinsLogical[GT_LT - GT_EQ] == EJ_mi);
+    assert(genJCCinsLogical[GT_GE - GT_EQ] == EJ_pl);
 #else
     assert(!"unknown arch");
 #endif
@@ -2563,15 +2563,15 @@ emitJumpKind         CodeGen::genJumpKindForOper(genTreeOps  cmp, CompareKind co
 
     if (compareKind == CK_UNSIGNED)
     {
-        result = (emitJumpKind)genJCCinsUns[cmp - GT_EQ];
+        result = (emitJumpKind)genJCCinsUnsigned[cmp - GT_EQ];
     }
     else if (compareKind == CK_SIGNED)
     {
-        result = (emitJumpKind)genJCCinsSgn[cmp - GT_EQ];
+        result = (emitJumpKind)genJCCinsSigned[cmp - GT_EQ];
     }
     else if (compareKind == CK_LOGICAL)
     {
-        result = (emitJumpKind)genJCCinsLog[cmp - GT_EQ];
+        result = (emitJumpKind)genJCCinsLogical[cmp - GT_EQ];
     }
     assert(result != EJ_COUNT);
     return result;

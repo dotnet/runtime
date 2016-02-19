@@ -6261,14 +6261,31 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode *lea)
     genProduceReg(lea);
 }
 
-/*****************************************************************************
- *  The condition to use for (the jmp/set for) the given type of compare operation are
- *  returned in 'jmpKind' array.  The corresponding elements of jmpToTrueLabel indicate
- *  the branch target when the condition being true.
- *
- *  jmpToTrueLabel[i]= true  implies branch to the target when the compare operation is true. 
- *  jmpToTrueLabel[i]= false implies branch to the target when the compare operation is false.
- */
+//-------------------------------------------------------------------------------------------
+// genJumpKindsForTree:  Determine the number and kinds of conditional branches
+//                       necessary to implement the given GT_CMP node
+//
+// Arguments:
+//    cmpTree          - (input) The GenTree node that is used to set the Condition codes
+//                     - The GenTree Relop node that was used to set the Condition codes
+//   jmpKind[2]        - (output) One or two conditional branch instructions
+//   jmpToTrueLabel[2] - (output) When true we branch to the true case
+//                       When false we create a second label and branch to the false case
+//                       Only GT_EQ for a floating point compares can have a false value.
+//
+// Return Value:
+//    Sets the proper values into the array elements of jmpKind[] and jmpToTrueLabel[] 
+//
+// Assumptions:
+//    At least one conditional branch instruction will be returned.
+//    Typically only one conditional branch is needed 
+//     and the second jmpKind[] value is set to EJ_NONE
+//
+// Notes:
+//    jmpToTrueLabel[i]= true  implies branch when the compare operation is true. 
+//    jmpToTrueLabel[i]= false implies branch when the compare operation is false.
+//-------------------------------------------------------------------------------------------
+
 // static
 void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree, 
                                           emitJumpKind  jmpKind[2], 
@@ -6293,7 +6310,7 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
         // while generating code for compare opererators (e.g. GT_EQ etc).
         if ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
-            // Unordered
+            // Must branch if we have an NaN, unordered
             switch (cmpTree->gtOper)
             {
             case GT_LT:
@@ -6322,8 +6339,9 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
                 unreached();
             }
         }
-        else
+        else  // ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) == 0)
         {
+            // Do not branch if we have an NaN, unordered
             switch (cmpTree->gtOper)
             {
             case GT_LT:
@@ -6825,8 +6843,20 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         genProduceReg(tree);
     }
 }
-// Generate code to materialize a condition into a register
-// (the condition codes must already have been appropriately set)
+
+//-------------------------------------------------------------------------------------------
+// genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
+//                   corresponding to a binary Relational operator result.
+//
+// Arguments:
+//   dstReg          - The target register to set to 1 or 0
+//   tree            - The GenTree Relop node that was used to set the Condition codes
+//
+// Return Value:     none
+//
+// Notes:
+//    A full 64-bit value of either 1 or 0 is setup in the 'dstReg'
+//-------------------------------------------------------------------------------------------
 
 void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 {
@@ -6894,7 +6924,6 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
     }
     else
     {
-        // FP types have been converted to flow
         noway_assert(treeType == TYP_BYTE);
     }
 }
