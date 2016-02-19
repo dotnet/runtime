@@ -174,7 +174,7 @@ namespace System.Threading.Tasks
                                         CancellationTokenSource underlyingCancelTokenSource, Progress<TProgressInfo> underlyingProgressDispatcher)
         {
             if (underlyingTask == null)
-                throw new ArgumentNullException("underlyingTask");
+                throw new ArgumentNullException(nameof(underlyingTask));
 
             // Throw InvalidOperation and not Argument for parity with the constructor that takes Delegate taskProvider:
             if (underlyingTask.Status == TaskStatus.Created)
@@ -291,7 +291,7 @@ namespace System.Threading.Tasks
                 return false;
 
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
 
             // Here we do not try to deal with the inherit races: Use this method only when constructing a synchronously
             // completed IAsyncInfo in a desired state when you understand the threading conditions well.
@@ -975,7 +975,7 @@ namespace System.Threading.Tasks
                 AggregateException aggregateException = task.Exception;
 
                 // By spec, if task.IsFaulted is true, then task.Exception must not be null and its InnerException must
-                // also not be null. However, in case something is unexpected on the Task side of the road, let’s be defensive
+                // also not be null. However, in case something is unexpected on the Task side of the road, let?s be defensive
                 // instead of failing with an inexplicable NullReferenceException:
 
                 if (aggregateException == null)

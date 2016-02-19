@@ -45,19 +45,19 @@ namespace System.IO.Pipes
             }
             if (serverSafePipeHandle == null)
             {
-                throw new ArgumentNullException("serverSafePipeHandle");
+                throw new ArgumentNullException(nameof(serverSafePipeHandle));
             }
             if (clientSafePipeHandle == null)
             {
-                throw new ArgumentNullException("clientSafePipeHandle");
+                throw new ArgumentNullException(nameof(clientSafePipeHandle));
             }
             if (serverSafePipeHandle.IsInvalid)
             {
-                throw new ArgumentException(SR.Argument_InvalidHandle, "serverSafePipeHandle");
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(serverSafePipeHandle));
             }
             if (clientSafePipeHandle.IsInvalid)
             {
-                throw new ArgumentException(SR.Argument_InvalidHandle, "clientSafePipeHandle");
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(clientSafePipeHandle));
             }
             ValidateHandleIsPipe(serverSafePipeHandle);
             ValidateHandleIsPipe(clientSafePipeHandle);
@@ -81,7 +81,7 @@ namespace System.IO.Pipes
             }
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability", SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
+                throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
             }
 
             Create(direction, inheritability, bufferSize);
@@ -166,7 +166,7 @@ namespace System.IO.Pipes
 
                 if (value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
                 }
                 if (value == PipeTransmissionMode.Message)
                 {

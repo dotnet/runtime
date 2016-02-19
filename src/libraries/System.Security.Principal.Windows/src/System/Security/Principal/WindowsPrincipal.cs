@@ -37,7 +37,7 @@ namespace System.Security.Principal
             : base(ntIdentity)
         {
             if (ntIdentity == null)
-                throw new ArgumentNullException("ntIdentity");
+                throw new ArgumentNullException(nameof(ntIdentity));
             Contract.EndContractBlock();
 
             _identity = ntIdentity;
@@ -130,7 +130,7 @@ namespace System.Security.Principal
         public virtual bool IsInRole(WindowsBuiltInRole role)
         {
             if (role < WindowsBuiltInRole.Administrator || role > WindowsBuiltInRole.Replicator)
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)role), "role");
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)role), nameof(role));
             Contract.EndContractBlock();
 
             return IsInRole((int)role);
@@ -152,7 +152,7 @@ namespace System.Security.Principal
         public virtual bool IsInRole(SecurityIdentifier sid)
         {
             if (sid == null)
-                throw new ArgumentNullException("sid");
+                throw new ArgumentNullException(nameof(sid));
             Contract.EndContractBlock();
 
             // special case the anonymous identity.

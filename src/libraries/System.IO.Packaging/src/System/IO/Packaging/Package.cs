@@ -243,10 +243,10 @@ namespace System.IO.Packaging
             ThrowIfReadOnly();
 
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             if (contentType == null)
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
 
             ThrowIfCompressionOptionInvalid(compressionOption);
 
@@ -331,7 +331,7 @@ namespace System.IO.Packaging
             ThrowIfReadOnly();
 
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
@@ -614,7 +614,7 @@ namespace System.IO.Packaging
             ThrowIfReadOnly();
 
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 
@@ -655,7 +655,7 @@ namespace System.IO.Packaging
             ThrowIfWriteOnly();
 
             if (relationshipType == null)
-                throw new ArgumentNullException("relationshipType");
+                throw new ArgumentNullException(nameof(relationshipType));
 
             InternalRelationshipCollection.ThrowIfInvalidRelationshipType(relationshipType);
 
@@ -834,21 +834,21 @@ namespace System.IO.Packaging
         {
             //We do the enum check as suggested by the following condition for performance reasons.
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
-                throw new ArgumentOutOfRangeException("mode");
+                throw new ArgumentOutOfRangeException(nameof(mode));
         }
 
         internal static void ThrowIfFileAccessInvalid(FileAccess access)
         {
             //We do the enum check as suggested by the following condition for performance reasons.
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
         }
 
         internal static void ThrowIfCompressionOptionInvalid(CompressionOption compressionOption)
         {
             //We do the enum check as suggested by the following condition for performance reasons.
             if (compressionOption < CompressionOption.NotCompressed || compressionOption > CompressionOption.SuperFast)
-                throw new ArgumentOutOfRangeException("compressionOption");
+                throw new ArgumentOutOfRangeException(nameof(compressionOption));
         }
 
         /// <summary>
@@ -871,7 +871,7 @@ namespace System.IO.Packaging
             try
             {
                 if (path == null)
-                    throw new ArgumentNullException("path");
+                    throw new ArgumentNullException(nameof(path));
 
                 ThrowIfFileModeInvalid(packageMode);
                 ThrowIfFileAccessInvalid(packageAccess);
@@ -946,7 +946,7 @@ namespace System.IO.Packaging
             try
             {
                 if (stream == null)
-                    throw new ArgumentNullException("stream");
+                    throw new ArgumentNullException(nameof(stream));
 
                 try
                 {
@@ -1179,7 +1179,7 @@ namespace System.IO.Packaging
             ThrowIfWriteOnly();
 
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
@@ -1200,7 +1200,7 @@ namespace System.IO.Packaging
             ThrowIfWriteOnly();
 
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 

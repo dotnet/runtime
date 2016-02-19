@@ -43,7 +43,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(Stream stream, string name)
             : base(name)
         {
-            if (stream == null) throw new ArgumentNullException("stream");
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             this.writer = new StreamWriter(stream);
         }
 
@@ -65,7 +65,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(TextWriter writer, string name)
             : base(name)
         {
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
             this.writer = writer;
         }
 

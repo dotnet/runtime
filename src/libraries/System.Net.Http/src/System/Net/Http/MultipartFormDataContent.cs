@@ -29,7 +29,7 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             Contract.EndContractBlock();
 
@@ -45,11 +45,11 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "name");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
             }
             Contract.EndContractBlock();
 
@@ -60,15 +60,15 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "name");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
             }
             if (string.IsNullOrWhiteSpace(fileName))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "fileName");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(fileName));
             }
             Contract.EndContractBlock();
 

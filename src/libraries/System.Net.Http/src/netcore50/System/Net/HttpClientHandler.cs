@@ -80,7 +80,7 @@ namespace System.Net.Http
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (!UseCookies)
                 {
@@ -100,7 +100,7 @@ namespace System.Net.Http
                 if (value != ClientCertificateOption.Manual &&
                     value != ClientCertificateOption.Automatic)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 CheckDisposedOrStarted();
                 clientCertificateOptions = value;

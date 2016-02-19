@@ -771,30 +771,27 @@ namespace System.Linq.Expressions
         ///<paramref name="arguments" /> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression" />.</exception>
         public static InvocationExpression Invoke(Expression expression, IEnumerable<Expression> arguments)
         {
-            var argumentList = arguments as IReadOnlyList<Expression>;
+            var argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
 
-            if (argumentList != null)
+            switch (argumentList.Count)
             {
-                switch (argumentList.Count)
-                {
-                    case 0:
-                        return Invoke(expression);
-                    case 1:
-                        return Invoke(expression, argumentList[0]);
-                    case 2:
-                        return Invoke(expression, argumentList[0], argumentList[1]);
-                    case 3:
-                        return Invoke(expression, argumentList[0], argumentList[1], argumentList[2]);
-                    case 4:
-                        return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
-                    case 5:
-                        return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
-                }
+                case 0:
+                    return Invoke(expression);
+                case 1:
+                    return Invoke(expression, argumentList[0]);
+                case 2:
+                    return Invoke(expression, argumentList[0], argumentList[1]);
+                case 3:
+                    return Invoke(expression, argumentList[0], argumentList[1], argumentList[2]);
+                case 4:
+                    return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
+                case 5:
+                    return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
             }
 
             RequiresCanRead(expression, "expression");
 
-            var args = arguments.ToReadOnly();
+            var args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
             var mi = GetInvokeMethod(expression);
             ValidateArgumentTypes(mi, ExpressionType.Invoke, ref args);
             return new InvocationExpressionN(expression, args, mi.ReturnType);

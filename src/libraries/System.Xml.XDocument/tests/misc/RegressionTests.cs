@@ -189,7 +189,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetObjects")]
+        [MemberData(nameof(GetObjects))]
         public void CreatingXElementsFromNewDev10Types(object t, Type type)
         {
             XElement e = new XElement("e1", new XElement("e2"), "text1", new XElement("e3"), t);

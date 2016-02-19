@@ -90,7 +90,7 @@ namespace System.Buffers
         {
             // Check to see if the buffer is the correct size for this bucket
             if (buffer.Length != _bufferLength)
-                throw new ArgumentException(SR.ArgumentException_BufferNotFromPool, "buffer");
+                throw new ArgumentException(SR.ArgumentException_BufferNotFromPool, nameof(buffer));
 
             // Use a SpinLock since it is super lightweight
             // and our lock is very short lived. Wrap in try-finally

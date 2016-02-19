@@ -45,6 +45,7 @@ namespace System.IO.Pipes.Tests
                 PipeStream pipe = pair.writeablePipe;
                 Assert.True(pipe.IsConnected);
                 Assert.True(pipe.CanWrite);
+                Assert.False(pipe.CanSeek);
 
                 // Offset must be nonnegative
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => pipe.Write(new byte[5], -1, 1));

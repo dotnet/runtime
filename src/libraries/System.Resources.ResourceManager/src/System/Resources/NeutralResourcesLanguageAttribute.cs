@@ -13,7 +13,7 @@ namespace System.Resources
         {
             if (cultureName == null)
             {
-                throw new ArgumentNullException("cultureName");
+                throw new ArgumentNullException(nameof(cultureName));
             }
 
             _culture = cultureName;

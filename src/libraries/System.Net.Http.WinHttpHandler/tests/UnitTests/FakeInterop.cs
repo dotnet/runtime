@@ -258,7 +258,7 @@ internal static partial class Interop
         public static bool WinHttpQueryHeaders(
             SafeWinHttpHandle requestHandle,
             uint infoLevel, string name,
-            StringBuilder buffer,
+            IntPtr buffer,
             ref uint bufferLength,
             ref uint index)
         {
@@ -273,42 +273,20 @@ internal static partial class Interop
 
             if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_VERSION)
             {
-                if (buffer == null)
-                {
-                    bufferLength = ((uint)httpVersion.Length + 1) * 2;
-                    TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER;
-                    return false;
-                }
-
-                buffer.Append(httpVersion);
-                return true;
+                return CopyToBufferOrFailIfInsufficientBufferLength(httpVersion, buffer, ref bufferLength);
             }
 
             if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_STATUS_TEXT)
             {
-                if (buffer == null)
-                {
-                    bufferLength = ((uint)statusText.Length + 1) * 2;
-                    TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER;
-                    return false;
-                }
-
-                buffer.Append(statusText);
-                return true;
+                return CopyToBufferOrFailIfInsufficientBufferLength(statusText, buffer, ref bufferLength);
             }
 
             if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING)
             {
-                string compression = null;
-
-                if (TestServer.ResponseHeaders.Contains("Content-Encoding: deflate"))
-                {
-                    compression = "deflate";
-                }
-                else if (TestServer.ResponseHeaders.Contains("Content-Encoding: gzip"))
-                {
-                    compression = "gzip";
-                }
+                string compression =
+                    TestServer.ResponseHeaders.Contains("Content-Encoding: deflate") ? "deflate" :
+                    TestServer.ResponseHeaders.Contains("Content-Encoding: gzip") ? "gzip" :
+                    null;
 
                 if (compression == null)
                 {
@@ -316,31 +294,37 @@ internal static partial class Interop
                     return false;
                 }
 
-                if (buffer == null)
-                {
-                    bufferLength = ((uint)compression.Length + 1) * 2;
-                    TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER;
-                    return false;
-                }
-
-                buffer.Append(compression);
-                return true;
+                return CopyToBufferOrFailIfInsufficientBufferLength(compression, buffer, ref bufferLength);
             }
 
             if (infoLevel == Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF)
             {
-                if (buffer == null)
-                {
-                    bufferLength = ((uint)TestServer.ResponseHeaders.Length + 1) * 2;
-                    TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER;
-                    return false;
-                }
-
-                buffer.Append(TestServer.ResponseHeaders);
-                return true;
+                return CopyToBufferOrFailIfInsufficientBufferLength(TestServer.ResponseHeaders, buffer, ref bufferLength);
             }
 
             return false;
+        }
+
+        private static bool CopyToBufferOrFailIfInsufficientBufferLength(string value, IntPtr buffer, ref uint bufferLength)
+        {
+            // The length of the string (plus terminating null char) in bytes.
+            uint bufferLengthNeeded = ((uint)value.Length + 1) * sizeof(char);
+
+            if (buffer == IntPtr.Zero || bufferLength < bufferLengthNeeded)
+            {
+                bufferLength = bufferLengthNeeded;
+                TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER;
+                return false;
+            }
+
+            // Copy the string to the buffer.
+            char[] temp = new char[value.Length + 1]; // null terminated.
+            value.CopyTo(0, temp, 0, value.Length);
+            Marshal.Copy(temp, 0, buffer, temp.Length);
+
+            // The length in bytes, minus the length of the null char at the end.
+            bufferLength = (uint)value.Length * sizeof(char);
+            return true;
         }
 
         public static bool WinHttpQueryHeaders(
@@ -626,7 +610,7 @@ internal static partial class Interop
         {
             if (handle == null)
             {
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
             }
             
             var fakeHandle = (FakeSafeWinHttpHandle)handle;

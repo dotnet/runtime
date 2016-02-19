@@ -21,11 +21,11 @@ namespace Internal.Cryptography
             // an invalid number of bytes read.  Since our implementations of AppendHashDataCore
             // end up using unsafe code, we want to be sure the arguments are valid.
             if (data == null)
-                throw new ArgumentNullException("data", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(data), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (data.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

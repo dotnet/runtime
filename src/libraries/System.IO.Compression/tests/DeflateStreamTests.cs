@@ -15,6 +15,150 @@ namespace System.IO.Compression.Tests
         static string gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
 
         [Fact]
+        public static async Task OverlappingReadAsync()
+        {
+            byte[] buffer = new byte[32];
+            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
+            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
+            using (var unzip = new DeflateStream(readStream, CompressionMode.Decompress, true))
+            {
+                Task task = null;
+                try
+                {
+                    task = unzip.ReadAsync(buffer, 0, 32);
+                    Assert.True(readStream.ReadHit);
+                    Assert.Throws<InvalidOperationException>(() => { unzip.ReadAsync(buffer, 0, 32); }); // "overlapping read"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    readStream.manualResetEvent.Set();
+                    // The original ReadAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task OverlappingFlushAsync_DuringFlushAsync()
+        {
+            byte[] buffer = null;
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
+            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            {
+                buffer = origStream.ToArray();
+            }
+
+            using (var writeStream = new ManualSyncMemoryStream(false))
+            using (var zip = new DeflateStream(writeStream, CompressionMode.Compress))
+            {
+                Task task = null;
+                try
+                {
+                    writeStream.manualResetEvent.Set();
+                    await zip.WriteAsync(buffer, 0, buffer.Length);
+                    writeStream.manualResetEvent.Reset();
+                    writeStream.WriteHit = false;
+                    task = zip.FlushAsync();
+                    Assert.True(writeStream.WriteHit);
+                    Assert.Throws<InvalidOperationException>(() => { zip.FlushAsync(); }); // "overlapping flushes"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    writeStream.manualResetEvent.Set();
+                    // The original WriteAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task OverlappingFlushAsync_DuringWriteAsync()
+        {
+            byte[] buffer = null;
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
+            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            {
+                buffer = origStream.ToArray();
+            }
+
+            using (var writeStream = new ManualSyncMemoryStream(false))
+            using (var zip = new DeflateStream(writeStream, CompressionMode.Compress))
+            {
+                Task task = null;
+                try
+                {
+                    task = zip.WriteAsync(buffer, 0, buffer.Length);
+                    Assert.True(writeStream.WriteHit);
+                    Assert.Throws<InvalidOperationException>(() => { zip.FlushAsync(); }); // "overlapping flushes"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    writeStream.manualResetEvent.Set();
+                    // The original WriteAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task OverlappingFlushAsync_DuringReadAsync()
+        {
+            byte[] buffer = new byte[32];
+            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
+            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
+            using (var unzip = new DeflateStream(readStream, CompressionMode.Decompress, true))
+            {
+                Task task = null;
+                try
+                {
+                    task = unzip.ReadAsync(buffer, 0, 32);
+                    Assert.True(readStream.ReadHit);
+                    Assert.Throws<InvalidOperationException>(() => { unzip.FlushAsync(); }); // "overlapping read"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    readStream.manualResetEvent.Set();
+                    // The original ReadAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task OverlappingWriteAsync()
+        {
+            byte[] buffer = null;
+            string testFilePath = gzTestFile("GZTestDocument.pdf");
+            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            {
+                buffer = origStream.ToArray();
+            }
+
+            using (var writeStream = new ManualSyncMemoryStream(false))
+            using (var zip = new DeflateStream(writeStream, CompressionMode.Compress))
+            {
+                Task task = null;
+                try
+                {
+                    task = zip.WriteAsync(buffer, 0, buffer.Length);    // write needs to be bigger than the internal write buffer
+                    Assert.True(writeStream.WriteHit);
+                    Assert.Throws<InvalidOperationException>(() => { zip.WriteAsync(buffer, 32, 32); }); // "overlapping write"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    writeStream.manualResetEvent.Set();
+                    // The original WriteAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
         public void BaseStream1()
         {
             var writeStream = new MemoryStream();
@@ -539,7 +683,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task RoundtripCompressDecompress(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -564,7 +708,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task RoundTripWithFlush(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -593,7 +737,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task WriteAfterFlushing(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -628,7 +772,7 @@ namespace System.IO.Compression.Tests
 
         [OuterLoop]
         [Theory]
-        [MemberData("RoundtripCompressDecompressOuterData")]
+        [MemberData(nameof(RoundtripCompressDecompressOuterData))]
         public async Task FlushBeforeFirstWrites(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -801,6 +945,65 @@ namespace System.IO.Compression.Tests
             public override long Position { get { throw new NotSupportedException(); } set { throw new NotSupportedException(); } }
             public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException(); }
             public override void SetLength(long value) { throw new NotSupportedException(); }
+        }
+
+        private class ManualSyncMemoryStream : MemoryStream
+        {
+            private bool isSync;
+            public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(false);
+
+            public bool ReadHit = false;  // For validation of the async methods we want to ensure they correctly delegate the the async
+            public bool WriteHit = false; // methods of the underlying stream. This bool acts as a toggle to check that they're being used.
+
+            public static async Task<ManualSyncMemoryStream> GetStreamFromFileAsync(String testFile, bool sync = false, bool strip = false)
+            {
+                var baseStream = await StreamHelpers.CreateTempCopyStream(testFile);
+                if (strip)
+                {
+                    baseStream = StripHeaderAndFooter.Strip(baseStream);
+                }
+
+                var ms = new ManualSyncMemoryStream(sync);
+                await baseStream.CopyToAsync(ms);
+
+                ms.Position = 0;
+                return ms;
+            }
+
+            public ManualSyncMemoryStream(bool sync = false) : base()
+            {
+                isSync = sync;
+            }
+
+            public override async Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+            {
+                ReadHit = true;
+                if (isSync)
+                {
+                    manualResetEvent.Wait(cancellationToken);
+                }
+                else
+                {
+                    await Task.Run(() => manualResetEvent.Wait(cancellationToken));
+                }
+
+                return await base.ReadAsync(array, offset, count, cancellationToken);
+            }
+
+            public override async Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+            {
+                WriteHit = true;
+                if (isSync)
+                {
+                    manualResetEvent.Wait(cancellationToken);
+                }
+                else
+                {
+                    await Task.Run(() => manualResetEvent.Wait(cancellationToken));
+                }
+
+                await base.WriteAsync(array, offset, count, cancellationToken);
+            }
         }
 
     }

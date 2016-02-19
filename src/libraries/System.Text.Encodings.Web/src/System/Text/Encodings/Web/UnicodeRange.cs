@@ -25,11 +25,11 @@ namespace System.Text.Unicode
             // lie within the BMP. See http://unicode.org/faq/blocks_ranges.html for more info.
             if (firstCodePoint < 0 || firstCodePoint > 0xFFFF)
             {
-                throw new ArgumentOutOfRangeException("firstCodePoint");
+                throw new ArgumentOutOfRangeException(nameof(firstCodePoint));
             }
             if (length < 0 || ((long)firstCodePoint + (long)length > 0x10000))
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             FirstCodePoint = firstCodePoint;
@@ -56,7 +56,7 @@ namespace System.Text.Unicode
         {
             if (lastCharacter < firstCharacter)
             {
-                throw new ArgumentOutOfRangeException("lastCharacter");
+                throw new ArgumentOutOfRangeException(nameof(lastCharacter));
             }
 
             return new UnicodeRange(firstCharacter, 1 + (int)(lastCharacter - firstCharacter));

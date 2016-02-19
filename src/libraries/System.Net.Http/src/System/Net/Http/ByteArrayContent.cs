@@ -18,7 +18,7 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             _content = content;
@@ -34,15 +34,15 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             if ((offset < 0) || (offset > content.Length))
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             if ((count < 0) || (count > (content.Length - offset)))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             _content = content;

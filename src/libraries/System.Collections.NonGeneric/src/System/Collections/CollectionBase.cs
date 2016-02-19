@@ -74,7 +74,7 @@ namespace System.Collections
         public void RemoveAt(int index)
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
             Object temp = InnerList[index];
             OnValidate(temp);
@@ -121,14 +121,14 @@ namespace System.Collections
             get
             {
                 if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 Contract.EndContractBlock();
                 return InnerList[index];
             }
             set
             {
                 if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 Contract.EndContractBlock();
                 OnValidate(value);
                 Object temp = InnerList[index];
@@ -195,7 +195,7 @@ namespace System.Collections
         void IList.Insert(int index, Object value)
         {
             if (index < 0 || index > Count)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
             OnValidate(value);
             OnInsert(index, value);
@@ -234,7 +234,7 @@ namespace System.Collections
 
         protected virtual void OnValidate(Object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
         }
 

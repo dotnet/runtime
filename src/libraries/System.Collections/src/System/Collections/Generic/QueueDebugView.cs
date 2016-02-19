@@ -14,7 +14,7 @@ namespace System.Collections.Generic
         {
             if (queue == null)
             {
-                throw new ArgumentNullException("queue");
+                throw new ArgumentNullException(nameof(queue));
             }
 
             _queue = queue;

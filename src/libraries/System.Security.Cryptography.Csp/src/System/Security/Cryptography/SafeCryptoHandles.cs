@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
@@ -30,17 +27,6 @@ namespace System.Security.Cryptography
         private SafeProvHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
-            _containerName = null;
-            _providerName = null;
-            _type = 0;
-            _flags = 0;
-            _fPersistKeyInCsp = true;
-            _fReleaseProvider = true;
-        }
-
-        private SafeProvHandle(IntPtr handle) : base(true)
-        {
-            SetHandle(handle);
             _containerName = null;
             _providerName = null;
             _type = 0;
@@ -163,19 +149,11 @@ namespace System.Security.Cryptography
     [SecurityCritical]  // auto-generated
     internal sealed class SafeKeyHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        //SafeProvHandle safeProvHandle;
         private int _keySpec;
         private bool _fPublicOnly;
         private SafeKeyHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
-            _keySpec = 0;
-            _fPublicOnly = false;
-        }
-
-        private SafeKeyHandle(IntPtr handle) : base(true)
-        {
-            SetHandle(handle);
             _keySpec = 0;
             _fPublicOnly = false;
         }
@@ -209,12 +187,6 @@ namespace System.Security.Cryptography
             get { return new SafeKeyHandle(); }
         }
 
-        //[DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        //[ResourceExposure(ResourceScope.None)]
-        //[SuppressUnmanagedCodeSecurity]
-        //private static extern void FreeKey(IntPtr pKeyCotext);
-
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
@@ -235,17 +207,10 @@ namespace System.Security.Cryptography
             SetHandle(IntPtr.Zero);
         }
 
-        private SafeHashHandle(IntPtr handle) : base(true)
-        {
-            SetHandle(handle);
-        }
-
         internal static SafeHashHandle InvalidHandle
         {
             get { return new SafeHashHandle(); }
         }
-
-        //private static extern void FreeHash(IntPtr pHashContext);
 
         [SecurityCritical]
         protected override bool ReleaseHandle()

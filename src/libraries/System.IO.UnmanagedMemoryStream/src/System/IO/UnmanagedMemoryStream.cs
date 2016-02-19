@@ -151,15 +151,15 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.ByteLength < (ulong)(offset + length))
             {
@@ -167,7 +167,7 @@ namespace System.IO
             }
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
             Contract.EndContractBlock();
 
@@ -243,17 +243,17 @@ namespace System.IO
         private unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             if (pointer == null)
-                throw new ArgumentNullException("pointer");
+                throw new ArgumentNullException(nameof(pointer));
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? "length" : "capacity", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             Contract.EndContractBlock();
             // Check for wraparound.
             if (((byte*)((long)pointer + capacity)) < pointer)
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_UnmanagedMemStreamWrapAround);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_UnmanagedMemStreamWrapAround);
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException("access", SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
             if (_isOpen)
                 throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
 
@@ -375,7 +375,7 @@ namespace System.IO
             [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                if (value < 0) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
 
@@ -385,7 +385,7 @@ namespace System.IO
                     {
                         // On 32 bit process, ensure we don't wrap around.
                         if (value > (long)Int32.MaxValue || _mem + value < _mem)
-                            throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_StreamLength);
+                            throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
                     }
                 }
                 Interlocked.Exchange(ref _position, value);
@@ -433,11 +433,11 @@ namespace System.IO
         public override int Read([In, Out] byte[] buffer, int offset, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep this in sync with contract validation in ReadAsync
@@ -515,11 +515,11 @@ namespace System.IO
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // contract validation copied from Read(...) 
@@ -634,7 +634,7 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
@@ -670,11 +670,11 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep contract validation in sync with WriteAsync(..)
@@ -760,11 +760,11 @@ namespace System.IO
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // contract validation copied from Write(..) 

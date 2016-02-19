@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 NonGenericList[index] = value;
             }
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 _list[index] = value;
             }
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates
         public int Add(X509Certificate value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             int index = _list.Count;
             _list.Add(value);
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddRange(X509Certificate[] value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddRange(X509CertificateCollection value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             for (int i = 0; i < value.Count; i++)
             {
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Insert(int index, X509Certificate value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             _list.Insert(index, value);
         }
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Remove(X509Certificate value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             bool removed = _list.Remove(value);
 
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates
         int IList.Add(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             return NonGenericList.Add(value);
         }
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.X509Certificates
         void IList.Insert(int index, object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             NonGenericList.Insert(index, value);
         }
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates
         void IList.Remove(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             // On full framework this method throws when removing an item that
             // is not present in the collection, and that behavior needs to be

@@ -60,7 +60,7 @@ namespace System.Collections.Specialized.Tests
         };
 
         [Theory]
-        [MemberData("ListDictionary_Empty_Data")]
+        [MemberData(nameof(ListDictionary_Empty_Data))]
         public static void Constructor_DefaultTests(ListDictionary ld)
         {
             Assert.Equal(0, ld.Count);
@@ -157,7 +157,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void Add_NullKeyTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.Throws<ArgumentNullException>("key", () => ld.Add(null, "value"));
@@ -165,7 +165,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void ClearTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.Equal(data.Length, ld.Count);
@@ -178,14 +178,14 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void Contains_NullTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.Throws<ArgumentNullException>("key", () => ld.Contains(null));
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void CopyToTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             DictionaryEntry[] translated = data.Select(kv => new DictionaryEntry(kv.Key, kv.Value)).ToArray();
@@ -212,7 +212,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void CopyTo_ArgumentInvalidTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.Throws<ArgumentNullException>("array", () => ld.CopyTo(null, 0));
@@ -227,7 +227,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void GetSetTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             DictionaryEntry[] translated = data.Select(kv => new DictionaryEntry(kv.Key, kv.Value)).ToArray();
@@ -268,7 +268,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void GetSet_ArgumentInvalidTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.Throws<ArgumentNullException>("key", () => ld[(string)null] = "notpresent");
@@ -294,7 +294,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void GetEnumeratorTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             bool repeat = true;
@@ -324,7 +324,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void GetEnumerator_ModifiedCollectionTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             IDictionaryEnumerator enumerator = ld.GetEnumerator();
@@ -346,7 +346,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void RemoveTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             Assert.All(data, element =>
@@ -376,7 +376,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void Remove_NotPresentTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             ld.Remove("notpresent");
@@ -385,7 +385,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void SyncRootTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             object syncRoot = ld.SyncRoot;
@@ -400,7 +400,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void KeyCollection_CopyTo_NullArgument_Test(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             ICollection keys = ld.Keys;
@@ -408,7 +408,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void KeyCollection_CopyTo_InvalidArgument_Test(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             ICollection keys = ld.Keys;
@@ -416,7 +416,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void KeyCollection_SyncRoot_Test(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             ICollection keys = ld.Keys;
@@ -431,7 +431,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void KeyCollection_GetEnumeratorTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             bool repeat = true;
@@ -456,7 +456,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("ListDictionary_Data")]
+        [MemberData(nameof(ListDictionary_Data))]
         public static void KeyCollection_GetEnumerator_ModifiedCollectionTest(ListDictionary ld, KeyValuePair<string, string>[] data)
         {
             IEnumerator enumerator = ld.Keys.GetEnumerator();

@@ -73,7 +73,7 @@ namespace System.IO
                     FileAttributes.System | FileAttributes.Temporary;
                 if ((value & ~allValidFlags) != 0)
                 {
-                    throw new ArgumentException(SR.Arg_InvalidFileAttrs, "value");
+                    throw new ArgumentException(SR.Arg_InvalidFileAttrs, nameof(value));
                 }
 
                 // The only thing we can reasonably change is whether the file object is readonly,

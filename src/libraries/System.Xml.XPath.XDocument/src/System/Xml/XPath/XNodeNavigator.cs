@@ -913,7 +913,7 @@ namespace System.Xml.XPath
         /// <returns>An <see cref="XPathNavigator"/></returns>
         public static XPathNavigator CreateNavigator(this XNode node, XmlNameTable nameTable)
         {
-            if (node == null) throw new ArgumentNullException("node");
+            if (node == null) throw new ArgumentNullException(nameof(node));
             if (node is XDocumentType) throw new ArgumentException(SR.Format(SR.Argument_CreateNavigator, XmlNodeType.DocumentType));
             XText text = node as XText;
             if (text != null)
@@ -947,7 +947,7 @@ namespace System.Xml.XPath
         /// IEnumerable</returns>
         public static object XPathEvaluate(this XNode node, string expression, IXmlNamespaceResolver resolver)
         {
-            if (node == null) throw new ArgumentNullException("node");
+            if (node == null) throw new ArgumentNullException(nameof(node));
             return new XPathEvaluator().Evaluate<object>(node, expression, resolver);
         }
 
@@ -996,7 +996,7 @@ namespace System.Xml.XPath
         /// <returns>An <see cref="IEnumerable&lt;XElement&gt;"/> corresponding to the resulting set of elements</returns>
         public static IEnumerable<XElement> XPathSelectElements(this XNode node, string expression, IXmlNamespaceResolver resolver)
         {
-            if (node == null) throw new ArgumentNullException("node");
+            if (node == null) throw new ArgumentNullException(nameof(node));
             return (IEnumerable<XElement>)new XPathEvaluator().Evaluate<XElement>(node, expression, resolver);
         }
 

@@ -496,7 +496,7 @@ namespace System.Diagnostics
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 
                 if (Associated)
@@ -1133,7 +1133,7 @@ namespace System.Diagnostics
         {
             Process process = new Process();
             if (startInfo == null)
-                throw new ArgumentNullException("startInfo");
+                throw new ArgumentNullException(nameof(startInfo));
 
             process.StartInfo = startInfo;
             return process.Start() ? 

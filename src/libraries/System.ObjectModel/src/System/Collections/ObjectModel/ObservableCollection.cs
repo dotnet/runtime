@@ -49,7 +49,7 @@ namespace System.Collections.ObjectModel
         private static List<T> CreateCopy(IEnumerable<T> collection)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
 
             return new List<T>(collection);
         }

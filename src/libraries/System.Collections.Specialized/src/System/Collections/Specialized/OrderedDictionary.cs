@@ -165,7 +165,7 @@ namespace System.Collections.Specialized
                 }
                 if (index < 0 || index >= objectsArray.Count)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 object key = ((DictionaryEntry)objectsArray[index]).Key;
                 objectsArray[index] = new DictionaryEntry(key, value);
@@ -295,7 +295,7 @@ namespace System.Collections.Specialized
             }
             if (index > Count || index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             objectsTable.Add(key, value);
             objectsArray.Insert(index, new DictionaryEntry(key, value));
@@ -312,7 +312,7 @@ namespace System.Collections.Specialized
             }
             if (index >= Count || index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             object key = ((DictionaryEntry)objectsArray[index]).Key;
             objectsArray.RemoveAt(index);
@@ -330,7 +330,7 @@ namespace System.Collections.Specialized
             }
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             int index = IndexOfKey(key);
@@ -463,9 +463,9 @@ namespace System.Collections.Specialized
             void ICollection.CopyTo(Array array, int index)
             {
                 if (array == null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 foreach (object o in _objects)
                 {
                     array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);

@@ -56,7 +56,7 @@ namespace System.Resources
         public ResourceWriter(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             Contract.EndContractBlock();
@@ -71,7 +71,7 @@ namespace System.Resources
         public void AddResource(String name, String value)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);

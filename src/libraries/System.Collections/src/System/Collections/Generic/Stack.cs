@@ -43,7 +43,7 @@ namespace System.Collections.Generic
         public Stack(int capacity)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity", capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             _array = new T[capacity];
         }
 
@@ -54,7 +54,7 @@ namespace System.Collections.Generic
         public Stack(IEnumerable<T> collection)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
@@ -119,12 +119,12 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex", arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -143,22 +143,22 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex", arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -173,7 +173,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
             }
         }
 

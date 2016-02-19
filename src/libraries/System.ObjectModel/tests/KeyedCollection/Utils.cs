@@ -157,7 +157,7 @@ namespace System.Collections.ObjectModel.Tests
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
             MethodInfo propGet =
                 typeof (KeyedCollection<TKey, TValue>).GetTypeInfo()
@@ -511,7 +511,7 @@ namespace System.Collections.ObjectModel.Tests
         {
             if (getKey == null)
             {
-                throw new ArgumentNullException("getKey");
+                throw new ArgumentNullException(nameof(getKey));
             }
             _getKey = getKey;
         }
@@ -522,7 +522,7 @@ namespace System.Collections.ObjectModel.Tests
         {
             if (getKey == null)
             {
-                throw new ArgumentNullException("getKey");
+                throw new ArgumentNullException(nameof(getKey));
             }
             _getKey = getKey;
         }

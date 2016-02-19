@@ -12,7 +12,6 @@
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <LangVersion>6</LangVersion>
     <DefineConstants>$(DefineConstants);SRM</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

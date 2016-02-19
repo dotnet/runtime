@@ -64,11 +64,11 @@ namespace System.IO.Pipes
         {
             if (pipeName == null)
             {
-                throw new ArgumentNullException("pipeName");
+                throw new ArgumentNullException(nameof(pipeName));
             }
             if (serverName == null)
             {
-                throw new ArgumentNullException("serverName", SR.ArgumentNull_ServerName);
+                throw new ArgumentNullException(nameof(serverName), SR.ArgumentNull_ServerName);
             }
             if (pipeName.Length == 0)
             {
@@ -80,15 +80,15 @@ namespace System.IO.Pipes
             }
             if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous)) != 0)
             {
-                throw new ArgumentOutOfRangeException("options", SR.ArgumentOutOfRange_OptionsInvalid);
+                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
             if (impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation)
             {
-                throw new ArgumentOutOfRangeException("impersonationLevel", SR.ArgumentOutOfRange_ImpersonationInvalid);
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
             }
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability", SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
+                throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
             }
 
             _normalizedPipePath = GetPipePath(serverName, pipeName);
@@ -105,11 +105,11 @@ namespace System.IO.Pipes
         {
             if (safePipeHandle == null)
             {
-                throw new ArgumentNullException("safePipeHandle");
+                throw new ArgumentNullException(nameof(safePipeHandle));
             }
             if (safePipeHandle.IsInvalid)
             {
-                throw new ArgumentException(SR.Argument_InvalidHandle, "safePipeHandle");
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
             }
             ValidateHandleIsPipe(safePipeHandle);
 
@@ -136,7 +136,7 @@ namespace System.IO.Pipes
 
             if (timeout < 0 && timeout != Timeout.Infinite)
             {
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_InvalidTimeout);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
             }
 
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
@@ -199,7 +199,7 @@ namespace System.IO.Pipes
 
             if (timeout < 0 && timeout != Timeout.Infinite)
             {
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_InvalidTimeout);
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
             }
 
             if (cancellationToken.IsCancellationRequested)

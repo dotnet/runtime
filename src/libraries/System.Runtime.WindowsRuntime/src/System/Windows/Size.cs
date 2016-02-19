@@ -40,9 +40,9 @@ namespace Windows.Foundation
         public Size(double width, double height)
         {
             if (width < 0)
-                throw new ArgumentException("width");
+                throw new ArgumentException(nameof(width));
             if (height < 0)
-                throw new ArgumentException("height");
+                throw new ArgumentException(nameof(height));
 
             _width = (float)width;
             _height = (float)height;

@@ -11,7 +11,7 @@ namespace System.Net.Sockets.Tests
     public class NetworkStreamTest
     {
         [Theory]
-        [MemberData("NonCanceledTokens")]
+        [MemberData(nameof(NonCanceledTokens))]
         public async Task ReadWriteAsync_NonCanceled_Success(CancellationToken nonCanceledToken)
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>

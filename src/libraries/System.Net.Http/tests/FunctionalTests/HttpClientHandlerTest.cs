@@ -135,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task SendAsync_SimpleGet_Success(Uri remoteServer)
         {
             using (var client = new HttpClient())
@@ -202,7 +202,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("CompressedServers")]
+        [Theory, MemberData(nameof(CompressedServers))]
         public async Task GetAsync_DefaultAutomaticDecompression_ContentDecompressed(Uri server)
         {
             using (var client = new HttpClient())
@@ -450,7 +450,7 @@ namespace System.Net.Http.Functional.Tests
             }            
         }
 
-        [Theory, MemberData("HeaderValueAndUris")]
+        [Theory, MemberData(nameof(HeaderValueAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value, Uri uri)
         {
             using (var client = new HttpClient())
@@ -533,7 +533,7 @@ namespace System.Net.Http.Functional.Tests
 
         #region Post Methods Tests
 
-        [Theory, MemberData("VerifyUploadServers")]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostAsync_CallMethodTwice_StringContent(Uri remoteServer)
         {
             using (var client = new HttpClient())
@@ -557,7 +557,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("VerifyUploadServers")]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostAsync_CallMethod_UnicodeStringContent(Uri remoteServer)
         {
             using (var client = new HttpClient())
@@ -573,7 +573,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("VerifyUploadServersStreamsAndExpectedData")]
+        [Theory, MemberData(nameof(VerifyUploadServersStreamsAndExpectedData))]
         public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer, Stream requestContentStream, byte[] expectedData)
         {
             using (var client = new HttpClient())
@@ -655,7 +655,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostAsync_CallMethod_NullContent(Uri remoteServer)
         {
             using (var client = new HttpClient())
@@ -675,7 +675,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostAsync_CallMethod_EmptyContent(Uri remoteServer)
         {
             using (var client = new HttpClient())
@@ -737,7 +737,7 @@ namespace System.Net.Http.Functional.Tests
 
         #region Various HTTP Method Tests
 
-        [Theory, MemberData("HttpMethods")]
+        [Theory, MemberData(nameof(HttpMethods))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
             string method,
             bool secureServer)
@@ -755,7 +755,7 @@ namespace System.Net.Http.Functional.Tests
             }        
         }
 
-        [Theory, MemberData("HttpMethodsThatAllowContent")]
+        [Theory, MemberData(nameof(HttpMethodsThatAllowContent))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
             bool secureServer)
@@ -789,28 +789,28 @@ namespace System.Net.Http.Functional.Tests
         // response version to see if the client sent a particular request version only works
         // for some servers. In particular the 'Http2Servers' used in these tests always seem
         // to echo the minor version of the request.
-        [Theory, MemberData("Http2Servers")]
+        [Theory, MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
             Assert.Equal(new Version(1, 0), responseVersion);
         }
 
-        [Theory, MemberData("Http2Servers")]
+        [Theory, MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
             Assert.Equal(new Version(1, 1), responseVersion);
         }
 
-        [Theory, MemberData("Http2Servers")]
+        [Theory, MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
             Assert.Equal(new Version(1, 1), responseVersion);
         }
 
-        [Theory, MemberData("Http2Servers")]
+        [Theory, MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
             // We don't currently have a good way to test whether HTTP/2 is supported without

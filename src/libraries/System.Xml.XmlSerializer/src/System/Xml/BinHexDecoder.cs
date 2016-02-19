@@ -124,7 +124,7 @@ namespace System.Xml
         {
             if (chars == null)
             {
-                throw new ArgumentException("chars");
+                throw new ArgumentException(nameof(chars));
             }
 
             int len = chars.Length;

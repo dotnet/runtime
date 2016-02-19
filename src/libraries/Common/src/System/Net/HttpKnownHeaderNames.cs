@@ -4,8 +4,10 @@
 
 namespace System.Net
 {
-    internal static class HttpKnownHeaderNames
+    internal static partial class HttpKnownHeaderNames
     {
+        // When adding a new constant, add it to HttpKnownHeaderNames.TryGetHeaderName.cs as well.
+
         public const string Accept = "Accept";
         public const string AcceptCharset = "Accept-Charset";
         public const string AcceptEncoding = "Accept-Encoding";

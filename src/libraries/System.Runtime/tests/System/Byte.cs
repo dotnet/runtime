@@ -211,7 +211,7 @@ public static class ByteTests
         yield return new object[] { "(123)", NumberStyles.AllowParentheses, defaultFormat, typeof(OverflowException) }; // Parentheses = negative
     }
 
-    [Theory, MemberData("ParseValidData")]
+    [Theory, MemberData(nameof(ParseValidData))]
     public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, byte expected)
     {
         byte i;
@@ -242,7 +242,7 @@ public static class ByteTests
         Assert.Equal(expected, byte.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Theory, MemberData("ParseInvalidData")]
+    [Theory, MemberData(nameof(ParseInvalidData))]
     public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
         byte i;

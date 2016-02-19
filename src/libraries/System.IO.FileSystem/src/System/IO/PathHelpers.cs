@@ -22,11 +22,11 @@ namespace System.IO
         internal static void ThrowIfEmptyOrRootedPath(string path2)
         {
             if (path2 == null)
-                throw new ArgumentNullException("path2");
+                throw new ArgumentNullException(nameof(path2));
             if (path2.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, "path2");
+                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path2));
             if (Path.IsPathRooted(path2))
-                throw new ArgumentException(SR.Arg_Path2IsRooted, "path2");
+                throw new ArgumentException(SR.Arg_Path2IsRooted, nameof(path2));
         }
 
         internal static bool IsRoot(string path)

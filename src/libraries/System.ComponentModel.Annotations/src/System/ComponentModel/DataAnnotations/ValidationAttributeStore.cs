@@ -117,7 +117,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             lock (_typeStoreItems)
@@ -142,7 +142,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (validationContext == null)
             {
-                throw new ArgumentNullException("validationContext");
+                throw new ArgumentNullException(nameof(validationContext));
             }
         }
 
@@ -200,7 +200,7 @@ namespace System.ComponentModel.DataAnnotations
                     throw new ArgumentException(
                         string.Format(CultureInfo.CurrentCulture,
                             SR.AttributeStore_Unknown_Property, _type.Name, propertyName),
-                        "propertyName");
+nameof(propertyName));
                 }
                 return item;
             }
@@ -209,7 +209,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (string.IsNullOrEmpty(propertyName))
                 {
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentNullException(nameof(propertyName));
                 }
 
                 if (_propertyStoreItems == null)

@@ -220,7 +220,7 @@ namespace System.Threading
             {
                 long ltm = (long)timeout.TotalMilliseconds;
                 if (ltm < -1 || ltm > (long)Int32.MaxValue)
-                    throw new ArgumentOutOfRangeException("timeout");
+                    throw new ArgumentOutOfRangeException(nameof(timeout));
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)
                     _start = Environment.TickCount;
@@ -231,7 +231,7 @@ namespace System.Threading
             public TimeoutTracker(int millisecondsTimeout)
             {
                 if (millisecondsTimeout < -1)
-                    throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
                     _start = Environment.TickCount;

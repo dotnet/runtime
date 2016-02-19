@@ -147,11 +147,11 @@ namespace System.Net.Sockets
             // Validate the args, similar to how Socket.Connect(string, int) would.
             if (host == null)
             {
-                throw new ArgumentNullException("host");
+                throw new ArgumentNullException(nameof(host));
             }
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
-                throw new ArgumentOutOfRangeException("port");
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
             // If the client socket has already materialized, this API can't be used.
@@ -185,15 +185,15 @@ namespace System.Net.Sockets
             // Validate the args, similar to how Socket.Connect(IPAddress[], int) would.
             if (addresses == null)
             {
-                throw new ArgumentNullException("addresses");
+                throw new ArgumentNullException(nameof(addresses));
             }
             if (addresses.Length == 0)
             {
-                throw new ArgumentException(SR.net_invalidAddressList, "addresses");
+                throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
-                throw new ArgumentOutOfRangeException("port");
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
             // If the client socket has already materialized, this API can't be used.
@@ -244,7 +244,7 @@ namespace System.Net.Sockets
                     lastException.Throw();
                 }
 
-                throw new ArgumentException(SR.net_invalidAddressList, "addresses");
+                throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
             finally
             {

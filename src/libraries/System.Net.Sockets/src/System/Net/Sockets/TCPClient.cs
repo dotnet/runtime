@@ -34,7 +34,7 @@ namespace System.Net.Sockets
             // Validate parameter
             if (family != AddressFamily.InterNetwork && family != AddressFamily.InterNetworkV6)
             {
-                throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "TCP"), "family");
+                throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "TCP"), nameof(family));
             }
 
             _family = family;

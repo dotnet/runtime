@@ -209,7 +209,7 @@ namespace System.IO.Packaging
         public static Uri CreatePartUri(Uri partUri)
         {
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             ThrowIfAbsoluteUri(partUri);
 
@@ -250,10 +250,10 @@ namespace System.IO.Packaging
         public static Uri ResolvePartUri(Uri sourcePartUri, Uri targetUri)
         {
             if (sourcePartUri == null)
-                throw new ArgumentNullException("sourcePartUri");
+                throw new ArgumentNullException(nameof(sourcePartUri));
 
             if (targetUri == null)
-                throw new ArgumentNullException("targetUri");
+                throw new ArgumentNullException(nameof(targetUri));
 
             ThrowIfAbsoluteUri(sourcePartUri);
 
@@ -282,10 +282,10 @@ namespace System.IO.Packaging
             //although we do expect the subsequent ValidatePartUri call to throw in case of null 
             // as well, it dosn't have the right parameter namer for ValidatePartUri function 
             if (sourcePartUri == null)
-                throw new ArgumentNullException("sourcePartUri");
+                throw new ArgumentNullException(nameof(sourcePartUri));
 
             if (targetPartUri == null)
-                throw new ArgumentNullException("targetPartUri");
+                throw new ArgumentNullException(nameof(targetPartUri));
 
             sourcePartUri = new Uri(s_defaultUri, ValidatePartUri(sourcePartUri));
             targetPartUri = new Uri(s_defaultUri, ValidatePartUri(targetPartUri));
@@ -303,7 +303,7 @@ namespace System.IO.Packaging
         public static Uri GetNormalizedPartUri(Uri partUri)
         {
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             if (!(partUri is ValidatedPartUri))
                 partUri = ValidatePartUri(partUri);
@@ -398,7 +398,7 @@ namespace System.IO.Packaging
         public static bool IsRelationshipPartUri(Uri partUri)
         {
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             if (!(partUri is ValidatedPartUri))
                 partUri = ValidatePartUri(partUri);
@@ -422,7 +422,7 @@ namespace System.IO.Packaging
         public static Uri GetRelationshipPartUri(Uri partUri)
         {
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             if (Uri.Compare(partUri, PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) == 0)
                 return PackageRelationship.ContainerRelationshipPartName;
@@ -476,7 +476,7 @@ namespace System.IO.Packaging
         public static Uri GetSourcePartUriFromRelationshipPartUri(Uri relationshipPartUri)
         {
             if (relationshipPartUri == null)
-                throw new ArgumentNullException("relationshipPartUri");
+                throw new ArgumentNullException(nameof(relationshipPartUri));
 
             // Verify -
             // 1. Validates that this part Uri is a valid part Uri
@@ -666,7 +666,7 @@ namespace System.IO.Packaging
         private static void ValidatePackageUri(Uri packageUri)
         {
             if (packageUri == null)
-                throw new ArgumentNullException("packageUri");
+                throw new ArgumentNullException(nameof(packageUri));
 
             if (!packageUri.IsAbsoluteUri)
                 throw new ArgumentException(SR.UriShouldBeAbsolute);
@@ -676,7 +676,7 @@ namespace System.IO.Packaging
         private static Uri ValidatePackUri(Uri packUri)
         {
             if (packUri == null)
-                throw new ArgumentNullException("packUri");
+                throw new ArgumentNullException(nameof(packUri));
 
             if (!packUri.IsAbsoluteUri)
                 throw new ArgumentException(SR.UriShouldBeAbsolute);
@@ -741,7 +741,7 @@ namespace System.IO.Packaging
             partUriString = String.Empty;
 
             if (partUri == null)
-                return new ArgumentNullException("partUri");
+                return new ArgumentNullException(nameof(partUri));
 
             Exception argumentException = null;
 
