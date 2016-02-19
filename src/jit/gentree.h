@@ -3171,7 +3171,7 @@ struct GenTreeRetExpr: public GenTree
 
 /* gtStmt   -- 'statement expr' (GT_STMT) */
 
-struct InlineContext;
+class InlineContext;
 
 struct GenTreeStmt: public GenTree
 {

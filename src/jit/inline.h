@@ -13,13 +13,13 @@
 // InlineTarget -- enum, target of a particular observation
 // InlineImpact -- enum, impact of a particular observation
 // InlineObservation -- enum, facts observed when considering an inline
-// InlineContext -- class, remembers what inlines happened
 // InlineResult -- class, accumulates observations and makes a decision
 // InlineCandidateInfo -- struct, detailed information needed for inlining
 // InlArgInfo -- struct, information about a candidate's argument
 // InlLclVarInfo -- struct, information about a candidate's local variable
 // InlineHints -- enum, alternative form of observations
 // InlineInfo -- struct, basic information needed for inlining
+// InlineContext -- class, remembers what inlines happened
 
 #ifndef _INLINE_H_
 #define _INLINE_H_
@@ -116,42 +116,6 @@ InlineTarget inlGetTarget(InlineObservation obs);
 // Get the impact of this observation
 
 InlineImpact inlGetImpact(InlineObservation obs);
-
-// InlineContext tracks the inline history in a method.
-//
-// Notes:
-//
-// InlineContexts form a tree with the root method as the root and
-// inlines as children. Nested inlines are represented as granchildren
-// and so on.
-//
-// Leaves in the tree represent successful inlines of leaf methods.
-// In DEBUG builds we also keep track of failed inline attempts.
-//
-// During inlining, all statements in the IR refer back to the
-// InlineContext that is responsible for those statements existing.
-// This makes it possible to detect recursion and to keep track of the
-// depth of each inline attempt.
-
-struct InlineContext
-{
-    // Default constructor, suitable for root instance
-    InlineContext();
-
-    InlineContext*        inlParent;      // logical caller (parent)
-    InlineContext*        inlChild;       // first child
-    InlineContext*        inlSibling;     // next child of the parent
-    IL_OFFSETX            inlOffset;      // call site location within parent
-    BYTE*                 inlCode;        // address of IL buffer for the method
-    InlineObservation     inlObservation; // what lead to this inline
-
-#ifdef DEBUG
-    CORINFO_METHOD_HANDLE inlCallee;     // handle to the method
-
-   // Dump this entry and all descendants
-   void Dump(Compiler* compiler, int indent = 0);
-#endif
-};
 
 // InlineResult summarizes what is known about the viability of a
 // particular inline candiate.
@@ -361,6 +325,18 @@ public:
         return inlObservation;
     }
 
+    // The callee handle for this result
+    CORINFO_METHOD_HANDLE getCallee() const
+    {
+        return inlCallee;
+    }
+
+    // The call being considered
+    GenTreeCall* getCall() const
+    {
+        return inlCall;
+    }
+
     // The reason for this particular result
     const char * reasonString() const
     {
@@ -537,6 +513,77 @@ struct InlineInfo
     BasicBlock      * iciBlock;      // The basic block iciStmt is in.
 };
 
+// InlineContext tracks the inline history in a method.
+//
+// Notes:
+//
+// InlineContexts form a tree with the root method as the root and
+// inlines as children. Nested inlines are represented as granchildren
+// and so on.
+//
+// Leaves in the tree represent successful inlines of leaf methods.
+// In DEBUG builds we also keep track of failed inline attempts.
+//
+// During inlining, all statements in the IR refer back to the
+// InlineContext that is responsible for those statements existing.
+// This makes it possible to detect recursion and to keep track of the
+// depth of each inline attempt.
+
+class InlineContext
+{
+public:
+
+    // New context for the root instance
+    static InlineContext* newRoot(Compiler* compiler);
+
+    // New context for a successful inline
+    static InlineContext* newSuccess(Compiler*   compiler,
+                                     InlineInfo* inlineInfo);
+
+#ifdef DEBUG
+
+    // New context for a failing inline
+    static InlineContext* newFailure(Compiler *    compiler,
+                                     GenTree*      stmt,
+                                     InlineResult* inlineResult);
+
+    // Dump the context and all descendants
+    void Dump(Compiler* compiler, int indent = 0);
+
+#endif
+
+    // Get the parent context for this context.
+    InlineContext* getParent() const
+    {
+        return inlParent;
+    }
+
+    // Get the code pointer for this context.
+    BYTE* getCode() const
+    {
+        return inlCode;
+    }
+
+private:
+
+    InlineContext();
+
+private:
+
+    InlineContext*        inlParent;      // logical caller (parent)
+    InlineContext*        inlChild;       // first child
+    InlineContext*        inlSibling;     // next child of the parent
+    IL_OFFSETX            inlOffset;      // call site location within parent
+    BYTE*                 inlCode;        // address of IL buffer for the method
+    InlineObservation     inlObservation; // what lead to this inline
+
+#ifdef DEBUG
+    CORINFO_METHOD_HANDLE inlCallee;      // handle to the method
+    unsigned              inlTreeID;      // ID of the GenTreeCall
+    bool                  inlSuccess;     // true if this was a successful inline
+#endif
+
+};
 
 #endif // _INLINE_H_
 
