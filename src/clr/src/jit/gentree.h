@@ -2358,11 +2358,6 @@ struct GenTreeCall final : public GenTree
     regMaskTP         gtCallRegUsedMask;      // mask of registers used to pass parameters
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-
-    void SetRegisterReturningStructState(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDescIn)
-    {
-        structDesc.CopyFrom(structDescIn);
-    }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #define     GTF_CALL_M_EXPLICIT_TAILCALL       0x0001  // GT_CALL -- the call is "tail" prefixed and importer has performed tail call checks
