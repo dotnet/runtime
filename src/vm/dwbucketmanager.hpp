@@ -323,7 +323,6 @@ private:
     void FindFaultingMethodInfo();
     OBJECTREF GetRealExceptionObject();
     WCHAR* GetParamBufferForIndex(BucketParameterIndex paramIndex);
-    int CopyStringToBucket(__out_ecount(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, __in_z LPCWSTR pSource, bool cannonicalize = false);
     void LogParam(__in_z LPCWSTR paramValue, BucketParameterIndex paramIndex);
     
 protected:
@@ -349,7 +348,7 @@ protected:
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
-
+    static int CopyStringToBucket(__out_ecount(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, __in_z LPCWSTR pSource, bool cannonicalize = false);
     // function that consumers should call to populate the GMB
     virtual void PopulateBucketParameters() = 0;
 };
@@ -485,10 +484,10 @@ void BaseBucketParamsManager::GetAppName(__out_ecount(maxLength) WCHAR* targetPa
     CONTRACTL_END;
 
     HMODULE hModule = WszGetModuleHandle(NULL);
-    WCHAR appPath[MAX_LONGPATH];
-    DWORD cchAppPath = NumItems(appPath);
+    PathString appPath;
+    
 
-    if (GetCurrentModuleFileName(appPath, &cchAppPath) == S_OK)
+    if (GetCurrentModuleFileName(appPath) == S_OK)
     {
         CopyStringToBucket(targetParam, maxLength, appPath);
     }
@@ -509,13 +508,13 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
     CONTRACTL_END;
 
     HMODULE hModule = WszGetModuleHandle(NULL);
-    WCHAR appPath[MAX_LONGPATH];
-    DWORD cchAppPath = NumItems(appPath);
+    PathString appPath;
+    
 
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 
-    if ((GetCurrentModuleFileName(appPath, &cchAppPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))
+    if ((GetCurrentModuleFileName(appPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))
     {
         _snwprintf_s(targetParam,
             maxLength,

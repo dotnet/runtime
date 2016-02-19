@@ -2364,8 +2364,8 @@ void QCALLTYPE AssemblyNative::CreateVersionInfoResource(LPCWSTR    pwzFilename,
     const void  *pvData=0;              // Pointer to the resource.
     ULONG       cbData;                 // Size of the resource data.
     ULONG       cbWritten;
-    WCHAR       szFile[MAX_PATH_FNAME+1];     // File name for resource file.
-    WCHAR       szPath[MAX_LONGPATH+1];     // Path name for resource file.
+    PathString       szFile;     // File name for resource file.
+    PathString       szPath;     // Path name for resource file.
     HandleHolder hFile;
 
     res.SetInfo(pwzFilename, 
@@ -2387,9 +2387,9 @@ void QCALLTYPE AssemblyNative::CreateVersionInfoResource(LPCWSTR    pwzFilename,
     // messages including the path/file name</TODO>
 
     // Persist to a file.
-    if (!WszGetTempPath(MAX_LONGPATH, szPath))
+    if (!WszGetTempPath(szPath))
         COMPlusThrowWin32();
-    if (!WszGetTempFileName(szPath, W("RES"), 0, szFile))
+    if (!WszGetTempFileName(szPath.GetUnicode(), W("RES"), 0, szFile))
         COMPlusThrowWin32();
 
     hFile = WszCreateFile(szFile, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);

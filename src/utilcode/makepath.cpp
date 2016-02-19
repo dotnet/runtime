@@ -183,15 +183,28 @@ HRESULT GetProcessExePath(LPCWSTR *pwszProcessExePath)
 
     if (g_wszProcessExePath == NULL)
     {
-        NewArrayHolder<WCHAR> wszProcName = new (nothrow) WCHAR[_MAX_PATH];
-        IfNullRet(wszProcName);
-
-        DWORD cchProcName = WszGetModuleFileName(NULL, wszProcName, _MAX_PATH);
-        if (cchProcName == 0)
+        DWORD cchProcName = 0;
+        NewArrayHolder<WCHAR> wszProcName;
+        EX_TRY
         {
-            return HRESULT_FROM_GetLastError();
+            PathString wszProcNameString;
+            cchProcName = WszGetModuleFileName(NULL, wszProcNameString);
+            if (cchProcName == 0)
+            {
+                hr = HRESULT_FROM_GetLastError();
+            }
+            else
+            {
+                wszProcName = wszProcNameString.GetCopyOfUnicodeString();
+            }
         }
+        EX_CATCH_HRESULT(hr);
 
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+        
         if (InterlockedCompareExchangeT(&g_wszProcessExePath, const_cast<LPCWSTR>(wszProcName.GetValue()), NULL) == NULL)
         {
             wszProcName.SuppressRelease();
@@ -205,3 +218,66 @@ HRESULT GetProcessExePath(LPCWSTR *pwszProcessExePath)
 }
 #endif
 
+// Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
+// then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
+HRESULT GetHModuleDirectory(
+    __in                          HMODULE   hMod,
+    SString&                                 wszPath)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    DWORD dwRet = WszGetModuleFileName(hMod, wszPath);
+   
+     if (dwRet == 0)
+    {   // Some other error.
+        return HRESULT_FROM_GetLastError();
+    }
+
+     CopySystemDirectory(wszPath, wszPath);
+         
+
+    return S_OK;
+}
+
+//
+// Returns path name from a file name. 
+// Example: For input "C:\Windows\System.dll" returns "C:\Windows\".
+// Warning: The input file name string might be destroyed.
+// 
+// Arguments:
+//    pPathString - [in] SString with file  name
+//                
+//    pBuffer    - [out] SString .
+// 
+// Return Value:
+//    S_OK - Output buffer contains path name.
+//    other errors - If Sstring throws.
+//
+HRESULT CopySystemDirectory(const SString& pPathString,
+                            SString& pbuffer)
+{
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        pbuffer.Set(pPathString);
+        SString::Iterator iter = pbuffer.End();
+        if (pbuffer.FindBack(iter,DIRECTORY_SEPARATOR_CHAR_W))
+        {
+            iter++;
+            pbuffer.Truncate(iter);
+        }
+        else
+        {
+            hr = E_UNEXPECTED;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}

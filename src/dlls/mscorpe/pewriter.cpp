@@ -2181,14 +2181,14 @@ HRESULT PEWriter::write(__in LPCWSTR fileName) {
     HRESULT hr;
 
 #ifdef ENC_DELTA_HACK
-    WCHAR szFileName[256];
-    DWORD len = WszGetEnvironmentVariable(L"COMP_ENC_EMIT", szFileName, NumItems(szFileName));
+    PathString szFileName;
+    DWORD len = WszGetEnvironmentVariable(L"COMP_ENC_EMIT", szFileName);
     _ASSERTE(len < sizeof(szFileName));
     if (len > 0)
     {
         _ASSERTE(!m_pSeedFileDecoder);
-
-        wcscat_s(szFileName, sizeof(szFileName)/sizeof(szFileName[0]), L".dil");
+        szFileName.Append(L".dil");
+       
         HANDLE pDelta = WszCreateFile(szFileName,
                            GENERIC_WRITE,
                            FILE_SHARE_READ | FILE_SHARE_WRITE,
