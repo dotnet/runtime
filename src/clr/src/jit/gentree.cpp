@@ -6308,6 +6308,10 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         }
         copy->gtCall.gtRetClsHnd = tree->gtCall.gtRetClsHnd;
 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        copy->gtCall.structDesc.CopyFrom(tree->gtCall.structDesc);
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)  
+
 #ifdef FEATURE_READYTORUN_COMPILER
         copy->gtCall.gtEntryPoint = tree->gtCall.gtEntryPoint;
 #endif
