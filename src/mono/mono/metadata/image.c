@@ -1046,7 +1046,8 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 			}
 		}
 		if (!image->loader) {
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			if (status)
+				*status = MONO_IMAGE_IMAGE_INVALID;
 			goto invalid_image;
 		}
 
