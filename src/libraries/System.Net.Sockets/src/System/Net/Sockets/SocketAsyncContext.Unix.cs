@@ -416,9 +416,6 @@ namespace System.Net.Sockets
         private bool _nonBlockingSet;
         private bool _connectFailed;
 
-        // These locks are hierarchical: _closeLock must be acquired before _queueLock in order
-        // to prevent deadlock.
-        private object _closeLock = new object();
         private object _queueLock = new object();
 
         public SocketAsyncContext(int fileDescriptor, SocketAsyncEngine engine)
@@ -507,24 +504,21 @@ namespace System.Net.Sockets
 
         private void CloseInner()
         {
-            Debug.Assert(Monitor.IsEntered(_closeLock) && !Monitor.IsEntered(_queueLock));
+            Debug.Assert(Monitor.IsEntered(_queueLock));
 
             OperationQueue<AcceptOrConnectOperation> acceptOrConnectQueue;
             OperationQueue<SendOperation> sendQueue;
             OperationQueue<TransferOperation> receiveQueue;
 
-            lock (_queueLock)
-            {
-                // Drain queues and unregister events
+            // Drain queues and unregister events
 
-                acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
-                sendQueue = _sendQueue.Stop();
-                receiveQueue = _receiveQueue.Stop();
+            acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
+            sendQueue = _sendQueue.Stop();
+            receiveQueue = _receiveQueue.Stop();
 
-                Unregister();
+            Unregister();
 
-                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
-            }
+            // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
             // TODO: the error codes on these operations may need to be changed to account for
             //       the close. I think Winsock returns OperationAborted in the case that
@@ -557,9 +551,7 @@ namespace System.Net.Sockets
 
         public void Close()
         {
-            Debug.Assert(!Monitor.IsEntered(_queueLock));
-
-            lock (_closeLock)
+            lock (_queueLock)
             {
                 CloseInner();
             }
@@ -631,17 +623,6 @@ namespace System.Net.Sockets
                 queue.Enqueue(operation);
                 isStopped = false;
                 return true;
-            }
-        }
-
-        private void EndOperation<TOperation>(ref OperationQueue<TOperation> queue)
-            where TOperation : AsyncOperation
-        {
-            lock (_queueLock)
-            {
-                Debug.Assert(!queue.IsStopped);
-
-                queue.Dequeue();
             }
         }
 
@@ -1376,23 +1357,18 @@ namespace System.Net.Sockets
 
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
-            Debug.Assert(!Monitor.IsEntered(_queueLock) || Monitor.IsEntered(_closeLock), "Lock ordering violation");
-
-            lock (_closeLock)
+            lock (_queueLock)
             {
                 if (_registeredEvents == (Interop.Sys.SocketEvents)(-1))
                 {
                     // This can happen if a previous attempt at unregistration did not succeed.
                     // Retry the unregistration.
-                    lock (_queueLock)
-                    {
-                        Debug.Assert(_acceptOrConnectQueue.IsStopped, "{Accept,Connect} queue should be stopped before retrying unregistration");
-                        Debug.Assert(_sendQueue.IsStopped, "Send queue should be stopped before retrying unregistration");
-                        Debug.Assert(_receiveQueue.IsStopped, "Receive queue should be stopped before retrying unregistration");
+                    Debug.Assert(_acceptOrConnectQueue.IsStopped, "{Accept,Connect} queue should be stopped before retrying unregistration");
+                    Debug.Assert(_sendQueue.IsStopped, "Send queue should be stopped before retrying unregistration");
+                    Debug.Assert(_receiveQueue.IsStopped, "Receive queue should be stopped before retrying unregistration");
 
-                        Unregister();
-                        return;
-                    }
+                    Unregister();
+                    return;
                 }
 
                 if ((events & Interop.Sys.SocketEvents.Error) != 0)
@@ -1414,11 +1390,7 @@ namespace System.Net.Sockets
                     // Drain read queue and unregister read operations
                     Debug.Assert(_acceptOrConnectQueue.IsEmpty, "{Accept,Connect} queue should be empty before ReadClose");
 
-                    OperationQueue<TransferOperation> receiveQueue;
-                    lock (_queueLock)
-                    {
-                        receiveQueue = _receiveQueue.Stop();
-                    }
+                    OperationQueue<TransferOperation> receiveQueue = _receiveQueue.Stop();
 
                     while (!receiveQueue.IsEmpty)
                     {
@@ -1428,10 +1400,7 @@ namespace System.Net.Sockets
                         receiveQueue.Dequeue();
                     }
 
-                    lock (_queueLock)
-                    {
-                        UnregisterRead();
-                    }
+                    UnregisterRead();
 
                     // Any data left in the socket has been received above; skip further processing.
                     events &= ~Interop.Sys.SocketEvents.Read;
@@ -1443,16 +1412,11 @@ namespace System.Net.Sockets
 
                 if ((events & Interop.Sys.SocketEvents.Read) != 0)
                 {
-                    AcceptOrConnectOperation acceptTail;
-                    TransferOperation receiveTail;
-                    lock (_queueLock)
-                    {
-                        acceptTail = _acceptOrConnectQueue.Tail as AcceptOperation;
-                        _acceptOrConnectQueue.State = QueueState.Set;
+                    AcceptOrConnectOperation acceptTail = _acceptOrConnectQueue.Tail as AcceptOperation;
+                    _acceptOrConnectQueue.State = QueueState.Set;
 
-                        receiveTail = _receiveQueue.Tail;
-                        _receiveQueue.State = QueueState.Set;
-                    }
+                    TransferOperation receiveTail = _receiveQueue.Tail;
+                    _receiveQueue.State = QueueState.Set;
 
                     if (acceptTail != null)
                     {
@@ -1464,7 +1428,7 @@ namespace System.Net.Sockets
                             {
                                 break;
                             }
-                            EndOperation(ref _acceptOrConnectQueue);
+                            _acceptOrConnectQueue.Dequeue();
                         } while (op != acceptTail);
                     }
 
@@ -1478,23 +1442,18 @@ namespace System.Net.Sockets
                             {
                                 break;
                             }
-                            EndOperation(ref _receiveQueue);
+                            _receiveQueue.Dequeue();
                         } while (op != receiveTail);
                     }
                 }
 
                 if ((events & Interop.Sys.SocketEvents.Write) != 0)
                 {
-                    AcceptOrConnectOperation connectTail;
-                    SendOperation sendTail;
-                    lock (_queueLock)
-                    {
-                        connectTail = _acceptOrConnectQueue.Tail as ConnectOperation;
-                        _acceptOrConnectQueue.State = QueueState.Set;
+                    AcceptOrConnectOperation connectTail = _acceptOrConnectQueue.Tail as ConnectOperation;
+                    _acceptOrConnectQueue.State = QueueState.Set;
 
-                        sendTail = _sendQueue.Tail;
-                        _sendQueue.State = QueueState.Set;
-                    }
+                    SendOperation sendTail = _sendQueue.Tail;
+                    _sendQueue.State = QueueState.Set;
 
                     if (connectTail != null)
                     {
@@ -1506,7 +1465,7 @@ namespace System.Net.Sockets
                             {
                                 break;
                             }
-                            EndOperation(ref _acceptOrConnectQueue);
+                            _acceptOrConnectQueue.Dequeue();
                         } while (op != connectTail);
                     }
 
@@ -1520,7 +1479,7 @@ namespace System.Net.Sockets
                             {
                                 break;
                             }
-                            EndOperation(ref _sendQueue);
+                            _sendQueue.Dequeue();
                         } while (op != sendTail);
                     }
                 }
