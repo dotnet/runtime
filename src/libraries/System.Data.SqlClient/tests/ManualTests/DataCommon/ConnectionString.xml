@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ConnectionStrings>
+  <ConnectionString id="SQL2005_Master"></ConnectionString>
+  <ConnectionString id="SQL2005_Northwind"></ConnectionString>
+  <ConnectionString id="SQL2005_Northwind_NamedPipes"></ConnectionString>
+  <ConnectionString id="SQL2005_Pubs"></ConnectionString>
+
+  <ConnectionString id="SQL2008_Master"></ConnectionString>
+  <ConnectionString id="SQL2008_Northwind"></ConnectionString>
+  <ConnectionString id="SQL2008_Pubs"></ConnectionString>
+  <ConnectionString id="SQL2008_Northwind_NamedPipes"></ConnectionString>
+
+  <ConnectionString id="SQL2012_Northwind_NamedPipes"></ConnectionString>
+</ConnectionStrings>
