@@ -181,7 +181,7 @@ namespace System.Runtime.Serialization.Json
                 long tickCount = value.Ticks - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
                 if ((tickCount > DateTime.MaxValue.Ticks) || (tickCount < DateTime.MinValue.Ticks))
                 {
-                    throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException("value"));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException(nameof(value)));
                 }
             }
 

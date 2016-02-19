@@ -28,7 +28,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="id">The ID of the message. Must be unique within the originating source block. Need not be globally unique.</param>
         public DataflowMessageHeader(Int64 id)
         {
-            if (id == default(long)) throw new ArgumentException(SR.Argument_InvalidMessageId, "id");
+            if (id == default(long)) throw new ArgumentException(SR.Argument_InvalidMessageId, nameof(id));
             Contract.EndContractBlock();
 
             _id = id;

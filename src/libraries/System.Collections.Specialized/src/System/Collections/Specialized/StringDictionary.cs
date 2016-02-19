@@ -63,7 +63,7 @@ namespace System.Collections.Specialized
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
 
                 return (string)_contents[key.ToLowerInvariant()];
@@ -72,7 +72,7 @@ namespace System.Collections.Specialized
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
 
                 _contents[key.ToLowerInvariant()] = value;
@@ -120,7 +120,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             _contents.Add(key.ToLowerInvariant(), value);
@@ -141,7 +141,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return _contents.ContainsKey(key.ToLowerInvariant());
@@ -179,7 +179,7 @@ namespace System.Collections.Specialized
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             _contents.Remove(key.ToLowerInvariant());

@@ -16,7 +16,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (otherProperty == null)
             {
-                throw new ArgumentNullException("otherProperty");
+                throw new ArgumentNullException(nameof(otherProperty));
             }
             OtherProperty = otherProperty;
         }

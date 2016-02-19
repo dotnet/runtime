@@ -29,7 +29,7 @@ namespace System.Xml.XPath
 
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
             else if (null != (xpdocNav = obj as XPathDocumentNavigator))
             {

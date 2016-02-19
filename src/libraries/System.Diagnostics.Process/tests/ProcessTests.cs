@@ -602,7 +602,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, PlatformSpecific(PlatformID.Windows)]
-        [MemberData("GetTestProcess")]
+        [MemberData(nameof(GetTestProcess))]
         public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
         {
             Assert.Equal(currentProcess.Id, remoteProcess.Id);

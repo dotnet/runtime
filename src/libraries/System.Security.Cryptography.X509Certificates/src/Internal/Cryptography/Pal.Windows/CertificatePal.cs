@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal
         public static ICertificatePal FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Arg_InvalidHandle, "handle");
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
             SafeCertContextHandle safeCertContextHandle = Interop.crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)

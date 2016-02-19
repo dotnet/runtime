@@ -33,10 +33,10 @@ namespace System.Threading
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
             if (handle == null)
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
 
             if (handle.IsClosed || handle.IsInvalid)
-                throw new ArgumentException(SR.Argument_InvalidHandle, "handle");
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
             // Make sure we use a statically-rooted completion callback, 
             // so it doesn't get collected while the I/O is in progress.
@@ -49,10 +49,10 @@ namespace System.Threading
             {
                 int hr = Marshal.GetHRForLastWin32Error();
                 if (hr == System.HResults.E_HANDLE)         // Bad handle
-                    throw new ArgumentException(SR.Argument_InvalidHandle, "handle");
+                    throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
                 if (hr == System.HResults.E_INVALIDARG)     // Handle already bound or sync handle
-                    throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, "handle");
+                    throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, nameof(handle));
 
                 throw Marshal.GetExceptionForHR(hr);
             }
@@ -64,7 +64,7 @@ namespace System.Threading
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object state, object pinData)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             AddRef();
             try
@@ -87,7 +87,7 @@ namespace System.Threading
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
             if (preAllocated == null)
-                throw new ArgumentNullException("preAllocated");
+                throw new ArgumentNullException(nameof(preAllocated));
 
             bool addedRefToThis = false;
             bool addedRefToPreAllocated = false;
@@ -98,7 +98,7 @@ namespace System.Threading
 
                 Win32ThreadPoolNativeOverlapped.OverlappedData data = preAllocated._overlapped->Data;
                 if (data._boundHandle != null)
-                    throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, "preAllocated");
+                    throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
                 data._boundHandle = this;
 
@@ -120,7 +120,7 @@ namespace System.Threading
         public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
             if (overlapped == null)
-                throw new ArgumentNullException("overlapped");
+                throw new ArgumentNullException(nameof(overlapped));
 
             Win32ThreadPoolNativeOverlapped* threadPoolOverlapped = Win32ThreadPoolNativeOverlapped.FromNativeOverlapped(overlapped);
             Win32ThreadPoolNativeOverlapped.OverlappedData data = GetOverlappedData(threadPoolOverlapped, this);
@@ -144,7 +144,7 @@ namespace System.Threading
         public unsafe static object GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
             if (overlapped == null)
-                throw new ArgumentNullException("overlapped");
+                throw new ArgumentNullException(nameof(overlapped));
 
             Win32ThreadPoolNativeOverlapped* threadPoolOverlapped = Win32ThreadPoolNativeOverlapped.FromNativeOverlapped(overlapped);
             Win32ThreadPoolNativeOverlapped.OverlappedData data = GetOverlappedData(threadPoolOverlapped, null);
@@ -157,10 +157,10 @@ namespace System.Threading
             Win32ThreadPoolNativeOverlapped.OverlappedData data = overlapped->Data;
 
             if (data._boundHandle == null)
-                throw new ArgumentException(SR.Argument_NativeOverlappedAlreadyFree, "overlapped");
+                throw new ArgumentException(SR.Argument_NativeOverlappedAlreadyFree, nameof(overlapped));
 
             if (expectedBoundHandle != null && data._boundHandle != expectedBoundHandle)
-                throw new ArgumentException(SR.Argument_NativeOverlappedWrongBoundHandle, "overlapped");
+                throw new ArgumentException(SR.Argument_NativeOverlappedWrongBoundHandle, nameof(overlapped));
 
             return data;
         }

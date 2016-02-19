@@ -58,7 +58,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Theory]
-        [MemberData("HeaderData")]
+        [MemberData(nameof(HeaderData))]
         public void ReadHeader_VariousInputs_MatchesExpectedBehavior(string raw, KeyValuePair<string, string>[] expectedHeaders)
         {
             char[] array = raw.ToCharArray();

@@ -40,7 +40,7 @@ namespace System.Net.Http.Headers
                 // value.
                 if ((value < 0) || (value > 1))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);

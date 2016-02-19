@@ -27,7 +27,7 @@ namespace System.Reflection
         {
             if (types == null)
             {
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             }
             GetTypeInfoOrThrow(type);
 
@@ -329,7 +329,7 @@ namespace System.Reflection
         {
             if (types == null)
             {
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             }
             GetTypeInfoOrThrow(type);
 
@@ -485,7 +485,7 @@ namespace System.Reflection
         {
             if (types == null)
             {
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             }
             GetTypeInfoOrThrow(type);
 

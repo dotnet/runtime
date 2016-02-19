@@ -27,7 +27,7 @@ namespace System.IO
         public static Task<Stream> OpenStreamForReadAsync(this IStorageFile windowsRuntimeFile)
         {
             if (windowsRuntimeFile == null)
-                throw new ArgumentNullException("windowsRuntimeFile");
+                throw new ArgumentNullException(nameof(windowsRuntimeFile));
 
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
@@ -62,7 +62,7 @@ namespace System.IO
         public static Task<Stream> OpenStreamForWriteAsync(this IStorageFile windowsRuntimeFile)
         {
             if (windowsRuntimeFile == null)
-                throw new ArgumentNullException("windowsRuntimeFile");
+                throw new ArgumentNullException(nameof(windowsRuntimeFile));
 
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
@@ -103,13 +103,13 @@ namespace System.IO
         public static Task<Stream> OpenStreamForReadAsync(this IStorageFolder rootDirectory, String relativePath)
         {
             if (rootDirectory == null)
-                throw new ArgumentNullException("rootDirectory");
+                throw new ArgumentNullException(nameof(rootDirectory));
 
             if (relativePath == null)
-                throw new ArgumentNullException("relativePath");
+                throw new ArgumentNullException(nameof(relativePath));
 
             if (String.IsNullOrWhiteSpace(relativePath))
-                throw new ArgumentException(SR.Argument_RelativePathMayNotBeWhitespaceOnly, "relativePath");
+                throw new ArgumentException(SR.Argument_RelativePathMayNotBeWhitespaceOnly, nameof(relativePath));
 
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();
@@ -147,13 +147,13 @@ namespace System.IO
                                                            CreationCollisionOption creationCollisionOption)
         {
             if (rootDirectory == null)
-                throw new ArgumentNullException("rootDirectory");
+                throw new ArgumentNullException(nameof(rootDirectory));
 
             if (relativePath == null)
-                throw new ArgumentNullException("relativePath");
+                throw new ArgumentNullException(nameof(relativePath));
 
             if (String.IsNullOrWhiteSpace(relativePath))
-                throw new ArgumentException(SR.Argument_RelativePathMayNotBeWhitespaceOnly, "relativePath");
+                throw new ArgumentException(SR.Argument_RelativePathMayNotBeWhitespaceOnly, nameof(relativePath));
 
             Contract.Ensures(Contract.Result<Task<Stream>>() != null);
             Contract.EndContractBlock();

@@ -31,7 +31,7 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request", SR.net_http_handler_norequest);
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
 
             // ProcessRequest() and ProcessResponse() are supposed to be fast, so we call ProcessRequest() on the same

@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
                 CngKey key = value;
                 Debug.Assert(key != null, "key != null");
                 if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
-                    throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "value");
+                    throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, nameof(value));
                 _core.SetKey(key);
                 KeySize = key.KeySize;
             }

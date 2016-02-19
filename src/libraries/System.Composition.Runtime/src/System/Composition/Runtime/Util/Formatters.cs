@@ -15,7 +15,7 @@ namespace System.Composition.Runtime.Util
         public static string Format(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (value is string)
                 return "\"" + value + "\"";
@@ -25,7 +25,7 @@ namespace System.Composition.Runtime.Util
 
         public static string Format(Type type)
         {
-            if (type == null) throw new ArgumentNullException("type");
+            if (type == null) throw new ArgumentNullException(nameof(type));
 
             if (type.IsConstructedGenericType)
                 return FormatClosedGeneric(type);
@@ -35,7 +35,7 @@ namespace System.Composition.Runtime.Util
 
         private static string FormatClosedGeneric(Type closedGenericType)
         {
-            if (closedGenericType == null) throw new ArgumentNullException("closedGenericType");
+            if (closedGenericType == null) throw new ArgumentNullException(nameof(closedGenericType));
             if (!closedGenericType.IsConstructedGenericType) throw new ArgumentException();
             var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf("`"));
             var args = closedGenericType.GenericTypeArguments.Select(t => Format(t));

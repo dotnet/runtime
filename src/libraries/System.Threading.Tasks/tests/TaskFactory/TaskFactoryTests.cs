@@ -552,7 +552,7 @@ namespace System.Threading.Tasks.Tests
                 myAsyncResult mar = new myAsyncResult(cb, o);
 
                 // Allow for exception throwing to test our handling of that.
-                if (s == null) throw new ArgumentNullException("s");
+                if (s == null) throw new ArgumentNullException(nameof(s));
 
                 Task t = Task.Factory.StartNew(delegate
                 {
@@ -598,7 +598,7 @@ namespace System.Threading.Tasks.Tests
                 myAsyncResult mar = new myAsyncResult(cb, o);
 
                 // Allow for exception throwing to test our handling of that.
-                if (maxBytes == -1) throw new ArgumentException("maxBytes");
+                if (maxBytes == -1) throw new ArgumentException(nameof(maxBytes));
 
                 Task t = Task.Factory.StartNew(delegate
                 {

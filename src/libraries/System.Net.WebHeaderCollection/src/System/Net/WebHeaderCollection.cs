@@ -152,7 +152,7 @@ namespace System.Net
                 {
                     if (value != null && value.Length > ushort.MaxValue)
                     {
-                        throw new ArgumentOutOfRangeException("value", value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
+                        throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
                     }
                 }
                 this[header.GetName()] = value;
@@ -171,8 +171,8 @@ namespace System.Net
                 // empty name is invalid
                 if (!isHeaderValue)
                 {
-                    throw name == null ? new ArgumentNullException("name") :
-                        new ArgumentException(SR.Format(SR.net_emptystringcall, "name"), "name");
+                    throw name == null ? new ArgumentNullException(nameof(name)) :
+                        new ArgumentException(SR.Format(SR.net_emptystringcall, "name"), nameof(name));
                 }
                 // empty value is OK
                 return string.Empty;
@@ -319,7 +319,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException("value", value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -346,7 +346,7 @@ namespace System.Net
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             name = CheckBadChars(name, false);
             ThrowOnRestrictedHeader(name);
@@ -355,7 +355,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException("value", value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -379,7 +379,7 @@ namespace System.Net
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             ThrowOnRestrictedHeader(name);
             name = CheckBadChars(name, false);

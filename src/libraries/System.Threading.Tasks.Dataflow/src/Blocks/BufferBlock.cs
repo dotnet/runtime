@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public BufferBlock(DataflowBlockOptions dataflowBlockOptions)
         {
-            if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
+            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
             Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
@@ -93,8 +93,8 @@ namespace System.Threading.Tasks.Dataflow
         DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
             Contract.EndContractBlock();
 
             lock (IncomingLock)
@@ -152,7 +152,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);

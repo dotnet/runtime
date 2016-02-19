@@ -596,9 +596,9 @@ namespace System.Data.SqlTypes
         {
             CheckValidPrecScale(bPrecision, bScale);
             if (bits == null)
-                throw new ArgumentNullException("bits");
+                throw new ArgumentNullException(nameof(bits));
             else if (bits.Length != 4)
-                throw new ArgumentException(SQLResource.InvalidArraySizeMessage, "bits");
+                throw new ArgumentException(SQLResource.InvalidArraySizeMessage, nameof(bits));
 
             m_bPrec = bPrecision;
             m_bScale = bScale;
@@ -1034,7 +1034,7 @@ namespace System.Data.SqlTypes
         public static SqlDecimal Parse(String s)
         {
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             if (s == SQLResource.NullString)
                 return SqlDecimal.Null;

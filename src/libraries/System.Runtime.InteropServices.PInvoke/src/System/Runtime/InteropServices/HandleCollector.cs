@@ -27,12 +27,12 @@ namespace System.Runtime.InteropServices
         {
             if (initialThreshold < 0)
             {
-                throw new ArgumentOutOfRangeException("initialThreshold", SR.Arg_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(initialThreshold), SR.Arg_NeedNonNegNumRequired);
             }
 
             if (maximumThreshold < 0)
             {
-                throw new ArgumentOutOfRangeException("maximumThreshold", SR.Arg_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(maximumThreshold), SR.Arg_NeedNonNegNumRequired);
             }
 
             if (initialThreshold > maximumThreshold)

@@ -20,7 +20,7 @@ namespace System.Net
                 {
                     return null;
                 }
-                throw new ArgumentNullException("ipString");
+                throw new ArgumentNullException(nameof(ipString));
             }
 
             uint error = 0;

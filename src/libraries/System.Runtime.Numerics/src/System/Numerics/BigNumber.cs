@@ -357,7 +357,7 @@ namespace System.Numerics
         internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             ArgumentException e;
             if (!TryValidateParseStyleInteger(style, out e))

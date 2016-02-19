@@ -105,7 +105,7 @@ namespace System.IO
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             Contract.Ensures(Contract.Result<int>() >= 0);
@@ -145,7 +145,7 @@ namespace System.IO
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             Contract.EndContractBlock();

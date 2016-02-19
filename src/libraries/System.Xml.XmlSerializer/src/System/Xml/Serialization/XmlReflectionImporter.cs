@@ -172,7 +172,7 @@ namespace System.Xml.Serialization
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute root, string defaultNamespace)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -297,7 +297,7 @@ namespace System.Xml.Serialization
             else if (mapping is TypeMapping)
                 return ((TypeMapping)mapping).TypeDesc.FullName;
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private ElementAccessor ReconcileLocalAccessor(ElementAccessor accessor, string ns)
@@ -560,7 +560,7 @@ namespace System.Xml.Serialization
                 case ImportContext.Attribute: return "attribute";
                 case ImportContext.Text: return "text";
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "context");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(context));
             }
         }
 
@@ -1084,7 +1084,7 @@ namespace System.Xml.Serialization
                         return;
                     break;
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "context");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(context));
             }
             throw UnsupportedException(typeDesc, context);
         }

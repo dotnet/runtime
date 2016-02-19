@@ -80,7 +80,7 @@ namespace System.Collections.Specialized
                 //       So it should work just fine.
                 else if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
                 return null;
             }
@@ -283,7 +283,7 @@ namespace System.Collections.Specialized
             }
             else if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             return false;
         }
@@ -338,7 +338,7 @@ namespace System.Collections.Specialized
             }
             else if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
         }
     }

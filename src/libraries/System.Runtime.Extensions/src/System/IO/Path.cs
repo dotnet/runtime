@@ -231,7 +231,7 @@ namespace System.IO
         {
             if (paths == null)
             {
-                throw new ArgumentNullException("paths");
+                throw new ArgumentNullException(nameof(paths));
             }
             Contract.EndContractBlock();
 
@@ -245,7 +245,7 @@ namespace System.IO
             {
                 if (paths[i] == null)
                 {
-                    throw new ArgumentNullException("paths");
+                    throw new ArgumentNullException(nameof(paths));
                 }
 
                 if (paths[i].Length == 0)

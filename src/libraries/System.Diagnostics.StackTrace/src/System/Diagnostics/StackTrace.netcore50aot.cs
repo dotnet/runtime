@@ -16,7 +16,7 @@ namespace System.Diagnostics
         {
             if (exception == null)
             {
-                throw new ArgumentNullException("exception");
+                throw new ArgumentNullException(nameof(exception));
             }
             _ips = ExceptionExtensions.GetStackIPs(exception);
             _needFileInfo = needFileInfo;

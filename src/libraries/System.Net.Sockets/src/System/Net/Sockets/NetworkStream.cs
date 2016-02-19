@@ -38,7 +38,7 @@ namespace System.Net.Sockets
 #endif
                 if (socket == null)
                 {
-                    throw new ArgumentNullException("socket");
+                    throw new ArgumentNullException(nameof(socket));
                 }
                 InitNetworkStream(socket);
 #if DEBUG
@@ -54,7 +54,7 @@ namespace System.Net.Sockets
 #endif
                 if (socket == null)
                 {
-                    throw new ArgumentNullException("socket");
+                    throw new ArgumentNullException(nameof(socket));
                 }
                 InitNetworkStream(socket);
                 _ownsSocket = ownsSocket;
@@ -68,7 +68,7 @@ namespace System.Net.Sockets
             Socket socket = networkStream.Socket;
             if (socket == null)
             {
-                throw new ArgumentNullException("networkStream");
+                throw new ArgumentNullException(nameof(networkStream));
             }
             InitNetworkStream(socket);
             _ownsSocket = ownsSocket;
@@ -218,7 +218,7 @@ namespace System.Net.Sockets
 #endif
                     if (value <= 0 && value != System.Threading.Timeout.Infinite)
                     {
-                        throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_gt_zero);
+                        throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
                     }
                     SetSocketTimeoutOption(SocketShutdown.Receive, value, false);
 #if DEBUG
@@ -255,7 +255,7 @@ namespace System.Net.Sockets
 #endif
                     if (value <= 0 && value != System.Threading.Timeout.Infinite)
                     {
-                        throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_gt_zero);
+                        throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
                     }
                     SetSocketTimeoutOption(SocketShutdown.Send, value, false);
 #if DEBUG
@@ -408,15 +408,15 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (offset < 0 || offset > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset");
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
                 if (size < 0 || size > buffer.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 Socket chkStreamSocket = _streamSocket;
@@ -481,15 +481,15 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (offset < 0 || offset > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset");
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
                 if (size < 0 || size > buffer.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 Socket chkStreamSocket = _streamSocket;
@@ -619,15 +619,15 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (offset < 0 || offset > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset");
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
                 if (size < 0 || size > buffer.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 Socket chkStreamSocket = _streamSocket;
@@ -727,7 +727,7 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 Socket chkStreamSocket = _streamSocket;
@@ -790,15 +790,15 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (offset < 0 || offset > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset");
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
                 if (size < 0 || size > buffer.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 Socket chkStreamSocket = _streamSocket;
@@ -908,7 +908,7 @@ namespace System.Net.Sockets
                 // Validate input parameters.
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 Socket chkStreamSocket = _streamSocket;

@@ -1584,7 +1584,7 @@ namespace Tests.Collections
         }
 
         [Theory]
-        [MemberData("RemoveAtInvalidData")]
+        [MemberData(nameof(RemoveAtInvalidData))]
         public void RemoveAtInvalid(int index, int size)
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)
@@ -1599,7 +1599,7 @@ namespace Tests.Collections
         }
 
         [Theory]
-        [MemberData("RemoveAtInvalidData")]
+        [MemberData(nameof(RemoveAtInvalidData))]
         public void RemoveAtInvalidReadOnly(int index, int size)
         {
             if (!ExpectedIsFixedSize && !ExpectedIsReadOnly)

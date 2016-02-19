@@ -20,7 +20,7 @@ namespace System.Net.Primitives.PalTests
             new object[] { AddressFamily.InterNetworkV6 }
         };
 
-        [Theory, MemberData("AddressFamilyData")]
+        [Theory, MemberData(nameof(AddressFamilyData))]
         public void AddressFamily_Get_Set(AddressFamily family)
         {
             var buffer = new byte[16];
@@ -43,7 +43,7 @@ namespace System.Net.Primitives.PalTests
             new object[] { (ushort)65535 }
         };
 
-        [Theory, MemberData("PortData")]
+        [Theory, MemberData(nameof(PortData))]
         public void Port_Get_Set_IPv4(ushort port)
         {
             var buffer = new byte[SocketAddressPal.IPv4AddressSize];
@@ -52,7 +52,7 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(port, SocketAddressPal.GetPort(buffer));
         }
 
-        [Theory, MemberData("PortData")]
+        [Theory, MemberData(nameof(PortData))]
         public void Port_Get_Set_IPv6(ushort port)
         {
             var buffer = new byte[SocketAddressPal.IPv6AddressSize];
@@ -86,7 +86,7 @@ namespace System.Net.Primitives.PalTests
             new object[] { 0xFFFFFFFF }
         };
 
-        [Theory, MemberData("IPv4AddressData")]
+        [Theory, MemberData(nameof(IPv4AddressData))]
         public void IPv4Address_Get_Set(uint address)
         {
             var buffer = new byte[SocketAddressPal.IPv4AddressSize];
@@ -123,7 +123,7 @@ namespace System.Net.Primitives.PalTests
             }
         };
 
-        [Theory, MemberData("IPv6AddressData")]
+        [Theory, MemberData(nameof(IPv6AddressData))]
         public void IPv6Address_Get_Set(byte[] address, uint scope)
         {
             var buffer = new byte[SocketAddressPal.IPv6AddressSize];
@@ -154,7 +154,7 @@ namespace System.Net.Primitives.PalTests
 
         public static IEnumerable<object[]> IPv4AddressAndPortData = IPv4AddressData.SelectMany(o => PortData.Select(p => o.Concat(p))).Select(o => o.ToArray());
 
-        [Theory, MemberData("IPv4AddressAndPortData")]
+        [Theory, MemberData(nameof(IPv4AddressAndPortData))]
         public void IPv4AddressAndPort_Get_Set(uint address, ushort port)
         {
             var buffer = new byte[SocketAddressPal.IPv4AddressSize];
@@ -168,7 +168,7 @@ namespace System.Net.Primitives.PalTests
 
         public static IEnumerable<object[]> IPv6AddressAndPortData = IPv6AddressData.SelectMany(o => PortData.Select(p => o.Concat(p))).Select(o => o.ToArray());
 
-        [Theory, MemberData("IPv6AddressAndPortData")]
+        [Theory, MemberData(nameof(IPv6AddressAndPortData))]
         public void IPv6AddressAndPort_Get_Set(byte[] address, uint scope, ushort port)
         {
             var buffer = new byte[SocketAddressPal.IPv6AddressSize];

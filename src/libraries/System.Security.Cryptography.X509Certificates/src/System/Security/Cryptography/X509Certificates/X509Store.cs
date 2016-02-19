@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Add(X509Certificate2 certificate)
         {
             if (certificate == null)
-                throw new ArgumentNullException("certificate");
+                throw new ArgumentNullException(nameof(certificate));
 
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Remove(X509Certificate2 certificate)
         {
             if (certificate == null)
-                throw new ArgumentNullException("certificate");
+                throw new ArgumentNullException(nameof(certificate));
 
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);

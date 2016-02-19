@@ -35,7 +35,7 @@ namespace System.IO.Pipes
             // Make sure the pipe name isn't one of our reserved names for anonymous pipes.
             if (String.Equals(fullPipeName, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
             {
-                throw new ArgumentOutOfRangeException("pipeName", SR.ArgumentOutOfRange_AnonymousReserved);
+                throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
             }
 
 
@@ -306,7 +306,7 @@ namespace System.IO.Pipes
             // through the MaxAllowedServerInstances constant. This is consistent e.g. with -1 as infinite timeout, etc
             if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
             {
-                throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
+                throw new ArgumentOutOfRangeException(nameof(maxNumberOfServerInstances), SR.ArgumentOutOfRange_MaxNumServerInstances);
             }
         }
     }

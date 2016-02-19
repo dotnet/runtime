@@ -64,7 +64,7 @@ namespace System.Collections.Generic
         // 
         public LowLevelList(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
             Contract.EndContractBlock();
 
             if (capacity == 0)
@@ -80,7 +80,7 @@ namespace System.Collections.Generic
         public LowLevelList(IEnumerable<T> collection)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             Contract.EndContractBlock();
 
             ICollection<T> c = collection as ICollection<T>;
@@ -130,7 +130,7 @@ namespace System.Collections.Generic
             {
                 if (value < _size)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 Contract.EndContractBlock();
 
@@ -312,7 +312,7 @@ namespace System.Collections.Generic
         public int IndexOf(T item, int index)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
@@ -328,7 +328,7 @@ namespace System.Collections.Generic
             // Note that insertions at the end are legal.
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             if (_size == _items.Length) EnsureCapacity(_size + 1);
@@ -350,12 +350,12 @@ namespace System.Collections.Generic
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
 
@@ -422,7 +422,7 @@ namespace System.Collections.Generic
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.Ensures(Contract.Result<int>() <= Contract.OldValue(Count));
@@ -461,7 +461,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             _size--;

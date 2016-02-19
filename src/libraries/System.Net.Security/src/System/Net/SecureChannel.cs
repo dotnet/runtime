@@ -858,7 +858,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (input == null ? 0 : input.Length - offset))
@@ -869,7 +869,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken", "Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             SecurityBuffer incomingSecurity = null;
@@ -1053,12 +1053,12 @@ namespace System.Net.Security
             {
                 if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
                 {
-                    throw new ArgumentOutOfRangeException("offset");
+                    throw new ArgumentOutOfRangeException(nameof(offset));
                 }
 
                 if (size < 0 || size > (buffer == null ? 0 : buffer.Length - offset))
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 resultSize = 0;
@@ -1126,7 +1126,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (payload == null ? 0 : payload.Length - offset))
@@ -1137,7 +1137,7 @@ namespace System.Net.Security
                 }
 
                 Debug.Fail("SecureChannel#" + LoggingHash.HashString(this) + "::Encrypt", "Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             SecurityStatusPal secStatus = SslStreamPal.DecryptMessage(_securityContext, payload, ref offset, ref count);

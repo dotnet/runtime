@@ -13,7 +13,7 @@ namespace System.Resources
         {
             if (version == null)
             {
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             }
 
             _version = version;

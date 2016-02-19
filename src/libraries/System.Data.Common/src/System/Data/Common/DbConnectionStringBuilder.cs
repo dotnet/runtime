@@ -266,7 +266,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException("keyword", "not a string");
+                throw new ArgumentException(nameof(keyword), "not a string");
             }
         }
 

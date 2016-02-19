@@ -120,7 +120,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, data.Count(IsEven));
         }
 
-        [Theory, MemberData("CountsAndTallies")]
+        [Theory, MemberData(nameof(CountsAndTallies))]
         public void CountMatchesTally<T, TEn>(T unusedArgumentToForceTypeInference, int count, TEn enumerable)
             where TEn : IEnumerable<T>
         {

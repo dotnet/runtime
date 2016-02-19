@@ -595,7 +595,7 @@ namespace System.Xml
         {
             if (i < 0 || i >= AttributeCount)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             MoveToElement();
             MoveToFirstAttribute();
@@ -843,7 +843,7 @@ namespace System.Xml
             }
             if (namespaceURI == null)
             {
-                throw new ArgumentNullException("namespaceURI");
+                throw new ArgumentNullException(nameof(namespaceURI));
             }
 
             // atomize local name and namespace
@@ -912,7 +912,7 @@ namespace System.Xml
             }
             if (namespaceURI == null)
             {
-                throw new ArgumentNullException("namespaceURI");
+                throw new ArgumentNullException(nameof(namespaceURI));
             }
             // save the element or root depth
             int parentDepth = Depth;
@@ -987,7 +987,7 @@ namespace System.Xml
             }
             if (namespaceURI == null)
             {
-                throw new ArgumentNullException("namespaceURI");
+                throw new ArgumentNullException(nameof(namespaceURI));
             }
 
             // atomize local name and namespace
@@ -1334,7 +1334,7 @@ namespace System.Xml
             }
             if (namespaceURI == null)
             {
-                throw new ArgumentNullException("namespaceURI");
+                throw new ArgumentNullException(nameof(namespaceURI));
             }
             if (NodeType != XmlNodeType.Element)
             {

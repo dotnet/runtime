@@ -77,9 +77,9 @@ namespace System.Xml.Linq
         bool IEqualityComparer.Equals(object x, object y)
         {
             XNode n1 = x as XNode;
-            if (n1 == null && x != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), "x");
+            if (n1 == null && x != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(x));
             XNode n2 = y as XNode;
-            if (n2 == null && y != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), "y");
+            if (n2 == null && y != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(y));
             return Equals(n1, n2);
         }
 
@@ -96,7 +96,7 @@ namespace System.Xml.Linq
         int IEqualityComparer.GetHashCode(object obj)
         {
             XNode n = obj as XNode;
-            if (n == null && obj != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), "obj");
+            if (n == null && obj != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(obj));
             return GetHashCode(n);
         }
     }

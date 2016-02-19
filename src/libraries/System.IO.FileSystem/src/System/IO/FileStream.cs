@@ -21,7 +21,7 @@ namespace System.IO
         {
             if (innerStream == null)
             {
-                throw new ArgumentNullException("innerStream");
+                throw new ArgumentNullException(nameof(innerStream));
             }
 
             this._innerStream = innerStream;
@@ -60,9 +60,9 @@ namespace System.IO
         private void Init(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (path == null)
-                throw new ArgumentNullException("path", SR.ArgumentNull_Path);
+                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
             if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, "path");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
@@ -80,10 +80,10 @@ namespace System.IO
 
             // NOTE: any change to FileOptions enum needs to be matched here in the error validation
             if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
-                throw new ArgumentOutOfRangeException("options", SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
 
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             // Write access validation
             if ((access & FileAccess.Write) == 0)
@@ -91,7 +91,7 @@ namespace System.IO
                 if (mode == FileMode.Truncate || mode == FileMode.CreateNew || mode == FileMode.Create || mode == FileMode.Append)
                 {
                     // No write access, mode and access disagree but flag access since mode comes first
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, mode, access), "access");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, mode, access), nameof(access));
                 }
             }
 
@@ -100,7 +100,7 @@ namespace System.IO
             ValidatePath(fullPath, "path");
 
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
-                throw new ArgumentException(SR.Argument_InvalidAppendMode, "access");
+                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
 
             this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options, this);
         }
@@ -225,11 +225,11 @@ namespace System.IO
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
@@ -267,11 +267,11 @@ namespace System.IO
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();

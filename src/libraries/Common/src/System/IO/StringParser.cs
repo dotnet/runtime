@@ -35,7 +35,7 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             _buffer = buffer;
             _separator = separator;

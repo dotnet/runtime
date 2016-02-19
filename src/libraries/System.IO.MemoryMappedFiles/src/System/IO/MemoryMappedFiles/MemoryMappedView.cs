@@ -97,7 +97,7 @@ namespace System.IO.MemoryMappedFiles
 
             if (IntPtr.Size == 4 && newSize > uint.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
         }
     }

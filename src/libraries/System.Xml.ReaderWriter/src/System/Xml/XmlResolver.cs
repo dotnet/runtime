@@ -71,7 +71,7 @@ namespace System.Xml
         {
             if (absoluteUri == null)
             {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
             if (type == null || type == typeof(System.IO.Stream))
             {

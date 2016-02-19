@@ -234,10 +234,10 @@ namespace System.Net.Http
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null) throw new ArgumentNullException("buffer");
-                if (offset < 0) throw new ArgumentOutOfRangeException("offset");
-                if (count < 0) throw new ArgumentOutOfRangeException("count");
-                if (offset > buffer.Length - count) throw new ArgumentException("buffer");
+                if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+                if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+                if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+                if (offset > buffer.Length - count) throw new ArgumentException(nameof(buffer));
                 CheckDisposed();
 
                 EventSourceTrace("Buffer: {0}, Offset: {1}, Count: {2}", buffer.Length, offset, count);

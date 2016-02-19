@@ -20,7 +20,7 @@ namespace System.Diagnostics
                                          object[] args, object data1, object[] data)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             return String.Equals(_src, source);
         }

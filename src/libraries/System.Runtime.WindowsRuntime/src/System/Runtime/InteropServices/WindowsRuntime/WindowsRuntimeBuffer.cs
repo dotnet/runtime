@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [CLSCompliant(false)]
         public static IBuffer Create(Int32 capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
             Contract.Ensures(Contract.Result<IBuffer>() != null);
             Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((UInt32)0));
@@ -50,10 +50,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [CLSCompliant(false)]
         public static IBuffer Create(Byte[] data, Int32 offset, Int32 length, Int32 capacity)
         {
-            if (data == null) throw new ArgumentNullException("data");
-            if (offset < 0) throw new ArgumentOutOfRangeException("offset");
-            if (length < 0) throw new ArgumentOutOfRangeException("length");
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal WindowsRuntimeBuffer(Int32 capacity)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity");
+                throw new ArgumentOutOfRangeException(nameof(capacity));
 
             Contract.EndContractBlock();
 
@@ -143,10 +143,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal WindowsRuntimeBuffer(Byte[] data, Int32 offset, Int32 length, Int32 capacity)
         {
-            if (data == null) throw new ArgumentNullException("data");
-            if (offset < 0) throw new ArgumentOutOfRangeException("offset");
-            if (length < 0) throw new ArgumentOutOfRangeException("length");
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
@@ -241,7 +241,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 if (value > ((IBuffer)this).Capacity)
                 {
-                    ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(SR.Argument_BufferLengthExceedsCapacity, "value");
+                    ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(SR.Argument_BufferLengthExceedsCapacity, nameof(value));
                     ex.SetErrorCode(HResults.E_BOUNDS);
                     throw ex;
                 }

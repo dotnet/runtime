@@ -19,7 +19,7 @@ namespace System.Security.Principal
         public GenericPrincipal(IIdentity identity, string[] roles)
         {
             if (identity == null)
-                throw new ArgumentNullException("identity");
+                throw new ArgumentNullException(nameof(identity));
             Contract.EndContractBlock();
 
             m_identity = identity;

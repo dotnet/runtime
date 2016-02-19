@@ -43,14 +43,14 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, null,
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
@@ -58,56 +58,56 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(5485, PlatformID.Windows)]
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new SyncBlockingContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new RepeatedFlushContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
-        [Theory, MemberData("BasicAuthEchoServers")]
+        [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
         {
             HttpContent content = CustomContent.Create(ExpectedContent, true);
@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, false);
         }
 
-        [Theory, MemberData("BasicAuthEchoServers")]
+        [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsInvalidOperationException(Uri serverUri)
         {
             HttpContent content = CustomContent.Create(ExpectedContent, false);
@@ -124,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
                 PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
-        [Theory, MemberData("BasicAuthEchoServers")]
+        [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Uri serverUri)
         {
             HttpContent content = CustomContent.Create(ExpectedContent, false);

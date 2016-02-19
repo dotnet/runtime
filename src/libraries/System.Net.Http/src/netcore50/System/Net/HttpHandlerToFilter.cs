@@ -34,7 +34,7 @@ namespace System.Net.Http
         {
             if (filter == null)
             {
-                throw new ArgumentNullException("filter");
+                throw new ArgumentNullException(nameof(filter));
             }
 
             _next = filter;
@@ -45,7 +45,7 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
             cancel.ThrowIfCancellationRequested();
 

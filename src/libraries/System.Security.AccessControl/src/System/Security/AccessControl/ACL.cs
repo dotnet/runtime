@@ -41,7 +41,7 @@ namespace System.Security.AccessControl
         {
             if ( collection == null )
             {
-                throw new ArgumentNullException( "collection" );
+                throw new ArgumentNullException( nameof(collection));
             }
             Contract.EndContractBlock();
 
@@ -172,7 +172,7 @@ namespace System.Security.AccessControl
         {
             if ( array == null )
             {
-                throw new ArgumentNullException( "array" );
+                throw new ArgumentNullException( nameof(array));
             }
 
             if ( array.Rank != 1 )
@@ -184,13 +184,13 @@ namespace System.Security.AccessControl
             if ( index < 0 )
             {
                 throw new ArgumentOutOfRangeException(
-                    "index",
+nameof(index),
                     SR.ArgumentOutOfRange_NeedNonNegNum );
             }
             else if ( array.Length - index < Count )
             {
                 throw new ArgumentOutOfRangeException(
-                    "array",
+nameof(array),
                     SR.ArgumentOutOfRange_ArrayTooSmall );
             }
 
@@ -250,7 +250,7 @@ namespace System.Security.AccessControl
         {
             if ( binaryForm == null )
             {
-                throw new ArgumentNullException( "binaryForm" );
+                throw new ArgumentNullException( nameof(binaryForm));
             }
             Contract.EndContractBlock();
 
@@ -261,7 +261,7 @@ namespace System.Security.AccessControl
                 //
 
                 throw new ArgumentOutOfRangeException(
-                    "offset",
+nameof(offset),
                     SR.ArgumentOutOfRange_NeedNonNegNum );
             }
 
@@ -293,7 +293,7 @@ namespace System.Security.AccessControl
         InvalidParameter:
 
             throw new ArgumentOutOfRangeException(
-                "binaryForm",
+nameof(binaryForm),
                 SR.ArgumentOutOfRange_ArrayTooSmall );
         }
 
@@ -301,12 +301,12 @@ namespace System.Security.AccessControl
         {
             if ( binaryForm == null )
             {
-                throw new ArgumentNullException( "binaryForm" );
+                throw new ArgumentNullException( nameof(binaryForm));
             }
             else if ( offset < 0 )
             {
                 throw new ArgumentOutOfRangeException(
-                    "offset",
+nameof(offset),
                     SR.ArgumentOutOfRange_NeedNonNegNum );
             }
             else if ( BinaryLength > MaxBinaryLength )
@@ -316,7 +316,7 @@ namespace System.Security.AccessControl
             else if ( binaryForm.Length - offset < BinaryLength )
             {
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall );
             }
 
@@ -365,7 +365,7 @@ namespace System.Security.AccessControl
 
                     throw new ArgumentException(
                         SR.ArgumentException_InvalidAclBinaryForm ,
-                        "binaryForm" );
+nameof(binaryForm));
                 }
 
                 _aces.Add( ace );
@@ -418,7 +418,7 @@ namespace System.Security.AccessControl
 
             throw new ArgumentException(
                 SR.ArgumentException_InvalidAclBinaryForm ,
-                "binaryForm" );
+nameof(binaryForm));
         }
 
         #endregion
@@ -549,7 +549,7 @@ namespace System.Security.AccessControl
             {
                 if ( value == null )
                 {
-                    throw new ArgumentNullException( "value" );
+                    throw new ArgumentNullException( nameof(value));
                 }
                 Contract.EndContractBlock();
 
@@ -587,7 +587,7 @@ namespace System.Security.AccessControl
         {
             if ( ace == null )
             {
-                throw new ArgumentNullException( "ace" );
+                throw new ArgumentNullException( nameof(ace));
             }
             Contract.EndContractBlock();
 
@@ -1900,7 +1900,7 @@ namespace System.Security.AccessControl
         {
             if ( rawAcl == null )
             {
-                throw new ArgumentNullException( "rawAcl" );
+                throw new ArgumentNullException( nameof(rawAcl));
             }
             Contract.EndContractBlock();
 
@@ -1983,7 +1983,7 @@ namespace System.Security.AccessControl
                 accessType != AccessControlType.Deny )
             {
                 throw new ArgumentOutOfRangeException(
-                    "accessType",
+nameof(accessType),
                     SR.ArgumentOutOfRange_Enum );
             }
         }
@@ -2001,20 +2001,20 @@ namespace System.Security.AccessControl
                 {
                     throw new ArgumentException(
                         SR.Argument_InvalidAnyFlag,
-                        "propagationFlags" );
+nameof(propagationFlags));
                 }
             }
             else if ( inheritanceFlags != InheritanceFlags.None )
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-                    "inheritanceFlags" );
+nameof(inheritanceFlags));
             }
             else if ( propagationFlags != PropagationFlags.None )
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-                    "propagationFlags" );
+nameof(propagationFlags));
             }
 
             return;
@@ -2028,7 +2028,7 @@ namespace System.Security.AccessControl
         {
             if ( sid == null )
             {
-                throw new ArgumentNullException( "sid" );
+                throw new ArgumentNullException( nameof(sid));
             }
             Contract.EndContractBlock();
 
@@ -2041,14 +2041,14 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "flags" );
+nameof(flags));
             }
 
             if ( accessMask == 0 )
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-                    "accessMask" );
+nameof(accessMask));
             }
 
             GenericAce newAce;
@@ -2112,7 +2112,7 @@ namespace System.Security.AccessControl
         {
             if ( sid == null )
             {
-                throw new ArgumentNullException( "sid" );
+                throw new ArgumentNullException( nameof(sid));
             }
 
             if ( qualifier == AceQualifier.SystemAudit &&
@@ -2120,14 +2120,14 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "flags" );
+nameof(flags));
             }
 
             if ( accessMask == 0 )
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-                    "accessMask" );
+nameof(accessMask));
             }
             Contract.EndContractBlock();
             ThrowIfNotCanonical();
@@ -2225,7 +2225,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-                    "accessMask" );
+nameof(accessMask));
             }
 
             if ( qualifier == AceQualifier.SystemAudit &&
@@ -2233,12 +2233,12 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "flags" );
+nameof(flags));
             }
 
             if ( sid == null )
             {
-                throw new ArgumentNullException( "sid" );
+                throw new ArgumentNullException( nameof(sid));
             }
             Contract.EndContractBlock();
             ThrowIfNotCanonical();
@@ -2670,7 +2670,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-                    "accessMask" );
+nameof(accessMask));
             }
 
             if ( qualifier == AceQualifier.SystemAudit &&
@@ -2678,12 +2678,12 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-                    "flags" );
+nameof(flags));
             }
         
             if ( sid == null )
             {
-                throw new ArgumentNullException( "sid" );
+                throw new ArgumentNullException( nameof(sid));
             }
             Contract.EndContractBlock();
             ThrowIfNotCanonical();
@@ -2903,7 +2903,7 @@ namespace System.Security.AccessControl
         {
             if ( sid == null )
             {
-                throw new ArgumentNullException( "sid" );
+                throw new ArgumentNullException( nameof(sid));
             }
             Contract.EndContractBlock();
             ThrowIfNotCanonical();

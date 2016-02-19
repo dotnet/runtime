@@ -49,7 +49,7 @@ namespace System
         public UriBuilder(Uri uri)
         {
             if ((object)uri == null)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
 
             Init(uri);
         }
@@ -121,7 +121,7 @@ namespace System
                     throw;
                 }
 
-                throw new ArgumentException("extraValue");
+                throw new ArgumentException(nameof(extraValue));
             }
         }
 
@@ -156,7 +156,7 @@ namespace System
                     }
                     else
                     {
-                        throw new ArgumentException("value");
+                        throw new ArgumentException(nameof(value));
                     }
                 }
                 else
@@ -256,7 +256,7 @@ namespace System
             {
                 if (value < -1 || value > 0xFFFF)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _port = value;
                 _changed = true;
@@ -307,7 +307,7 @@ namespace System
                 {
                     if (!Uri.CheckSchemeName(value))
                     {
-                        throw new ArgumentException("value");
+                        throw new ArgumentException(nameof(value));
                     }
                     value = value.ToLowerInvariant();
                 }

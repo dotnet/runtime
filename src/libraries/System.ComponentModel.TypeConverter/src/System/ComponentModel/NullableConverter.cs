@@ -27,7 +27,7 @@ namespace System.ComponentModel
             _simpleType = Nullable.GetUnderlyingType(type);
             if (_simpleType == null)
             {
-                throw new ArgumentException(SR.NullableConverterBadCtorArg, "type");
+                throw new ArgumentException(SR.NullableConverterBadCtorArg, nameof(type));
             }
 
             _simpleTypeConverter = TypeDescriptor.GetConverter(_simpleType);
@@ -102,7 +102,7 @@ namespace System.ComponentModel
         {
             if (destinationType == null)
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == _simpleType && value != null && _nullableType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))

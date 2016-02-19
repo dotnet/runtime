@@ -565,7 +565,7 @@ namespace System.Net
 
                 if (count > maxCount || count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.Format(SR.net_io_out_range, maxCount));
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.net_io_out_range, maxCount));
                 }
             }
             catch (Exception e)
@@ -661,7 +661,7 @@ namespace System.Net
 
                 Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'offset' out of range.");
 
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             
             if (count < 0 || count > (payload == null ? 0 : payload.Length - offset))
@@ -673,7 +673,7 @@ namespace System.Net
 
                 Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::Decrypt", "Argument 'count' out of range.");
 
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (IsNTLM)
@@ -750,7 +750,7 @@ namespace System.Net
 
                 Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::DecryptNtlm", "Argument 'count' out of range.");
 
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             var securityBuffer = new SecurityBuffer[2];

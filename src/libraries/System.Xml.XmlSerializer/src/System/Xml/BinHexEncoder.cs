@@ -13,19 +13,19 @@ namespace System.Xml
         {
             if (null == inArray)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             if (0 > offsetIn)
             {
-                throw new ArgumentOutOfRangeException("offsetIn");
+                throw new ArgumentOutOfRangeException(nameof(offsetIn));
             }
             if (0 > count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (count > inArray.Length - offsetIn)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             char[] outArray = new char[2 * count];

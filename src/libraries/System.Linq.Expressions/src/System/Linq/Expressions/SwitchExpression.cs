@@ -276,7 +276,7 @@ namespace System.Linq.Expressions
                     {
                         if (!TypeUtils.AreEquivalent(firstTestValue.Type, c.TestValues[i].Type))
                         {
-                            throw new ArgumentException(Strings.AllTestValuesMustHaveSameType, "cases");
+                            throw new ArgumentException(Strings.AllTestValuesMustHaveSameType, nameof(cases));
                         }
                     }
                 }

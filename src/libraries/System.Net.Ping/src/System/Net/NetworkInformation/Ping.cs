@@ -134,22 +134,22 @@ namespace System.Net.NetworkInformation
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (buffer.Length > MaxBufferSize)
             {
-                throw new ArgumentException(SR.net_invalidPingBufferSize, "buffer");
+                throw new ArgumentException(SR.net_invalidPingBufferSize, nameof(buffer));
             }
 
             if (timeout < 0)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             if (address == null)
             {
-                throw new ArgumentNullException("address");
+                throw new ArgumentNullException(nameof(address));
             }
 
             // Check if address family is installed.
@@ -157,7 +157,7 @@ namespace System.Net.NetworkInformation
 
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
             {
-                throw new ArgumentException(SR.net_invalid_ip_addr, "address");
+                throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
             // Need to snapshot the address here, so we're sure that it's not changed between now
@@ -182,7 +182,7 @@ namespace System.Net.NetworkInformation
         {
             if (string.IsNullOrEmpty(hostNameOrAddress))
             {
-                throw new ArgumentNullException("hostNameOrAddress");
+                throw new ArgumentNullException(nameof(hostNameOrAddress));
             }
 
             IPAddress address;
@@ -193,17 +193,17 @@ namespace System.Net.NetworkInformation
 
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (buffer.Length > MaxBufferSize)
             {
-                throw new ArgumentException(SR.net_invalidPingBufferSize, "buffer");
+                throw new ArgumentException(SR.net_invalidPingBufferSize, nameof(buffer));
             }
 
             if (timeout < 0)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             CheckStart();

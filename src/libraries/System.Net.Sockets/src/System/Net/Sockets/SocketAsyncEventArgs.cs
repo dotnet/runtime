@@ -265,11 +265,11 @@ namespace System.Net.Sockets
                     // combination must be in bounds of the array.
                     if (offset < 0 || offset > buffer.Length)
                     {
-                        throw new ArgumentOutOfRangeException("offset");
+                        throw new ArgumentOutOfRangeException(nameof(offset));
                     }
                     if (count < 0 || count > (buffer.Length - offset))
                     {
-                        throw new ArgumentOutOfRangeException("count");
+                        throw new ArgumentOutOfRangeException(nameof(count));
                     }
 
                     _buffer = buffer;

@@ -511,7 +511,7 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData("SpecificCodepageEncodings")]
+        [MemberData(nameof(SpecificCodepageEncodings))]
         public static void TestRoundtrippingSpecificCodepageEncoding(string encodingName, byte[] bytes, string expected)
         {
             Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(encodingName);
@@ -522,7 +522,7 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData("CodePageInfo")]
+        [MemberData(nameof(CodePageInfo))]
         public static void TestCodepageEncoding(int codePage, string webName, string queryString)
         {
             Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(queryString);
@@ -541,7 +541,7 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData("MultibyteCharacterEncodings")]
+        [MemberData(nameof(MultibyteCharacterEncodings))]
         public static void TestSpecificMultibyteCharacterEncodings(string codepageName, byte[] bytes, int[] expected)
         {
             Decoder decoder = CodePagesEncodingProvider.Instance.GetEncoding(codepageName).GetDecoder();
@@ -556,7 +556,7 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [MemberData("CodePageInfo")]
+        [MemberData(nameof(CodePageInfo))]
         public static void TestEncodingDisplayNames(int codePage, string webName, string queryString)
         {
             var encoding = CodePagesEncodingProvider.Instance.GetEncoding(codePage);

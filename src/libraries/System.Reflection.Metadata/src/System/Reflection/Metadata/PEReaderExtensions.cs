@@ -23,7 +23,7 @@ namespace System.Reflection.Metadata
         {
             if (peReader == null)
             {
-                throw new ArgumentNullException("peReader");
+                throw new ArgumentNullException(nameof(peReader));
             }
 
             var block = peReader.GetSectionData(relativeVirtualAddress);

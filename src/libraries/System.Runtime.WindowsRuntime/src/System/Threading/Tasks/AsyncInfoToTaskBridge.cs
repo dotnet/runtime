@@ -123,7 +123,7 @@ namespace System.Threading.Tasks
         private void Complete(IAsyncInfo asyncInfo, Func<IAsyncInfo, TResult> getResultsFunction, AsyncStatus asyncStatus)
         {
             if (asyncInfo == null)
-                throw new ArgumentNullException("asyncInfo");
+                throw new ArgumentNullException(nameof(asyncInfo));
 
             Contract.EndContractBlock();
             

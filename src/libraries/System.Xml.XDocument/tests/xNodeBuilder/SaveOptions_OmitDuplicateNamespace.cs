@@ -174,7 +174,7 @@ namespace CoreXml.Test.XLinq
                         "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C></B></A>" }
                 };
 
-                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                [Theory, MemberData(nameof(ConFlictsNSRedefenitionParams))]
                 public void XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(string xml1, string xml2)
                 {
                     XDocument doc = XDocument.Parse(xml1);
@@ -186,7 +186,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                [Theory, MemberData(nameof(ConFlictsNSRedefenitionParams))]
                 public void XDocumentConflictsNSRedefinitionToString(string xml1, string xml2)
                 {
                     XDocument doc = XDocument.Parse(xml1);
@@ -194,7 +194,7 @@ namespace CoreXml.Test.XLinq
                     ReaderDiff.Compare(xml2, doc.ToString(so));
                 }
 
-                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                [Theory, MemberData(nameof(ConFlictsNSRedefenitionParams))]
                 public void XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(string xml1, string xml2)
                 {
                     XElement el = XElement.Parse(xml1);
@@ -206,7 +206,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                [Theory, MemberData("ConFlictsNSRedefenitionParams")]
+                [Theory, MemberData(nameof(ConFlictsNSRedefenitionParams))]
                 public void XElementConflictsNSRedefinitionToString(string xml1, string xml2)
                 {
                     XElement el = XElement.Parse(xml1);

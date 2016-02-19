@@ -23,10 +23,10 @@ namespace System.Security.Cryptography
         public RSACng(CngKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
-                throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "key");
+                throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
         }

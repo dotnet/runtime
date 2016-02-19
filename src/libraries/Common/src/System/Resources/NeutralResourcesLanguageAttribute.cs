@@ -15,7 +15,7 @@ namespace System.Resources
         public NeutralResourcesLanguageAttribute(string cultureName)
         {
             if (cultureName == null)
-                throw new ArgumentNullException("cultureName");
+                throw new ArgumentNullException(nameof(cultureName));
 
             _culture = cultureName;
         }

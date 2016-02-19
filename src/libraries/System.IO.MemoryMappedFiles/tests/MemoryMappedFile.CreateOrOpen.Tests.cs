@@ -31,7 +31,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// </summary>
         [PlatformSpecific(PlatformID.AnyUnix)]
         [Theory]
-        [MemberData("CreateValidMapNames")]
+        [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
         {
             Assert.Throws<PlatformNotSupportedException>(() => MemoryMappedFile.CreateOrOpen(mapName, 4096));
@@ -107,7 +107,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
-        [MemberData("MemberData_ValidArgumentCombinations",
+        [MemberData(nameof(MemberData_ValidArgumentCombinations),
             new string[] { "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite },
@@ -168,7 +168,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
-        [MemberData("MemberData_ValidArgumentCombinations",
+        [MemberData(nameof(MemberData_ValidArgumentCombinations),
             new string[] { "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadWriteExecute },

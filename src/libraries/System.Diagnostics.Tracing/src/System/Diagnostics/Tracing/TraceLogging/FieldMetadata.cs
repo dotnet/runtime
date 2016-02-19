@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tracing
             if (name == null)
             {
                 throw new ArgumentNullException(
-                    "name",
+nameof(name),
                     "This usually means that the object passed to Write is of a type that"
                     + " does not support being used as the top-level object in an event,"
                     + " e.g. a primitive or built-in type.");

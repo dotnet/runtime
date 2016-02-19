@@ -116,10 +116,10 @@ namespace System.IO.Packaging
                                 CompressionOption compressionOption)
         {
             if (package == null)
-                throw new ArgumentNullException("package");
+                throw new ArgumentNullException(nameof(package));
 
             if (partUri == null)
-                throw new ArgumentNullException("partUri");
+                throw new ArgumentNullException(nameof(partUri));
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 
@@ -454,7 +454,7 @@ namespace System.IO.Packaging
             _container.ThrowIfReadOnly();
 
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 
@@ -498,7 +498,7 @@ namespace System.IO.Packaging
             _container.ThrowIfWriteOnly();
 
             if (relationshipType == null)
-                throw new ArgumentNullException("relationshipType");
+                throw new ArgumentNullException(nameof(relationshipType));
 
             InternalRelationshipCollection.ThrowIfInvalidRelationshipType(relationshipType);
 
@@ -804,7 +804,7 @@ namespace System.IO.Packaging
             _container.ThrowIfWriteOnly();
 
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
             InternalRelationshipCollection.ThrowIfInvalidXsdId(id);
 

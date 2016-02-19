@@ -161,7 +161,7 @@ namespace System.Text
 
             // Throw it, using our complete bytes
             throw new ArgumentException(
-                SR.Format(SR.Argument_RecursiveFallbackBytes, strBytes.ToString()), "bytesUnknown");
+                SR.Format(SR.Argument_RecursiveFallbackBytes, strBytes.ToString()), nameof(bytesUnknown));
         }
     }
 }

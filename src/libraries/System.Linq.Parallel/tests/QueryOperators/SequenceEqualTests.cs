@@ -51,7 +51,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SequenceEqualData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SequenceEqualData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SequenceEqual(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SequenceEqualData", (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(SequenceEqualData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
         public static void SequenceEqual_Longrunning(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
             SequenceEqual(left, right, count);
         }
 
         [Theory]
-        [MemberData("SequenceEqualData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SequenceEqualData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SequenceEqual_CustomComparator(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -88,14 +88,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SequenceEqualData", (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(SequenceEqualData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
         public static void SequenceEqual_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
             SequenceEqual_CustomComparator(left, right, count);
         }
 
         [Theory]
-        [MemberData("SequenceEqualUnequalSizeData", (object)(new int[] { 0, 4, 16 }))]
+        [MemberData(nameof(SequenceEqualUnequalSizeData), (object)(new int[] { 0, 4, 16 }))]
         public static void SequenceEqual_UnequalSize(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -108,14 +108,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SequenceEqualUnequalSizeData", (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(SequenceEqualUnequalSizeData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
         public static void SequenceEqual_UnequalSize_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             SequenceEqual_UnequalSize(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData("SequenceEqualUnequalData", (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(SequenceEqualUnequalData), (object)(new int[] { 1, 2, 16 }))]
         public static void SequenceEqual_Unequal(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -128,7 +128,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SequenceEqualUnequalData", (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(SequenceEqualUnequalData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
         public static void SequenceEqual_Unequal_Longrunning(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
             SequenceEqual_Unequal(left, right, count, item);
@@ -143,7 +143,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SequenceEqualUnequalData", (object)(new int[] { 4 }))]
+        [MemberData(nameof(SequenceEqualUnequalData), (object)(new int[] { 4 }))]
         public static void SequenceEqual_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -157,7 +157,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SequenceEqualUnequalData", (object)(new int[] { 4 }))]
+        [MemberData(nameof(SequenceEqualUnequalData), (object)(new int[] { 4 }))]
         public static void SequenceEqual_AggregateException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => left.Item.SequenceEqual(right.Item, new FailingEqualityComparer<int>()));
@@ -184,7 +184,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SequenceEqualData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SequenceEqualData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SequenceEqual_DisposeException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;

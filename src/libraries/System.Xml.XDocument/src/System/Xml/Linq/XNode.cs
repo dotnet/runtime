@@ -438,7 +438,7 @@ namespace System.Xml.Linq
         /// </exception>
         public static XNode ReadFrom(XmlReader reader)
         {
-            if (reader == null) throw new ArgumentNullException("reader");
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
             if (reader.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             switch (reader.NodeType)
             {

@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     public class VariableTests : ParameterExpressionTests
     {
         [Theory]
-        [MemberData("ValidTypeData")]
+        [MemberData(nameof(ValidTypeData))]
         public void CreateVariableForValidTypeNoName(Type type)
         {
             ParameterExpression variable = Expression.Variable(type);
@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ValidTypeData")]
+        [MemberData(nameof(ValidTypeData))]
         public void CrateVariableForValidTypeWithName(Type type)
         {
             ParameterExpression variable = Expression.Variable(type, "name");
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ByRefTypeData")]
+        [MemberData(nameof(ByRefTypeData))]
         public void VariableCannotBeByRef(Type type)
         {
             Assert.Throws<ArgumentException>(() => Expression.Variable(type));
@@ -60,7 +60,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ValueData")]
+        [MemberData(nameof(ValueData))]
         public void CanWriteAndReadBack(object value)
         {
             Type type = value.GetType();

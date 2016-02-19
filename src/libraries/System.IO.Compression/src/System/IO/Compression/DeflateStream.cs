@@ -55,7 +55,7 @@ namespace System.IO.Compression
         internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             switch (mode)
             {
@@ -68,7 +68,7 @@ namespace System.IO.Compression
                     break;
 
                 default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, "mode");
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.IO.Compression
         internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
         }
@@ -90,7 +90,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(stream != null);
             if (!stream.CanRead)
-                throw new ArgumentException(SR.NotSupported_UnreadableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
             _inflater = new Inflater(windowBits);
 
@@ -107,7 +107,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(stream != null);
             if (!stream.CanWrite)
-                throw new ArgumentException(SR.NotSupported_UnwritableStream, "stream");
+                throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
             _deflater = new Deflater(compressionLevel, windowBits);
 
@@ -299,13 +299,13 @@ namespace System.IO.Compression
         private void ValidateParameters(byte[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.InvalidArgumentOffsetCount);

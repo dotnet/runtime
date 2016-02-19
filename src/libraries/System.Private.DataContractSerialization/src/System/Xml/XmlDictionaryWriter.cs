@@ -155,7 +155,7 @@ namespace System.Xml
         public virtual void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             if (localName == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("localName"));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localName)));
             if (namespaceUri == null)
                 namespaceUri = XmlDictionaryString.Empty;
 #pragma warning suppress 56506 // Microsoft, XmlDictionaryString.Empty is never null
@@ -350,7 +350,7 @@ namespace System.Xml
         public virtual void WriteNode(XmlDictionaryReader reader, bool defattr)
         {
             if (reader == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("reader"));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(reader)));
             int d = (reader.NodeType == XmlNodeType.None ? -1 : reader.Depth);
             do
             {
@@ -403,15 +403,15 @@ namespace System.Xml
         private void CheckArray(Array array, int offset, int count)
         {
             if (array == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("array"));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("offset", SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ValueMustBeNonNegative)));
             if (offset > array.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("offset", SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
             if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("count", SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.ValueMustBeNonNegative)));
             if (count > array.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("count", SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
         }
 
         // bool

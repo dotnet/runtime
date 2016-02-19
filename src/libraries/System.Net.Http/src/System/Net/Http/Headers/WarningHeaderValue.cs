@@ -324,7 +324,7 @@ namespace System.Net.Http.Headers
         {
             if ((code < 0) || (code > 999))
             {
-                throw new ArgumentOutOfRangeException("code");
+                throw new ArgumentOutOfRangeException(nameof(code));
             }
         }
 
@@ -332,7 +332,7 @@ namespace System.Net.Http.Headers
         {
             if (string.IsNullOrEmpty(agent))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "agent");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(agent));
             }
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value

@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation
         {
             if (ttl <= 0)
             {
-                throw new ArgumentOutOfRangeException("ttl");
+                throw new ArgumentOutOfRangeException(nameof(ttl));
             }
 
             _ttl = ttl;
@@ -35,7 +35,7 @@ namespace System.Net.NetworkInformation
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 // Useful to discover routes.

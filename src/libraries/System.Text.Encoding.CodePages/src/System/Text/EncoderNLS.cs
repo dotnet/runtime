@@ -88,13 +88,13 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - index < count)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             // Avoid empty input problem
@@ -115,10 +115,10 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_mustFlush = flush;
@@ -138,10 +138,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
 
             if (chars.Length == 0)
@@ -194,10 +194,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             Contract.EndContractBlock();
 

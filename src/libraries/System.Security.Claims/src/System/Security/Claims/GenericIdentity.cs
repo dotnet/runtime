@@ -19,7 +19,7 @@ namespace System.Security.Principal
         public GenericIdentity(string name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             m_name = name;
@@ -31,9 +31,9 @@ namespace System.Security.Principal
         public GenericIdentity(string name, string type)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
 
             m_name = name;

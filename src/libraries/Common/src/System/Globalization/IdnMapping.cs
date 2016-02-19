@@ -64,7 +64,7 @@ namespace System.Globalization
         public string GetAscii(string unicode, int index)
         {
             if (unicode == null) 
-                throw new ArgumentNullException("unicode");
+                throw new ArgumentNullException(nameof(unicode));
             Contract.EndContractBlock();
             return GetAscii(unicode, index, unicode.Length - index);
         }
@@ -72,13 +72,13 @@ namespace System.Globalization
         public string GetAscii(string unicode, int index, int count)
         {
             if (unicode == null) 
-                throw new ArgumentNullException("unicode");
+                throw new ArgumentNullException(nameof(unicode));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
                 throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
             if (index > unicode.Length - count)
-                throw new ArgumentOutOfRangeException("unicode", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(unicode), SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             // We're only using part of the string
@@ -86,11 +86,11 @@ namespace System.Globalization
 
             if (unicode.Length == 0)
             {
-                throw new ArgumentException(SR.Argument_IdnBadLabelSize, "unicode");
+                throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
             }
             if (unicode[unicode.Length - 1] == 0)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), "unicode");
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
             }
 
             return GetAsciiCore(unicode);
@@ -105,7 +105,7 @@ namespace System.Globalization
         public string GetUnicode(string ascii, int index)
         {
             if (ascii == null) 
-                throw new ArgumentNullException("ascii");
+                throw new ArgumentNullException(nameof(ascii));
             Contract.EndContractBlock();
             return GetUnicode(ascii, index, ascii.Length - index);
         }
@@ -113,19 +113,19 @@ namespace System.Globalization
         public string GetUnicode(string ascii, int index, int count)
         {
             if (ascii == null) 
-                throw new ArgumentNullException("ascii");
+                throw new ArgumentNullException(nameof(ascii));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)
                 throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
             if (index > ascii.Length - count)
-                throw new ArgumentOutOfRangeException("ascii", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(ascii), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // This is a case (i.e. explicitly null-terminated input) where behavior in .NET and Win32 intentionally differ.
             // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
             // The Win32 APIs fail on an embedded null, but not on a terminating null.
             if (count > 0 && ascii[index + count - 1] == (char)0)
-                throw new ArgumentException("ascii", SR.Argument_IdnBadPunycode);
+                throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
             Contract.EndContractBlock();
 
             // We're only using part of the string

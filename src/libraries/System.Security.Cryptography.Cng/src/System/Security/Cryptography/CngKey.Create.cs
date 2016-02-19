@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         public static CngKey Create(CngAlgorithm algorithm, string keyName, CngKeyCreationParameters creationParameters)
         {
             if (algorithm == null)
-                throw new ArgumentNullException("algorithm");
+                throw new ArgumentNullException(nameof(algorithm));
 
             if (creationParameters == null)
                 creationParameters = new CngKeyCreationParameters();

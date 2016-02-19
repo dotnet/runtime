@@ -149,12 +149,12 @@ namespace System.Reflection.Internal
 
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             }
 
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException("byteCount");
+                throw new ArgumentOutOfRangeException(nameof(byteCount));
             }
 
             byte[] buffer = AcquireBuffer(byteCount);
@@ -253,12 +253,12 @@ namespace System.Reflection.Internal
 
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             }
 
             if (byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException("byteCount");
+                throw new ArgumentOutOfRangeException(nameof(byteCount));
             }
 
             return createStringFromEncoding(bytes, byteCount, encoding);

@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
 
             int estimatedSize;
             switch (KeySize)
@@ -50,9 +50,9 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (signature == null)
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
 
             unsafe
             {

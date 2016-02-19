@@ -46,7 +46,7 @@ namespace System.Net.Http
         {
             if (string.IsNullOrWhiteSpace(subtype))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "subtype");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(subtype));
             }
             Contract.EndContractBlock();
             ValidateBoundary(boundary);
@@ -60,7 +60,7 @@ namespace System.Net.Http
             }
 
             MediaTypeHeaderValue contentType = new MediaTypeHeaderValue("multipart/" + subtype);
-            contentType.Parameters.Add(new NameValueHeaderValue("boundary", quotedBoundary));
+            contentType.Parameters.Add(new NameValueHeaderValue(nameof(boundary), quotedBoundary));
             Headers.ContentType = contentType;
 
             _nestedContent = new List<HttpContent>();
@@ -72,7 +72,7 @@ namespace System.Net.Http
             // Instead validate it ourselves and then quote it.
             if (string.IsNullOrWhiteSpace(boundary))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "boundary");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(boundary));
             }
 
             // RFC 2046 Section 5.1.1
@@ -81,13 +81,13 @@ namespace System.Net.Http
             // bcharsnospace := DIGIT / ALPHA / "'" / "(" / ")" / "+" / "_" / "," / "-" / "." / "/" / ":" / "=" / "?"
             if (boundary.Length > 70)
             {
-                throw new ArgumentOutOfRangeException("boundary", boundary,
+                throw new ArgumentOutOfRangeException(nameof(boundary), boundary,
                     string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
             }
             // Cannot end with space.
             if (boundary.EndsWith(" ", StringComparison.Ordinal))
             {
-                throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), "boundary");
+                throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
             Contract.EndContractBlock();
 
@@ -104,7 +104,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), "boundary");
+                    throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace System.Net.Http
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             Contract.EndContractBlock();
 

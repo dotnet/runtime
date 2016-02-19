@@ -31,7 +31,7 @@ namespace System.Collections.Generic
             Contract.Ensures(Contract.Result<Comparer<T>>() != null);
 
             if (comparison == null)
-                throw new ArgumentNullException("comparison");
+                throw new ArgumentNullException(nameof(comparison));
 
             return new ComparisonComparer<T>(comparison);
         }

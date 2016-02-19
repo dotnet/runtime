@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHashAlgorithms")]
+        [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHMACs")]
+        [MemberData(nameof(GetHMACs))]
         public static void VerifyIncrementalHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHashAlgorithms")]
+        [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyEmptyHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHMACs")]
+        [MemberData(nameof(GetHMACs))]
         public static void VerifyEmptyHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHashAlgorithms")]
+        [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyTrivialHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [MemberData("GetHMACs")]
+        [MemberData(nameof(GetHMACs))]
         public static void VerifyTrivialHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             using (referenceAlgorithm)

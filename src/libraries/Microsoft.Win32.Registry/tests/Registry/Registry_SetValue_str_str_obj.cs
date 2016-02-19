@@ -50,7 +50,7 @@ namespace Microsoft.Win32.RegistryTests
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }
 
         [Theory]
-        [MemberData("TestValueTypes")]
+        [MemberData(nameof(TestValueTypes))]
         public void SetValueWithValueTypes(string valueName, object testValue)
         {
             Registry.SetValue(TestRegistryKey.Name, valueName, testValue);
@@ -113,7 +113,7 @@ namespace Microsoft.Win32.RegistryTests
         public static IEnumerable<object[]> TestEnvironment { get { return TestData.TestEnvironment; } }
 
         [Theory]
-        [MemberData("TestEnvironment")]
+        [MemberData(nameof(TestEnvironment))]
         public void SetValueWithEnvironmentVariable(string valueName, string envVariableName, string expectedVariableValue)
         {
             string value = "%" + envVariableName + "%";

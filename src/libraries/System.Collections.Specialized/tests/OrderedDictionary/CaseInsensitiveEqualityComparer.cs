@@ -30,7 +30,7 @@ namespace System.Collections.Specialized.Tests
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             string s = obj as string;

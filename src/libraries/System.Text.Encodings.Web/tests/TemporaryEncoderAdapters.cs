@@ -36,7 +36,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 s_default = value;
             }
@@ -99,7 +99,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 s_default = value;
             }
@@ -162,7 +162,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 s_default = value;
             }

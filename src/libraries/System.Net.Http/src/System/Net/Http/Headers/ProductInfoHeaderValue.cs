@@ -30,7 +30,7 @@ namespace System.Net.Http.Headers
         {
             if (product == null)
             {
-                throw new ArgumentNullException("product");
+                throw new ArgumentNullException(nameof(product));
             }
 
             _product = product;

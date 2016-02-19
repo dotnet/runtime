@@ -179,7 +179,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer)
             : this(comparer)
         {
-            if (collection == null) throw new ArgumentNullException("collection");
+            if (collection == null) throw new ArgumentNullException(nameof(collection));
 
             InitializeFromCollection(collection);
         }
@@ -209,8 +209,8 @@ namespace System.Collections.Concurrent
             int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer)
             : this(concurrencyLevel, DefaultCapacity, false, comparer)
         {
-            if (collection == null) throw new ArgumentNullException("collection");
-            if (comparer == null) throw new ArgumentNullException("comparer");
+            if (collection == null) throw new ArgumentNullException(nameof(collection));
+            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
 
             InitializeFromCollection(collection);
         }
@@ -261,13 +261,13 @@ namespace System.Collections.Concurrent
         {
             if (concurrencyLevel < 1)
             {
-                throw new ArgumentOutOfRangeException("concurrencyLevel", SR.ConcurrentDictionary_ConcurrencyLevelMustBePositive);
+                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositive);
             }
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ConcurrentDictionary_CapacityMustNotBeNegative);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ConcurrentDictionary_CapacityMustNotBeNegative);
             }
-            if (comparer == null) throw new ArgumentNullException("comparer");
+            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
 
             // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard
             // any buckets.
@@ -609,8 +609,8 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/>.</exception>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException("array");
-            if (index < 0) throw new ArgumentOutOfRangeException("index", SR.ConcurrentDictionary_IndexIsNegative);
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
 
             int locksAcquired = 0;
             try
@@ -968,7 +968,7 @@ namespace System.Collections.Concurrent
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
             if (key == null) ThrowKeyNullException();
-            if (valueFactory == null) throw new ArgumentNullException("valueFactory");
+            if (valueFactory == null) throw new ArgumentNullException(nameof(valueFactory));
 
             int hashcode = _comparer.GetHashCode(key);
 
@@ -1028,8 +1028,8 @@ namespace System.Collections.Concurrent
         public TValue AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
         {
             if (key == null) ThrowKeyNullException();
-            if (addValueFactory == null) throw new ArgumentNullException("addValueFactory");
-            if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
+            if (addValueFactory == null) throw new ArgumentNullException(nameof(addValueFactory));
+            if (updateValueFactory == null) throw new ArgumentNullException(nameof(updateValueFactory));
 
             int hashcode = _comparer.GetHashCode(key);
 
@@ -1076,7 +1076,7 @@ namespace System.Collections.Concurrent
         public TValue AddOrUpdate(TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory)
         {
             if (key == null) ThrowKeyNullException();
-            if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
+            if (updateValueFactory == null) throw new ArgumentNullException(nameof(updateValueFactory));
 
             int hashcode = _comparer.GetHashCode(key);
 
@@ -1510,8 +1510,8 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/>.</exception>
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null) throw new ArgumentNullException("array");
-            if (index < 0) throw new ArgumentOutOfRangeException("index", SR.ConcurrentDictionary_IndexIsNegative);
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
 
             int locksAcquired = 0;
             try
@@ -1558,7 +1558,7 @@ namespace System.Collections.Concurrent
                     return;
                 }
 
-                throw new ArgumentException(SR.ConcurrentDictionary_ArrayIncorrectType, "array");
+                throw new ArgumentException(SR.ConcurrentDictionary_ArrayIncorrectType, nameof(array));
             }
             finally
             {
@@ -1957,7 +1957,7 @@ namespace System.Collections.Concurrent
         public IDictionaryDebugView(IDictionary<K, V> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             _dictionary = dictionary;
         }

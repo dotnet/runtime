@@ -84,7 +84,7 @@ namespace System.Collections.Generic
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             // these are explicit type checks in the mould of HashSet. It would have worked better
@@ -630,17 +630,17 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             // will array, starting at arrayIndex, be able to hold elements? Note: not
@@ -671,22 +671,22 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (array.Length - index < Count)
@@ -704,7 +704,7 @@ namespace System.Collections.Generic
                 object[] objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
 
                 try
@@ -713,7 +713,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
             }
         }
@@ -1045,7 +1045,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             SortedSet<T> s = other as SortedSet<T>;
@@ -1205,7 +1205,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (Count == 0)
@@ -1293,7 +1293,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (_count == 0)
@@ -1341,7 +1341,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (this.Count == 0)
@@ -1432,7 +1432,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (Count == 0)
@@ -1477,7 +1477,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if ((other as ICollection) != null)
@@ -1513,7 +1513,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if ((other as ICollection) != null && (other as ICollection).Count == 0)
@@ -1547,7 +1547,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (Count == 0)
@@ -1591,7 +1591,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             SortedSet<T> asSorted = other as SortedSet<T>;
@@ -1630,7 +1630,7 @@ namespace System.Collections.Generic
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             if (this.Count == 0)
@@ -1757,7 +1757,7 @@ namespace System.Collections.Generic
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             List<T> matches = new List<T>(this.Count);
 
@@ -1828,7 +1828,7 @@ namespace System.Collections.Generic
         {
             if (Comparer.Compare(lowerValue, upperValue) > 0)
             {
-                throw new ArgumentException(SR.SortedSet_LowerValueGreaterThanUpperValue, "lowerValue");
+                throw new ArgumentException(SR.SortedSet_LowerValueGreaterThanUpperValue, nameof(lowerValue));
             }
             return new TreeSubSet(this, lowerValue, upperValue, true, true);
         }
@@ -2114,12 +2114,12 @@ namespace System.Collections.Generic
                 if (_lBoundActive && Comparer.Compare(_min, lowerValue) > 0)
                 {
                     //lBound = min;
-                    throw new ArgumentOutOfRangeException("lowerValue");
+                    throw new ArgumentOutOfRangeException(nameof(lowerValue));
                 }
                 if (_uBoundActive && Comparer.Compare(_max, upperValue) < 0)
                 {
                     //uBound = max;
-                    throw new ArgumentOutOfRangeException("upperValue");
+                    throw new ArgumentOutOfRangeException(nameof(upperValue));
                 }
                 TreeSubSet ret = (TreeSubSet)_underlying.GetViewBetween(lowerValue, upperValue);
                 return ret;

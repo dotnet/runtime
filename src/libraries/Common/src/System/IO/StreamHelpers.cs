@@ -26,11 +26,11 @@ namespace System.IO
 
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
             if (bufferSize <= 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
             }
 
             if (!source.CanRead)
@@ -44,7 +44,7 @@ namespace System.IO
             {
                 throw destination.CanRead ?
                     (Exception)new NotSupportedException(SR.NotSupported_UnwritableStream) :
-                    new ObjectDisposedException("destination");
+                    new ObjectDisposedException(nameof(destination));
             }
 
             return ArrayPoolCopyToAsyncInternal(source, destination, bufferSize, cancellationToken);

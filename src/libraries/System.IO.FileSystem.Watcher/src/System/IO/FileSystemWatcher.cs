@@ -97,14 +97,14 @@ namespace System.IO
         public FileSystemWatcher(string path, string filter)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (filter == null)
-                throw new ArgumentNullException("filter");
+                throw new ArgumentNullException(nameof(filter));
 
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0 || !Directory.Exists(path))
-                throw new ArgumentException(SR.Format(SR.InvalidDirName, path), "path");
+                throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
 
             _directory = path;
             _filter = filter;

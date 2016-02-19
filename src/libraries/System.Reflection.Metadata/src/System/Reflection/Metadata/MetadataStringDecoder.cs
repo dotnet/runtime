@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             if (encoding == null)
             {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
 
             // Non-enforcement of (encoding is UTF8Encoding) here is by design.

@@ -631,12 +631,12 @@ namespace System.Runtime.Serialization
             // dictMap passes in the dictionary that is used for mapping field names to their serialized representations.
             if (dictMap == null)
             {
-                throw new ArgumentNullException("dictMap");
+                throw new ArgumentNullException(nameof(dictMap));
             }
 
             if (exceptionNamespace == null)
             {
-                throw new ArgumentNullException("exceptionNamespace");
+                throw new ArgumentNullException(nameof(exceptionNamespace));
             }
 
             _elementNamesToMap = dictMap;

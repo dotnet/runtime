@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments.  It's ok for the filterFunction to be null, but not the other parameters.
             if (transformSync == null && transformAsync == null) throw new ArgumentNullException("transform");
-            if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
+            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
 
             Contract.Requires(transformSync == null ^ transformAsync == null, "Exactly one of transformSync and transformAsync must be null.");
             Contract.EndContractBlock();
@@ -571,7 +571,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             _target.Complete(exception, dropPendingMessages: true);

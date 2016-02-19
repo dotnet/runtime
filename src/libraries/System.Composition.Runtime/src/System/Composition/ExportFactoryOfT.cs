@@ -22,7 +22,7 @@ namespace System.Composition
         {
             if (exportCreator == null)
             {
-                throw new ArgumentNullException("exportCreator");
+                throw new ArgumentNullException(nameof(exportCreator));
             }
 
             _exportLifetimeContextCreator = exportCreator;

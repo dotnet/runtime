@@ -211,7 +211,7 @@ namespace System.IO
         {
             // To ensure we don't leak a handle, put it in a SafeFileHandle first
             if (handle.IsInvalid)
-                throw new ArgumentException(SR.Arg_InvalidHandle, "handle");
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
             Contract.EndContractBlock();
 
             _handle = handle;
@@ -219,9 +219,9 @@ namespace System.IO
 
             // Now validate arguments.
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException("access", SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             int handleType = Interop.mincore.GetFileType(_handle);
             Debug.Assert(handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK || handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE || handleType == Interop.mincore.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
@@ -259,7 +259,7 @@ namespace System.IO
                 {
                     // If you passed in a synchronous handle and told us to use
                     // it asynchronously, throw here.
-                    throw new ArgumentException(SR.Arg_HandleNotAsync, "handle", ex);
+                    throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle), ex);
                 }
             }
             else if (!_isAsync)
@@ -416,7 +416,7 @@ namespace System.IO
             }
             set
             {
-                if (value < 0) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
                 if (_writePos > 0) FlushWrite(false);
                 _readPos = 0;
@@ -605,7 +605,7 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) throw Error.GetFileNotOpen();
@@ -645,7 +645,7 @@ namespace System.IO
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_FileLengthTooBig);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
             // Return file pointer to where it was before setting length
@@ -662,11 +662,11 @@ namespace System.IO
         public override int Read([In, Out] byte[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
@@ -782,7 +782,7 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
-                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, "origin");
+                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
             Contract.EndContractBlock();
             if (_handle.IsClosed) throw Error.GetFileNotOpen();
             if (!_parent.CanSeek) throw Error.GetSeekNotSupported();
@@ -938,11 +938,11 @@ namespace System.IO
         public override void Write(byte[] array, int offset, int count)
         {
             if (array == null)
-                throw new ArgumentNullException("array", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();

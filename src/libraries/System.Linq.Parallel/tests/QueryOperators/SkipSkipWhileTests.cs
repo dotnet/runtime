@@ -26,7 +26,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Skip_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -42,14 +42,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void Skip_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip_Unordered(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Skip(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void Skip_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Skip_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -83,14 +83,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void Skip_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip_Unordered_NotPipelined(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Skip_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -101,7 +101,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void Skip_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             Skip_NotPipelined(labeled, count, skip);
@@ -127,7 +127,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -143,14 +143,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Unordered(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -164,14 +164,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -184,14 +184,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Unordered_NotPipelined(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -202,14 +202,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_NotPipelined(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Indexed_Unordered(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -225,14 +225,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Indexed_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed_Unordered(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Indexed(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -246,14 +246,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Indexed_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Indexed_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -266,14 +266,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipUnorderedData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipUnorderedData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Indexed_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed_Unordered_NotPipelined(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_Indexed_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -284,14 +284,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_Indexed_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_Indexed_NotPipelined(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_AllFalse(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -302,14 +302,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_AllFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_AllFalse(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SkipWhile_AllTrue(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -320,14 +320,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_AllTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int skip)
         {
             SkipWhile_AllTrue(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipWhileData", (object)(new int[] { 2, 16 }))]
+        [MemberData(nameof(SkipWhileData), (object)(new int[] { 2, 16 }))]
         public static void SkipWhile_SomeTrue(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -338,14 +338,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipWhileData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipWhileData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_SomeTrue_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
         {
             SkipWhile_SomeTrue(labeled, count, skip);
         }
 
         [Theory]
-        [MemberData("SkipWhileData", (object)(new int[] { 2, 16 }))]
+        [MemberData(nameof(SkipWhileData), (object)(new int[] { 2, 16 }))]
         public static void SkipWhile_SomeFalse(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -356,7 +356,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SkipWhileData", (object)(new int[] { 1024 * 32 }))]
+        [MemberData(nameof(SkipWhileData), (object)(new int[] { 1024 * 32 }))]
         public static void SkipWhile_SomeFalse_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, IEnumerable<int> skip)
         {
             SkipWhile_SomeFalse(labeled, count, skip);

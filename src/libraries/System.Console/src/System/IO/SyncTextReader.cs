@@ -105,7 +105,7 @@ namespace System.IO
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
@@ -118,7 +118,7 @@ namespace System.IO
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)

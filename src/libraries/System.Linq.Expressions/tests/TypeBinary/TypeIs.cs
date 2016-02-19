@@ -48,35 +48,35 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void TypePropertyMatches(Expression expression, Type type)
         {
             Assert.Equal(type, Expression.TypeIs(expression, type).TypeOperand);
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void TypeIsBoolean(Expression expression, Type type)
         {
             Assert.Equal(typeof(bool), Expression.TypeIs(expression, type).Type);
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void NodeType(Expression expression, Type type)
         {
             Assert.Equal(ExpressionType.TypeIs, Expression.TypeIs(expression, type).NodeType);
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void ExpressionIsThatPassed(Expression expression, Type type)
         {
             Assert.Same(expression, Expression.TypeIs(expression, type).Expression);
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void ExpressionEvaluationCompiled(Expression expression, Type type)
         {
             bool expected = expression.Type == typeof(void)
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void ExpressionEvaluationInterpretted(Expression expression, Type type)
         {
             bool expected = expression.Type == typeof(void)
@@ -98,7 +98,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void ExpressionEvaluationWithParameterCompiled(Expression expression, Type type)
         {
             if (expression.Type == typeof(void))
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ExpressionAndTypeCombinations")]
+        [MemberData(nameof(ExpressionAndTypeCombinations))]
         public void ExpressionEvaluationWithParameterInterpretted(Expression expression, Type type)
         {
             if (expression.Type == typeof(void))

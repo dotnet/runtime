@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (indentChars == null)
                 {
-                    throw new ArgumentNullException("indentChars");
+                    throw new ArgumentNullException(nameof(indentChars));
                 }
                 _indentChars = indentChars;
             }
@@ -222,7 +222,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (ns == null)
             {
-                throw new ArgumentNullException("ns");
+                throw new ArgumentNullException(nameof(ns));
             }
             if (ns == Globals.XmlnsNamespace)
             {
@@ -243,11 +243,11 @@ namespace System.Runtime.Serialization.Json
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
             if (encoding == null)
             {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
@@ -370,22 +370,22 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
             }
 
             StartText();
@@ -396,22 +396,22 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
             }
 
             StartText();
@@ -432,22 +432,22 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
             }
 
             WriteString(new string(buffer, index, count));
@@ -703,7 +703,7 @@ namespace System.Runtime.Serialization.Json
 
             if (!name.Equals("xml", StringComparison.OrdinalIgnoreCase))
             {
-                throw new ArgumentException(SR.JsonXmlProcessingInstructionNotSupported, "name");
+                throw new ArgumentException(SR.JsonXmlProcessingInstructionNotSupported, nameof(name));
             }
 
             if (WriteState != WriteState.Start)
@@ -716,11 +716,11 @@ namespace System.Runtime.Serialization.Json
         {
             if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
             if (localName.Length == 0)
             {
-                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, "localName");
+                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
             if (ns == null)
             {
@@ -739,22 +739,22 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
             }
 
             WriteString(new string(buffer, index, count));
@@ -773,12 +773,12 @@ namespace System.Runtime.Serialization.Json
                 {
                     if (ns != null && ns != xmlnsNamespace)
                     {
-                        throw new ArgumentException(SR.Format(SR.XmlPrefixBoundToNamespace, "xmlns", xmlnsNamespace, ns), "ns");
+                        throw new ArgumentException(SR.Format(SR.XmlPrefixBoundToNamespace, "xmlns", xmlnsNamespace, ns), nameof(ns));
                     }
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.JsonPrefixMustBeNullOrEmpty, prefix), "prefix");
+                    throw new ArgumentException(SR.Format(SR.JsonPrefixMustBeNullOrEmpty, prefix), nameof(prefix));
                 }
             }
             else
@@ -801,16 +801,16 @@ namespace System.Runtime.Serialization.Json
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), "ns");
+                    throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), nameof(ns));
                 }
             }
             if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
             if (localName.Length == 0)
             {
-                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, "localName");
+                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
             if ((_nodeType != JsonNodeType.Element) && !_wroteServerTypeAttribute)
             {
@@ -866,7 +866,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.JsonUnexpectedAttributeLocalName, localName), "localName");
+                throw new ArgumentException(SR.Format(SR.JsonUnexpectedAttributeLocalName, localName), nameof(localName));
             }
         }
 
@@ -893,24 +893,24 @@ namespace System.Runtime.Serialization.Json
         {
             if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
             if (localName.Length == 0)
             {
-                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, "localName");
+                throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
             if (!string.IsNullOrEmpty(prefix))
             {
                 if (string.IsNullOrEmpty(ns) || !TrySetWritingNameWithMapping(localName, ns))
                 {
-                    throw new ArgumentException(SR.Format(SR.JsonPrefixMustBeNullOrEmpty, prefix), "prefix");
+                    throw new ArgumentException(SR.Format(SR.JsonPrefixMustBeNullOrEmpty, prefix), nameof(prefix));
                 }
             }
             if (!string.IsNullOrEmpty(ns))
             {
                 if (!TrySetWritingNameWithMapping(localName, ns))
                 {
-                    throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), "ns");
+                    throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), nameof(ns));
                 }
             }
             if (IsClosed)
@@ -1090,7 +1090,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             StartText();
@@ -1106,7 +1106,7 @@ namespace System.Runtime.Serialization.Json
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (value is Array)
@@ -1132,7 +1132,7 @@ namespace System.Runtime.Serialization.Json
             }
             if (ws == null)
             {
-                throw new ArgumentNullException("ws");
+                throw new ArgumentNullException(nameof(ws));
             }
 
             for (int i = 0; i < ws.Length; ++i)
@@ -1143,7 +1143,7 @@ namespace System.Runtime.Serialization.Json
                     c != '\n' &&
                     c != '\r')
                 {
-                    throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, c.ToString(), "WriteWhitespace"), "ws");
+                    throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, c.ToString(), "WriteWhitespace"), nameof(ws));
                 }
             }
 
@@ -1465,7 +1465,7 @@ namespace System.Runtime.Serialization.Json
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (value is ulong)
@@ -1522,7 +1522,7 @@ namespace System.Runtime.Serialization.Json
             }
             else if (value.GetType().IsArray)
             {
-                throw new ArgumentException(SR.JsonNestedArraysNotSupported, "value");
+                throw new ArgumentException(SR.JsonNestedArraysNotSupported, nameof(value));
             }
             else
             {

@@ -31,11 +31,11 @@ namespace System.Security.Cryptography
         public static CngKey Import(byte[] keyBlob, CngKeyBlobFormat format, CngProvider provider)
         {
             if (keyBlob == null)
-                throw new ArgumentNullException("keyBlob");
+                throw new ArgumentNullException(nameof(keyBlob));
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
             if (provider == null)
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
 
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle;

@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
 using System.Collections;
 using Xunit;
 
-namespace System.Data.SqlClient.Tests
+namespace System.Data.SqlClient.Tests 
 {
     public class ExceptionTest
     {
@@ -17,10 +16,9 @@ namespace System.Data.SqlClient.Tests
         private const string sqlsvrBadConn = "A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections.";
         private const string execReaderFailedMessage = "ExecuteReader requires an open and available Connection. The connection's current state is closed.";
         private const string orderIdQuery = "select orderid from orders where orderid < 10250";
-        
 
         [Fact]
-        private void ExceptionTests()
+        public void ExceptionTests()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
 
@@ -31,7 +29,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        private void VariousExceptionTests()
+        public void VariousExceptionTests()
         {
             // Test exceptions - makes sure they are only thrown from upper layers
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
@@ -48,7 +46,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        private void IndependentConnectionExceptionTestOpenConnection()
+        public void IndependentConnectionExceptionTestOpenConnection()
         {
             // Test exceptions for existing connection to ensure proper exception and call stack
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
@@ -61,7 +59,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        private void IndependentConnectionExceptionTestExecuteReader()
+        public void IndependentConnectionExceptionTestExecuteReader()
         {
             // Test exceptions for existing connection to ensure proper exception and call stack
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);

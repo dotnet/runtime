@@ -26,7 +26,7 @@ namespace Tests.System.Net
         }
 
         [Theory]
-        [MemberData("HttpKnownHeaderNamesPublicStringConstants")]
+        [MemberData(nameof(HttpKnownHeaderNamesPublicStringConstants))]
         public void TryGetHeaderName_AllHttpKnownHeaderNamesPublicStringConstants_Found(string constant)
         {
             char[] key = constant.ToCharArray();

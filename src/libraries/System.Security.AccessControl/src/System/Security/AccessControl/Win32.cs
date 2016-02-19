@@ -129,7 +129,7 @@ namespace System.Security.AccessControl
                     {
                         throw new ArgumentException(
                             SR.Argument_InvalidSafeHandle,
-                            "handle");
+nameof(handle));
                     }
                     else
                     {
@@ -292,7 +292,7 @@ namespace System.Security.AccessControl
                     {
                         throw new ArgumentException(
                             SR.Argument_InvalidSafeHandle,
-                            "handle");
+nameof(handle));
                     }
                     else
                     {

@@ -60,11 +60,11 @@ namespace Microsoft.Framework.WebEncoders
             // Input checking
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             ValidateInputs(startIndex, characterCount, actualInputLength: value.Length);
 
@@ -121,11 +121,11 @@ namespace Microsoft.Framework.WebEncoders
             // Input checking
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             ValidateInputs(startIndex, characterCount, actualInputLength: value.Length);
 
@@ -243,11 +243,11 @@ namespace Microsoft.Framework.WebEncoders
         {
             if (startIndex < 0 || startIndex > actualInputLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex");
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
             if (characterCount < 0 || characterCount > (actualInputLength - startIndex))
             {
-                throw new ArgumentOutOfRangeException("characterCount");
+                throw new ArgumentOutOfRangeException(nameof(characterCount));
             }
         }
 

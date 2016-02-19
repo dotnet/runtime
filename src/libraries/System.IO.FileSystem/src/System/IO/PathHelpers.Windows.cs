@@ -31,7 +31,7 @@ namespace System.IO
                 if (index + 2 == searchPattern.Length || 
                     PathInternal.IsDirectorySeparator(searchPattern[index + 2]))
                 {
-                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
+                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, nameof(searchPattern));
                 }
             }
 

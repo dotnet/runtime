@@ -51,13 +51,13 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - index < count)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             // If no input, return 0, avoid fixed empty array problem
@@ -77,7 +77,7 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
 
             fixed (char* pChars = s)
@@ -91,10 +91,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // Call it with empty encoder
@@ -116,10 +116,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (s.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("s", SR.ArgumentOutOfRange_IndexCount);
+                throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
 
             int byteCount = bytes.Length - byteIndex;
@@ -158,10 +158,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
 
             // If nothing to encode return 0, avoid fixed problem
@@ -209,13 +209,13 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             // If no input just return 0, fixed doesn't like 0 length arrays
@@ -234,10 +234,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             return GetCharCount(bytes, count, null);
@@ -258,10 +258,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException("charIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
 
             // If no input, return 0 & avoid fixed problem
@@ -309,13 +309,13 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             // Avoid problems with empty input buffer

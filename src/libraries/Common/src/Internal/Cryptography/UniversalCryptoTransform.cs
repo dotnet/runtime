@@ -61,23 +61,23 @@ namespace Internal.Cryptography
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
             if (inputBuffer == null)
-                throw new ArgumentNullException("inputBuffer");
+                throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException("inputOffset");
+                throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException("inputOffset");
+                throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount <= 0)
-                throw new ArgumentOutOfRangeException("inputCount");
+                throw new ArgumentOutOfRangeException(nameof(inputCount));
             if (inputCount % InputBlockSize != 0)
-                throw new ArgumentOutOfRangeException("inputCount", SR.Cryptography_MustTransformWholeBlock);
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
             if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException("inputCount", SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_TransformBeyondEndOfBuffer);
             if (outputBuffer == null)
-                throw new ArgumentNullException("outputBuffer");
+                throw new ArgumentNullException(nameof(outputBuffer));
             if (outputOffset > outputBuffer.Length)
-                throw new ArgumentOutOfRangeException("outputOffset");
+                throw new ArgumentOutOfRangeException(nameof(outputOffset));
             if (inputCount > outputBuffer.Length - outputOffset)
-                throw new ArgumentOutOfRangeException("outputOffset", SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Cryptography_TransformBeyondEndOfBuffer);
             
             int numBytesWritten = UncheckedTransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
             Debug.Assert(numBytesWritten >= 0 && numBytesWritten <= inputCount);
@@ -87,15 +87,15 @@ namespace Internal.Cryptography
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             if (inputBuffer == null)
-                throw new ArgumentNullException("inputBuffer");
+                throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException("inputOffset");
+                throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount < 0)
-                throw new ArgumentOutOfRangeException("inputCount");
+                throw new ArgumentOutOfRangeException(nameof(inputCount));
             if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException("inputOffset");
+                throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException("inputCount", SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_TransformBeyondEndOfBuffer);
 
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
             return output;

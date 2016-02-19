@@ -117,10 +117,10 @@ namespace System
         protected virtual string GetComponents(Uri uri, UriComponents components, UriFormat format)
         {
             if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
-                throw new ArgumentOutOfRangeException("components", components, SR.net_uri_NotJustSerialization);
+                throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
 
             if ((format & ~UriFormat.SafeUnescaped) != 0)
-                throw new ArgumentOutOfRangeException("format");
+                throw new ArgumentOutOfRangeException(nameof(format));
 
             if (uri.UserDrivenParsing)
                 throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, this.GetType().ToString()));
@@ -142,10 +142,10 @@ namespace System
         public static bool IsKnownScheme(string schemeName)
         {
             if (schemeName == null)
-                throw new ArgumentNullException("schemeName");
+                throw new ArgumentNullException(nameof(schemeName));
 
             if (!Uri.CheckSchemeName(schemeName))
-                throw new ArgumentOutOfRangeException("schemeName");
+                throw new ArgumentOutOfRangeException(nameof(schemeName));
 
             UriParser syntax = UriParser.GetSyntax(schemeName.ToLowerInvariant());
             return syntax != null && syntax.NotAny(UriSyntaxFlags.V1_UnknownUri);

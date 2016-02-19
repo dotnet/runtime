@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     public class ParameterTests : ParameterExpressionTests
     {
         [Theory]
-        [MemberData("ValidTypeData")]
+        [MemberData(nameof(ValidTypeData))]
         public void CreateParameterForValidTypeNoName(Type type)
         {
             ParameterExpression param = Expression.Parameter(type);
@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ValidTypeData")]
+        [MemberData(nameof(ValidTypeData))]
         public void CrateParamForValidTypeWithName(Type type)
         {
             ParameterExpression param = Expression.Parameter(type, "name");
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ByRefTypeData")]
+        [MemberData(nameof(ByRefTypeData))]
         public void ParameterCanBeByRef(Type type)
         {
             ParameterExpression param = Expression.Parameter(type);
@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ByRefTypeData")]
+        [MemberData(nameof(ByRefTypeData))]
         public void NamedParameterCanBeByRef(Type type)
         {
             ParameterExpression param = Expression.Parameter(type, "name");
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ValueData")]
+        [MemberData(nameof(ValueData))]
         public void CanWriteAndReadBack(object value)
         {
             Type type = value.GetType();

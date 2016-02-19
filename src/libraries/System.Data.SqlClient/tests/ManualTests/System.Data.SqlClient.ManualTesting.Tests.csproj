@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
+      <Name>System.Data.SqlClient</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- SQL Common Files -->
+    <Compile Include="SQL\Common\AsyncDebugScope.cs" />
+    <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />
+    <Compile Include="SQL\Common\InternalConnectionWrapper.cs" />
+    <Compile Include="SQL\Common\SystemDataExtensions.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\CommandHelper.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\ConnectionHelper.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\ConnectionPoolHelper.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\DataReaderHelper.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\TdsParserHelper.cs" />
+    <Compile Include="SQL\Common\SystemDataInternals\TdsParserStateObjectHelper.cs" />
+    <!-- Data Common Files -->
+    <Compile Include="DataCommon\AssemblyResourceManager.cs" />
+    <Compile Include="DataCommon\CarriageReturnLineFeedReplacer.cs" />
+    <Compile Include="DataCommon\DataSourceBuilder.cs" />
+    <Compile Include="DataCommon\DataTestClass.cs" />
+    <Compile Include="DataCommon\ProxyServer.cs" />
+    <Compile Include="DataCommon\SystemDataResourceManager.cs" />
+    <!-- ADO Tests -->
+    <Compile Include="ADO\BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />
+    <Compile Include="ADO\BaseProviderAsyncTest\MockCommand.cs" />
+    <Compile Include="ADO\BaseProviderAsyncTest\MockConnection.cs" />
+    <Compile Include="ADO\BaseProviderAsyncTest\MockDataReader.cs" />
+    <Compile Include="ADO\ParametersTest\ParametersTest.cs" />
+    <!-- DDBasics Tests -->
+    <Compile Include="DDBasics\AsyncTest\AsyncTest.cs" />
+    <Compile Include="DDBasics\DataTypes\DataTypes.cs" />
+    <Compile Include="DDBasics\MARSTest\DDMARSTest.cs" />
+    <!-- ProviderAgnostic Tests -->
+    <Compile Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.cs" />
+    <Compile Include="ProviderAgnostic\ReaderTest\ReaderTest.cs" />
+    <!-- SQL Tests -->
+    <Compile Include="SQL\AsyncTest\AsyncTest.cs" />
+    <Compile Include="SQL\CommandCancel\CommandCancel.cs" />
+    <Compile Include="SQL\ConnectionPool\ConnectionPool.cs" />
+    <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
+    <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
+    <Compile Include="SQL\KatmaiDateTimeTest\DateTimeTest.cs" />
+    <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />
+    <Compile Include="SQL\MARSTest\SQLMARSTest.cs" />
+    <Compile Include="SQL\ParallelTransactionsTest\ParallelTransactionsTest.cs" />
+    <Compile Include="SQL\SqlNamedPipesTest\SqlNamedPipesTest.cs" />
+    <Compile Include="SQL\SqlRandom\Randomizer.cs" />
+    <Compile Include="SQL\SqlRandom\RandomizerPool.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomColumnOptions.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomizer.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomTable.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomTableColumn.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomTypeInfo.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomTypeInfoCollection.cs" />
+    <Compile Include="SQL\SqlRandom\SqlRandomTypesForSqlServer.cs" />
+    <Compile Include="SQL\SqlRandomStress\SqlRandomStress.cs" />
+    <Compile Include="SQL\SqlTypeTest\SqlTypeTest.cs" />
+    <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
+    <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
+    <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DDBasics\DataTypes\data.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="DataCommon\ConnectionString.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

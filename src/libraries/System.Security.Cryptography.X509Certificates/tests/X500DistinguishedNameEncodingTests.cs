@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("SingleRdnTestCases")]
+        [MemberData(nameof(SingleRdnTestCases))]
         public static void EncodeSingleRdn(SimpleEncoderTestCase testCase)
         {
             X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, X500DistinguishedNameFlags.None);
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("GetFlagBasedDnCases")]
+        [MemberData(nameof(GetFlagBasedDnCases))]
         public static void EncodeWithFlags(FlagControlledEncoderTestCase testCase)
         {
             X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, testCase.Flags);
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("SeparatorFlagCombinations")]
+        [MemberData(nameof(SeparatorFlagCombinations))]
         private static void VerifySeparatorProcessing(X500DistinguishedNameFlags flags)
         {
             const string input = "CN=a, O=b; OU=c\r L=d\n S=e";
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("ParserBoundaryCases")]
+        [MemberData(nameof(ParserBoundaryCases))]
         public static void CheckParserBoundaryCases(SimpleEncoderTestCase testCase)
         {
             X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, X500DistinguishedNameFlags.None);

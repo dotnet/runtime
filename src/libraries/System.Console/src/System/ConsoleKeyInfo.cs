@@ -18,7 +18,7 @@ namespace System
             // that might start showing up on keyboards in a few years.
             if (((int)key) < 0 || ((int)key) > 255)
             {
-                throw new ArgumentOutOfRangeException("key", SR.ArgumentOutOfRange_ConsoleKey);
+                throw new ArgumentOutOfRangeException(nameof(key), SR.ArgumentOutOfRange_ConsoleKey);
             }
 
             _keyChar = keyChar;

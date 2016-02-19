@@ -54,7 +54,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("EncodingAndEncodingStrings")]
+        [MemberData(nameof(EncodingAndEncodingStrings))]
         public void BinaryWriter_EncodingCtorAndWriteTests(Encoding encoding, string testString)
         {
             using (Stream memStream = CreateStream())

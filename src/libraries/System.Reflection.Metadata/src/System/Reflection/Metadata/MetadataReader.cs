@@ -65,12 +65,12 @@ namespace System.Reflection.Metadata
         {
             if (length <= 0)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             if (metadata == null)
             {
-                throw new ArgumentNullException("metadata");
+                throw new ArgumentNullException(nameof(metadata));
             }
 
             if (utf8Decoder == null)
@@ -80,7 +80,7 @@ namespace System.Reflection.Metadata
 
             if (!(utf8Decoder.Encoding is UTF8Encoding))
             {
-                throw new ArgumentException(SR.MetadataStringDecoderEncodingMustBeUtf8, "utf8Decoder");
+                throw new ArgumentException(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
             }
 
             if (!BitConverter.IsLittleEndian)

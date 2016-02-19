@@ -248,7 +248,7 @@ public static unsafe class ArrayTests
         }
     }
 
-    [Theory, MemberData("BinarySearchTestData")]
+    [Theory, MemberData(nameof(BinarySearchTestData))]
     public static void TestBinarySearch<T>(T[] array, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
     {
         int idx = Array.BinarySearch((Array)array, value, comparer);
@@ -290,7 +290,7 @@ public static unsafe class ArrayTests
         }
     }
 
-    [Theory, MemberData("BinarySearchTestDataInRange")]
+    [Theory, MemberData(nameof(BinarySearchTestDataInRange))]
     public static void TestBinarySearchInRange<T>(T[] array, int index, int length, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
     {
         int idx = Array.BinarySearch((Array)array, index, length, value, comparer);

@@ -705,7 +705,7 @@ namespace System.Collections.Immutable
             int index = self.IndexOf(oldValue, equalityComparer);
             if (index < 0)
             {
-                throw new ArgumentException(SR.CannotFindOldValue, "oldValue");
+                throw new ArgumentException(SR.CannotFindOldValue, nameof(oldValue));
             }
 
             return self.SetItem(index, newValue);
@@ -1597,7 +1597,7 @@ namespace System.Collections.Immutable
                     }
                     else if (self.array == null ^ theirs.Array == null)
                     {
-                        throw new ArgumentException(SR.ArrayInitializedStateNotEqual, "other");
+                        throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
                     }
 
                     otherArray = theirs.Array;
@@ -1610,7 +1610,7 @@ namespace System.Collections.Immutable
                 return ours.CompareTo(otherArray, comparer);
             }
 
-            throw new ArgumentException(SR.ArrayLengthsNotEqual, "other");
+            throw new ArgumentException(SR.ArrayLengthsNotEqual, nameof(other));
         }
 
         #endregion

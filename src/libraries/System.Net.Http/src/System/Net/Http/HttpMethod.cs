@@ -66,7 +66,7 @@ namespace System.Net.Http
         {
             if (string.IsNullOrEmpty(method))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "method");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(method));
             }
             if (HttpRuleParser.GetTokenLength(method, 0) != method.Length)
             {

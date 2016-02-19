@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static IAsyncAction Run(Func<CancellationToken, Task> taskProvider)
         {
             if (taskProvider == null)
-                throw new ArgumentNullException("taskProvider");
+                throw new ArgumentNullException(nameof(taskProvider));
 
             Contract.EndContractBlock();
 
@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static IAsyncActionWithProgress<TProgress> Run<TProgress>(Func<CancellationToken, IProgress<TProgress>, Task> taskProvider)
         {
             if (taskProvider == null)
-                throw new ArgumentNullException("taskProvider");
+                throw new ArgumentNullException(nameof(taskProvider));
 
             Contract.EndContractBlock();
 
@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Code execution flows through this method when the method above is called. We can always make this public.
 
             if (taskProvider == null)
-                throw new ArgumentNullException("taskProvider");
+                throw new ArgumentNullException(nameof(taskProvider));
 
             Contract.EndContractBlock();
 
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                                                             Func<CancellationToken, IProgress<TProgress>, Task<TResult>> taskProvider)
         {
             if (taskProvider == null)
-                throw new ArgumentNullException("taskProvider");
+                throw new ArgumentNullException(nameof(taskProvider));
 
             Contract.EndContractBlock();
 
@@ -159,7 +159,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static IAsyncAction CreateFaultedAction(Exception error)
         {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
             Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncActionAdapter(isCanceled: false);
@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static IAsyncActionWithProgress<TProgress> CreateFaultedAction<TProgress>(Exception error)
         {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
             Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncActionWithProgressAdapter<TProgress>(isCanceled: false);
@@ -189,7 +189,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static IAsyncOperation<TResult> CreateFaultedOperation<TResult>(Exception error)
         {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
             Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncOperationAdapter<TResult>(default(TResult));
@@ -204,7 +204,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static IAsyncOperationWithProgress<TResult, TProgress> CreateFaultedOperation<TResult, TProgress>(Exception error)
         {
             if (error == null)
-                throw new ArgumentNullException("error");
+                throw new ArgumentNullException(nameof(error));
             Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>(default(TResult));

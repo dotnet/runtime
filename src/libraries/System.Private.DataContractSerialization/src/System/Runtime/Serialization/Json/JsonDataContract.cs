@@ -290,7 +290,7 @@ namespace System.Runtime.Serialization.Json
                         }
                         else
                         {
-                            throw new ArgumentException(SR.Format(SR.JsonTypeNotSupportedByDataContractJsonSerializer, traditionalDataContract.UnderlyingType), "traditionalDataContract");
+                            throw new ArgumentException(SR.Format(SR.JsonTypeNotSupportedByDataContractJsonSerializer, traditionalDataContract.UnderlyingType), nameof(traditionalDataContract));
                         }
                     }
                     return dataContract;

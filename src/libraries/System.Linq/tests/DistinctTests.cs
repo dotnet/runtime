@@ -144,7 +144,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Distinct(new AnagramEqualityComparer()), new AnagramEqualityComparer());
         }
 
-        [Theory, MemberData("SequencesWithDuplicates")]
+        [Theory, MemberData(nameof(SequencesWithDuplicates))]
         public void FindDistinctAndValidate<T>(T unusedArgumentToForceTypeInference, IEnumerable<T> original)
         {
             // Convert to list to avoid repeated enumerations of the enumerables.

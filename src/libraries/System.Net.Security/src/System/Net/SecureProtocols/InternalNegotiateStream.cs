@@ -99,22 +99,22 @@ namespace System.Net.Security
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (count > buffer.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count", SR.net_offset_plus_count);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
 

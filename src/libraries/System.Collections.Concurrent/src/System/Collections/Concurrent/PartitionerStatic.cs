@@ -84,7 +84,7 @@ namespace System.Collections.Concurrent
         {
             if (list == null)
             {
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             }
             if (loadBalance)
             {
@@ -115,7 +115,7 @@ namespace System.Collections.Concurrent
 
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (loadBalance)
             {
@@ -165,11 +165,11 @@ namespace System.Collections.Concurrent
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
 
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
-                throw new ArgumentOutOfRangeException("partitionerOptions");
+                throw new ArgumentOutOfRangeException(nameof(partitionerOptions));
 
             return (new DynamicPartitionerForIEnumerable<TSource>(source, partitionerOptions));
         }
@@ -187,7 +187,7 @@ namespace System.Collections.Concurrent
             // load balancing on a busy system if you make it higher than 1.
             int coreOversubscriptionRate = 3;
 
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException("toExclusive");
+            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
             long rangeSize = (toExclusive - fromInclusive) /
                 (PlatformHelper.ProcessorCount * coreOversubscriptionRate);
             if (rangeSize == 0) rangeSize = 1;
@@ -205,8 +205,8 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException("toExclusive");
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException("rangeSize");
+            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -244,7 +244,7 @@ namespace System.Collections.Concurrent
             // load balancing on a busy system if you make it higher than 1.
             int coreOversubscriptionRate = 3;
 
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException("toExclusive");
+            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
             int rangeSize = (toExclusive - fromInclusive) /
                 (PlatformHelper.ProcessorCount * coreOversubscriptionRate);
             if (rangeSize == 0) rangeSize = 1;
@@ -262,8 +262,8 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException("toExclusive");
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException("rangeSize");
+            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -510,7 +510,7 @@ namespace System.Collections.Concurrent
             {
                 if (partitionCount <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("partitionCount");
+                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
                 }
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
@@ -1039,7 +1039,7 @@ namespace System.Collections.Concurrent
             {
                 if (partitionCount <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("partitionCount");
+                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
                 }
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
@@ -1402,7 +1402,7 @@ namespace System.Collections.Concurrent
             {
                 if (partitionCount <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("partitionCount");
+                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
                 }
 
                 int quotient, remainder;

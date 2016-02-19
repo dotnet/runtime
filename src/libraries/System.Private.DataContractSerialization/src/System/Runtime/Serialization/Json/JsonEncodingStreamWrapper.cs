@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (encoding == null)
                 {
-                    throw new ArgumentNullException("encoding");
+                    throw new ArgumentNullException(nameof(encoding));
                 }
 
                 InitForWriting(stream, encoding);

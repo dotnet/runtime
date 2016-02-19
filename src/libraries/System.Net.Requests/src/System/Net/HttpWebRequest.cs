@@ -108,7 +108,7 @@ namespace System.Net
                 }
                 if ((value < 0) && (value != System.Threading.Timeout.Infinite))
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_ge_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
                 }
                 _continueTimeout = value;
             }
@@ -186,12 +186,12 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentException(SR.net_badmethod, "value");
+                    throw new ArgumentException(SR.net_badmethod, nameof(value));
                 }
 
                 if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(value))
                 {
-                    throw new ArgumentException(SR.net_badmethod, "value");
+                    throw new ArgumentException(SR.net_badmethod, nameof(value));
                 }
                 _originVerb = value;
             }
@@ -331,7 +331,7 @@ namespace System.Net
 
             if (asyncResult == null || !(asyncResult is Task<Stream>))
             {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
 
             if (Interlocked.Exchange(ref _endGetRequestStreamCalled, 1) != 0)
@@ -460,7 +460,7 @@ namespace System.Net
 
             if (asyncResult == null || !(asyncResult is Task<WebResponse>))
             {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
 
             if (Interlocked.Exchange(ref _endGetResponseCalled, 1) != 0)

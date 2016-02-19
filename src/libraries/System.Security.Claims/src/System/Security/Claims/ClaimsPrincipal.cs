@@ -35,7 +35,7 @@ namespace System.Security.Claims
         {
             if (identities == null)
             {
-                throw new ArgumentNullException("identities");
+                throw new ArgumentNullException(nameof(identities));
             }
 
             foreach (ClaimsIdentity identity in identities)
@@ -89,7 +89,7 @@ namespace System.Security.Claims
         {
             if (identities == null)
             {
-                throw new ArgumentNullException("identities");
+                throw new ArgumentNullException(nameof(identities));
             }
 
             Contract.EndContractBlock();
@@ -106,7 +106,7 @@ namespace System.Security.Claims
         {
             if (identity == null)
             {
-                throw new ArgumentNullException("identity");
+                throw new ArgumentNullException(nameof(identity));
             }
 
             Contract.EndContractBlock();
@@ -131,7 +131,7 @@ namespace System.Security.Claims
         {
             if (null == principal)
             {
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
             }
 
             Contract.EndContractBlock();
@@ -163,7 +163,7 @@ namespace System.Security.Claims
         public ClaimsPrincipal(BinaryReader reader)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
 
             Initialize(reader);
         }
@@ -177,7 +177,7 @@ namespace System.Security.Claims
         {
             if (identity == null)
             {
-                throw new ArgumentNullException("identity");
+                throw new ArgumentNullException(nameof(identity));
             }
 
             Contract.EndContractBlock();
@@ -194,7 +194,7 @@ namespace System.Security.Claims
         {
             if (identities == null)
             {
-                throw new ArgumentNullException("identities");
+                throw new ArgumentNullException(nameof(identities));
             }
 
             Contract.EndContractBlock();
@@ -248,7 +248,7 @@ namespace System.Security.Claims
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return new ClaimsIdentity(reader);
@@ -282,7 +282,7 @@ namespace System.Security.Claims
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             Contract.EndContractBlock();
@@ -310,7 +310,7 @@ namespace System.Security.Claims
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             Contract.EndContractBlock();
@@ -337,7 +337,7 @@ namespace System.Security.Claims
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             Contract.EndContractBlock();
@@ -370,7 +370,7 @@ namespace System.Security.Claims
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             Contract.EndContractBlock();
@@ -403,7 +403,7 @@ namespace System.Security.Claims
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             Contract.EndContractBlock();
@@ -435,12 +435,12 @@ namespace System.Security.Claims
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             Contract.EndContractBlock();
@@ -521,7 +521,7 @@ namespace System.Security.Claims
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             SerializationMask mask = (SerializationMask)reader.ReadInt32();
@@ -571,7 +571,7 @@ namespace System.Security.Claims
 
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
 
             int numberOfPropertiesWritten = 0;

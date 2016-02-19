@@ -41,10 +41,10 @@ namespace System.Security.Cryptography
         public ECDsaCng(CngKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
-                throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, "key");
+                throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
         }

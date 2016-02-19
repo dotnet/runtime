@@ -233,7 +233,7 @@ namespace XLinqTests
             switch (mode)
             {
                 case InputParamStyle.Array:
-                    e = new XElement("data", data);
+                    e = new XElement(nameof(data), data);
                     break;
                 case InputParamStyle.SingleAndArray:
                     if (data.Length < 2)
@@ -242,10 +242,10 @@ namespace XLinqTests
                     }
                     var copy = new object[data.Length - 1];
                     Array.Copy(data, 1, copy, 0, data.Length - 1);
-                    e = new XElement("data", data[0], copy);
+                    e = new XElement(nameof(data), data[0], copy);
                     break;
                 case InputParamStyle.IEnumerable:
-                    e = new XElement("data", data);
+                    e = new XElement(nameof(data), data);
                     break;
                 default:
                     TestLog.Compare(false, "test failed");
@@ -256,7 +256,7 @@ namespace XLinqTests
 
         private XElement CreateElement(InputParamStyle mode, object data)
         {
-            return new XElement("data", data);
+            return new XElement(nameof(data), data);
         }
 
         private IEnumerable<ExpectedValue> ExpectedContent<T>(IEnumerable<T> data) where T : class

@@ -28,7 +28,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact("NoSocketsReuseUnicastPortSupport")]
+        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -37,7 +37,7 @@ namespace System.Net.Sockets.Tests
                 socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
         }
 
-        [ConditionalFact("SocketsReuseUnicastPortSupport")]
+        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, optionValue);
         }
 
-        [ConditionalFact("NoSocketsReuseUnicastPortSupport")]
+        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
                 socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
         }
 
-        [ConditionalFact("SocketsReuseUnicastPortSupport")]
+        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOptionToZeroAndGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

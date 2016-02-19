@@ -35,7 +35,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Theory]
-        [MemberData("TestInput")]
+        [MemberData(nameof(TestInput))]
         public static void ResultPropertyTest(object expectedResult, Exception expectedError, bool cancelled, Type expectedExceptionType)
         {
             var target = new RunWorkerCompletedEventArgs(expectedResult, expectedError, cancelled);

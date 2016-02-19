@@ -114,12 +114,12 @@ namespace System.Security.AccessControl
 
             if (binaryForm == null)
             {
-                throw new ArgumentNullException("binaryForm");
+                throw new ArgumentNullException(nameof(binaryForm));
             }
             else if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
-                    "offset",
+nameof(offset),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             else if (binaryForm.Length - offset < BinaryLength)
@@ -129,7 +129,7 @@ namespace System.Security.AccessControl
                 //
 
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                      SR.ArgumentOutOfRange_ArrayTooSmall);
             }
             else if (Length > ushort.MaxValue)
@@ -193,7 +193,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                      SR.Arg_EnumAtLeastOneFlag,
-                    "auditFlags");
+nameof(auditFlags));
             }
 
             return flags;
@@ -245,12 +245,12 @@ namespace System.Security.AccessControl
         {
             if (binaryForm == null)
             {
-                throw new ArgumentNullException("binaryForm");
+                throw new ArgumentNullException(nameof(binaryForm));
             }
             else if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
-                    "offset",
+nameof(offset),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             else if (binaryForm.Length - offset < HeaderLength)
@@ -260,7 +260,7 @@ namespace System.Security.AccessControl
                 //
 
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                      SR.ArgumentOutOfRange_ArrayTooSmall);
             }
             else if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
@@ -271,7 +271,7 @@ namespace System.Security.AccessControl
                 //
 
                 throw new ArgumentOutOfRangeException(
-                    "binaryForm",
+nameof(binaryForm),
                      SR.ArgumentOutOfRange_ArrayTooSmall);
             }
         }
@@ -410,7 +410,7 @@ namespace System.Security.AccessControl
 
             throw new ArgumentException(
                  SR.ArgumentException_InvalidAceBinaryForm,
-                "binaryForm");
+nameof(binaryForm));
         }
 
         #endregion
@@ -688,7 +688,7 @@ namespace System.Security.AccessControl
         {
             if (securityIdentifier == null)
             {
-                throw new ArgumentNullException("securityIdentifier");
+                throw new ArgumentNullException(nameof(securityIdentifier));
             }
             Contract.EndContractBlock();
 
@@ -739,7 +739,7 @@ namespace System.Security.AccessControl
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
 
@@ -787,7 +787,7 @@ namespace System.Security.AccessControl
             if (type <= AceType.MaxDefinedAceType)
             {
                 throw new ArgumentOutOfRangeException(
-                    "type",
+nameof(type),
                      SR.ArgumentOutOfRange_InvalidUserDefinedAceType);
             }
             Contract.EndContractBlock();
@@ -852,13 +852,13 @@ namespace System.Security.AccessControl
                 if (opaque.Length > MaxOpaqueLength)
                 {
                     throw new ArgumentOutOfRangeException(
-                        "opaque",
+nameof(opaque),
                         string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
-                        "opaque",
+nameof(opaque),
                         string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }
@@ -1303,13 +1303,13 @@ namespace System.Security.AccessControl
                 if (opaque.Length > MaxOpaqueLengthInternal)
                 {
                     throw new ArgumentOutOfRangeException(
-                        "opaque",
+nameof(opaque),
                         string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
-                        "opaque",
+nameof(opaque),
                         string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }
@@ -1424,7 +1424,7 @@ namespace System.Security.AccessControl
                 default:
 
                     throw new ArgumentOutOfRangeException(
-                        "qualifier",
+nameof(qualifier),
                         SR.ArgumentOutOfRange_Enum);
             }
         }
@@ -1808,7 +1808,7 @@ namespace System.Security.AccessControl
                 default:
 
                     throw new ArgumentOutOfRangeException(
-                        "qualifier",
+nameof(qualifier),
                         SR.ArgumentOutOfRange_Enum);
             }
         }

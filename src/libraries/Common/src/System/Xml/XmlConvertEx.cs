@@ -246,7 +246,7 @@ namespace System.Xml
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             int colonPosition = -1;

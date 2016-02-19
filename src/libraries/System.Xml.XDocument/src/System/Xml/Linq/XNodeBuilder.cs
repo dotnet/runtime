@@ -165,7 +165,7 @@ namespace System.Xml.Linq
 
         public override void WriteStartAttribute(string prefix, string localName, string namespaceName)
         {
-            if (prefix == null) throw new ArgumentNullException("prefix");
+            if (prefix == null) throw new ArgumentNullException(nameof(prefix));
             _attrName = XNamespace.Get(prefix.Length == 0 ? string.Empty : namespaceName).GetName(localName);
             _attrValue = string.Empty;
         }
