@@ -268,7 +268,7 @@ namespace System.Net.Http
                         OperationCanceledException oce = _completed as OperationCanceledException;
                         return (oce != null && oce.CancellationToken.IsCancellationRequested) ?
                             Task.FromCanceled<int>(oce.CancellationToken) :
-                            Task.FromException<int>(_completed);
+                            Task.FromException<int>(MapToReadWriteIOException(_completed, isRead: true));
                     }
 
                     // Quick check for if no data was actually requested.  We do this after the check
@@ -380,7 +380,7 @@ namespace System.Net.Http
                             }
                             else
                             {
-                                _pendingReadRequest.TrySetException(_completed);
+                                _pendingReadRequest.TrySetException(MapToReadWriteIOException(_completed, isRead: true));
                             }
                         }
 
