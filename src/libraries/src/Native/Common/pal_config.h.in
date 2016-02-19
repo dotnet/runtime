@@ -15,6 +15,7 @@
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
 #cmakedefine01 HAVE_IN6_U
+#cmakedefine01 HAVE_U6_ADDR
 #cmakedefine01 HAVE_IOCTL
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY

@@ -149,6 +149,12 @@ check_struct_has_member(
     "netdb.h"
     HAVE_IN6_U)
 
+check_struct_has_member(
+    "struct in6_addr"
+    __u6_addr
+    "netdb.h"
+    HAVE_U6_ADDR)
+
 check_cxx_source_compiles(
     "
     #include <string.h>
