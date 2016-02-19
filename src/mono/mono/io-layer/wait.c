@@ -17,6 +17,7 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-time.h>
 
 static gboolean own_if_signalled(gpointer handle)
 {
@@ -88,6 +89,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	int thr_ret;
 	gboolean apc_pending = FALSE;
 	gpointer current_thread = wapi_get_current_thread_handle ();
+	gint64 now, end;
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -157,6 +159,9 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		goto done;
 	}
 	
+	if (timeout != INFINITE)
+		end = mono_100ns_ticks () + timeout * 1000 * 10;
+
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
@@ -170,7 +175,17 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 			goto done;
 		}
 
-		waited = _wapi_handle_timedwait_signal_handle (handle, timeout, alertable, FALSE, &apc_pending);
+		if (timeout == INFINITE) {
+			waited = _wapi_handle_timedwait_signal_handle (handle, INFINITE, alertable, FALSE, &apc_pending);
+		} else {
+			now = mono_100ns_ticks ();
+			if (end < now) {
+				ret = WAIT_TIMEOUT;
+				goto done;
+			}
+
+			waited = _wapi_handle_timedwait_signal_handle (handle, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+		}
 
 		if(waited==0 && !apc_pending) {
 			/* Condition was signalled, so hopefully
@@ -253,6 +268,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	int thr_ret;
 	gboolean apc_pending = FALSE;
 	gpointer current_thread = wapi_get_current_thread_handle ();
+	gint64 now, end;
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -327,6 +343,9 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		goto done;
 	}
 
+	if (timeout != INFINITE)
+		end = mono_100ns_ticks () + timeout * 1000 * 10;
+
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
@@ -339,7 +358,17 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 			goto done;
 		}
 
-		waited = _wapi_handle_timedwait_signal_handle (wait, timeout, alertable, FALSE, &apc_pending);
+		if (timeout == INFINITE) {
+			waited = _wapi_handle_timedwait_signal_handle (wait, INFINITE, alertable, FALSE, &apc_pending);
+		} else {
+			now = mono_100ns_ticks ();
+			if (end < now) {
+				ret = WAIT_TIMEOUT;
+				goto done;
+			}
+
+			waited = _wapi_handle_timedwait_signal_handle (wait, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+		}
 
 		if (waited==0 && !apc_pending) {
 			/* Condition was signalled, so hopefully
@@ -445,6 +474,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	gboolean poll;
 	gpointer sorted_handles [MAXIMUM_WAIT_OBJECTS];
 	gboolean apc_pending = FALSE;
+	gint64 now, end;
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -528,6 +558,10 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	if (timeout == 0) {
 		return WAIT_TIMEOUT;
 	}
+
+	if (timeout != INFINITE)
+		end = mono_100ns_ticks () + timeout * 1000 * 10;
+
 	/* Have to wait for some or all handles to become signalled
 	 */
 
@@ -571,7 +605,16 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		
 		if (!done) {
 			/* Enter the wait */
-			ret = _wapi_handle_timedwait_signal (timeout, poll, &apc_pending);
+			if (timeout == INFINITE) {
+				ret = _wapi_handle_timedwait_signal (INFINITE, poll, &apc_pending);
+			} else {
+				now = mono_100ns_ticks ();
+				if (end < now) {
+					ret = WAIT_TIMEOUT;
+				} else {
+					ret = _wapi_handle_timedwait_signal ((end - now) / 10 / 1000, poll, &apc_pending);
+				}
+			}
 		} else {
 			/* No need to wait */
 			ret = 0;
