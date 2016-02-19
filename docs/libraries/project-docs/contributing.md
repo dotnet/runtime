@@ -6,12 +6,13 @@ This document describes contribution guidelines that are specific to CoreFX. Ple
 Coding Style Changes
 --------------------
 
-We intend to bring dotnet/corefx in to full conformance with the style guidelines described in [Coding Style](../coding-guidelines/coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
+We intend to bring dotnet/corefx into full conformance with the style guidelines described in [Coding Style](../coding-guidelines/coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
 
-* **DO NOT** send PRs for style changes.
+* **DO NOT** send PRs for style changes. For example, do not send PRs that are focused on changing usage of ```Int32``` to ```int```.
+* **DO NOT** send PRs for upgrading code to use newer language features, though it's ok to use newer language features as part of new code that's written.  For example, it's ok to use ```nameof``` as part of argument validation in new methods you write, but do not send a PR focused on changing existing argument validation to use ```nameof```.
 * **DO** give priority to the current style of the project or file you're changing even if it diverges from the general guidelines.
 
 API Changes
 -----------
 
-* **DON'T** submit API additions to any type that has shipped in the full .NET framework to the *master* branch. Instead, use the *future* branch. See [Branching Guide](branching-guide.md).
+* **DO NOT** submit to the *master* branch API additions to any type that has shipped in the full .NET framework. Instead, use the *future* branch. See [Branching Guide](branching-guide.md). Further, do not submit such PRs until the APIs have been approved via the [API Review Process](api-review-process.md).
