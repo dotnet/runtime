@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
@@ -625,9 +626,16 @@ nameof(value),
                 message);
         }
 
-        private static Exception CreateHttpRequestException(Exception inner = null)
+        private static HttpRequestException CreateHttpRequestException(Exception inner = null)
         {
             return new HttpRequestException(SR.net_http_client_execution_error, inner);
+        }
+
+        private static IOException MapToReadWriteIOException(Exception error, bool isRead)
+        {
+            return new IOException(
+                isRead ? SR.net_http_io_read : SR.net_http_io_write,
+                error is HttpRequestException && error.InnerException != null ? error.InnerException : error);
         }
 
         private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader, EasyRequest state)
