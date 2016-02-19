@@ -50,6 +50,10 @@ Abstract:
 #include <debugmacrosext.h>
 #include <semaphore.h>
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(PROCESS);
@@ -1800,6 +1804,102 @@ exit:
 }
 
 /*++
+ Function:
+  GetUniqueTimeValueForProcess
+  
+  Get a numeric value that can be used to disambiguate between processes with the same PID,
+  provided that one of them is still running. The numeric value can mean different things
+  on different platforms, so it should not be used for any other purpose. Under the hood,
+  it is implemented based on the creation time of the process.
+--*/
+BOOL
+GetUniqueTimeValueForProcess(DWORD processId, UINT64 *uniqueTimeValue)
+{
+    if (uniqueTimeValue == nullptr)
+    {
+        _ASSERTE(!"uniqueTimeValue argument cannot be null!");
+        return FALSE;
+    }
+
+    *uniqueTimeValue = 0;
+
+#if defined(__APPLE__)
+
+    // On OS X, we return the process start time expressed in Unix time (the number of seconds
+    // since the start of the Unix epoch).
+    struct kinfo_proc info = {};
+    size_t size = sizeof(info);
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
+
+    if (ret == 0)
+    {
+        timeval procStartTime = info.kp_proc.p_starttime;
+        long secondsSinceEpoch = procStartTime.tv_sec;
+
+        *uniqueTimeValue = secondsSinceEpoch;
+        return TRUE;
+    }
+    else
+    {
+        _ASSERTE(!"Failed to get start time of a process.");
+        return FALSE;
+    }
+
+#elif defined(HAVE_PROCFS_CTL)
+
+    // Here we read /proc/<pid>/stat file to get the start time for the process.
+    // We return this value (which is expressed in jiffies since boot time).
+
+    // Making something like: /proc/123/stat
+    char statFileName[64];
+
+    INDEBUG(int chars = )
+    snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
+    _ASSERTE(chars > 0 && chars <= sizeof(statFileName));
+
+    FILE *statFile = fopen(statFileName, "r");
+    if (statFile == nullptr) 
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
+    }
+
+    char *line = nullptr;
+    size_t lineLen = 0;
+    if (getline(&line, &lineLen, statFile) == -1)
+    {
+        _ASSERTE(!"Failed to getline from the stat file for a process.");
+        return FALSE;
+    }
+
+    unsigned long long starttime;
+
+    // scanf format specifiers for the fields in the stat file are provided by 'man proc'.
+    int sscanfRet = sscanf(line, 
+        "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+         &starttime);
+
+    if (sscanfRet != 1)
+    {
+        _ASSERTE(!"Failed to parse stat file contents with sscanf.");
+        return FALSE;
+    }
+
+    free(line);
+    fclose(statFile);
+
+    *uniqueTimeValue = starttime;
+    return TRUE;
+
+#else
+    // If this is not OS X and we don't have /proc, we just return FALSE.
+    //////_ASSERTE(!"Not implemented on this platform."); // should this be enabled?
+    return FALSE;
+#endif
+}
+
+/*++
 Function:
   GetProcessTimes
 
@@ -2344,7 +2444,7 @@ CreateProcessModules(
 
 #if defined(__APPLE__)
 
-    // For OSx, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
+    // For OS X, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
     // command and read the relevant lines:
     //
     // ...
