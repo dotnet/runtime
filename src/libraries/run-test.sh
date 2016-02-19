@@ -337,6 +337,7 @@ then
 fi
 
 export CORECLR_SERVER_GC="$serverGC"
+export PAL_OUTPUTDEBUGSTRING="1"
 
 
 create_test_overlay
