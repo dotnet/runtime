@@ -28,43 +28,24 @@ JMP_SMALL(jge   , jl    , jge    )
 JMP_SMALL(jle   , jg    , jle    )
 JMP_SMALL(jg    , jle   , jg     )
 
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARMARCH_)
 
 //       jump   reverse instruction condcode
-JMP_SMALL(jmp   , jmp   , b         , 15    )  // illegal condcode
-JMP_SMALL(jo    , jno   , bvs       , 6     )  // VS
-JMP_SMALL(jno   , jo    , bvc       , 7     )  // VC
-JMP_SMALL(jb    , jae   , blo       , 3     )  // LO also CC
-JMP_SMALL(jae   , jb    , bhs       , 2     )  // HS also CS
-JMP_SMALL(je    , jne   , beq       , 0     )  // EQ
-JMP_SMALL(jne   , je    , bne       , 1     )  // NE
-JMP_SMALL(jbe   , ja    , bls       , 9     )  // LS
-JMP_SMALL(ja    , jbe   , bhi       , 8     )  // HI
-JMP_SMALL(js    , jns   , bmi       , 4     )  // MI
-JMP_SMALL(jns   , js    , bpl       , 5     )  // PL
-JMP_SMALL(jl    , jge   , blt       , 11    )  // LT
-JMP_SMALL(jge   , jl    , bge       , 10    )  // GE
-JMP_SMALL(jle   , jg    , ble       , 13    )  // LE
-JMP_SMALL(jg    , jle   , bgt       , 12    )  // GT
-
-#elif defined(_TARGET_ARM64_)
-
-//       jump   reverse instruction condcode
-JMP_SMALL(jmp   , jmp   , b         , 15    )  // illegal condcode
-JMP_SMALL(jo    , jno   , bvs       , 6     )  // VS
-JMP_SMALL(jno   , jo    , bvc       , 7     )  // VC
-JMP_SMALL(jb    , jae   , blo       , 3     )  // LO also CC
-JMP_SMALL(jae   , jb    , bhs       , 2     )  // HS also CS
-JMP_SMALL(je    , jne   , beq       , 0     )  // EQ
-JMP_SMALL(jne   , je    , bne       , 1     )  // NE
-JMP_SMALL(jbe   , ja    , bls       , 9     )  // LS
-JMP_SMALL(ja    , jbe   , bhi       , 8     )  // HI
-JMP_SMALL(js    , jns   , bmi       , 4     )  // MI
-JMP_SMALL(jns   , js    , bpl       , 5     )  // PL
-JMP_SMALL(jl    , jge   , blt       , 11    )  // LT
-JMP_SMALL(jge   , jl    , bge       , 10    )  // GE
-JMP_SMALL(jle   , jg    , ble       , 13    )  // LE
-JMP_SMALL(jg    , jle   , bgt       , 12    )  // GT
+JMP_SMALL(jmp   , jmp   , b      )  // AL always
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+JMP_SMALL(hs    , lo    , bhs    )  // HS also CS
+JMP_SMALL(lo    , hs    , blo    )  // LO also CC
+JMP_SMALL(mi    , pl    , bmi    )  // MI
+JMP_SMALL(pl    , mi    , bpl    )  // PL
+JMP_SMALL(vs    , vc    , bvs    )  // VS
+JMP_SMALL(vc    , vs    , bvc    )  // VC
+JMP_SMALL(hi    , ls    , bhi    )  // HI
+JMP_SMALL(ls    , hi    , bls    )  // LS
+JMP_SMALL(ge    , lt    , bge    )  // GE
+JMP_SMALL(lt    , ge    , blt    )  // LT
+JMP_SMALL(gt    , le    , bgt    )  // GT
+JMP_SMALL(le    , gt    , ble    )  // LE
 
 #else
   #error Unsupported or unset target architecture

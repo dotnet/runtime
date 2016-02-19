@@ -31,7 +31,7 @@ const instruction       emitJumpKindInstructions[] =
 {
     INS_nop,
 
-    #define JMP_SMALL(en, rev, ins, condcode) INS_##ins,
+    #define JMP_SMALL(en, rev, ins) INS_##ins,
     #include "emitjmps.h"
 };
 
@@ -39,16 +39,7 @@ const emitJumpKind      emitReverseJumpKinds[] =
 {
     EJ_NONE,
 
-    #define JMP_SMALL(en, rev, ins, condcode) EJ_##rev,
-    #include "emitjmps.h"
-};
-
-
-const unsigned          emitJumpKindCondCodes[] =
-{
-    15, // illegal
-
-    #define JMP_SMALL(en, rev, ins, condcode) condcode,
+    #define JMP_SMALL(en, rev, ins) EJ_##rev,
     #include "emitjmps.h"
 };
 
@@ -89,16 +80,6 @@ const unsigned          emitJumpKindCondCodes[] =
 {
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
-}
-
-/*****************************************************************************
- * Look up the condition code for a give jump kind
- */
-
-/*static*/ unsigned         emitter::emitJumpKindCondCode(emitJumpKind jumpKind)
-{
-    assert(EJ_NONE < jumpKind && jumpKind < EJ_COUNT);
-    return emitJumpKindCondCodes[jumpKind];
 }
 
 /*****************************************************************************
