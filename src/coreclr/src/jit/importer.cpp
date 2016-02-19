@@ -2878,6 +2878,7 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
                                        CORINFO_SIG_INFO *       sig,
                                        int                      memberRef,
                                        bool                     readonlyCall,
+                                       bool                     tailCall,
                                        CorInfoIntrinsics *      pIntrinsicID)
 {
     bool mustExpand = false;
@@ -2956,8 +2957,13 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
 #ifdef LEGACY_BACKEND
         if (IsTargetIntrinsic(intrinsicID))
 #else
-        // Intrinsics that are not implemented directly by target intructions will
-        // be rematerialized as users calls in rationalizer.
+        // Intrinsics that are not implemented directly by target instructions will
+        // be re-materialized as users calls in rationalizer. For prefixed tail calls, 
+        // don't do this optimization, because 
+        //  a) For back compatibility reasons on desktop.Net 4.6 / 4.6.1
+        //  b) It will be non-trivial task or too late to re-materialize a surviving 
+        //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
+        if (!IsIntrinsicImplementedByUserCall(intrinsicID) || !tailCall)
 #endif
         {
             switch (sig->numArgs)
@@ -3016,14 +3022,15 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
                 default:
                     NO_WAY("Unsupported number of args for Math Instrinsic");
             }
-        }
         
 #ifndef LEGACY_BACKEND
-        if (IsIntrinsicImplementedByUserCall(intrinsicID))
-        {
-            op1->gtFlags |= GTF_CALL;
-        }
+            if (IsIntrinsicImplementedByUserCall(intrinsicID))
+            {
+                op1->gtFlags |= GTF_CALL;
+            }
 #endif
+        }
+
         retNode = op1;
         break;
 
@@ -5773,8 +5780,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         // <NICE> Factor this into getCallInfo </NICE>
         if ((mflags & CORINFO_FLG_INTRINSIC) && !pConstrainedResolvedToken)
         {
-            call = impIntrinsic(clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall, &intrinsicID);
-
+            call = impIntrinsic(clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall, (canTailCall && (tailCall != 0)), &intrinsicID);
 
             if (call != nullptr)
             {
@@ -7067,7 +7073,7 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
     else
     {
         callNode->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-    }
+  }
 
     return call;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
