@@ -14,15 +14,17 @@ def osGroupMap = ['Ubuntu':'Linux',
                   'Windows_NT':'Windows_NT',
                   'FreeBSD':'FreeBSD',
                   'CentOS7.1': 'Linux',
-                  'OpenSUSE13.2': 'Linux']
+                  'OpenSUSE13.2': 'Linux',
+                  'RHEL7.2': 'Linux']
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu' : 'ubuntu.14.04-x64',
                              'Ubuntu15.10' : 'ubuntu.14.04-x64',
                              'Debian8.2' : 'ubuntu.14.04-x64',
                              'FreeBSD' : 'ubuntu.14.04-x64',
-                             'CentOS7.1' : 'ubuntu.14.04-x64',
-                             'OpenSUSE13.2' : 'ubuntu.14.04-x64']
+                             'CentOS7.1' : 'centos.7-x64',
+                             'OpenSUSE13.2' : 'ubuntu.14.04-x64',
+                             'RHEL7.2': 'rhel.7.2-x64']
 
 def branchList = ['master', 'rc2', 'pr']
 
@@ -191,7 +193,7 @@ branchList.each { branchName ->
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 branchList.each { branchName ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
