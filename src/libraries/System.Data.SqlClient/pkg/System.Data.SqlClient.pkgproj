@@ -4,10 +4,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
-      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+      <SupportedFramework>net45;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\facade\System.Data.SqlClient.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+      <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </ProjectReference>
 
     <ProjectReference Include="win\System.Data.SqlClient.pkgproj">
