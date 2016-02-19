@@ -471,6 +471,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		}
 		break;
 
+#if SIZEOF_VOID_P == 8
 	case OP_LDIV:
 	case OP_LREM:
 	case OP_LDIV_UN:
@@ -502,6 +503,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			NULLIFY_INS (ins);
 		}
 		break;
+#endif
 
 	case OP_DIV_IMM:
 	case OP_REM_IMM:
