@@ -1861,6 +1861,13 @@ GetProcessTimes(
         OUT LPFILETIME lpKernelTime,
         OUT LPFILETIME lpUserTime);
 
+PALIMPORT
+BOOL
+PALAPI
+GetUniqueTimeValueForProcess(
+        IN DWORD processId,
+        OUT UINT64 *uniqueTimeValue);
+
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
 #define WAIT_ABANDONED   0x00000080
