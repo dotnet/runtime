@@ -331,7 +331,7 @@ function create_core_overlay {
     fi
     mkdir "$coreOverlayDir"
 
-    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' -exec cp -f '{}' "$coreOverlayDir/" \;)
+    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*RemoteExecutorConsoleApp*' -exec cp -f '{}' "$coreOverlayDir/" \;)
     cp -f "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
     cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
