@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 default:
                     Debug.Assert(false);
-                    throw new ArgumentOutOfRangeException("typeCode");
+                    throw new ArgumentOutOfRangeException(nameof(typeCode));
             }
         }
 
@@ -212,7 +212,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     return GetTypeFromSpecification(reader, (TypeSpecificationHandle)handle);
 
                 default:
-                    throw new ArgumentOutOfRangeException("handle");
+                    throw new ArgumentOutOfRangeException(nameof(handle));
             }
         }
 

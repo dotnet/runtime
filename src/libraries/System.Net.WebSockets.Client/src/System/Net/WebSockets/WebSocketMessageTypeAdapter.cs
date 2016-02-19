@@ -62,7 +62,7 @@ namespace System.Net.WebSockets
                     endOfMessage = true;
                     return WebSocketMessageType.Close;
                 default:
-                    throw new ArgumentOutOfRangeException("Unknown WINHTTP_WEB_SOCKET_BUFFER_TYPE.");
+                    throw new ArgumentOutOfRangeException(nameof(winHttpMessageType), "Unknown WINHTTP_WEB_SOCKET_BUFFER_TYPE.");
             }
         }
     }

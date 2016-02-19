@@ -72,16 +72,16 @@ namespace System.Security.Cryptography.X509Certificates
         private static byte[] EncodeExtension(byte[] subjectKeyIdentifier)
         {
             if (subjectKeyIdentifier == null)
-                throw new ArgumentNullException("subjectKeyIdentifier");
+                throw new ArgumentNullException(nameof(subjectKeyIdentifier));
             if (subjectKeyIdentifier.Length == 0)
-                throw new ArgumentException("subjectKeyIdentifier");
+                throw new ArgumentException(nameof(subjectKeyIdentifier));
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
         private static byte[] EncodeExtension(string subjectKeyIdentifier)
         {
             if (subjectKeyIdentifier == null)
-                throw new ArgumentNullException("subjectKeyIdentifier");
+                throw new ArgumentNullException(nameof(subjectKeyIdentifier));
 
             byte[] subjectKeyIdentifiedBytes = subjectKeyIdentifier.DecodeHexString();
             return EncodeExtension(subjectKeyIdentifiedBytes);
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static byte[] EncodeExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             byte[] subjectKeyIdentifier = GenerateSubjectKeyIdentifierFromPublicKey(key, algorithm);
             return EncodeExtension(subjectKeyIdentifier);
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return X509Pal.Instance.ComputeCapiSha1OfPublicKey(key);
 
                 default:
-                    throw new ArgumentException("algorithm");
+                    throw new ArgumentException(nameof(algorithm));
             }
         }
 

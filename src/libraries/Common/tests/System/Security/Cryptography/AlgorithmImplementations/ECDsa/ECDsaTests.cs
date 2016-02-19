@@ -22,168 +22,168 @@ namespace System.Security.Cryptography.EcDsa.Tests
             };
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArray_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.SignData((byte[])null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArray_DefaultHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.SignData(new byte[0], default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.SignData(null, -1, -1, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_NegativeOffset_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("offset",
                 () => ecdsa.SignData(new byte[0], -1, -1, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_OffsetGreaterThanCount_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("offset",
                 () => ecdsa.SignData(new byte[0], 2, 1, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_NegativeCount_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("count",
                 () => ecdsa.SignData(new byte[0], 0, -1, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_CountGreaterThanLengthMinusOffset_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("count",
                 () => ecdsa.SignData(new byte[0], 0, 1, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_DefaultHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArraySpan_EmptyHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.SignData(new byte[10], 0, 10, new HashAlgorithmName("")));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataStream_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.SignData((Stream)null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataStream_DefaultHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArray_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.VerifyData((byte[])null, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArray_NullSignature_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("signature",
                 () => ecdsa.VerifyData(new byte[0], null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArray_DefaultHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.VerifyData(new byte[0], new byte[0], default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.VerifyData((byte[])null, -1, -1, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_NegativeOffset_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("offset",
                 () => ecdsa.VerifyData(new byte[0], -1, -1, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_OffsetGreaterThanCount_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("offset",
                 () => ecdsa.VerifyData(new byte[0], 2, 1, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_NegativeCount_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("count",
                 () => ecdsa.VerifyData(new byte[0], 0, -1, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_CountGreaterThanLengthMinusOffset_ThrowsArgumentOutOfRangeException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentOutOfRangeException>("count",
                 () => ecdsa.VerifyData(new byte[0], 0, 1, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_NullSignature_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("signature",
                 () => ecdsa.VerifyData(new byte[0], 0, 0, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataByteArraySpan_EmptyHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
                 () => ecdsa.VerifyData(new byte[10], 0, 10, new byte[0], new HashAlgorithmName("")));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataStream_NullData_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("data",
                 () => ecdsa.VerifyData((Stream)null, null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataStream_NullSignature_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>("signature",
                 () => ecdsa.VerifyData(new MemoryStream(), null, default(HashAlgorithmName)));
         }
 
-        [Theory, MemberData("AllImplementations")]
+        [Theory, MemberData(nameof(AllImplementations))]
         public void VerifyDataStream_DefaultHashAlgorithm_ThrowsArgumentException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentException>("hashAlgorithm",
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             };
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void SignHash_NullHash_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>(
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 () => ecdsa.SignHash(null));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyHash_NullHash_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>(
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 () => ecdsa.VerifyHash(null, null));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyHash_NullSignature_ThrowsArgumentNullException(ECDsa ecdsa)
         {
             Assert.Throws<ArgumentNullException>(
@@ -226,42 +226,42 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void SignDataByteArray_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
                 () => ecdsa.SignData(new byte[0], new HashAlgorithmName("NOT_A_REAL_HASH_ALGORITHM")));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void SignDataByteArraySpan_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
                 () => ecdsa.SignData(new byte[0], 0, 0, new HashAlgorithmName("NOT_A_REAL_HASH_ALGORITHM")));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void SignDataStream_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
                 () => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName("NOT_A_REAL_HASH_ALGORITHM")));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyDataByteArray_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
                 () => ecdsa.VerifyData(new byte[0], new byte[0], new HashAlgorithmName("NOT_A_REAL_HASH_ALGORITHM")));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyDataByteArraySpan_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
                 () => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], new HashAlgorithmName("NOT_A_REAL_HASH_ALGORITHM")));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyDataStream_UnsupportedHashAlgorithm_ThrowsCryptographicException(ECDsa ecdsa)
         {
             Assert.Throws<CryptographicException>(
@@ -270,7 +270,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void SignData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
             // Explicitly larger than Array.Empty
@@ -280,7 +280,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(ecdsa.VerifyData(Array.Empty<byte>(), signature, HashAlgorithmName.SHA256));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
             // Explicitly larger than Array.Empty
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(ecdsa.VerifyData(data, data.Length, 0, signature, HashAlgorithmName.SHA256));
         }
 
-        [Theory, MemberData("RealImplementations")]
+        [Theory, MemberData(nameof(RealImplementations))]
         public void Roundtrip_WithOffset(ECDsa ecdsa)
         {
             byte[] data = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [Theory, MemberData("InteroperableSignatureConfigurations")]
+        [Theory, MemberData(nameof(InteroperableSignatureConfigurations))]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
             byte[] data = Encoding.UTF8.GetBytes("something to repeat and sign");

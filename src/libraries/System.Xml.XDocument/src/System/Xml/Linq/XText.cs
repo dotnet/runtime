@@ -19,7 +19,7 @@ namespace System.Xml.Linq
         /// <param name="value">The string that contains the value of the text node.</param>
         public XText(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             text = value;
         }
 
@@ -29,7 +29,7 @@ namespace System.Xml.Linq
         /// <param name="other">The text node to copy from.</param>
         public XText(XText other)
         {
-            if (other == null) throw new ArgumentNullException("other");
+            if (other == null) throw new ArgumentNullException(nameof(other));
             text = other.text;
         }
 
@@ -64,7 +64,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
                 text = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
@@ -79,7 +79,7 @@ namespace System.Xml.Linq
         /// </param>
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
             if (parent is XDocument)
             {
                 writer.WriteWhitespace(text);

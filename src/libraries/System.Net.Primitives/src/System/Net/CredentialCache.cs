@@ -46,11 +46,11 @@ namespace System.Net
             // Parameter validation
             if (uriPrefix == null)
             {
-                throw new ArgumentNullException("uriPrefix");
+                throw new ArgumentNullException(nameof(uriPrefix));
             }
             if (authenticationType == null)
             {
-                throw new ArgumentNullException("authenticationType");
+                throw new ArgumentNullException(nameof(authenticationType));
             }
 
             ++_version;
@@ -75,12 +75,12 @@ namespace System.Net
             // Parameter validation
             if (host == null)
             {
-                throw new ArgumentNullException("host");
+                throw new ArgumentNullException(nameof(host));
             }
 
             if (authenticationType == null)
             {
-                throw new ArgumentNullException("authenticationType");
+                throw new ArgumentNullException(nameof(authenticationType));
             }
 
             if (host.Length == 0)
@@ -90,7 +90,7 @@ namespace System.Net
 
             if (port < 0)
             {
-                throw new ArgumentOutOfRangeException("port");
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
             ++_version;
@@ -182,11 +182,11 @@ namespace System.Net
         {
             if (uriPrefix == null)
             {
-                throw new ArgumentNullException("uriPrefix");
+                throw new ArgumentNullException(nameof(uriPrefix));
             }
             if (authenticationType == null)
             {
-                throw new ArgumentNullException("authenticationType");
+                throw new ArgumentNullException(nameof(authenticationType));
             }
 
             if (GlobalLog.IsEnabled)
@@ -230,11 +230,11 @@ namespace System.Net
         {
             if (host == null)
             {
-                throw new ArgumentNullException("host");
+                throw new ArgumentNullException(nameof(host));
             }
             if (authenticationType == null)
             {
-                throw new ArgumentNullException("authenticationType");
+                throw new ArgumentNullException(nameof(authenticationType));
             }
             if (host.Length == 0)
             {
@@ -242,7 +242,7 @@ namespace System.Net
             }
             if (port < 0)
             {
-                throw new ArgumentOutOfRangeException("port");
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
             if (GlobalLog.IsEnabled)

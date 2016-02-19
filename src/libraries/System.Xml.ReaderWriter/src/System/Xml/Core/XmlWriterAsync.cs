@@ -245,7 +245,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
@@ -293,7 +293,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.Settings != null && reader.Settings.Async)

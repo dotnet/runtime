@@ -28,12 +28,12 @@ namespace System.Reflection.Internal
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             if (buffer == null && length != 0)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // the reader performs little-endian specific operations

@@ -36,7 +36,7 @@ namespace System.Linq.Parallel.Tests
         // Single and SingleOrDefault
         //
         [Theory]
-        [MemberData("SingleData", new int[] { 0, 2, 16, 1024 * 1024 }, new int[] { 1 })]
+        [MemberData(nameof(SingleData), new int[] { 0, 2, 16, 1024 * 1024 }, new int[] { 1 })]
         public static void Single(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -45,7 +45,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0, 2, 16, 1024 * 1024 }, new int[] { 0, 1 })]
+        [MemberData(nameof(SingleData), new int[] { 0, 2, 16, 1024 * 1024 }, new int[] { 0, 1 })]
         public static void SingleOrDefault(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -54,7 +54,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0, 1024 * 1024 }, new int[] { 0 })]
+        [MemberData(nameof(SingleData), new int[] { 0, 1024 * 1024 }, new int[] { 0 })]
         public static void Single_Empty(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -63,7 +63,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 0, 1, 2, 16 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 0, 1, 2, 16 })]
         public static void Single_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -74,14 +74,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
         public static void Single_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             Single_NoMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 0, 1, 2, 16 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 0, 1, 2, 16 })]
         public static void SingleOrDefault_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -92,14 +92,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
         public static void SingleOrDefault_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             SingleOrDefault_NoMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 2, 16 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 2, 16 })]
         public static void Single_AllMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -108,14 +108,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
         public static void Single_AllMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             Single_AllMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 2, 16 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 2, 16 })]
         public static void SingleOrDefault_AllMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -124,14 +124,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleData", new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(SingleData), new int[] { 0 }, new int[] { 1024 * 4, 1024 * 1024 })]
         public static void SingleOrDefault_AllMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             SingleOrDefault_AllMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("SingleSpecificData", (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(SingleSpecificData), (object)(new int[] { 1, 2, 16 }))]
         public static void Single_OneMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -142,14 +142,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleSpecificData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(SingleSpecificData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
         public static void Single_OneMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             Single_OneMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("SingleSpecificData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(SingleSpecificData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void SingleOrDefault_OneMatch(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -160,14 +160,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("SingleSpecificData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(SingleSpecificData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
         public static void SingleOrDefault_OneMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int element)
         {
             SingleOrDefault_OneMatch(labeled, count, element);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void Single_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -181,7 +181,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void Single_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Single(x => { throw new DeliberateTestException(); }));

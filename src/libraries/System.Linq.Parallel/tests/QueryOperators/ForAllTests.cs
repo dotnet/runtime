@@ -10,8 +10,8 @@ namespace System.Linq.Parallel.Tests
     public class ForAllTests
     {
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ForAll(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -22,15 +22,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(Sources))]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void ForAll_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ForAll(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void ForAll_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -40,7 +40,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void ForAll_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ForAll(x => { throw new DeliberateTestException(); }));

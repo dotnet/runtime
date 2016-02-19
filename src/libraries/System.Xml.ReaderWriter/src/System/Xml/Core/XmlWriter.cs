@@ -264,7 +264,7 @@ namespace System.Xml
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             WriteString(XmlUntypedStringConverter.Instance.ToString(value, null));
         }
@@ -344,7 +344,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
@@ -392,7 +392,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             bool canReadChunk = reader.CanReadValueChunk;
@@ -550,7 +550,7 @@ namespace System.Xml
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             return settings.CreateWriter(new StringWriter(output, CultureInfo.InvariantCulture));
         }

@@ -11,7 +11,7 @@ namespace System.Linq.Parallel.Tests
     public class ToDictionaryTests
     {
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -23,14 +23,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -42,14 +42,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_ElementSelector(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -61,14 +61,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_CustomComparator(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -80,14 +80,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_ElementSelector_CustomComparator(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_UniqueKeys_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -114,14 +114,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_UniqueKeys_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_UniqueKeys_CustomComparator(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector_UniqueKeys_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -148,7 +148,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_ElementSelector_UniqueKeys_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_ElementSelector_UniqueKeys_CustomComparator(labeled, count);
@@ -162,7 +162,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_DuplicateKeys_ElementSelector(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -172,7 +172,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_DuplicateKeys_ElementSelector_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_DuplicateKeys_ElementSelector(labeled, count);
@@ -186,7 +186,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_DuplicateKeys_ElementSelector_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -196,14 +196,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_DuplicateKeys_ElementSelector_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToDictionary_DuplicateKeys_ElementSelector_CustomComparator(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -216,7 +216,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void ToDictionary_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.ToDictionary((Func<int, int>)(x => { throw new DeliberateTestException(); })));

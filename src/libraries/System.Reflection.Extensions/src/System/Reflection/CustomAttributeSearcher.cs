@@ -29,7 +29,7 @@ namespace System.Reflection
             // Do all parameter validation here before we enter the iterator function (so that exceptions from validations
             // show up immediately rather than on the first MoveNext()).
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             bool typeFilterKnownToBeSealed = false;
             if (!skipTypeValidation)

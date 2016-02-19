@@ -535,13 +535,13 @@ namespace System.Net.Security
 
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 BufferAsyncResult bufferResult = asyncResult as BufferAsyncResult;
                 if (bufferResult == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), "asyncResult");
+                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
                 }
 
                 if (Interlocked.Exchange(ref _NestedRead, 0) == 0)
@@ -608,13 +608,13 @@ namespace System.Net.Security
 
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 BufferAsyncResult bufferResult = asyncResult as BufferAsyncResult;
                 if (bufferResult == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), "asyncResult");
+                    throw new ArgumentException(SR.Format(SR.net_io_async_result, asyncResult.GetType().FullName), nameof(asyncResult));
                 }
 
                 if (Interlocked.Exchange(ref _NestedWrite, 0) == 0)

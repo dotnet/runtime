@@ -49,7 +49,7 @@ namespace System.Collections.Generic
 
         public Dictionary(int capacity, IEqualityComparer<TKey> comparer)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity", capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             if (capacity > 0) Initialize(capacity);
             this.comparer = comparer ?? EqualityComparer<TKey>.Default;
         }
@@ -61,7 +61,7 @@ namespace System.Collections.Generic
         {
             if (dictionary == null)
             {
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
             }
 
             // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
@@ -245,12 +245,12 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - index < Count)
@@ -283,7 +283,7 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (buckets != null)
@@ -310,7 +310,7 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (buckets == null) Initialize(0);
@@ -416,7 +416,7 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (buckets != null)
@@ -490,22 +490,22 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - index < Count)
@@ -536,7 +536,7 @@ namespace System.Collections.Generic
                 object[] objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
 
                 try
@@ -553,7 +553,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
             }
         }
@@ -618,10 +618,10 @@ namespace System.Collections.Generic
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
                 if (value == null && !(default(TValue) == null))
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {
@@ -632,12 +632,12 @@ namespace System.Collections.Generic
                     }
                     catch (InvalidCastException)
                     {
-                        throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
+                        throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
                     }
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), "key");
+                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
                 }
             }
         }
@@ -646,7 +646,7 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             return (key is TKey);
         }
@@ -655,11 +655,11 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (value == null && !(default(TValue) == null))
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             try
             {
@@ -671,12 +671,12 @@ namespace System.Collections.Generic
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
+                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
                 }
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), "key");
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
             }
         }
 
@@ -839,7 +839,7 @@ namespace System.Collections.Generic
             {
                 if (dictionary == null)
                 {
-                    throw new ArgumentNullException("dictionary");
+                    throw new ArgumentNullException(nameof(dictionary));
                 }
                 this.dictionary = dictionary;
             }
@@ -853,12 +853,12 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
                 }
 
                 if (array.Length - index < dictionary.Count)
@@ -919,22 +919,22 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 }
 
                 if (array.GetLowerBound(0) != 0)
                 {
-                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
                 }
 
                 if (array.Length - index < dictionary.Count)
@@ -952,7 +952,7 @@ namespace System.Collections.Generic
                     object[] objects = array as object[];
                     if (objects == null)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                     }
 
                     int count = dictionary.count;
@@ -967,7 +967,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                     }
                 }
             }
@@ -1068,7 +1068,7 @@ namespace System.Collections.Generic
             {
                 if (dictionary == null)
                 {
-                    throw new ArgumentNullException("dictionary");
+                    throw new ArgumentNullException(nameof(dictionary));
                 }
                 this.dictionary = dictionary;
             }
@@ -1082,12 +1082,12 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
                 }
 
                 if (array.Length - index < dictionary.Count)
@@ -1148,22 +1148,22 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 }
 
                 if (array.Rank != 1)
                 {
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 }
 
                 if (array.GetLowerBound(0) != 0)
                 {
-                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
                 }
 
                 if (array.Length - index < dictionary.Count)
@@ -1179,7 +1179,7 @@ namespace System.Collections.Generic
                     object[] objects = array as object[];
                     if (objects == null)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                     }
 
                     int count = dictionary.count;
@@ -1194,7 +1194,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                     }
                 }
             }

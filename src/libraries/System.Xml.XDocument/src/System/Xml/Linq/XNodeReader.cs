@@ -698,7 +698,7 @@ namespace System.Xml.Linq
             {
                 return;
             }
-            if (index < 0) throw new ArgumentOutOfRangeException("index");
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
             XElement e = GetElementInAttributeScope();
             if (e != null)
             {
@@ -721,7 +721,7 @@ namespace System.Xml.Linq
                     } while (a != e.lastAttr);
                 }
             }
-            throw new ArgumentOutOfRangeException("index");
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override bool MoveToElement()

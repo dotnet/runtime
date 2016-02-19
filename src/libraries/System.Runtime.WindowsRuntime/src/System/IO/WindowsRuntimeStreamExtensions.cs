@@ -130,10 +130,10 @@ namespace System.IO
         private static Stream AsStreamInternal(Object windowsRuntimeStream, Int32 bufferSize, String invokedMethodName, bool forceBufferSize)
         {
             if (windowsRuntimeStream == null)
-                throw new ArgumentNullException("windowsRuntimeStream");
+                throw new ArgumentNullException(nameof(windowsRuntimeStream));
 
             if (bufferSize < 0)
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative);
 
             Contract.Requires(!String.IsNullOrWhiteSpace(invokedMethodName));
             Contract.Ensures(Contract.Result<Stream>() != null);
@@ -149,7 +149,7 @@ namespace System.IO
             {
                 Stream wrappedNetFxStream = sAdptr.GetManagedStream();
                 if (wrappedNetFxStream == null)
-                    throw new ObjectDisposedException("windowsRuntimeStream", SR.ObjectDisposed_CannotPerformOperation);
+                    throw new ObjectDisposedException(nameof(windowsRuntimeStream), SR.ObjectDisposed_CannotPerformOperation);
 
 #if DEBUG  // In Chk builds, verify that the original managed stream is correctly entered into the NetFx->WinRT map:
                 AssertMapContains(s_netFxToWinRtAdapterMap, wrappedNetFxStream, sAdptr,
@@ -238,7 +238,7 @@ namespace System.IO
         public static IInputStream AsInputStream(this Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             if (!stream.CanRead)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotReadableToInputStream);
@@ -259,7 +259,7 @@ namespace System.IO
         public static IOutputStream AsOutputStream(this Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             if (!stream.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotWritableToOutputStream);
@@ -280,7 +280,7 @@ namespace System.IO
         public static IRandomAccessStream AsRandomAccessStream(this Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             if (!stream.CanSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotSeekableToRandomAccessStream);
@@ -318,7 +318,7 @@ namespace System.IO
             {
                 Object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<Object>();
                 if (wrappedWinRtStream == null)
-                    throw new ObjectDisposedException("stream", SR.ObjectDisposed_CannotPerformOperation);
+                    throw new ObjectDisposedException(nameof(stream), SR.ObjectDisposed_CannotPerformOperation);
 
 #if DEBUG  // In Chk builds, verify that the original WinRT stream is correctly entered into the WinRT->NetFx map:
                 AssertMapContains(s_winRtToNetFxAdapterMap, wrappedWinRtStream, sAdptr, valueMayBeWrappedInBufferedStream: true);

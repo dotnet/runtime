@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [ConditionalFact("ECDsa224Available")]
+        [ConditionalFact(nameof(ECDsa224Available))]
         public static void Ctor224()
         {
             int expectedKeySize = 224;
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [ConditionalFact("ECDsa224Available")]
+        [ConditionalFact(nameof(ECDsa224Available))]
         public static void CtorHandle224()
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp224r1);
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [ConditionalFact("ECDsa224Available")]
+        [ConditionalFact(nameof(ECDsa224Available))]
         public static void KeySizeProp()
         {
             using (ECDsaOpenSsl e = new ECDsaOpenSsl())

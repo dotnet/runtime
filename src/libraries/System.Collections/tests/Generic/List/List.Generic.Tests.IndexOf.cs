@@ -77,7 +77,7 @@ namespace System.Collections.Tests
         #region IndexOf
 
         [Theory]
-        [MemberData("IndexOfTestData")]
+        [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_NoDuplicates(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             List<T> list = GenericListFactory(count);
@@ -91,7 +91,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("IndexOfTestData")]
+        [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_NonExistingValues(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             List<T> list = GenericListFactory(count);
@@ -105,7 +105,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("IndexOfTestData")]
+        [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_DefaultValue(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             T defaultValue = default(T);
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("IndexOfTestData")]
+        [MemberData(nameof(IndexOfTestData))]
         public void IndexOf_OrderIsCorrect(IndexOfMethod indexOfMethod, int count, bool frontToBackOrder)
         {
             List<T> list = GenericListFactory(count);
@@ -136,7 +136,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IndexOf_int_OrderIsCorrectWithManyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -157,7 +157,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void LastIndexOf_int_OrderIsCorrectWithManyDuplicates(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -178,7 +178,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -190,7 +190,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -205,7 +205,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void LastIndexOf_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -218,7 +218,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void LastIndexOf_int_int_OutOfRangeExceptions(int count)
         {
             List<T> list = GenericListFactory(count);

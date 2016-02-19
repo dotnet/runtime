@@ -32,7 +32,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [MemberData("OneWayReadWritesMemberData")]
+        [MemberData(nameof(OneWayReadWritesMemberData))]
         public async Task OneWayReadWrites(PipeOptions serverOptions, PipeOptions clientOptions, bool asyncServerOps, bool asyncClientOps)
         {
             using (NamedPipePair pair = CreateNamedPipePair(serverOptions, clientOptions))

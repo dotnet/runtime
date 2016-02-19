@@ -30,16 +30,16 @@ namespace System.Net.Sockets
             // We will validate if the file exists on send.
             if (filepath == null)
             {
-                throw new ArgumentNullException("filepath");
+                throw new ArgumentNullException(nameof(filepath));
             }
             // The native API will validate the file length on send.
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             Initialize(filepath, null, offset, count, SendPacketsElementFlags.File, endOfPacket);
@@ -58,15 +58,15 @@ namespace System.Net.Sockets
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0 || offset > buffer.Length)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             if (count < 0 || count > (buffer.Length - offset))
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             Initialize(null, buffer, offset, count, SendPacketsElementFlags.Memory, endOfPacket);

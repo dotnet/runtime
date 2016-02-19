@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("GetContentBlobsWithType")]
+        [MemberData(nameof(GetContentBlobsWithType))]
         public static void TestBlobContentType(byte[] blob, X509ContentType contentType)
         {
             X509ContentType blobType = X509Certificate2.GetCertContentType(blob);

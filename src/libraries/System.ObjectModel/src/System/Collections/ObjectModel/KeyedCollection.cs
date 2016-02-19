@@ -41,7 +41,7 @@ namespace System.Collections.ObjectModel
 
             if (dictionaryCreationThreshold < -1)
             {
-                throw new ArgumentOutOfRangeException("dictionaryCreationThreshold", SR.ArgumentOutOfRange_InvalidThreshold);
+                throw new ArgumentOutOfRangeException(nameof(dictionaryCreationThreshold), SR.ArgumentOutOfRange_InvalidThreshold);
             }
 
             _comparer = comparer;
@@ -75,7 +75,7 @@ namespace System.Collections.ObjectModel
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
 
                 if (_dict != null)
@@ -96,7 +96,7 @@ namespace System.Collections.ObjectModel
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (_dict != null)
@@ -132,7 +132,7 @@ namespace System.Collections.ObjectModel
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (_dict != null)

@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Tests
         {
             if (order < 0)
             {
-                throw new ArgumentOutOfRangeException("order");
+                throw new ArgumentOutOfRangeException(nameof(order));
             }
 
             Order = order;

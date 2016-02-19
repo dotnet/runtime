@@ -28,7 +28,7 @@ namespace System.Threading.Tasks
         {
             if (task == null)
             {
-                throw new ArgumentNullException("task");
+                throw new ArgumentNullException(nameof(task));
             }
 
             // Creates a proxy Task and hooks up the logic to have it represent the task.Result
@@ -56,7 +56,7 @@ namespace System.Threading.Tasks
         {
             if (task == null)
             {
-                throw new ArgumentNullException("task");
+                throw new ArgumentNullException(nameof(task));
             }
 
             // Creates a proxy Task<TResult> and hooks up the logic to have it represent the task.Result

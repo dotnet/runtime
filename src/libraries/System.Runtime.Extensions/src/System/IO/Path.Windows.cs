@@ -39,13 +39,13 @@ namespace System.IO
         public static string GetFullPath(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             string fullPath = NormalizeAndValidatePath(path);
 
             // Emulate FileIOPermissions checks, retained for compatibility (normal invalid characters have already been checked)
             if (PathInternal.HasWildCardCharacters(fullPath))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
             return fullPath;
         }
@@ -128,7 +128,7 @@ namespace System.IO
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results. Other invalid characters we give a chance to be normalized out.
             if (path.IndexOf('\0') != -1)
-                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
             // Toss out paths with colons that aren't a valid drive specifier.
             // Cannot start with a colon and can only be of the form "C:" or "\\?\C:".

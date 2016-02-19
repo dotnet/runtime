@@ -39,7 +39,7 @@ namespace System.Xml
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             XmlNode node = _source;
@@ -1601,7 +1601,7 @@ namespace System.Xml
             {
                 if (lastSiblingToReplace == null)
                 {
-                    throw new ArgumentNullException("lastSiblingToReplace");
+                    throw new ArgumentNullException(nameof(lastSiblingToReplace));
                 }
                 else
                 {
@@ -1659,7 +1659,7 @@ namespace System.Xml
             {
                 if (lastSiblingToDelete == null)
                 {
-                    throw new ArgumentNullException("lastSiblingToDelete");
+                    throw new ArgumentNullException(nameof(lastSiblingToDelete));
                 }
                 else
                 {

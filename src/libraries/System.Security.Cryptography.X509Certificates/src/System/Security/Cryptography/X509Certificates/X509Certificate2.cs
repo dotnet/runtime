@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.X509Certificates
         public static X509ContentType GetCertContentType(byte[] rawData)
         {
             if (rawData == null || rawData.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullArray, "rawData");
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
 
             return X509Pal.Instance.GetCertContentType(rawData);
         }
@@ -263,7 +263,7 @@ namespace System.Security.Cryptography.X509Certificates
         public static X509ContentType GetCertContentType(string fileName)
         {
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
 
             // Desktop compat: The desktop CLR expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.

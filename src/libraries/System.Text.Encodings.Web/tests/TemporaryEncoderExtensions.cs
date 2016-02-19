@@ -23,7 +23,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             if (htmlEncoder == null)
             {
-                throw new ArgumentNullException("htmlEncoder");
+                throw new ArgumentNullException(nameof(htmlEncoder));
             }
 
             if (!String.IsNullOrEmpty(value))
@@ -39,7 +39,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             if (javaScriptStringEncoder == null)
             {
-                throw new ArgumentNullException("javaScriptStringEncoder");
+                throw new ArgumentNullException(nameof(javaScriptStringEncoder));
             }
 
             if (!String.IsNullOrEmpty(value))
@@ -59,7 +59,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             if (urlEncoder == null)
             {
-                throw new ArgumentNullException("urlEncoder");
+                throw new ArgumentNullException(nameof(urlEncoder));
             }
 
             if (!String.IsNullOrEmpty(value))

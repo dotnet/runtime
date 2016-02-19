@@ -178,101 +178,101 @@ namespace System.Runtime.Serialization.Json
                 CharType.None | CharType.FirstName | CharType.Name, //  9E (.) 
                 CharType.None | CharType.FirstName | CharType.Name, //  9F (.) 
                 CharType.None | CharType.FirstName | CharType.Name, //  A0 (.) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A1 (¡) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A2 (¢) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A3 (£) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A4 (¤) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A5 (¥) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A6 (¦) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A7 (§)
-                CharType.None | CharType.FirstName | CharType.Name, //  A8 (¨) 
-                CharType.None | CharType.FirstName | CharType.Name, //  A9 (©) 
-                CharType.None | CharType.FirstName | CharType.Name, //  AA (ª­) 
-                CharType.None | CharType.FirstName | CharType.Name, //  AB («) 
-                CharType.None | CharType.FirstName | CharType.Name, //  AC (¬) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A6 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A7 (?)
+                CharType.None | CharType.FirstName | CharType.Name, //  A8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  A9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  AA (??) 
+                CharType.None | CharType.FirstName | CharType.Name, //  AB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  AC (?) 
                 CharType.None | CharType.FirstName | CharType.Name, //  AD (.) 
-                CharType.None | CharType.FirstName | CharType.Name, //  AE (®) 
-                CharType.None | CharType.FirstName | CharType.Name, //  AF (¯) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B0 (°) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B1 (±) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B2 (²) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B3 (³) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B4 (´) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B5 (µ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B6 (¶)
-                CharType.None | CharType.FirstName | CharType.Name, //  B7 (·) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B8 (¸) 
-                CharType.None | CharType.FirstName | CharType.Name, //  B9 (¹) 
-                CharType.None | CharType.FirstName | CharType.Name, //  BA (º) 
-                CharType.None | CharType.FirstName | CharType.Name, //  BB (») 
-                CharType.None | CharType.FirstName | CharType.Name, //  BC (¼) 
-                CharType.None | CharType.FirstName | CharType.Name, //  BD (½) 
-                CharType.None | CharType.FirstName | CharType.Name, //  BE (¾) 
-                CharType.None | CharType.FirstName | CharType.Name, //  BF (¿) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C0 (À) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C1 (Á) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C2 (Â) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C3 (Ã) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C4 (Ä) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C5 (Å) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C6 (Æ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C7 (Ç) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C8 (È) 
-                CharType.None | CharType.FirstName | CharType.Name, //  C9 (É) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CA (Ê) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CB (Ë) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CC (Ì) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CD (Í) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CE (Î) 
-                CharType.None | CharType.FirstName | CharType.Name, //  CF (Ï) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D0 (Ð) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D1 (Ñ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D2 (Ò) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D3 (Ó) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D4 (Ô) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D5 (Õ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D6 (Ö) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D7 (×) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D8 (Ø) 
-                CharType.None | CharType.FirstName | CharType.Name, //  D9 (Ù) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DA (Ú) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DB (Û) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DC (Ü) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DD (Ý) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DE (Þ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  DF (ß) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E0 (à) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E1 (á) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E2 (â) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E3 (ã) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E4 (ä) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E5 (å) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E6 (æ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E7 (ç) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E8 (è) 
-                CharType.None | CharType.FirstName | CharType.Name, //  E9 (é) 
-                CharType.None | CharType.FirstName | CharType.Name, //  EA (ê) 
-                CharType.None | CharType.FirstName | CharType.Name, //  EB (ë) 
-                CharType.None | CharType.FirstName | CharType.Name, //  EC (ì) 
-                CharType.None | CharType.FirstName | CharType.Name, //  ED (í) 
-                CharType.None | CharType.FirstName | CharType.Name, //  EE (î) 
-                CharType.None | CharType.FirstName | CharType.Name, //  EF (ï) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F0 (ð) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F1 (ñ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F2 (ò) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F3 (ó) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F4 (ô) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F5 (õ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F6 (ö) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F7 (÷) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F8 (ø) 
-                CharType.None | CharType.FirstName | CharType.Name, //  F9 (ù) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FA (ú) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FB (û) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FC (ü) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FD (ý) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FE (þ) 
-                CharType.None | CharType.FirstName | CharType.Name, //  FF (ÿ) 
+                CharType.None | CharType.FirstName | CharType.Name, //  AE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  AF (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B0 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B6 (?)
+                CharType.None | CharType.FirstName | CharType.Name, //  B7 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  B9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BA (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BC (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BD (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  BF (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C0 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C6 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C7 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  C9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CA (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CC (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CD (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  CF (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D0 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D6 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D7 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  D9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DA (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DC (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DD (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  DF (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E0 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E6 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E7 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  E9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  EA (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  EB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  EC (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  ED (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  EE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  EF (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F0 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F1 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F2 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F3 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F4 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F5 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F6 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F7 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F8 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  F9 (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FA (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FB (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FC (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FD (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FE (?) 
+                CharType.None | CharType.FirstName | CharType.Name, //  FF (?) 
             };
         private bool _buffered;
         private byte[] _charactersToSkipOnNextRead;
@@ -736,23 +736,23 @@ namespace System.Runtime.Serialization.Json
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (offset < 0)
                 {
-                    throw new ArgumentOutOfRangeException("offset", SR.ValueMustBeNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
                 }
                 if (offset > buffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset", SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
+                    throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
                 }
                 if (count > buffer.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
                 }
 
                 return 0;
@@ -767,23 +767,23 @@ namespace System.Runtime.Serialization.Json
             {
                 if (chars == null)
                 {
-                    throw new ArgumentNullException("chars");
+                    throw new ArgumentNullException(nameof(chars));
                 }
                 if (offset < 0)
                 {
-                    throw new ArgumentOutOfRangeException("offset", SR.ValueMustBeNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
                 }
                 if (offset > chars.Length)
                 {
-                    throw new ArgumentOutOfRangeException("offset", SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
+                    throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
                 }
                 if (count > chars.Length - offset)
                 {
-                    throw new ArgumentOutOfRangeException("count", SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
                 }
                 int actual;
 
@@ -812,23 +812,23 @@ namespace System.Runtime.Serialization.Json
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
             }
             if (offset > buffer.Length)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Format(SR.JsonOffsetExceedsBufferSize, buffer.Length));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.JsonOffsetExceedsBufferSize, buffer.Length));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > buffer.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - offset));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - offset));
             }
             MoveToInitial(quotas, onClose);
 
@@ -843,7 +843,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
             MoveToInitial(quotas, onClose);
 
@@ -863,23 +863,23 @@ namespace System.Runtime.Serialization.Json
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
             }
             if (offset > array.Length)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Format(SR.OffsetExceedsBufferSize, array.Length));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
             }
             if (count > array.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
             }
         }
 

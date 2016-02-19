@@ -33,7 +33,7 @@ namespace System.IO
         public static string GetFullPath(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathIllegal);

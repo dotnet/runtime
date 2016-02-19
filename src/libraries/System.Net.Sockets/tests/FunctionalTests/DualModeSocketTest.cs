@@ -138,7 +138,7 @@ namespace System.Net.Sockets.Tests
         #region ConnectAsync to DnsEndPoint
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {

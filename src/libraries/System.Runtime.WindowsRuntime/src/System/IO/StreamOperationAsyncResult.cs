@@ -299,7 +299,7 @@ namespace System.IO
             : base(asyncStreamReadOperation, userCompletionCallback, userAsyncStateInfo, processCompletedOperationInCallback)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             _userBuffer = buffer;
             asyncStreamReadOperation.Completed = this.StreamOperationCompletedCallback;

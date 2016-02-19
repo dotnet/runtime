@@ -56,7 +56,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _order = value;

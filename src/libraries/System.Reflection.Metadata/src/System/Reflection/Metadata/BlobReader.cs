@@ -616,7 +616,7 @@ namespace System.Reflection.Metadata
                     return null;
 
                 default:
-                    throw new ArgumentOutOfRangeException("typeCode");
+                    throw new ArgumentOutOfRangeException(nameof(typeCode));
             }
         }
 

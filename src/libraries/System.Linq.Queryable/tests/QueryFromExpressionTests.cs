@@ -409,7 +409,7 @@ namespace System.Linq.Tests
             public static IEnumerable<int> RunningTotals(IEnumerable<int> source)
             {
                 if (source == null)
-                    throw new ArgumentNullException("source");
+                    throw new ArgumentNullException(nameof(source));
                 return RunningTotalsIterator(source);
             }
 

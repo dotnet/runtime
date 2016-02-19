@@ -579,7 +579,7 @@ namespace Microsoft.Win32
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view)
         {
             if (machineName == null)
-                throw new ArgumentNullException("machineName");
+                throw new ArgumentNullException(nameof(machineName));
             int index = (int)hKey & 0x0FFFFFFF;
             if (index < 0 || index >= hkeyNames.Length || ((int)hKey & 0xFFFFFFF0) != 0x80000000)
             {
@@ -784,7 +784,7 @@ namespace Microsoft.Win32
         [System.Security.SecurityCritical]
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
-            if (handle == null) throw new ArgumentNullException("handle");
+            if (handle == null) throw new ArgumentNullException(nameof(handle));
             ValidateKeyView(view);
 
             return new RegistryKey(handle, true /* isWritable */, view);
@@ -994,7 +994,7 @@ namespace Microsoft.Win32
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), "options");
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
             bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
             return InternalGetValue(name, defaultValue, doNotExpand, true);
@@ -1323,7 +1323,7 @@ namespace Microsoft.Win32
             }
 
             if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
-                throw new ArgumentException(SR.Arg_RegBadKeyKind, "valueKind");
+                throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
 
             EnsureWriteable();
 

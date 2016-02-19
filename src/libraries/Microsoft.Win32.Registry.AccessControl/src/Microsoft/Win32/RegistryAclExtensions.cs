@@ -31,7 +31,7 @@ namespace Microsoft.Win32
         {
             if (registrySecurity == null)
             {
-                throw new ArgumentNullException("registrySecurity");
+                throw new ArgumentNullException(nameof(registrySecurity));
             }
 
             registrySecurity.Persist(key.Handle, key.Name);

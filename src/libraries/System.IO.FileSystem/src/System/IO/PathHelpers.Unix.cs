@@ -23,7 +23,7 @@ namespace System.IO
                 if ((index == 0 || PathInternal.IsDirectorySeparator(searchPattern[index - 1])) && // previous character is directory separator
                     (index + 2 == searchPattern.Length || PathInternal.IsDirectorySeparator(searchPattern[index + 2]))) // next character is directory separator
                 {
-                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
+                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, nameof(searchPattern));
                 }
             }
         }

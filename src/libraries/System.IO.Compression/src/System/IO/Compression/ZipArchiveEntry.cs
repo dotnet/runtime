@@ -225,7 +225,7 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
                     throw new IOException(SR.FrozenAfterWrite);
                 if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
-                    throw new ArgumentOutOfRangeException("value", SR.DateTimeOutOfRange);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
 
                 _lastModified = value;
             }
@@ -1219,11 +1219,11 @@ namespace System.IO.Compression
             {
                 //we can't pass the argument checking down a level
                 if (buffer == null)
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 if (offset < 0)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentNeedNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentNeedNonNegative);
                 if (count < 0)
-                    throw new ArgumentOutOfRangeException("count", SR.ArgumentNeedNonNegative);
+                    throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentNeedNonNegative);
                 if ((buffer.Length - offset) < count)
                     throw new ArgumentException(SR.OffsetLengthInvalid);
                 Contract.EndContractBlock();
