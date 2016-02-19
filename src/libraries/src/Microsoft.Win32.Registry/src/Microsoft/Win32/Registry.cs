@@ -70,7 +70,7 @@ namespace Microsoft.Win32
         {
             if (keyName == null)
             {
-                throw new ArgumentNullException("keyName");
+                throw new ArgumentNullException(nameof(keyName));
             }
 
             string basekeyName;

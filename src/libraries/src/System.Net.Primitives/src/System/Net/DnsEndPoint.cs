@@ -18,7 +18,7 @@ namespace System.Net
         {
             if (host == null)
             {
-                throw new ArgumentNullException("host");
+                throw new ArgumentNullException(nameof(host));
             }
 
             if (String.IsNullOrEmpty(host))
@@ -28,14 +28,14 @@ namespace System.Net
 
             if (port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort)
             {
-                throw new ArgumentOutOfRangeException("port");
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
             if (addressFamily != AddressFamily.InterNetwork &&
                 addressFamily != AddressFamily.InterNetworkV6 &&
                 addressFamily != AddressFamily.Unspecified)
             {
-                throw new ArgumentException(SR.net_sockets_invalid_optionValue_all, "addressFamily");
+                throw new ArgumentException(SR.net_sockets_invalid_optionValue_all, nameof(addressFamily));
             }
 
             _host = host;

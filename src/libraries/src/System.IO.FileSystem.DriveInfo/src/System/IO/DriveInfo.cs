@@ -15,7 +15,7 @@ namespace System.IO
         {
             if (driveName == null)
             {
-                throw new ArgumentNullException("driveName");
+                throw new ArgumentNullException(nameof(driveName));
             }
             Contract.EndContractBlock();
 

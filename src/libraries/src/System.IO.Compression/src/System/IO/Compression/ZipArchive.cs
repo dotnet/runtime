@@ -130,7 +130,7 @@ namespace System.IO.Compression
         public ZipArchive(Stream stream, ZipArchiveMode mode, Boolean leaveOpen, Encoding entryNameEncoding)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             Contract.EndContractBlock();
 
@@ -280,7 +280,7 @@ namespace System.IO.Compression
         public ZipArchiveEntry GetEntry(String entryName)
         {
             if (entryName == null)
-                throw new ArgumentNullException("entryName");
+                throw new ArgumentNullException(nameof(entryName));
             Contract.EndContractBlock();
 
             if (_mode == ZipArchiveMode.Create)
@@ -347,10 +347,10 @@ namespace System.IO.Compression
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
 
             if (entryName == null)
-                throw new ArgumentNullException("entryName");
+                throw new ArgumentNullException(nameof(entryName));
 
             if (String.IsNullOrEmpty(entryName))
-                throw new ArgumentException(SR.CannotBeEmpty, "entryName");
+                throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
@@ -492,7 +492,7 @@ namespace System.IO.Compression
                         break;
                     default:
                         //still have to throw this, because stream constructor doesn't do mode argument checks
-                        throw new ArgumentOutOfRangeException("mode");
+                        throw new ArgumentOutOfRangeException(nameof(mode));
                 }
 
                 _mode = mode;

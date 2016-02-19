@@ -40,7 +40,7 @@ namespace System.Net.Http
             // other *Content constructors: 'null' throws, empty values are allowed.
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             if (encoding == null)

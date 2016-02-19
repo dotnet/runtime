@@ -19,13 +19,13 @@ namespace System.Net
             // ArraySegment<byte> is not nullable.
             if (segment.Array == null)
             {
-                throw new ArgumentNullException("segment");
+                throw new ArgumentNullException(nameof(segment));
             }
 
             // Length zero is explicitly allowed
             if (segment.Offset < 0 || segment.Count < 0 || segment.Count > (segment.Array.Length - segment.Offset))
             {
-                throw new ArgumentOutOfRangeException("segment");
+                throw new ArgumentOutOfRangeException(nameof(segment));
             }
         }
     }

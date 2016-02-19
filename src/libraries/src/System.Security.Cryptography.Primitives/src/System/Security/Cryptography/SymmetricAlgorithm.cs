@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (value.Length != this.BlockSize / 8)
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
 
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 long bitLength = value.Length * 8L;
                 if (bitLength > int.MaxValue || !ValidKeySize((int)bitLength))

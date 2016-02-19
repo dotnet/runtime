@@ -63,7 +63,7 @@ namespace System.Linq
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                return new Concat3Iterator<TSource>(_first, _second, next);
+                return new ConcatNIterator<TSource>(this, next, 2);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
@@ -72,42 +72,6 @@ namespace System.Linq
                 {
                     case 0: return _first;
                     case 1: return _second;
-                    default: return null;
-                }
-            }
-        }
-
-        private sealed class Concat3Iterator<TSource> : ConcatIterator<TSource>
-        {
-            private readonly IEnumerable<TSource> _first;
-            private readonly IEnumerable<TSource> _second;
-            private readonly IEnumerable<TSource> _third;
-
-            internal Concat3Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second, IEnumerable<TSource> third)
-            {
-                Debug.Assert(first != null && second != null && third != null);
-                _first = first;
-                _second = second;
-                _third = third;
-            }
-
-            public override Iterator<TSource> Clone()
-            {
-                return new Concat3Iterator<TSource>(_first, _second, _third);
-            }
-
-            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
-            {
-                return new ConcatNIterator<TSource>(this, next, 3);
-            }
-
-            internal override IEnumerable<TSource> GetEnumerable(int index)
-            {
-                switch (index)
-                {
-                    case 0: return _first;
-                    case 1: return _second;
-                    case 2: return _third;
                     default: return null;
                 }
             }
@@ -115,7 +79,7 @@ namespace System.Linq
 
         private sealed class ConcatNIterator<TSource> : ConcatIterator<TSource>
         {
-            // To handle chains of >= 4 sources, we chain the concat iterators together and allow
+            // To handle chains of >= 3 sources, we chain the concat iterators together and allow
             // GetEnumerable to fetch enumerables from the previous sources.  This means that rather
             // than each MoveNext/Current calls having to traverse all of the previous sources, we
             // only have to traverse all of the previous sources once per chained enumerable.  An
@@ -130,7 +94,7 @@ namespace System.Linq
             {
                 Debug.Assert(previousConcat != null);
                 Debug.Assert(next != null);
-                Debug.Assert(nextIndex > 0);
+                Debug.Assert(nextIndex >= 2);
                 _previousConcat = previousConcat;
                 _next = next;
                 _nextIndex = nextIndex;
@@ -143,7 +107,14 @@ namespace System.Linq
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                return new ConcatNIterator<TSource>(this, next, checked(_nextIndex + 1));
+                if (_nextIndex == int.MaxValue - 2)
+                {
+                    // In the unlikely case of this many concatenations, if we produced a ConcatNIterator
+                    // with int.MaxValue then state would overflow before it matched it's index.
+                    // So we use the naïve approach of just having a left and right sequence.
+                    return new Concat2Iterator<TSource>(this, next);
+                }
+                return new ConcatNIterator<TSource>(this, next, _nextIndex + 1);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
@@ -156,7 +127,7 @@ namespace System.Linq
                 // Walk back through the chain of ConcatNIterators looking for the one
                 // that has its _nextIndex equal to index.  If we don't find one, then it
                 // must be prior to any of them, so call GetEnumerable on the previous
-                // Concat3/2Iterator.  This avoids a deep recursive call chain.
+                // Concat2Iterator.  This avoids a deep recursive call chain.
                 ConcatNIterator<TSource> current = this;
                 while (true)
                 {
@@ -172,6 +143,8 @@ namespace System.Linq
                         continue;
                     }
 
+                    Debug.Assert(current._previousConcat is Concat2Iterator<TSource>);
+                    Debug.Assert(index == 0 || index == 1);
                     return current._previousConcat.GetEnumerable(index);
                 }
             }

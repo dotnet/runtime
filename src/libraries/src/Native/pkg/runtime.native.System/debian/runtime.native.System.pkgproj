@@ -4,7 +4,7 @@
   
   <PropertyGroup>
     <Version>1.0.1</Version>
-    <PackageTargetRuntime>debian.8.2-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>

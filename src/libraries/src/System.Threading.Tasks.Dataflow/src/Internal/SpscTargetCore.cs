@@ -135,13 +135,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If the message header is invalid, throw.
             if (!messageHeader.IsValid)
             {
-                throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+                throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             }
 
             // If the caller has requested we consume the message using ConsumeMessage, do so.
             if (consumeToAccept)
             {
-                if (source == null) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
+                if (source == null) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
                 bool consumed;
                 messageValue = source.ConsumeMessage(messageHeader, _owningTarget, out consumed);
                 if (!consumed) return DataflowMessageStatus.NotAvailable;

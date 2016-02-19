@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -76,9 +77,9 @@ namespace System.Security.Cryptography
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
             SafeRsaHandle key = _key.Value;
@@ -115,9 +116,9 @@ namespace System.Security.Cryptography
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
             SafeRsaHandle key = _key.Value;
@@ -352,11 +353,11 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 
@@ -400,11 +401,11 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 

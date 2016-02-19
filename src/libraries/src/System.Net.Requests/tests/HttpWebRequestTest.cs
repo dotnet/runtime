@@ -34,7 +34,7 @@ namespace System.Net.Tests
             _output = output;
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Ctor_VerifyDefaults_Success(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -54,7 +54,7 @@ namespace System.Net.Tests
             Assert.False(request.UseDefaultCredentials);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Ctor_CreateHttpWithString_ExpectNotNull(Uri remoteServer)
         {
             string remoteServerString = remoteServer.ToString();
@@ -62,14 +62,14 @@ namespace System.Net.Tests
             Assert.NotNull(request);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Ctor_CreateHttpWithUri_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.NotNull(request);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Accept_SetThenGetValidValue_ExpectSameValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -78,7 +78,7 @@ namespace System.Net.Tests
             Assert.Equal(acceptType, request.Accept);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Accept_SetThenGetEmptyValue_ExpectNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -86,7 +86,7 @@ namespace System.Net.Tests
             Assert.Null(request.Accept);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Accept_SetThenGetNullValue_ExpectNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -94,7 +94,7 @@ namespace System.Net.Tests
             Assert.Null(request.Accept);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void AllowReadStreamBuffering_SetFalseThenGet_ExpectFalse(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -102,7 +102,7 @@ namespace System.Net.Tests
             Assert.False(request.AllowReadStreamBuffering);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void AllowReadStreamBuffering_SetTrueThenGet_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -110,7 +110,7 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -125,7 +125,7 @@ namespace System.Net.Tests
             Assert.Equal(strContent.Length, length);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void ContentType_SetThenGet_ExpectSameValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -134,7 +134,7 @@ namespace System.Net.Tests
             Assert.Equal(myContent, request.ContentType);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void ContentType_SetThenGetEmptyValue_ExpectNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -142,7 +142,7 @@ namespace System.Net.Tests
             Assert.Null(request.ContentType);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void ContinueTimeout_SetThenGetZero_ExpectZero(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -150,21 +150,21 @@ namespace System.Net.Tests
             Assert.Equal(0, request.ContinueTimeout);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void ContinueTimeout_SetNegativeOne_Success(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.ContinueTimeout = -1;
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void ContinueTimeout_SetNegativeTwo_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.Throws<ArgumentOutOfRangeException>(() => request.ContinueTimeout = -2);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Credentials_SetDefaultCredentialsThenGet_ValuesMatch(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -172,7 +172,7 @@ namespace System.Net.Tests
             Assert.Equal(CredentialCache.DefaultCredentials, request.Credentials);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Credentials_SetExplicitCredentialsThenGet_ValuesMatch(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -180,7 +180,7 @@ namespace System.Net.Tests
             Assert.Equal(_explicitCredential, request.Credentials);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void UseDefaultCredentials_SetTrue_CredentialsEqualsDefaultCredentials(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -189,7 +189,7 @@ namespace System.Net.Tests
             Assert.Equal(CredentialCache.DefaultCredentials, request.Credentials);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void UseDefaultCredentials_SetFalse_CredentialsNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -198,7 +198,7 @@ namespace System.Net.Tests
             Assert.Equal(null, request.Credentials);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_UseGETVerb_ThrowsProtocolViolationException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -208,7 +208,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_UseHEADVerb_ThrowsProtocolViolationException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -219,7 +219,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_UseCONNECTVerb_ThrowsProtocolViolationException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -230,7 +230,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_CreatePostRequestThenAbort_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -240,7 +240,7 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, ex.Status);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -253,7 +253,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -265,7 +265,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -277,7 +277,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void BeginGetResponse_CreatePostRequestThenAbort_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -287,7 +287,7 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, ex.Status);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -303,7 +303,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -312,7 +312,7 @@ namespace System.Net.Tests
             Assert.NotNull(requestStream);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetResponseAsync_GetResponseStream_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -320,7 +320,7 @@ namespace System.Net.Tests
             Assert.NotNull(response.GetResponseStream());
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetResponseAsync_GetResponseStream_ContainsHost(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -336,7 +336,7 @@ namespace System.Net.Tests
             Assert.True(strContent.Contains("\"Host\": \"" + HttpTestServers.Host + "\""));
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetResponseAsync_PostRequestStream_ContainsData(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -355,7 +355,7 @@ namespace System.Net.Tests
             Assert.True(strContent.Contains(RequestBody));
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -379,7 +379,7 @@ namespace System.Net.Tests
             new object[] { HttpTestServers.StatusCodeUri(true, 404) },
         };
 
-        [Theory, MemberData("StatusCodeServers")]
+        [Theory, MemberData(nameof(StatusCodeServers))]
         public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -389,7 +389,7 @@ namespace System.Net.Tests
 
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -397,7 +397,7 @@ namespace System.Net.Tests
             Assert.True(request.HaveResponse);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -407,7 +407,7 @@ namespace System.Net.Tests
             Assert.True(headersString.Contains(headersPartialContent));
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Method_SetThenGetToGET_ExpectSameValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -415,7 +415,7 @@ namespace System.Net.Tests
             Assert.Equal(HttpMethod.Get.Method, request.Method);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Method_SetThenGetToPOST_ExpectSameValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -423,21 +423,21 @@ namespace System.Net.Tests
             Assert.Equal(HttpMethod.Post.Method, request.Method);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Proxy_GetDefault_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.NotNull(request.Proxy);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void RequestUri_CreateHttpThenGet_ExpectSameUri(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.Equal(remoteServer, request.RequestUri);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task ResponseUri_GetResponseAsync_ExpectSameUri(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -445,14 +445,14 @@ namespace System.Net.Tests
             Assert.Equal(remoteServer, response.ResponseUri);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void SupportsCookieContainer_GetDefault_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.True(request.SupportsCookieContainer);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -467,7 +467,7 @@ namespace System.Net.Tests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task SimpleScenario_UsePOSTVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -490,7 +490,7 @@ namespace System.Net.Tests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -509,7 +509,7 @@ namespace System.Net.Tests
             Assert.True(responseBody.Contains("Content-Type"));
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -523,7 +523,7 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, wex.Status);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -534,7 +534,7 @@ namespace System.Net.Tests
             Assert.Equal(1, _responseCallbackCallCount);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -546,7 +546,7 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, wex.Status);
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseUsingNoCallbackThenAbort_Success(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -556,7 +556,7 @@ namespace System.Net.Tests
             _savedHttpWebRequest.Abort();
         }
 
-        [Theory, MemberData("EchoServers")]
+        [Theory, MemberData(nameof(EchoServers))]
         public void Abort_CreateRequestThenAbort_Success(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);

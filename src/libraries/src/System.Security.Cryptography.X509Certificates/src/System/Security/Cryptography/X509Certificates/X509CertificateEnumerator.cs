@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
             public X509CertificateEnumerator(X509CertificateCollection mappings)
             {
                 if (mappings == null)
-                    throw new ArgumentNullException("mappings");
+                    throw new ArgumentNullException(nameof(mappings));
 
                 mappings.GetEnumerator(out _enumerator);
             }

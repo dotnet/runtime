@@ -41,8 +41,20 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+      <Link>Common\System\CharArrayHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
+      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
       <Link>Common\System\Net\HttpVersion.cs</Link>
@@ -89,6 +101,9 @@
     <Compile Include="..\..\src\System\Net\Http\WinHttpRequestStream.cs">
       <Link>ProductionCode\WinHttpRequestStream.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseHeaderReader.cs">
+      <Link>ProductionCode\WinHttpResponseHeaderReader.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpResponseParser.cs">
       <Link>ProductionCode\WinHttpResponseParser.cs</Link>
     </Compile>
@@ -118,6 +133,7 @@
     <Compile Include="TestControl.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="WinHttpRequestStreamTest.cs" />
+    <Compile Include="WinHttpResponseHeaderReaderTest.cs" />
     <Compile Include="WinHttpResponseStreamTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>

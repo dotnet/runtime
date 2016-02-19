@@ -336,7 +336,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
-        [MemberData("ApiType")]
+        [MemberData(nameof(ApiType))]
         public static void TestIntegration(String apiType, bool useReader)
         {
             Debug.WriteLine(string.Format(" Running apiType:{0} useReader:{1}", apiType, useReader));

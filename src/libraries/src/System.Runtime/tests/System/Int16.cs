@@ -228,7 +228,7 @@ public static class Int16Tests
         yield return new object[] { "32768", defaultStyle, defaultFormat, typeof(OverflowException) }; // > max value
     }
 
-    [Theory, MemberData("ParseValidData")]
+    [Theory, MemberData(nameof(ParseValidData))]
     public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, short expected)
     {
         short i;
@@ -259,7 +259,7 @@ public static class Int16Tests
         Assert.Equal(expected, short.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Theory, MemberData("ParseInvalidData")]
+    [Theory, MemberData(nameof(ParseInvalidData))]
     public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
         short i;

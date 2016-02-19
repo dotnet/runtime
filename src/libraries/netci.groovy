@@ -14,15 +14,17 @@ def osGroupMap = ['Ubuntu':'Linux',
                   'Windows_NT':'Windows_NT',
                   'FreeBSD':'FreeBSD',
                   'CentOS7.1': 'Linux',
-                  'OpenSUSE13.2': 'Linux']
+                  'OpenSUSE13.2': 'Linux',
+                  'RHEL7.2': 'Linux']
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu' : 'ubuntu.14.04-x64',
                              'Ubuntu15.10' : 'ubuntu.14.04-x64',
                              'Debian8.2' : 'ubuntu.14.04-x64',
                              'FreeBSD' : 'ubuntu.14.04-x64',
-                             'CentOS7.1' : 'ubuntu.14.04-x64',
-                             'OpenSUSE13.2' : 'ubuntu.14.04-x64']
+                             'CentOS7.1' : 'centos.7-x64',
+                             'OpenSUSE13.2' : 'ubuntu.14.04-x64',
+                             'RHEL7.2': 'rhel.7.2-x64']
 
 def branchList = ['master', 'rc2', 'pr']
 
@@ -105,40 +107,43 @@ branchList.each { branchName ->
 // Define outerloop windows testing.  Run locally on each machine.
 // **************************
 
-def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu' : 'ubuntu', 'OSX' : 'osx']
+def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu14.04' : 'ubuntu14.04', 'OSX' : 'osx']
 branchList.each { branchName ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu', 'OSX'].each { os ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'OSX'].each { os ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def isPR = (branchName == 'pr')  
             def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
 
-            def newJob
-            if (os != 'Ubuntu' && os != 'OSX') {
-                newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
-                    steps {
+            def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+                steps {
+                    if (os != 'Ubuntu14.04' && os != 'OSX') {
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
                     }
-                }
-            } else {
-                newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
-                    // Jobs run as a service in unix, which means that HOME variable is not set, and it is required for restoring packages
-                    // so we set it first, and then call build.sh
-                    steps {
+                    else if (os != 'Ubuntu14.04') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")
+                    }
+                    else {
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")    
                     }
                 }
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            Utilities.setMachineAffinity(newJob, os)
+            if (os == 'Ubuntu14.04') {
+                Utilities.setMachineAffinity(newJob, os, "201626test")    
+            }
+            else {
+                Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
+            }
+
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
             // Add the unit test results
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
 
             // Unix runs take more than 2 hours to run, so we set the timeout to be longer.
-            if (os == 'Ubuntu' || os == 'OSX') {
+            if (os == 'Ubuntu14.04' || os == 'OSX') {
                 Utilities.setJobTimeout(newJob, 240)
             }
 
@@ -146,7 +151,7 @@ branchList.each { branchName ->
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop.*")
+                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}.*")
             }
             else {
                 // Set a periodic trigger
@@ -188,7 +193,7 @@ branchList.each { branchName ->
 // and then a build for the test of corefx on the target platform.  Then we link them with a build
 // flow job.
 
-def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2']
+def innerLoopNonWindowsOSs = ['Ubuntu', 'Ubuntu15.10', 'Debian8.2', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2']
 branchList.each { branchName ->
     ['Debug', 'Release'].each { configurationGroup ->
         innerLoopNonWindowsOSs.each { os ->
@@ -230,7 +235,7 @@ branchList.each { branchName ->
             }
 
             // Set the affinity.  All of these run on Windows currently.
-            Utilities.setMachineAffinity(newBuildJob, 'Windows_NT')
+            Utilities.setMachineAffinity(newBuildJob, 'Windows_NT', 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
             // Archive the results

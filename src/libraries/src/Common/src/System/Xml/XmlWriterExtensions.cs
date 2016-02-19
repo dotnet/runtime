@@ -31,7 +31,7 @@ namespace System.Xml.XPath
         {
             if (navigator == null)
             {
-                throw new ArgumentNullException("navigator");
+                throw new ArgumentNullException(nameof(navigator));
             }
             int iLevel = 0;
 

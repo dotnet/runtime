@@ -1957,7 +1957,7 @@ namespace XmlCoreTest.Common
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             if (AsyncUtil.RedirectWriter)
             {

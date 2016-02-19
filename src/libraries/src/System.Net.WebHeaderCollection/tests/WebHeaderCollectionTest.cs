@@ -143,7 +143,7 @@ namespace System.Net.WebHeaderCollectionTests
             new object[] { "\u0019" }
         };
 
-        [Theory, MemberData("InvalidNames")]
+        [Theory, MemberData(nameof(InvalidNames))]
         public void CheckBadChars_InvalidName(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -158,7 +158,7 @@ namespace System.Net.WebHeaderCollectionTests
             new object[] { "value1\u0019value2" }
         };
 
-        [Theory, MemberData("InvalidValues")]
+        [Theory, MemberData(nameof(InvalidValues))]
         public void CheckBadChars_InvalidValue(string value)
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -172,7 +172,7 @@ namespace System.Net.WebHeaderCollectionTests
             new object[] { "value1\r\n value2" }
         };
 
-        [Theory, MemberData("ValidValues")]
+        [Theory, MemberData(nameof(ValidValues))]
         public void CheckBadChars_ValidValue(string value)
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -224,7 +224,7 @@ namespace System.Net.WebHeaderCollectionTests
         };
 
         [Theory]
-        [MemberData("TestHeadersWithValues")]
+        [MemberData(nameof(TestHeadersWithValues))]
         public void GetValues_String_Success(string header, string value, string[] expectedValues)
         {
             WebHeaderCollection w = new WebHeaderCollection();

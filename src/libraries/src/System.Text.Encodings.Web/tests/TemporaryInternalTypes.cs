@@ -81,7 +81,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Volatile.Write(ref _defaultEncoder, value);
             }
@@ -254,7 +254,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Volatile.Write(ref _defaultEncoder, value);
             }
@@ -451,7 +451,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Volatile.Write(ref _defaultEncoder, value);
             }

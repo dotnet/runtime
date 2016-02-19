@@ -14,8 +14,8 @@ namespace System.Composition.TypedParts.Util
     {
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, Reflection.MemberInfo member)
         {
-            if (reflectedType == null) throw new ArgumentNullException("reflectedType");
-            if (member == null) throw new ArgumentNullException("member");
+            if (reflectedType == null) throw new ArgumentNullException(nameof(reflectedType));
+            if (member == null) throw new ArgumentNullException(nameof(member));
 
             if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
                 return EmptyArray<Attribute>.Value;
@@ -25,8 +25,8 @@ namespace System.Composition.TypedParts.Util
 
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, Reflection.ParameterInfo parameter)
         {
-            if (reflectedType == null) throw new ArgumentNullException("reflectedType");
-            if (parameter == null) throw new ArgumentNullException("parameter");
+            if (reflectedType == null) throw new ArgumentNullException(nameof(reflectedType));
+            if (parameter == null) throw new ArgumentNullException(nameof(parameter));
             return parameter.GetCustomAttributes(false);
         }
     }

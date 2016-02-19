@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             InitializeFromCollection(collection);
@@ -151,7 +151,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             // Validate arguments.
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an
@@ -432,7 +432,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an

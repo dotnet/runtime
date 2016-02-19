@@ -67,7 +67,7 @@ public static unsafe class BufferTests
         }
     }
 
-    [Theory, MemberData("ByteLengthTestData")]
+    [Theory, MemberData(nameof(ByteLengthTestData))]
     public static void TestByteLength(Type type, int size)
     {
         const int length = 25;

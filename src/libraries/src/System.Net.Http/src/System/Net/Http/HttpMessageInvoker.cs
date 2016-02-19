@@ -27,7 +27,7 @@ namespace System.Net.Http
 
             if (handler == null)
             {
-                throw new ArgumentNullException("handler");
+                throw new ArgumentNullException(nameof(handler));
             }
 
             if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, handler);
@@ -43,7 +43,7 @@ namespace System.Net.Http
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
             CheckDisposed();
 

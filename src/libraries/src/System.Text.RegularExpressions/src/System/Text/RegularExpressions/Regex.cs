@@ -99,9 +99,9 @@ namespace System.Text.RegularExpressions
             string cultureKey = null;
 
             if (pattern == null)
-                throw new ArgumentNullException("pattern");
+                throw new ArgumentNullException(nameof(pattern));
             if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
-                throw new ArgumentOutOfRangeException("options");
+                throw new ArgumentOutOfRangeException(nameof(options));
             if ((options & RegexOptions.ECMAScript) != 0
              && (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions
                            | RegexOptions.Debug
 #endif
                                                )) != 0)
-                throw new ArgumentOutOfRangeException("options");
+                throw new ArgumentOutOfRangeException(nameof(options));
 
             ValidateMatchTimeout(matchTimeout);
 
@@ -178,7 +178,7 @@ namespace System.Text.RegularExpressions
             if (TimeSpan.Zero < matchTimeout && matchTimeout <= MaximumMatchTimeout)
                 return;
 
-            throw new ArgumentOutOfRangeException("matchTimeout");
+            throw new ArgumentOutOfRangeException(nameof(matchTimeout));
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace System.Text.RegularExpressions
         public static String Escape(String str)
         {
             if (str == null)
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
 
             return RegexParser.Escape(str);
         }
@@ -205,7 +205,7 @@ namespace System.Text.RegularExpressions
         public static String Unescape(String str)
         {
             if (str == null)
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
 
             return RegexParser.Unescape(str);
         }
@@ -220,7 +220,7 @@ namespace System.Text.RegularExpressions
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 s_cacheSize = value;
                 if (s_livecode.Count > s_cacheSize)
@@ -389,7 +389,7 @@ namespace System.Text.RegularExpressions
             int result = -1;
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             // look up name if we have a hashtable of names
             if (_capnames != null)
@@ -459,7 +459,7 @@ namespace System.Text.RegularExpressions
         public bool IsMatch(String input)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return IsMatch(input, UseOptionR() ? input.Length : 0);
         }
@@ -475,7 +475,7 @@ namespace System.Text.RegularExpressions
         public bool IsMatch(String input, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return (null == Run(true, -1, input, 0, input.Length, startat));
         }
@@ -522,7 +522,7 @@ namespace System.Text.RegularExpressions
         public Match Match(String input)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Match(input, UseOptionR() ? input.Length : 0);
         }
@@ -537,7 +537,7 @@ namespace System.Text.RegularExpressions
         public Match Match(String input, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Run(false, -1, input, 0, input.Length, startat);
         }
@@ -553,7 +553,7 @@ namespace System.Text.RegularExpressions
         public Match Match(String input, int beginning, int length)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Run(false, -1, input, beginning, length, UseOptionR() ? beginning + length : beginning);
         }
@@ -595,7 +595,7 @@ namespace System.Text.RegularExpressions
         public MatchCollection Matches(String input)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Matches(input, UseOptionR() ? input.Length : 0);
         }
@@ -609,7 +609,7 @@ namespace System.Text.RegularExpressions
         public MatchCollection Matches(String input, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return new MatchCollection(this, input, 0, input.Length, startat);
         }
@@ -646,7 +646,7 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, String replacement)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0);
         }
@@ -659,7 +659,7 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, String replacement, int count)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Replace(input, replacement, count, UseOptionR() ? input.Length : 0);
         }
@@ -672,10 +672,10 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, String replacement, int count, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             if (replacement == null)
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
 
             // a little code to grab a cached parsed replacement object
             RegexReplacement repl = (RegexReplacement)_replref.Get();
@@ -719,7 +719,7 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, MatchEvaluator evaluator)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0);
         }
@@ -731,7 +731,7 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, MatchEvaluator evaluator, int count)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0);
         }
@@ -744,7 +744,7 @@ namespace System.Text.RegularExpressions
         public String Replace(String input, MatchEvaluator evaluator, int count, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return RegexReplacement.Replace(evaluator, this, input, count, startat);
         }
@@ -778,7 +778,7 @@ namespace System.Text.RegularExpressions
         public String[] Split(String input)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return Split(input, 0, UseOptionR() ? input.Length : 0);
         }
@@ -790,7 +790,7 @@ namespace System.Text.RegularExpressions
         public String[] Split(String input, int count)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return RegexReplacement.Split(this, input, count, UseOptionR() ? input.Length : 0);
         }
@@ -802,7 +802,7 @@ namespace System.Text.RegularExpressions
         public String[] Split(String input, int count, int startat)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             return RegexReplacement.Split(this, input, count, startat);
         }
@@ -830,7 +830,7 @@ namespace System.Text.RegularExpressions
                 throw new ArgumentOutOfRangeException("start", SR.BeginIndexNotNegative);
 
             if (length < 0 || length > input.Length)
-                throw new ArgumentOutOfRangeException("length", SR.LengthNotNegative);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
             // There may be a cached runner; grab ownership of it if we can.
 
@@ -1078,7 +1078,7 @@ namespace System.Text.RegularExpressions
         internal void Release(Object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
 
             // if this reference owns the lock, release it
 

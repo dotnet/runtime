@@ -284,7 +284,7 @@ namespace System.Xml
         {
             if (!InAttributeActiveState)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             int n = reader.AttributeCount;
             if (i < n)
@@ -297,7 +297,7 @@ namespace System.Xml
             }
             else
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
 
@@ -351,7 +351,7 @@ namespace System.Xml
         {
             if (!InAttributeActiveState)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             int n = reader.AttributeCount;
             if (i < n)
@@ -366,7 +366,7 @@ namespace System.Xml
             }
             else
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
 
@@ -1533,19 +1533,19 @@ namespace System.Xml
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
         }
     }

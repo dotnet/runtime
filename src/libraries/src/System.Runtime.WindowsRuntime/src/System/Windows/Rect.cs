@@ -51,9 +51,9 @@ namespace Windows.Foundation
                     double height)
         {
             if (width < 0)
-                throw new ArgumentException("width");
+                throw new ArgumentException(nameof(width));
             if (height < 0)
-                throw new ArgumentException("height");
+                throw new ArgumentException(nameof(height));
 
             _x = (float)x;
             _y = (float)y;

@@ -25,7 +25,7 @@ namespace Tests.Collections
             if (arguments == null && default(T) == null)
                 return array.Push(default(T));
             if (arguments == null)
-                throw new ArgumentNullException("arguments");
+                throw new ArgumentNullException(nameof(arguments));
             var ret = new T[array.Length + arguments.Length];
             Array.Copy(array, ret, array.Length);
             Array.Copy(

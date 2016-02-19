@@ -322,7 +322,7 @@ namespace System
         public Uri(string uriString)
         {
             if ((object)uriString == null)
-                throw new ArgumentNullException("uriString");
+                throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, UriKind.Absolute);
         }
@@ -333,7 +333,7 @@ namespace System
         public Uri(string uriString, UriKind uriKind)
         {
             if ((object)uriString == null)
-                throw new ArgumentNullException("uriString");
+                throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, uriKind);
         }
@@ -348,10 +348,10 @@ namespace System
         public Uri(Uri baseUri, string relativeUri)
         {
             if ((object)baseUri == null)
-                throw new ArgumentNullException("baseUri");
+                throw new ArgumentNullException(nameof(baseUri));
 
             if (!baseUri.IsAbsoluteUri)
-                throw new ArgumentOutOfRangeException("baseUri");
+                throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateUri(baseUri, relativeUri, false);
         }
@@ -401,10 +401,10 @@ namespace System
         public Uri(Uri baseUri, Uri relativeUri)
         {
             if ((object)baseUri == null)
-                throw new ArgumentNullException("baseUri");
+                throw new ArgumentNullException(nameof(baseUri));
 
             if (!baseUri.IsAbsoluteUri)
-                throw new ArgumentOutOfRangeException("baseUri");
+                throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateThisFromUri(relativeUri);
 
@@ -1306,7 +1306,7 @@ namespace System
                 case UriPartial.Query:
                     return GetParts(NonPathPart | UriComponents.Path | UriComponents.Query, UriFormat.UriEscaped);
             }
-            throw new ArgumentException("part");
+            throw new ArgumentException(nameof(part));
         }
 
         //
@@ -1388,7 +1388,7 @@ namespace System
                     : ((int)digit - (int)'a'))
                     + 10);
             }
-            throw new ArgumentException("digit");
+            throw new ArgumentException(nameof(digit));
         }
 
         //
@@ -1714,7 +1714,7 @@ namespace System
         public Uri MakeRelativeUri(Uri uri)
         {
             if ((object)uri == null)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
 
             if (IsNotAbsoluteUri || uri.IsNotAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);

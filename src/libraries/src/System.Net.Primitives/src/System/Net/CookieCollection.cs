@@ -35,7 +35,7 @@ namespace System.Net
             {
                 if (index < 0 || index >= _list.Count)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 return _list[index];
             }
@@ -60,7 +60,7 @@ namespace System.Net
         {
             if (cookie == null)
             {
-                throw new ArgumentNullException("cookie");
+                throw new ArgumentNullException(nameof(cookie));
             }
             int idx = IndexOf(cookie);
             if (idx == -1)
@@ -77,7 +77,7 @@ namespace System.Net
         {
             if (cookies == null)
             {
-                throw new ArgumentNullException("cookies");
+                throw new ArgumentNullException(nameof(cookies));
             }
             foreach (Cookie cookie in cookies._list)
             {

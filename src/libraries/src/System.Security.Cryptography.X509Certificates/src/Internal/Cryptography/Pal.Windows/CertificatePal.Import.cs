@@ -207,7 +207,7 @@ namespace Internal.Cryptography.Pal
         private static PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
             if ((keyStorageFlags & (X509KeyStorageFlags)~0x1F) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, "keyStorageFlags");
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             PfxCertStoreFlags pfxCertStoreFlags = 0;
             if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)

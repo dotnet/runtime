@@ -123,7 +123,7 @@ namespace System.Net.Sockets
             {
                 if (!(socketList[current] is Socket))
                 {
-                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), "socketList");
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
                 fileDescriptorSet[current + 1] = ((Socket)socketList[current])._handle.DangerousGetHandle();

@@ -106,11 +106,11 @@ namespace System.IO
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
             if (bufferSize <= 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
             if (!CanRead && !CanWrite)
             {
@@ -118,7 +118,7 @@ namespace System.IO
             }
             if (!destination.CanRead && !destination.CanWrite)
             {
-                throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
             }
             if (!CanRead)
             {
@@ -154,7 +154,7 @@ namespace System.IO
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
             if (!CanRead && !CanWrite)
             {
@@ -162,7 +162,7 @@ namespace System.IO
             }
             if (!destination.CanRead && !destination.CanWrite)
             {
-                throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
             }
             if (!CanRead)
             {
@@ -180,11 +180,11 @@ namespace System.IO
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
             if (bufferSize <= 0)
             {
-                throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
             if (!CanRead && !CanWrite)
             {
@@ -192,7 +192,7 @@ namespace System.IO
             }
             if (!destination.CanRead && !destination.CanWrite)
             {
-                throw new ObjectDisposedException("destination", SR.ObjectDisposed_StreamClosed);
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
             }
             if (!CanRead)
             {

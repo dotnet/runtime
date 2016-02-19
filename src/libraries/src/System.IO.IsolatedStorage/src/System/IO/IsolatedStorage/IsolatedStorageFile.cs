@@ -93,7 +93,7 @@ namespace System.IO.IsolatedStorage
         public void DeleteFile(String file)
         {
             if (file == null)
-                throw new ArgumentNullException("file");
+                throw new ArgumentNullException(nameof(file));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -113,7 +113,7 @@ namespace System.IO.IsolatedStorage
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
             EnsureStoreIsValid();
@@ -124,7 +124,7 @@ namespace System.IO.IsolatedStorage
         public bool DirectoryExists(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -135,7 +135,7 @@ namespace System.IO.IsolatedStorage
         public void CreateDirectory(String dir)
         {
             if (dir == null)
-                throw new ArgumentNullException("dir");
+                throw new ArgumentNullException(nameof(dir));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -172,7 +172,7 @@ namespace System.IO.IsolatedStorage
         public void DeleteDirectory(String dir)
         {
             if (dir == null)
-                throw new ArgumentNullException("dir");
+                throw new ArgumentNullException(nameof(dir));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -199,7 +199,7 @@ namespace System.IO.IsolatedStorage
         public String[] GetFileNames(String searchPattern)
         {
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -228,7 +228,7 @@ namespace System.IO.IsolatedStorage
         public String[] GetDirectoryNames(String searchPattern)
         {
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.EndContractBlock();
 
             EnsureStoreIsValid();
@@ -272,11 +272,11 @@ namespace System.IO.IsolatedStorage
         public DateTimeOffset GetCreationTime(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (path == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "path");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
 
             Contract.EndContractBlock();
@@ -296,11 +296,11 @@ namespace System.IO.IsolatedStorage
         public DateTimeOffset GetLastAccessTime(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (path == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "path");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
 
             Contract.EndContractBlock();
@@ -320,11 +320,11 @@ namespace System.IO.IsolatedStorage
         public DateTimeOffset GetLastWriteTime(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (path == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "path");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
 
             Contract.EndContractBlock();
@@ -345,19 +345,19 @@ namespace System.IO.IsolatedStorage
         public void CopyFile(string sourceFileName, string destinationFileName)
         {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName");
+                throw new ArgumentNullException(nameof(sourceFileName));
 
             if (destinationFileName == null)
-                throw new ArgumentNullException("destinationFileName");
+                throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "sourceFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
             if (destinationFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "destinationFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
 
             Contract.EndContractBlock();
@@ -368,19 +368,19 @@ namespace System.IO.IsolatedStorage
         public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite)
         {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName");
+                throw new ArgumentNullException(nameof(sourceFileName));
 
             if (destinationFileName == null)
-                throw new ArgumentNullException("destinationFileName");
+                throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "sourceFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
             if (destinationFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "destinationFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
 
             Contract.EndContractBlock();
@@ -411,19 +411,19 @@ namespace System.IO.IsolatedStorage
         public void MoveFile(string sourceFileName, string destinationFileName)
         {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName");
+                throw new ArgumentNullException(nameof(sourceFileName));
 
             if (destinationFileName == null)
-                throw new ArgumentNullException("destinationFileName");
+                throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "sourceFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
             if (destinationFileName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "destinationFileName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
 
             Contract.EndContractBlock();
@@ -454,19 +454,19 @@ namespace System.IO.IsolatedStorage
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName)
         {
             if (sourceDirectoryName == null)
-                throw new ArgumentNullException("sourceDirectoryName");
+                throw new ArgumentNullException(nameof(sourceDirectoryName));
 
             if (destinationDirectoryName == null)
-                throw new ArgumentNullException("destinationDirectoryName");
+                throw new ArgumentNullException(nameof(destinationDirectoryName));
 
             if (sourceDirectoryName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "sourceDirectoryName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceDirectoryName));
             }
 
             if (destinationDirectoryName == String.Empty)
             {
-                throw new ArgumentException(SR.Argument_EmptyPath, "destinationDirectoryName");
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationDirectoryName));
             }
 
             Contract.EndContractBlock();

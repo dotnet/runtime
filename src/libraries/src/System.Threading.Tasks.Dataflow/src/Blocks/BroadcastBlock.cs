@@ -67,7 +67,7 @@ namespace System.Threading.Tasks.Dataflow
         public BroadcastBlock(Func<T, T> cloningFunction, DataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
+            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
             Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
@@ -168,8 +168,8 @@ namespace System.Threading.Tasks.Dataflow
         DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
             Contract.EndContractBlock();
 
             lock (IncomingLock)
@@ -1031,8 +1031,8 @@ namespace System.Threading.Tasks.Dataflow
             internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
             {
                 // Validate arguments
-                if (target == null) throw new ArgumentNullException("target");
-                if (linkOptions == null) throw new ArgumentNullException("linkOptions");
+                if (target == null) throw new ArgumentNullException(nameof(target));
+                if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
                 Contract.EndContractBlock();
 
                 lock (OutgoingLock)
@@ -1062,8 +1062,8 @@ namespace System.Threading.Tasks.Dataflow
             internal TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
-                if (target == null) throw new ArgumentNullException("target");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
+                if (target == null) throw new ArgumentNullException(nameof(target));
                 Contract.EndContractBlock();
 
                 TOutput valueToClone;
@@ -1103,8 +1103,8 @@ namespace System.Threading.Tasks.Dataflow
             internal Boolean ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
-                if (target == null) throw new ArgumentNullException("target");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
+                if (target == null) throw new ArgumentNullException(nameof(target));
                 Contract.EndContractBlock();
 
                 lock (OutgoingLock)
@@ -1131,8 +1131,8 @@ namespace System.Threading.Tasks.Dataflow
             internal void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
-                if (target == null) throw new ArgumentNullException("target");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
+                if (target == null) throw new ArgumentNullException(nameof(target));
                 Contract.EndContractBlock();
 
                 lock (OutgoingLock)

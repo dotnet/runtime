@@ -1108,11 +1108,11 @@ namespace System.Linq.Expressions
         {
             if (method.IsStatic)
             {
-                if (instance != null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, "instance");
+                if (instance != null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, nameof(instance));
             }
             else
             {
-                if (instance == null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, "method");
+                if (instance == null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, nameof(method));
                 RequiresCanRead(instance, "instance");
                 ValidateCallInstanceType(instance.Type, method);
             }

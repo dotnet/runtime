@@ -33,7 +33,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("NullReaders")]
+        [MemberData(nameof(NullReaders))]
         public static void TestNullTextReader(TextReader input)
         {
             StreamReader sr = input as StreamReader;
@@ -54,7 +54,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("NullWriters")]
+        [MemberData(nameof(NullWriters))]
         public static void TextNullTextWriter(TextWriter output)
         {
             output.Flush();

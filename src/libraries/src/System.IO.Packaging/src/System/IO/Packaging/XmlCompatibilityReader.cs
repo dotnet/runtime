@@ -446,7 +446,7 @@ namespace System.IO.Packaging
             }
             else if (i < 0 || i >= AttributeCount)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             else
             {

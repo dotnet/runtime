@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (validationResult == null)
             {
-                throw new ArgumentNullException("validationResult");
+                throw new ArgumentNullException(nameof(validationResult));
             }
 
             _errorMessage = validationResult._errorMessage;

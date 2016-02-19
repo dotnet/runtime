@@ -52,7 +52,14 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/bin/</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
   </PropertyGroup>
+
+  <!-- Use Roslyn Compilers to build -->
+  <PropertyGroup Condition="'$(UseRoslynCompilers)'!='false'">
+    <UseSharedCompilation>true</UseSharedCompilation>
+  </PropertyGroup>
+  <Import Project="$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props" Condition="'$(UseRoslynCompilers)'!='false'" />
 
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
@@ -74,7 +81,7 @@
 
   <ItemGroup>
     <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
-      <ExpectedPrerelease>rc3-23816</ExpectedPrerelease>
+      <ExpectedPrerelease>rc3-23818</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="^(?i)Microsoft\.TargetingPack\.(NetFramework.%2A|Private\.WinRT)$">
       <ExpectedVersion>1.0.1</ExpectedVersion>
@@ -364,11 +371,6 @@
   <PropertyGroup>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-
-  <!-- Temporary until build/CI system is upgraded to C# 6: disable C# 6 features -->
-  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#'">
-    <LangVersion>5</LangVersion>
   </PropertyGroup>
 
   <!-- Set up some common paths -->

@@ -341,7 +341,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("MemberData_FileStreamAsyncWriting")]
+        [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
         public async Task ManyConcurrentWriteAsyncs(
             bool useAsync, bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
@@ -414,7 +414,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("MemberData_FileStreamAsyncWriting")]
+        [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
         public async Task CopyToAsyncBetweenFileStreams(
             bool useAsync, bool preSize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)

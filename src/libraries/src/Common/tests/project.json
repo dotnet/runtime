@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23816",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
     "System.Collections.Concurrent": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -9,6 +9,7 @@
     "System.IO.FileSystem": "4.0.0",
     "System.IO.FileSystem.Primitives": "4.0.0",
     "System.Linq": "4.0.0",
+    "System.Reflection": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Handles": "4.0.0",

@@ -99,7 +99,7 @@ namespace System.Xml.Extensions
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
@@ -108,7 +108,7 @@ namespace System.Xml.Extensions
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
