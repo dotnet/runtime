@@ -2376,7 +2376,7 @@ static void ConvertEventEPollToSocketAsync(SocketEvent* sae, epoll_event* epoll)
     uint32_t events = epoll->events;
     if ((events & EPOLLHUP) != 0)
     {
-        events = (events & ~EPOLLHUP) | EPOLLIN | EPOLLOUT;
+        events = (events & static_cast<uint32_t>(~EPOLLHUP)) | EPOLLIN | EPOLLOUT;
     }
 
     *sae = {.Data = reinterpret_cast<uintptr_t>(epoll->data.ptr), .Events = GetSocketEvents(events)};
