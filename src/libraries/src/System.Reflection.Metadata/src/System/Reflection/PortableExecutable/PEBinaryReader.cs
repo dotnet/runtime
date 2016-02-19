@@ -123,7 +123,7 @@ namespace System.Reflection.PortableExecutable
             {
                 if (unchecked(size.Value) > maxSize)
                 {
-                    throw new ArgumentOutOfRangeException("size");
+                    throw new ArgumentOutOfRangeException(nameof(size));
                 }
 
                 return size.Value;
@@ -132,7 +132,7 @@ namespace System.Reflection.PortableExecutable
             {
                 if (maxSize > int.MaxValue)
                 {
-                    throw new ArgumentException(SR.StreamTooLarge, "peStream");
+                    throw new ArgumentException(SR.StreamTooLarge, nameof(peStream));
                 }
 
                 return (int)maxSize;

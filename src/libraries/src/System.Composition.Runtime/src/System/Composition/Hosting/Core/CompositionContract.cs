@@ -46,8 +46,8 @@ namespace System.Composition.Hosting.Core
         /// <param name="metadataConstraints">Optionally, a non-empty collection of named constraints that apply to the contract.</param>
         public CompositionContract(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
         {
-            if (contractType == null) throw new ArgumentNullException("contractType");
-            if (metadataConstraints != null && metadataConstraints.Count == 0) throw new ArgumentOutOfRangeException("metadataConstraints");
+            if (contractType == null) throw new ArgumentNullException(nameof(contractType));
+            if (metadataConstraints != null && metadataConstraints.Count == 0) throw new ArgumentOutOfRangeException(nameof(metadataConstraints));
 
             _contractType = contractType;
             _contractName = contractName;
@@ -126,7 +126,7 @@ namespace System.Composition.Hosting.Core
         /// new contract type.</returns>
         public CompositionContract ChangeType(Type newContractType)
         {
-            if (newContractType == null) throw new ArgumentNullException("newContractType");
+            if (newContractType == null) throw new ArgumentNullException(nameof(newContractType));
             return new CompositionContract(newContractType, _contractName, _metadataConstraints);
         }
 
@@ -142,7 +142,7 @@ namespace System.Composition.Hosting.Core
         /// <returns>True if the constraint is present and of the correct type, otherwise false.</returns>
         public bool TryUnwrapMetadataConstraint<T>(string constraintName, out T constraintValue, out CompositionContract remainingContract)
         {
-            if (constraintName == null) throw new ArgumentNullException("constraintName");
+            if (constraintName == null) throw new ArgumentNullException(nameof(constraintName));
 
             constraintValue = default(T);
             remainingContract = null;

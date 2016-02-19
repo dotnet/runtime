@@ -193,7 +193,7 @@ namespace System {
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
             {
-                throw new ArgumentOutOfRangeException("sourceBytesToCopy");
+                throw new ArgumentOutOfRangeException(nameof(sourceBytesToCopy));
             }
 
             Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));

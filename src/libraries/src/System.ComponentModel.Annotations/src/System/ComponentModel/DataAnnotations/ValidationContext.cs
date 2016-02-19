@@ -85,7 +85,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             if (serviceProvider != null)
@@ -159,7 +159,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _displayName = value;
             }

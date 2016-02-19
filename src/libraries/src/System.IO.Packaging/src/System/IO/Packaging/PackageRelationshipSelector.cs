@@ -45,10 +45,10 @@ namespace System.IO.Packaging
         public PackageRelationshipSelector(Uri sourceUri, PackageRelationshipSelectorType selectorType, string selectionCriteria)
         {
             if (sourceUri == null)
-                throw new ArgumentNullException("sourceUri");
+                throw new ArgumentNullException(nameof(sourceUri));
 
             if (selectionCriteria == null)
-                throw new ArgumentNullException("selectionCriteria");
+                throw new ArgumentNullException(nameof(selectionCriteria));
 
             //If the sourceUri is not equal to "/", it must be a valid part name.
             if (Uri.Compare(sourceUri, PackUriHelper.PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) != 0)
@@ -62,7 +62,7 @@ namespace System.IO.Packaging
             if (selectorType == PackageRelationshipSelectorType.Id)
                 InternalRelationshipCollection.ThrowIfInvalidXsdId(selectionCriteria);
             else
-                throw new ArgumentOutOfRangeException("selectorType");
+                throw new ArgumentOutOfRangeException(nameof(selectorType));
 
             _sourceUri = sourceUri;
             _selectionCriteria = selectionCriteria;
@@ -138,7 +138,7 @@ namespace System.IO.Packaging
         {
             if (package == null)
             {
-                throw new ArgumentNullException("package");
+                throw new ArgumentNullException(nameof(package));
             }
 
             List<PackageRelationship> relationships = new List<PackageRelationship>(0);

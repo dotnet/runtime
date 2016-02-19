@@ -34,7 +34,7 @@ namespace System.Resources
         public ResourceReader(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
 

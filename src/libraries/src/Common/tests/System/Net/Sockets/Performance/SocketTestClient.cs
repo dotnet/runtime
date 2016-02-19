@@ -98,7 +98,7 @@ namespace System.Net.Sockets.Performance.Tests
                     return socketAsync;
 
                 default:
-                    throw new ArgumentOutOfRangeException("type");
+                    throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
 

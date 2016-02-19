@@ -58,7 +58,7 @@ namespace System.IO.Compression
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException("compressionLevel");
+                    throw new ArgumentOutOfRangeException(nameof(compressionLevel));
             }
 
             ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;

@@ -29,7 +29,7 @@ namespace System.Collections.ObjectModel.Tests
         /// Tests that the IEnumerable constructor can various IEnumerables with items.
         /// </summary>
         [Theory]
-        [MemberData("Collections")]
+        [MemberData(nameof(Collections))]
         public static void IEnumerableConstructorTest(IEnumerable<string> collection)
         {
             var actual = new ObservableCollection<string>(collection);

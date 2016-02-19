@@ -210,7 +210,7 @@ public static class UInt16Tests
         yield return new object[] { "(123)", NumberStyles.AllowParentheses, defaultFormat, typeof(OverflowException) }; // Parentheses = negative
     }
 
-    [Theory, MemberData("ParseValidData")]
+    [Theory, MemberData(nameof(ParseValidData))]
     public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, ushort expected)
     {
         ushort i;
@@ -241,7 +241,7 @@ public static class UInt16Tests
         Assert.Equal(expected, ushort.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Theory, MemberData("ParseInvalidData")]
+    [Theory, MemberData(nameof(ParseInvalidData))]
     public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
         ushort i;

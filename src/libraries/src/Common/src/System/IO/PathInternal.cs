@@ -20,10 +20,10 @@ namespace System.IO
         internal static void CheckInvalidPathChars(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (PathInternal.HasIllegalCharacters(path))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
         }
 
 

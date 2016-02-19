@@ -32,8 +32,8 @@ namespace System.Linq.Parallel.Tests
         // ElementAt and ElementAtOrDefault
         //
         [Theory]
-        [MemberData("ElementAtUnorderedData", (object)(new int[] { 1, 2, 16 }))]
-        [MemberData("ElementAtData", (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtUnorderedData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtData), (object)(new int[] { 1, 2, 16 }))]
         public static void ElementAt(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
@@ -44,15 +44,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ElementAtUnorderedData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
-        [MemberData("ElementAtData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtUnorderedData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void ElementAt_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAt(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("ElementAtOutOfRangeData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtOutOfRangeData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void ElementAt_OutOfRange(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -61,15 +61,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ElementAtOutOfRangeData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtOutOfRangeData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void ElementAt_OutOfRange_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAt_OutOfRange(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("ElementAtUnorderedData", (object)(new int[] { 0, 1, 2, 16 }))]
-        [MemberData("ElementAtData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void ElementAtOrDefault(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
@@ -80,15 +80,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ElementAtUnorderedData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
-        [MemberData("ElementAtData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtUnorderedData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void ElementAtOrDefault_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAtOrDefault(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("ElementAtOutOfRangeData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ElementAtOutOfRangeData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void ElementAtOrDefault_OutOfRange(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -97,14 +97,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ElementAtOutOfRangeData", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(ElementAtOutOfRangeData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
         public static void ElementAtOrDefault_OutOfRange_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ElementAtOrDefault_OutOfRange(labeled, count, position);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
         public static void ElementAt_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();

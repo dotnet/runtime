@@ -170,7 +170,7 @@ namespace System
         {
             if (minValue > maxValue)
             {
-                throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
+                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
             }
             Contract.EndContractBlock();
 
@@ -195,7 +195,7 @@ namespace System
         {
             if (maxValue < 0)
             {
-                throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_MustBePositive, "maxValue"));
+                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, "maxValue"));
             }
             Contract.EndContractBlock();
             return (int)(Sample() * maxValue);
@@ -221,7 +221,7 @@ namespace System
         ==============================================================================*/
         public virtual void NextBytes(byte[] buffer)
         {
-            if (buffer == null) throw new ArgumentNullException("buffer");
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             Contract.EndContractBlock();
             for (int i = 0; i < buffer.Length; i++)
             {

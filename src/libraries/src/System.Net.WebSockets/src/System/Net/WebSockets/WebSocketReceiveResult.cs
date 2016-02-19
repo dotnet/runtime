@@ -21,7 +21,7 @@ namespace System.Net.WebSockets
         {
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             Count = count;

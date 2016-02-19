@@ -15,12 +15,12 @@ namespace System.Net.Sockets
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (remoteEndPoint == null)
             {
-                throw new ArgumentNullException("remoteEndPoint");
+                throw new ArgumentNullException(nameof(remoteEndPoint));
             }
 
             _buffer = buffer;

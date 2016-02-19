@@ -37,7 +37,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Theory]
-        [MemberData("TestInput")]
+        [MemberData(nameof(TestInput))]
         public static void CtorTest(Exception expectedException, bool expectedCancelled, object expectedState)
         {
             var target = new AsyncCompletedEventArgsTests(expectedException, expectedCancelled, expectedState);
@@ -47,7 +47,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Theory]
-        [MemberData("TestInput")]
+        [MemberData(nameof(TestInput))]
         public static void RaiseExceptionIfNecessaryTest(Exception expectedError, bool cancelled, Type expectedExceptionType)
         {
             var target = new AsyncCompletedEventArgsTests(expectedError, cancelled, null);

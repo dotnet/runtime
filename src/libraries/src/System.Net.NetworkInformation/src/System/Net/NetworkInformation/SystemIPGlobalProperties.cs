@@ -378,7 +378,7 @@ namespace System.Net.NetworkInformation
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             ContextAwareResult result = asyncResult as ContextAwareResult;

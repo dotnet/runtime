@@ -20,7 +20,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XComment("Comment") }, new XDocumentType("root", "", "", "") },
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
@@ -53,7 +53,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
@@ -138,7 +138,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object [] { new XNode[] { new XComment("Comment") }, new XElement("root") },
             new object [] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
@@ -171,7 +171,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..")  }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
@@ -262,7 +262,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object [] { new XNode[] { new XComment("Comment") }, new XElement("root") },
             new object [] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
@@ -299,7 +299,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
         };
-        [Theory, MemberData("ExecuteXElementVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
         public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
@@ -426,7 +426,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XComment("Comment") }, new XElement("root") },
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
         };
-        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXDocumentVariationParams))]
         public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
@@ -463,7 +463,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
             new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
         };
-        [Theory, MemberData("VariationsForXElementParams")]
+        [Theory, MemberData(nameof(VariationsForXElementParams))]
         public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
         {
             IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
@@ -493,7 +493,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy") }, new XAttribute("a", "aa") },
             new object[] { InputSpace.GetElement(100, 10).Attributes().ToArray(), new XAttribute("a", "aa") }
         };
-        [Theory, MemberData("ExecuteXAttributeVariationParams")]
+        [Theory, MemberData(nameof(ExecuteXAttributeVariationParams))]
         public void ExecuteXAttributeVariation(XAttribute[] toAdd, XAttribute contextNode)
         {
             IEnumerable<XAttribute> allNodes, toAddList = toAdd.OfType<XAttribute>();

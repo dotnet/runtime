@@ -48,7 +48,7 @@ namespace System.Linq.Parallel.Tests
         // Except
         //
         [Theory]
-        [MemberData("ExceptUnorderedData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptUnorderedData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Unordered(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -85,14 +85,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptUnorderedData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -104,14 +104,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptUnorderedData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Unordered_NotPipelined(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -123,14 +123,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_NotPipelined(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptUnorderedData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Unordered_Distinct(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -148,14 +148,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptUnorderedData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Unordered_Distinct_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Unordered_Distinct(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Distinct(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -173,14 +173,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Distinct_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Distinct(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptUnorderedData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Unordered_Distinct_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -196,14 +196,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Unordered_Distinct_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Unordered_Distinct_NotPipelined(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(ExceptData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
         public static void Except_Distinct_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -219,14 +219,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptData", new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
+        [MemberData(nameof(ExceptData), new int[] { 1024, 1024 * 16 }, new int[] { 0, 1024, 1024 * 32 })]
         public static void Except_Distinct_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int start, int count)
         {
             Except_Distinct_NotPipelined(left, leftCount, right, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptSourceMultipleData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ExceptSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Except_Unordered_SourceMultiple(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int start, int count)
         {
             // The difference between this test and the previous, is that it's not possible to
@@ -240,14 +240,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptSourceMultipleData", (object)(new int[] { 1024, 1024 * 16 }))]
+        [MemberData(nameof(ExceptSourceMultipleData), (object)(new int[] { 1024, 1024 * 16 }))]
         public static void Except_Unordered_SourceMultiple_Longrunning(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int start, int count)
         {
             Except_Unordered_SourceMultiple(leftQuery, leftCount, rightQuery, rightCount, start, count);
         }
 
         [Theory]
-        [MemberData("ExceptSourceMultipleData", (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ExceptSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
         public static void Except_SourceMultiple(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int start, int count)
         {
             int seen = start;
@@ -257,7 +257,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("ExceptSourceMultipleData", (object)(new int[] { 1024, 1024 * 16 }))]
+        [MemberData(nameof(ExceptSourceMultipleData), (object)(new int[] { 1024, 1024 * 16 }))]
         public static void Except_SourceMultiple_Longrunning(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int start, int count)
         {
             Except_SourceMultiple(leftQuery, leftCount, rightQuery, rightCount, start, count);

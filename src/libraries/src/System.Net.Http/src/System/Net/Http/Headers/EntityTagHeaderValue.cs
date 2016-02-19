@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
         {
             if (string.IsNullOrEmpty(tag))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "tag");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(tag));
             }
             int length = 0;
             if ((HttpRuleParser.GetQuotedStringLength(tag, 0, out length) != HttpParseResult.Parsed) ||

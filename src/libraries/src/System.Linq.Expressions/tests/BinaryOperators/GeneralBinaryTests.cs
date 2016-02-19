@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("NonBinaryTypesIncludingInvalidData")]
+        [MemberData(nameof(NonBinaryTypesIncludingInvalidData))]
         public void MakeBinaryInvalidType(ExpressionType type)
         {
             Assert.Throws<ArgumentException>(() => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0)));
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("BinaryTypesData")]
+        [MemberData(nameof(BinaryTypesData))]
         public void MakeBinaryLeftNull(ExpressionType type)
         {
             Assert.Throws<ArgumentNullException>(() => Expression.MakeBinary(type, null, Expression.Constant(0)));
@@ -59,7 +59,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("BinaryTypesData")]
+        [MemberData(nameof(BinaryTypesData))]
         public void MakeBinaryRightNull(ExpressionType type)
         {
             Assert.Throws<ArgumentNullException>(() => Expression.MakeBinary(type, Expression.Variable(typeof(object)), null));

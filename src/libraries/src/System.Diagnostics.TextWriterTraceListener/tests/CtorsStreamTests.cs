@@ -95,7 +95,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Theory]
-        [MemberData("TestNames")]
+        [MemberData(nameof(TestNames))]
         public void TestConstructorWithStreamAndName(string testName)
         {
             StreamWriter testWriter = StreamWriter.Null;

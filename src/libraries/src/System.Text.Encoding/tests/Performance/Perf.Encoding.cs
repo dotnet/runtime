@@ -21,7 +21,7 @@ namespace System.Text.Tests
         }
 
         [Benchmark]
-        [MemberData("EncodingSizeData")]
+        [MemberData(nameof(EncodingSizeData))]
         public void GetBytes(int size, string encName)
         {
             const int innerIterations = 100;
@@ -39,7 +39,7 @@ namespace System.Text.Tests
         }
 
         [Benchmark]
-        [MemberData("EncodingSizeData")]
+        [MemberData(nameof(EncodingSizeData))]
         public void GetString(int size, string encName)
         {
             const int innerIterations = 100;
@@ -57,7 +57,7 @@ namespace System.Text.Tests
         }
 
         [Benchmark]
-        [MemberData("EncodingSizeData")]
+        [MemberData(nameof(EncodingSizeData))]
         public void GetChars(int size, string encName)
         {
             const int innerIterations = 100;
@@ -75,7 +75,7 @@ namespace System.Text.Tests
         }
 
         [Benchmark]
-        [MemberData("EncodingSizeData")]
+        [MemberData(nameof(EncodingSizeData))]
         public void GetEncoder(int size, string encName)
         {
             const int innerIterations = 10000;
@@ -91,7 +91,7 @@ namespace System.Text.Tests
         }
 
         [Benchmark]
-        [MemberData("EncodingSizeData")]
+        [MemberData(nameof(EncodingSizeData))]
         public void GetByteCount(int size, string encName)
         {
             const int innerIterations = 100;

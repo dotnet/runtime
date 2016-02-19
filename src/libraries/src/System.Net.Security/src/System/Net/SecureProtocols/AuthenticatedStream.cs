@@ -16,12 +16,12 @@ namespace System.Net.Security
         {
             if (innerStream == null || innerStream == Stream.Null)
             {
-                throw new ArgumentNullException("innerStream");
+                throw new ArgumentNullException(nameof(innerStream));
             }
 
             if (!innerStream.CanRead || !innerStream.CanWrite)
             {
-                throw new ArgumentException(SR.net_io_must_be_rw_stream, "innerStream");
+                throw new ArgumentException(SR.net_io_must_be_rw_stream, nameof(innerStream));
             }
 
             _innerStream = innerStream;

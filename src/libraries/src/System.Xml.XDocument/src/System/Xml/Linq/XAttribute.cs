@@ -52,8 +52,8 @@ namespace System.Xml.Linq
         /// </exception>
         public XAttribute(XName name, object value)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (value == null) throw new ArgumentNullException("value");
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (value == null) throw new ArgumentNullException(nameof(value));
             string s = XContainer.GetStringValue(value);
             ValidateAttribute(name, s);
             this.name = name;
@@ -70,7 +70,7 @@ namespace System.Xml.Linq
         /// </exception>
         public XAttribute(XAttribute other)
         {
-            if (other == null) throw new ArgumentNullException("other");
+            if (other == null) throw new ArgumentNullException(nameof(other));
             name = other.name;
             value = other.value;
         }
@@ -160,7 +160,7 @@ namespace System.Xml.Linq
             }
             set
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 ValidateAttribute(name, value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
                 this.value = value;
@@ -195,7 +195,7 @@ namespace System.Xml.Linq
         /// </exception>
         public void SetValue(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             Value = XContainer.GetStringValue(value);
         }
 
@@ -248,7 +248,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator bool (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToBoolean(attribute.value.ToLowerInvariant());
         }
 
@@ -283,7 +283,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator int (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToInt32(attribute.value);
         }
 
@@ -318,7 +318,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator uint (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToUInt32(attribute.value);
         }
 
@@ -353,7 +353,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator long (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToInt64(attribute.value);
         }
 
@@ -388,7 +388,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator ulong (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToUInt64(attribute.value);
         }
 
@@ -423,7 +423,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator float (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToSingle(attribute.value);
         }
 
@@ -458,7 +458,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator double (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToDouble(attribute.value);
         }
 
@@ -493,7 +493,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator decimal (XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToDecimal(attribute.value);
         }
 
@@ -528,7 +528,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator DateTime(XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return DateTime.Parse(attribute.value, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
         }
 
@@ -563,7 +563,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator DateTimeOffset(XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToDateTimeOffset(attribute.value);
         }
 
@@ -598,7 +598,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator TimeSpan(XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToTimeSpan(attribute.value);
         }
 
@@ -633,7 +633,7 @@ namespace System.Xml.Linq
         [CLSCompliant(false)]
         public static explicit operator Guid(XAttribute attribute)
         {
-            if (attribute == null) throw new ArgumentNullException("attribute");
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
             return XmlConvert.ToGuid(attribute.value);
         }
 

@@ -17,7 +17,7 @@ namespace System.Collections.Tests
         // Has tests that pass a variably sized TestCollection and MyEnumerable to the AddRange function
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void AddRange(EnumerableType enumerableType, int listLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             List<T> list = GenericListFactory(listLength);
@@ -39,7 +39,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void AddRange_NullEnumerable_ThrowsArgumentNullException(int count)
         {
             List<T> list = GenericListFactory(count);

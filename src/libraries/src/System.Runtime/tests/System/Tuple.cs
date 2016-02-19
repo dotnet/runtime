@@ -28,9 +28,9 @@ public class TupleTests
         internal TupleTestDriver(params object[] values)
         {
             if (values.Length == 0)
-                throw new ArgumentOutOfRangeException("values", "You must provide at least one value");
+                throw new ArgumentOutOfRangeException(nameof(values), "You must provide at least one value");
             if (values.Length > 10)
-                throw new ArgumentOutOfRangeException("values", "You must provide at most 10 values");
+                throw new ArgumentOutOfRangeException(nameof(values), "You must provide at most 10 values");
 
             _nItems = values.Length;
             switch (_nItems)
@@ -248,8 +248,8 @@ public class TupleTests
         object myObj = new object();
         //Tuple-10
         DateTime now = DateTime.Now;
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
-        tupleDriverA.TestConstructor((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverA.TestConstructor((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
     }
 
     [Fact]
@@ -283,9 +283,9 @@ public class TupleTests
         //Tuple-10
         DateTime now = DateTime.Now;
 
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
         // .NET Native bug 438149 - object.ToString in incorrect
-        tupleDriverA.TestToString("(" + ((short)10000) + ", " + ((int)1000000) + ", " + ((long)10000000) + ", 2008年7月2日, 0, " + ((Single)0.0001) + ", " + ((Double)0.0000001) + ", " + now + ", (False, System.Object), " + TimeSpan.Zero + ")");
+        tupleDriverA.TestToString("(" + ((short)10000) + ", " + ((int)1000000) + ", " + ((long)10000000) + ", 2008?7?2?, 0, " + ((Single)0.0001) + ", " + ((Double)0.0000001) + ", " + now + ", (False, System.Object), " + TimeSpan.Zero + ")");
     }
 
     [Fact]
@@ -339,9 +339,9 @@ public class TupleTests
         //Tuple-10
         DateTime now = DateTime.Now;
 
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
-        tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
-        tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10001, (int)1000001, (long)10000001, "2008年7月3日", '1', (Single)0.0002, (Double)0.0000002, now.AddMilliseconds(1), Tuple.Create(true, myObj), TimeSpan.MaxValue);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10001, (int)1000001, (long)10000001, "2008?7?3?", '1', (Single)0.0002, (Double)0.0000002, now.AddMilliseconds(1), Tuple.Create(true, myObj), TimeSpan.MaxValue);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
     }
@@ -397,9 +397,9 @@ public class TupleTests
         //Tuple-10
         DateTime now = DateTime.Now;
 
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
-        tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
-        tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10001, (int)1000001, (long)10000001, "2008年7月3日", '1', (Single)0.0002, (Double)0.0000002, now.AddMilliseconds(1), Tuple.Create(true, myObj), TimeSpan.MaxValue);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', (Single)0.0001, (Double)0.0000001, now, Tuple.Create(false, myObj), TimeSpan.Zero);
+        tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10001, (int)1000001, (long)10000001, "2008?7?3?", '1', (Single)0.0002, (Double)0.0000002, now.AddMilliseconds(1), Tuple.Create(true, myObj), TimeSpan.MaxValue);
         tupleDriverA.TestCompareTo(tupleDriverB, 0, 5);
         tupleDriverA.TestCompareTo(tupleDriverC, -1, 5);
     }
@@ -419,19 +419,19 @@ public class TupleTests
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000);
         tupleDriverA.TestNotEqual();
         //Tuple-4
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日");
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?");
         tupleDriverA.TestNotEqual();
         //Tuple-5
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0');
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0');
         tupleDriverA.TestNotEqual();
         //Tuple-6
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN);
         tupleDriverA.TestNotEqual();
         //Tuple-7
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN, Double.NegativeInfinity);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity);
         tupleDriverA.TestNotEqual();
         //Tuple-8, extended tuple
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
         tupleDriverA.TestNotEqual();
         //Tuple-9 and Tuple-10 are not necesary because they use the same code path as Tuple-8
     }
@@ -451,19 +451,19 @@ public class TupleTests
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000);
         tupleDriverA.TestCompareToThrows();
         //Tuple-4
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日");
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?");
         tupleDriverA.TestCompareToThrows();
         //Tuple-5
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0');
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0');
         tupleDriverA.TestCompareToThrows();
         //Tuple-6
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN);
         tupleDriverA.TestCompareToThrows();
         //Tuple-7
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN, Double.NegativeInfinity);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity);
         tupleDriverA.TestCompareToThrows();
         //Tuple-8, extended tuple
-        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008年7月2日", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
+        tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
         tupleDriverA.TestCompareToThrows();
         //Tuple-9 and Tuple-10 are not necesary because they use the same code path as Tuple-8
     }

@@ -25,11 +25,11 @@ namespace System.IO
         {
             if (driveName.Contains("\0"))
             {
-                throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), "driveName");
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), nameof(driveName));
             }
             if (driveName.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName, "driveName");
+                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName, nameof(driveName));
             }
             return driveName;
         }

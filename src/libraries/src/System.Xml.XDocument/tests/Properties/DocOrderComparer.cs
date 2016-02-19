@@ -141,7 +141,7 @@ namespace System.Xml.Linq.Tests
         }
 
         [Theory]
-        [MemberData("GetNotXNodes")]
+        [MemberData(nameof(GetNotXNodes))]
         public void NotXNode(object x, object y)
         {
             Assert.Throws<ArgumentException>(() => ((IComparer)XNode.DocumentOrderComparer).Compare(x, y));

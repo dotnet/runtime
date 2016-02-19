@@ -37,7 +37,7 @@ namespace System.Collections
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", length, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(length), length, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -65,7 +65,7 @@ namespace System.Collections
         {
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             }
             Contract.EndContractBlock();
             // this value is chosen to prevent overflow when computing m_length.
@@ -73,7 +73,7 @@ namespace System.Collections
             // type of m_length can't be changed to accommodate.
             if (bytes.Length > Int32.MaxValue / BitsPerByte)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), "bytes");
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
             }
 
             m_array = new int[GetArrayLength(bytes.Length, BytesPerInt32)];
@@ -115,7 +115,7 @@ namespace System.Collections
         {
             if (values == null)
             {
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             }
             Contract.EndContractBlock();
 
@@ -143,13 +143,13 @@ namespace System.Collections
         {
             if (values == null)
             {
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             }
             Contract.EndContractBlock();
             // this value is chosen to prevent overflow when computing m_length
             if (values.Length > Int32.MaxValue / BitsPerInt32)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), "values");
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
             m_array = new int[values.Length];
@@ -168,7 +168,7 @@ namespace System.Collections
         {
             if (bits == null)
             {
-                throw new ArgumentNullException("bits");
+                throw new ArgumentNullException(nameof(bits));
             }
             Contract.EndContractBlock();
 
@@ -203,7 +203,7 @@ namespace System.Collections
         {
             if (index < 0 || index >= Length)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -220,7 +220,7 @@ namespace System.Collections
         {
             if (index < 0 || index >= Length)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -260,7 +260,7 @@ namespace System.Collections
         public BitArray And(BitArray value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
             Contract.EndContractBlock();
@@ -284,7 +284,7 @@ namespace System.Collections
         public BitArray Or(BitArray value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
             Contract.EndContractBlock();
@@ -308,7 +308,7 @@ namespace System.Collections
         public BitArray Xor(BitArray value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
             Contract.EndContractBlock();
@@ -351,7 +351,7 @@ namespace System.Collections
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
                 Contract.EndContractBlock();
 
@@ -385,13 +385,13 @@ namespace System.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
             Contract.EndContractBlock();
 
@@ -419,7 +419,7 @@ namespace System.Collections
                     b[index + i] = ((m_array[i / 32] >> (i % 32)) & 0x00000001) != 0;
             }
             else
-                throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, "array");
+                throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, nameof(array));
         }
 
         int ICollection.Count

@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
 
             unsafe
             {
@@ -50,9 +50,9 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (signature == null)
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
 
             unsafe
             {
@@ -75,10 +75,10 @@ namespace System.Security.Cryptography
         {
             string hashAlgorithmName = hashAlgorithm.Name;
             if (string.IsNullOrEmpty(hashAlgorithmName))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             switch (padding.Mode)
             {

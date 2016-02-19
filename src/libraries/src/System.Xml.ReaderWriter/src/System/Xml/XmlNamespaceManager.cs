@@ -113,10 +113,10 @@ namespace System.Xml
         public virtual void AddNamespace(string prefix, string uri)
         {
             if (uri == null)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
 
             if (prefix == null)
-                throw new ArgumentNullException("prefix");
+                throw new ArgumentNullException(nameof(prefix));
 
             prefix = _nameTable.Add(prefix);
             uri = _nameTable.Add(uri);
@@ -180,11 +180,11 @@ namespace System.Xml
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (prefix == null)
             {
-                throw new ArgumentNullException("prefix");
+                throw new ArgumentNullException(nameof(prefix));
             }
 
             int declIndex = LookupNamespaceDecl(prefix);

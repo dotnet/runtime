@@ -91,7 +91,7 @@ namespace System.Xml.Serialization
             else
             {
                 if (colon == 0 || colon == name.Length - 1)
-                    throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name), "name");
+                    throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name), nameof(name));
                 return new XmlQualifiedName(XmlConvert.EncodeLocalName(name.Substring(colon + 1)), XmlConvert.EncodeLocalName(name.Substring(0, colon))).ToString();
             }
         }

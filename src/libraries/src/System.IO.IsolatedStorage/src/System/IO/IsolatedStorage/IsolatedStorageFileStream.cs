@@ -49,7 +49,7 @@ namespace System.IO.IsolatedStorage
             IsolatedStorageFile isf)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             if ((path.Length == 0) || path.Equals(s_BackSlash))
@@ -58,7 +58,7 @@ namespace System.IO.IsolatedStorage
 
             if (isf == null)
             {
-                throw new ArgumentNullException("isf");
+                throw new ArgumentNullException(nameof(isf));
             }
 
             if (isf.Disposed)

@@ -137,7 +137,7 @@ namespace System.Linq.Parallel.Tests
 
         // Check that some queries run in parallel by default, and some require forcing.
         [Theory]
-        [MemberData("WithExecutionModeQueryData", new int[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
+        [MemberData(nameof(WithExecutionModeQueryData), new int[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
         public static void WithExecutionMode(
             Labeled<ParallelQuery<int>> labeled,
             int requestedDop, int expectedDop,
@@ -150,7 +150,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
         public static void WithExecutionMode_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -158,7 +158,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("AllExecutionModes_Multiple")]
+        [MemberData(nameof(AllExecutionModes_Multiple))]
         public static void WithExecutionMode_Multiple(ParallelExecutionMode first, ParallelExecutionMode second)
         {
             Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(first).WithExecutionMode(second));

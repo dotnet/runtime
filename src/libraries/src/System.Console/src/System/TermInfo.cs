@@ -536,11 +536,11 @@ namespace System
             {
                 if (format == null)
                 {
-                    throw new ArgumentNullException("format");
+                    throw new ArgumentNullException(nameof(format));
                 }
                 if (args == null)
                 {
-                    throw new ArgumentNullException("args");
+                    throw new ArgumentNullException(nameof(args));
                 }
 
                 // Initialize the stack to use for processing.

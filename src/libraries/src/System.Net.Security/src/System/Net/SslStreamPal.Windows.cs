@@ -263,7 +263,7 @@ namespace System.Net
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), "policy");
+                throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
             }
 
             credential.version = version;

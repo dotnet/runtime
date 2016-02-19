@@ -128,7 +128,7 @@ namespace System.IO.Pipes
             // upper bound on maxNumberOfServerInstances.
             if ((maxNumberOfServerInstances < 1) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
             {
-                throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
+                throw new ArgumentOutOfRangeException(nameof(maxNumberOfServerInstances), SR.ArgumentOutOfRange_MaxNumServerInstances);
             }
         }
 

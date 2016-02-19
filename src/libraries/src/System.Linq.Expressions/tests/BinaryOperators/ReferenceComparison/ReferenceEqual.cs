@@ -10,7 +10,7 @@ namespace System.Linq.Expressions.Tests
     public class ReferenceEqual : ReferenceEqualityTests
     {
         [Theory]
-        [MemberData("ReferenceObjectsData")]
+        [MemberData(nameof(ReferenceObjectsData))]
         public void TrueOnSame(object item)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ReferenceTypesData")]
+        [MemberData(nameof(ReferenceTypesData))]
         public void TrueOnBothNull(Type type)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ReferenceObjectsData")]
+        [MemberData(nameof(ReferenceObjectsData))]
         public void FalseIfLeftNull(object item)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ReferenceObjectsData")]
+        [MemberData(nameof(ReferenceObjectsData))]
         public void FalseIfRightNull(object item)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("DifferentObjects")]
+        [MemberData(nameof(DifferentObjects))]
         public void FalseIfDifferentObjectsAsObject(object x, object y)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("DifferentObjects")]
+        [MemberData(nameof(DifferentObjects))]
         public void FalseIfDifferentObjectsOwnType(object x, object y)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -76,9 +76,9 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("LeftValueType")]
-        [MemberData("RightValueType")]
-        [MemberData("BothValueType")]
+        [MemberData(nameof(LeftValueType))]
+        [MemberData(nameof(RightValueType))]
+        [MemberData(nameof(BothValueType))]
         public void ThrowsOnValueTypeArguments(object x, object y)
         {
             Expression xExp = Expression.Constant(x);
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("UnassignablePairs")]
+        [MemberData(nameof(UnassignablePairs))]
         public void ThrowsOnUnassignablePairs(object x, object y)
         {
             Expression xExp = Expression.Constant(x);
@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ComparableValuesData")]
+        [MemberData(nameof(ComparableValuesData))]
         public void TrueOnSameViaInterface(object item)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("DifferentComparableValues")]
+        [MemberData(nameof(DifferentComparableValues))]
         public void FalseOnDifferentViaInterface(object x, object y)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ComparableReferenceTypesData")]
+        [MemberData(nameof(ComparableReferenceTypesData))]
         public void TrueOnSameLeftViaInterface(object item)
         {
             Expression exp = Expression.ReferenceEqual(
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ComparableReferenceTypesData")]
+        [MemberData(nameof(ComparableReferenceTypesData))]
         public void TrueOnSameRightViaInterface(object item)
         {
             Expression exp = Expression.ReferenceEqual(

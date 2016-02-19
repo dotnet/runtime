@@ -87,7 +87,7 @@ namespace System
         public static Task AsTask(this IAsyncAction source, CancellationToken cancellationToken)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 
@@ -169,7 +169,7 @@ namespace System
         public static Task<TResult> AsTask<TResult>(this IAsyncOperation<TResult> source, CancellationToken cancellationToken)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 
@@ -273,7 +273,7 @@ namespace System
                                              CancellationToken cancellationToken, IProgress<TProgress> progress)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 
@@ -387,7 +387,7 @@ namespace System
                                                                CancellationToken cancellationToken, IProgress<TProgress> progress)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 
@@ -457,7 +457,7 @@ namespace System
         public static IAsyncAction AsAsyncAction(this Task source)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 
@@ -468,7 +468,7 @@ namespace System
         public static IAsyncOperation<TResult> AsAsyncOperation<TResult>(this Task<TResult> source)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             Contract.EndContractBlock();
 

@@ -65,7 +65,7 @@ namespace System.Xml
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             int len = key.Length;
             if (len == 0)
@@ -135,7 +135,7 @@ namespace System.Xml
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (value.Length == 0)
             {

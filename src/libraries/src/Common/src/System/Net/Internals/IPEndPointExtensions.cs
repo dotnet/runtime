@@ -27,14 +27,14 @@ namespace System.Net.Sockets
             AddressFamily family = socketAddress.Family;
             if (family != thisObj.AddressFamily)
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, family.ToString(), thisObj.GetType().FullName, thisObj.AddressFamily.ToString()), "socketAddress");
+                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, family.ToString(), thisObj.GetType().FullName, thisObj.AddressFamily.ToString()), nameof(socketAddress));
             }
 
             if (family == AddressFamily.InterNetwork || family == AddressFamily.InterNetworkV6)
             {
                 if (socketAddress.Size < 8)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_InvalidSocketAddressSize, socketAddress.GetType().FullName, thisObj.GetType().FullName), "socketAddress");
+                    throw new ArgumentException(SR.Format(SR.net_InvalidSocketAddressSize, socketAddress.GetType().FullName, thisObj.GetType().FullName), nameof(socketAddress));
                 }
 
                 return socketAddress.GetIPEndPoint();

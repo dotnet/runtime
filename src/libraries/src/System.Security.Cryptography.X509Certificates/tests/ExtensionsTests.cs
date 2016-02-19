@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("BasicConstraintsData")]
+        [MemberData(nameof(BasicConstraintsData))]
         public static void BasicConstraintsExtensionEncode(
             bool certificateAuthority,
             bool hasPathLengthConstraint,
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData("BasicConstraintsData")]
+        [MemberData(nameof(BasicConstraintsData))]
         public static void BasicConstraintsExtensionDecode(
             bool certificateAuthority,
             bool hasPathLengthConstraint,

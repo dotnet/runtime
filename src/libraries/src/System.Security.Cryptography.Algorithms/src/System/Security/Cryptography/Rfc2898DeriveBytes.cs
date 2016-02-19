@@ -14,11 +14,11 @@ namespace System.Security.Cryptography
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
         {
             if (salt == null)
-                throw new ArgumentNullException("salt");
+                throw new ArgumentNullException(nameof(salt));
             if (salt.Length < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, "salt");
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
             if (iterations <= 0)
-                throw new ArgumentOutOfRangeException("iterations", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (password == null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
 
@@ -48,11 +48,11 @@ namespace System.Security.Cryptography
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations)
         {
             if (saltSize < 0)
-                throw new ArgumentOutOfRangeException("saltSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(saltSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (saltSize < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, "saltSize");
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(saltSize));
             if (iterations <= 0)
-                throw new ArgumentOutOfRangeException("iterations", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
 
             _salt = Helpers.GenerateRandom(saltSize);
             _iterations = (uint)iterations;
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedPosNum);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedPosNum);
                 _iterations = (uint)value;
                 Initialize();
             }
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (value.Length < MinimumSaltSize)
                     throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
                 _salt = value.CloneByteArray();
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
         public override byte[] GetBytes(int cb)
         {
             if (cb <= 0)
-                throw new ArgumentOutOfRangeException("cb", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(cb), SR.ArgumentOutOfRange_NeedPosNum);
             byte[] password = new byte[cb];
 
             int offset = 0;

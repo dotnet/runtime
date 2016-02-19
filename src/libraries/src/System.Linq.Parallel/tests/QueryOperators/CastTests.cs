@@ -9,7 +9,7 @@ namespace System.Linq.Parallel.Tests
     public class CastTests
     {
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Cast_Unordered_Valid(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -23,14 +23,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
         public static void Cast_Unordered_Valid_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Cast_Unordered_Valid(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
         public static void Cast_Valid(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -44,14 +44,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(Sources))]
         public static void Cast_Valid_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Cast_Valid(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Cast_Unordered_Valid_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -62,14 +62,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
         public static void Cast_Unordered_Valid_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Cast_Unordered_Valid_NotPipelined(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
         public static void Cast_Valid_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -80,15 +80,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(Sources))]
         public static void Cast_Valid_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Cast_Valid(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
-        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0 }), MemberType = typeof(Sources))]
         public static void Cast_Empty(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> empty = labeled.Item;
@@ -99,8 +99,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
         public static void Cast_InvalidCastException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<InvalidCastException>(() => labeled.Item.Cast<double>().ForAll(x => {; }));
@@ -108,8 +108,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
-        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(Sources))]
         public static void Cast_Assignable_InvalidCastException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<InvalidCastException>(() => labeled.Item.Select(x => (Int32)x).Cast<Castable>().ForAll(x => {; }));

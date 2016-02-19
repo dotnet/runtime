@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
         {
             if (data == null)
             {
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             }
         }
     }

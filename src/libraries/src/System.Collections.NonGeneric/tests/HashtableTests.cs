@@ -1405,7 +1405,7 @@ namespace System.Collections.Tests
                 }
                 else
                 {
-                    throw new ArgumentException("o", "is not BadHashCode type actual " + o.GetType());
+                    throw new ArgumentException(nameof(o), "is not BadHashCode type actual " + o.GetType());
                 }
             }
 

@@ -290,7 +290,7 @@ namespace System.Net.Http.Headers
         {
             if (string.IsNullOrEmpty(receivedBy))
             {
-                throw new ArgumentException(SR.net_http_argument_empty_string, "receivedBy");
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(receivedBy));
             }
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value

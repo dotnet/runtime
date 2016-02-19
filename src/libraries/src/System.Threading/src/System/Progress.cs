@@ -49,7 +49,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>
         public Progress(Action<T> handler) : this()
         {
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
             _handler = handler;
         }
 

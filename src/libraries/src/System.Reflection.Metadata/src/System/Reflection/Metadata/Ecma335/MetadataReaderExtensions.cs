@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if ((int)tableIndex >= TableIndexExtensions.Count)
@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             switch (tableIndex)
@@ -104,7 +104,7 @@ namespace System.Reflection.Metadata.Ecma335
                 case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.RowSize;
 
                 default:
-                    throw new ArgumentOutOfRangeException("tableIndex");
+                    throw new ArgumentOutOfRangeException(nameof(tableIndex));
             }
         }
 
@@ -117,7 +117,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return (int)(reader.GetTableMetadataBlock(tableIndex).Pointer - reader.Block.Pointer);
@@ -186,7 +186,7 @@ namespace System.Reflection.Metadata.Ecma335
                 case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.Block;
 
                 default:
-                    throw new ArgumentOutOfRangeException("tableIndex");
+                    throw new ArgumentOutOfRangeException(nameof(tableIndex));
             }
         }
 
@@ -199,7 +199,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return reader.GetMetadataBlock(heapIndex).Length;
@@ -214,7 +214,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return (int)(reader.GetMetadataBlock(heapIndex).Pointer - reader.Block.Pointer);
@@ -244,7 +244,7 @@ namespace System.Reflection.Metadata.Ecma335
                     return reader.GuidStream.Block;
 
                 default:
-                    throw new ArgumentOutOfRangeException("heapIndex");
+                    throw new ArgumentOutOfRangeException(nameof(heapIndex));
             }
         }
 
@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return reader.UserStringStream.GetNextHandle(handle);
@@ -270,7 +270,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return reader.BlobStream.GetNextHandle(handle);
@@ -284,7 +284,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             return reader.StringStream.GetNextHandle(handle);
@@ -298,7 +298,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
@@ -317,7 +317,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
@@ -337,7 +337,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
@@ -357,7 +357,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)

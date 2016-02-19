@@ -24,7 +24,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="inner">Will be run with a RanToCompletion, Faulted, and Canceled task.</param>
         [Theory]
-        [MemberData("CompletedNonGenericTasks")]
+        [MemberData(nameof(CompletedNonGenericTasks))]
         public void NonGeneric_Completed_Completed(Task inner) 
         {
             Task<Task> outer = Task.FromResult(inner);
@@ -39,7 +39,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="inner">The inner task.</param>
         [Theory]
-        [MemberData("CompletedStringTasks")]
+        [MemberData(nameof(CompletedStringTasks))]
         public void Generic_Completed_Completed(Task<string> inner)
         {
             Task<Task<string>> outer = Task.FromResult(inner);
@@ -54,7 +54,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="inner">The inner task.</param>
         [Theory]
-        [MemberData("CompletedNonGenericTasks")]
+        [MemberData(nameof(CompletedNonGenericTasks))]
         public void NonGeneric_NotCompleted_Completed(Task inner) 
         {
             var outerTcs = new TaskCompletionSource<Task>();
@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="inner">The inner task.</param>
         [Theory]
-        [MemberData("CompletedStringTasks")]
+        [MemberData(nameof(CompletedStringTasks))]
         public void Generic_NotCompleted_Completed(Task<string> inner)
         {
             var outerTcs = new TaskCompletionSource<Task<string>>();

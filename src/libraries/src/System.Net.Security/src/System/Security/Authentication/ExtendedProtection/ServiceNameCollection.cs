@@ -15,7 +15,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             if (items == null)
             {
-                throw new ArgumentNullException("items");
+                throw new ArgumentNullException(nameof(items));
             }
 
             // Normalize and filter for duplicates.

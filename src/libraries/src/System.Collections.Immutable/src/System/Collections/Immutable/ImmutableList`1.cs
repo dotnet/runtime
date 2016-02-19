@@ -474,7 +474,7 @@ namespace System.Collections.Immutable
             int index = this.IndexOf(oldValue, equalityComparer);
             if (index < 0)
             {
-                throw new ArgumentException(SR.CannotFindOldValue, "oldValue");
+                throw new ArgumentException(SR.CannotFindOldValue, nameof(oldValue));
             }
 
             return this.SetItem(index, newValue);

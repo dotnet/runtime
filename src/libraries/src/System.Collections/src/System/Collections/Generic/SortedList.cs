@@ -87,7 +87,7 @@ namespace System.Collections.Generic
         public SortedList(int capacity)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity", capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             _keys = new TKey[capacity];
             _values = new TValue[capacity];
             _comparer = Comparer<TKey>.Default;
@@ -150,7 +150,7 @@ namespace System.Collections.Generic
             : this((dictionary != null ? dictionary.Count : 0), comparer)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             dictionary.Keys.CopyTo(_keys, 0);
             dictionary.Values.CopyTo(_values, 0);
@@ -163,10 +163,10 @@ namespace System.Collections.Generic
         // 
         public void Add(TKey key, TValue value)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) throw new ArgumentNullException(nameof(key));
             int i = Array.BinarySearch<TKey>(_keys, 0, _size, key, _comparer);
             if (i >= 0)
-                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), "key");
+                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
             Insert(~i, key, value);
         }
 
@@ -214,7 +214,7 @@ namespace System.Collections.Generic
                 {
                     if (value < _size)
                     {
-                        throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_SmallCapacity);
+                        throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_SmallCapacity);
                     }
 
                     if (value > 0)
@@ -249,16 +249,16 @@ namespace System.Collections.Generic
         void System.Collections.IDictionary.Add(Object key, Object value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
-                throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), "key");
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
 
             if (!(value is TValue) && value != null)            // null is a valid value for Reference Types
-                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
+                throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
 
             Add((TKey)key, (TValue)value);
         }
@@ -436,12 +436,12 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex", arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - arrayIndex < Count)
@@ -460,22 +460,22 @@ namespace System.Collections.Generic
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound, "array");
+                throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             }
 
             if (array.Length - index < Count)
@@ -496,7 +496,7 @@ namespace System.Collections.Generic
                 object[] objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
 
                 try
@@ -508,7 +508,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
             }
         }
@@ -534,7 +534,7 @@ namespace System.Collections.Generic
         private TValue GetByIndex(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             return _values[index];
         }
 
@@ -565,7 +565,7 @@ namespace System.Collections.Generic
         private TKey GetKey(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             return _keys[index];
         }
 
@@ -586,7 +586,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((Object)key) == null) throw new ArgumentNullException("key");
+                if (((Object)key) == null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(_keys, 0, _size, key, _comparer);
                 if (i >= 0)
                 {
@@ -617,11 +617,11 @@ namespace System.Collections.Generic
             {
                 if (!IsCompatibleKey(key))
                 {
-                    throw new ArgumentException("key");
+                    throw new ArgumentException(nameof(key));
                 }
 
                 if (value == null && !(default(TValue) == null))
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
                 try
@@ -630,7 +630,7 @@ namespace System.Collections.Generic
                 }
                 catch (InvalidCastException)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), "value");
+                    throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
                 }
             }
         }
@@ -645,7 +645,7 @@ namespace System.Collections.Generic
         public int IndexOfKey(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             int ret = Array.BinarySearch<TKey>(_keys, 0, _size, key, _comparer);
             return ret >= 0 ? ret : -1;
         }
@@ -695,7 +695,7 @@ namespace System.Collections.Generic
         public void RemoveAt(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException("index", index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             _size--;
             if (index < _size)
             {
@@ -749,7 +749,7 @@ namespace System.Collections.Generic
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return (key is TKey);
@@ -1079,7 +1079,7 @@ namespace System.Collections.Generic
             void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
             {
                 if (array != null && array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 try
                 {
@@ -1088,7 +1088,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
             }
 
@@ -1122,7 +1122,7 @@ namespace System.Collections.Generic
             public int IndexOf(TKey key)
             {
                 if (((Object)key) == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict._keys, 0,
                                           _dict.Count, key, _dict._comparer);
@@ -1197,7 +1197,7 @@ namespace System.Collections.Generic
             void System.Collections.ICollection.CopyTo(Array array, int index)
             {
                 if (array != null && array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, "array");
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 try
                 {
@@ -1206,7 +1206,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, "array");
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
             }
 

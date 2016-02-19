@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
         public RSAOpenSsl(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "handle");
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
             SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
 
@@ -49,9 +49,9 @@ namespace System.Security.Cryptography
         public RSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
             if (pkeyHandle == null)
-                throw new ArgumentNullException("pkeyHandle");
+                throw new ArgumentNullException(nameof(pkeyHandle));
             if (pkeyHandle.IsInvalid)
-                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "pkeyHandle");
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             // If rsa is valid it has already been up-ref'd, so we can just use this handle as-is.
             SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkeyHandle);

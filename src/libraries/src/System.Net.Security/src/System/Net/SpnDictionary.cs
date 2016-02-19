@@ -191,7 +191,7 @@ namespace System.Net
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             try
@@ -201,7 +201,7 @@ namespace System.Net
             }
             catch (UriFormatException e)
             {
-                throw new ArgumentException(SR.Format(SR.net_mustbeuri, "key"), "key", e);
+                throw new ArgumentException(SR.Format(SR.net_mustbeuri, "key"), nameof(key), e);
             }
 
             return key;
@@ -212,7 +212,7 @@ namespace System.Net
             // Copied from HashTable.CopyTo
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (array.Rank != 1)
@@ -222,7 +222,7 @@ namespace System.Net
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if ((array.Length - index) < count)

@@ -115,12 +115,12 @@ namespace System.Net.Security
 
             if (targetHost == null)
             {
-                throw new ArgumentNullException("targetHost");
+                throw new ArgumentNullException(nameof(targetHost));
             }
 
             if (isServer && serverCertificate == null)
             {
-                throw new ArgumentNullException("serverCertificate");
+                throw new ArgumentNullException(nameof(serverCertificate));
             }
 
             if ((int)enabledSslProtocols == 0)

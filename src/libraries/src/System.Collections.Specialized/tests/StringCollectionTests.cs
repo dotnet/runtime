@@ -114,8 +114,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void AddTest(StringCollection collection, string[] data)
         {
             StringCollection added = new StringCollection();
@@ -131,8 +131,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void Add_ExplicitInterface_Test(StringCollection collection, string[] data)
         {
             IList added = new StringCollection();
@@ -148,8 +148,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void AddRangeTest(StringCollection collection, string[] data)
         {
             StringCollection added = new StringCollection();
@@ -160,16 +160,16 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void AddRange_NullTest(StringCollection collection, string[] data)
         {
             Assert.Throws<ArgumentNullException>("value", () => collection.AddRange(null));
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void ClearTest(StringCollection collection, string[] data)
         {
             Assert.Equal(data.Length, collection.Count);
@@ -178,8 +178,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void CopyToTest(StringCollection collection, string[] data)
         {
             string[] full = new string[data.Length];
@@ -202,8 +202,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void CopyTo_ExplicitInterface_Test(ICollection collection, string[] data)
         {
             string[] full = new string[data.Length];
@@ -226,8 +226,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void CopyTo_ArgumentInvalidTest(StringCollection collection, string[] data)
         {
             Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
@@ -249,8 +249,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void CountTest(StringCollection collection, string[] data)
         {
             Assert.Equal(data.Length, collection.Count);
@@ -263,8 +263,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void ContainsTest(StringCollection collection, string[] data)
         {
             Assert.All(data, element => Assert.True(collection.Contains(element)));
@@ -274,8 +274,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void GetEnumeratorTest(StringCollection collection, string[] data)
         {
             bool repeat = true;
@@ -301,8 +301,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void GetEnumerator_ModifiedCollectionTest(StringCollection collection, string[] data)
         {
             StringEnumerator enumerator = collection.GetEnumerator();
@@ -329,8 +329,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void GetSetTest(StringCollection collection, string[] data)
         {
             for (int i = 0; i < data.Length; i++)
@@ -350,8 +350,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void GetSet_ExplicitInterface_Test(IList collection, string[] data)
         {
             for (int i = 0; i < data.Length; i++)
@@ -375,8 +375,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void GetSet_ArgumentInvalidTest(StringCollection collection, string[] data)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1] = ElementNotPresent);
@@ -398,8 +398,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void IndexOfTest(StringCollection collection, string[] data)
         {
             Assert.All(data, element => Assert.Equal(Array.IndexOf(data, element), collection.IndexOf(element)));
@@ -409,7 +409,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void IndexOf_DuplicateTest(StringCollection collection, string[] data)
         {
             // Only the index of the first element will be returned.
@@ -421,7 +421,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("Insert_Data")]
+        [MemberData(nameof(Insert_Data))]
         public static void InsertTest(StringCollection collection, string[] data, string element, int location)
         {
             collection.Insert(location, element);
@@ -448,7 +448,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("Insert_Data")]
+        [MemberData(nameof(Insert_Data))]
         public static void Insert_ExplicitInterface_Test(IList collection, string[] data, string element, int location)
         {
             collection.Insert(location, element);
@@ -475,8 +475,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void Insert_ArgumentInvalidTest(StringCollection collection, string[] data)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(-1, ElementNotPresent));
@@ -508,7 +508,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
+        [MemberData(nameof(StringCollection_Data))]
         public static void RemoveTest(StringCollection collection, string[] data)
         {
             Assert.All(data, element =>
@@ -523,7 +523,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
+        [MemberData(nameof(StringCollection_Data))]
         public static void Remove_IListTest(StringCollection collection, string[] data)
         {
             Assert.All(data, element =>
@@ -538,8 +538,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void Remove_NotPresentTest(StringCollection collection, string[] data)
         {
             collection.Remove(ElementNotPresent);
@@ -549,7 +549,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void Remove_DuplicateTest(StringCollection collection, string[] data)
         {
             // Only the first element will be removed.
@@ -577,7 +577,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("RemoveAt_Data")]
+        [MemberData(nameof(RemoveAt_Data))]
         public static void RemoveAtTest(StringCollection collection, string[] data, int location)
         {
             collection.RemoveAt(location);
@@ -596,8 +596,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void RemoveAt_ArgumentInvalidTest(StringCollection collection, string[] data)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(-1));
@@ -605,7 +605,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void Remove_Duplicate_IListTest(StringCollection collection, string[] data)
         {
             // Only the first element will be removed.
@@ -633,8 +633,8 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Theory]
-        [MemberData("StringCollection_Data")]
-        [MemberData("StringCollection_Duplicates_Data")]
+        [MemberData(nameof(StringCollection_Data))]
+        [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void SyncRootTest(StringCollection collection, string[] data)
         {
             object syncRoot = collection.SyncRoot;

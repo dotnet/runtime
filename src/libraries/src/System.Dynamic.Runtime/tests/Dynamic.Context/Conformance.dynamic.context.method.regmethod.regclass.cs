@@ -523,7 +523,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
         public MyClass Method_ReturnMyClass_Throw(bool? b)
         {
-            throw new ArgumentException("Test exception", "b");
+            throw new ArgumentException("Test exception", nameof(b));
         }
 
         public MyClass Method_ReturnMyClass_Throw(out MyClass p1, out decimal?[] p2, MyEnum p3)
@@ -703,7 +703,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
         public short Method_ReturnShort_Throw(MyEnum m)
         {
-            throw new ArgumentException("Test message", "m");
+            throw new ArgumentException("Test message", nameof(m));
         }
 
         public short Method_ReturnShort_Throw(out char? p1, ref string[] p2, short[] p3)
@@ -714,7 +714,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         public short Method_ReturnShort_Throw(out MyEnum m)
         {
             m = MyEnum.Second;
-            throw new ArgumentException("Test message", "m");
+            throw new ArgumentException("Test message", nameof(m));
         }
 
         public short Method_ReturnShort_Throw(params MyEnum[] m)
@@ -729,7 +729,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
         public short? Method_ReturnShort_ThrowNullable(decimal? d)
         {
-            throw new ArgumentException("Test message", "d");
+            throw new ArgumentException("Test message", nameof(d));
         }
 
         public short? Method_ReturnShort_ThrowNullable(out char? p1, int[] p2, params bool?[] p3)
@@ -745,7 +745,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         public short? Method_ReturnShort_ThrowNullable(ref decimal? d)
         {
             d = 3m;
-            throw new ArgumentException("Test message", "d");
+            throw new ArgumentException("Test message", nameof(d));
         }
 
         public sbyte Method_ReturnSbyte(int x, dynamic d, short s, decimal dd, MyClass c, float f, short? ss)

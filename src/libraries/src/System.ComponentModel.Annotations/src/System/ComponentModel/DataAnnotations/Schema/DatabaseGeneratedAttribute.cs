@@ -18,7 +18,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         {
             if (!(Enum.IsDefined(typeof(DatabaseGeneratedOption), databaseGeneratedOption)))
             {
-                throw new ArgumentOutOfRangeException("databaseGeneratedOption");
+                throw new ArgumentOutOfRangeException(nameof(databaseGeneratedOption));
             }
 
             DatabaseGeneratedOption = databaseGeneratedOption;

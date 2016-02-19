@@ -227,7 +227,7 @@ public static class Int32Tests
         yield return new object[] { "2147483648", defaultStyle, defaultFormat, typeof(OverflowException) }; // < min value
     }
 
-    [Theory, MemberData("ParseValidData")]
+    [Theory, MemberData(nameof(ParseValidData))]
     public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, int expected)
     {
         int i;
@@ -258,7 +258,7 @@ public static class Int32Tests
         Assert.Equal(expected, int.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Theory, MemberData("ParseInvalidData")]
+    [Theory, MemberData(nameof(ParseInvalidData))]
     public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
         int i;

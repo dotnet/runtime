@@ -61,7 +61,7 @@ namespace System.Text.Encodings.Web
         {
             if (filter == null)
             {
-                throw new ArgumentNullException("filter");
+                throw new ArgumentNullException(nameof(filter));
             }
 
             _allowedCharacters = filter.GetAllowedCharacters();
@@ -150,7 +150,7 @@ namespace System.Text.Encodings.Web
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
             return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
@@ -159,7 +159,7 @@ namespace System.Text.Encodings.Web
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }

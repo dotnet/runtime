@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     public class Continue : GotoExpressionTests
     {
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NonVoidTargetContinueHasNoValue(Type type)
         {
             LabelTarget target = Expression.Label(type);
@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NonVoidTargetContinueHasNoValueTypeExplicit(Type type)
         {
             LabelTarget target = Expression.Label(type);
@@ -51,14 +51,14 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NullValueOnNonVoidContinue(Type type)
         {
             Assert.Throws<ArgumentException>(() => Expression.Continue(Expression.Label(type)));
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void ExplicitNullTypeWithValue(object value)
         {
             Assert.Throws<ArgumentException>(() => Expression.Continue(Expression.Label(value.GetType()), default(Type)));

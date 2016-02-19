@@ -67,7 +67,7 @@ namespace System.IO.Packaging
             partUri = PackUriHelper.ValidatePartUri(partUri);
 
             if (contentType == null)
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 

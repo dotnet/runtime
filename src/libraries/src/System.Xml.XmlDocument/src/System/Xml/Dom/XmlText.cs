@@ -104,7 +104,7 @@ namespace System.Xml
             XmlNode parentNode = this.ParentNode;
             int length = this.Length;
             if (offset > length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             //if the text node is out of the living tree, throw exception.
             if (parentNode == null)
                 throw new InvalidOperationException(SR.Xdom_TextNode_SplitText);

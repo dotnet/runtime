@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\Microsoft.VisualBasic.Tests.csproj" />
+    <ExcludeProjects Condition="'$(OSGroup)'=='Windows_NT'" Include="**\System.Security.Cryptography.OpenSsl.Tests.csproj" />
     <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)">
       <OSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</OSGroup>
     </Project>

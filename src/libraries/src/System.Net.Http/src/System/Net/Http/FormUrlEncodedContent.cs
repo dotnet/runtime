@@ -23,7 +23,7 @@ namespace System.Net.Http
         {
             if (nameValueCollection == null)
             {
-                throw new ArgumentNullException("nameValueCollection");
+                throw new ArgumentNullException(nameof(nameValueCollection));
             }
             Contract.EndContractBlock();
 

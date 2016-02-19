@@ -318,7 +318,7 @@ namespace System.IO.Tests
         }
 
 
-        [ConditionalFact("CanCreateSymbolicLinks")]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectory()
         {
             string targetPath = GetTestFilePath();

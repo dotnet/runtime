@@ -30,7 +30,7 @@ namespace System.Globalization
                 buf = new char[realLen];
             }
 
-            throw new ArgumentException(SR.Argument_IdnIllegalName, "unicode");
+            throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
         }
 
         private string GetUnicodeCore(string ascii)
@@ -57,7 +57,7 @@ namespace System.Globalization
                 buf = new char[realLen];
             }
 
-            throw new ArgumentException(SR.Argument_IdnIllegalName, "ascii");
+            throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
         }
 
         // -----------------------------

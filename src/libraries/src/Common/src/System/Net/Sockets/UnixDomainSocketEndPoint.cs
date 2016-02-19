@@ -23,12 +23,12 @@ namespace System.Net.Sockets
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
             if (path.Length == 0 || s_pathEncoding.GetByteCount(path) >= MaxPathLength)
             {
-                throw new ArgumentOutOfRangeException("path");
+                throw new ArgumentOutOfRangeException(nameof(path));
             }
 
             _path = path;
@@ -39,13 +39,13 @@ namespace System.Net.Sockets
         {
             if (socketAddress == null)
             {
-                throw new ArgumentNullException("socketAddress");
+                throw new ArgumentNullException(nameof(socketAddress));
             }
 
             if (socketAddress.Family != EndPointAddressFamily || 
                 socketAddress.Size > MaxSocketAddressSize)
             {
-                throw new ArgumentOutOfRangeException("socketAddress");
+                throw new ArgumentOutOfRangeException(nameof(socketAddress));
             }
 
             if (socketAddress.Size >= MinSocketAddressSize)

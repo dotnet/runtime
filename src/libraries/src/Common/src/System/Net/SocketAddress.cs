@@ -85,7 +85,7 @@ namespace System.Net.Internals
         {
             if (size < MinSize)
             {
-                throw new ArgumentOutOfRangeException("size");
+                throw new ArgumentOutOfRangeException(nameof(size));
             }
 
             InternalSize = size;

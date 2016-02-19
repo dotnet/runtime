@@ -608,14 +608,14 @@ namespace System.Linq.Expressions
         {
             if (typeArgs == null)
             {
-                throw new ArgumentNullException("typeArgs");
+                throw new ArgumentNullException(nameof(typeArgs));
             }
             for (int i = 0, n = typeArgs.Length; i < n; i++)
             {
                 var a = typeArgs[i];
                 if (a == null)
                 {
-                    throw new ArgumentNullException("typeArgs");
+                    throw new ArgumentNullException(nameof(typeArgs));
                 }
                 if (a.IsByRef)
                 {

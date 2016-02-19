@@ -114,7 +114,7 @@ namespace System.Text.RegularExpressions
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             for (int i = arrayIndex, j = 0; j < Count; i++, j++)
             {

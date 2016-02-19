@@ -34,7 +34,7 @@ namespace System.Net
         {
             if (Transport == null || Transport == Stream.Null)
             {
-                throw new ArgumentNullException("Transport");
+                throw new ArgumentNullException(nameof(Transport));
             }
 
             _transport = Transport;
@@ -307,13 +307,13 @@ namespace System.Net
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
             WorkerAsyncResult workerResult = asyncResult as WorkerAsyncResult;
 
             if (workerResult == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_io_async_result, typeof(WorkerAsyncResult).FullName), "asyncResult");
+                throw new ArgumentException(SR.Format(SR.net_io_async_result, typeof(WorkerAsyncResult).FullName), nameof(asyncResult));
             }
 
             if (!workerResult.InternalPeekCompleted)
@@ -345,7 +345,7 @@ namespace System.Net
         {
             if (message == null)
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _writeHeader.PayloadSize = message.Length;
@@ -364,7 +364,7 @@ namespace System.Net
         {
             if (message == null)
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
 
             _writeHeader.PayloadSize = message.Length;
@@ -460,7 +460,7 @@ namespace System.Net
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             WorkerAsyncResult workerResult = asyncResult as WorkerAsyncResult;

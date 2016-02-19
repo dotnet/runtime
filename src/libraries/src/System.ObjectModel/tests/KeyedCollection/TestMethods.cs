@@ -293,7 +293,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void AddNullKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -334,7 +334,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void AddExistingKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -375,7 +375,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void AddUniqueKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -415,7 +415,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void NonGenericAddNullKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -454,7 +454,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void NonGenericAddExistingKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -492,7 +492,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void NonGenericAddUniqueKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -529,7 +529,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -575,7 +575,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKeyThrowsPreexistingKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -618,7 +618,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKeySameKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -661,7 +661,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemDoesNotExistThrows(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -711,7 +711,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKeyNullToNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -757,7 +757,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKeyNullToNonNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -806,7 +806,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void ChangeItemKeyNonNullToNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -854,7 +854,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void ChangeItemKeyNullItemNotPresent(int collectionSize)
         {
             if (default(TKey) == null)
@@ -887,7 +887,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void ChangeItemKeyNullItemPresent(int collectionSize)
         {
             if (default(TKey) == null)
@@ -919,7 +919,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void ChangeItemKeyNullKeyNotPresent(int collectionSize)
         {
             if (default(TKey) == null)
@@ -947,7 +947,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void ChangeItemKeyNullKeyPresent(int collectionSize)
         {
             if (default(TKey) == null)
@@ -976,7 +976,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void ChangeItemKeyNullItemNullKeyPresent(
             int collectionSize)
         {
@@ -1008,7 +1008,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyKeyAlreadyChanged(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1056,7 +1056,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyKeyAlreadyChangedNewKeyIsOldKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1104,7 +1104,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1154,7 +1154,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyNullToNewKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1216,7 +1216,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyNullToOldKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1282,7 +1282,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeyNullToOtherKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1346,7 +1346,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeySetKeyNonNullToNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1391,7 +1391,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void ChangeItemKeySetKeyNonNullToNullChangeKeyNonNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1445,7 +1445,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData2")]
+        [MemberData(nameof(ClassData2))]
         public void
             ChangeItemKeySetKeyNonNullToNullChangeKeySomethingElse(
             int collectionSize,
@@ -1532,7 +1532,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void Contains(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1570,7 +1570,7 @@ namespace System.Collections.ObjectModel.Tests
         {
             if (dictionary == null)
             {
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
             }
             if (expectedKeys.Length != expectedItems.Length)
             {
@@ -1588,7 +1588,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ThresholdData")]
+        [MemberData(nameof(ThresholdData))]
         public void Threshold(
             int collectionDictionaryThreshold,
             Named<AddItemsFunc<TKey, IKeyedItem<TKey, TValue>>> addItems)
@@ -1666,7 +1666,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ContainsKeyData")]
+        [MemberData(nameof(ContainsKeyData))]
         public void ContainsKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1713,7 +1713,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ContainsKeyData")]
+        [MemberData(nameof(ContainsKeyData))]
         public void RemoveKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1781,7 +1781,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ContainsKeyData")]
+        [MemberData(nameof(ContainsKeyData))]
         public void KeyIndexer(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1829,7 +1829,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("CollectionSizes")]
+        [MemberData(nameof(CollectionSizes))]
         public void KeyIndexerSet(int collectionSize)
         {
             TKey[] keys;
@@ -1851,7 +1851,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("DictionaryData")]
+        [MemberData(nameof(DictionaryData))]
         public void Dictionary(
             int addCount,
             int insertCount,
@@ -1928,7 +1928,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [MemberData("ClassData")]
+        [MemberData(nameof(ClassData))]
         public void Insert(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>

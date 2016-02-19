@@ -122,12 +122,12 @@ namespace System.Net.Http.Headers
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             // Allow arrayIndex == array.Length in case our own collection is empty
             if ((arrayIndex < 0) || (arrayIndex > array.Length))
             {
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
             object storeValue = _store.GetParsedValues(_headerName);
@@ -241,7 +241,7 @@ namespace System.Net.Http.Headers
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
 
             // If this instance has a custom validator for validating arguments, call it now.

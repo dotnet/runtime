@@ -563,7 +563,7 @@ namespace System.Security.Principal
         public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action)
         {
             if (action == null)
-                throw new ArgumentNullException("action");
+                throw new ArgumentNullException(nameof(action));
 
             RunImpersonatedInternal(safeAccessTokenHandle, action);
         }
@@ -572,7 +572,7 @@ namespace System.Security.Principal
         public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func)
         {
             if (func == null)
-                throw new ArgumentNullException("func");
+                throw new ArgumentNullException(nameof(func));
 
             T result = default(T);
             RunImpersonatedInternal(safeAccessTokenHandle, () => result = func());
@@ -828,7 +828,7 @@ namespace System.Security.Principal
             : base(identity, null, identity._authType, null, null)
         {
             if (identity == null)
-                throw new ArgumentNullException("identity");
+                throw new ArgumentNullException(nameof(identity));
 
             Contract.EndContractBlock();
 

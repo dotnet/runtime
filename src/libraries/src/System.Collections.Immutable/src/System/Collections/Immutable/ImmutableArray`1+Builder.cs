@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
                 {
                     if (value < _count)
                     {
-                        throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount, paramName: "value");
+                        throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount, paramName: nameof(value));
                     }
 
                     if (value != _elements.Length)

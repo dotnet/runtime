@@ -15,7 +15,7 @@ namespace Internal.Cryptography.Pal
         public static ICertificatePal FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Arg_InvalidHandle, "handle");
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
             return new OpenSslX509CertificateReader(Interop.Crypto.X509Duplicate(handle));
         }

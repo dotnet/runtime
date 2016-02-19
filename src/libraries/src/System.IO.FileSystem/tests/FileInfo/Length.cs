@@ -45,7 +45,7 @@ namespace System.IO.Tests
         // In some cases (such as when running without elevated privileges,
         // the symbolic link may fail to create. Only run this test if it creates
         // links successfully.
-        [ConditionalFact("CanCreateSymbolicLinks")]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymLinkLength()
         {
             var path = GetTestFilePath();

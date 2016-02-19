@@ -17,7 +17,7 @@ namespace System.Collections.Tests
         #region RemoveAll(Pred<T>)
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void RemoveAll_AllElements(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -28,7 +28,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void RemoveAll_NoElements(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -40,7 +40,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void RemoveAll_DefaultElements(int count)
         {
             List<T> list = GenericListFactory(count);
@@ -84,7 +84,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void RemoveRange_InvalidParameters(int listLength)
         {
             if (listLength % 2 != 0)
@@ -116,7 +116,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void RemoveRange_NegativeParameters(int listLength)
         {
             if (listLength % 2 != 0)

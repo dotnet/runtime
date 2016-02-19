@@ -10,7 +10,7 @@ namespace System.Linq.Parallel.Tests
     public class AsSequentialTests
     {
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void AsSequential_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
@@ -21,14 +21,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void AsSequential_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsSequential_Unordered(labeled, count);
         }
 
         [Theory]
-        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
         public static void AsSequential(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int seen = 0;
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData("Ranges", (object)(new int[] { 1024 * 4, 1024 * 128 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 128 }), MemberType = typeof(Sources))]
         public static void AsSequential_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsSequential(labeled, count);
@@ -47,7 +47,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [ActiveIssue("AsSequential.Cast<T>() retains origin type")]
-        [MemberData("Ranges", (object)(new int[] { 0, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 16 }), MemberType = typeof(Sources))]
         public static void AsSequential_LinqBinding(Labeled<ParallelQuery<int>> labeled, int count)
         {
             IEnumerable<int> seq = labeled.Item.AsSequential();

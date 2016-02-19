@@ -54,9 +54,9 @@ namespace System.Collections
         public Queue(int capacity, float growFactor)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (!(growFactor >= 1.0 && growFactor <= 10.0))
-                throw new ArgumentOutOfRangeException("growFactor", SR.Format(SR.ArgumentOutOfRange_QueueGrowFactor, 1, 10));
+                throw new ArgumentOutOfRangeException(nameof(growFactor), SR.Format(SR.ArgumentOutOfRange_QueueGrowFactor, 1, 10));
             Contract.EndContractBlock();
 
             _array = new Object[capacity];
@@ -72,7 +72,7 @@ namespace System.Collections
         public Queue(ICollection col) : this((col == null ? 32 : col.Count))
         {
             if (col == null)
-                throw new ArgumentNullException("col");
+                throw new ArgumentNullException(nameof(col));
             Contract.EndContractBlock();
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
@@ -145,11 +145,11 @@ namespace System.Collections
         public virtual void CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
             int arrayLen = array.Length;
             if (arrayLen - index < _size)
@@ -228,7 +228,7 @@ namespace System.Collections
         public static Queue Synchronized(Queue queue)
         {
             if (queue == null)
-                throw new ArgumentNullException("queue");
+                throw new ArgumentNullException(nameof(queue));
             Contract.EndContractBlock();
             return new SynchronizedQueue(queue);
         }
@@ -509,7 +509,7 @@ namespace System.Collections
             public QueueDebugView(Queue queue)
             {
                 if (queue == null)
-                    throw new ArgumentNullException("queue");
+                    throw new ArgumentNullException(nameof(queue));
                 Contract.EndContractBlock();
 
                 _queue = queue;

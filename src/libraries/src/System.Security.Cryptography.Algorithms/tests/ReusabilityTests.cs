@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     public class ReusabilityTests
     {
         [Theory]
-        [MemberData("ReusabilityHashAlgorithms")]
+        [MemberData(nameof(ReusabilityHashAlgorithms))]
         public void TestReusability(HashAlgorithm hashAlgorithm)
         {
             using (hashAlgorithm)

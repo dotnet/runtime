@@ -18,7 +18,7 @@ namespace System.Numerics.Tests
         }
 
         [Benchmark]
-        [MemberData("TestOperations")]
+        [MemberData(nameof(TestOperations))]
         public void Operation(Operations operation)
         {
             Random rand = new Random(84329);

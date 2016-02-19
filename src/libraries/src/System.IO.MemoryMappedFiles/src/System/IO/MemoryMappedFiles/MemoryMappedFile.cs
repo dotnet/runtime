@@ -63,7 +63,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (mapName == null)
             {
-                throw new ArgumentNullException("mapName", SR.ArgumentNull_MapName);
+                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
             }
 
             if (mapName.Length == 0)
@@ -73,12 +73,12 @@ namespace System.IO.MemoryMappedFiles
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability");
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
             }
 
             if (((int)desiredAccessRights & ~((int)(MemoryMappedFileRights.FullControl | MemoryMappedFileRights.AccessSystemSecurity))) != 0)
             {
-                throw new ArgumentOutOfRangeException("desiredAccessRights");
+                throw new ArgumentOutOfRangeException(nameof(desiredAccessRights));
             }
 
             SafeMemoryMappedFileHandle handle = OpenCore(mapName, inheritability, desiredAccessRights, false);
@@ -118,7 +118,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
             if (mapName != null && mapName.Length == 0)
@@ -128,22 +128,22 @@ namespace System.IO.MemoryMappedFiles
 
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
             }
 
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (mode == FileMode.Append)
             {
-                throw new ArgumentException(SR.Argument_NewMMFAppendModeNotAllowed, "mode");
+                throw new ArgumentException(SR.Argument_NewMMFAppendModeNotAllowed, nameof(mode));
             }
             if (access == MemoryMappedFileAccess.Write)
             {
-                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, "access");
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
             bool existed = File.Exists(path);
@@ -170,7 +170,7 @@ namespace System.IO.MemoryMappedFiles
             if (fileStream.Length > capacity)
             {
                 CleanupFile(fileStream, existed, path);
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle handle = null;
@@ -197,7 +197,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (fileStream == null)
             {
-                throw new ArgumentNullException("fileStream", SR.ArgumentNull_FileStream);
+                throw new ArgumentNullException(nameof(fileStream), SR.ArgumentNull_FileStream);
             }
 
             if (mapName != null && mapName.Length == 0)
@@ -207,7 +207,7 @@ namespace System.IO.MemoryMappedFiles
 
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
             }
 
             if (capacity == 0 && fileStream.Length == 0)
@@ -218,12 +218,12 @@ namespace System.IO.MemoryMappedFiles
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (access == MemoryMappedFileAccess.Write)
             {
-                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, "access");
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
             if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
@@ -233,7 +233,7 @@ namespace System.IO.MemoryMappedFiles
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability");
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
             }
 
             // flush any bytes written to the FileStream buffer so that we can see them in our MemoryMappedFile
@@ -247,7 +247,7 @@ namespace System.IO.MemoryMappedFiles
             // one can always create a small view if they do not want to map an entire file 
             if (fileStream.Length > capacity)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
@@ -282,33 +282,33 @@ namespace System.IO.MemoryMappedFiles
 
             if (capacity <= 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedPositiveNumber);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
             }
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (access == MemoryMappedFileAccess.Write)
             {
-                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, "access");
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
             if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
             {
-                throw new ArgumentOutOfRangeException("options");
+                throw new ArgumentOutOfRangeException(nameof(options));
             }
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability");
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
             }
 
             SafeMemoryMappedFileHandle handle = CreateCore(null, mapName, inheritability, access, options, capacity);
@@ -338,7 +338,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (mapName == null)
             {
-                throw new ArgumentNullException("mapName", SR.ArgumentNull_MapName);
+                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
             }
 
             if (mapName.Length == 0)
@@ -348,28 +348,28 @@ namespace System.IO.MemoryMappedFiles
 
             if (capacity <= 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedPositiveNumber);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
             }
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
             {
-                throw new ArgumentOutOfRangeException("options");
+                throw new ArgumentOutOfRangeException(nameof(options));
             }
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
-                throw new ArgumentOutOfRangeException("inheritability");
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
             }
 
             SafeMemoryMappedFileHandle handle;
@@ -401,22 +401,22 @@ namespace System.IO.MemoryMappedFiles
         {
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (size < 0)
             {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_PositiveOrDefaultSizeRequired);
+                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_PositiveOrDefaultSizeRequired);
             }
 
             if (access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (IntPtr.Size == 4 && size > uint.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
             MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);
@@ -439,22 +439,22 @@ namespace System.IO.MemoryMappedFiles
         {
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (size < 0)
             {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_PositiveOrDefaultSizeRequired);
+                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_PositiveOrDefaultSizeRequired);
             }
 
             if (access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute)
             {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
 
             if (IntPtr.Size == 4 && size > uint.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
             MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);

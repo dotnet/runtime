@@ -48,12 +48,12 @@ namespace System.Reflection.PortableExecutable
         {
             if (peImage == null)
             {
-                throw new ArgumentNullException("peImage");
+                throw new ArgumentNullException(nameof(peImage));
             }
 
             if (size < 0)
             {
-                throw new ArgumentOutOfRangeException("size");
+                throw new ArgumentOutOfRangeException(nameof(size));
             }
 
             _peImage = new ExternalMemoryBlockProvider(peImage, size);
@@ -136,17 +136,17 @@ namespace System.Reflection.PortableExecutable
         {
             if (peStream == null)
             {
-                throw new ArgumentNullException("peStream");
+                throw new ArgumentNullException(nameof(peStream));
             }
 
             if (!peStream.CanRead || !peStream.CanSeek)
             {
-                throw new ArgumentException(SR.StreamMustSupportReadAndSeek, "peStream");
+                throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
             if (!options.IsValid())
             {
-                throw new ArgumentOutOfRangeException("options");
+                throw new ArgumentOutOfRangeException(nameof(options));
             }
 
             long start = peStream.Position;
@@ -207,7 +207,7 @@ namespace System.Reflection.PortableExecutable
         {
             if (peImage.IsDefault)
             {
-                throw new ArgumentNullException("peImage");
+                throw new ArgumentNullException(nameof(peImage));
             }
 
             _peImage = new ByteArrayMemoryProvider(peImage);
@@ -514,7 +514,7 @@ namespace System.Reflection.PortableExecutable
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
             {
-                throw new ArgumentException("entry");
+                throw new ArgumentException(nameof(entry));
             }
 
             using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(entry.DataPointer, entry.DataSize))

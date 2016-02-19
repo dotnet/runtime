@@ -65,7 +65,7 @@ namespace System.Net.Sockets.Tests
                 case SocketImplementationType.Async:
                     return new SocketTestServerAsync(numConnections, receiveBufferSize, localEndPoint, protocolType);
                 default:
-                    throw new ArgumentOutOfRangeException("type");
+                    throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
 

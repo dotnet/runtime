@@ -121,7 +121,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData("CopyFileWithData_MemberData")]
+        [MemberData(nameof(CopyFileWithData_MemberData))]
         public void CopyFileWithData_MemberData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();

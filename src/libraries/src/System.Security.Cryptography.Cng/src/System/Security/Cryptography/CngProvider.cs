@@ -18,9 +18,9 @@ namespace System.Security.Cryptography
         public CngProvider(string provider)
         {
             if (provider == null)
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             if (provider.Length == 0)
-                throw new ArgumentException(SR.Format(SR.Cryptography_InvalidProviderName, provider), "provider");
+                throw new ArgumentException(SR.Format(SR.Cryptography_InvalidProviderName, provider), nameof(provider));
 
             _provider = provider;
         }

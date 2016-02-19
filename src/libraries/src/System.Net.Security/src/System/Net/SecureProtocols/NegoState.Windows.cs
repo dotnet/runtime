@@ -85,7 +85,7 @@ namespace System.Net.Security
                 // One of these must be set if EP is turned on
                 if (policy.CustomChannelBinding == null && policy.CustomServiceNames == null)
                 {
-                    throw new ArgumentException(SR.net_auth_must_specify_extended_protection_scheme, "policy");
+                    throw new ArgumentException(SR.net_auth_must_specify_extended_protection_scheme, nameof(policy));
                 }
 
                 _extendedProtectionPolicy = policy;
@@ -119,19 +119,19 @@ namespace System.Net.Security
 
             if (credential == null)
             {
-                throw new ArgumentNullException("credential");
+                throw new ArgumentNullException(nameof(credential));
             }
 
             if (servicePrincipalName == null)
             {
-                throw new ArgumentNullException("servicePrincipalName");
+                throw new ArgumentNullException(nameof(servicePrincipalName));
             }
 
             if (impersonationLevel != TokenImpersonationLevel.Identification &&
                 impersonationLevel != TokenImpersonationLevel.Impersonation &&
                 impersonationLevel != TokenImpersonationLevel.Delegation)
             {
-                throw new ArgumentOutOfRangeException("impersonationLevel", impersonationLevel.ToString(), SR.net_auth_supported_impl_levels);
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(), SR.net_auth_supported_impl_levels);
             }
 
             if (_context != null && IsServer != isServer)

@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     public class Break : GotoExpressionTests
     {
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void JustBreakValue(object value)
         {
             Type type = value.GetType();
@@ -38,7 +38,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void BreakJumps(object value)
         {
             Type type = value.GetType();
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NonVoidTargetBreakHasNoValue(Type type)
         {
             LabelTarget target = Expression.Label(type);
@@ -60,7 +60,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NonVoidTargetBreakHasNoValueTypeExplicit(Type type)
         {
             LabelTarget target = Expression.Label(type);
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("TypesData")]
+        [MemberData(nameof(TypesData))]
         public void NullValueOnNonVoidBreak(Type type)
         {
             Assert.Throws<ArgumentException>(() => Expression.Break(Expression.Label(type)));
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void ExplicitNullTypeWithValue(object value)
         {
             Assert.Throws<ArgumentException>(() => Expression.Break(Expression.Label(value.GetType()), default(Type)));
@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("ConstantValueData")]
+        [MemberData(nameof(ConstantValueData))]
         public void CanAssignAnythingToVoid(object value)
         {
             LabelTarget target = Expression.Label();
@@ -130,14 +130,14 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData("NonObjectAssignableConstantValueData")]
+        [MemberData(nameof(NonObjectAssignableConstantValueData))]
         public void CannotAssignValueTypesToObject(object value)
         {
             Assert.Throws<ArgumentException>(() => Expression.Break(Expression.Label(typeof(object)), Expression.Constant(value)));
         }
 
         [Theory]
-        [MemberData("ObjectAssignableConstantValueData")]
+        [MemberData(nameof(ObjectAssignableConstantValueData))]
         public void ExplicitTypeAssigned(object value)
         {
             LabelTarget target = Expression.Label(typeof(object));

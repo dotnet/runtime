@@ -17,12 +17,12 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<T?> NullableSequence<T>(IEnumerable<T> source) where T : struct
+        public static IEnumerable<T?> NullableSequence<T>(IEnumerable<T> source) where T : struct
         {
             return source.Select(i => (T?)i).Concat(Enumerable.Repeat(default(T?), 1));
         }
 
-        private static IEnumerable<short> Int16s
+        public static IEnumerable<short> Int16s
         {
             get
             {
@@ -40,7 +40,7 @@ namespace System.Linq.Expressions.Tests
             return Int16s.Select(i => new object[] { typeof(short), i, (short)(i + 1) });
         }
 
-        private static IEnumerable<short?> NullableInt16s
+        public static IEnumerable<short?> NullableInt16s
         {
             get { return NullableSequence(Int16s); }
         }
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Tests
             return NullableInt16s.Select(i => new object[] { typeof(short?), i, (short?)(i + 1) });
         }
 
-        private static IEnumerable<ushort> UInt16s
+        public static IEnumerable<ushort> UInt16s
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Tests
             return UInt16s.Select(i => new object[] { typeof(ushort), i, (ushort)(i + 1) });
         }
 
-        private static IEnumerable<ushort?> NullableUInt16s
+        public static IEnumerable<ushort?> NullableUInt16s
         {
             get { return NullableSequence(UInt16s); }
         }
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Tests
             return NullableUInt16s.Select(i => new object[] { typeof(ushort?), i, (ushort?)(i + 1) });
         }
 
-        private static IEnumerable<int> Int32s
+        public static IEnumerable<int> Int32s
         {
             get
             {
@@ -106,22 +106,22 @@ namespace System.Linq.Expressions.Tests
             return Int32s.Select(i => new object[] { typeof(int), i, i + 1 });
         }
 
-        private static IEnumerable<int?> NullableInt32s
+        public static IEnumerable<int?> NullableInt32s
         {
             get { return NullableSequence(Int32s); }
         }
 
-        private static IEnumerable<object[]> NullableInt32sAndDecrements()
+        public static IEnumerable<object[]> NullableInt32sAndDecrements()
         {
             return NullableInt32s.Select(i => new object[] { typeof(int?), i, i - 1 });
         }
 
-        private static IEnumerable<object[]> NullableInt32sAndIncrements()
+        public static IEnumerable<object[]> NullableInt32sAndIncrements()
         {
             return NullableInt32s.Select(i => new object[] { typeof(int?), i, i + 1 });
         }
 
-        private static IEnumerable<uint> UInt32s
+        public static IEnumerable<uint> UInt32s
         {
             get
             {
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Tests
             return UInt32s.Select(i => new object[] { typeof(uint), i, i + 1 });
         }
 
-        private static IEnumerable<uint?> NullableUInt32s
+        public static IEnumerable<uint?> NullableUInt32s
         {
             get { return NullableSequence(UInt32s); }
         }
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Tests
             return NullableUInt32s.Select(i => new object[] { typeof(uint?), i, i + 1 });
         }
 
-        private static IEnumerable<long> Int64s
+        public static IEnumerable<long> Int64s
         {
             get
             {
@@ -172,22 +172,22 @@ namespace System.Linq.Expressions.Tests
             return Int64s.Select(i => new object[] { typeof(long), i, i + 1 });
         }
 
-        private static IEnumerable<long?> NullableInt64s
+        public static IEnumerable<long?> NullableInt64s
         {
             get { return NullableSequence(Int64s); }
         }
 
-        private static IEnumerable<object[]> NullableInt64sAndDecrements()
+        public static IEnumerable<object[]> NullableInt64sAndDecrements()
         {
             return NullableInt64s.Select(i => new object[] { typeof(long?), i, i - 1 });
         }
 
-        private static IEnumerable<object[]> NullableInt64sAndIncrements()
+        public static IEnumerable<object[]> NullableInt64sAndIncrements()
         {
             return NullableInt64s.Select(i => new object[] { typeof(long?), i, i + 1 });
         }
 
-        private static IEnumerable<ulong> UInt64s
+        public static IEnumerable<ulong> UInt64s
         {
             get
             {
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
             return UInt64s.Select(i => new object[] { typeof(ulong), i, i + 1 });
         }
 
-        private static IEnumerable<ulong?> NullableUInt64s
+        public static IEnumerable<ulong?> NullableUInt64s
         {
             get { return NullableSequence(UInt64s); }
         }
@@ -220,7 +220,7 @@ namespace System.Linq.Expressions.Tests
             return NullableUInt64s.Select(i => new object[] { typeof(ulong?), i, i + 1 });
         }
 
-        private static IEnumerable<decimal> Decimals
+        public static IEnumerable<decimal> Decimals
         {
             get
             {
@@ -238,7 +238,7 @@ namespace System.Linq.Expressions.Tests
             return Decimals.Select(i => new object[] { typeof(decimal), i, i + 1 });
         }
 
-        private static IEnumerable<decimal?> NullableDecimals
+        public static IEnumerable<decimal?> NullableDecimals
         {
             get
             {

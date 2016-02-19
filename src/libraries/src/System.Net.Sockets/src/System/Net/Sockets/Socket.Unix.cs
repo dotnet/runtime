@@ -32,7 +32,7 @@ namespace System.Net.Sockets
                 var socket = socketList[i] as Socket;
                 if (socket == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[i].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), "socketList");
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[i].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
                 int fd = socket._handle.FileDescriptor;

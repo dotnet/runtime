@@ -26,7 +26,7 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData("CompareToData")]
+    [MemberData(nameof(CompareToData))]
     [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void Compare(string localeName, string left, string right, int expected, CompareOptions options)
     {
@@ -90,7 +90,7 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData("IndexOfData")]
+    [MemberData(nameof(IndexOfData))]
     [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
     {
@@ -195,7 +195,7 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData("LastIndexOfData")]
+    [MemberData(nameof(LastIndexOfData))]
     [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void LastIndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
     {
@@ -288,7 +288,7 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData("IsPrefixData")]
+    [MemberData(nameof(IsPrefixData))]
     [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IsPrefix(string localeName, string source, string prefix, bool expectedResult, CompareOptions options)
     {
@@ -324,7 +324,7 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData("IsSuffixData")]
+    [MemberData(nameof(IsSuffixData))]
     [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void IsSuffix(string localeName, string source, string suffix, bool expectedResult, CompareOptions options)
     {

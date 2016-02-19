@@ -43,7 +43,7 @@ namespace System.Security.AccessControl
         {
             if (securityDescriptor == null)
             {
-                throw new ArgumentNullException("securityDescriptor");
+                throw new ArgumentNullException(nameof(securityDescriptor));
             }
             Contract.EndContractBlock();
 
@@ -81,7 +81,7 @@ namespace System.Security.AccessControl
 
                 if (!IsValidTargetTypeStatic(targetType))
                 {
-                    throw new ArgumentException(SR.Arg_MustBeIdentityReferenceType, "targetType");
+                    throw new ArgumentException(SR.Arg_MustBeIdentityReferenceType, nameof(targetType));
                 }
 
                 CommonAcl acl = null;
@@ -361,7 +361,7 @@ namespace System.Security.AccessControl
 
                     default:
                         throw new ArgumentOutOfRangeException(
-                            "modification",
+nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
             }
@@ -407,7 +407,7 @@ namespace System.Security.AccessControl
 
                     default:
                         throw new ArgumentOutOfRangeException(
-                            "modification",
+nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
             }
@@ -502,7 +502,7 @@ namespace System.Security.AccessControl
 
                 default:
                     throw new ArgumentOutOfRangeException(
-                        "modification",
+nameof(modification),
                         SR.ArgumentOutOfRange_Enum);
             }
 
@@ -558,7 +558,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -581,7 +581,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -602,7 +602,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -623,7 +623,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -649,7 +649,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -675,7 +675,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -701,7 +701,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -722,7 +722,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -743,7 +743,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -764,7 +764,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 
@@ -785,7 +785,7 @@ namespace System.Security.AccessControl
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
             Contract.EndContractBlock();
 

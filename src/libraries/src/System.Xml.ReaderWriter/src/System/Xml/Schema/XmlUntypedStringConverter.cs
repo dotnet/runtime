@@ -58,7 +58,7 @@ namespace System.Xml.Schema
 
         internal string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
             //we can consider avoiding the type equality checks and instead doing a "is" check
@@ -89,8 +89,8 @@ namespace System.Xml.Schema
 
         internal object FromString(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == s_objectType) destinationType = typeof(string);
             if (destinationType == s_booleanType) return XmlConvert.ToBoolean((string)value);

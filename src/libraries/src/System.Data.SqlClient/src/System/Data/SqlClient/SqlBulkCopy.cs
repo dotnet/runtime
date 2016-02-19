@@ -1411,7 +1411,7 @@ namespace System.Data.SqlClient
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (_isBulkCopyingInProgress)
@@ -1444,7 +1444,7 @@ namespace System.Data.SqlClient
             Task resultTask = null;
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (_isBulkCopyingInProgress)

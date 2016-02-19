@@ -186,11 +186,11 @@ namespace System.Data.SqlClient.SNI
 
             if (serverAddresses == null)
             {
-                throw new ArgumentNullException("serverAddresses");
+                throw new ArgumentNullException(nameof(serverAddresses));
             }
             if (serverAddresses.Length == 0)
             {
-                throw new ArgumentOutOfRangeException("serverAddresses");
+                throw new ArgumentOutOfRangeException(nameof(serverAddresses));
             }
 
             // Try each address in turn, and return the socket opened for the first one that works.

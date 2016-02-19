@@ -13,11 +13,11 @@ namespace System.Linq.Expressions.Tests
         public static ConstructorInfo GetConstructor(this Type _this, Type[] types)
         {
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             for (int i = 0; i < types.Length; i++)
             {
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             }
 
             foreach (ConstructorInfo candidate in _this.GetTypeInfo().DeclaredConstructors)

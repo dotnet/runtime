@@ -896,7 +896,7 @@ namespace System.Runtime.Serialization.Json
 
             if (maxItemsInObjectGraph < 0)
             {
-                throw new ArgumentOutOfRangeException("maxItemsInObjectGraph", SR.ValueMustBeNonNegative);
+                throw new ArgumentOutOfRangeException(nameof(maxItemsInObjectGraph), SR.ValueMustBeNonNegative);
             }
             _maxItemsInObjectGraph = maxItemsInObjectGraph;
             _ignoreExtensionDataObject = ignoreExtensionDataObject;

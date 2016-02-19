@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
         {
             if (rgb == null)
             {
-                throw new ArgumentNullException("rgb");
+                throw new ArgumentNullException(nameof(rgb));
             }
 
             GetKeyPair();
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
         {
             if (rgb == null)
             {
-                throw new ArgumentNullException("rgb");
+                throw new ArgumentNullException(nameof(rgb));
             }
 
             GetKeyPair();
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography
         public byte[] SignHash(byte[] rgbHash, string str)
         {
             if (rgbHash == null)
-                throw new ArgumentNullException("rgbHash");
+                throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
@@ -421,9 +421,9 @@ namespace System.Security.Cryptography
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
             if (rgbHash == null)
-                throw new ArgumentNullException("rgbHash");
+                throw new ArgumentNullException(nameof(rgbHash));
             if (rgbSignature == null)
-                throw new ArgumentNullException("rgbSignature");
+                throw new ArgumentNullException(nameof(rgbSignature));
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
             return VerifyHash(rgbHash, calgHash, rgbSignature);
@@ -445,7 +445,7 @@ namespace System.Security.Cryptography
         {
             if (keyBlob == null)
             {
-                throw new ArgumentNullException("keyBlob");
+                throw new ArgumentNullException(nameof(keyBlob));
             }
             // The CAPI RSA public key representation consists of the following sequence:
             //  - BLOBHEADER
@@ -540,9 +540,9 @@ namespace System.Security.Cryptography
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
@@ -561,9 +561,9 @@ namespace System.Security.Cryptography
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
@@ -585,11 +585,11 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 
@@ -603,13 +603,13 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             if (hash == null)
-                throw new ArgumentNullException("hash");
+                throw new ArgumentNullException(nameof(hash));
             if (signature == null)
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
             if (padding == null)
-                throw new ArgumentNullException("padding");
+                throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 

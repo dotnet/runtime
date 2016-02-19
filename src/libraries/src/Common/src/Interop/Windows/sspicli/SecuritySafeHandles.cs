@@ -565,7 +565,7 @@ namespace System.Net.Security
 
             if (inCredentials == null)
             {
-                throw new ArgumentNullException("inCredentials");
+                throw new ArgumentNullException(nameof(inCredentials));
             }
 
             Interop.SspiCli.SecurityBufferDescriptor inSecurityBufferDescriptor = null;
@@ -877,7 +877,7 @@ namespace System.Net.Security
 
             if (inCredentials == null)
             {
-                throw new ArgumentNullException("inCredentials");
+                throw new ArgumentNullException(nameof(inCredentials));
             }
 
             Interop.SspiCli.SecurityBufferDescriptor inSecurityBufferDescriptor = null;

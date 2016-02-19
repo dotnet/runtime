@@ -101,7 +101,7 @@ namespace System.Diagnostics
         public static bool IsRemoteMachine(string machineName)
         {
             if (machineName == null)
-                throw new ArgumentNullException("machineName");
+                throw new ArgumentNullException(nameof(machineName));
 
             if (machineName.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, "machineName", machineName));
