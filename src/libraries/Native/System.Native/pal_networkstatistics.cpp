@@ -20,7 +20,9 @@
 #include <net/route.h>
 
 #include <sys/types.h>
+#if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 #include <sys/socketvar.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
