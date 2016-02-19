@@ -15762,7 +15762,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
         }
         else 
         {
-            // Static hint case.... here the "callee" is the function being assessed. (PLS VERIFY)
+            // Static hint case.... here the "callee" is the function being assessed.
             inlineResult->noteFatal(InlineObservation::CALLEE_EXCEEDS_THRESHOLD);
         }
     }
@@ -16816,9 +16816,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     }
     
     GenTreeCall* call = callNode->AsCall();
-    CORINFO_METHOD_HANDLE callerHandle = info.compMethodHnd;
-    CORINFO_METHOD_HANDLE calleeHandle = call->gtCall.gtCallType == CT_USER_FUNC ? call->gtCall.gtCallMethHnd : nullptr;
-    InlineResult inlineResult(this, callerHandle, calleeHandle, "impMarkInlineCandidate");
+    InlineResult inlineResult(this, call, "impMarkInlineCandidate");
     
     /* Don't inline if not optimized code */
     if  (opts.compDbgCode)
