@@ -237,11 +237,13 @@ public class Tree
 
             else
             {
+                Node newGrandparent = null;
                 if (x.parent.parent != _root)
                 {
                     if (WhichChild(x.parent.parent) == Child.Left)
                         x.parent.parent.parent.left = x.parent;
                     else x.parent.parent.parent.right = x.parent;
+                    newGrandparent = x.parent.parent.parent;
                 }
 
                 else _root = x.parent;
@@ -264,6 +266,7 @@ public class Tree
                     x.parent.left.color = Color.Red;
                 }
 
+                x.parent.parent = newGrandparent;
                 x.parent.color = Color.Black;
             }
         }  // end of Rotation Type 1
