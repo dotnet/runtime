@@ -7045,31 +7045,29 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
     call->gtCall.gtReturnType = call->gtType;
 
     // Get the classification for the struct.
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
-    if (structDesc.passedInRegisters)
+    GenTreeCall* callNode = call->AsCall();
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &(callNode->structDesc));
+    if (callNode->structDesc.passedInRegisters)
     {
-        call->gtCall.SetRegisterReturningStructState(structDesc);
-
-        if (structDesc.eightByteCount <= 1)
+        if (callNode->structDesc.eightByteCount <= 1)
         {
-            call->gtCall.gtReturnType = getEightByteType(structDesc, 0);
+            callNode->gtReturnType = getEightByteType(callNode->structDesc, 0);
         }
         else
         {
-            if (!call->gtCall.CanTailCall() && ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0))
+            if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
             {
-                // If we can tail call returning in registers struct or inline a method that returns
-                // a registers returned struct, then don't assign it to
-                // a variable back and forth.
+                // No need to assign the struct in two registers to a local var if:
+                // 1. It is a tail call.
+                // 2. The call is marked for a later inlining.
                 return impAssignStructClassToVar(call, retClsHnd);
             }
         }
     }
     else
     {
-        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-  }
+        callNode->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+    }
 
     return call;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
