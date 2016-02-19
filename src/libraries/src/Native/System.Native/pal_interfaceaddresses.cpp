@@ -13,7 +13,9 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 
 #if defined(AF_PACKET)
 #include <linux/if_packet.h>
