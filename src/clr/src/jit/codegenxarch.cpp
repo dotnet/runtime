@@ -258,7 +258,8 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
 
     BasicBlock  *gsCheckBlk = genCreateTempLabel();
-    inst_JMP(genJumpKindForOper(GT_EQ, true), gsCheckBlk);
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, gsCheckBlk);
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
     genDefineTempLabel(gsCheckBlk);
 }
@@ -2267,7 +2268,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             BasicBlock* skipLabel = genCreateTempLabel();
 
-            inst_JMP(genJumpKindForOper(GT_EQ, true), skipLabel);
+            emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+            inst_JMP(jmpEqual, skipLabel);
 
             // emit the call to the EE-helper that stops for GC (or other reasons)
             assert(treeNode->gtRsvdRegs != RBM_NONE);
@@ -2878,7 +2880,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
         getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
 
         BasicBlock  *   esp_check = genCreateTempLabel();
-        inst_JMP(genJumpKindForOper(GT_EQ, true), esp_check);
+        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+        inst_JMP(jmpEqual, esp_check);
         getEmitter()->emitIns(INS_BREAKPOINT);
         genDefineTempLabel(esp_check);
     }
@@ -6258,14 +6261,31 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode *lea)
     genProduceReg(lea);
 }
 
-/*****************************************************************************
- *  The condition to use for (the jmp/set for) the given type of compare operation are
- *  returned in 'jmpKind' array.  The corresponding elements of jmpToTrueLabel indicate
- *  the branch target when the condition being true.
- *
- *  jmpToTrueLabel[i]= true  implies branch to the target when the compare operation is true. 
- *  jmpToTrueLabel[i]= false implies branch to the target when the compare operation is false.
- */
+//-------------------------------------------------------------------------------------------
+// genJumpKindsForTree:  Determine the number and kinds of conditional branches
+//                       necessary to implement the given GT_CMP node
+//
+// Arguments:
+//    cmpTree          - (input) The GenTree node that is used to set the Condition codes
+//                     - The GenTree Relop node that was used to set the Condition codes
+//   jmpKind[2]        - (output) One or two conditional branch instructions
+//   jmpToTrueLabel[2] - (output) When true we branch to the true case
+//                       When false we create a second label and branch to the false case
+//                       Only GT_EQ for a floating point compares can have a false value.
+//
+// Return Value:
+//    Sets the proper values into the array elements of jmpKind[] and jmpToTrueLabel[] 
+//
+// Assumptions:
+//    At least one conditional branch instruction will be returned.
+//    Typically only one conditional branch is needed 
+//     and the second jmpKind[] value is set to EJ_NONE
+//
+// Notes:
+//    jmpToTrueLabel[i]= true  implies branch when the compare operation is true. 
+//    jmpToTrueLabel[i]= false implies branch when the compare operation is false.
+//-------------------------------------------------------------------------------------------
+
 // static
 void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree, 
                                           emitJumpKind  jmpKind[2], 
@@ -6278,7 +6298,8 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
     // For integer comparisons just use genJumpKindForOper
     if (!varTypeIsFloating(cmpTree->gtOp.gtOp1->gtEffectiveVal()))
     {
-        jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, (cmpTree->gtFlags & GTF_UNSIGNED) != 0);
+        CompareKind compareKind = ((cmpTree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+        jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, compareKind);
         jmpKind[1] = EJ_NONE;
     }
     else
@@ -6289,7 +6310,7 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
         // while generating code for compare opererators (e.g. GT_EQ etc).
         if ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
-            // Unordered
+            // Must branch if we have an NaN, unordered
             switch (cmpTree->gtOper)
             {
             case GT_LT:
@@ -6318,8 +6339,9 @@ void         CodeGen::genJumpKindsForTree(GenTreePtr    cmpTree,
                 unreached();
             }
         }
-        else
+        else  // ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) == 0)
         {
+            // Do not branch if we have an NaN, unordered
             switch (cmpTree->gtOper)
             {
             case GT_LT:
@@ -6428,7 +6450,7 @@ void         CodeGen::genJumpKindsForTreeLongLo(GenTreePtr    cmpTree,
     jmpToTrueLabel[1] = true;
 
     assert(cmpTree->OperIsCompare());
-    jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, true);
+    jmpKind[0] = genJumpKindForOper(cmpTree->gtOper, CK_UNSIGNED);
     jmpKind[1] = EJ_NONE;
 }
 
@@ -6821,8 +6843,20 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         genProduceReg(tree);
     }
 }
-// Generate code to materialize a condition into a register
-// (the condition codes must already have been appropriately set)
+
+//-------------------------------------------------------------------------------------------
+// genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
+//                   corresponding to a binary Relational operator result.
+//
+// Arguments:
+//   dstReg          - The target register to set to 1 or 0
+//   tree            - The GenTree Relop node that was used to set the Condition codes
+//
+// Return Value:     none
+//
+// Notes:
+//    A full 64-bit value of either 1 or 0 is setup in the 'dstReg'
+//-------------------------------------------------------------------------------------------
 
 void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 {
@@ -6890,7 +6924,6 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
     }
     else
     {
-        // FP types have been converted to flow
         noway_assert(treeType == TYP_BYTE);
     }
 }
