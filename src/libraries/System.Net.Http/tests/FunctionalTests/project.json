@@ -2,6 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
     "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23818",
+    "System.Diagnostics.Tracing": "4.0.20",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",

@@ -117,5 +117,55 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void RepeatEnumeration()
+        {
+            var q = Enumerable.Range(0, 3).DefaultIfEmpty(9);
+
+            Assert.Equal(q, q);
+        }
+
+        [Fact]
+        public void ToArray()
+        {
+            int[] source = { 3, -1, 0, 10, 15 };
+
+            Assert.Equal(source, source.DefaultIfEmpty(9).ToArray());
+        }
+
+        [Fact]
+        public void EmptyToArray()
+        {
+            Assert.Equal(new[] { 9 }, Enumerable.Empty<int>().DefaultIfEmpty(9).ToArray());
+        }
+
+        [Fact]
+        public void ToList()
+        {
+            int[] source = { 3, -1, 0, 10, 15 };
+
+            Assert.Equal(source, source.DefaultIfEmpty(9).ToList());
+        }
+
+        [Fact]
+        public void EmptyToList()
+        {
+            Assert.Equal(new[] { 9 }, Enumerable.Empty<int>().DefaultIfEmpty(9).ToList());
+        }
+
+        [Fact]
+        public void Count()
+        {
+            int[] source = { 3, -1, 0, 10, 15 };
+
+            Assert.Equal(5, source.DefaultIfEmpty().Count());
+        }
+
+        [Fact]
+        public void EmptyCount()
+        {
+            Assert.Equal(1, Enumerable.Empty<int>().DefaultIfEmpty().Count());
+        }
     }
 }

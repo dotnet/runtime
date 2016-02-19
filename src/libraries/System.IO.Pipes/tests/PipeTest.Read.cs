@@ -124,6 +124,7 @@ namespace System.IO.Pipes.Tests
                 PipeStream pipe = pair.readablePipe;
                 Assert.True(pipe.IsConnected);
                 Assert.False(pipe.CanWrite);
+                Assert.False(pipe.CanSeek);
 
                 Assert.Throws<NotSupportedException>(() => pipe.Write(new byte[5], 0, 5));
 

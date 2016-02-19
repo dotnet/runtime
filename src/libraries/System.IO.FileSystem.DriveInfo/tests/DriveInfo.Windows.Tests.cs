@@ -19,7 +19,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         [PlatformSpecific(PlatformID.Windows)]
         public void TestConstructor()
         {
-            string[] invalidInput = { ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
+            string[] invalidInput = { ":\0", ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
             string[] variableInput = { "{0}", "{0}", "{0}:", "{0}:", @"{0}:\", @"{0}:\\", "{0}://" };
 
             // Test Invalid input

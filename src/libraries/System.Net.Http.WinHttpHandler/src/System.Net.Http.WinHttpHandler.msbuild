@@ -14,7 +14,11 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
     <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <CompileItem Include="$(CommonPath)\System\CharArrayHelpers.cs" />
     <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpVersion.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\SecurityProtocol.cs" />
@@ -30,6 +34,7 @@
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestCallback.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestState.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestStream.cs" />
+    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseHeaderReader.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseParser.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpResponseStream.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpTraceHelper.cs" />
