@@ -33,7 +33,15 @@ namespace System.Diagnostics
                 else
                 {
                     // TODO: #3708 Determine if/how to put up a dialog instead.
-                    throw new DebugAssertException(message, detailMessage, stackTrace);
+                    var exc = new DebugAssertException(message, detailMessage, stackTrace);
+                    if (!s_shouldWriteToStdErr) 
+                    {
+                        // We always want to print out Debug.Assert failures to stderr, even if
+                        // !s_shouldWriteToStdErr, so if it wouldn't have been printed in
+                        // WriteCore (only when s_shouldWriteToStdErr), print it here.
+                        WriteToStderr(exc.Message);
+                    }
+                    throw exc;
                 }
             }
 
