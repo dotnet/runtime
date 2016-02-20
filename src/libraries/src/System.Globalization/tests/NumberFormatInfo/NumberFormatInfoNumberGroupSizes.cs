@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -68,8 +67,7 @@ namespace System.Globalization.Tests
 
         // TestNumberGroupSizesLocale: Verify value of property NumberGroupSizes for specific locales
         [Theory]
-        [InlineData("en-US")]
-        [InlineData("ur-IN")]
+        [MemberData("LocalesToCheck")]
         public void TestNumberGroupSizesLocale(string locale)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
@@ -77,6 +75,17 @@ namespace System.Globalization.Tests
 
             int[] expected = NumberFormatInfoData.GetNumberGroupSizes(myTestCulture);
             Assert.Equal(expected, nfi.NumberGroupSizes);
+        }
+
+        public static IEnumerable<object[]> LocalesToCheck()
+        {
+            yield return new object[] { "en-US" };
+
+            // When dotnet/corefx#2103 is addressed, we should also check fr-FR (and we can move back to InlineData)
+            if (!PlatformDetection.IsUbuntu1510)
+            {
+                yield return new object[] { "ur-IN" };
+            }
         }
 
         private void VerificationHelper<T>(int[] intArray) where T : Exception
