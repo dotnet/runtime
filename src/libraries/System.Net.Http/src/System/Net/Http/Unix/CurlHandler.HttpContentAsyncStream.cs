@@ -349,7 +349,7 @@ namespace System.Net.Http
                         Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader");
                         if (completedCopy.IsFaulted)
                         {
-                            _asyncOp.TrySetException(MapToReadWriteIOException(completedCopy.Exception.InnerException, isRead: _waiterIsReader));
+                            _asyncOp.TrySetException(completedCopy.Exception.InnerException);
                             _copyTask = completedCopy;
                         }
                         else if (completedCopy.IsCanceled)

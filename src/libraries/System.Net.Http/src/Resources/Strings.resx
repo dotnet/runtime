@@ -298,16 +298,16 @@
     <value>ClientCertificateOption.Automatic is supported only with libcurl with libssl compatible backend.</value>
   </data>
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
-    <value>libcurl does not support different credentials for different authentication schemes</value>
+    <value>The libcurl library in use does not support different credentials for different authentication schemes.</value>
   </data>
   <data name="net_http_unix_https_libcurl_no_versioninfo" xml:space="preserve">
-    <value>The call to curl_version_info failed unexpectedly.</value>
+    <value>The attempt to access libcurl version information failed unexpectedly.</value>
   </data>
   <data name="net_http_unix_https_libcurl_too_old" xml:space="preserve">
-    <value>libcurl library available is too old</value>
+    <value>The libcurl library in use is too old.</value>
   </data>
   <data name="net_http_unix_https_support_unavailable_libcurl" xml:space="preserve">
-    <value>libcurl library available on the system does not support https</value>
+    <value>The libcurl library in use does not support https.</value>
   </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>

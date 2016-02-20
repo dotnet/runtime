@@ -8,6 +8,7 @@
 
 #include <assert.h>
 
+static_assert(PAL_CURLM_CALL_MULTI_PERFORM == CURLM_CALL_MULTI_PERFORM, "");
 static_assert(PAL_CURLM_OK == CURLM_OK, "");
 static_assert(PAL_CURLM_BAD_HANDLE == CURLM_BAD_HANDLE, "");
 static_assert(PAL_CURLM_BAD_EASY_HANDLE == CURLM_BAD_EASY_HANDLE, "");
