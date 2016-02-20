@@ -319,9 +319,9 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
     if (bTakeOwnership)
     {
 #ifndef FEATURE_PAL
-        WCHAR wszDllName[MAX_LONGPATH];
-        WszGetModuleFileName((HMODULE)mapped, wszDllName, MAX_LONGPATH);
-        wszDllName[MAX_LONGPATH - 1] = W('\0');
+        PathString wszDllName;
+        WszGetModuleFileName((HMODULE)mapped, wszDllName);
+        
         m_LibraryHolder=CLRLoadLibraryEx(wszDllName,NULL,GetLoadWithAlteredSearchPathFlag());
 #else // !FEATURE_PAL
         _ASSERTE(!"bTakeOwnership Should not be used on FEATURE_PAL");

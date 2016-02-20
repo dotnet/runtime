@@ -198,7 +198,7 @@ namespace SecurityPolicy
     BOOL WasStrongNameEvidenceUsed(OBJECTREF evidence);
 #endif
     // Like WszGetLongPathName, but it works with nonexistant files too
-    size_t GetLongPathNameHelper( const WCHAR* wszShortPath, __inout_ecount(cchBuffer) __inout_z WCHAR* wszBuffer, DWORD cchBuffer );
+    size_t GetLongPathNameHelper( const WCHAR* wszShortPath, SString& wszBuffer);
 
 #ifdef FEATURE_CAS_POLICY
     extern CrstStatic s_crstPolicyInit;

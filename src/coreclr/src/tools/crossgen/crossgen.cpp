@@ -282,7 +282,7 @@ bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
 // When using the Phone binding model (TrustedPlatformAssemblies), automatically
 // detect which path mscorlib.[ni.]dll lies in.
 //
-bool ComputeMscorlibPathFromTrustedPlatformAssemblies(_In_z_ LPWSTR pwzMscorlibPath, DWORD cbMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
+bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
@@ -302,18 +302,17 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(_In_z_ LPWSTR pwzMscorlibP
         if (StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W W("mscorlib.dll")) ||
             StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W W("mscorlib.ni.dll")))
         {
-            wcscpy_s(pwzMscorlibPath, cbMscorlibPath, wszSingleTrustedPath);
+            pwzMscorlibPath.Set(wszSingleTrustedPath);
+            SString::Iterator pwzSeparator = pwzMscorlibPath.End();
+            bool retval = true;
             
-            LPWSTR pwzSeparator = wcsrchr(pwzMscorlibPath, DIRECTORY_SEPARATOR_CHAR_W);
-            if (pwzSeparator == NULL)
+            if (!SUCCEEDED(CopySystemDirectory(pwzMscorlibPath, pwzMscorlibPath)))
             {
-                delete [] wszTrustedPathCopy;
-                return false;
+                retval = false;
             }
-            pwzSeparator[1] = W('\0'); // after '\'
 
             delete [] wszTrustedPathCopy;
-            return true;
+            return retval;
         }
         
         wszSingleTrustedPath = wcstok_s(NULL, PATH_SEPARATOR_STR_W, &context);
@@ -961,7 +960,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         PrintLogoHelper();
     }
 
-    WCHAR wzTrustedPathRoot[MAX_LONGPATH];
+    PathString wzTrustedPathRoot;
 
 #ifdef FEATURE_CORECLR
     SString ssTPAList;  
@@ -985,9 +984,9 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzTrustedPlatformAssemblies != nullptr)
     {
-        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, MAX_LONGPATH, pwzTrustedPlatformAssemblies))
+        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, pwzTrustedPlatformAssemblies))
         {
-            pwzPlatformAssembliesPaths = wzTrustedPathRoot;
+            pwzPlatformAssembliesPaths = wzTrustedPathRoot.GetUnicode();
             SetMscorlibPath(pwzPlatformAssembliesPaths);
         }
     }
@@ -995,21 +994,23 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzPlatformAssembliesPaths == NULL)
     {
-        if (!WszGetModuleFileName(NULL, wzTrustedPathRoot, MAX_LONGPATH))
+        if (!WszGetModuleFileName(NULL, wzTrustedPathRoot))
         {
             ERROR_WIN32(W("Error: GetModuleFileName failed (%d)\n"), GetLastError());
             exit(CLR_INIT_ERROR);
         }
-
-        wchar_t* pszSep = wcsrchr(wzTrustedPathRoot, DIRECTORY_SEPARATOR_CHAR_W);
-        if (pszSep == NULL)
+        
+        if (SUCCEEDED(CopySystemDirectory(wzTrustedPathRoot, wzTrustedPathRoot)))
+        {
+            pwzPlatformAssembliesPaths = wzTrustedPathRoot.GetUnicode();
+        }
+        else
         {
             ERROR_HR(W("Error: wcsrchr returned NULL; GetModuleFileName must have given us something bad\n"), E_UNEXPECTED);
             exit(CLR_INIT_ERROR);
         }
-        *pszSep = '\0';
-
-        pwzPlatformAssembliesPaths = wzTrustedPathRoot;
+        
+        
     }
 
     // Initialize the logger

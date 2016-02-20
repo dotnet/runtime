@@ -473,20 +473,18 @@ HRESULT CORPATHService::GetClassFromCORPath(
     IUnknown    **ppIScope,             // [OUT] Scope in which the TypeRef resolves.
     mdTypeDef    *ptd)                    // [OUT] typedef corresponding the typeref
 {
-    WCHAR        rcCorPath[1024] = {W('\0')};  // The CORPATH environment variable.
-    LPWSTR        szCorPath = rcCorPath;  // Used to parse CORPATH.
+    PathString    rcCorPath;  // The CORPATH environment variable.
+    LPWSTR        szCorPath;  // Used to parse CORPATH.
     int            iLen;                   // Length of the directory.
-    WCHAR        rcCorDir[_MAX_PATH];    // Buffer for the directory.
+    PathString     rcCorDir;    // Buffer for the directory.
     WCHAR        *temp;                  // Used as a parsing temp.
     WCHAR        *szSemiCol;
 
     // Get the CORPATH environment variable.
-    if (WszGetEnvironmentVariable(W("CORPATH"), rcCorPath,
-                                  sizeof(rcCorPath) / sizeof(WCHAR)))
+    if (WszGetEnvironmentVariable(W("CORPATH"), rcCorPath))
     {
-        // Force nul termination.
-        rcCorPath[lengthof(rcCorPath)-1] = 0;
-
+        NewArrayHolder<WCHAR> szCorPathHolder = rcCorPath.GetCopyOfUnicodeString();
+        szCorPath = szCorPathHolder.GetValue();
         // Try each directory in the path.
         for(;*szCorPath != W('\0');)
         {
@@ -502,12 +500,11 @@ HRESULT CORPATHService::GetClassFromCORPath(
                 temp = szCorPath;
                 szCorPath += wcslen(temp);
             }
-            if ((iLen = (int)wcslen(temp)) >= _MAX_PATH)
-                continue;
-            wcscpy_s(rcCorDir, COUNTOF(rcCorDir), temp);
+
+            rcCorDir.Set(temp);
 
             // Check if we can find the class in the directory.
-            if (CORPATHService::GetClassFromDir(wzClassname, rcCorDir, iLen, tr, pCommon, riid, ppIScope, ptd) == S_OK)
+            if (CORPATHService::GetClassFromDir(wzClassname, rcCorDir, tr, pCommon, riid, ppIScope, ptd) == S_OK)
                 return S_OK;
         }
     }
@@ -516,24 +513,20 @@ HRESULT CORPATHService::GetClassFromCORPath(
     // some headaches right now, so we'll give them a little time to transition.</TODO>
 
     // Try the current directory first.
-    if ((iLen = WszGetCurrentDirectory(_MAX_PATH, rcCorDir)) > 0 &&
-        CORPATHService::GetClassFromDir(wzClassname, rcCorDir, iLen, tr, pCommon, riid, ppIScope, ptd) == S_OK)
+    if ((iLen = WszGetCurrentDirectory( rcCorDir)) > 0 &&
+        CORPATHService::GetClassFromDir(wzClassname, rcCorDir, tr, pCommon, riid, ppIScope, ptd) == S_OK)
     {
         return S_OK;
     }
-
+    
     // Try the app directory next.
-    if ((iLen = WszGetModuleFileName(NULL, rcCorDir, _MAX_PATH)) > 0)
+    if ((iLen = WszGetModuleFileName(NULL, rcCorDir)) > 0)
     {
-        // Back up to the last path separator.
-        while (--iLen >= 0 && rcCorDir[iLen] != W('\\') && rcCorDir[iLen] != W('/'))
-        {
-        }
-        if (iLen > 0 && 
-            CORPATHService::GetClassFromDir(
+        
+        if(SUCCEEDED(CopySystemDirectory(rcCorDir, rcCorDir)) && 
+           CORPATHService::GetClassFromDir(
                     wzClassname, 
                     rcCorDir, 
-                    iLen, 
                     tr, 
                     pCommon, 
                     riid, 
@@ -550,15 +543,11 @@ HRESULT CORPATHService::GetClassFromCORPath(
 
 //*****************************************************************************
 // This is used in conjunction with GetClassFromCORPath.  See it for details
-// of the algorithm.  One thing to note is that the dir passed here must be
-// _MAX_PATH size and will be written to by this routine.  This routine will
-// frequently leave junk at the end of the directory string and dir[iLen] may
-// not be '\0' on return.
+// of the algorithm.
 //*****************************************************************************
 HRESULT CORPATHService::GetClassFromDir(
     __in __in_z LPWSTR        wzClassname,            // Fully qualified class name.
-    __in __in_z LPWSTR        dir,                    // Directory to try.
-    int            iLen,                    // Length of the directory.
+    __in SString&             directory,             // Directory to try. at most appended with a '\\'
     mdTypeRef   tr,                     // TypeRef to resolve.
     IMetaModelCommon *pCommon,          // Scope in which the TypeRef is defined.
     REFIID        riid, 
@@ -569,58 +558,48 @@ HRESULT CORPATHService::GetClassFromDir(
     int        iTmp;
     bool    bContinue;                    // Flag to check if the for loop should end.
     LPWSTR    wzSaveClassname = NULL;     // Saved offset into the class name string.
-    int        iSaveLen = 0;               // Saved length of the dir string.
-    
-    PREFIX_ASSUME(iLen >= 0);
     
     // Process the class name appending each segment of the name to the
     // directory until we find a DLL.
+    PathString dir;
+    if (!directory.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    {
+        directory.Append(DIRECTORY_SEPARATOR_CHAR_W);
+    }
+
     for(;;)
     {
         bContinue = false;
+        dir.Set(directory);
+
         if ((temp = wcschr(wzClassname, NAMESPACE_SEPARATOR_WCHAR)) != NULL)
         {
-            iTmp = (int) (temp - wzClassname);
-            // Check for buffer overflow with correct integer overflow check.
-            //   "if (iLen + 5 + iTmp >= _MAX_PATH)"
-            if (ovadd_ge(iLen, iTmp, (_MAX_PATH - 5)))
-                break;
+            *temp = W('\0');  //terminate with null so that it can be appended
+            dir.Append(wzClassname);
+            *temp = NAMESPACE_SEPARATOR_WCHAR;   //recover the '.'
 
-            // Append the next segment from the class spec to the directory.
-            dir[iLen++] = W('\\');
-            wcsncpy_s(dir+iLen, iTmp+1, wzClassname, iTmp);
-            iLen += iTmp;
-            dir[iLen] = W('\0');
             wzClassname = temp+1;
-
             // Check if a directory by this name exists.
             DWORD iAttrs = WszGetFileAttributes(dir);
             if (iAttrs != 0xffffffff && (iAttrs & FILE_ATTRIBUTE_DIRECTORY))
             {
                 // Next element in the class spec.
                 bContinue = true;
-                iSaveLen = iLen;
                 wzSaveClassname = wzClassname;
             }
         }
         else
         {
-            iTmp = (int)wcslen(wzClassname);
-            // Check for buffer overflow with correct integer overflow check.
-            //   "if (iLen + 5 + iTmp >= _MAX_PATH)"
-            if (ovadd_ge(iLen, iTmp, (_MAX_PATH - 5)))
-                break;
-            dir[iLen++] = W('\\');
-            wcscpy_s(dir+iLen, iTmp+1, wzClassname);
+            dir.Append(wzClassname);
 
             // Advance past the class name.
-            iLen += iTmp;
+            iTmp = (int)wcslen(wzClassname);
             wzClassname += iTmp;
         }
 
         // Try to load the image.
-        wcscpy_s(dir+iLen, 5, W(".dll"));
-
+        dir.Append(W(".dll"));
+       
         // OpenScope given the dll name and make sure that the class is defined in the module.
         if ( SUCCEEDED( CORPATHService::FindTypeDef(dir, tr, pCommon, riid, ppIScope, ptd) ) )
         {
@@ -632,21 +611,25 @@ HRESULT CORPATHService::GetClassFromDir(
         {
             // Find the length of the next class name element.
             if ((temp = wcschr(wzClassname, NAMESPACE_SEPARATOR_WCHAR)) == NULL)
+            {
                 temp = wzClassname + wcslen(wzClassname);
-
-            iTmp = (int) (temp - wzClassname);
-            // Check for buffer overflow.
-            if ((iLen + 5 + iTmp) >= _MAX_PATH)
-                break;
+            }
 
             // Tack on ".element.dll"
-            dir[iLen++] = W('.');
-            wcsncpy_s(dir+iLen, iTmp+1, wzClassname, iTmp);
-            iLen += iTmp;
-
+            SString::Iterator iter = dir.End();
+            BOOL findperiod = dir.FindBack(iter, NAMESPACE_SEPARATOR_WCHAR);
+            _ASSERTE(findperiod);
+            iter++;
+            dir.Truncate(iter);
+            
+            WCHAR save = *temp;
+            *temp      = W('\0');
+            dir.Append(wzClassname);  //element
+            *temp = save;
+            
             // Try to load the image.
-            wcscpy_s(dir+iLen, 5, W(".dll"));
-
+            dir.Append(W(".dll"));
+           
             // OpenScope given the dll name and make sure that the class is defined in the module.
             if ( SUCCEEDED( CORPATHService::FindTypeDef(dir, tr, pCommon, riid, ppIScope, ptd) ) )
             {
@@ -660,7 +643,7 @@ HRESULT CORPATHService::GetClassFromDir(
         }
         if (bContinue)
         {
-            iLen = iSaveLen;
+            
             wzClassname = wzSaveClassname;
         }
         else
@@ -679,7 +662,7 @@ HRESULT CORPATHService::GetClassFromDir(
 //
 //*************************************************************
 HRESULT CORPATHService::FindTypeDef(
-    __in __in_z LPWSTR wzModule,    // name of the module that we are going to open
+    __in __in_z LPCWSTR wzModule,    // name of the module that we are going to open
     mdTypeRef          tr,          // TypeRef to resolve.
     IMetaModelCommon * pCommon,     // Scope in which the TypeRef is defined.
     REFIID             riid, 
