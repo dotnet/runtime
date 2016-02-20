@@ -8,18 +8,20 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeAssembly
     {
+        private readonly string _assemblyName;
+
         public RuntimeAssembly(string path)
-            : this(new AssemblyName(System.IO.Path.GetFileNameWithoutExtension(path)), path)
+            : this(System.IO.Path.GetFileNameWithoutExtension(path), path)
         {
         }
 
-        public RuntimeAssembly(AssemblyName name, string path)
+        public RuntimeAssembly(string assemblyName, string path)
         {
-            Name = name;
+            _assemblyName = assemblyName;
             Path = path;
         }
 
-        public AssemblyName Name { get; }
+        public AssemblyName Name => new AssemblyName(_assemblyName);
 
         public string Path { get; }
     }
