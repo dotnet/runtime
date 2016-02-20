@@ -1306,7 +1306,7 @@ namespace System
                 case UriPartial.Query:
                     return GetParts(NonPathPart | UriComponents.Path | UriComponents.Query, UriFormat.UriEscaped);
             }
-            throw new ArgumentException(nameof(part));
+            throw new ArgumentException(SR.Format(SR.Argument_InvalidUriSubcomponent, part), nameof(part));
         }
 
         //
@@ -1388,7 +1388,7 @@ namespace System
                     : ((int)digit - (int)'a'))
                     + 10);
             }
-            throw new ArgumentException(nameof(digit));
+            throw new ArgumentOutOfRangeException(nameof(digit));
         }
 
         //

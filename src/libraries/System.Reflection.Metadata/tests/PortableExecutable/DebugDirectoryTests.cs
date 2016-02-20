@@ -94,7 +94,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
                 Assert.Equal(2, entries.Length);
 
-                Assert.Throws<ArgumentException>(() => reader.ReadCodeViewDebugDirectoryData(detEntry));
+                Assert.Throws<ArgumentException>("entry", () => reader.ReadCodeViewDebugDirectoryData(detEntry));
             }
         }
     }

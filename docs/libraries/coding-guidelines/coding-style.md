@@ -55,7 +55,7 @@ namespace System.Collections.Generic
         public ObservableLinkedList(IEnumerable<T> items)
         {
             if (items == null)
-                throw new ArgumentException(nameof(items));
+                throw new ArgumentNullException(nameof(items));
 
             foreach (T item in items)
             {

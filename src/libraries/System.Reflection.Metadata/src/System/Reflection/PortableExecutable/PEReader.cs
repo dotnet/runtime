@@ -514,7 +514,7 @@ namespace System.Reflection.PortableExecutable
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
             {
-                throw new ArgumentException(nameof(entry));
+                throw new ArgumentException(SR.NotCodeViewEntry, nameof(entry));
             }
 
             using (AbstractMemoryBlock block = _peImage.GetMemoryBlock(entry.DataPointer, entry.DataSize))

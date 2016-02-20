@@ -354,4 +354,7 @@
   <data name="NotTypeDefOrRefOrSpecHandle" xml:space="preserve">
     <value>Specified handle is not a TypeDefinitionHandle, TypeRefererenceHandle, or TypeSpecificationHandle.</value>
   </data>
+  <data name="NotCodeViewEntry" xml:space="preserve">
+    <value>The Debug directory was not of type CodeView.</value>
+  </data>
 </root>
