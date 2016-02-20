@@ -14,7 +14,7 @@ namespace System.Linq
         {
             long max = ((long)start) + count - 1;
             if (count < 0 || max > Int32.MaxValue) throw Error.ArgumentOutOfRange("count");
-            if (count == 0) return new EmptyPartition<int>();
+            if (count == 0) return EmptyPartition<int>.Instance;
             return new RangeIterator(start, count);
         }
 
@@ -57,6 +57,11 @@ namespace System.Linq
                 state = -1; // Don't reset current
             }
 
+            public override IEnumerable<TResult> Select<TResult>(Func<int, TResult> selector)
+            {
+                return new SelectIPartitionIterator<int, TResult>(this, selector);
+            }
+
             public int[] ToArray()
             {
                 int[] array = new int[_end - _start];
@@ -88,7 +93,7 @@ namespace System.Linq
 
             public IPartition<int> Skip(int count)
             {
-                if (count >= _end - _start) return new EmptyPartition<int>();
+                if (count >= _end - _start) return EmptyPartition<int>.Instance;
                 return new RangeIterator(_start + count, _end - _start - count);
             }
 
@@ -99,34 +104,27 @@ namespace System.Linq
                 return new RangeIterator(_start, count);
             }
 
-            public int ElementAt(int index)
+            public int TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index >= (uint)(_end - _start)) throw Error.ArgumentOutOfRange("index");
-                return _start + index;
+                if ((uint)index < (uint)(_end - _start))
+                {
+                    found = true;
+                    return _start + index;
+                }
+
+                found = false;
+                return 0;
             }
 
-            public int ElementAtOrDefault(int index)
+            public int TryGetFirst(out bool found)
             {
-                return (uint)index >= (uint)(_end - _start) ? 0 : _start + index;
-            }
-
-            public int First()
-            {
+                found = true;
                 return _start;
             }
 
-            public int FirstOrDefault()
+            public int TryGetLast(out bool found)
             {
-                return _start;
-            }
-
-            public int Last()
-            {
-                return _end - 1;
-            }
-
-            public int LastOrDefault()
-            {
+                found = true;
                 return _end - 1;
             }
         }
