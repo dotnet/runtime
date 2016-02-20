@@ -835,12 +835,12 @@ HRESULT EEConfig::sync()
             {
                 bGCStressAndHeapVerifyAllowed = false;
                 
-                WCHAR wszFileName[_MAX_PATH];
-                if (WszGetModuleFileName(NULL, wszFileName, _MAX_PATH) != 0)
+                PathString wszFileName;
+                if (WszGetModuleFileName(NULL, wszFileName) != 0)
                 {
                     // just keep the name
-                    LPWSTR pwszName = wcsrchr(wszFileName, W('\\'));
-                    pwszName = (pwszName == NULL) ? wszFileName : (pwszName + 1);
+                    LPCWSTR pwszName = wcsrchr(wszFileName, W('\\'));
+                    pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
                     
                     if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)
                     {
@@ -1619,46 +1619,62 @@ HRESULT EEConfig::SetupConfiguration()
     // AppX process check to make sure no app.config file
     // exists unless launched with AO_DESIGNMODE.
     // ----------------------------------------------------
+    
+    do
     {
-        WCHAR wzProcExe[_MAX_PATH];
-        size_t cchProcExe = COUNTOF(wzProcExe);
-
-        // Get name of file used to create process
-        if (g_pCachedModuleFileName)
+        size_t cchProcExe=0;
+        PathString wzProcExe;
+        EX_TRY
         {
-            IfFailRet(StringCchCopy(wzProcExe, COUNTOF(wzProcExe), g_pCachedModuleFileName));
-            IfFailRet(StringCchLength(wzProcExe, COUNTOF(wzProcExe), &cchProcExe));
-        }
-        else
-        {
-            cchProcExe = WszGetModuleFileName(NULL, wzProcExe, COUNTOF(wzProcExe));
 
-            if (cchProcExe == 0)
+
+
+            // Get name of file used to create process
+            if (g_pCachedModuleFileName)
             {
-                return HRESULT_FROM_GetLastError();
+                wzProcExe.Set(g_pCachedModuleFileName);
+                cchProcExe = wzProcExe.GetCount();
             }
-        }
-
-        if (cchProcExe != 0)
-        {
-            IfFailRet(StringCchCat(wzProcExe, COUNTOF(wzProcExe), CONFIGURATION_EXTENSION));
-
-            if (AppX::IsAppXProcess() && !AppX::IsAppXDesignMode())
+            else
             {
-                if (clr::fs::Path::Exists(wzProcExe))
+                cchProcExe = WszGetModuleFileName(NULL, wzProcExe);
+
+                if (cchProcExe == 0)
                 {
-                    return CLR_E_APP_CONFIG_NOT_ALLOWED_IN_APPX_PROCESS;
+                    hr = HRESULT_FROM_GetLastError();
+                    break;
                 }
             }
 
+            if (cchProcExe != 0)
+            {
+                wzProcExe.Append(CONFIGURATION_EXTENSION);
+
+                if (AppX::IsAppXProcess() && !AppX::IsAppXDesignMode())
+                {
+                    if (clr::fs::Path::Exists(wzProcExe))
+                    {
+                        hr = CLR_E_APP_CONFIG_NOT_ALLOWED_IN_APPX_PROCESS;
+                        break;
+                    }
+                }
+            }
+        }
+        EX_CATCH_HRESULT(hr);
+        if (cchProcExe != 0)
+        {
             IfFailParseError(wzProcExe, true, AppendConfigurationFile(wzProcExe, version));
 
             // We really should return a failure hresult if the app config file is bad, but that
             // would be a breaking change. Not sure if it's worth it yet.
             hr = S_OK;
+            break;
         }
-    }
+    } while (false);
+    
 
+    if (hr != S_OK)
+        return hr;
     // ----------------------------------------------------
     // Import machine.config, if needed.
     // ----------------------------------------------------

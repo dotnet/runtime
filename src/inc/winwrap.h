@@ -6,16 +6,15 @@
 //
 // This file contains wrapper functions for Win32 API's that take strings.
 //
-// The Common Language Runtime internally uses UNICODE as the internal state 
-// and string format.  This file will undef the mapping macros so that one 
-// cannot mistakingly call a method that isn't going to work.  Instead, you 
+// The Common Language Runtime internally uses UNICODE as the internal state
+// and string format.  This file will undef the mapping macros so that one
+// cannot mistakingly call a method that isn't going to work.  Instead, you
 // have to call the correct wrapper API.
 //
 //*****************************************************************************
 
 #ifndef __WIN_WRAP_H__
 #define __WIN_WRAP_H__
-
 
 //********** Macros. **********************************************************
 #if !defined(WIN32_LEAN_AND_MEAN)
@@ -48,6 +47,7 @@
 #include <specstrings.h>
 
 #include "registrywrapper.h"
+#include "longfilepathwrappers.h"
 
 #ifdef _PREFAST_
 //
@@ -75,288 +75,288 @@
 #undef GetBinaryType
 #undef GetShortPathName
 #undef GetLongPathName
-#undef GetEnvironmentStrings  
-#undef FreeEnvironmentStrings  
-#undef FormatMessage  
-#undef CreateMailslot  
-#undef EncryptFile  
-#undef DecryptFile  
-#undef OpenRaw  
-#undef QueryRecoveryAgents  
-#undef lstrcmp  
-#undef lstrcmpi  
-#undef lstrcpyn  
-#undef lstrcpy  
-#undef lstrcat  
-#undef lstrlen  
-#undef CreateMutex  
-#undef OpenMutex  
-#undef CreateEvent  
-#undef OpenEvent  
-#undef CreateSemaphore  
-#undef OpenSemaphore  
-#undef CreateWaitableTimer  
-#undef OpenWaitableTimer  
-#undef CreateFileMapping  
-#undef OpenFileMapping  
-#undef GetLogicalDriveStrings  
-#undef LoadLibrary  
-#undef LoadLibraryEx  
-#undef GetModuleFileName  
-#undef GetModuleHandle  
+#undef GetEnvironmentStrings
+#undef FreeEnvironmentStrings
+#undef FormatMessage
+#undef CreateMailslot
+#undef EncryptFile
+#undef DecryptFile
+#undef OpenRaw
+#undef QueryRecoveryAgents
+#undef lstrcmp
+#undef lstrcmpi
+#undef lstrcpyn
+#undef lstrcpy
+#undef lstrcat
+#undef lstrlen
+#undef CreateMutex
+#undef OpenMutex
+#undef CreateEvent
+#undef OpenEvent
+#undef CreateSemaphore
+#undef OpenSemaphore
+#undef CreateWaitableTimer
+#undef OpenWaitableTimer
+#undef CreateFileMapping
+#undef OpenFileMapping
+#undef GetLogicalDriveStrings
+#undef LoadLibrary
+#undef LoadLibraryEx
+#undef GetModuleFileName
+#undef GetModuleHandle
 #undef GetModuleHandleEx
-#undef CreateProcess  
-#undef FatalAppExit  
-#undef GetStartupInfo  
-#undef GetCommandLine  
-#undef GetEnvironmentVariable  
-#undef SetEnvironmentVariable  
-#undef ExpandEnvironmentStrings  
-#undef OutputDebugString  
-#undef FindResource  
-#undef FindResourceEx  
-#undef EnumResourceTypes  
-#undef EnumResourceNames  
-#undef EnumResourceLanguages  
-#undef BeginUpdateResource  
-#undef UpdateResource  
-#undef EndUpdateResource  
-#undef GlobalAddAtom  
-#undef GlobalFindAtom  
-#undef GlobalGetAtomName  
-#undef AddAtom  
-#undef FindAtom  
-#undef GetAtomName  
-#undef GetProfileInt  
-#undef GetProfileString  
-#undef WriteProfileString  
-#undef GetProfileSection  
-#undef WriteProfileSection  
-#undef GetPrivateProfileInt  
-#undef GetPrivateProfileString  
-#undef WritePrivateProfileString  
-#undef GetPrivateProfileSection  
-#undef WritePrivateProfileSection  
-#undef GetPrivateProfileSectionNames  
-#undef GetPrivateProfileStruct  
-#undef WritePrivateProfileStruct  
-#undef GetDriveType  
-#undef GetSystemDirectory  
-#undef GetTempPath  
-#undef GetTempFileName  
-#undef GetWindowsDirectory  
-#undef SetCurrentDirectory  
-#undef GetCurrentDirectory  
-#undef GetDiskFreeSpace  
-#undef GetDiskFreeSpaceEx  
-#undef CreateDirectory  
-#undef CreateDirectoryEx  
-#undef RemoveDirectory  
-#undef GetFullPathName  
-#undef DefineDosDevice  
-#undef QueryDosDevice  
-#undef CreateFile  
-#undef SetFileAttributes  
-#undef GetFileAttributes  
+#undef CreateProcess
+#undef FatalAppExit
+#undef GetStartupInfo
+#undef GetCommandLine
+#undef GetEnvironmentVariable
+#undef SetEnvironmentVariable
+#undef ExpandEnvironmentStrings
+#undef OutputDebugString
+#undef FindResource
+#undef FindResourceEx
+#undef EnumResourceTypes
+#undef EnumResourceNames
+#undef EnumResourceLanguages
+#undef BeginUpdateResource
+#undef UpdateResource
+#undef EndUpdateResource
+#undef GlobalAddAtom
+#undef GlobalFindAtom
+#undef GlobalGetAtomName
+#undef AddAtom
+#undef FindAtom
+#undef GetAtomName
+#undef GetProfileInt
+#undef GetProfileString
+#undef WriteProfileString
+#undef GetProfileSection
+#undef WriteProfileSection
+#undef GetPrivateProfileInt
+#undef GetPrivateProfileString
+#undef WritePrivateProfileString
+#undef GetPrivateProfileSection
+#undef WritePrivateProfileSection
+#undef GetPrivateProfileSectionNames
+#undef GetPrivateProfileStruct
+#undef WritePrivateProfileStruct
+#undef GetDriveType
+#undef GetSystemDirectory
+#undef GetTempPath
+#undef GetTempFileName
+#undef GetWindowsDirectory
+#undef SetCurrentDirectory
+#undef GetCurrentDirectory
+#undef GetDiskFreeSpace
+#undef GetDiskFreeSpaceEx
+#undef CreateDirectory
+#undef CreateDirectoryEx
+#undef RemoveDirectory
+#undef GetFullPathName
+#undef DefineDosDevice
+#undef QueryDosDevice
+#undef CreateFile
+#undef SetFileAttributes
+#undef GetFileAttributes
 #undef GetFileAttributesEx
-#undef GetCompressedFileSize  
-#undef DeleteFile  
-#undef FindFirstFileEx  
-#undef FindFirstFile  
-#undef FindNextFile  
-#undef SearchPath  
-#undef CopyFile  
-#undef CopyFileEx  
-#undef MoveFile  
-#undef MoveFileEx  
-#undef MoveFileWithProgress  
-#undef CreateSymbolicLink  
-#undef QuerySymbolicLink  
-#undef CreateHardLink  
-#undef CreateNamedPipe  
-#undef GetNamedPipeHandleState  
-#undef CallNamedPipe  
-#undef WaitNamedPipe  
-#undef SetVolumeLabel  
-#undef GetVolumeInformation  
-#undef ClearEventLog  
-#undef BackupEventLog  
-#undef OpenEventLog  
-#undef RegisterEventSource  
-#undef OpenBackupEventLog  
-#undef ReadEventLog  
-#undef ReportEvent  
-#undef AccessCheckAndAuditAlarm  
-#undef AccessCheckByTypeAndAuditAlarm  
-#undef AccessCheckByTypeResultListAndAuditAlarm  
-#undef ObjectOpenAuditAlarm  
-#undef ObjectPrivilegeAuditAlarm  
-#undef ObjectCloseAuditAlarm  
-#undef ObjectDeleteAuditAlarm  
-#undef PrivilegedServiceAuditAlarm  
-#undef SetFileSecurity  
-#undef GetFileSecurity  
-#undef FindFirstChangeNotification  
-#undef IsBadStringPtr  
+#undef GetCompressedFileSize
+#undef DeleteFile
+#undef FindFirstFileEx
+#undef FindFirstFile
+#undef FindNextFile
+#undef SearchPath
+#undef CopyFile
+#undef CopyFileEx
+#undef MoveFile
+#undef MoveFileEx
+#undef MoveFileWithProgress
+#undef CreateSymbolicLink
+#undef QuerySymbolicLink
+#undef CreateHardLink
+#undef CreateNamedPipe
+#undef GetNamedPipeHandleState
+#undef CallNamedPipe
+#undef WaitNamedPipe
+#undef SetVolumeLabel
+#undef GetVolumeInformation
+#undef ClearEventLog
+#undef BackupEventLog
+#undef OpenEventLog
+#undef RegisterEventSource
+#undef OpenBackupEventLog
+#undef ReadEventLog
+#undef ReportEvent
+#undef AccessCheckAndAuditAlarm
+#undef AccessCheckByTypeAndAuditAlarm
+#undef AccessCheckByTypeResultListAndAuditAlarm
+#undef ObjectOpenAuditAlarm
+#undef ObjectPrivilegeAuditAlarm
+#undef ObjectCloseAuditAlarm
+#undef ObjectDeleteAuditAlarm
+#undef PrivilegedServiceAuditAlarm
+#undef SetFileSecurity
+#undef GetFileSecurity
+#undef FindFirstChangeNotification
+#undef IsBadStringPtr
 #undef LookupAccountSid
-#undef LookupAccountName  
-#undef LookupPrivilegeValue  
-#undef LookupPrivilegeName  
-#undef LookupPrivilegeDisplayName  
-#undef BuildCommDCB  
-#undef BuildCommDCBAndTimeouts  
-#undef CommConfigDialog  
-#undef GetDefaultCommConfig  
-#undef SetDefaultCommConfig  
-#undef GetComputerName  
-#undef SetComputerName  
-#undef GetUserName  
-#undef LogonUser  
-#undef CreateProcessAsUser  
-#undef GetCurrentHwProfile  
-#undef GetVersionEx  
-#undef CreateJobObject  
-#undef OpenJobObject  
-
+#undef LookupAccountName
+#undef LookupPrivilegeValue
+#undef LookupPrivilegeName
+#undef LookupPrivilegeDisplayName
+#undef BuildCommDCB
+#undef BuildCommDCBAndTimeouts
+#undef CommConfigDialog
+#undef GetDefaultCommConfig
+#undef SetDefaultCommConfig
+#undef GetComputerName
+#undef SetComputerName
+#undef GetUserName
+#undef LogonUser
+#undef CreateProcessAsUser
+#undef GetCurrentHwProfile
+#undef GetVersionEx
+#undef CreateJobObject
+#undef OpenJobObject
+#undef SetDllDirectory
 
 // winuser.h
-#undef MAKEINTRESOURCE  
-#undef wvsprintf  
-#undef wsprintf  
-#undef LoadKeyboardLayout  
-#undef GetKeyboardLayoutName  
-#undef CreateDesktop  
-#undef OpenDesktop  
-#undef EnumDesktops  
-#undef CreateWindowStation  
-#undef OpenWindowStation  
+#undef MAKEINTRESOURCE
+#undef wvsprintf
+#undef wsprintf
+#undef LoadKeyboardLayout
+#undef GetKeyboardLayoutName
+#undef CreateDesktop
+#undef OpenDesktop
+#undef EnumDesktops
+#undef CreateWindowStation
+#undef OpenWindowStation
 #undef EnumWindowStations
 #undef GetUserObjectInformation
 #undef SetUserObjectInformation
 #undef RegisterWindowMessage
 #undef SIZEZOOMSHOW
-#undef WS_TILEDWINDOW      
-#undef GetMessage  
-#undef DispatchMessage  
-#undef PeekMessage  
+#undef WS_TILEDWINDOW
+#undef GetMessage
+#undef DispatchMessage
+#undef PeekMessage
 
 #undef SendMessage
-#undef SendMessageTimeout  
-#undef SendNotifyMessage  
-#undef SendMessageCallback  
-#undef BroadcastSystemMessage  
-#undef RegisterDeviceNotification  
-#undef PostMessage  
-#undef PostThreadMessage  
-#undef PostAppMessage  
-#undef DefWindowProc  
-#undef CallWindowProc  
-#undef RegisterClass  
-#undef UnregisterClass  
-#undef GetClassInfo  
-#undef RegisterClassEx  
-#undef GetClassInfoEx  
-#undef CreateWindowEx  
-#undef CreateWindow  
-#undef CreateDialogParam  
-#undef CreateDialogIndirectParam  
-#undef CreateDialog  
-#undef CreateDialogIndirect  
-#undef DialogBoxParam  
-#undef DialogBoxIndirectParam  
-#undef DialogBox  
-#undef DialogBoxIndirect  
-#undef SetDlgItemText  
-#undef GetDlgItemText  
-#undef SendDlgItemMessage  
-#undef DefDlgProc  
-#undef CallMsgFilter  
-#undef RegisterClipboardFormat  
-#undef GetClipboardFormatName  
-#undef CharToOem  
-#undef OemToChar  
-#undef CharToOemBuff  
-#undef OemToCharBuff  
-#undef CharUpper  
-#undef CharUpperBuff  
-#undef CharLower  
-#undef CharLowerBuff  
-#undef CharNext  
-#undef IsCharAlpha  
-#undef IsCharAlphaNumeric  
-#undef IsCharUpper  
-#undef IsCharLower  
-#undef GetKeyNameText  
-#undef VkKeyScan  
-#undef VkKeyScanEx  
-#undef MapVirtualKey  
-#undef MapVirtualKeyEx  
-#undef LoadAccelerators  
-#undef CreateAcceleratorTable  
-#undef CopyAcceleratorTable  
-#undef TranslateAccelerator  
-#undef LoadMenu  
-#undef LoadMenuIndirect  
-#undef ChangeMenu  
-#undef GetMenuString  
-#undef InsertMenu  
-#undef AppendMenu  
-#undef ModifyMenu  
-#undef InsertMenuItem  
-#undef GetMenuItemInfo  
-#undef SetMenuItemInfo  
-#undef DrawText  
-#undef DrawTextEx  
-#undef GrayString  
-#undef DrawState  
-#undef TabbedTextOut  
-#undef GetTabbedTextExtent  
-#undef SetProp  
-#undef GetProp  
-#undef RemoveProp  
-#undef EnumPropsEx  
-#undef EnumProps  
-#undef SetWindowText  
-#undef GetWindowText  
-#undef GetWindowTextLength  
-#undef MessageBox  
-#undef MessageBoxEx  
-#undef MessageBoxIndirect  
-#undef COLOR_3DSHADOW          
-#undef GetWindowLong  
-#undef SetWindowLong  
-#undef GetClassLong  
-#undef SetClassLong  
-#undef FindWindow  
-#undef FindWindowEx  
-#undef GetClassName  
-#undef SetWindowsHook  
-#undef SetWindowsHook  
-#undef SetWindowsHookEx  
-#undef MFT_OWNERDRAW       
-#undef LoadBitmap  
-#undef LoadCursor  
-#undef LoadCursorFromFile  
-#undef LoadIcon  
-#undef LoadImage  
-#undef LoadString  
-#undef IsDialogMessage  
-#undef DlgDirList  
-#undef DlgDirSelectEx  
-#undef DlgDirListComboBox  
-#undef DlgDirSelectComboBoxEx  
-#undef DefFrameProc  
-#undef DefMDIChildProc  
-#undef CreateMDIWindow  
-#undef WinHelp  
-#undef ChangeDisplaySettings  
-#undef ChangeDisplaySettingsEx  
-#undef EnumDisplaySettings  
-#undef EnumDisplayDevices  
-#undef SystemParametersInfo  
-#undef GetMonitorInfo  
-#undef GetWindowModuleFileName  
-#undef RealGetWindowClass  
+#undef SendMessageTimeout
+#undef SendNotifyMessage
+#undef SendMessageCallback
+#undef BroadcastSystemMessage
+#undef RegisterDeviceNotification
+#undef PostMessage
+#undef PostThreadMessage
+#undef PostAppMessage
+#undef DefWindowProc
+#undef CallWindowProc
+#undef RegisterClass
+#undef UnregisterClass
+#undef GetClassInfo
+#undef RegisterClassEx
+#undef GetClassInfoEx
+#undef CreateWindowEx
+#undef CreateWindow
+#undef CreateDialogParam
+#undef CreateDialogIndirectParam
+#undef CreateDialog
+#undef CreateDialogIndirect
+#undef DialogBoxParam
+#undef DialogBoxIndirectParam
+#undef DialogBox
+#undef DialogBoxIndirect
+#undef SetDlgItemText
+#undef GetDlgItemText
+#undef SendDlgItemMessage
+#undef DefDlgProc
+#undef CallMsgFilter
+#undef RegisterClipboardFormat
+#undef GetClipboardFormatName
+#undef CharToOem
+#undef OemToChar
+#undef CharToOemBuff
+#undef OemToCharBuff
+#undef CharUpper
+#undef CharUpperBuff
+#undef CharLower
+#undef CharLowerBuff
+#undef CharNext
+#undef IsCharAlpha
+#undef IsCharAlphaNumeric
+#undef IsCharUpper
+#undef IsCharLower
+#undef GetKeyNameText
+#undef VkKeyScan
+#undef VkKeyScanEx
+#undef MapVirtualKey
+#undef MapVirtualKeyEx
+#undef LoadAccelerators
+#undef CreateAcceleratorTable
+#undef CopyAcceleratorTable
+#undef TranslateAccelerator
+#undef LoadMenu
+#undef LoadMenuIndirect
+#undef ChangeMenu
+#undef GetMenuString
+#undef InsertMenu
+#undef AppendMenu
+#undef ModifyMenu
+#undef InsertMenuItem
+#undef GetMenuItemInfo
+#undef SetMenuItemInfo
+#undef DrawText
+#undef DrawTextEx
+#undef GrayString
+#undef DrawState
+#undef TabbedTextOut
+#undef GetTabbedTextExtent
+#undef SetProp
+#undef GetProp
+#undef RemoveProp
+#undef EnumPropsEx
+#undef EnumProps
+#undef SetWindowText
+#undef GetWindowText
+#undef GetWindowTextLength
+#undef MessageBox
+#undef MessageBoxEx
+#undef MessageBoxIndirect
+#undef COLOR_3DSHADOW
+#undef GetWindowLong
+#undef SetWindowLong
+#undef GetClassLong
+#undef SetClassLong
+#undef FindWindow
+#undef FindWindowEx
+#undef GetClassName
+#undef SetWindowsHook
+#undef SetWindowsHook
+#undef SetWindowsHookEx
+#undef MFT_OWNERDRAW
+#undef LoadBitmap
+#undef LoadCursor
+#undef LoadCursorFromFile
+#undef LoadIcon
+#undef LoadImage
+#undef LoadString
+#undef IsDialogMessage
+#undef DlgDirList
+#undef DlgDirSelectEx
+#undef DlgDirListComboBox
+#undef DlgDirSelectComboBoxEx
+#undef DefFrameProc
+#undef DefMDIChildProc
+#undef CreateMDIWindow
+#undef WinHelp
+#undef ChangeDisplaySettings
+#undef ChangeDisplaySettingsEx
+#undef EnumDisplaySettings
+#undef EnumDisplayDevices
+#undef SystemParametersInfo
+#undef GetMonitorInfo
+#undef GetWindowModuleFileName
+#undef RealGetWindowClass
 #undef GetAltTabInfo
 #undef GetCalendarInfo
 #undef GetDateFormat
@@ -369,9 +369,7 @@
 // Win32 Fusion API's
 #undef QueryActCtxW
 
-
 #endif // !defined(__TODO_PORT_TO_WRAPPERS__)
-
 
 //
 // NT supports the wide entry points.  So we redefine the wrappers right back
@@ -385,9 +383,6 @@
 #define WszCryptVerifySignature CryptVerifySignatureW
 
 // winbase.h
-#define WszGetBinaryType GetBinaryTypeW
-#define WszGetShortPathName GetShortPathNameW
-#define WszGetLongPathName GetLongPathNameW
 #define WszGetEnvironmentStrings   GetEnvironmentStringsW
 #define WszFreeEnvironmentStrings   FreeEnvironmentStringsW
 #ifndef USE_FORMATMESSAGE_WRAPPER
@@ -396,8 +391,6 @@
 #define WszFormatMessage   CCompRC::FormatMessage
 #endif
 #define WszCreateMailslot   CreateMailslotW
-#define WszEncryptFile   EncryptFileW
-#define WszDecryptFile   DecryptFileW
 #define WszOpenRaw   OpenRawW
 #define WszQueryRecoveryAgents   QueryRecoveryAgentsW
 #define Wszlstrcmp   lstrcmpW
@@ -413,16 +406,11 @@
 #define WszCreateFileMapping CreateFileMappingW
 #define WszOpenFileMapping OpenFileMappingW
 #define WszGetLogicalDriveStrings GetLogicalDriveStringsW
-#define WszLoadLibrary(_filename) LoadLibraryExW((_filename), NULL, 0)
-#define WszLoadLibraryEx LoadLibraryExW
-#define WszSetDllDirectory SetDllDirectoryW
-#define WszGetModuleFileName GetModuleFileNameW
 #define WszGetModuleHandle GetModuleHandleW
 #define WszGetModuleHandleEx GetModuleHandleExW
 #define WszFatalAppExit FatalAppExitW
 #define WszGetStartupInfo GetStartupInfoW
 #define WszGetCommandLine GetCommandLineW
-#define WszGetEnvironmentVariable GetEnvironmentVariableW
 #define WszSetEnvironmentVariable SetEnvironmentVariableW
 #define WszExpandEnvironmentStrings ExpandEnvironmentStringsW
 #define WszOutputDebugString OutputDebugStringW
@@ -455,37 +443,12 @@
 #define WszWritePrivateProfileStruct WritePrivateProfileStructW
 #define WszGetDriveType GetDriveTypeW
 #define WszGetSystemDirectory GetSystemDirectoryW
-#define WszGetTempPath GetTempPathW
-#define WszGetTempFileName GetTempFileNameW
 #define WszGetWindowsDirectory GetWindowsDirectoryW
-#define WszSetCurrentDirectory SetCurrentDirectoryW
-#define WszGetCurrentDirectory GetCurrentDirectoryW
 #define WszGetDiskFreeSpace GetDiskFreeSpaceW
 #define WszGetDiskFreeSpaceEx GetDiskFreeSpaceExW
-#define WszCreateDirectory CreateDirectoryW
-#define WszCreateDirectoryEx CreateDirectoryExW
-#define WszRemoveDirectory RemoveDirectoryW
-#define WszGetFullPathName GetFullPathNameW
 #define WszDefineDosDevice DefineDosDeviceW
 #define WszQueryDosDevice QueryDosDeviceW
-#define WszCreateFile CreateFileW
-#define WszSetFileAttributes SetFileAttributesW
-#define WszGetFileAttributes GetFileAttributesW
-#define WszGetFileAttributesEx GetFileAttributesExW
-#define WszGetCompressedFileSize GetCompressedFileSizeW
-#define WszDeleteFile DeleteFileW
-#define WszFindFirstFileEx FindFirstFileExW
-#define WszFindFirstFile FindFirstFileW
-#define WszFindNextFile FindNextFileW
-#define WszSearchPath SearchPathW
-#define WszCopyFile CopyFileW
-#define WszCopyFileEx CopyFileExW
-#define WszMoveFile MoveFileW
-#define WszMoveFileEx MoveFileExW
-#define WszMoveFileWithProgress MoveFileWithProgressW
-#define WszCreateSymbolicLink CreateSymbolicLinkW
 #define WszQuerySymbolicLink QuerySymbolicLinkW
-#define WszCreateHardLink CreateHardLinkW
 #define WszCreateNamedPipe CreateNamedPipeW
 #define WszGetNamedPipeHandleState GetNamedPipeHandleStateW
 #define WszCallNamedPipe CallNamedPipeW
@@ -507,9 +470,6 @@
 #define WszObjectCloseAuditAlarm ObjectCloseAuditAlarmW
 #define WszObjectDeleteAuditAlarm ObjectDeleteAuditAlarmW
 #define WszPrivilegedServiceAuditAlarm PrivilegedServiceAuditAlarmW
-#define WszSetFileSecurity SetFileSecurityW
-#define WszGetFileSecurity GetFileSecurityW
-#define WszFindFirstChangeNotification FindFirstChangeNotificationW
 #define WszIsBadStringPtr __DO_NOT_USE__WszIsBadStringPtr__
 #if !defined(FEATURE_CORESYSTEM) || defined(CROSSGEN_COMPILE)
 #define WszLookupAccountSid LookupAccountSidW
@@ -678,7 +638,6 @@
 #define WszRegQueryValueExTrue RegQueryValueExW
 #define WszRegQueryStringValueEx RegQueryValueExW
 
-
 #ifndef FEATURE_CORECLR
 #define WszRegDeleteKey RegDeleteKeyW
 #define WszRegCreateKeyEx ClrRegCreateKeyEx
@@ -723,13 +682,66 @@
 #define _T(str) W(str)
 #endif
 
-
 // on win98 and higher
 #define Wszlstrlen      lstrlenW
 #define Wszlstrcpy      lstrcpyW
 #define Wszlstrcat      lstrcatW
 
+//File and Directory Functions which need special handling for LongFile Names
+//Note only the functions which are currently used are defined
+#define WszLoadLibrary         LoadLibraryExWrapper
+#define WszLoadLibraryEx       LoadLibraryExWrapper
+#define WszCreateFile          CreateFileWrapper
+#define WszSetFileAttributes   SetFileAttributesWrapper  
+#define WszGetFileAttributes   GetFileAttributesWrapper
+#define WszGetFileAttributesEx GetFileAttributesExWrapper
+#define WszDeleteFile          DeleteFileWrapper
+#define WszFindFirstFileEx     FindFirstFileExWrapper
+#define WszFindNextFile        FindNextFileW
+#define WszCopyFile            CopyFileWrapper
+#define WszCopyFileEx          CopyFileExWrapper
+#define WszMoveFile            MoveFileWrapper
+#define WszMoveFileEx          MoveFileExWrapper
+#define WszCreateDirectory     CreateDirectoryWrapper 
+#define WszRemoveDirectory     RemoveDirectoryWrapper
+#define WszCreateHardLink      CreateHardLinkWrapper
 
+//Can not use extended syntax 
+#define WszGetFullPathName     GetFullPathNameW
+
+//Long Files will not work on these till redstone
+#define WszGetCurrentDirectory GetCurrentDirectoryWrapper
+#define WszGetTempFileName     GetTempFileNameWrapper
+#define WszGetTempPath         GetTempPathWrapper
+
+//APIS which have a buffer as an out parameter
+#define WszGetEnvironmentVariable GetEnvironmentVariableWrapper
+#define WszSearchPath          SearchPathWrapper
+#define WszGetShortPathName    GetShortPathNameWrapper
+#define WszGetLongPathName     GetLongPathNameWrapper
+#define WszGetModuleFileName   GetModuleFileNameWrapper
+
+//NOTE: IF the following API's are enabled ensure that they can work with LongFile Names
+//See the usage and implementation of above API's
+//
+//#define WszGetCompressedFileSize GetCompressedFileSizeW
+//#define WszMoveFileWithProgress MoveFileWithProgressW
+//#define WszEncryptFile   EncryptFileW
+//#define WszDecryptFile   DecryptFileW
+//#define WszSetFileSecurity SetFileSecurityW
+//#define WszGetFileSecurity GetFileSecurityW
+//#define WszFindFirstChangeNotification FindFirstChangeNotificationW
+//#define WszSetDllDirectory SetDllDirectoryW
+//#define WszSetCurrentDirectory SetCurrentDirectoryW
+//#define WszCreateDirectoryEx CreateDirectoryExW
+//#define WszCreateSymbolicLink  CreateSymbolicLinkW
+//#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
+
+#if FEATURE_PAL
+#define WszFindFirstFile     FindFirstFileW
+#else
+#define WszFindFirstFile(_lpFileName_, _lpFindData_)       FindFirstFileExWrapper(_lpFileName_, FindExInfoStandard, _lpFindData_, FindExSearchNameMatch, NULL, 0)
+#endif //FEATURE_PAL
 //*****************************************************************************
 // Prototypes for API's.
 //*****************************************************************************
@@ -746,7 +758,7 @@ inline DWORD GetMaxDBCSCharByteSize()
     EnsureCharSetInfoInitialized();
 
     _ASSERTE(g_dwMaxDBCSCharByteSize != 0);
-    return (g_dwMaxDBCSCharByteSize); 
+    return (g_dwMaxDBCSCharByteSize);
 #else // FEATURE_PAL
     return 3;
 #endif // FEATURE_PAL
@@ -758,7 +770,7 @@ BOOL RunningInteractive();
 #define RunningInteractive() FALSE
 #endif // !FEATURE_PAL
 
-// Determines if the process is running as Local System or as a service. Note that this function uses the 
+// Determines if the process is running as Local System or as a service. Note that this function uses the
 // process' identity and not the thread's (if the thread is impersonating).
 //
 // If the function succeeds, it returns ERROR_SUCCESS, else it returns the error code returned by GetLastError()
@@ -767,7 +779,6 @@ DWORD RunningAsLocalSystemOrService(OUT BOOL& fIsLocalSystemOrService);
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
 #endif
-
 
 #ifndef Wsz_wcstombs
 #define Wsz_wcstombs(szOut, szIn, iSize) WszWideCharToMultiByte(CP_ACP, 0, szIn, -1, szOut, iSize, 0, 0)
@@ -815,11 +826,11 @@ DWORD  WszGetProcessHandleCount();
 #define InterlockedOr                   _InterlockedOr
 
 //
-// There is no _InterlockedCompareExchangePointer intrinsic in VC++ for x86.  
+// There is no _InterlockedCompareExchangePointer intrinsic in VC++ for x86.
 // winbase.h #defines InterlockedCompareExchangePointer as __InlineInterlockedCompareExchangePointer,
 // which calls the Win32 InterlockedCompareExchange, not the intrinsic _InterlockedCompareExchange.
 // We want the intrinsic, so we #undef the Windows version of this API, and define our own.
-// 
+//
 #ifdef InterlockedCompareExchangePointer
 #undef InterlockedCompareExchangePointer
 #endif
@@ -850,7 +861,7 @@ InterlockedCompareExchangePointer (
 
 #if defined(_X86_) & !defined(InterlockedIncrement64)
 
-// Interlockedxxx64 that do not have intrinsics are only supported on Windows Server 2003 
+// Interlockedxxx64 that do not have intrinsics are only supported on Windows Server 2003
 // or higher for X86 so define our own portable implementation
 
 #undef InterlockedIncrement64
@@ -918,7 +929,7 @@ __forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LO
 
 //
 // RtlVerifyVersionInfo() type mask bits
-// Making our copy of type mask bits as the original 
+// Making our copy of type mask bits as the original
 // macro name are redefined in public\internal\NDP\inc\product_version.h
 //
 //
@@ -970,11 +981,11 @@ inline int LateboundMessageBoxW(HWND hWnd,
 #if defined(FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE)
     // Some CoreSystem OSs will support MessageBoxW via an extension library. The following technique is what
     // was recommeded by Philippe Joubert from the CoreSystem team.
-    HMODULE hGuiExtModule = LoadLibraryExW(W("ext-ms-win-ntuser-gui-l1"), NULL, 0);
+    HMODULE hGuiExtModule = WszLoadLibrary(W("ext-ms-win-ntuser-gui-l1"), NULL, 0);
 #else
     // Outside of CoreSystem, MessageBoxW lives in User32
     HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
-#endif 
+#endif
     if (hGuiExtModule)
     {
         int result = IDCANCEL;

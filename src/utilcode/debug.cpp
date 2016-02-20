@@ -239,8 +239,8 @@ VOID LogAssert(
     GetSystemTime(&st);
 #endif
 
-    WCHAR exename[300];
-    WszGetModuleFileName(NULL, exename, sizeof(exename)/sizeof(WCHAR));
+    PathString exename;
+    WszGetModuleFileName(NULL, exename);
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
@@ -259,7 +259,7 @@ VOID LogAssert(
          szFile,
          iLine,
          szExpr));
-    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %ws\n", exename));
+    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %ws\n", exename.GetUnicode()));
 }
 
 //*****************************************************************************

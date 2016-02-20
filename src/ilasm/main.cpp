@@ -95,7 +95,7 @@ WCHAR       *pwzDeltaFiles[1024];
 char        szInputFilename[MAX_FILENAME_LENGTH*3];
 WCHAR       wzInputFilename[MAX_FILENAME_LENGTH];
 WCHAR       wzOutputFilename[MAX_FILENAME_LENGTH];
-WCHAR       wzIncludePathBuffer[MAX_FILENAME_LENGTH];
+
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -628,8 +628,12 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
             }
             if(wzIncludePath == NULL)
             {
-                if(0!=WszGetEnvironmentVariable(W("ILASM_INCLUDE"),wzIncludePathBuffer,MAX_FILENAME_LENGTH))
-                    wzIncludePath = wzIncludePathBuffer;
+                PathString wzIncludePathBuffer;
+                if (0 != WszGetEnvironmentVariable(W("ILASM_INCLUDE"), wzIncludePathBuffer))
+                {
+                    wzIncludePath = wzIncludePathBuffer.GetCopyOfUnicodeString();
+
+                }
             }
             //------------ Assembler initialization done. Now, to business -----------------------
             if((pParser = new AsmParse(NULL, pAsm)))

@@ -274,9 +274,8 @@ IMGHLPFN_LOAD ailFuncList[] =
 #define MAX_SYM_PATH        (1024*8)
 #define DEFAULT_SYM_PATH    W("symsrv*symsrv.dll*\\\\symbols\\symbols;")
 #define STR_ENGINE_NAME     MAIN_CLR_DLL_NAME_W
-LPSTR FillSymbolSearchPath(CQuickBytes &qb)
+LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 {
-    STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
@@ -287,21 +286,15 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
         return NULL;
 #endif
 
-    NewArrayHolder<WCHAR> rcBuff = new (nothrow) WCHAR[MAX_SYM_PATH]; // Working buffer
+   InlineSString<MAX_SYM_PATH> rcBuff ; // Working buffer
     WCHAR       rcVerString[64];            // Extension for install directory.
     int         chTotal = 0;                // How full is working buffer.
     int         ch;
 
-
-    if (rcBuff == NULL)
-        return NULL; // Unable to allocate working buffer - fail
-
-    ZeroMemory(rcBuff, MAX_SYM_PATH*sizeof(WCHAR));
-
     // If the NT symbol server path vars are there, then use those.
-    chTotal = WszGetEnvironmentVariable(W("_NT_SYMBOL_PATH"), rcBuff, MAX_SYM_PATH); // Cannot use NumItems(rcBuff) since NumItems does not work with holders
+    chTotal = WszGetEnvironmentVariable(W("_NT_SYMBOL_PATH"), rcBuff); 
     if (chTotal + 1 < MAX_SYM_PATH)
-        rcBuff[chTotal++] = W(';');
+        rcBuff.Append(W(';'));
     
     // Copy the defacto NT symbol path as well.
     size_t sympathLength = chTotal + NumItems(DEFAULT_SYM_PATH) + 1;
@@ -313,13 +306,15 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
 
     if (sympathLength < MAX_SYM_PATH)
     {
-        wcsncpy_s(&rcBuff[chTotal], MAX_SYM_PATH-chTotal, DEFAULT_SYM_PATH, _TRUNCATE);
-        chTotal = (int) wcslen(rcBuff);
+        rcBuff.Append(DEFAULT_SYM_PATH);
+        chTotal = rcBuff.GetCount();
     }
 
     // Next, if there is a URTTARGET, add that since that is where ndpsetup places
     // your symobls on an install.
-    ch = WszGetEnvironmentVariable(W("URTTARGET"), &rcBuff[chTotal], MAX_SYM_PATH - chTotal);
+    PathString rcBuffTemp;
+    ch = WszGetEnvironmentVariable(W("URTTARGET"), rcBuffTemp);
+    rcBuff.Append(rcBuffTemp);
     if (ch != 0 && (chTotal + ch + 1 < MAX_SYM_PATH))
     {
     	size_t chNewTotal = chTotal + ch;
@@ -328,7 +323,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
 			return NULL;
 		}
         chTotal += ch;
-        rcBuff[chTotal++] = W(';');
+        rcBuff.Append(W(';'));
     }
 
 #ifndef SELF_NO_HOST
@@ -336,8 +331,10 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     // in case URTARGET didn't cut it either.
     // For no-host builds of utilcode, we don't necessarily have an engine DLL in the 
     // process, so skip this part.
-    ch = WszGetModuleFileName(GetCLRModuleHack(), 
-                              &rcBuff[chTotal], MAX_SYM_PATH - chTotal);
+    
+    ch = WszGetModuleFileName(GetCLRModuleHack(), rcBuffTemp);
+    
+
 	size_t pathLocationLength = chTotal + ch + 1;
 		// integer overflow occurred
 	if (pathLocationLength < (size_t)chTotal || pathLocationLength < (size_t)ch)
@@ -348,13 +345,9 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     if (ch != 0 && (pathLocationLength < MAX_SYM_PATH))
     {
         chTotal = chTotal + ch - NumItems(STR_ENGINE_NAME);
-        rcBuff[chTotal++] = W(';');
-        rcBuff[chTotal] = 0;
+        rcBuff.Append(W(';'));
     }
 #endif
-
-    // We want to ensure the resulting string is always NULL-terminated.
-    rcBuff[MAX_SYM_PATH-1] = W('\0');
 
     // Now we have a working buffer with a bunch of interesting stuff.  Time
     // to convert it back to ansi for the imagehlp api's.  Allocate the buffer
@@ -366,7 +359,29 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     WszWideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, szRtn, ch+1, 0, 0);
     return (szRtn);
 }
+LPSTR FillSymbolSearchPath(CQuickBytes &qb)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
+    SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
+    LPSTR retval;
+    HRESULT hr = S_OK;
 
+    EX_TRY
+    {
+        retval = FillSymbolSearchPathThrows(qb);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    if (hr != S_OK)
+    {
+        SetLastError(hr);
+        retval = NULL;
+    }
+
+    return retval;
+}
 
 /****************************************************************************
 * MagicInit *

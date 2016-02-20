@@ -225,8 +225,8 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
 
 #ifdef ENC_DELTA_HACK
     // for EnC we want the RVA to be right at the front of the IL stream
-    WCHAR szFileName[256];
-    DWORD len = WszGetEnvironmentVariable(W("COMP_ENC_EMIT"), szFileName, NumItems(szFileName));
+    PathString szFileName;
+    DWORD len = WszGetEnvironmentVariable(W("COMP_ENC_EMIT"), szFileName);
     if (len > 0)
         g_EnCMode = TRUE;
 #endif
@@ -941,64 +941,25 @@ HRESULT CeeFileGenWriter::emitExeMain()
     return S_OK;
 } // HRESULT CeeFileGenWriter::emitExeMain()
 
-// Like CreateProcess(), but waits for execution to finish
-// Returns true if successful, false on failure.
-// dwExitCode set to process' exitcode
 
-HRESULT CopySystemDirectory(__in WCHAR* pPath,
-                            __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pbuffer, 
-                            DWORD  cchBuffer,
-                            __out DWORD* pdwLength)
-{
-    if (pdwLength == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    if(pPath == NULL) 
-        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-
-    SIZE_T dwPath = wcslen(pPath);
-    LPWSTR pSep = wcsrchr(pPath, L'\\');
-    if(pSep) {
-        dwPath = (DWORD)(pSep-pPath+1);
-        pPath[dwPath] = L'\0';
-    }
-
-    dwPath++; // Add back in the null
-    *pdwLength = (DWORD)dwPath;
-    if(dwPath > cchBuffer || pbuffer == NULL)
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    else {
-        CopyMemory(pbuffer, 
-                   pPath,
-                   dwPath*sizeof(WCHAR));
-    }
-    return hr;
-}
-
-HRESULT GetClrSystemDirectory(__out_ecount_part(cchBuffer, *pdwLength) LPWSTR pbuffer, 
-                             DWORD  cchBuffer,
-                             __out DWORD* pdwLength)
+HRESULT GetClrSystemDirectory(SString& pbuffer)
 {
     HRESULT hr = S_OK;
 
-    if(pdwLength == NULL)
-        return E_POINTER;
 
-    WCHAR pPath[MAX_PATH];
-    DWORD dwPath = MAX_PATH;
+    PathString pPath;
+    DWORD dwPath;
     
-
     _ASSERTE (g_hThisInst);
 
-    dwPath = WszGetModuleFileName(g_hThisInst, pPath, dwPath);
+    dwPath = WszGetModuleFileName(g_hThisInst, pPath);
     if(dwPath == 0)
     {
         hr = HRESULT_FROM_GetLastErrorNA();
         return (hr);
     }
-    else 
-        return CopySystemDirectory(pPath, pbuffer, cchBuffer, pdwLength);
+    
+    return CopySystemDirectory(pPath, pbuffer);
 }
 
 #ifndef FEATURE_PAL
@@ -1008,10 +969,8 @@ BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEW
 
     PROCESS_INFORMATION pi;
 
-    DWORD cchSystemDir = MAX_PATH + 1;
-    DWORD dwLen;
-    WCHAR wszSystemDir[MAX_PATH + 1];
-    if (FAILED(GetClrSystemDirectory(wszSystemDir, cchSystemDir, &dwLen)))
+    PathString wszSystemDir;
+    if (FAILED(GetClrSystemDirectory(wszSystemDir)))
         return FALSE;
 
     WCHAR* wzMachine;
@@ -1031,7 +990,7 @@ BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEW
     if(*ext == NULL)
     {
         ssCmdLine.Printf(L"%scvtres.exe /NOLOGO /READONLY /MACHINE:%s \"/OUT:%s\" \"%s.\"",
-                    wszSystemDir,
+                    wszSystemDir.GetUnicode(),
                     wzMachine,
                     tempResObj,
                     pszFilename);
@@ -1039,7 +998,7 @@ BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEW
     else
     {
         ssCmdLine.Printf(L"%scvtres.exe /NOLOGO /READONLY /MACHINE:%s \"/OUT:%s\" \"%s\"",
-                    wszSystemDir,
+                    wszSystemDir.GetUnicode(),
                     wzMachine,
                     tempResObj,
                     pszFilename);
@@ -1115,11 +1074,11 @@ HRESULT ConvertResource(const WCHAR * pszFilename, __in_ecount(cchTempFilename) 
         return S_OK;
     }
 
-    WCHAR tempResObj[MAX_PATH+1];
-    WCHAR tempResPath[MAX_PATH+1];
+    PathString tempResObj;
+    PathString tempResPath;
 
     // Create the temp file where the temp path is at rather than where the application is at.
-    if (!WszGetTempPath(MAX_PATH, tempResPath))
+    if (!WszGetTempPath( tempResPath))
     {
         return HRESULT_FROM_GetLastError();
     }
