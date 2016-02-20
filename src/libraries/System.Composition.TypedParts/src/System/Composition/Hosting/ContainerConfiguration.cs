@@ -50,7 +50,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithProvider(ExportDescriptorProvider exportDescriptorProvider)
         {
-            if (exportDescriptorProvider == null) throw new ArgumentNullException("ExportDescriptorProvider");
+            if (exportDescriptorProvider == null) throw new ArgumentNullException(nameof(exportDescriptorProvider));
             _addedSources.Add(exportDescriptorProvider);
             return this;
         }
