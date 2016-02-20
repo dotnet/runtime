@@ -41,9 +41,9 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Satisfied(CompositionContract contract, ExportDescriptorPromise target, bool isPrerequisite, object site)
         {
-            Requires.NotNull(target, "target");
-            Requires.NotNull(site, "site");
-            Requires.NotNull(contract, "contract");
+            Requires.NotNull(target, nameof(target));
+            Requires.NotNull(site, nameof(site));
+            Requires.NotNull(contract, nameof(contract));
 
             return new CompositionDependency(contract, target, isPrerequisite, site);
         }
@@ -57,8 +57,8 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Missing(CompositionContract contract, object site)
         {
-            Requires.NotNull(contract, "contract");
-            Requires.NotNull(site, "site");
+            Requires.NotNull(contract, nameof(contract));
+            Requires.NotNull(site, nameof(site));
 
             return new CompositionDependency(contract, site);
         }
@@ -73,9 +73,9 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Oversupplied(CompositionContract contract, IEnumerable<ExportDescriptorPromise> targets, object site)
         {
-            Requires.NotNull(targets, "targets");
-            Requires.NotNull(site, "site");
-            Requires.NotNull(contract, "contract");
+            Requires.NotNull(targets, nameof(targets));
+            Requires.NotNull(site, nameof(site));
+            Requires.NotNull(contract, nameof(contract));
 
             return new CompositionDependency(contract, targets, site);
         }
