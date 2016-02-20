@@ -19,7 +19,7 @@ namespace System.Dynamic
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected InvokeBinder(CallInfo callInfo)
         {
-            ContractUtils.RequiresNotNull(callInfo, "callInfo");
+            ContractUtils.RequiresNotNull(callInfo, nameof(callInfo));
             _callInfo = callInfo;
         }
 
@@ -67,8 +67,8 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNullItems(args, "args");
+            ContractUtils.RequiresNotNull(target, nameof(target));
+            ContractUtils.RequiresNotNullItems(args, nameof(args));
 
             return target.BindInvoke(this, args);
         }

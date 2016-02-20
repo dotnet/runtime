@@ -52,9 +52,9 @@ namespace System.Dynamic
         /// </returns>
         public sealed override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel)
         {
-            ContractUtils.RequiresNotNull(args, "args");
-            ContractUtils.RequiresNotNull(parameters, "parameters");
-            ContractUtils.RequiresNotNull(returnLabel, "returnLabel");
+            ContractUtils.RequiresNotNull(args, nameof(args));
+            ContractUtils.RequiresNotNull(parameters, nameof(parameters));
+            ContractUtils.RequiresNotNull(returnLabel, nameof(returnLabel));
             if (args.Length == 0)
             {
                 throw Error.OutOfRange("args.Length", 1);
@@ -194,7 +194,7 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, "target");
+            ContractUtils.RequiresNotNull(target, nameof(target));
 
             if (args == null)
             {

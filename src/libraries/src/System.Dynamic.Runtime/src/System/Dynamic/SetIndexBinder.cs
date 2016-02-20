@@ -19,7 +19,7 @@ namespace System.Dynamic
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected SetIndexBinder(CallInfo callInfo)
         {
-            ContractUtils.RequiresNotNull(callInfo, "callInfo");
+            ContractUtils.RequiresNotNull(callInfo, nameof(callInfo));
             _callInfo = callInfo;
         }
 
@@ -47,15 +47,15 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNull(args, "args");
-            ContractUtils.Requires(args.Length >= 2, "args");
+            ContractUtils.RequiresNotNull(target, nameof(target));
+            ContractUtils.RequiresNotNull(args, nameof(args));
+            ContractUtils.Requires(args.Length >= 2, nameof(args));
 
             DynamicMetaObject value = args[args.Length - 1];
             DynamicMetaObject[] indexes = args.RemoveLast();
 
-            ContractUtils.RequiresNotNull(value, "args");
-            ContractUtils.RequiresNotNullItems(indexes, "args");
+            ContractUtils.RequiresNotNull(value, nameof(args));
+            ContractUtils.RequiresNotNullItems(indexes, nameof(args));
 
             return target.BindSetIndex(this, indexes, value);
         }
