@@ -25,7 +25,7 @@
 ** retrieve a handle to itself, and calls GetThreadPriority()
 ** to verify that its priority matches what it was set to on
 ** the main execution thread.
-** 
+**
 
 **
 **===========================================================================*/
@@ -47,7 +47,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
 {
     int      priority;
     HANDLE   hThread;
-    
+
     /* call GetCurrentThread() to get a pseudo-handle to */
     /* the current thread                                */
     hThread = GetCurrentThread();
@@ -55,8 +55,8 @@ DWORD PALAPI ThreadFunc( LPVOID param )
     {
         Fail( "GetCurrentThread() call failed\n" );
     }
-    
-    
+
+
     /* get the current thread priority */
     priority = GetThreadPriority( hThread );
     if( priority == THREAD_PRIORITY_ERROR_RETURN )
@@ -66,7 +66,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
     }
 
     /* store this globally because we don't have GetExitCodeThread() */
-    g_priority = priority;    
+    g_priority = priority;
     return (DWORD)priority;
 }
 
@@ -118,7 +118,7 @@ INT __cdecl main( INT argc, CHAR **argv )
         Fail( "ERROR:%lu:SetThreadPriority() call failed\n", GetLastError() );
     }
 
-    /* let the child thread run now */    
+    /* let the child thread run now */
     ResumeThread( hThread );
 
 
@@ -137,7 +137,7 @@ INT __cdecl main( INT argc, CHAR **argv )
         Fail( "FAIL:Unexpected thread priority %d returned, expected %d\n",
                 g_priority, THREAD_PRIORITY_TIME_CRITICAL );
     }
-#endif    
+#endif
 
     PAL_Terminate();
     return PASS;
