@@ -835,7 +835,7 @@ exceptions by switching to the thread in question, and running
 \\
 
 COMMAND: clrstack.
-!CLRStack [-a] [-l] [-p] [-n]
+!CLRStack [-a] [-l] [-p] [-n] [-f]
 !CLRStack [-a] [-l] [-p] [-i] [variable name] [frame]
 
 CLRStack attempts to provide a true stack trace for managed code only. It is
@@ -845,6 +845,10 @@ programs. The -p parameter will show arguments to the managed function. The
 SOS can't retrieve local names at this time, so the output for locals is in
 the format <local address> = <value>. The -a (all) parameter is a short-cut
 for -l and -p combined. 
+
+The -f option (full mode) displays the native frames intermixing them with
+the managed frames and the assembly name and function offset for the managed
+frames.
 
 If the debugger has the option SYMOPT_LOAD_LINES specified (either by the
 .lines or .symopt commands), SOS will look up the symbols for every managed 
