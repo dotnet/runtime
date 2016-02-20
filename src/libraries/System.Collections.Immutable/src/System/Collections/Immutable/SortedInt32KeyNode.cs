@@ -85,8 +85,8 @@ namespace System.Collections.Immutable
         /// <param name="frozen">Whether this node is prefrozen.</param>
         private SortedInt32KeyNode(int key, TValue value, SortedInt32KeyNode<TValue> left, SortedInt32KeyNode<TValue> right, bool frozen = false)
         {
-            Requires.NotNull(left, "left");
-            Requires.NotNull(right, "right");
+            Requires.NotNull(left, nameof(left));
+            Requires.NotNull(right, nameof(right));
             Debug.Assert(!frozen || (left._frozen && right._frozen));
 
             _key = key;
@@ -182,7 +182,7 @@ namespace System.Collections.Immutable
         /// <param name="mutated">Receives a value indicating whether this node tree has mutated because of this operation.</param>
         internal SortedInt32KeyNode<TValue> SetItem(int key, TValue value, IEqualityComparer<TValue> valueComparer, out bool replacedExistingValue, out bool mutated)
         {
-            Requires.NotNull(valueComparer, "valueComparer");
+            Requires.NotNull(valueComparer, nameof(valueComparer));
 
             return this.SetOrAdd(key, value, valueComparer, true, out replacedExistingValue, out mutated);
         }
@@ -258,7 +258,7 @@ namespace System.Collections.Immutable
         /// <returns>The rotated tree.</returns>
         private static SortedInt32KeyNode<TValue> RotateLeft(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             if (tree._right.IsEmpty)
@@ -277,7 +277,7 @@ namespace System.Collections.Immutable
         /// <returns>The rotated tree.</returns>
         private static SortedInt32KeyNode<TValue> RotateRight(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             if (tree._left.IsEmpty)
@@ -296,7 +296,7 @@ namespace System.Collections.Immutable
         /// <returns>The rotated tree.</returns>
         private static SortedInt32KeyNode<TValue> DoubleLeft(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             if (tree._right.IsEmpty)
@@ -315,7 +315,7 @@ namespace System.Collections.Immutable
         /// <returns>The rotated tree.</returns>
         private static SortedInt32KeyNode<TValue> DoubleRight(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             if (tree._left.IsEmpty)
@@ -335,7 +335,7 @@ namespace System.Collections.Immutable
         [Pure]
         private static int Balance(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             return tree._right._height - tree._left._height;
@@ -351,7 +351,7 @@ namespace System.Collections.Immutable
         [Pure]
         private static bool IsRightHeavy(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
             return Balance(tree) >= 2;
         }
@@ -362,7 +362,7 @@ namespace System.Collections.Immutable
         [Pure]
         private static bool IsLeftHeavy(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
             return Balance(tree) <= -2;
         }
@@ -375,7 +375,7 @@ namespace System.Collections.Immutable
         [Pure]
         private static SortedInt32KeyNode<TValue> MakeBalanced(SortedInt32KeyNode<TValue> tree)
         {
-            Requires.NotNull(tree, "tree");
+            Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
             if (IsRightHeavy(tree))
@@ -629,7 +629,7 @@ namespace System.Collections.Immutable
             /// <param name="root">The root of the set to be enumerated.</param>
             internal Enumerator(SortedInt32KeyNode<TValue> root)
             {
-                Requires.NotNull(root, "root");
+                Requires.NotNull(root, nameof(root));
 
                 _root = root;
                 _current = null;
@@ -757,7 +757,7 @@ namespace System.Collections.Immutable
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushLeft(SortedInt32KeyNode<TValue> node)
             {
-                Requires.NotNull(node, "node");
+                Requires.NotNull(node, nameof(node));
                 var stack = _stack.Use(ref this);
                 while (!node.IsEmpty)
                 {

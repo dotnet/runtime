@@ -72,7 +72,7 @@ namespace System.Collections.Immutable
             /// <param name="map">The map that serves as the basis for this Builder.</param>
             internal Builder(ImmutableDictionary<TKey, TValue> map)
             {
-                Requires.NotNull(map, "map");
+                Requires.NotNull(map, nameof(map));
                 _root = map._root;
                 _count = map._count;
                 _comparers = map._comparers;
@@ -94,7 +94,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    Requires.NotNull(value, "value");
+                    Requires.NotNull(value, nameof(value));
                     if (value != this.KeyComparer)
                     {
                         var comparers = Comparers.Get(value, this.ValueComparer);
@@ -124,7 +124,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    Requires.NotNull(value, "value");
+                    Requires.NotNull(value, nameof(value));
                     if (value != this.ValueComparer)
                     {
                         // When the key comparer is the same but the value comparer is different, we don't need a whole new tree
@@ -347,9 +347,9 @@ namespace System.Collections.Immutable
             /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
             void ICollection.CopyTo(Array array, int arrayIndex)
             {
-                Requires.NotNull(array, "array");
-                Requires.Range(arrayIndex >= 0, "arrayIndex");
-                Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
+                Requires.NotNull(array, nameof(array));
+                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
+                Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
                 foreach (var item in this)
                 {
@@ -448,7 +448,7 @@ namespace System.Collections.Immutable
             /// <param name="keys">The keys for entries to remove from the dictionary.</param>
             public void RemoveRange(IEnumerable<TKey> keys)
             {
-                Requires.NotNull(keys, "keys");
+                Requires.NotNull(keys, nameof(keys));
 
                 foreach (var key in keys)
                 {
@@ -489,7 +489,7 @@ namespace System.Collections.Immutable
             [Pure]
             public TValue GetValueOrDefault(TKey key, TValue defaultValue)
             {
-                Requires.NotNullAllowStructs(key, "key");
+                Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
                 if (this.TryGetValue(key, out value))
@@ -652,7 +652,7 @@ namespace System.Collections.Immutable
             /// </summary>
             void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
             {
-                Requires.NotNull(array, "array");
+                Requires.NotNull(array, nameof(array));
 
                 foreach (var item in this)
                 {
@@ -745,7 +745,7 @@ namespace System.Collections.Immutable
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
         {
-            Requires.NotNull(map, "map");
+            Requires.NotNull(map, nameof(map));
             _map = map;
         }
 

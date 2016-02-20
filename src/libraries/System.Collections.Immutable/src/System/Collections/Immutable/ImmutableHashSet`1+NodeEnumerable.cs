@@ -28,7 +28,7 @@ namespace System.Collections.Immutable
             /// <param name="root">The root.</param>
             internal NodeEnumerable(SortedInt32KeyNode<HashBucket> root)
             {
-                Requires.NotNull(root, "root");
+                Requires.NotNull(root, nameof(root));
                 _root = root;
             }
 

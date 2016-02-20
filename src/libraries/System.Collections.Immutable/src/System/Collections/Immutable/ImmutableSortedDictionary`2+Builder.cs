@@ -75,7 +75,7 @@ namespace System.Collections.Immutable
             /// <param name="map">A map to act as the basis for a new map.</param>
             internal Builder(ImmutableSortedDictionary<TKey, TValue> map)
             {
-                Requires.NotNull(map, "map");
+                Requires.NotNull(map, nameof(map));
                 _root = map._root;
                 _keyComparer = map.KeyComparer;
                 _valueComparer = map.ValueComparer;
@@ -294,7 +294,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    Requires.NotNull(value, "value");
+                    Requires.NotNull(value, nameof(value));
                     if (value != _keyComparer)
                     {
                         var newRoot = Node.EmptyNode;
@@ -331,7 +331,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    Requires.NotNull(value, "value");
+                    Requires.NotNull(value, nameof(value));
                     if (value != _valueComparer)
                     {
                         // When the key comparer is the same but the value comparer is different, we don't need a whole new tree
@@ -467,7 +467,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public bool TryGetKey(TKey equalKey, out TKey actualKey)
             {
-                Requires.NotNullAllowStructs(equalKey, "equalKey");
+                Requires.NotNullAllowStructs(equalKey, nameof(equalKey));
                 return this.Root.TryGetKey(equalKey, _keyComparer, out actualKey);
             }
 
@@ -570,7 +570,7 @@ namespace System.Collections.Immutable
             [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
             public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
             {
-                Requires.NotNull(items, "items");
+                Requires.NotNull(items, nameof(items));
 
                 foreach (var pair in items)
                 {
@@ -584,7 +584,7 @@ namespace System.Collections.Immutable
             /// <param name="keys">The keys for entries to remove from the dictionary.</param>
             public void RemoveRange(IEnumerable<TKey> keys)
             {
-                Requires.NotNull(keys, "keys");
+                Requires.NotNull(keys, nameof(keys));
 
                 foreach (var key in keys)
                 {
@@ -614,7 +614,7 @@ namespace System.Collections.Immutable
             [Pure]
             public TValue GetValueOrDefault(TKey key, TValue defaultValue)
             {
-                Requires.NotNullAllowStructs(key, "key");
+                Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
                 if (this.TryGetValue(key, out value))
@@ -669,7 +669,7 @@ namespace System.Collections.Immutable
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableSortedDictionaryBuilderDebuggerProxy(ImmutableSortedDictionary<TKey, TValue>.Builder map)
         {
-            Requires.NotNull(map, "map");
+            Requires.NotNull(map, nameof(map));
             _map = map;
         }
 

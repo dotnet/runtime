@@ -245,7 +245,7 @@ namespace System.Collections.Immutable.Tests
 
         protected void TryGetValueTestHelper(IImmutableSet<string> set)
         {
-            Requires.NotNull(set, "set");
+            Requires.NotNull(set, nameof(set));
 
             string expected = "egg";
             set = set.Add(expected);

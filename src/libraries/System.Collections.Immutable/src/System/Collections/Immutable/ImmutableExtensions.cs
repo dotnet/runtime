@@ -100,8 +100,8 @@ namespace System.Collections.Immutable
         /// </remarks>
         internal static T[] ToArray<T>(this IEnumerable<T> sequence, int count)
         {
-            Requires.NotNull(sequence, "sequence");
-            Requires.Range(count >= 0, "count");
+            Requires.NotNull(sequence, nameof(sequence));
+            Requires.Range(count >= 0, nameof(count));
 
             T[] array = new T[count];
             int i = 0;
@@ -249,7 +249,7 @@ namespace System.Collections.Immutable
         /// <returns>An ordered collection.  May not be thread-safe.  Never null.</returns>
         internal static IOrderedCollection<T> AsOrderedCollection<T>(this IEnumerable<T> sequence)
         {
-            Requires.NotNull(sequence, "sequence");
+            Requires.NotNull(sequence, nameof(sequence));
             Contract.Ensures(Contract.Result<IOrderedCollection<T>>() != null);
 
             var orderedCollection = sequence as IOrderedCollection<T>;
@@ -296,7 +296,7 @@ namespace System.Collections.Immutable
         internal static DisposableEnumeratorAdapter<T, TEnumerator> GetEnumerableDisposable<T, TEnumerator>(this IEnumerable<T> enumerable)
             where TEnumerator : struct, IStrongEnumerator<T>, IEnumerator<T>
         {
-            Requires.NotNull(enumerable, "enumerable");
+            Requires.NotNull(enumerable, nameof(enumerable));
 
             var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
             if (strongEnumerable != null)
@@ -328,7 +328,7 @@ namespace System.Collections.Immutable
             /// <param name="collection">The collection.</param>
             internal ListOfTWrapper(IList<T> collection)
             {
-                Requires.NotNull(collection, "collection");
+                Requires.NotNull(collection, nameof(collection));
                 _collection = collection;
             }
 
@@ -393,7 +393,7 @@ namespace System.Collections.Immutable
             /// <param name="sequence">The sequence.</param>
             internal FallbackWrapper(IEnumerable<T> sequence)
             {
-                Requires.NotNull(sequence, "sequence");
+                Requires.NotNull(sequence, nameof(sequence));
                 _sequence = sequence;
             }
 

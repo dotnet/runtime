@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableStack<T> CreateRange<T>(IEnumerable<T> items)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
 
             var stack = ImmutableStack<T>.Empty;
             foreach (var item in items)
@@ -66,7 +66,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableStack<T> Create<T>(params T[] items)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
 
             var stack = ImmutableStack<T>.Empty;
             foreach (var item in items)
@@ -91,7 +91,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static IImmutableStack<T> Pop<T>(this IImmutableStack<T> stack, out T value)
         {
-            Requires.NotNull(stack, "stack");
+            Requires.NotNull(stack, nameof(stack));
             Contract.Ensures(Contract.Result<IImmutableStack<T>>() != null);
 
             value = stack.Peek();
