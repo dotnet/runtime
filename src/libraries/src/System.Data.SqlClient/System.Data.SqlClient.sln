@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient", "src\System.Data.SqlClient.csproj", "{D4550556-4745-457F-BA8F-3EBF3836D6B4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ECE6CCAC-682B-4054-B737-E6DB4A4FA79A}" 
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ECE6CCAC-682B-4054-B737-E6DB4A4FA79A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Tests", "tests\FunctionalTests\System.Data.SqlClient.Tests.csproj", "{F3E72F35-0351-4D67-9388-725BCAD807BA}"
 EndProject
@@ -21,14 +21,14 @@ Global
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{F3E72F35-0351-4D67-9388-725BCAD807BA}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
