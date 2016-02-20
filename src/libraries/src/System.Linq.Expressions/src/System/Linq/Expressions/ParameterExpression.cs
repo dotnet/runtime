@@ -209,7 +209,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
         public static ParameterExpression Parameter(Type type, string name)
         {
-            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(type, nameof(type));
 
             if (type == typeof(void))
             {
@@ -233,7 +233,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
         public static ParameterExpression Variable(Type type, string name)
         {
-            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(type, nameof(type));
             if (type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
             if (type.IsByRef) throw Error.TypeMustNotBeByRef();
             return ParameterExpression.Make(type, name, false);

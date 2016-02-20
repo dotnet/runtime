@@ -474,7 +474,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
-            ContractUtils.RequiresNotNull(body, "body");
+            ContractUtils.RequiresNotNull(body, nameof(body));
 
             var parameterList = parameters.ToReadOnly();
 
@@ -537,8 +537,8 @@ namespace System.Linq.Expressions
 
         private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters)
         {
-            ContractUtils.RequiresNotNull(delegateType, "delegateType");
-            RequiresCanRead(body, "body");
+            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
+            RequiresCanRead(body, nameof(body));
 
             if (!typeof(MulticastDelegate).IsAssignableFrom(delegateType) || delegateType == typeof(MulticastDelegate))
             {
@@ -569,7 +569,7 @@ namespace System.Linq.Expressions
                 {
                     ParameterExpression pex = parameters[i];
                     ParameterInfo pi = pis[i];
-                    RequiresCanRead(pex, "parameters");
+                    RequiresCanRead(pex, nameof(parameters));
                     Type pType = pi.ParameterType;
                     if (pex.IsByRef)
                     {
@@ -705,8 +705,8 @@ namespace System.Linq.Expressions
         /// to System.Void to produce an Action.</remarks>
         public static Type GetDelegateType(params Type[] typeArgs)
         {
-            ContractUtils.RequiresNotEmpty(typeArgs, "typeArgs");
-            ContractUtils.RequiresNotNullItems(typeArgs, "typeArgs");
+            ContractUtils.RequiresNotEmpty(typeArgs, nameof(typeArgs));
+            ContractUtils.RequiresNotNullItems(typeArgs, nameof(typeArgs));
             return Compiler.DelegateHelpers.MakeDelegateType(typeArgs);
         }
     }

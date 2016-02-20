@@ -144,8 +144,8 @@ namespace System.Linq.Expressions
         /// <returns>An instance of the <see cref="NewArrayExpression"/>.</returns>
         public static NewArrayExpression NewArrayInit(Type type, IEnumerable<Expression> initializers)
         {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
+            ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             if (type.Equals(typeof(void)))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid();
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = initializerList.Count; i < n; i++)
             {
                 Expression expr = initializerList[i];
-                RequiresCanRead(expr, "initializers");
+                RequiresCanRead(expr, nameof(initializers));
 
                 if (!TypeUtils.AreReferenceAssignable(type, expr.Type))
                 {
@@ -212,8 +212,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="P:NodeType"/> property equal to type and the <see cref="P:Expressions"/> property set to the specified value.</returns>
         public static NewArrayExpression NewArrayBounds(Type type, IEnumerable<Expression> bounds)
         {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(bounds, "bounds");
+            ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.RequiresNotNull(bounds, nameof(bounds));
 
             if (type.Equals(typeof(void)))
             {
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
             for (int i = 0; i < dimensions; i++)
             {
                 Expression expr = boundsList[i];
-                RequiresCanRead(expr, "bounds");
+                RequiresCanRead(expr, nameof(bounds));
                 if (!TypeUtils.IsInteger(expr.Type))
                 {
                     throw Error.ArgumentMustBeInteger();
