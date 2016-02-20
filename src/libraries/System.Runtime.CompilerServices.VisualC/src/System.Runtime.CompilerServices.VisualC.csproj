@@ -5,6 +5,7 @@
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

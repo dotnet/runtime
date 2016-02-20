@@ -5,6 +5,7 @@
     <ProjectGuid>{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}</ProjectGuid>
     <AssemblyName>System.Net.WebSockets</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>    
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

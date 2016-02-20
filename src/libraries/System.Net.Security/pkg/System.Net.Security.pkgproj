@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Net.Security.csproj">
+      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\facade\System.Net.Security.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
+    </ProjectReference>
+    
+    <ProjectReference Include="$(MSBuildThisFileDirectory)win\System.Net.Security.pkgproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)unix\System.Net.Security.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

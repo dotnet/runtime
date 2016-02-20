@@ -8,7 +8,7 @@
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.2</PackageTargetFramework> 
     <NuGetTargetMoniker>.NETPlatform,Version=v5.2</NuGetTargetMoniker>
     <ProjectGuid>{404DB891-B5AF-41E6-B89D-29E3F4573C4F}</ProjectGuid>
   </PropertyGroup>

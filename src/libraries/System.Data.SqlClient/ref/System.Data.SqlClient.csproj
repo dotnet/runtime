@@ -4,8 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.2</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.SqlClient.cs" />

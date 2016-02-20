@@ -1,0 +1,3 @@
+// Remove once we can OOB this to desktop - https://github.com/dotnet/corefx/issues/6059
+PermitPortableVersionMismatch=.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6
+

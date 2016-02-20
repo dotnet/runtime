@@ -8,9 +8,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.1</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.1</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="lib/dotnet5.1">
+      <TargetFramework>dotnet5.1</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="lib/portable-net45+win8+wp8+wpa81">
+      <TargetFramework>portable-net45+win8+wp8+wpa81</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

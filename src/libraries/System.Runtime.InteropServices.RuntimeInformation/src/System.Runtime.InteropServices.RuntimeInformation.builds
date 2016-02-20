@@ -15,13 +15,18 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>net45</TargetGroup>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
+      <AdditionalProperties>PackageTargetPath=runtimes/win7/lib/netcore50</AdditionalProperties>
     </Project>
     <Project Include="System.Runtime.InteropServices.RuntimeInformation.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
+      <AdditionalProperties>PackageTargetPath=runtimes/win8-aot/lib/netcore50</AdditionalProperties>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.Emit.csproj">
+      <SupportedFramework>net45;netcore50;dnxcore50</SupportedFramework>
+    </ProjectReference>
+
+    <ProjectReference Include="..\src\System.Reflection.Emit.builds" />
+
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+
+    <!-- ensure that no lib is in scope for AOT since this isn't supported 
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
+    </File> -->
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
