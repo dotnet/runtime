@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -88,6 +89,54 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 3)));
                 Assert.True(task.Status == TaskStatus.RanToCompletion || task.Status == TaskStatus.Canceled);
             }
+        }
+
+        [ActiveIssue(6231, PlatformID.Windows)]
+        [Fact]
+        public async Task ReadAsStreamAsync_IncompleteContentLengthResponse_ThrowsIOException()
+        {
+            var server = new TcpListener(IPAddress.Loopback, 0);
+            Task serverTask = ((Func<Task>)async delegate {
+                server.Start();
+                using (var client = await server.AcceptSocketAsync())
+                using (var stream = new NetworkStream(client))
+                using (var reader = new StreamReader(stream, Encoding.ASCII))
+                {
+                    // Read request
+                    string line;
+                    while (!string.IsNullOrEmpty(line = reader.ReadLine())) ;
+
+                    // Write response, with a potentially invalid content length
+                    using (var writer = new StreamWriter(stream, Encoding.ASCII))
+                    {
+                        string content = "This is some response content.";
+                        writer.Write("HTTP/1.1 200 OK\r\n");
+                        writer.Write($"Date: {DateTimeOffset.UtcNow:R}\r\n");
+                        writer.Write("Content-Type: text/plain\r\n");
+                        writer.Write($"Content-Length: {content.Length + 42}\r\n"); // incorrect length
+                        writer.Write("\r\n");
+                        writer.Write(content);
+                        writer.Flush();
+                    }
+
+                    client.Shutdown(SocketShutdown.Both);
+                }
+            })();
+
+            using (var client = new HttpClient())
+            {
+                var local = (IPEndPoint)server.LocalEndpoint;
+                using (var response = await client.GetAsync(new Uri($"http://localhost:{((IPEndPoint)server.LocalEndpoint).Port}/"), HttpCompletionOption.ResponseHeadersRead))
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                {
+                    await Assert.ThrowsAsync<IOException>(async () => {
+                        var buffer = new byte[1];
+                        while (await stream.ReadAsync(buffer, 0, 1) > 0) ;
+                    });
+                }
+            }
+
+            await serverTask;
         }
 
         // These methods help to validate the response body since the endpoint will echo
