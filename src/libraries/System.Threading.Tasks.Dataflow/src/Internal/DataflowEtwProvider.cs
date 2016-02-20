@@ -107,27 +107,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
-        [ThreadStatic]
-        private static object[] t_sharedArray;
-
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
         {
-            // There is no explicit WriteEvent() overload matching this event's fields:
-            //     WriteEvent(TASKLAUNCHED_EVENTID, blockId, (int)reason, availableMessages, taskId);
-            // Therefore this call would hit the "params" overload, which leads to multiple object 
-            // allocations every time this event is fired.
-
-            if (t_sharedArray == null)
-            {
-                t_sharedArray = new object[4];
-            }
-            t_sharedArray[0] = blockId;
-            t_sharedArray[1] = (int)reason;
-            t_sharedArray[2] = availableMessages;
-            t_sharedArray[3] = taskId;
-
-            WriteEvent(TASKLAUNCHED_EVENTID, t_sharedArray);
+            WriteEvent(TASKLAUNCHED_EVENTID, blockId, reason, availableMessages, taskId);
         }
 
         /// <summary>Describes the reason a task is being launched.</summary>
@@ -183,7 +166,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
         private void DataflowBlockCompleted(int blockId, BlockCompletionReason reason, string exceptionData)
         {
-            WriteEvent(BLOCKCOMPLETED_EVENTID, blockId, (int)reason, exceptionData);
+            WriteEvent(BLOCKCOMPLETED_EVENTID, blockId, reason, exceptionData);
         }
     #endregion
 
