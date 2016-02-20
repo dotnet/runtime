@@ -1892,7 +1892,7 @@ namespace System.Collections.Generic
             {
                 if (!IsWithinRange(item))
                 {
-                    throw new ArgumentOutOfRangeException("collection");
+                    throw new ArgumentOutOfRangeException(nameof(item));
                 }
 
                 bool ret = _underlying.AddIfNotPresent(item);

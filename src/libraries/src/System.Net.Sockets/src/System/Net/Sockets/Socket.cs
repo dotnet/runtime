@@ -4026,7 +4026,7 @@ namespace System.Net.Sockets
             // Validate input parameters.
             if (receiveSize < 0)
             {
-                throw new ArgumentOutOfRangeException("size");
+                throw new ArgumentOutOfRangeException(nameof(receiveSize));
             }
 
             // Set up the async result with flowing.
