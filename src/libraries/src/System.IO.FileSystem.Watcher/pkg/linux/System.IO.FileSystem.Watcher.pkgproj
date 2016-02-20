@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageTargetRuntime>linux</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.Watcher.builds" >
+      <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
+      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    </ProjectReference>
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

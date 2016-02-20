@@ -4,9 +4,20 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.2</NuGetTargetMoniker>
+    <!-- remove when fixing https://github.com/dotnet/corefx/issues/5900 -->
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+    <PackageDestination Include="ref/dotnet5.2">
+      <TargetFramework>dotnet5.2</TargetFramework>
+    </PackageDestination>
+    <PackageDestination Include="ref/portable-net45+win8">
+      <TargetFramework>portable-net45+win8</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System.Numerics.Vectors.cs" />
   </ItemGroup>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Runtime.InteropServices.WindowsRuntime.csproj">
+      <SupportedFramework>net45;dnxcore50;netcore45;wp8;wpa81</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Runtime.InteropServices.WindowsRuntime.builds" />
+
+    <InboxOnTargetFramework Include="net45"/>
+    <InboxOnTargetFramework Include="win8"/>
+    <InboxOnTargetFramework Include="wp80"/>
+    <InboxOnTargetFramework Include="wpa81"/>
+
+    <ExcludeDefaultValidateFramework Include="dnxcore50" />
+
+    <!-- Only supported on win8 and higher, so overriding
+         the validation RID's -->
+    <ValidateFramework Include="dnxcore50"> 
+      <RuntimeIDs>win8-x86;win8-x64</RuntimeIDs> 
+    </ValidateFramework> 
+
+    <NotSupportedOnTargetFramework Include="xamarinios1" />
+  </ItemGroup>
+  
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

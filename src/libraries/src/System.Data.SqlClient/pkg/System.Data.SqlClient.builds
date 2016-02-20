@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.Data.SqlClient.pkgproj" />
+    <Project Include="win\System.Data.SqlClient.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="unix\System.Data.SqlClient.pkgproj">
+      <OSGroup>Linux</OSGroup>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+

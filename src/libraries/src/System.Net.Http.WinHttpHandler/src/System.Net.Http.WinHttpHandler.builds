@@ -5,6 +5,9 @@
     <Project Include="System.Net.Http.WinHttpHandler.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="System.Net.Http.WinHttpHandler.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

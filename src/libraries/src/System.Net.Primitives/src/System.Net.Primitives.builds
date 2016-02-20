@@ -12,9 +12,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.Primitives.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    <Project Include="System.Net.Primitives.csproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>

@@ -649,6 +649,11 @@
         ]
     },
     {
+        "Name": "System.IO.Packaging",
+        "Description": "Provides classes that support storage of multiple data objects in a single container.",
+        "CommonTypes": []
+    },
+    {
         "Name": "System.IO.Pipes",
         "Description": "Provides a means for interprocess communication through anonymous and/or named pipes.",
         "CommonTypes": [
@@ -1579,6 +1584,13 @@
             "System.Threading.Tasks.Dataflow.TransformBlock<TInput, TOutput>",
             "System.Threading.Tasks.Dataflow.TransformManyBlock<TInput, TOutput>",
             "System.Threading.Tasks.Dataflow.WriteOnceBlock<T>"
+        ]
+    },
+    {
+        "Name": "System.Threading.Tasks.Extensions",
+        "Description": "Provides additional types that simplify the work of writing concurrent and asynchronous code.",
+        "CommonTypes": [
+            "System.Threading.Tasks.ValueTask<TResult>"
         ]
     },
     {

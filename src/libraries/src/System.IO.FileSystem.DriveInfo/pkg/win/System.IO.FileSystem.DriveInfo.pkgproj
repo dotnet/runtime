@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageTargetRuntime>win7</PackageTargetRuntime>
+    <PreventImplementationReference>true</PreventImplementationReference>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <NotSupportedOnTargetFramework Include="win8;wp8;wpa81" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.DriveInfo.builds" >
+      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    </ProjectReference>
+    <ExternalOnTargetFramework Include="net" />
+    <NotSupportedOnTargetFramework Include="netcore50"/>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

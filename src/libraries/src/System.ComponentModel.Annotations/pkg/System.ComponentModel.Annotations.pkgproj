@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\4.0.0\System.ComponentModel.Annotations.depproj">
+      <SupportedFramework>net45</SupportedFramework>
+    </ProjectReference>
+    <!-- TODO: Add back once nuget maps UAP to 5.5 https://github.com/nuget/home/1709 -->
+    <!-- ProjectReference Include="..\ref\4.0.10\System.ComponentModel.Annotations.depproj">
+      <SupportedFramework>net46;netcore50</SupportedFramework>
+    </ProjectReference -->
+    <ProjectReference Include="..\ref\System.ComponentModel.Annotations.csproj">
+      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.ComponentModel.Annotations.builds" />
+
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="net45" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
