@@ -28,7 +28,7 @@ namespace System.Composition.Hosting
 
         private CompositionHost(LifetimeContext rootLifetimeContext)
         {
-            Requires.NotNull(rootLifetimeContext, "rootLifetimeContext");
+            Requires.NotNull(rootLifetimeContext, nameof(rootLifetimeContext));
 
             _rootLifetimeContext = rootLifetimeContext;
         }
@@ -48,7 +48,7 @@ namespace System.Composition.Hosting
         /// <returns>The container as an <see cref="CompositionHost"/>.</returns>
         public static CompositionHost CreateCompositionHost(IEnumerable<ExportDescriptorProvider> providers)
         {
-            Requires.NotNull(providers, "providers");
+            Requires.NotNull(providers, nameof(providers));
 
             var allProviders = new ExportDescriptorProvider[] {
                 new LazyExportDescriptorProvider(),

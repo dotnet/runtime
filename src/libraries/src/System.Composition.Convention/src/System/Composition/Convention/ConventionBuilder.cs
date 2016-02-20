@@ -51,7 +51,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesDerivedFrom(Type type)
         {
-            Requires.NotNull(type, "type");
+            Requires.NotNull(type, nameof(type));
 
             var partBuilder = new PartConventionBuilder((t) => IsDescendentOf(t, type));
             _conventions.Add(partBuilder);
@@ -77,7 +77,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForType(Type type)
         {
-            Requires.NotNull(type, "type");
+            Requires.NotNull(type, nameof(type));
 
             var partBuilder = new PartConventionBuilder((t) => t == type);
             _conventions.Add(partBuilder);
@@ -93,7 +93,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
-            Requires.NotNull(typeFilter, "typeFilter");
+            Requires.NotNull(typeFilter, nameof(typeFilter));
 
             var partBuilder = new PartConventionBuilder<T>(typeFilter);
             _conventions.Add(partBuilder);
@@ -108,7 +108,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
-            Requires.NotNull(typeFilter, "typeFilter");
+            Requires.NotNull(typeFilter, nameof(typeFilter));
 
             var partBuilder = new PartConventionBuilder(typeFilter);
             _conventions.Add(partBuilder);
@@ -151,7 +151,7 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
         {
-            Requires.NotNull(member, "member");
+            Requires.NotNull(member, nameof(member));
 
             // Now edit the attributes returned from the base type
             List<Attribute> cachedAttributes = null;
@@ -288,8 +288,7 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
         {
-            Requires.NotNull(parameter, "reflectedType");
-            Requires.NotNull(parameter, "parameter");
+            Requires.NotNull(parameter, nameof(parameter));
             var attributes = parameter.GetCustomAttributes<Attribute>(false);
             List<Attribute> cachedAttributes = ReadParameterCustomAttributes(reflectedType, parameter);
             return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);
