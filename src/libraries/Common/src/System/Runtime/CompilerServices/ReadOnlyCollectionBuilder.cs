@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         /// </summary> 
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            ContractUtils.Requires(capacity >= 0, "capacity");
+            ContractUtils.Requires(capacity >= 0, nameof(capacity));
             _items = new T[capacity];
         }
 
@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="collection"></param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
-            ContractUtils.Requires(collection != null, "collection");
+            ContractUtils.Requires(collection != null, nameof(collection));
 
             ICollection<T> c = collection as ICollection<T>;
             if (c != null)
@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
             get { return _items.Length; }
             set
             {
-                ContractUtils.Requires(value >= _size, "value");
+                ContractUtils.Requires(value >= _size, nameof(value));
 
                 if (value != _items.Length)
                 {
@@ -129,7 +129,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item)
         {
-            ContractUtils.Requires(index <= _size, "index");
+            ContractUtils.Requires(index <= _size, nameof(index));
 
             if (_size == _items.Length)
             {
@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            ContractUtils.Requires(index >= 0 && index < _size, "index");
+            ContractUtils.Requires(index >= 0 && index < _size, nameof(index));
 
             _size--;
             if (index < _size)
@@ -170,12 +170,12 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                ContractUtils.Requires(index < _size, "index");
+                ContractUtils.Requires(index < _size, nameof(index));
                 return _items[index];
             }
             set
             {
-                ContractUtils.Requires(index < _size, "index");
+                ContractUtils.Requires(index < _size, nameof(index));
                 _items[index] = value;
                 _version++;
             }
@@ -312,14 +312,14 @@ namespace System.Runtime.CompilerServices
 
         int System.Collections.IList.Add(object value)
         {
-            ValidateNullValue(value, "value");
+            ValidateNullValue(value, nameof(value));
             try
             {
                 Add((T)value);
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, "value");
+                ThrowInvalidTypeException(value, nameof(value));
             }
             return Count - 1;
         }
@@ -344,14 +344,14 @@ namespace System.Runtime.CompilerServices
 
         void System.Collections.IList.Insert(int index, object value)
         {
-            ValidateNullValue(value, "value");
+            ValidateNullValue(value, nameof(value));
             try
             {
                 Insert(index, (T)value);
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, "value");
+                ThrowInvalidTypeException(value, nameof(value));
             }
         }
 
@@ -376,7 +376,7 @@ namespace System.Runtime.CompilerServices
             }
             set
             {
-                ValidateNullValue(value, "value");
+                ValidateNullValue(value, nameof(value));
 
                 try
                 {
@@ -384,7 +384,7 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (InvalidCastException)
                 {
-                    ThrowInvalidTypeException(value, "value");
+                    ThrowInvalidTypeException(value, nameof(value));
                 }
             }
         }
@@ -395,8 +395,8 @@ namespace System.Runtime.CompilerServices
 
         void System.Collections.ICollection.CopyTo(Array array, int index)
         {
-            ContractUtils.RequiresNotNull(array, "array");
-            ContractUtils.Requires(array.Rank == 1, "array");
+            ContractUtils.RequiresNotNull(array, nameof(array));
+            ContractUtils.Requires(array.Rank == 1, nameof(array));
             Array.Copy(_items, 0, array, index, _size);
         }
 
@@ -434,8 +434,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            ContractUtils.Requires(index >= 0, "index");
-            ContractUtils.Requires(count >= 0, "count");
+            ContractUtils.Requires(index >= 0, nameof(index));
+            ContractUtils.Requires(count >= 0, nameof(count));
 
             Array.Reverse(_items, index, count);
             _version++;

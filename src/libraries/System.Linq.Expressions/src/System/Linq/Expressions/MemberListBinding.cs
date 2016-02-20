@@ -76,8 +76,8 @@ namespace System.Linq.Expressions
         ///<paramref name="member" /> does not represent a field or property.-or-The <see cref="P:System.Reflection.FieldInfo.FieldType" /> or <see cref="P:System.Reflection.PropertyInfo.PropertyType" /> of the field or property that <paramref name="member" /> represents does not implement <see cref="T:System.Collections.IEnumerable" />.</exception>
         public static MemberListBinding ListBind(MemberInfo member, IEnumerable<ElementInit> initializers)
         {
-            ContractUtils.RequiresNotNull(member, "member");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
+            ContractUtils.RequiresNotNull(member, nameof(member));
+            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             Type memberType;
             ValidateGettableFieldOrPropertyMember(member, out memberType);
             var initList = initializers.ToReadOnly();
@@ -108,8 +108,8 @@ namespace System.Linq.Expressions
         ///<paramref name="propertyAccessor" /> does not represent a property accessor method.-or-The <see cref="P:System.Reflection.PropertyInfo.PropertyType" /> of the property that the method represented by <paramref name="propertyAccessor" /> accesses does not implement <see cref="T:System.Collections.IEnumerable" />.</exception>        
         public static MemberListBinding ListBind(MethodInfo propertyAccessor, IEnumerable<ElementInit> initializers)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
-            ContractUtils.RequiresNotNull(initializers, "initializers");
+            ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
+            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             return ListBind(GetProperty(propertyAccessor), initializers);
         }
 
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = initializers.Count; i < n; i++)
             {
                 ElementInit element = initializers[i];
-                ContractUtils.RequiresNotNull(element, "initializers");
+                ContractUtils.RequiresNotNull(element, nameof(initializers));
                 ValidateCallInstanceType(listType, element.AddMethod);
             }
         }

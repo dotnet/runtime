@@ -141,35 +141,35 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arg, ParameterInfo pi)
+        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi)
         {
-            RequiresCanRead(arg, "arguments");
+            RequiresCanRead(arguments, nameof(arguments));
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
             {
                 pType = pType.GetElementType();
             }
             TypeUtils.ValidateType(pType);
-            if (!TypeUtils.AreReferenceAssignable(pType, arg.Type))
+            if (!TypeUtils.AreReferenceAssignable(pType, arguments.Type))
             {
-                if (!TryQuote(pType, ref arg))
+                if (!TryQuote(pType, ref arguments))
                 {
                     // Throw the right error for the node we were given
                     switch (nodeKind)
                     {
                         case ExpressionType.New:
-                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType);
+                            throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arguments.Type, pType);
                         case ExpressionType.Invoke:
-                            throw Error.ExpressionTypeDoesNotMatchParameter(arg.Type, pType);
+                            throw Error.ExpressionTypeDoesNotMatchParameter(arguments.Type, pType);
                         case ExpressionType.Dynamic:
                         case ExpressionType.Call:
-                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method);
+                            throw Error.ExpressionTypeDoesNotMatchMethodParameter(arguments.Type, pType, method);
                         default:
                             throw ContractUtils.Unreachable;
                     }
                 }
             }
-            return arg;
+            return arguments;
         }
 
         public static void RequiresCanRead(Expression expression, string paramName)

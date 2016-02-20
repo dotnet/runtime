@@ -17,7 +17,7 @@ namespace System.Linq.Expressions
 
         internal SymbolDocumentInfo(string fileName)
         {
-            ContractUtils.RequiresNotNull(fileName, "fileName");
+            ContractUtils.RequiresNotNull(fileName, nameof(fileName));
             _fileName = fileName;
         }
 

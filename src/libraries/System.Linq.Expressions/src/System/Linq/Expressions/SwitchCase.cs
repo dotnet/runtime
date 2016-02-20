@@ -89,11 +89,11 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="T:SwitchCase">SwitchCase</see>.</returns>
         public static SwitchCase SwitchCase(Expression body, IEnumerable<Expression> testValues)
         {
-            RequiresCanRead(body, "body");
+            RequiresCanRead(body, nameof(body));
 
             var values = testValues.ToReadOnly();
-            ContractUtils.RequiresNotEmpty(values, "testValues");
-            RequiresCanRead(values, "testValues");
+            ContractUtils.RequiresNotEmpty(values, nameof(testValues));
+            RequiresCanRead(values, nameof(testValues));
 
             return new SwitchCase(body, values);
         }

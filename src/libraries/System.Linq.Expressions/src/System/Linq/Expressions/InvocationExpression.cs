@@ -480,7 +480,7 @@ namespace System.Linq.Expressions
         {
             // COMPAT: This method is marked as non-public to avoid a gap between a 0-ary and 2-ary overload (see remark for the unary case below).
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions
         {
             // COMPAT: This method is marked as non-public to ensure compile-time compatibility for Expression.Invoke(e, null).
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -556,7 +556,7 @@ namespace System.Linq.Expressions
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1)
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -601,7 +601,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -650,7 +650,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -703,7 +703,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var method = GetInvokeMethod(expression);
 
@@ -789,7 +789,7 @@ namespace System.Linq.Expressions
                     return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
             }
 
-            RequiresCanRead(expression, "expression");
+            RequiresCanRead(expression, nameof(expression));
 
             var args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
             var mi = GetInvokeMethod(expression);
