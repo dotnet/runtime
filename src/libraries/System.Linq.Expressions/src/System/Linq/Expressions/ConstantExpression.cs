@@ -123,7 +123,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static ConstantExpression Constant(object value, Type type)
         {
-            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(type, nameof(type));
             if (value == null && type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type))
             {
                 throw Error.ArgumentTypesMustMatch();

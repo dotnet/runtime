@@ -174,10 +174,10 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression MakeTry(Type type, Expression body, Expression @finally, Expression fault, IEnumerable<CatchBlock> handlers)
         {
-            RequiresCanRead(body, "body");
+            RequiresCanRead(body, nameof(body));
 
             var @catch = handlers.ToReadOnly();
-            ContractUtils.RequiresNotNullItems(@catch, "handlers");
+            ContractUtils.RequiresNotNullItems(@catch, nameof(handlers));
             ValidateTryAndCatchHaveSameType(type, body, @catch);
 
             if (fault != null)
@@ -186,11 +186,11 @@ namespace System.Linq.Expressions
                 {
                     throw Error.FaultCannotHaveCatchOrFinally();
                 }
-                RequiresCanRead(fault, "fault");
+                RequiresCanRead(fault, nameof(fault));
             }
             else if (@finally != null)
             {
-                RequiresCanRead(@finally, "finally");
+                RequiresCanRead(@finally, nameof(@finally));
             }
             else if (@catch.Count == 0)
             {

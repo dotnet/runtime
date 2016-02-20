@@ -106,7 +106,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LabelExpression"/> with the given default value.</returns>
         public static LabelExpression Label(LabelTarget target, Expression defaultValue)
         {
-            ValidateGoto(target, ref defaultValue, "target", "defaultValue");
+            ValidateGoto(target, ref defaultValue, nameof(target), nameof(defaultValue));
             return new LabelExpression(target, defaultValue);
         }
     }

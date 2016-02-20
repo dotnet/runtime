@@ -75,8 +75,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="MemberMemberBinding"/> that has the <see cref="P:MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/> and the <see cref="P:MemberBinding.Member"/> and <see cref="P:MemberMemberBindings.Bindings"/> properties set to the specified values.</returns>
         public static MemberMemberBinding MemberBind(MemberInfo member, IEnumerable<MemberBinding> bindings)
         {
-            ContractUtils.RequiresNotNull(member, "member");
-            ContractUtils.RequiresNotNull(bindings, "bindings");
+            ContractUtils.RequiresNotNull(member, nameof(member));
+            ContractUtils.RequiresNotNull(bindings, nameof(bindings));
             ReadOnlyCollection<MemberBinding> roBindings = bindings.ToReadOnly();
             Type memberType;
             ValidateGettableFieldOrPropertyMember(member, out memberType);
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static MemberMemberBinding MemberBind(MethodInfo propertyAccessor, IEnumerable<MemberBinding> bindings)
         {
-            ContractUtils.RequiresNotNull(propertyAccessor, "propertyAccessor");
+            ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
             return MemberBind(GetProperty(propertyAccessor), bindings);
         }
 
@@ -142,7 +142,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = bindings.Count; i < n; i++)
             {
                 MemberBinding b = bindings[i];
-                ContractUtils.RequiresNotNull(b, "bindings");
+                ContractUtils.RequiresNotNull(b, nameof(bindings));
                 if (!b.Member.DeclaringType.IsAssignableFrom(type))
                 {
                     throw Error.NotAMemberOfType(b.Member.Name, type);

@@ -202,8 +202,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeIs"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeIs(Expression expression, Type type)
         {
-            RequiresCanRead(expression, "expression");
-            ContractUtils.RequiresNotNull(type, "type");
+            RequiresCanRead(expression, nameof(expression));
+            ContractUtils.RequiresNotNull(type, nameof(type));
             if (type.IsByRef) throw Error.TypeMustNotBeByRef();
 
             return new TypeBinaryExpression(expression, type, ExpressionType.TypeIs);
@@ -217,8 +217,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="TypeBinaryExpression"/> for which the <see cref="NodeType"/> property is equal to <see cref="TypeEqual"/> and for which the <see cref="Expression"/> and <see cref="TypeBinaryExpression.TypeOperand"/> properties are set to the specified values.</returns>
         public static TypeBinaryExpression TypeEqual(Expression expression, Type type)
         {
-            RequiresCanRead(expression, "expression");
-            ContractUtils.RequiresNotNull(type, "type");
+            RequiresCanRead(expression, nameof(expression));
+            ContractUtils.RequiresNotNull(type, nameof(type));
             if (type.IsByRef) throw Error.TypeMustNotBeByRef();
 
             return new TypeBinaryExpression(expression, type, ExpressionType.TypeEqual);

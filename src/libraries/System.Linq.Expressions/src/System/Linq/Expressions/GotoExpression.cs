@@ -354,7 +354,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static GotoExpression MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type)
         {
-            ValidateGoto(target, ref value, "target", "value");
+            ValidateGoto(target, ref value, nameof(target), nameof(value));
             return new GotoExpression(kind, target, value, type);
         }
 

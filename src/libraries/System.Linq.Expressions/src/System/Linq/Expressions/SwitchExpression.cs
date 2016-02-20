@@ -199,11 +199,11 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases)
         {
-            RequiresCanRead(switchValue, "switchValue");
+            RequiresCanRead(switchValue, nameof(switchValue));
             if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
 
             var caseList = cases.ToReadOnly();
-            ContractUtils.RequiresNotNullItems(caseList, "cases");
+            ContractUtils.RequiresNotNullItems(caseList, nameof(cases));
 
             // Type of the result. Either provided, or it is type of the branches.
             Type resultType;
@@ -240,8 +240,8 @@ namespace System.Linq.Expressions
                 var rightParam = pms[1];
                 foreach (var c in caseList)
                 {
-                    ContractUtils.RequiresNotNull(c, "cases");
-                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
+                    ContractUtils.RequiresNotNull(c, nameof(cases));
+                    ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     for (int i = 0; i < c.TestValues.Count; i++)
                     {
                         // When a comparison method is provided, test values can have different type but have to
@@ -269,8 +269,8 @@ namespace System.Linq.Expressions
                 var firstTestValue = caseList[0].TestValues[0];
                 foreach (var c in caseList)
                 {
-                    ContractUtils.RequiresNotNull(c, "cases");
-                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
+                    ContractUtils.RequiresNotNull(c, nameof(cases));
+                    ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     // When no comparison method is provided, require all test values to have the same type.
                     for (int i = 0; i < c.TestValues.Count; i++)
                     {
@@ -296,7 +296,7 @@ namespace System.Linq.Expressions
             }
             else
             {
-                ValidateSwitchCaseType(defaultBody, customType, resultType, "defaultBody");
+                ValidateSwitchCaseType(defaultBody, customType, resultType, nameof(defaultBody));
             }
 
             // if we have a non-boolean userdefined equals, we don't want it.
