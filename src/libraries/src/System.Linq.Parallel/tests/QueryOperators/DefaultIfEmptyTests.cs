@@ -24,7 +24,7 @@ namespace System.Linq.Parallel.Tests
         // DefaultIfEmpty
         //
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void DefaultIfEmpty_Unordered_NotEmpty(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -38,7 +38,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
         public static void DefaultIfEmpty_Unordered_NotEmpty_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             DefaultIfEmpty_Unordered_NotEmpty(labeled, count);
@@ -66,7 +66,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void DefaultIfEmpty_Unordered_NotEmpty_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -77,7 +77,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
         public static void DefaultIfEmpty_Unordered_NotEmpty_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             DefaultIfEmpty_Unordered_NotEmpty_NotPipelined(labeled, count);

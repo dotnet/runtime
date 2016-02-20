@@ -10,7 +10,7 @@ namespace System.Linq.Parallel.Tests
     public class SelectSelectManyTests
     {
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -25,7 +25,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Select_Unordered(labeled, count);
@@ -54,7 +54,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -66,7 +66,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Select_Unordered_NotPipelined(labeled, count);
@@ -100,7 +100,7 @@ namespace System.Linq.Parallel.Tests
         // larger input sizes increases the probability that it will.
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Indexed_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             // For unordered collections, which element is at which index isn't actually guaranteed, but an effect of the implementation.
@@ -117,7 +117,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Indexed_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Select_Indexed_Unordered(labeled, count);
@@ -146,7 +146,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Indexed_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             // For unordered collections, which element is at which index isn't actually guaranteed, but an effect of the implementation.
@@ -164,7 +164,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024, 1024 * 4 }), MemberType = typeof(UnorderedSources))]
         public static void Select_Indexed_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Select_Indexed_Unordered_NotPipelined(labeled, count);

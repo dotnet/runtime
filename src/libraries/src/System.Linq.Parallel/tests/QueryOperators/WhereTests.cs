@@ -9,7 +9,7 @@ namespace System.Linq.Parallel.Tests
     public class WhereTests
     {
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -24,7 +24,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Where_Unordered(labeled, count);
@@ -52,7 +52,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -63,7 +63,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Where_Unordered_NotPipelined(labeled, count);
@@ -92,7 +92,7 @@ namespace System.Linq.Parallel.Tests
         // larger input sizes increases the probability that it will.
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Indexed_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -106,7 +106,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Indexed_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Where_Indexed_Unordered(labeled, count);
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Indexed_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -145,7 +145,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 512 }), MemberType = typeof(UnorderedSources))]
         public static void Where_Indexed_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Where_Indexed_Unordered_NotPipelined(labeled, count);
