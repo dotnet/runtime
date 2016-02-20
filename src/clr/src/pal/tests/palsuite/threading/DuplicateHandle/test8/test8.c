@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 /*=====================================================================
-** 
+**
 ** Source:  test8.c (DuplicateHandle)
 **
 ** Purpose: Tests the PAL implementation of the DuplicateHandle function,
 **          with a handle from GetCurrentThread. The test will create a thread
-**          handle, get the current thread and its duplicate. Then get the 
+**          handle, get the current thread and its duplicate. Then get the
 **          priorities of the threads, set the priority of one and the change
 **          should be seen in the other.
 **
@@ -21,9 +21,9 @@ DWORD PALAPI CreateTestThread(LPVOID lpParam);
 
 int __cdecl main(int argc, char* argv[])
 {
-    HANDLE  hThread;  
-    HANDLE  hCurrentThread;  
-    HANDLE  hDupThread;  
+    HANDLE  hThread;
+    HANDLE  hCurrentThread;
+    HANDLE  hDupThread;
     DWORD   dwThreadId = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
 
@@ -43,7 +43,7 @@ int __cdecl main(int argc, char* argv[])
     */
     printf("paltest_duplicatehandle_test8 has been disabled on this platform\n");
 #else
-    
+
     /* Create a thread.*/
     hThread = CreateThread(NULL,            /* SD*/
                           (DWORD)0,         /* initial stack size*/
