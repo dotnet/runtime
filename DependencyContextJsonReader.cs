@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public class DependencyContextReader
+    public class DependencyContextJsonReader
     {
         public DependencyContext Read(Stream stream)
         {
