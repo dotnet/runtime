@@ -250,7 +250,7 @@ desc_retire (Descriptor *desc)
 	g_assert (desc->in_use);
 	desc->in_use = FALSE;
 	free_sb (desc->sb, desc->block_size);
-	mono_thread_hazardous_free_or_queue (desc, desc_enqueue_avail, FALSE, TRUE);
+	mono_thread_hazardous_free_or_queue (desc, desc_enqueue_avail, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 }
 #else
 MonoLockFreeQueue available_descs;
@@ -302,7 +302,7 @@ static void
 list_put_partial (Descriptor *desc)
 {
 	g_assert (desc->anchor.data.state != STATE_FULL);
-	mono_thread_hazardous_free_or_queue (desc, desc_put_partial, FALSE, TRUE);
+	mono_thread_hazardous_free_or_queue (desc, desc_put_partial, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 }
 
 static void
@@ -321,7 +321,7 @@ list_remove_empty_desc (MonoLockFreeAllocSizeClass *sc)
 			desc_retire (desc);
 		} else {
 			g_assert (desc->heap->sc == sc);
-			mono_thread_hazardous_free_or_queue (desc, desc_put_partial, FALSE, TRUE);
+			mono_thread_hazardous_free_or_queue (desc, desc_put_partial, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 			if (++num_non_empty >= 2)
 				return;
 		}

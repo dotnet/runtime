@@ -151,7 +151,7 @@ mono_lls_filter_accept_all (gpointer elem)
 						mono_memory_write_barrier (); \
 						mono_hazard_pointer_clear (hp__, 1); \
 						if (list__->free_node_func) { \
-							mono_thread_hazardous_free_or_queue (cur__, list__->free_node_func, FALSE, TRUE); \
+							mono_thread_hazardous_free_or_queue (cur__, list__->free_node_func, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX); \
 						} \
 					} else { \
 						restart__ = TRUE; \

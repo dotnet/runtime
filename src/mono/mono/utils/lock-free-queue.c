@@ -286,7 +286,7 @@ mono_lock_free_queue_dequeue (MonoLockFreeQueue *q)
 		g_assert (q->has_dummy);
 		q->has_dummy = 0;
 		mono_memory_write_barrier ();
-		mono_thread_hazardous_free_or_queue (head, free_dummy, FALSE, TRUE);
+		mono_thread_hazardous_free_or_queue (head, free_dummy, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 		if (try_reenqueue_dummy (q))
 			goto retry;
 		return NULL;

@@ -424,7 +424,7 @@ unregister_thread (void *arg)
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
 	/*now it's safe to free the thread info.*/
-	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);
+	mono_thread_hazardous_free_or_queue (info, free_thread_info, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 	mono_thread_small_id_free (small_id);
 }
 

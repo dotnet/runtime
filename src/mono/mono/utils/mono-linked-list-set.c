@@ -125,7 +125,7 @@ try_again:
 				mono_memory_write_barrier ();
 				mono_hazard_pointer_clear (hp, 1);
 				if (list->free_node_func)
-					mono_thread_hazardous_free_or_queue (cur, list->free_node_func, FALSE, TRUE);
+					mono_thread_hazardous_free_or_queue (cur, list->free_node_func, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 			} else
 				goto try_again;
 		}
@@ -193,7 +193,7 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 			mono_memory_write_barrier ();
 			mono_hazard_pointer_clear (hp, 1);
 			if (list->free_node_func)
-				mono_thread_hazardous_free_or_queue (value, list->free_node_func, FALSE, TRUE);
+				mono_thread_hazardous_free_or_queue (value, list->free_node_func, HAZARD_FREE_NO_LOCK, HAZARD_FREE_ASYNC_CTX);
 		} else
 			mono_lls_find (list, hp, value->key);
 		return TRUE;
