@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# This file invokes cmake and generates the build system for gcc.
+# This file invokes cmake and generates the build system for Clang.
 #
 
 if [ $# -lt 4 -o $# -gt 8 ]
