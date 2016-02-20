@@ -2611,20 +2611,53 @@ if test "x$enable_llvm" = "xyes"; then
 
    if test "x$host_win32" = "xno"; then
 
+   # Should be something like '2.6' or '2.7svn'
+   llvm_version=`$LLVM_CONFIG --version`
+   llvm_api_version=`$LLVM_CONFIG --mono-api-version 2>/dev/null`
+   AC_MSG_CHECKING(LLVM version)
+   AC_MSG_RESULT($llvm_version $llvm_api_version)
+   if echo $llvm_version | grep -q 'mono'; then
+	  if test "x$enable_llvm_version_check" == "xyes"; then
+	  	 if test "$llvm_version" != "$expected_llvm_version"; then
+		 	AC_MSG_ERROR([Expected llvm version $expected_llvm_version, but llvm-config --version returned $llvm_version"])
+	  	 fi
+	  fi
+   else
+	  AC_MSG_ERROR([Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm, with the GIT branch which matches this version of mono, i.e. 'mono-2-10' for Mono 2.10.])
+   fi
+
    # The output of --cflags seems to include optimizations flags too
-   LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
-   LLVM_CXXFLAGS=`$LLVM_CONFIG --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
+   if test $llvm_api_version -gt 100; then
+   	  # The --cflags argument includes all kinds of warnings -pendantic etc.
+	  LLVM_CFLAGS="-I$with_llvm/include -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"
+	  LLVM_CXXFLAGS="-I$with_llvm/include -std=c++11 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"
+   else
+	  LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
+      LLVM_CXXFLAGS=`$LLVM_CONFIG --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
+   fi
    # LLVM is compiled with -fno-rtti, so we need this too, since our classes inherit
    # from LLVM classes.
    LLVM_CXXFLAGS="$LLVM_CXXFLAGS -fno-rtti -fexceptions"
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
    # This might include empty lines
    LLVM_SYSTEM_LIBS=`$LLVM_CONFIG --system-libs 2>/dev/null | grep -- -`
-   if test "x$host" != "x$target"; then
+   llvm_jit_supported=yes
+   if test $llvm_api_version -gt 100; then
+   	  # Based on llvm 3.9, only aot is currently supported
+	  llvm_jit_supported=no
+   elif test "x$host" != "x$target"; then
+      # No need for jit libs
+	  llvm_jit_supported=no
+   fi
+   if test $llvm_jit_supported = no; then
       # No need for jit libs
       LLVM_LIBS=`$LLVM_CONFIG --libs analysis core bitwriter`
    else
       LLVM_LIBS=`$LLVM_CONFIG --libs analysis core bitwriter jit mcjit $llvm_codegen`
+   fi
+   if test "x$LLVM_LIBS" == "x"; then
+   	  echo "$LLVM_CONFIG --libs failed."
+	  exit 1
    fi
    LLVM_LIBS="$LLVM_LIBS $LLVM_LDFLAGS $LLVM_SYSTEM_LIBS"
    # The c++ standard library used by llvm doesn't show up in $LLVM_SYSTEM_LIBS so add it manually
@@ -2635,21 +2668,6 @@ if test "x$enable_llvm" = "xyes"; then
    fi
 
    expected_llvm_version="3.4svn-mono-mono/e656cac"
-
-   # Should be something like '2.6' or '2.7svn'
-   llvm_version=`$LLVM_CONFIG --version`
-   llvm_api_version=`$LLVM_CONFIG --mono-api-version 2>/dev/null`
-   AC_MSG_CHECKING(LLVM version)
-   AC_MSG_RESULT($llvm_version)
-   if echo $llvm_version | grep -q 'mono'; then
-	  if test "x$enable_llvm_version_check" == "xyes"; then
-	  	 if test "$llvm_version" != "$expected_llvm_version"; then
-	  	 	AC_MSG_ERROR([Expected llvm version $expected_llvm_version, but llvm-config --version returned $llvm_version"])
-	  	 fi
-	  fi
-   else
-	  AC_MSG_ERROR([Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm, with the GIT branch which matches this version of mono, i.e. 'mono-2-10' for Mono 2.10.])
-   fi
 
    else
        LLVM_CFLAGS="-I$with_llvm/include -DNDEBUG -D__NO_CTYPE_INLINE -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"

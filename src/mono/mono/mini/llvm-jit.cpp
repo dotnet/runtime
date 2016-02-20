@@ -12,6 +12,13 @@
 
 #include "config.h"
 
+#include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
+
+#include "mini-llvm-cpp.h"
+
+#if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 100
+
 #include <stdint.h>
 
 #include <llvm/Support/raw_ostream.h>
@@ -35,13 +42,6 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-
-#include <llvm-c/Core.h>
-#include <llvm-c/ExecutionEngine.h>
-
-#include "mini-llvm-cpp.h"
-
-#ifndef MONO_CROSS_COMPILE
 
 using namespace llvm;
 

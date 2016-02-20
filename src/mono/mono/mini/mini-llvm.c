@@ -265,7 +265,7 @@ static void init_jit_module (MonoDomain *domain);
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
 static LLVMValueRef emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, const char *name);
 static void emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name);
-
+static void emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *exc_type, LLVMValueRef cmp);
 
 static inline void
 set_failure (EmitContext *ctx, const char *message)
@@ -1866,8 +1866,19 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 	const char *intrins_name;
 	LLVMValueRef args [16], res;
 	LLVMTypeRef addr_type;
+	gboolean use_intrinsics = TRUE;
 
+#if LLVM_API_VERSION > 100
 	if (is_faulting && bb->region != -1 && !ctx->cfg->llvm_only) {
+		/* The llvm.mono.load/store intrinsics are not supported by this llvm version, emit an explicit null check instead */
+		LLVMValueRef cmp = LLVMBuildICmp (*builder_ref, LLVMIntEQ, addr, LLVMConstNull (LLVMTypeOf (addr)), "");
+		emit_cond_system_exception (ctx, bb, "NullReferenceException", cmp);
+		*builder_ref = ctx->builder;
+		use_intrinsics = FALSE;
+	}
+#endif
+
+	if (is_faulting && bb->region != -1 && !ctx->cfg->llvm_only && use_intrinsics) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -1955,8 +1966,19 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 {
 	const char *intrins_name;
 	LLVMValueRef args [16];
+	gboolean use_intrinsics = TRUE;
 
+#if LLVM_API_VERSION > 100
 	if (is_faulting && bb->region != -1 && !ctx->cfg->llvm_only) {
+		/* The llvm.mono.load/store intrinsics are not supported by this llvm version, emit an explicit null check instead */
+		LLVMValueRef cmp = LLVMBuildICmp (*builder_ref, LLVMIntEQ, addr, LLVMConstNull (LLVMTypeOf (addr)), "");
+		emit_cond_system_exception (ctx, bb, "NullReferenceException", cmp);
+		*builder_ref = ctx->builder;
+		use_intrinsics = FALSE;
+	}
+#endif
+
+	if (is_faulting && bb->region != -1 && !ctx->cfg->llvm_only && use_intrinsics) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -4852,7 +4874,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_U1:
 		case OP_RCONV_TO_U1:
-			values [ins->dreg] = LLVMBuildZExt (builder, LLVMBuildFPToUI (builder, lhs, LLVMInt8Type (), dname), LLVMInt32Type (), "");
+			values [ins->dreg] = LLVMBuildZExt (builder, LLVMBuildTrunc (builder, LLVMBuildFPToUI (builder, lhs, IntPtrType (), dname), LLVMInt8Type (), ""), LLVMInt32Type (), "");
 			break;
 		case OP_FCONV_TO_I2:
 		case OP_RCONV_TO_I2:
