@@ -101,12 +101,12 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="T:ElementInit">ElementInit</see> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, IEnumerable<Expression> arguments)
         {
-            ContractUtils.RequiresNotNull(addMethod, "addMethod");
-            ContractUtils.RequiresNotNull(arguments, "arguments");
+            ContractUtils.RequiresNotNull(addMethod, nameof(addMethod));
+            ContractUtils.RequiresNotNull(arguments, nameof(arguments));
 
             var argumentsRO = arguments.ToReadOnly();
 
-            RequiresCanRead(argumentsRO, "arguments");
+            RequiresCanRead(argumentsRO, nameof(arguments));
             ValidateElementInitAddMethodInfo(addMethod);
             ValidateArgumentTypes(addMethod, ExpressionType.Call, ref argumentsRO);
             return new ElementInit(addMethod, argumentsRO);

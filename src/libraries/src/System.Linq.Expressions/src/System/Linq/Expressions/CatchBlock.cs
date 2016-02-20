@@ -114,7 +114,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(ParameterExpression variable, Expression body)
         {
-            ContractUtils.RequiresNotNull(variable, "variable");
+            ContractUtils.RequiresNotNull(variable, nameof(variable));
             return MakeCatchBlock(variable.Type, variable, body, null);
         }
 
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(ParameterExpression variable, Expression body, Expression filter)
         {
-            ContractUtils.RequiresNotNull(variable, "variable");
+            ContractUtils.RequiresNotNull(variable, nameof(variable));
             return MakeCatchBlock(variable.Type, variable, body, filter);
         }
 
@@ -156,16 +156,16 @@ namespace System.Linq.Expressions
         /// <remarks><paramref name="type"/> must be non-null and match the type of <paramref name="variable"/> (if it is supplied).</remarks>
         public static CatchBlock MakeCatchBlock(Type type, ParameterExpression variable, Expression body, Expression filter)
         {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), "variable");
+            ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), nameof(variable));
             if (variable != null && variable.IsByRef)
             {
                 throw Error.VariableMustNotBeByRef(variable, variable.Type);
             }
-            RequiresCanRead(body, "body");
+            RequiresCanRead(body, nameof(body));
             if (filter != null)
             {
-                RequiresCanRead(filter, "filter");
+                RequiresCanRead(filter, nameof(filter));
                 if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean();
             }
 

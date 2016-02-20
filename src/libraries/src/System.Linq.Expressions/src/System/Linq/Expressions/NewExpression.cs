@@ -162,8 +162,8 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/> and <see cref="P:Arguments"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments)
         {
-            ContractUtils.RequiresNotNull(constructor, "constructor");
-            ContractUtils.RequiresNotNull(constructor.DeclaringType, "constructor.DeclaringType");
+            ContractUtils.RequiresNotNull(constructor, nameof(constructor));
+            ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
             TypeUtils.ValidateType(constructor.DeclaringType);
             ValidateConstructor(constructor);
             var argList = arguments.ToReadOnly();
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/>, <see cref="P:Arguments"/> and <see cref="P:Members"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, IEnumerable<MemberInfo> members)
         {
-            ContractUtils.RequiresNotNull(constructor, "constructor");
+            ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ValidateConstructor(constructor);
             var memberList = members.ToReadOnly();
             var argList = arguments.ToReadOnly();
@@ -211,7 +211,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to New and the Constructor property set to the ConstructorInfo that represents the parameterless constructor of the specified type.</returns>
         public static NewExpression New(Type type)
         {
-            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(type, nameof(type));
             if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid();
@@ -252,7 +252,7 @@ namespace System.Linq.Expressions
                     Expression arg = arguments[i];
                     RequiresCanRead(arg, "argument");
                     MemberInfo member = members[i];
-                    ContractUtils.RequiresNotNull(member, "member");
+                    ContractUtils.RequiresNotNull(member, nameof(member));
                     if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType))
                     {
                         throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name);

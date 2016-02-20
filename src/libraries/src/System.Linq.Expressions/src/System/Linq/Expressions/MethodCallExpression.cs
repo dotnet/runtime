@@ -706,7 +706,7 @@ namespace System.Linq.Expressions
         {
             // NB: Keeping this method as internal to avoid public API changes; it's internal for MethodCallExpression0.Rewrite.
 
-            ContractUtils.RequiresNotNull(method, "method");
+            ContractUtils.RequiresNotNull(method, nameof(method));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -723,8 +723,8 @@ namespace System.Linq.Expressions
         ///<paramref name="method" /> is null.</exception>
         public static MethodCallExpression Call(MethodInfo method, Expression arg0)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -744,9 +744,9 @@ namespace System.Linq.Expressions
         ///<paramref name="method" /> is null.</exception>
         public static MethodCallExpression Call(MethodInfo method, Expression arg0, Expression arg1)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -768,10 +768,10 @@ namespace System.Linq.Expressions
         ///<paramref name="method" /> is null.</exception>
         public static MethodCallExpression Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
-            ContractUtils.RequiresNotNull(arg2, "arg2");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
+            ContractUtils.RequiresNotNull(arg2, nameof(arg2));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -795,11 +795,11 @@ namespace System.Linq.Expressions
         ///<paramref name="method" /> is null.</exception>
         public static MethodCallExpression Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
-            ContractUtils.RequiresNotNull(arg2, "arg2");
-            ContractUtils.RequiresNotNull(arg3, "arg3");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
+            ContractUtils.RequiresNotNull(arg2, nameof(arg2));
+            ContractUtils.RequiresNotNull(arg3, nameof(arg3));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -826,12 +826,12 @@ namespace System.Linq.Expressions
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         public static MethodCallExpression Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
-            ContractUtils.RequiresNotNull(arg2, "arg2");
-            ContractUtils.RequiresNotNull(arg3, "arg3");
-            ContractUtils.RequiresNotNull(arg4, "arg4");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
+            ContractUtils.RequiresNotNull(arg2, nameof(arg2));
+            ContractUtils.RequiresNotNull(arg3, nameof(arg3));
+            ContractUtils.RequiresNotNull(arg4, nameof(arg4));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(null, method);
 
@@ -876,7 +876,7 @@ namespace System.Linq.Expressions
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         public static MethodCallExpression Call(Expression instance, MethodInfo method)
         {
-            ContractUtils.RequiresNotNull(method, "method");
+            ContractUtils.RequiresNotNull(method, nameof(method));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(instance, method);
 
@@ -913,8 +913,8 @@ namespace System.Linq.Expressions
         {
             // COMPAT: This method is marked as non-public to ensure compile-time compatibility for Expression.Call(e, m, null).
 
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(instance, method);
 
@@ -940,9 +940,9 @@ namespace System.Linq.Expressions
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         public static MethodCallExpression Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(instance, method);
 
@@ -970,10 +970,10 @@ namespace System.Linq.Expressions
         ///<returns>A <see cref="T:System.Linq.Expressions.MethodCallExpression" /> that has the <see cref="P:System.Linq.Expressions.Expression.NodeType" /> property equal to <see cref="F:System.Linq.Expressions.ExpressionType.Call" /> and the <see cref="P:System.Linq.Expressions.MethodCallExpression.Object" /> and <see cref="P:System.Linq.Expressions.MethodCallExpression.Method" /> properties set to the specified values.</returns>
         public static MethodCallExpression Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
         {
-            ContractUtils.RequiresNotNull(method, "method");
-            ContractUtils.RequiresNotNull(arg0, "arg0");
-            ContractUtils.RequiresNotNull(arg1, "arg1");
-            ContractUtils.RequiresNotNull(arg2, "arg2");
+            ContractUtils.RequiresNotNull(method, nameof(method));
+            ContractUtils.RequiresNotNull(arg0, nameof(arg0));
+            ContractUtils.RequiresNotNull(arg1, nameof(arg1));
+            ContractUtils.RequiresNotNull(arg2, nameof(arg2));
 
             ParameterInfo[] pis = ValidateMethodAndGetParameters(instance, method);
 
@@ -1004,8 +1004,8 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.InvalidOperationException">No method whose name is <paramref name="methodName" />, whose type parameters match <paramref name="typeArguments" />, and whose parameter types match <paramref name="arguments" /> is found in <paramref name="instance" />.Type or its base types.-or-More than one method whose name is <paramref name="methodName" />, whose type parameters match <paramref name="typeArguments" />, and whose parameter types match <paramref name="arguments" /> is found in <paramref name="instance" />.Type or its base types.</exception>
         public static MethodCallExpression Call(Expression instance, string methodName, Type[] typeArguments, params Expression[] arguments)
         {
-            ContractUtils.RequiresNotNull(instance, "instance");
-            ContractUtils.RequiresNotNull(methodName, "methodName");
+            ContractUtils.RequiresNotNull(instance, nameof(instance));
+            ContractUtils.RequiresNotNull(methodName, nameof(methodName));
             if (arguments == null)
             {
                 arguments = Array.Empty<Expression>();
@@ -1029,8 +1029,8 @@ namespace System.Linq.Expressions
         ///<exception cref="T:System.InvalidOperationException">No method whose name is <paramref name="methodName" />, whose type parameters match <paramref name="typeArguments" />, and whose parameter types match <paramref name="arguments" /> is found in <paramref name="type" /> or its base types.-or-More than one method whose name is <paramref name="methodName" />, whose type parameters match <paramref name="typeArguments" />, and whose parameter types match <paramref name="arguments" /> is found in <paramref name="type" /> or its base types.</exception>
         public static MethodCallExpression Call(Type type, string methodName, Type[] typeArguments, params Expression[] arguments)
         {
-            ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.RequiresNotNull(methodName, "methodName");
+            ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.RequiresNotNull(methodName, nameof(methodName));
 
             if (arguments == null) arguments = Array.Empty<Expression>();
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
@@ -1078,7 +1078,7 @@ namespace System.Linq.Expressions
                 }
             }
 
-            ContractUtils.RequiresNotNull(method, "method");
+            ContractUtils.RequiresNotNull(method, nameof(method));
 
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
 
@@ -1113,7 +1113,7 @@ namespace System.Linq.Expressions
             else
             {
                 if (instance == null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, nameof(method));
-                RequiresCanRead(instance, "instance");
+                RequiresCanRead(instance, nameof(instance));
                 ValidateCallInstanceType(instance.Type, method);
             }
         }
@@ -1267,8 +1267,8 @@ namespace System.Linq.Expressions
         ///<paramref name="array" />.Type does not represent an array type.-or-The rank of <paramref name="array" />.Type does not match the number of elements in <paramref name="indexes" />.-or-The <see cref="P:System.Linq.Expressions.Expression.Type" /> property of one or more elements of <paramref name="indexes" /> does not represent the <see cref="T:System.Int32" /> type.</exception>
         public static MethodCallExpression ArrayIndex(Expression array, IEnumerable<Expression> indexes)
         {
-            RequiresCanRead(array, "array");
-            ContractUtils.RequiresNotNull(indexes, "indexes");
+            RequiresCanRead(array, nameof(array));
+            ContractUtils.RequiresNotNull(indexes, nameof(indexes));
 
             Type arrayType = array.Type;
             if (!arrayType.IsArray)
@@ -1284,7 +1284,7 @@ namespace System.Linq.Expressions
 
             foreach (Expression e in indexList)
             {
-                RequiresCanRead(e, "indexes");
+                RequiresCanRead(e, nameof(indexes));
                 if (e.Type != typeof(int))
                 {
                     throw Error.ArgumentMustBeArrayIndexType();
