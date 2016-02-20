@@ -12,7 +12,7 @@ namespace System.Collections.Immutable
 
         internal DictionaryEnumerator(IEnumerator<KeyValuePair<TKey, TValue>> inner)
         {
-            Requires.NotNull(inner, "inner");
+            Requires.NotNull(inner, nameof(inner));
 
             _inner = inner;
         }

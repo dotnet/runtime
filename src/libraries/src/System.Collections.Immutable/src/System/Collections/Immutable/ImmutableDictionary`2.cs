@@ -51,9 +51,9 @@ namespace System.Collections.Immutable
         /// <param name="comparers">The comparers.</param>
         /// <param name="count">The number of elements in the map.</param>
         private ImmutableDictionary(SortedInt32KeyNode<HashBucket> root, Comparers comparers, int count)
-            : this(Requires.NotNullPassthrough(comparers, "comparers"))
+            : this(Requires.NotNullPassthrough(comparers, nameof(comparers)))
         {
-            Requires.NotNull(root, "root");
+            Requires.NotNull(root, nameof(root));
 
             root.Freeze(s_FreezeBucketAction);
             _root = root;
@@ -246,7 +246,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                Requires.NotNullAllowStructs(key, "key");
+                Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
                 if (this.TryGetValue(key, out value))
@@ -302,7 +302,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = Add(key, value, KeyCollisionBehavior.ThrowIfValueDifferent, this.Origin);
@@ -316,7 +316,7 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
         {
-            Requires.NotNull(pairs, "pairs");
+            Requires.NotNull(pairs, nameof(pairs));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             return this.AddRange(pairs, false);
@@ -328,7 +328,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
             Contract.Ensures(!Contract.Result<ImmutableDictionary<TKey, TValue>>().IsEmpty);
 
@@ -345,7 +345,7 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = AddRange(items, this.Origin, KeyCollisionBehavior.SetValue);
@@ -358,7 +358,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableDictionary<TKey, TValue> Remove(TKey key)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = Remove(key, this.Origin);
@@ -371,7 +371,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
         {
-            Requires.NotNull(keys, "keys");
+            Requires.NotNull(keys, nameof(keys));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             int count = _count;
@@ -404,7 +404,7 @@ namespace System.Collections.Immutable
         /// </returns>
         public bool ContainsKey(TKey key)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
             return ContainsKey(key, this.Origin);
         }
 
@@ -425,7 +425,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool TryGetValue(TKey key, out TValue value)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
             return TryGetValue(key, this.Origin, out value);
         }
 
@@ -434,7 +434,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool TryGetKey(TKey equalKey, out TKey actualKey)
         {
-            Requires.NotNullAllowStructs(equalKey, "equalKey");
+            Requires.NotNullAllowStructs(equalKey, nameof(equalKey));
             return TryGetKey(equalKey, this.Origin, out actualKey);
         }
 
@@ -642,9 +642,9 @@ namespace System.Collections.Immutable
 
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            Requires.NotNull(array, "array");
-            Requires.Range(arrayIndex >= 0, "arrayIndex");
-            Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
+            Requires.NotNull(array, nameof(array));
+            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
+            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
             foreach (var item in this)
             {
@@ -782,9 +782,9 @@ namespace System.Collections.Immutable
         /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            Requires.NotNull(array, "array");
-            Requires.Range(arrayIndex >= 0, "arrayIndex");
-            Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
+            Requires.NotNull(array, nameof(array));
+            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
+            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
             foreach (var item in this)
             {
@@ -861,7 +861,7 @@ namespace System.Collections.Immutable
         [Pure]
         private static ImmutableDictionary<TKey, TValue> EmptyWithComparers(Comparers comparers)
         {
-            Requires.NotNull(comparers, "comparers");
+            Requires.NotNull(comparers, nameof(comparers));
 
             return Empty._comparers == comparers
                 ? Empty
@@ -965,7 +965,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private static MutationResult Add(TKey key, TValue value, KeyCollisionBehavior behavior, MutationInput origin)
         {
-            Requires.NotNullAllowStructs(key, "key");
+            Requires.NotNullAllowStructs(key, nameof(key));
 
             OperationResult result;
             int hashCode = origin.KeyComparer.GetHashCode(key);
@@ -985,7 +985,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private static MutationResult AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items, MutationInput origin, KeyCollisionBehavior collisionBehavior = KeyCollisionBehavior.ThrowIfValueDifferent)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
 
             int countAdjustment = 0;
             var newRoot = origin.Root;
@@ -1052,9 +1052,9 @@ namespace System.Collections.Immutable
         /// </returns>
         private static ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket> root, Comparers comparers, int count)
         {
-            Requires.NotNull(root, "root");
-            Requires.NotNull(comparers, "comparers");
-            Requires.Range(count >= 0, "count");
+            Requires.NotNull(root, nameof(root));
+            Requires.NotNull(comparers, nameof(comparers));
+            Requires.Range(count >= 0, nameof(count));
             return new ImmutableDictionary<TKey, TValue>(root, comparers, count);
         }
 
@@ -1087,7 +1087,7 @@ namespace System.Collections.Immutable
         [Pure]
         private ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs, bool avoidToHashMap)
         {
-            Requires.NotNull(pairs, "pairs");
+            Requires.NotNull(pairs, nameof(pairs));
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             // Some optimizations may apply if we're an empty list.
