@@ -843,7 +843,8 @@ private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              __out_ecount(rcPathSize) WCHAR *rcPath, const DWORD rcPathSize);
+                              SString& rcPath);
+    HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
     HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
     HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
 #endif
@@ -4467,7 +4468,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           long    *pValue,                 // Put value here, if found.
                           BOOL    fReadNonVirtualizedKey); // Whether to read 64-bit hive on WOW64
 
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD *pcchBuffer);
+HRESULT GetCurrentModuleFileName(SString& pBuffer);
 
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
@@ -5309,7 +5310,7 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 struct CoreClrCallbacks
 {
     typedef IExecutionEngine* (__stdcall * pfnIEE_t)();
-    typedef HRESULT (__stdcall * pfnGetCORSystemDirectory_t)(LPWSTR pbuffer, DWORD cchBuffer, DWORD* pdwlength);
+    typedef HRESULT (__stdcall * pfnGetCORSystemDirectory_t)(SString& pbuffer);
     typedef void* (__stdcall * pfnGetCLRFunction_t)(LPCSTR functionName);
 
     HINSTANCE                   m_hmodCoreCLR;
@@ -5543,8 +5544,8 @@ inline T* InterlockedCompareExchangeT(
 
 // Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetHModuleDirectory(HMODULE hMod, __out_z __out_ecount(cchPath) LPWSTR wszPath, size_t cchPath);
-SString & GetHModuleDirectory(HMODULE hMod, SString &ssDir);
+HRESULT GetHModuleDirectory(HMODULE hMod, SString& wszPath);
+HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
 // This is a slight variation that can be used for anything else

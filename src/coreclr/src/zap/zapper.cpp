@@ -730,15 +730,14 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     HRESULT hr = E_FAIL;
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    WCHAR CoreClrFolder[MAX_LONGPATH + 1];
+    PathString CoreClrFolder;
     extern HINSTANCE g_hThisInst;
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_LONGPATH))
+    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
-        WCHAR *filePtr = wcsrchr(CoreClrFolder, W('\\'));
-        if (filePtr)
+        if (SUCCEEDED(CopySystemDirectory(CoreClrFolder, CoreClrFolder)))
         {
-            filePtr[1] = W('\0');
-            wcscat_s(CoreClrFolder, MAX_LONGPATH, pwzJitName);
+            CoreClrFolder.Append(pwzJitName);
+
             *phJit = ::WszLoadLibrary(CoreClrFolder);
             if (*phJit == NULL)
             {

@@ -6,6 +6,7 @@
 #include "perflog.h"
 #include "jitperf.h"
 #include <limits.h>
+#include "sstring.h"
 
 //=============================================================================
 // ALL THE PERF LOG CODE IS COMPILED ONLY IF THE ENABLE_PERF_LOG WAS DEFINED.
@@ -83,9 +84,9 @@ void PerfLog::PerfLogInitialize()
     // Special cases considered. Now turn on loggin if any of above want logging
     // or if PERF_OUTPUT says so.
 
-    wchar_t lpszValue[2];
+    InlineSString<4> lpszValue;
     // Read the env var PERF_OUTPUT and if set continue.
-    m_fLogPerfData = WszGetEnvironmentVariable (W("PERF_OUTPUT"), lpszValue, sizeof(lpszValue)/sizeof(lpszValue[0]));
+    m_fLogPerfData = WszGetEnvironmentVariable (W("PERF_OUTPUT"), lpszValue);
 
 #if defined(ENABLE_JIT_PERF)
     if (!m_fLogPerfData)
@@ -100,9 +101,9 @@ void PerfLog::PerfLogInitialize()
 #endif
 
     // See if we want to output to the database
-    wchar_t _lpszValue[11];
+    PathString _lpszValue;
     DWORD _cchValue = 10; // 11 - 1
-    _cchValue = WszGetEnvironmentVariable (W("PerfOutput"), _lpszValue, _cchValue);
+    _cchValue = WszGetEnvironmentVariable (W("PerfOutput"), _lpszValue);
     if (_cchValue && (wcscmp (_lpszValue, W("DBase")) == 0))
         m_perfAutomationFormat = true;
     if (_cchValue && (wcscmp (_lpszValue, W("CSV")) == 0))

@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-// 
-
-//
+//The .NET Foundation licenses this file to you under the MIT license.
+//See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -676,12 +673,11 @@ void QCALLTYPE SecurityPolicy::_GetLongPathName(LPCWSTR wszPath, QCall::StringHa
     BEGIN_QCALL;
 
 #if !defined(PLATFORM_UNIX)
-    WCHAR wszBuffer[MAX_LONGPATH + 1];
-    ZeroMemory(wszBuffer, sizeof(wszBuffer));
+    PathString wszBuffer;
                 
-    if (SecurityPolicy::GetLongPathNameHelper( wszPath, wszBuffer, MAX_LONGPATH ) != 0)
+    if (SecurityPolicy::GetLongPathNameHelper( wszPath, wszBuffer ) != 0)
     {
-        retLongPath.Set( wszBuffer );
+        retLongPath.Set( wszBuffer.GetUnicode() );
     }
 #endif // !PLATFORM_UNIX
 
@@ -689,15 +685,15 @@ void QCALLTYPE SecurityPolicy::_GetLongPathName(LPCWSTR wszPath, QCall::StringHa
 }
 
 #if !defined(PLATFORM_UNIX)
-size_t SecurityPolicy::GetLongPathNameHelper( const WCHAR* wszShortPath, __inout_ecount(cchBuffer) __inout_z WCHAR* wszBuffer, DWORD cchBuffer )
+size_t GetLongPathNameHelperthatThrows(const WCHAR* wszShortPath, SString& wszBuffer)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+    CONTRACTL{
+        THROWS;
+    GC_NOTRIGGER;
+    MODE_ANY;
     } CONTRACTL_END;
 
-    DWORD size = WszGetLongPathName(wszShortPath, wszBuffer, cchBuffer);
+    DWORD size = WszGetLongPathName(wszShortPath, wszBuffer);
 
     if (size == 0)
     {
@@ -707,66 +703,87 @@ size_t SecurityPolicy::GetLongPathNameHelper( const WCHAR* wszShortPath, __inout
         // trying GetLongPathName on every subdirectory until
         // it succeeds or we run out of string.
 
-        WCHAR wszIntermediateBuffer[MAX_LONGPATH];
+        size_t len = wcslen(wszShortPath);
+        NewArrayHolder<WCHAR> wszIntermediateBuffer = new (nothrow) WCHAR[len + 1];
 
-        if (wcslen( wszShortPath ) >= MAX_LONGPATH)
+        if (wszIntermediateBuffer == NULL)
+        {
             return 0;
+        }
 
-        wcscpy_s( wszIntermediateBuffer, COUNTOF(wszIntermediateBuffer), wszShortPath );
+        wcscpy_s(wszIntermediateBuffer, len + 1, wszShortPath);
 
-        size_t index = wcslen( wszIntermediateBuffer );
+        size_t index = len;
 
         do
         {
-            while (index > 0 && (wszIntermediateBuffer[index-1] != W('\\') && wszIntermediateBuffer[index-1] != W('/')))
+            while (index > 0 && (wszIntermediateBuffer[index - 1] != W('\\') && wszIntermediateBuffer[index - 1] != W('/')))
                 --index;
 
             if (index == 0)
                 break;
 
-            #ifdef _PREFAST_
-            #pragma prefast(push)
-            #pragma prefast(disable:26001, "suppress prefast warning about underflow by doing index-1 which is checked above.")
-            #endif // _PREFAST_
-            
-            wszIntermediateBuffer[index-1] = W('\0');
+#ifdef _PREFAST_
+#pragma prefast(push)
+#pragma prefast(disable:26001, "suppress prefast warning about underflow by doing index-1 which is checked above.")
+#endif // _PREFAST_
 
-            #ifdef _PREFAST_
-            #pragma prefast(pop)
-            #endif
+            wszIntermediateBuffer[index - 1] = W('\0');
 
-            size = WszGetLongPathName(wszIntermediateBuffer, wszBuffer, MAX_LONGPATH);
+#ifdef _PREFAST_
+#pragma prefast(pop)
+#endif
+
+            size = WszGetLongPathName(wszIntermediateBuffer, wszBuffer);
 
             if (size != 0)
             {
-                size_t sizeBuffer = wcslen( wszBuffer );
 
-                if (sizeBuffer + wcslen( &wszIntermediateBuffer[index] ) > MAX_LONGPATH - 2)
-                {
-                    return 0;
-                }
-                else
-                {
-                    if (wszBuffer[sizeBuffer-1] != W('\\') && wszBuffer[sizeBuffer-1] != W('/'))
-                        wcscat_s( wszBuffer, cchBuffer, W("\\") );
-                    wcscat_s( wszBuffer, cchBuffer, &wszIntermediateBuffer[index] );
-                    return (DWORD)wcslen( wszBuffer );
-                }
+                int sizeBuffer = wszBuffer.GetCount();
+
+                if (wszBuffer[sizeBuffer - 1] != W('\\') && wszBuffer[sizeBuffer - 1] != W('/'))
+                    wszBuffer.Append(W("\\"));
+
+                wszBuffer.Append(&wszIntermediateBuffer[index]);
+
+
+                return (DWORD)wszBuffer.GetCount();
+
             }
-        }
-        while( true );
+        } while (true);
 
-        return 0;
-    }
-    else if (size > MAX_LONGPATH)
-    {
         return 0;
     }
     else
     {
-        return wcslen( wszBuffer );
+        return (DWORD)wszBuffer.GetCount();
     }
 }
+size_t SecurityPolicy::GetLongPathNameHelper(const WCHAR* wszShortPath, SString& wszBuffer)
+{
+    CONTRACTL{
+        NOTHROW;
+    GC_NOTRIGGER;
+    MODE_ANY;
+    } CONTRACTL_END;
+
+    HRESULT hr = S_OK;
+    size_t retval = 0;
+
+    EX_TRY
+    {
+        retval = GetLongPathNameHelperthatThrows(wszShortPath,wszBuffer);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    if (hr != S_OK)
+    {
+        retval = 0;
+    }
+
+    return retval;
+}
+
 #endif // !PLATFORM_UNIX
 
 void QCALLTYPE SecurityPolicy::GetDeviceName(LPCWSTR wszDriveLetter, QCall::StringHandleOnStack retDeviceName)

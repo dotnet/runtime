@@ -4770,12 +4770,10 @@ void SystemDomain::GetDevpathW(__out_ecount_opt(1) LPWSTR* pDevpath, DWORD* pdwD
 
         if(m_fDevpath == FALSE) {
             DWORD dwPath = 0;
-            dwPath = WszGetEnvironmentVariable(APPENV_DEVPATH, 0, 0);
+            PathString m_pwDevpathholder; 
+            dwPath = WszGetEnvironmentVariable(APPENV_DEVPATH, m_pwDevpathholder);
             if(dwPath) {
-                m_pwDevpath = (WCHAR*) new WCHAR[dwPath];
-                m_dwDevpath = WszGetEnvironmentVariable(APPENV_DEVPATH,
-                                                        m_pwDevpath,
-                                                        dwPath);
+                m_pwDevpath = m_pwDevpathholder.GetCopyOfUnicodeString();
             }
             else {
                 RegKeyHolder userKey;
@@ -13831,14 +13829,30 @@ DWORD* SetupCompatibilityFlags()
         SO_TOLERANT;
     } CONTRACTL_END;
 
-    WCHAR buf[2] = { '\0', '\0' };
+    LPCWSTR buf;
+    bool return_null = true;
 
     FAULT_NOT_FATAL(); // we can simply give up
 
-    if (WszGetEnvironmentVariable(W("UnsupportedCompatSwitchesEnabled"), buf, COUNTOF(buf)) == 0)
-        return NULL;
+    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
+    InlineSString<4> bufString;
+    
+    if (WszGetEnvironmentVariable(W("UnsupportedCompatSwitchesEnabled"), bufString) != 0)
+    {
+        buf = bufString.GetUnicode();
+        if (buf[0] != '1' || buf[1] != '\0')
+        {
+            return_null = true;
+        }
+        else
+        {
+            return_null = false;
+        }
 
-    if (buf[0] != '1' || buf[1] != '\0')
+    }
+    END_SO_INTOLERANT_CODE
+
+    if (return_null)
         return NULL;
 
     static const LPCWSTR rgFlagNames[] = {
@@ -13852,17 +13866,21 @@ DWORD* SetupCompatibilityFlags()
         return NULL;
     ZeroMemory(pFlags, size * sizeof(DWORD));
 
+    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
+    InlineSString<4> bufEnvString;
     for (int i = 0; i < COUNTOF(rgFlagNames); i++)
     {
-        if (WszGetEnvironmentVariable(rgFlagNames[i], buf, COUNTOF(buf)) == 0)
+        if (WszGetEnvironmentVariable(rgFlagNames[i], bufEnvString) == 0)
             continue;
 
+        buf = bufEnvString.GetUnicode();
         if (buf[0] != '1' || buf[1] != '\0')
             continue;
 
         pFlags[i / 32] |= 1 << (i % 32);
     }
-
+    END_SO_INTOLERANT_CODE
+    
     return pFlags;
 }
 

@@ -592,25 +592,9 @@ inline PTR_PEImage PEImage::FindByLongPath(LPCWSTR pPath)
     }
     CONTRACTL_END;
 
-    InlineSString<MAX_PATH> sLongPath;
-    // Note: GetLongPathName  return the number of characters written NOT INCLUDING the
-    //       null character on success, and on failure returns the buffer size required
-    //       INCLUDING the null. This means the result must not be equal to MAX_PATH -
-    //       it must be greater or less then.
-    COUNT_T nLen = WszGetLongPathName(pPath, sLongPath.OpenUnicodeBuffer(MAX_PATH-1), MAX_PATH);
-    CONSISTENCY_CHECK(nLen != MAX_PATH);
-
-    // If this was insufficient buffer, then try again with a reallocated buffer
-    if (nLen > MAX_PATH)
-    {
-        // Close the buffer before reopening
-        sLongPath.CloseBuffer();
-        INDEBUG(SIZE_T nOldLen = nLen;)
-        nLen = WszGetLongPathName(pPath, sLongPath.OpenUnicodeBuffer(nLen-1), nLen);
-        CONSISTENCY_CHECK(nLen == (nOldLen - 1));
-    }
-    sLongPath.CloseBuffer(nLen);
-
+    PathString sLongPath;
+    COUNT_T nLen = WszGetLongPathName(pPath, sLongPath);
+   
     // Check for any kind of error other than an insufficient buffer result.
     if (nLen == 0)
     {
@@ -619,7 +603,7 @@ inline PTR_PEImage PEImage::FindByLongPath(LPCWSTR pPath)
             ThrowHR(hr);
         return (PEImage*)INVALIDENTRY;
     }
-    return FindByPath(sLongPath);
+    return FindByPath(sLongPath.GetUnicode());
 }
 
 /*static*/
@@ -634,24 +618,8 @@ inline PTR_PEImage PEImage::FindByShortPath(LPCWSTR pPath)
     }
     CONTRACTL_END;
 
-    InlineSString<MAX_PATH> sShortPath;
-    // Note: GetLongPathName  return the number of characters written NOT INCLUDING the
-    //       null character on success, and on failure returns the buffer size required
-    //       INCLUDING the null. This means the result must not be equal to MAX_PATH -
-    //       it must be greater or less then.
-    COUNT_T nLen = WszGetShortPathName(pPath, sShortPath.OpenUnicodeBuffer(MAX_PATH-1), MAX_PATH);
-    CONSISTENCY_CHECK(nLen != MAX_PATH);
-
-    // If this was insufficient buffer, then try again with a reallocated buffer
-    if (nLen > MAX_PATH)
-    {
-        // Close the buffer before reopening
-        sShortPath.CloseBuffer();
-        INDEBUG(SIZE_T nOldLen = nLen;)
-        nLen = WszGetShortPathName(pPath, sShortPath.OpenUnicodeBuffer(nLen-1), nLen);
-        CONSISTENCY_CHECK(nLen == (nOldLen - 1));
-    }
-    sShortPath.CloseBuffer(nLen);
+    PathString sShortPath;
+    COUNT_T nLen = WszGetShortPathName(pPath, sShortPath);
 
     // Check for any kind of error other than an insufficient buffer result.
     if (nLen == 0)
@@ -661,7 +629,7 @@ inline PTR_PEImage PEImage::FindByShortPath(LPCWSTR pPath)
             ThrowHR(hr);
         return (PEImage*)INVALIDENTRY;
     }
-    return FindByPath(sShortPath);
+    return FindByPath(sShortPath.GetUnicode());
 }
 #endif // !FEATURE_CORECLR
 
