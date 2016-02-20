@@ -48,6 +48,7 @@ internal static partial class Interop
         // Enum for constants defined for the enum CURLMcode in multi.h
         internal enum CURLMcode : int
         {
+            CURLM_CALL_MULTI_PERFORM = -1,
             CURLM_OK = 0,
             CURLM_BAD_HANDLE = 1,
             CURLM_BAD_EASY_HANDLE = 2,

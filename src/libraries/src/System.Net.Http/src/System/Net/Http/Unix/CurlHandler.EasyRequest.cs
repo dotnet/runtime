@@ -411,7 +411,7 @@ namespace System.Net.Http
                     {
                         if (!Interop.Http.SListAppend(slist, NoContentType))
                         {
-                            throw CreateHttpRequestException();
+                            throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
                         }
                     }
                 }
@@ -423,7 +423,7 @@ namespace System.Net.Http
                 {
                     if (!Interop.Http.SListAppend(slist, NoTransferEncoding))
                     {
-                        throw CreateHttpRequestException();
+                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
                     }
                 }
 
@@ -534,7 +534,7 @@ namespace System.Net.Http
                         header.Key + ": " + headerValue;
                     if (!Interop.Http.SListAppend(handle, headerKeyAndValue))
                     {
-                        throw CreateHttpRequestException();
+                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
                     }
                 }
             }
