@@ -1864,9 +1864,9 @@ GetProcessTimes(
 PALIMPORT
 BOOL
 PALAPI
-GetUniqueTimeValueForProcess(
+GetProcessIdDisambiguationKey(
         IN DWORD processId,
-        OUT UINT64 *uniqueTimeValue);
+        OUT UINT64 *disambiguationKey);
 
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
