@@ -67,7 +67,7 @@ namespace System.Collections.Immutable
             /// <param name="set">A set to act as the basis for a new set.</param>
             internal Builder(ImmutableSortedSet<T> set)
             {
-                Requires.NotNull(set, "set");
+                Requires.NotNull(set, nameof(set));
                 _root = set._root;
                 _comparer = set.KeyComparer;
                 _immutable = set;
@@ -143,7 +143,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    Requires.NotNull(value, "value");
+                    Requires.NotNull(value, nameof(value));
 
                     if (value != _comparer)
                     {
@@ -217,7 +217,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection of items to remove from the set.</param>
             public void ExceptWith(IEnumerable<T> other)
             {
-                Requires.NotNull(other, "other");
+                Requires.NotNull(other, nameof(other));
 
                 foreach (T item in other)
                 {
@@ -232,7 +232,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection to compare to the current set.</param>
             public void IntersectWith(IEnumerable<T> other)
             {
-                Requires.NotNull(other, "other");
+                Requires.NotNull(other, nameof(other));
 
                 var result = ImmutableSortedSet<T>.Node.EmptyNode;
                 foreach (T item in other)
@@ -322,7 +322,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection to compare to the current set.</param>
             public void UnionWith(IEnumerable<T> other)
             {
-                Requires.NotNull(other, "other");
+                Requires.NotNull(other, nameof(other));
 
                 foreach (T item in other)
                 {
@@ -507,7 +507,7 @@ namespace System.Collections.Immutable
         /// <param name="builder">The collection to display in the debugger</param>
         public ImmutableSortedSetBuilderDebuggerProxy(ImmutableSortedSet<T>.Builder builder)
         {
-            Requires.NotNull(builder, "builder");
+            Requires.NotNull(builder, nameof(builder));
             _set = builder;
         }
 

@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableQueue<T> CreateRange<T>(IEnumerable<T> items)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
 
             var queue = ImmutableQueue<T>.Empty;
             foreach (var item in items)
@@ -66,7 +66,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableQueue<T> Create<T>(params T[] items)
         {
-            Requires.NotNull(items, "items");
+            Requires.NotNull(items, nameof(items));
 
             var queue = ImmutableQueue<T>.Empty;
             foreach (var item in items)
@@ -89,7 +89,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static IImmutableQueue<T> Dequeue<T>(this IImmutableQueue<T> queue, out T value)
         {
-            Requires.NotNull(queue, "queue");
+            Requires.NotNull(queue, nameof(queue));
 
             value = queue.Peek();
             return queue.Dequeue();

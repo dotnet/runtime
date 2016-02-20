@@ -571,7 +571,7 @@ namespace System.Collections.Immutable.Tests
 
         private static void KeysOrValuesTestHelper<T>(ICollection<T> collection, T containedValue)
         {
-            Requires.NotNull(collection, "collection");
+            Requires.NotNull(collection, nameof(collection));
 
             Assert.True(collection.Contains(containedValue));
             Assert.Throws<NotSupportedException>(() => collection.Add(default(T)));
