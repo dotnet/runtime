@@ -14,7 +14,7 @@
 #define __PLATFORM_SPECIFIC_INCLUDED
 
 // The main debugger code already has target platform definitions for CONTEXT.
-#include "../../../../debug/inc/dbgtargetcontext.h"
+#include "../../../debug/inc/dbgtargetcontext.h"
 
 #ifndef FEATURE_PAL
 
