@@ -35,27 +35,17 @@ void ClrGetCurrentDirectory(SString & value)
     CONTRACTL_END;
 
     // Get size needed
-    DWORD lenWithNull = WszGetCurrentDirectory(0, NULL);
+    DWORD len = WszGetCurrentDirectory(value);
 
-    // Now read it for content.
-    WCHAR * pCharBuf = value.OpenUnicodeBuffer(lenWithNull);
-    DWORD lenWithoutNull = WszGetCurrentDirectory(lenWithNull, pCharBuf);
 
     // An actual API failure in GetCurrentDirectory failure should be very rare, so we'll throw on those.
-    if (lenWithoutNull == 0)
+    if (len == 0)
     {   
         value.CloseBuffer(0);    
         ThrowLastError();
     }
-    if (lenWithoutNull != (lenWithNull - 1))
-    {
-        value.CloseBuffer(lenWithoutNull);
     
-        // must have changed underneath us.
-        ThrowHR(E_FAIL);
-    }
-    
-    value.CloseBuffer(lenWithoutNull);
+    value.CloseBuffer();
 }
 
 // Nothrowing wrapper.

@@ -435,6 +435,7 @@
     <ClCompile Include="utilmessagebox.cpp" />
     <ClCompile Include="UTSEM.cpp" />
     <ClCompile Include="winfix.cpp" />
+    <ClCompile Include="longfilepathwrappers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hostimpl.h" />

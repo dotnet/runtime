@@ -858,23 +858,19 @@ Its_An_Id:
                                 if((parser->wzIncludePath != NULL)
                                  &&(wcschr(wzFile,'\\')==NULL)&&(wcschr(wzFile,':')==NULL))
                                 {
-                                    WCHAR* wzFullName =  new WCHAR[MAX_FILENAME_LENGTH+1];
-                                    if(wzFullName != NULL)
+                                    PathString wzFullName;
+
+                                    WCHAR* pwz;
+                                    DWORD dw = WszSearchPath(parser->wzIncludePath,wzFile,NULL,
+                                                TRUE, wzFullName,&pwz);
+                                    if(dw != 0)
                                     {
-                                        WCHAR* pwz;
-                                        DWORD dw = WszSearchPath(parser->wzIncludePath,wzFile,NULL,
-                                                   MAX_FILENAME_LENGTH+1,wzFullName,&pwz);
-                                        if(dw != 0)
-                                        {
-                                            wzFullName[dw] = 0;
-                                            delete [] wzFile;
-                                            wzFile = wzFullName;
-                                        }
-                                        else
-                                        {
-                                            delete [] wzFullName;
-                                        }
+                                        wzFullName.CloseBuffer((COUNT_T)(dw));
+                                        delete [] wzFile;
+
+                                        wzFile = wzFullName.GetCopyOfUnicodeString();
                                     }
+                                    
                                 }
                                 if(PASM->m_fReportProgress)
                                     parser->msg("\nIncluding '%S'\n",wzFile);
