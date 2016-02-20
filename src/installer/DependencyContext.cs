@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.DependencyModel
     public class DependencyContext
     {
         private const string DepsResourceSufix = ".deps.json";
+        private const string DepsFileExtension = ".deps";
 
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
@@ -43,22 +44,29 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static DependencyContext Load(Assembly assembly)
         {
-            var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + DepsResourceSufix);
-
-            if (stream == null)
+            if (assembly == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(assembly));
             }
 
-            using (stream)
+            using (var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + DepsResourceSufix))
             {
-                return Load(stream);
+                if (stream != null)
+                {
+                    return new DependencyContextJsonReader().Read(stream);
+                }
             }
-        }
 
-        public static DependencyContext Load(Stream stream)
-        {
-            return new DependencyContextReader().Read(stream);
+            var depsFile = Path.ChangeExtension(assembly.Location, DepsFileExtension);
+            if (File.Exists(depsFile))
+            {
+                using (var stream = File.OpenRead(depsFile))
+                {
+                    return new DependencyContextCsvReader().Read(stream);
+                }
+            }
+
+            return null;
         }
     }
 }
