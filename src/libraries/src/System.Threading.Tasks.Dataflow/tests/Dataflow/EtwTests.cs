@@ -57,36 +57,32 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         Assert.Equal(expected: 0, actual: remaining);
                     });
 
-                // Bug: It appears that private reflection problems are causing events with enum arguments
-                //      to fail to fire on .NET Core.  Needs further investigation.  The following
-                //      two tests are disabled as a result.
+                // Check that task launched events fire
+                const int TaskLaunchedId = 2;
+                ce.Reset(1);
+                listener.RunWithCallback(ev => {
+                        Assert.Equal(expected: TaskLaunchedId, actual: ev.EventId);
+                        ce.Signal();
+                    },
+                    () => {
+                        ab.Post(42);
+                        ce.Wait();
+                        Assert.Equal(expected: 0, actual: ce.CurrentCount);
+                    });
 
-                //// Check that task launched events fire
-                //const int TaskLaunchedId = 2;
-                //ce.Reset(1);
-                //listener.RunWithCallback(ev => {
-                //        Assert.Equal(expected: TaskLaunchedId, actual: ev.EventId);
-                //        ce.Signal();
-                //    },
-                //    () => {
-                //        ab.Post(42);
-                //        ce.Wait();
-                //        Assert.Equal(expected: 0, actual: ce.CurrentCount);
-                //    });
-
-                //// Check that completion events fire
-                //const int BlockCompletedId = 3;
-                //ce.Reset(2);
-                //listener.RunWithCallback(ev => {
-                //        Assert.Equal(expected: BlockCompletedId, actual: ev.EventId);
-                //        ce.Signal();
-                //    },
-                //    () => {
-                //        ab.Complete();
-                //        bb.Complete();
-                //        ce.Wait();
-                //        Assert.Equal(expected: 0, actual: ce.CurrentCount);
-                //    });
+                // Check that completion events fire
+                const int BlockCompletedId = 3;
+                ce.Reset(2);
+                listener.RunWithCallback(ev => {
+                        Assert.Equal(expected: BlockCompletedId, actual: ev.EventId);
+                        ce.Signal();
+                    },
+                    () => {
+                        ab.Complete();
+                        bb.Complete();
+                        ce.Wait();
+                        Assert.Equal(expected: 0, actual: ce.CurrentCount);
+                    });
 
             }
         }
