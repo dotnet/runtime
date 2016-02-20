@@ -1057,7 +1057,7 @@ namespace System {
             }
             
             int[] sepList = new int[Length];            
-            int numReplaces = MakeSeparatorList(separator, ref sepList);            
+            int numReplaces = MakeSeparatorList(separator, sepList);            
             
             // Handle the special case of no replaces.
             if (0 == numReplaces) {
@@ -1114,7 +1114,7 @@ namespace System {
 
             int[] sepList = new int[Length];
             int[] lengthList = new int[Length];                        
-            int numReplaces = MakeSeparatorList(separator, ref sepList, ref lengthList);
+            int numReplaces = MakeSeparatorList(separator, sepList, lengthList);
 
             // Handle the special case of no replaces.
             if (0 == numReplaces) {
@@ -1224,7 +1224,7 @@ namespace System {
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private unsafe int MakeSeparatorList(char[] separator, ref int[] sepList) {
+        private unsafe int MakeSeparatorList(char[] separator, int[] sepList) {
             int foundCount=0;
 
             if (separator == null || separator.Length ==0) {
@@ -1264,7 +1264,7 @@ namespace System {
         //       lengthList -- an array of ints for split string lengths.
         //--------------------------------------------------------------------    
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private unsafe int MakeSeparatorList(String[] separators, ref int[] sepList, ref int[] lengthList) {
+        private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList) {
             Contract.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
             
             int foundCount = 0;
