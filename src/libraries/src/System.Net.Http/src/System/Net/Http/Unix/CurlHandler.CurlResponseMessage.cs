@@ -237,7 +237,7 @@ namespace System.Net.Http
                 if (buffer == null) throw new ArgumentNullException(nameof(buffer));
                 if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
                 if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-                if (offset > buffer.Length - count) throw new ArgumentException(nameof(buffer));
+                if (offset > buffer.Length - count) throw new ArgumentException(SR.net_http_buffer_insufficient_length, nameof(buffer));
                 CheckDisposed();
 
                 EventSourceTrace("Buffer: {0}, Offset: {1}, Count: {2}", buffer.Length, offset, count);

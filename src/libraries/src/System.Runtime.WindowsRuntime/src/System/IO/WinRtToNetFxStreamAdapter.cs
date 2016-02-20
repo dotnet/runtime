@@ -380,7 +380,7 @@ namespace System.IO
 
                 default:
                     {
-                        throw new ArgumentException(nameof(origin));
+                        throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
                     }
             }
         }

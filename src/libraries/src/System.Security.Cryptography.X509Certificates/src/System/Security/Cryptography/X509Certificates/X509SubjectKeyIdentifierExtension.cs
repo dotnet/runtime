@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (subjectKeyIdentifier == null)
                 throw new ArgumentNullException(nameof(subjectKeyIdentifier));
             if (subjectKeyIdentifier.Length == 0)
-                throw new ArgumentException(nameof(subjectKeyIdentifier));
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(subjectKeyIdentifier));
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return X509Pal.Instance.ComputeCapiSha1OfPublicKey(key);
 
                 default:
-                    throw new ArgumentException(nameof(algorithm));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
             }
         }
 

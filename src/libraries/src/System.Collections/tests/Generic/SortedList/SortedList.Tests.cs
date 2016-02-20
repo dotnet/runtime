@@ -50,7 +50,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedList<string, string>();
-                Assert.Throws<ArgumentException>(() => dictionary[23] = CreateTValue(12345));
+                Assert.Throws<ArgumentException>("key", () => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }

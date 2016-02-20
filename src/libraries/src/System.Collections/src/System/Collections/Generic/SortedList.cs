@@ -617,7 +617,7 @@ namespace System.Collections.Generic
             {
                 if (!IsCompatibleKey(key))
                 {
-                    throw new ArgumentException(nameof(key));
+                    throw new ArgumentException(SR.Argument_InvalidArgumentForComparison, nameof(key));
                 }
 
                 if (value == null && !(default(TValue) == null))
