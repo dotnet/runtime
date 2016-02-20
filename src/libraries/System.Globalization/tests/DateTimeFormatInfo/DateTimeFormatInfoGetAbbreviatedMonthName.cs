@@ -62,7 +62,8 @@ namespace System.Globalization.Tests
         }
 
         // PosTest3: Call GetAbbreviatedMonthName on fr-FR culture DateTimeFormatInfo instance
-        [Fact]
+        // When dotnet/corefx#2103 is addressed, we should remove the conditional fact attribute and select the right data for fr-FR
+        [ConditionalFact("IsNotUbuntu1510")]
         public void PosTest3()
         {
             DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
@@ -135,6 +136,11 @@ namespace System.Globalization.Tests
                 string actual = info.GetAbbreviatedMonthName(i);
                 Assert.Equal(expected[i], actual);
             }
+        }
+
+        public static bool IsNotUbuntu1510()
+        {
+            return !PlatformDetection.IsUbuntu1510;
         }
     }
 }

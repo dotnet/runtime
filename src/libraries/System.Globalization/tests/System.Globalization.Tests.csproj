@@ -129,6 +129,7 @@
     <Compile Include="NumberStyles\NumberStylesInteger.cs" />
     <Compile Include="NumberStyles\NumberStylesNone.cs" />
     <Compile Include="NumberStyles\NumberStylesNumber.cs" />
+    <Compile Include="PlatformDetection.cs" />
     <Compile Include="StringInfo\StringInfoCtor1.cs" />
     <Compile Include="StringInfo\StringInfoCtor2.cs" />
     <Compile Include="StringInfo\StringInfoEquals.cs" />
