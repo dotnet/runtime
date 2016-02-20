@@ -24,5 +24,38 @@ namespace SampleDynamicTests
             int result = d(4, 6);
             Assert.Equal(24, result);
         }
+
+        private static int Foo(string s, dynamic d, object o)
+        {
+            return s.Length + d.ToString().Length + o.ToString().Length;
+        }
+
+        private static void Bar(string s, dynamic d, object o)
+        {
+        }
+
+        [Fact]
+        [ActiveIssue(6258)]
+        public static void VariantFuncTest()
+        {
+            Func<string, dynamic, object, int> del = Foo;
+            Func<string, dynamic, string, int> func = del;
+
+            dynamic arg = "saw";
+
+            Assert.Equal(16, func("came", arg, "conquered"));
+        }
+
+        [Fact]
+        [ActiveIssue(6258)]
+        public static void VariantActTest()
+        {
+            Action<string, dynamic, object> del = Bar;
+            Action<string, dynamic, string> act = del;
+
+            dynamic arg = "saw";
+
+            act("came", arg, "conquered");
+        }
     }
 }

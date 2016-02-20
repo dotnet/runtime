@@ -203,5 +203,43 @@ namespace System.Linq.Expressions.Tests
             visitor.Visit(expression);
             Assert.Same(expression, visitor.LastTypeBinaryVisited);
         }
+
+        [Fact]
+        public void VariantDelegateArgumentCompiled()
+        {
+            Action<object> ao = x => { };
+            Action<string> a = x => { };
+            Action<string> b = ao;
+
+            var param = Expression.Parameter(typeof(Action<string>));
+
+            Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
+                Expression.TypeEqual(param, typeof(Action<string>)),
+                param
+            ).Compile(false);
+
+            Assert.False(isActStr(ao));
+            Assert.True(isActStr(a));
+            Assert.False(isActStr(b));
+        }
+
+        [Fact]
+        public void VariantDelegateArgumentInterpreted()
+        {
+            Action<object> ao = x => { };
+            Action<string> a = x => { };
+            Action<string> b = ao;
+
+            var param = Expression.Parameter(typeof(Action<string>));
+
+            Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
+                Expression.TypeEqual(param, typeof(Action<string>)),
+                param
+            ).Compile(true);
+
+            Assert.False(isActStr(ao));
+            Assert.True(isActStr(a));
+            Assert.False(isActStr(b));
+        }
     }
 }

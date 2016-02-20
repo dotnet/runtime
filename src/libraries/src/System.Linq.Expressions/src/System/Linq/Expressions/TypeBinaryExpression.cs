@@ -67,40 +67,37 @@ namespace System.Linq.Expressions
         {
             Type cType = Expression.Type;
 
-            // For value types (including Void, but not nullables), we can
-            // determine the result now
-            if (cType.GetTypeInfo().IsValueType && !cType.IsNullableType())
+            if (cType.GetTypeInfo().IsValueType)
             {
-                return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
+                if (cType.IsNullableType())
+                {
+                    // If the expression type is a a nullable type, it will match if
+                    // the value is not null and the type operand
+                    // either matches or is its type argument (T to its T?).
+                    if (cType.GetNonNullableType() != _typeOperand.GetNonNullableType())
+                    {
+                        return Expression.Block(Expression, Expression.Constant(false));
+                    }
+                    else
+                    {
+                        return Expression.NotEqual(Expression, Expression.Constant(null, Expression.Type));
+                    }
+                }
+                else
+                {
+                    // For other value types (including Void), we can
+                    // determine the result now
+                    return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
+                }
             }
+
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(object), Expression.Type), "Expecting reference types only after this point.");
 
             // Can check the value right now for constants.
             if (Expression.NodeType == ExpressionType.Constant)
             {
                 return ReduceConstantTypeEqual();
             }
-
-            // If the expression type is a sealed reference type or a nullable
-            // type, it will match if the value is not null and the type operand
-            // either matches or one is a nullable type while the other is its
-            // type argument (T to the other's T?).
-            if (cType.GetTypeInfo().IsSealed)
-            {
-                if (cType.GetNonNullableType() != _typeOperand.GetNonNullableType())
-                {
-                    return Expression.Block(Expression, Expression.Constant(false));
-                }
-                else if (cType.IsNullableType())
-                {
-                    return Expression.NotEqual(Expression, Expression.Constant(null, Expression.Type));
-                }
-                else
-                {
-                    return Expression.ReferenceNotEqual(Expression, Expression.Constant(null, Expression.Type));
-                }
-            }
-
-            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(object), Expression.Type), "Expecting reference types only after this point.");
 
             // expression is a ByVal parameter. Can safely reevaluate.
             var parameter = Expression as ParameterExpression;
