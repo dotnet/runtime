@@ -180,7 +180,7 @@ namespace System.Net.Http
                     // If we've been disposed, throw an exception so as to end the CopyToAsync operation.
                     if (_disposed)
                     {
-                        throw CreateHttpRequestException();
+                        throw new ObjectDisposedException(GetType().FullName);
                     }
 
                     if (_buffer == null)
@@ -349,7 +349,7 @@ namespace System.Net.Http
                         Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader");
                         if (completedCopy.IsFaulted)
                         {
-                            _asyncOp.TrySetException(completedCopy.Exception.InnerException);
+                            _asyncOp.TrySetException(MapToReadWriteIOException(completedCopy.Exception.InnerException, isRead: _waiterIsReader));
                             _copyTask = completedCopy;
                         }
                         else if (completedCopy.IsCanceled)
