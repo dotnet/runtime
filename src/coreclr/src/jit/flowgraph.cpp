@@ -21311,33 +21311,55 @@ void Compiler::fgRemoveContainedEmbeddedStatements(GenTreePtr tree, GenTreeStmt*
     }
 }
 
-/*****************************************************************************
- * Check if we have a recursion loop or if the recursion is too deep while doing the inlining.
- * Return true if a recursion loop is found or if the inlining recursion is too deep.
- * Also return the depth.
- */
+//------------------------------------------------------------------------
+// fgCheckForInlineDepthAndRecursion: compute depth of the candidate, and
+// check for recursion and excessive depth
+//
+// Return Value:
+//    The depth of the inline candidate. The root method is a depth 0, top-level
+//    candidates at depth 1, etc.
+//
+// Notes:
+//    We generally disallow recursive inlines by policy. However, they are
+//    supported by the underlying machinery.
+//
+//    Likewise the depth limit is a policy consideration, and serves mostly
+//    as a safeguard to prevent runaway inlining of small methods.
 
-bool          Compiler::fgIsUnboundedInlineRecursion(InlineContext*          inlineContext,
-                                                     BYTE*                   ilCode,
-                                                     DWORD*                  finalDepth)
+unsigned     Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 {
+    BYTE*          candidateCode = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
+    InlineContext* inlineContext = inlineInfo->iciStmt->gtStmt.gtInlineContext;
+    InlineResult*  inlineResult  = inlineInfo->inlineResult;
+
+    // There should be a context for all candidates.
+    assert(inlineContext != nullptr);
+
     const DWORD MAX_INLINING_RECURSION_DEPTH = 20;
     DWORD depth = 0;
-    bool result = false;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->getParent())
     {
         // Hard limit just to catch pathological cases
         depth++;
-        if  ((inlineContext->getCode() == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
+
+        if (inlineContext->getCode() == candidateCode)
         {
-           result = true;
-           break;
+            // This inline candidate has the same IL code buffer as an already
+            // inlined method does.
+            inlineResult->noteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
+            break;
+        }
+
+        if (depth > MAX_INLINING_RECURSION_DEPTH)
+        {
+            inlineResult->noteFatal(InlineObservation::CALLSITE_IS_TOO_DEEP);
+            break;
         }
     }
 
-    *finalDepth = depth;
-    return result;
+    inlineResult->noteInt(InlineObservation::CALLSITE_DEPTH, depth);
+    return depth;
 }
 
 /*****************************************************************************
@@ -21757,11 +21779,9 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
 
-    DWORD          inlineDepth = 0;
-    BYTE*          candidateIL = inlineCandidateInfo->methInfo.ILCode;
-    InlineContext* inlineContext = inlineInfo.iciStmt->gtStmt.gtInlineContext;
+    unsigned inlineDepth = fgCheckInlineDepthAndRecursion(&inlineInfo);
 
-    if (fgIsUnboundedInlineRecursion(inlineContext, candidateIL, &inlineDepth))
+    if (inlineResult->isFailure())
     {
 #ifdef DEBUG
         if (verbose)
@@ -21769,7 +21789,6 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
             printf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
         }
 #endif // DEBUG
-        inlineResult->noteFatal(InlineObservation::CALLSITE_IS_RECURSIVE_OR_DEEP);
         return;
     }
 

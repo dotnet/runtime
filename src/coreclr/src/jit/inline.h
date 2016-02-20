@@ -7,19 +7,67 @@
 // This file contains enum and class definitions and related
 // information that the jit uses to make inlining decisions.
 //
-// -- Overview of classes and enums defined here --
+// -- ENUMS --
 //
-// InlineDecision -- enum, overall decision made about an inline
-// InlineTarget -- enum, target of a particular observation
-// InlineImpact -- enum, impact of a particular observation
-// InlineObservation -- enum, facts observed when considering an inline
-// InlineResult -- class, accumulates observations and makes a decision
-// InlineCandidateInfo -- struct, detailed information needed for inlining
-// InlArgInfo -- struct, information about a candidate's argument
-// InlLclVarInfo -- struct, information about a candidate's local variable
-// InlineHints -- enum, alternative form of observations
-// InlineInfo -- struct, basic information needed for inlining
-// InlineContext -- class, remembers what inlines happened
+// InlineDecision      - overall decision made about an inline
+// InlineTarget        - target of a particular observation
+// InlineImpact        - impact of a particular observation
+// InlineObservation   - facts observed when considering an inline
+// InlineHints         - alternative form of observations
+//
+// -- CLASSES --
+//
+// InlineResult        - accumulates observations and makes a decision
+// InlineCandidateInfo - basic information needed for inlining
+// InlArgInfo          - information about a candidate's argument
+// InlLclVarInfo       - information about a candidate's local variable
+// InlineInfo          - detailed information needed for inlining
+// InlineContext       - class, remembers what inlines happened
+// InlinePolicy        - (forthcoming)
+//
+// Enums are used throughout to provide various descriptions.
+//
+// Classes are used as follows. There are 4 sitations where inline
+// candidacy is evaluated.  In each case an InlineResult is allocated
+// on the stack to collect information about the inline candidate.
+//
+// 1. Importer Candidate Screen (impMarkInlineCandidate)
+//
+// Creates: InlineCandidateInfo
+//
+// During importing, the IL being imported is scanned to identify
+// inline candidates. This happens both when the root method is being
+// imported as well as when prospective inlines are being imported.
+// Candidates are marked in the IL and given an InlineCandidateInfo.
+//
+// 2. Inlining Optimization Pass (fgInline/fgMorphCallInline)
+//
+// Creates / Uses: InlineContext
+// Creates: InlineInfo, InlArgInfo, InlLocalVarInfo
+//
+// During the inlining optimation pass, each candidate is further
+// analyzed. Viable candidates will eventually inspire creation of an
+// InlineInfo and a set of InlArgInfos (for call arguments) and 
+// InlLocalVarInfos (for callee locals).
+//
+// The analysis will also examine InlineContexts from relevant prior
+// inlines. If the inline is successful, a new InlineContext will be
+// created to remember this inline. In DEBUG builds, failing inlines
+// also create InlineContexts.
+//
+// 3 & 4. Prejit suitability screens (compCompileHelper)
+//
+// When prejitting, each method is scanned to see if it is a viable
+// inline candidate. The scanning happens in two stages.
+//
+// A note on InlinePolicy
+//
+// In the current code base, the inlining policy is distributed across
+// the various parts of the code that drive the inlining process
+// forward. Subsequent refactoring will extract some or all of this
+// policy into a separate InlinePolicy object, to make it feasible to
+// create and experiment with alternative policies, while preserving
+// the existing policy as a baseline and fallback.
 
 #ifndef _INLINE_H_
 #define _INLINE_H_
