@@ -13,7 +13,7 @@ namespace System.Linq
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
         {
             if (count < 0) throw Error.ArgumentOutOfRange("count");
-            if (count == 0) return new EmptyPartition<TResult>();
+            if (count == 0) return EmptyPartition<TResult>.Instance;
             return new RepeatIterator<TResult>(element, count);
         }
 
@@ -51,6 +51,11 @@ namespace System.Linq
                 return false;
             }
 
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
+            {
+                return new SelectIPartitionIterator<TResult, TResult2>(this, selector);
+            }
+
             public TResult[] ToArray()
             {
                 TResult[] array = new TResult[_count];
@@ -77,7 +82,7 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                if (count >= _count) return new EmptyPartition<TResult>();
+                if (count >= _count) return EmptyPartition<TResult>.Instance;
                 return new RepeatIterator<TResult>(current, _count - count);
             }
 
@@ -87,34 +92,27 @@ namespace System.Linq
                 return new RepeatIterator<TResult>(current, count);
             }
 
-            public TResult ElementAt(int index)
+            public TResult TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index >= (uint)_count) throw Error.ArgumentOutOfRange("index");
+                if ((uint)index < (uint)_count)
+                {
+                    found = true;
+                    return current;
+                }
+
+                found = false;
+                return default(TResult);
+            }
+
+            public TResult TryGetFirst(out bool found)
+            {
+                found = true;
                 return current;
             }
 
-            public TResult ElementAtOrDefault(int index)
+            public TResult TryGetLast(out bool found)
             {
-                return (uint)index >= (uint)_count ? default(TResult) : current;
-            }
-
-            public TResult First()
-            {
-                return current;
-            }
-
-            public TResult FirstOrDefault()
-            {
-                return current;
-            }
-
-            public TResult Last()
-            {
-                return current;
-            }
-
-            public TResult LastOrDefault()
-            {
+                found = true;
                 return current;
             }
         }

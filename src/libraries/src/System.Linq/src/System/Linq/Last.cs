@@ -13,25 +13,33 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null) return partition.Last();
-            IList<TSource> list = source as IList<TSource>;
-            if (list != null)
+            if (partition != null)
             {
-                int count = list.Count;
-                if (count > 0) return list[count - 1];
+                bool found;
+                TSource last = partition.TryGetLast(out found);
+                if (found) return last;
             }
             else
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                IList<TSource> list = source as IList<TSource>;
+                if (list != null)
                 {
-                    if (e.MoveNext())
+                    int count = list.Count;
+                    if (count > 0) return list[count - 1];
+                }
+                else
+                {
+                    using (IEnumerator<TSource> e = source.GetEnumerator())
                     {
-                        TSource result;
-                        do
+                        if (e.MoveNext())
                         {
-                            result = e.Current;
-                        } while (e.MoveNext());
-                        return result;
+                            TSource result;
+                            do
+                            {
+                                result = e.Current;
+                            } while (e.MoveNext());
+                            return result;
+                        }
                     }
                 }
             }
@@ -79,7 +87,12 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null) return partition.LastOrDefault();
+            if (partition != null)
+            {
+                bool found;
+                return partition.TryGetLast(out found);
+            }
+
             IList<TSource> list = source as IList<TSource>;
             if (list != null)
             {

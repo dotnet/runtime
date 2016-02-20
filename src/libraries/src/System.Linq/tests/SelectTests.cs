@@ -769,6 +769,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateIPartition()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().AsReadOnly().Select(i => i).Skip(1);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
         public void Select_SourceIsArray_Count()
         {
             var source = new[] { 1, 2, 3, 4 };
@@ -787,6 +795,316 @@ namespace System.Linq.Tests
         {
             var souce = new List<int> { 1, 2, 3, 4 }.AsReadOnly();
             Assert.Equal(souce.Count, souce.Select(i => i * 2).Count());
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_Skip()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2).Skip(-1));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(1).Skip(1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Skip(-1));
+            Assert.Empty(source.Skip(4));
+            Assert.Empty(source.Skip(20));
+        }
+
+        [Fact]
+        public void Select_SourceIsList_Skip()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2).Skip(-1));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(1).Skip(1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Skip(-1));
+            Assert.Empty(source.Skip(4));
+            Assert.Empty(source.Skip(20));
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_Skip()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(2).Skip(-1));
+            Assert.Equal(new[] { 6, 8 }, source.Skip(1).Skip(1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Skip(-1));
+            Assert.Empty(source.Skip(4));
+            Assert.Empty(source.Skip(20));
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_Take()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(new[] { 2, 4 }, source.Take(2));
+            Assert.Equal(new[] { 2, 4 }, source.Take(3).Take(2));
+            Assert.Empty(source.Take(-1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+        }
+
+        [Fact]
+        public void Select_SourceIsList_Take()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(new[] { 2, 4 }, source.Take(2));
+            Assert.Equal(new[] { 2, 4 }, source.Take(3).Take(2));
+            Assert.Empty(source.Take(-1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_Take()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            Assert.Equal(new[] { 2, 4 }, source.Take(2));
+            Assert.Equal(new[] { 2, 4 }, source.Take(3).Take(2));
+            Assert.Empty(source.Take(-1));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
+            Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_ElementAt()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAt(i));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(4));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.Skip(2).ElementAt(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsList_ElementAt()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAt(i));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(4));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.Skip(2).ElementAt(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_ElementAt()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAt(i));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(4));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.Skip(2).ElementAt(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_ElementAtOrDefault()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAtOrDefault(i));
+            Assert.Equal(0, source.ElementAtOrDefault(-1));
+            Assert.Equal(0, source.ElementAtOrDefault(4));
+            Assert.Equal(0, source.ElementAtOrDefault(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAtOrDefault(1));
+            Assert.Equal(0, source.Skip(2).ElementAtOrDefault(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsList_ElementAtOrDefault()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAtOrDefault(i));
+            Assert.Equal(0, source.ElementAtOrDefault(-1));
+            Assert.Equal(0, source.ElementAtOrDefault(4));
+            Assert.Equal(0, source.ElementAtOrDefault(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAtOrDefault(1));
+            Assert.Equal(0, source.Skip(2).ElementAtOrDefault(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_ElementAtOrDefault()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            for (int i = 0; i != 4; ++i)
+                Assert.Equal(i * 2 + 2, source.ElementAtOrDefault(i));
+            Assert.Equal(0, source.ElementAtOrDefault(-1));
+            Assert.Equal(0, source.ElementAtOrDefault(4));
+            Assert.Equal(0, source.ElementAtOrDefault(40));
+
+            Assert.Equal(6, source.Skip(1).ElementAtOrDefault(1));
+            Assert.Equal(0, source.Skip(2).ElementAtOrDefault(9));
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_First()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(2, source.First());
+            Assert.Equal(2, source.FirstOrDefault());
+
+            Assert.Equal(6, source.Skip(2).First());
+            Assert.Equal(6, source.Skip(2).FirstOrDefault());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(4).First());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(14).First());
+            Assert.Equal(0, source.Skip(4).FirstOrDefault());
+            Assert.Equal(0, source.Skip(14).FirstOrDefault());
+
+            var empty = new int[0].Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.First());
+            Assert.Equal(0, empty.FirstOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsList_First()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(2, source.First());
+            Assert.Equal(2, source.FirstOrDefault());
+
+            Assert.Equal(6, source.Skip(2).First());
+            Assert.Equal(6, source.Skip(2).FirstOrDefault());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(4).First());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(14).First());
+            Assert.Equal(0, source.Skip(4).FirstOrDefault());
+            Assert.Equal(0, source.Skip(14).FirstOrDefault());
+
+            var empty = new List<int>().Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.First());
+            Assert.Equal(0, empty.FirstOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_First()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            Assert.Equal(2, source.First());
+            Assert.Equal(2, source.FirstOrDefault());
+
+            Assert.Equal(6, source.Skip(2).First());
+            Assert.Equal(6, source.Skip(2).FirstOrDefault());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(4).First());
+            Assert.Throws<InvalidOperationException>(() => source.Skip(14).First());
+            Assert.Equal(0, source.Skip(4).FirstOrDefault());
+            Assert.Equal(0, source.Skip(14).FirstOrDefault());
+
+            var empty = new List<int>().AsReadOnly().Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.First());
+            Assert.Equal(0, empty.FirstOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_Last()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(8, source.Last());
+            Assert.Equal(8, source.LastOrDefault());
+
+            Assert.Equal(6, source.Take(3).Last());
+            Assert.Equal(6, source.Take(3).LastOrDefault());
+
+            var empty = new int[0].Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.Last());
+            Assert.Equal(0, empty.LastOrDefault());
+            Assert.Throws<InvalidOperationException>(() => empty.Skip(1).Last());
+            Assert.Equal(0, empty.Skip(1).LastOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsList_Last()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.Select(i => i * 2);
+            Assert.Equal(8, source.Last());
+            Assert.Equal(8, source.LastOrDefault());
+
+            Assert.Equal(6, source.Take(3).Last());
+            Assert.Equal(6, source.Take(3).LastOrDefault());
+
+            var empty = new List<int>().Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.Last());
+            Assert.Equal(0, empty.LastOrDefault());
+            Assert.Throws<InvalidOperationException>(() => empty.Skip(1).Last());
+            Assert.Equal(0, empty.Skip(1).LastOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_Last()
+        {
+            var source = new List<int> { 1, 2, 3, 4 }.AsReadOnly().Select(i => i * 2);
+            Assert.Equal(8, source.Last());
+            Assert.Equal(8, source.LastOrDefault());
+
+            Assert.Equal(6, source.Take(3).Last());
+            Assert.Equal(6, source.Take(3).LastOrDefault());
+
+            var empty = new List<int>().AsReadOnly().Select(i => i * 2);
+            Assert.Throws<InvalidOperationException>(() => empty.Last());
+            Assert.Equal(0, empty.LastOrDefault());
+            Assert.Throws<InvalidOperationException>(() => empty.Skip(1).Last());
+            Assert.Equal(0, empty.Skip(1).LastOrDefault());
+        }
+
+        [Fact]
+        public void Select_SourceIsArray_SkipRepeatCalls()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2).Skip(1);
+            Assert.Equal(source, source);
+        }
+
+        [Fact]
+        public void Select_SourceIsArraySkipSelect()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2).Skip(1).Select(i => i + 1);
+            Assert.Equal(new[] { 5, 7, 9 }, source);
+        }
+
+        [Fact]
+        public void Select_SourceIsArrayTakeTake()
+        {
+            var source = new[] { 1, 2, 3, 4 }.Select(i => i * 2).Take(2).Take(1);
+            Assert.Equal(new[] { 2 }, source);
+            Assert.Equal(new[] { 2 }, source.Take(10));
+        }
+
+        [Fact]
+        public void Select_SourceIsListSkipTakeCount()
+        {
+            Assert.Equal(3, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(3).Count());
+            Assert.Equal(4, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(9).Count());
+            Assert.Equal(2, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(2).Count());
+            Assert.Equal(0, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(8).Count());
+        }
+
+        [Fact]
+        public void Select_SourceIsListSkipTakeToArray()
+        {
+            Assert.Equal(new[] { 2, 4, 6 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(3).ToArray());
+            Assert.Equal(new[] { 2, 4, 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(9).ToArray());
+            Assert.Equal(new[] { 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(2).ToArray());
+            Assert.Empty(new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(8).ToArray());
+        }
+
+        [Fact]
+        public void Select_SourceIsListSkipTakeToList()
+        {
+            Assert.Equal(new[] { 2, 4, 6 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(3).ToList());
+            Assert.Equal(new[] { 2, 4, 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(9).ToList());
+            Assert.Equal(new[] { 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(2).ToList());
+            Assert.Empty(new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(8).ToList());
         }
     }
 }
