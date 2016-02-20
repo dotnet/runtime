@@ -166,9 +166,12 @@ static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
     memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
-#else
+#elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
     memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
+#else
+    assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
+    memcpy(addr.s6_addr, buffer, UnsignedCast(bufferLength));
 #endif
 }
 
@@ -177,9 +180,12 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
     memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
-#else
+#elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
     memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
+#else
+    assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
+    memcpy(buffer, addr.s6_addr, UnsignedCast(bufferLength));
 #endif
 }
 
