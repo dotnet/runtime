@@ -2057,8 +2057,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 
 	LLVMBuildCondBr (ctx->builder, cmp, ex_bb, noex_bb);
 
-	exc_class = mono_class_from_name (mono_get_corlib (), "System", exc_type);
-	g_assert (exc_class);
+	exc_class = mono_class_load_from_name (mono_get_corlib (), "System", exc_type);
 
 	/* Emit exception throwing code */
 	ctx->builder = builder = create_builder (ctx);

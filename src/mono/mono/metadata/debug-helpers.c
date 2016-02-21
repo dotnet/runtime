@@ -538,7 +538,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	}
 
 	if (desc->name_space && desc->klass) {
-		klass = mono_class_from_name (image, desc->name_space, desc->klass);
+		klass = mono_class_try_load_from_name (image, desc->name_space, desc->klass);
 		if (!klass)
 			return NULL;
 		return mono_method_desc_search_in_class (desc, klass);

@@ -357,8 +357,7 @@ mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item)
 	g_assert (work_item);
 
 	if (!threadpool_class)
-		threadpool_class = mono_class_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-	g_assert (threadpool_class);
+		threadpool_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
 
 	if (!unsafe_queue_custom_work_item_method)
 		unsafe_queue_custom_work_item_method = mono_class_get_method_from_name (threadpool_class, "UnsafeQueueCustomWorkItem", 2);
@@ -1326,8 +1325,7 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 	MonoObject *state = NULL;
 
 	if (!async_call_klass)
-		async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
-	g_assert (async_call_klass);
+		async_call_klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 
 	mono_lazy_initialize (&status, initialize);
 

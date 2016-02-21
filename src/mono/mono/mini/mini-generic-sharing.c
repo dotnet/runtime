@@ -2630,19 +2630,19 @@ mini_method_is_open (MonoMethod *method)
 	return FALSE;
 }
 
+/* Lazy class loading functions */
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (iasync_state_machine, System.Runtime.CompilerServices, IAsyncStateMachine)
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (async_state_machine_attribute, System.Runtime.CompilerServices, AsyncStateMachineAttribute)
+
+
 static G_GNUC_UNUSED gboolean
 is_async_state_machine_class (MonoClass *klass)
 {
-	static MonoClass *iclass;
-	static gboolean iclass_set;
+	MonoClass *iclass;
 
 	return FALSE;
 
-	if (!iclass_set) {
-		iclass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "IAsyncStateMachine");
-		mono_memory_barrier ();
-		iclass_set = TRUE;
-	}
+	iclass = mono_class_try_get_iasync_state_machine_class ();
 
 	if (iclass && klass->valuetype && mono_class_is_assignable_from (iclass, klass))
 		return TRUE;
@@ -2655,16 +2655,11 @@ is_async_method (MonoMethod *method)
 	MonoCustomAttrInfo *cattr;
 	MonoMethodSignature *sig;
 	gboolean res = FALSE;
-	static MonoClass *attr_class;
-	static gboolean attr_class_set;
+	MonoClass *attr_class;
 
 	return FALSE;
 
-	if (!attr_class_set) {
-		attr_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
-		mono_memory_barrier ();
-		attr_class_set = TRUE;
-	}
+	attr_class = mono_class_try_get_iasync_state_machine_class ();
 
 	/* Do less expensive checks first */
 	sig = mono_method_signature (method);

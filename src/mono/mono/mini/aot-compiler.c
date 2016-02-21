@@ -3609,7 +3609,7 @@ add_wrappers (MonoAotCompile *acfg)
 		/* Assembly runtime-invoke (string, bool) [DoAssemblyResolve] */
 		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		csig->hasthis = 1;
-		csig->ret = &(mono_class_from_name (
+		csig->ret = &(mono_class_load_from_name (
 											mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
 		csig->params [0] = &mono_defaults.string_class->byval_arg;
 		csig->params [1] = &mono_defaults.boolean_class->byval_arg;
@@ -4279,14 +4279,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		icomparable = mono_class_from_name (mono_defaults.corlib, "System", "IComparable`1");
-		g_assert (icomparable);
+		icomparable = mono_class_load_from_name (mono_defaults.corlib, "System", "IComparable`1");
+
 		args [0] = &tclass->byval_arg;
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (icomparable, &ctx), tclass)) {
-			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
-			g_assert (gcomparer);
+			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
 			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE, "Comparer<T>");
 		}
 	}
@@ -4300,14 +4299,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		iface = mono_class_from_name (mono_defaults.corlib, "System", "IEquatable`1");
+		iface = mono_class_load_from_name (mono_defaults.corlib, "System", "IEquatable`1");
 		g_assert (iface);
 		args [0] = &tclass->byval_arg;
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (iface, &ctx), tclass)) {
-			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
-			g_assert (gcomparer);
+			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
 			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -4324,8 +4322,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			args [0] = &tclass->byval_arg;
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
-			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
-			g_assert (enum_comparer);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			add_generic_class (acfg, mono_class_inflate_generic_class (enum_comparer, &ctx), FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -4342,8 +4339,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			args [0] = &tclass->byval_arg;
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
-			comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "ObjectComparer`1");
-			g_assert (comparer);
+			comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ObjectComparer`1");
 			add_generic_class (acfg, mono_class_inflate_generic_class (comparer, &ctx), FALSE, "Comparer<T>");
 		}
 	}
@@ -4561,10 +4557,10 @@ add_generic_instances (MonoAotCompile *acfg)
 		insts [ninsts ++] = &mono_defaults.boolean_class->byval_arg;
 
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
@@ -4579,24 +4575,20 @@ add_generic_instances (MonoAotCompile *acfg)
 			insts [ninsts ++] = &mono_defaults.uint32_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.uint16_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.byte_class->byval_arg;
-			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
-			g_assert (enum_comparer);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
 
 			ninsts = 0;
 			insts [ninsts ++] = &mono_defaults.int16_class->byval_arg;
-			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "ShortEnumEqualityComparer`1");
-			g_assert (enum_comparer);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ShortEnumEqualityComparer`1");
 			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
 
 			ninsts = 0;
 			insts [ninsts ++] = &mono_defaults.sbyte_class->byval_arg;
-			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "SByteEnumEqualityComparer`1");
-			g_assert (enum_comparer);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "SByteEnumEqualityComparer`1");
 			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
 
-			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "LongEnumEqualityComparer`1");
-			g_assert (enum_comparer);
+			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "LongEnumEqualityComparer`1");
 			ninsts = 0;
 			insts [ninsts ++] = &mono_defaults.int64_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.uint64_class->byval_arg;
@@ -4605,13 +4597,15 @@ add_generic_instances (MonoAotCompile *acfg)
 
 		/* Add instances of the array generic interfaces for primitive types */
 		/* This will add instances of the InternalArray_ helper methods in Array too */
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IList`1");
+
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "IList`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
+
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
@@ -4642,7 +4636,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoType *args [16];
 			MonoMethod *m;
-			MonoClass *interlocked_klass = mono_class_from_name (mono_defaults.corlib, "System.Threading", "Interlocked");
+			MonoClass *interlocked_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "Interlocked");
 			gpointer iter = NULL;
 
 			while ((m = mono_class_get_methods (interlocked_klass, &iter))) {
@@ -4662,7 +4656,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoType *args [16];
 			MonoMethod *m;
-			MonoClass *volatile_klass = mono_class_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
+			MonoClass *volatile_klass = mono_class_try_load_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
 			gpointer iter = NULL;
 
 			if (volatile_klass) {
@@ -5383,9 +5377,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		MonoClass *ex_class;
 
 		ex_class =
-			mono_class_from_name (mono_defaults.exception_class->image,
+			mono_class_load_from_name (mono_defaults.exception_class->image,
 								  "System", (const char *)patch_info->data.target);
-		g_assert (ex_class);
 		encode_klass_ref (acfg, ex_class, p, &p);
 		break;
 	}

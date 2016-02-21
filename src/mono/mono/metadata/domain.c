@@ -624,258 +624,184 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	}
 	mono_defaults.corlib = mono_assembly_get_image (ass);
 
-	mono_defaults.object_class = mono_class_from_name (
+	mono_defaults.object_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Object");
-	g_assert (mono_defaults.object_class != 0);
 
-	mono_defaults.void_class = mono_class_from_name (
+	mono_defaults.void_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Void");
-	g_assert (mono_defaults.void_class != 0);
 
-	mono_defaults.boolean_class = mono_class_from_name (
+	mono_defaults.boolean_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Boolean");
-	g_assert (mono_defaults.boolean_class != 0);
 
-	mono_defaults.byte_class = mono_class_from_name (
+	mono_defaults.byte_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Byte");
-	g_assert (mono_defaults.byte_class != 0);
 
-	mono_defaults.sbyte_class = mono_class_from_name (
+	mono_defaults.sbyte_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "SByte");
-	g_assert (mono_defaults.sbyte_class != 0);
 
-	mono_defaults.int16_class = mono_class_from_name (
+	mono_defaults.int16_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Int16");
-	g_assert (mono_defaults.int16_class != 0);
 
-	mono_defaults.uint16_class = mono_class_from_name (
+	mono_defaults.uint16_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "UInt16");
-	g_assert (mono_defaults.uint16_class != 0);
 
-	mono_defaults.int32_class = mono_class_from_name (
+	mono_defaults.int32_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Int32");
-	g_assert (mono_defaults.int32_class != 0);
 
-	mono_defaults.uint32_class = mono_class_from_name (
+	mono_defaults.uint32_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "UInt32");
-	g_assert (mono_defaults.uint32_class != 0);
 
-	mono_defaults.uint_class = mono_class_from_name (
+	mono_defaults.uint_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "UIntPtr");
-	g_assert (mono_defaults.uint_class != 0);
 
-	mono_defaults.int_class = mono_class_from_name (
+	mono_defaults.int_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "IntPtr");
-	g_assert (mono_defaults.int_class != 0);
 
-	mono_defaults.int64_class = mono_class_from_name (
+	mono_defaults.int64_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Int64");
-	g_assert (mono_defaults.int64_class != 0);
 
-	mono_defaults.uint64_class = mono_class_from_name (
+	mono_defaults.uint64_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "UInt64");
-	g_assert (mono_defaults.uint64_class != 0);
 
-	mono_defaults.single_class = mono_class_from_name (
+	mono_defaults.single_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Single");
-	g_assert (mono_defaults.single_class != 0);
 
-	mono_defaults.double_class = mono_class_from_name (
+	mono_defaults.double_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Double");
-	g_assert (mono_defaults.double_class != 0);
 
-	mono_defaults.char_class = mono_class_from_name (
+	mono_defaults.char_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Char");
-	g_assert (mono_defaults.char_class != 0);
 
-	mono_defaults.string_class = mono_class_from_name (
+	mono_defaults.string_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "String");
-	g_assert (mono_defaults.string_class != 0);
 
-	mono_defaults.enum_class = mono_class_from_name (
+	mono_defaults.enum_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Enum");
-	g_assert (mono_defaults.enum_class != 0);
 
-	mono_defaults.array_class = mono_class_from_name (
+	mono_defaults.array_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Array");
-	g_assert (mono_defaults.array_class != 0);
 
-	mono_defaults.delegate_class = mono_class_from_name (
+	mono_defaults.delegate_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Delegate");
-	g_assert (mono_defaults.delegate_class != 0 );
 
-	mono_defaults.multicastdelegate_class = mono_class_from_name (
+	mono_defaults.multicastdelegate_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "MulticastDelegate");
-	g_assert (mono_defaults.multicastdelegate_class != 0 );
 
-	mono_defaults.asyncresult_class = mono_class_from_name (
+	mono_defaults.asyncresult_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Runtime.Remoting.Messaging", 
 		"AsyncResult");
-	g_assert (mono_defaults.asyncresult_class != 0 );
 
-	mono_defaults.manualresetevent_class = mono_class_from_name (
+	mono_defaults.manualresetevent_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "ManualResetEvent");
-	g_assert (mono_defaults.manualresetevent_class != 0 );
 
-	mono_defaults.typehandle_class = mono_class_from_name (
+	mono_defaults.typehandle_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "RuntimeTypeHandle");
-	g_assert (mono_defaults.typehandle_class != 0);
 
-	mono_defaults.methodhandle_class = mono_class_from_name (
+	mono_defaults.methodhandle_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "RuntimeMethodHandle");
-	g_assert (mono_defaults.methodhandle_class != 0);
 
-	mono_defaults.fieldhandle_class = mono_class_from_name (
+	mono_defaults.fieldhandle_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "RuntimeFieldHandle");
-	g_assert (mono_defaults.fieldhandle_class != 0);
 
-	mono_defaults.systemtype_class = mono_class_from_name (
+	mono_defaults.systemtype_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Type");
-	g_assert (mono_defaults.systemtype_class != 0);
 
-	mono_defaults.monotype_class = mono_class_from_name (
+	mono_defaults.monotype_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "MonoType");
-	g_assert (mono_defaults.monotype_class != 0);
 
-	mono_defaults.runtimetype_class = mono_class_from_name (
+	mono_defaults.runtimetype_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "RuntimeType");
-	g_assert (mono_defaults.runtimetype_class != 0);
 
-	mono_defaults.exception_class = mono_class_from_name (
+	mono_defaults.exception_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Exception");
-	g_assert (mono_defaults.exception_class != 0);
 
-	mono_defaults.threadabortexception_class = mono_class_from_name (
+	mono_defaults.threadabortexception_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "ThreadAbortException");
-	g_assert (mono_defaults.threadabortexception_class != 0);
 
-	mono_defaults.thread_class = mono_class_from_name (
+	mono_defaults.thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "Thread");
-	g_assert (mono_defaults.thread_class != 0);
 
-	mono_defaults.internal_thread_class = mono_class_from_name (
+	mono_defaults.internal_thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "InternalThread");
-	if (!mono_defaults.internal_thread_class) {
-		/* This can happen with an old mscorlib */
-		fprintf (stderr, "Corlib too old for this runtime.\n");
-		fprintf (stderr, "Loaded from: %s\n",
-				 mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown");
-		exit (1);
-	}
 
-	mono_defaults.appdomain_class = mono_class_from_name (
+	mono_defaults.appdomain_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "AppDomain");
-	g_assert (mono_defaults.appdomain_class != 0);
 
 #ifndef DISABLE_REMOTING
-	mono_defaults.transparent_proxy_class = mono_class_from_name (
+	mono_defaults.transparent_proxy_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
-	g_assert (mono_defaults.transparent_proxy_class != 0);
 
-	mono_defaults.real_proxy_class = mono_class_from_name (
+	mono_defaults.real_proxy_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "RealProxy");
-	g_assert (mono_defaults.real_proxy_class != 0);
 
-	mono_defaults.marshalbyrefobject_class =  mono_class_from_name (
+	mono_defaults.marshalbyrefobject_class =  mono_class_load_from_name (
 	        mono_defaults.corlib, "System", "MarshalByRefObject");
-	g_assert (mono_defaults.marshalbyrefobject_class != 0);
 
-	mono_defaults.iremotingtypeinfo_class = mono_class_from_name (
+	mono_defaults.iremotingtypeinfo_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Runtime.Remoting", "IRemotingTypeInfo");
-	g_assert (mono_defaults.iremotingtypeinfo_class != 0);
+
 #endif
 
-	mono_defaults.mono_method_message_class = mono_class_from_name (
+	mono_defaults.mono_method_message_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "MonoMethodMessage");
-	g_assert (mono_defaults.mono_method_message_class != 0);
 
-	mono_defaults.field_info_class = mono_class_from_name (
+	mono_defaults.field_info_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Reflection", "FieldInfo");
-	g_assert (mono_defaults.field_info_class != 0);
 
-	mono_defaults.method_info_class = mono_class_from_name (
+	mono_defaults.method_info_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Reflection", "MethodInfo");
-	g_assert (mono_defaults.method_info_class != 0);
 
-	mono_defaults.stringbuilder_class = mono_class_from_name (
+	mono_defaults.stringbuilder_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Text", "StringBuilder");
-	g_assert (mono_defaults.stringbuilder_class != 0);
 
-	mono_defaults.math_class = mono_class_from_name (
+	mono_defaults.math_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System", "Math");
-	g_assert (mono_defaults.math_class != 0);
 
-	mono_defaults.stack_frame_class = mono_class_from_name (
+	mono_defaults.stack_frame_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Diagnostics", "StackFrame");
-	g_assert (mono_defaults.stack_frame_class != 0);
 
-	mono_defaults.stack_trace_class = mono_class_from_name (
+	mono_defaults.stack_trace_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Diagnostics", "StackTrace");
-	g_assert (mono_defaults.stack_trace_class != 0);
 
-	mono_defaults.marshal_class = mono_class_from_name (
+	mono_defaults.marshal_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Runtime.InteropServices", "Marshal");
-	g_assert (mono_defaults.marshal_class != 0);
 
-	mono_defaults.typed_reference_class =  mono_class_from_name (
+	mono_defaults.typed_reference_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System", "TypedReference");
-	g_assert (mono_defaults.typed_reference_class != 0);
 
-	mono_defaults.argumenthandle_class =  mono_class_from_name (
+	mono_defaults.argumenthandle_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System", "RuntimeArgumentHandle");
-	g_assert (mono_defaults.argumenthandle_class != 0);
 
-	mono_defaults.monitor_class =  mono_class_from_name (
+	mono_defaults.monitor_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Threading", "Monitor");
-	g_assert (mono_defaults.monitor_class != 0);
-
-	mono_defaults.runtimesecurityframe_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Security", "RuntimeSecurityFrame");
-
-	mono_defaults.executioncontext_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Threading", "ExecutionContext");
-
-	mono_defaults.internals_visible_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute");
-
-	mono_defaults.critical_finalizer_object = mono_class_from_name (
-		mono_defaults.corlib, "System.Runtime.ConstrainedExecution", "CriticalFinalizerObject");
-
 	/*
-	 * mscorlib needs a little help, only now it can load its friends list (after we have
-	 * loaded the InternalsVisibleToAttribute), load it now
-	 */
-	mono_assembly_load_friends (ass);
-	
-	mono_defaults.safehandle_class = mono_class_from_name (
-		mono_defaults.corlib, "System.Runtime.InteropServices", "SafeHandle");
+	Not using GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL as this type is heavily checked by sgen when computing finalization.
+	*/
+	mono_defaults.critical_finalizer_object = mono_class_try_load_from_name (mono_defaults.corlib,
+			"System.Runtime.ConstrainedExecution", "CriticalFinalizerObject");
 
-	mono_defaults.handleref_class = mono_class_from_name (
+	mono_assembly_load_friends (ass);
+
+	mono_defaults.handleref_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Runtime.InteropServices", "HandleRef");
 
-	mono_defaults.attribute_class = mono_class_from_name (
+	mono_defaults.attribute_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Attribute");
 
-	mono_defaults.customattribute_data_class = mono_class_from_name (
+	mono_defaults.customattribute_data_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
 
 	mono_class_init (mono_defaults.array_class);
-	mono_defaults.generic_nullable_class = mono_class_from_name (
+	mono_defaults.generic_nullable_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Nullable`1");
-	mono_defaults.generic_ilist_class = mono_class_from_name (
+	mono_defaults.generic_ilist_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
-	mono_defaults.generic_ireadonlylist_class = mono_class_from_name (
+	mono_defaults.generic_ireadonlylist_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
 
-	mono_defaults.threadpool_wait_callback_class = mono_class_from_name (
+	mono_defaults.threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
-	if (!mono_defaults.threadpool_wait_callback_class) {
-		/* This can happen with an old mscorlib */
-		fprintf (stderr, "Corlib too old for this runtime.\n");
-		fprintf (stderr, "Loaded from: %s\n",
-				 mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown");
-		exit (1);
-	}
+
 	mono_defaults.threadpool_perform_wait_callback_method = mono_class_get_method_from_name (
 		mono_defaults.threadpool_wait_callback_class, "PerformWaitCallback", 0);
 

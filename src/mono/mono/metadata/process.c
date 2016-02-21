@@ -58,6 +58,34 @@ HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 
 static MonoImage *system_assembly=NULL;
 
+//Hand coded version that loads from system
+static MonoClass*
+mono_class_get_file_version_info_class (void)
+{
+	static MonoClass *tmp_class;
+	MonoClass *klass = tmp_class;
+	if (!klass) {
+		klass = mono_class_load_from_name (system_assembly, "System.Diagnostics", "FileVersionInfo");
+		mono_memory_barrier ();
+		tmp_class = klass;
+	}
+	return klass;
+}
+
+static MonoClass*
+mono_class_get_process_module_class (void)
+{
+	static MonoClass *tmp_class;
+	MonoClass *klass = tmp_class;
+	if (!klass) {
+		klass = mono_class_load_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
+		mono_memory_barrier ();
+		tmp_class = klass;
+	}
+	return klass;
+}
+
+
 static guint32 unicode_chars (const gunichar2 *str)
 {
 	guint32 len=0;
@@ -360,7 +388,6 @@ static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly 
 static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 {
 	MonoError error;
-	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	char *filename;
@@ -372,13 +399,7 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	 */
 	item = mono_object_new_checked (domain, proc_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
-	if (!filever_class)
-		filever_class = mono_class_from_name (system_assembly,
-					    "System.Diagnostics",
-					    "FileVersionInfo");
-
-	filever = mono_object_new_checked (domain, filever_class, &error);
+	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), &error);
 	if (!mono_error_ok (&error)) goto leave;
 
 	process_get_assembly_fileversion (filever, assembly);
@@ -400,7 +421,6 @@ leave:
 static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
 	MonoError error;
-	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
 	MODULEINFO modinfo;
@@ -410,13 +430,7 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	 */
 	item=mono_object_new_checked (domain, proc_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
-	if (!filever_class)
-		filever_class=mono_class_from_name (system_assembly,
-					    "System.Diagnostics",
-					    "FileVersionInfo");
-
-	filever=mono_object_new_checked (domain, filever_class, &error);
+	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	process_get_fileversion (filever, filename);
@@ -475,7 +489,6 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	DWORD needed;
 	guint32 count = 0, module_count = 0, assembly_count = 0;
 	guint32 i, num_added = 0;
-	static MonoClass *proc_class = NULL;
 	GPtrArray *assemblies = NULL;
 	static HANDLE current_process = 0;
 	
@@ -496,16 +509,13 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	}
 
 	count = module_count + assembly_count; 
-	if (!proc_class)
-		proc_class = mono_class_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
-
-	temp_arr = mono_array_new (mono_domain_get (), proc_class, count);
+	temp_arr = mono_array_new (mono_domain_get (), mono_class_get_process_module_class (), count);
 
 	for (i = 0; i < module_count; i++) {
 		if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
 				GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
 			MonoObject *module = process_add_module (process, mods[i],
-					filename, modname, proc_class);
+					filename, modname, mono_class_get_process_module_class ());
 			mono_array_setref (temp_arr, num_added++, module);
 		}
 	}
@@ -513,7 +523,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	if (assemblies) {
 		for (i = 0; i < assembly_count; i++) {
 			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-			MonoObject *module = get_process_module (ass, proc_class);
+			MonoObject *module = get_process_module (ass, mono_class_get_process_module_class ());
 			mono_array_setref (temp_arr, num_added++, module);
 		}
 		g_ptr_array_free (assemblies, TRUE);
@@ -523,7 +533,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 		arr = temp_arr;
 	} else {
 		/* shorter version of the array */
-		arr = mono_array_new (mono_domain_get (), proc_class, num_added);
+		arr = mono_array_new (mono_domain_get (), mono_class_get_process_module_class (), num_added);
 
 		for (i = 0; i < num_added; i++)
 			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));

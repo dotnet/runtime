@@ -193,6 +193,9 @@ static mono_mutex_t assembly_binding_mutex;
 /* Loaded assembly binding info */
 static GSList *loaded_assembly_bindings = NULL;
 
+/* Class lazy loading functions */
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, System.Runtime.CompilerServices, InternalsVisibleToAttribute)
+
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload);
 static MonoAssembly*
@@ -1684,7 +1687,7 @@ free_item (gpointer val, gpointer user_data)
  * names in custom attributes.
  *
  * This is an internal method, we need this because when we load mscorlib
- * we do not have the mono_defaults.internals_visible_class loaded yet,
+ * we do not have the internals visible cattr loaded yet,
  * so we need to load these after we initialize the runtime. 
  *
  * LOCKING: Acquires the assemblies lock plus the loader lock.
@@ -1724,7 +1727,7 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		MonoAssemblyName *aname;
 		const gchar *data;
 		/* Do some sanity checking */
-		if (!attr->ctor || attr->ctor->klass != mono_defaults.internals_visible_class)
+		if (!attr->ctor || attr->ctor->klass != mono_class_try_get_internals_visible_class ())
 			continue;
 		if (attr->data_size < 4)
 			continue;

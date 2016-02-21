@@ -3102,15 +3102,15 @@ get_implicit_generic_array_interfaces (MonoClass *klass, int *num, int *is_enume
 	all_interfaces = eclass->rank && eclass->element_class->rank? FALSE: TRUE;
 
 	if (!generic_icollection_class) {
-		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+		generic_icollection_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "ICollection`1");
-		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ienumerable_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IEnumerable`1");
-		generic_ienumerator_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ienumerator_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IEnumerator`1");
-		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ireadonlylist_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IReadOnlyList`1");
-		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ireadonlycollection_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IReadOnlyCollection`1");
 	}
 
@@ -6217,7 +6217,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 		CHECKED_METADATA_WRITE_PTR ( klass->parent , pinfo->constraints [0] );
 		pos++;
 	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) {
-		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_class_from_name (mono_defaults.corlib, "System", "ValueType") );
+		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_class_load_from_name (mono_defaults.corlib, "System", "ValueType") );
 	} else {
 		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_defaults.object_class );
 	}
@@ -6743,7 +6743,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	/* for the building corlib use System.Array from it */
 	if (image->assembly && assembly_is_dynamic (image->assembly) && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
-		parent = mono_class_from_name (image, "System", "Array");
+		parent = mono_class_load_from_name (image, "System", "Array");
 		corlib_type = TRUE;
 	} else {
 		parent = mono_defaults.array_class;
@@ -7836,12 +7836,14 @@ return_nested_in (MonoClass *klass, char *nested)
 }
 
 static MonoClass*
-search_modules (MonoImage *image, const char *name_space, const char *name)
+search_modules (MonoImage *image, const char *name_space, const char *name, MonoError *error)
 {
 	MonoTableInfo *file_table = &image->tables [MONO_TABLE_FILE];
 	MonoImage *file_image;
 	MonoClass *klass;
 	int i;
+
+	mono_error_init (error);
 
 	/* 
 	 * The EXPORTEDTYPES table only contains public types, so have to search the
@@ -7857,8 +7859,8 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 
 		file_image = mono_image_load_file_for_image (image, i + 1);
 		if (file_image) {
-			klass = mono_class_from_name (file_image, name_space, name);
-			if (klass)
+			klass = mono_class_from_name_checked (file_image, name_space, name, error);
+			if (klass || !is_ok (error))
 				return klass;
 		}
 	}
@@ -7867,7 +7869,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 }
 
 static MonoClass *
-mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoError *error, GHashTable* visited_images)
+mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, GHashTable* visited_images, MonoError *error)
 {
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
@@ -7900,8 +7902,11 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	if (get_class_from_name && image->tables [MONO_TABLE_EXPORTEDTYPE].rows == 0) {
 		gboolean res = get_class_from_name (image, name_space, name, &klass);
 		if (res) {
-			if (!klass)
-				klass = search_modules (image, name_space, name);
+			if (!klass) {
+				klass = search_modules (image, name_space, name, error);
+				if (!is_ok (error))
+					return NULL;
+			}
 			if (nested)
 				return klass ? return_nested_in (klass, nested) : NULL;
 			else
@@ -7924,15 +7929,15 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 		for (i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
 
-			klass = mono_class_from_name (module, name_space, name);
-			if (klass)
+			klass = mono_class_from_name_checked (module, name_space, name, error);
+			if (klass || !is_ok (error))
 				return klass;
 		}
 	}
 
 	if (!token) {
-		klass = search_modules (image, name_space, name);
-		if (klass)
+		klass = search_modules (image, name_space, name, error);
+		if (klass || !is_ok (error))
 			return klass;
 	}
 
@@ -7953,7 +7958,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 			loaded_image = mono_assembly_load_module (image->assembly, impl >> MONO_IMPLEMENTATION_BITS);
 			if (!loaded_image)
 				return NULL;
-			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, error, visited_images);
+			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, visited_images, error);
 			if (nested)
 				return klass ? return_nested_in (klass, nested) : NULL;
 			return klass;
@@ -7966,9 +7971,9 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 			g_assert (image->references [assembly_idx - 1]);
 			if (image->references [assembly_idx - 1] == (gpointer)-1)
 				return NULL;			
-			klass = mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, error, visited_images);
+			klass = mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, visited_images, error);
 			if (nested)
-				return return_nested_in (klass, nested);
+				return klass ? return_nested_in (klass, nested) : NULL;
 			return klass;
 		} else {
 			g_assert_not_reached ();
@@ -7983,6 +7988,18 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	return klass;
 }
 
+/**
+ * mono_class_from_name_checked:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.
+ *
+ * Works like mono_class_from_name, but error handling is tricky. It can return NULL and have no error
+ * set if the class was not found or it will return NULL and set the error if there was a loading error.
+ */
 MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
 {
@@ -7991,7 +8008,7 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 
 	visited_images = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	klass = mono_class_from_name_checked_aux (image, name_space, name, error, visited_images);
+	klass = mono_class_from_name_checked_aux (image, name_space, name, visited_images, error);
 
 	g_hash_table_destroy (visited_images);
 
@@ -8024,6 +8041,56 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	}
 	return klass;
 }
+
+/**
+ * mono_class_load_from_name:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * This function works exactly like mono_class_from_name but it will abort if the class is not found.
+ * This function should be used by the runtime for critical types to which there's no way to recover but crash
+ * If they are missing. Thing of System.Object or System.String.
+ */
+MonoClass *
+mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	klass = mono_class_from_name_checked (image, name_space, name, &error);
+	if (!klass)
+		g_error ("Runtime critical type %s.%s not found", name_space, name);
+	if (!mono_error_ok (&error))
+		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (&error));
+	return klass;
+}
+
+/**
+ * mono_class_try_load_from_name:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * This function tries to load a type, returning the class was found or NULL otherwise.
+ * This function should be used by the runtime when probing for optional types, those that could have being linked out.
+ *
+ * Big design consideration. This function aborts if there was an error loading the type. This prevents us from missing
+ * a type that we would otherwise assume to be available but was not due some error.
+ *
+ */
+MonoClass*
+mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	klass = mono_class_from_name_checked (image, name_space, name, &error);
+	if (!mono_error_ok (&error))
+		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (&error));
+	return klass;
+}
+
 
 /**
  * mono_class_is_subclass_of:
@@ -10813,3 +10880,5 @@ mono_class_full_name (MonoClass *klass)
 	return mono_type_full_name (&klass->byval_arg);
 }
 
+/* Declare all shared lazy type lookup functions */
+GENERATE_TRY_GET_CLASS_WITH_CACHE (safehandle, System.Runtime.InteropServices, SafeHandle)

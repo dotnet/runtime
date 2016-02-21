@@ -1147,16 +1147,12 @@ typedef struct {
 	MonoClass *typed_reference_class;
 	MonoClass *argumenthandle_class;
 	MonoClass *monitor_class;
-	MonoClass *runtimesecurityframe_class;
-	MonoClass *executioncontext_class;
-	MonoClass *internals_visible_class;
 	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
-	MonoClass *safehandle_class;
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;
 	MonoClass *customattribute_data_class;
-	MonoClass *critical_finalizer_object;
+	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *threadpool_wait_callback_class;
 	MonoMethod *threadpool_perform_wait_callback_method;
@@ -1182,6 +1178,9 @@ mono_install_remoting_trampoline (MonoRemotingTrampoline func);
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
 
+#define GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_try_get_##shortname##_class (void);
+
 #define GENERATE_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
 MonoClass*	\
 mono_class_get_##shortname##_class (void)	\
@@ -1189,17 +1188,31 @@ mono_class_get_##shortname##_class (void)	\
 	static MonoClass *tmp_class;	\
 	MonoClass *klass = tmp_class;	\
 	if (!klass) {	\
-		klass = mono_class_from_name (mono_defaults.corlib, #namespace, #name);	\
-		g_assert (klass);	\
+		klass = mono_class_load_from_name (mono_defaults.corlib, #namespace, #name);	\
 		mono_memory_barrier ();	\
 		tmp_class = klass;	\
 	}	\
 	return klass;	\
 }
 
-#define GENERATE_STATIC_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
-static GENERATE_GET_CLASS_WITH_CACHE (shortname,namespace,name)
+#define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+MonoClass*	\
+mono_class_try_get_##shortname##_class (void)	\
+{	\
+	static volatile MonoClass *tmp_class;	\
+	static volatile gboolean inited;	\
+	MonoClass *klass = (MonoClass *)tmp_class;	\
+	mono_memory_barrier ();	\
+	if (!inited) {	\
+		klass = mono_class_try_load_from_name (mono_defaults.corlib, #namespace, #name);	\
+		tmp_class = klass;	\
+		mono_memory_barrier ();	\
+		inited = TRUE;	\
+	}	\
+	return klass;	\
+}
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
 
 #ifndef DISABLE_COM
 
@@ -1476,5 +1489,11 @@ get_image_for_generic_param (MonoGenericParam *param);
 
 char *
 make_generic_name_string (MonoImage *image, int num);
+
+MonoClass *
+mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
+
+MonoClass*
+mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 #endif /* __MONO_METADATA_CLASS_INTERNALS_H__ */

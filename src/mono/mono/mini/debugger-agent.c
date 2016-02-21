@@ -3328,18 +3328,14 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	if (ji->dbg_attrs_inited)
 		return;
 
-	if (!hidden_klass) {
-		hidden_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
-		g_assert (hidden_klass);
-	}
-	if (!step_through_klass) {
-		step_through_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
-		g_assert (step_through_klass);
-	}
-	if (!non_user_klass) {
-		non_user_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
-		g_assert (non_user_klass);
-	}
+	if (!hidden_klass)
+		hidden_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
+
+	if (!step_through_klass)
+		step_through_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
+
+	if (!non_user_klass)
+		non_user_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
 
 	ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
 	if (ainfo) {
@@ -6957,7 +6953,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		wait_for_suspend ();
 
 #ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
-		env_class = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
+		env_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "Environment");
 		if (env_class)
 			exit_method = mono_class_get_method_from_name (env_class, "Exit", 1);
 #endif

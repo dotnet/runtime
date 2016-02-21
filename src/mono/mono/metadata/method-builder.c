@@ -550,7 +550,7 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 {
 	MonoMethod *ctor = NULL;
 
-	MonoClass *mme = mono_class_from_name (mono_defaults.corlib, exc_nspace, exc_name);
+	MonoClass *mme = mono_class_load_from_name (mono_defaults.corlib, exc_nspace, exc_name);
 	mono_class_init (mme);
 	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
 	g_assert (ctor);
