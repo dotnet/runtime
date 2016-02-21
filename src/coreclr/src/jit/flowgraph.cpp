@@ -21325,11 +21325,11 @@ bool          Compiler::fgIsUnboundedInlineRecursion(InlineContext*          inl
     DWORD depth = 0;
     bool result = false;
 
-    for (; inlineContext != nullptr; inlineContext = inlineContext->inlParent)
+    for (; inlineContext != nullptr; inlineContext = inlineContext->getParent())
     {
         // Hard limit just to catch pathological cases
         depth++;
-        if  ((inlineContext->inlCode == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
+        if  ((inlineContext->getCode() == ilCode) || (depth > MAX_INLINING_RECURSION_DEPTH))
         {
            result = true;
            break;
@@ -21360,11 +21360,7 @@ void                Compiler::fgInline()
     noway_assert(block != nullptr);
 
     // Set the root inline context on all statements
-    InlineContext* rootContext = new (this, CMK_Inlining) InlineContext;
-
-#if defined(DEBUG)
-    rootContext->inlCallee = info.compMethodHnd;
-#endif
+    InlineContext* rootContext = InlineContext::newRoot(this);
 
     for (; block != nullptr; block = block->bbNext)
     {
@@ -21394,7 +21390,7 @@ void                Compiler::fgInline()
         {
             expr = stmt->gtStmtExpr;
 
-            // See if we can expand the inline candidate.
+            // See if we can expand the inline candidate
             if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
             {
                 fgMorphStmt = stmt;
@@ -21924,11 +21920,10 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
     if (verbose || fgPrintInlinedMethods)
     {
-        printf("Successfully inlined %s (%d IL bytes) (depth %d) into %s [%s]\n",
+        printf("Successfully inlined %s (%d IL bytes) (depth %d) [%s]\n",
                eeGetMethodFullName(fncHandle),
                inlineCandidateInfo->methInfo.ILCodeSize,
                inlineDepth,
-               info.compFullName,
                inlineResult->reasonString());
     }
 
@@ -21991,24 +21986,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 #endif // defined(DEBUG) || MEASURE_INLINING
 
     //
-    // Obtain the current InlineContext and link in a new child for the callee
+    // Create a new inline context and mark the inlined statements with it
     //
-    InlineContext* calleeContext = new (this, CMK_Inlining) InlineContext;
-    InlineContext* parentContext = iciStmt->gtStmt.gtInlineContext;
-    noway_assert(parentContext != nullptr);
-    BYTE* calleeIL = pInlineInfo->inlineCandidateInfo->methInfo.ILCode;
-    calleeContext->inlCode = calleeIL;
-    calleeContext->inlParent = parentContext;
-    // Push on front here will put siblings in reverse lexical
-    // order which we undo in the dumper
-    calleeContext->inlSibling = parentContext->inlChild;
-    parentContext->inlChild = calleeContext;
-    calleeContext->inlChild = nullptr;
-    calleeContext->inlOffset = iciStmt->AsStmt()->gtStmtILoffsx;
-    calleeContext->inlObservation = pInlineInfo->inlineResult->getObservation();
-#ifdef DEBUG
-    calleeContext->inlCallee = pInlineInfo->fncHandle;
-#endif
+    InlineContext* calleeContext = InlineContext::newSuccess(this, pInlineInfo);
 
     for (block = InlineeCompiler->fgFirstBB;
          block != nullptr;
