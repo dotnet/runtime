@@ -3237,20 +3237,19 @@ namespace System {
                 (str2 == null ? 0 : str2.Length));
             Contract.EndContractBlock();
 
-            if (str0==null && str1==null && str2==null) {
-                return String.Empty;
+            if (IsNullOrEmpty(str0))
+            {
+                return Concat(str1, str2);
             }
 
-            if (str0==null) {
-                str0 = String.Empty;
+            if (IsNullOrEmpty(str1))
+            {
+                return Concat(str0, str2);
             }
 
-            if (str1==null) {
-                str1 = String.Empty;
-            }
-
-            if (str2 == null) {
-                str2 = String.Empty;
+            if (IsNullOrEmpty(str2))
+            {
+                return Concat(str0, str1);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length;
@@ -3273,24 +3272,24 @@ namespace System {
                 (str3 == null ? 0 : str3.Length));
             Contract.EndContractBlock();
 
-            if (str0==null && str1==null && str2==null && str3==null) {
-                return String.Empty;
+            if (IsNullOrEmpty(str0))
+            {
+                return Concat(str1, str2, str3);
             }
 
-            if (str0==null) {
-                str0 = String.Empty;
+            if (IsNullOrEmpty(str1))
+            {
+                return Concat(str0, str2, str3);
             }
 
-            if (str1==null) {
-                str1 = String.Empty;
+            if (IsNullOrEmpty(str2))
+            {
+                return Concat(str0, str1, str3);
             }
 
-            if (str2 == null) {
-                str2 = String.Empty;
-            }
-            
-            if (str3 == null) {
-                str3 = String.Empty;
+            if (IsNullOrEmpty(str3))
+            {
+                return Concat(str0, str1, str2);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
