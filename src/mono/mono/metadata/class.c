@@ -7733,7 +7733,8 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 {
 	MonoError error;
 	MonoClass *res = mono_class_from_name_case_checked (image, name_space, name, &error);
-	g_assert (!mono_error_ok (&error));
+	mono_error_cleanup (&error);
+
 	return res;
 }
 
@@ -8035,10 +8036,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	MonoClass *klass;
 
 	klass = mono_class_from_name_checked (image, name_space, name, &error);
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-	}
+	mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+
 	return klass;
 }
 
