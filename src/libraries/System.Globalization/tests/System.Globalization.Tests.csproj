@@ -130,14 +130,10 @@
     <Compile Include="NumberStyles\NumberStylesNone.cs" />
     <Compile Include="NumberStyles\NumberStylesNumber.cs" />
     <Compile Include="PlatformDetection.cs" />
-    <Compile Include="StringInfo\StringInfoCtor1.cs" />
-    <Compile Include="StringInfo\StringInfoCtor2.cs" />
+    <Compile Include="StringInfo\StringInfoCtor.cs" />
     <Compile Include="StringInfo\StringInfoEquals.cs" />
-    <Compile Include="StringInfo\StringInfoGetHashCode.cs" />
-    <Compile Include="StringInfo\StringInfoGetNextTextElement1.cs" />
-    <Compile Include="StringInfo\StringInfoGetNextTextElement2.cs" />
-    <Compile Include="StringInfo\StringInfoGetTextElementEnumerator1.cs" />
-    <Compile Include="StringInfo\StringInfoGetTextElementEnumerator2.cs" />
+    <Compile Include="StringInfo\StringInfoGetNextTextElement.cs" />
+    <Compile Include="StringInfo\StringInfoGetTextElementEnumerator.cs" />
     <Compile Include="StringInfo\StringInfoLengthInTextElements.cs" />
     <Compile Include="StringInfo\StringInfoParseCombiningCharacters.cs" />
     <Compile Include="StringInfo\StringInfoString.cs" />
