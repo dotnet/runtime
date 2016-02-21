@@ -390,6 +390,7 @@ MONO_API int            mono_metadata_parse_custom_mod  (MonoImage      *m,
 						MonoCustomMod   *dest,
 						const char      *ptr,
 						const char     **rptr);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArrayType *mono_metadata_parse_array       (MonoImage      *m,
 						const char      *ptr,
 						const char     **rptr);

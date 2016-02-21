@@ -1359,10 +1359,8 @@ mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
 	MonoError error;
 	MonoArrayType *ret = mono_metadata_parse_array_internal (m, NULL, FALSE, ptr, rptr, &error);
-	if (!ret) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
-	}
+	mono_error_cleanup (&error);
+
 	return ret;
 }
 
