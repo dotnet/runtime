@@ -6,43 +6,49 @@
 **
 ** Source: GetCurrentThread/test1/thread.c
 **
-** Purpose: Test to ensure GetCurrentThread returns a handle to 
+** Purpose: Test to ensure GetCurrentThread returns a handle to
 ** the current thread.
 **
 ** Dependencies: GetThreadPriority
 **               SetThreadPriority
-**               Fail   
+**               Fail
 **               Trace
-** 
+**
 
 **
 **=========================================================*/
 
 #include <palsuite.h>
 
-int __cdecl main( int argc, char **argv ) 
+int __cdecl main( int argc, char **argv )
 {
 
-    HANDLE hThread; 
+    HANDLE hThread;
     int nPriority;
- 
+
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return ( FAIL );
     }
-   
+
+#if !HAVE_SCHED_OTHER_ASSIGNABLE
+    /* Defining thread priority for SCHED_OTHER is implementation defined.
+       Some platforms like NetBSD cannot reassign it as they are dynamic.
+    */
+    printf("paltest_getcurrentthread_test1 has been disabled on this platform\n");
+#else
     hThread = GetCurrentThread();
-    
+
     nPriority = GetThreadPriority(hThread);
 
     if ( THREAD_PRIORITY_NORMAL != nPriority )
     {
-	if ( THREAD_PRIORITY_ERROR_RETURN == nPriority ) 
+	if ( THREAD_PRIORITY_ERROR_RETURN == nPriority )
 	{
 	    Fail ("GetThreadPriority function call failed for %s\n"
 		    "GetLastError returned %d\n", argv[0], GetLastError());
 	}
-	else 
+	else
 	{
 	    Fail ("GetThreadPriority function call failed for %s\n"
 		    "The priority returned was %d\n", argv[0], nPriority);
@@ -52,7 +58,7 @@ int __cdecl main( int argc, char **argv )
     {
 	nPriority = 0;
 	
-	if (0 == SetThreadPriority(hThread, THREAD_PRIORITY_HIGHEST)) 
+	if (0 == SetThreadPriority(hThread, THREAD_PRIORITY_HIGHEST))
 	{
 	    Fail ("Unable to set thread priority.  Either handle doesn't"
 		    " point to current thread \nor SetThreadPriority "
@@ -61,26 +67,27 @@ int __cdecl main( int argc, char **argv )
 	
 	nPriority = GetThreadPriority(hThread);
 	
-	if ( THREAD_PRIORITY_ERROR_RETURN == nPriority ) 
+	if ( THREAD_PRIORITY_ERROR_RETURN == nPriority )
 	{
 	    Fail ("GetThreadPriority function call failed for %s\n"
 		    "GetLastError returned %d\n", argv[0], GetLastError());
 	}
-	else if ( THREAD_PRIORITY_HIGHEST == nPriority ) 
+	else if ( THREAD_PRIORITY_HIGHEST == nPriority )
 	{
 	    Trace ("GetCurrentThread returns handle to the current "
 		    "thread.\n");
 	    exit ( PASS );
-	} 
-	else 
+	}
+	else
 	{
 	    Fail ("Unable to set thread priority.  Either handle doesn't"
 		    " point to current thread \nor SetThreadPriority "
 		    "function failed.  Failing test.\n");
 	}
     }
+#endif
 
     PAL_Terminate();
-    return ( PASS );    
-    
+    return ( PASS );
+
 }
