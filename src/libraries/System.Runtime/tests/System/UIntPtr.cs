@@ -3,117 +3,187 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class UIntPtrTests
+public static class UIntPtrTests
 {
+    private static unsafe bool s_is32Bits = sizeof(void*) == 4; // Skip UIntPtr tests on 32-bit platforms
+
     [Fact]
-    public static unsafe void TestBasics()
+    public static void TestZero()
     {
-        UIntPtr p;
-        uint i;
-        ulong l;
-
-        if (sizeof(void*) == 4)
-        {
-            // Skip UIntPtr tests on 32-bit platforms
+        if (s_is32Bits)
             return;
-        }
 
-        int size = UIntPtr.Size;
-        Assert.Equal(size, sizeof(void*));
-
-        TestPointer(UIntPtr.Zero, 0);
-
-        i = 42;
-        TestPointer(new UIntPtr(i), i);
-        TestPointer((UIntPtr)i, i);
-
-        i = 42;
-        TestPointer(new UIntPtr(i), i);
-
-        l = 0x0fffffffffffffff;
-        TestPointer(new UIntPtr(l), l);
-        TestPointer((UIntPtr)l, l);
-
-        void* pv = new UIntPtr(42).ToPointer();
-        TestPointer(new UIntPtr(pv), 42);
-        TestPointer((UIntPtr)pv, 42);
-
-        p = UIntPtr.Add(new UIntPtr(42), 5);
-        TestPointer(p, 42 + 5);
-
-        // Add is spected NOT to generate an OverflowException
-        p = UIntPtr.Add(new UIntPtr(0xffffffffffffffff), 5);
-        unchecked
-        {
-            TestPointer(p, (long)0x0000000000000004);
-        }
-
-        p = UIntPtr.Subtract(new UIntPtr(42), 5);
-        TestPointer(p, 42 - 5);
-
-        bool b;
-        p = new UIntPtr(42);
-        b = p.Equals(null);
-        Assert.False(b);
-        b = p.Equals((object)42);
-        Assert.False(b);
-        b = p.Equals((object)(new UIntPtr(42)));
-        Assert.True(b);
-
-        int h = p.GetHashCode();
-        int h2 = p.GetHashCode();
-        Assert.Equal(h, h2);
-
-        p = new UIntPtr(42);
-        i = (uint)p;
-        Assert.Equal(i, 42u);
-        l = (ulong)p;
-        Assert.Equal(l, 42u);
-        UIntPtr p2;
-        p2 = (UIntPtr)i;
-        Assert.Equal(p, p2);
-        p2 = (UIntPtr)l;
-        Assert.Equal(p, p2);
-        p2 = (UIntPtr)(p.ToPointer());
-        Assert.Equal(p, p2);
-        p2 = new UIntPtr(40) + 2;
-        Assert.Equal(p, p2);
-        p2 = new UIntPtr(44) - 2;
-        Assert.Equal(p, p2);
-
-        p = new UIntPtr(0x7fffffffffffffff);
-        Assert.Throws<OverflowException>(() => (uint)p);
+        VerifyPointer(UIntPtr.Zero, 0);
     }
 
-    private static void TestPointer(UIntPtr p, ulong expected)
+    [Fact]
+    public static void TestCtor_UInt()
     {
-        ulong l = p.ToUInt64();
-        Assert.Equal(expected, l);
+        if (s_is32Bits)
+            return;
+
+        uint i = 42;
+        VerifyPointer(new UIntPtr(i), i);
+        VerifyPointer((UIntPtr)i, i);
+    }
+
+    [Fact]
+    public static void TestCtor_ULong()
+    {
+        if (s_is32Bits)
+            return;
+
+        ulong l = 0x0fffffffffffffff;
+        VerifyPointer(new UIntPtr(l), l);
+        VerifyPointer((UIntPtr)l, l);
+    }
+
+    [Fact]
+    public static unsafe void TestCtor_VoidPointer_ToPointer()
+    {
+        if (s_is32Bits)
+            return;
+
+        void* pv = new UIntPtr(42).ToPointer();
+
+        VerifyPointer(new UIntPtr(pv), 42);
+        VerifyPointer((UIntPtr)pv, 42);
+    }
+
+    [Fact]
+    public static unsafe void TestSize()
+    {
+        if (s_is32Bits)
+            return;
+
+        Assert.Equal(sizeof(void*), UIntPtr.Size);
+    }
+
+    public static IEnumerable<object[]> Add_TestData()
+    {
+        yield return new object[] { new UIntPtr(42), 6, (ulong)48 };
+        yield return new object[] { new UIntPtr(40), 0, (ulong)40 };
+        yield return new object[] { new UIntPtr(38), -2, (ulong)36 };
+
+        yield return new object[] { new UIntPtr(0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
+    }
+
+    [Theory]
+    [MemberData(nameof(Add_TestData))]
+    public static void TestAdd(UIntPtr ptr, int offset, ulong expected)
+    {
+        if (s_is32Bits)
+            return;
+
+        UIntPtr p1 = UIntPtr.Add(ptr, offset);
+        VerifyPointer(p1, expected);
+
+        UIntPtr p2 = ptr + offset;
+        VerifyPointer(p2, expected);
+
+        UIntPtr p3 = ptr;
+        p3 += offset;
+        VerifyPointer(p3, expected);
+    }
+
+    public static IEnumerable<object[]> Subtract_TestData()
+    {
+        yield return new object[] { new UIntPtr(42), 6, (ulong)36 };
+        yield return new object[] { new UIntPtr(40), 0, (ulong)40 };
+        yield return new object[] { new UIntPtr(38), -2, (ulong)40 };
+    }
+
+    [Theory]
+    [MemberData(nameof(Subtract_TestData))]
+    public static void TestSubtract(UIntPtr ptr, int offset, ulong expected)
+    {
+        if (s_is32Bits)
+            return;
+
+        UIntPtr p1 = UIntPtr.Subtract(ptr, offset);
+        VerifyPointer(p1, expected);
+
+        UIntPtr p2 = ptr - offset;
+        VerifyPointer(p2, expected);
+
+        UIntPtr p3 = ptr;
+        p3 -= offset;
+        VerifyPointer(p3, expected);
+    }
+
+    public static IEnumerable<object[]> Equals_TestData()
+    {
+        yield return new object[] { new UIntPtr(42), new UIntPtr(42), true };
+        yield return new object[] { new UIntPtr(42), new UIntPtr(43), false };
+        yield return new object[] { new UIntPtr(42), 42, false };
+        yield return new object[] { new UIntPtr(42), null, false };
+    }
+
+    [Theory]
+    [MemberData(nameof(Equals_TestData))]
+    public static void TestEquals(UIntPtr ptr1, object obj, bool expected)
+    {
+        if (s_is32Bits)
+            return;
+
+        if (obj is UIntPtr)
+        {
+            UIntPtr ptr2 = (UIntPtr)obj;
+            Assert.Equal(expected, ptr1 == ptr2);
+            Assert.Equal(!expected, ptr1 != ptr2);
+            Assert.Equal(expected, ptr1.GetHashCode().Equals(ptr2.GetHashCode()));
+        }
+        Assert.Equal(expected, ptr1.Equals(obj));
+        Assert.Equal(ptr1.GetHashCode(), ptr1.GetHashCode());
+    }
+
+    [Fact]
+    public static unsafe void TestImplicitCast()
+    {
+        if (s_is32Bits)
+            return;
+
+        var ptr = new UIntPtr(42);
+
+        uint i = (uint)ptr;
+        Assert.Equal(42u, i);
+        Assert.Equal(ptr, (UIntPtr)i);
+
+        ulong l = (ulong)ptr;
+        Assert.Equal(42u, l);
+        Assert.Equal(ptr, (UIntPtr)l);
+
+        void* v = (void*)ptr;
+        Assert.Equal(ptr, (UIntPtr)v);
+
+        ptr = new UIntPtr(0x7fffffffffffffff);
+        Assert.Throws<OverflowException>(() => (uint)ptr);
+    }
+
+    private static void VerifyPointer(UIntPtr ptr, ulong expected)
+    {
+        Assert.Equal(expected, ptr.ToUInt64());
 
         uint expected32 = (uint)expected;
         if (expected32 != expected)
         {
-            Assert.Throws<OverflowException>(() => p.ToUInt32());
+            Assert.Throws<OverflowException>(() => ptr.ToUInt32());
             return;
         }
 
-        {
-            uint i = p.ToUInt32();
-            Assert.Equal(expected32, i);
-        }
+        Assert.Equal(expected32, ptr.ToUInt32());
 
-        string s = p.ToString();
-        string sExpected = expected.ToString();
-        Assert.Equal(s, sExpected);
+        Assert.Equal(expected.ToString(), ptr.ToString());
 
-        Assert.True(p == new UIntPtr(expected));
-        Assert.Equal(p, new UIntPtr(expected));
-        Assert.False(p == new UIntPtr(expected + 1));
-        Assert.NotEqual(p, new UIntPtr(expected + 1));
-        Assert.False(p != new UIntPtr(expected));
-        Assert.True(p != new UIntPtr(expected + 1));
+        Assert.Equal(ptr, new UIntPtr(expected));
+        Assert.True(ptr == new UIntPtr(expected));
+        Assert.False(ptr != new UIntPtr(expected));
+
+        Assert.NotEqual(ptr, new UIntPtr(expected + 1));
+        Assert.False(ptr == new UIntPtr(expected + 1));
+        Assert.True(ptr != new UIntPtr(expected + 1));
     }
 }
