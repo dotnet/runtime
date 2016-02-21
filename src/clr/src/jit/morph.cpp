@@ -5626,6 +5626,15 @@ bool        Compiler::fgMorphCallInline(GenTreePtr node)
     // If we failed to inline, we have a bit of work to do to cleanup
     if (inlineResult.isFailure())
     {
+
+#ifdef DEBUG
+
+        // Before we do any cleanup. create a failing InlineContext to
+        // capture details of the inlining attempt.
+        InlineContext::newFailure(this, fgMorphStmt, &inlineResult);
+
+#endif
+
         // It was an inline candidate, but we haven't expanded it.
         if (call->gtCall.gtReturnType != TYP_VOID)
         {
@@ -5693,7 +5702,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
 #ifdef DEBUG
-
         // Try and recover the reason left behind when the jit decided
         // this call was not a candidate.
         InlineObservation priorObservation = call->gtInlineObservation;
@@ -5704,7 +5712,24 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         }
 #endif
 
-        result->noteFatal(InlineObservation::CALLSITE_NOT_CANDIDATE);
+        // Would like to just call noteFatal here, since this
+        // observation blocked candidacy, but policy comes into play
+        // here too.  Also note there's no need to re-report these
+        // failures, since we reported them during the initial
+        // candidate scan.
+        InlineImpact impact = inlGetImpact(currentObservation);
+
+        if (impact == InlineImpact::FATAL)
+        {
+            result->noteFatal(currentObservation);
+        }
+        else
+        {
+            result->note(currentObservation);
+        }
+
+        result->setReported();
+
         return;
     }
     
