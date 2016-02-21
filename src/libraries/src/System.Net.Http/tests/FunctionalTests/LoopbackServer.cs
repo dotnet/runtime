@@ -78,15 +78,9 @@ namespace System.Net.Http.Functional.Tests
                         writer.Write("\r\n");
                         if (transferType == TransferType.Chunked)
                         {
-                            string chunkSizeInHex;
-                            if (transferError == TransferError.ChunkSizeTooLarge)
-                            {
-                                chunkSizeInHex = string.Format("{0:x}\r\n", content.Length + 42);
-                            }
-                            else
-                            {
-                                chunkSizeInHex = string.Format("{0:x}\r\n", content.Length);
-                            }
+                            string chunkSizeInHex = string.Format(
+                                "{0:x}\r\n",
+                                content.Length + (transferError == TransferError.ChunkSizeTooLarge ? 42 : 0));
                             writer.Write(chunkSizeInHex);
                             writer.Write($"{content}\r\n");
                             if (transferError != TransferError.MissingChunkTerminator)
