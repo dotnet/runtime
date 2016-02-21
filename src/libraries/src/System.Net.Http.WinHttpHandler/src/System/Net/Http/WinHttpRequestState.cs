@@ -55,6 +55,24 @@ namespace System.Net.Http
             }
         }
 
+        public void ClearSendRequestState()
+        {
+            // Since WinHttpRequestState has a self-referenced strong GCHandle, we
+            // need to clear out object references to break cycles and prevent leaks.
+            Tcs = null;
+            TcsSendRequest = null;
+            TcsWriteToRequestStream = null;
+            TcsInternalWriteDataToRequestStream = null;
+            TcsReceiveResponseHeaders = null;
+            RequestMessage = null;
+            Handler = null;
+            ServerCertificateValidationCallback = null;
+            TransportContext = null;
+            Proxy = null;
+            ServerCredentials = null;
+            DefaultProxyCredentials = null;
+        }
+
         public TaskCompletionSource<HttpResponseMessage> Tcs { get; set; }
 
         public CancellationToken CancellationToken { get; set; }
@@ -97,6 +115,8 @@ namespace System.Net.Http
         public TaskCompletionSource<bool> TcsWriteToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsInternalWriteDataToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
+        
+        // WinHttpResponseStream state.
         public TaskCompletionSource<int> TcsQueryDataAvailable { get; set; }
         public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
 

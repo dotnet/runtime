@@ -754,6 +754,7 @@ nameof(value),
             if (state.CancellationToken.IsCancellationRequested)
             {
                 state.Tcs.TrySetCanceled(state.CancellationToken);
+                state.ClearSendRequestState();
                 return;
             }
 
@@ -894,6 +895,8 @@ nameof(value),
             {
                 HandleAsyncException(state, savedException);
             }
+            
+            state.ClearSendRequestState();
         }
 
         private void SetSessionHandleOptions()
