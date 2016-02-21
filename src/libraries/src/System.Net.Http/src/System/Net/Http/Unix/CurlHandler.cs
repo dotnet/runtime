@@ -544,7 +544,8 @@ nameof(value),
 
         private static void ThrowIfCURLMError(CURLMcode error)
         {
-            if (error != CURLMcode.CURLM_OK)
+            if (error != CURLMcode.CURLM_OK && // success
+                error != CURLMcode.CURLM_CALL_MULTI_PERFORM) // success + a hint to try curl_multi_perform again
             {
                 string msg = CurlException.GetCurlErrorString((int)error, true);
                 EventSourceTrace(msg);
@@ -626,7 +627,7 @@ nameof(value),
                 message);
         }
 
-        private static HttpRequestException CreateHttpRequestException(Exception inner = null)
+        private static HttpRequestException CreateHttpRequestException(Exception inner)
         {
             return new HttpRequestException(SR.net_http_client_execution_error, inner);
         }
