@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,31 +11,23 @@ namespace System.Globalization.Tests
 {
     public class StringInfoLengthInTextElements
     {
-        // PosTest1: The mothod should return the number of base character in the current stringInfo object
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> LengthInTextElements_TestData()
         {
-            VerificationHelper("\u4f00\u302a\ud800\udc00\u4f01", 3);
-            VerificationHelper("abcdefgh", 8);
-            VerificationHelper("zj\uDBFF\uDFFFlk", 5);
-            VerificationHelper("!@#$%^&", 7);
-            VerificationHelper("!\u20D1bo\uFE22\u20D1\u20EB|", 4);
-            VerificationHelper("1\uDBFF\uDFFF@\uFE22\u20D1\u20EB9", 4);
+            yield return new object[] { "\u4f00\u302a\ud800\udc00\u4f01", 3 };
+            yield return new object[] { "abcdefgh", 8 };
+            yield return new object[] { "zj\uDBFF\uDFFFlk", 5 };
+            yield return new object[] { "!@#$%^&", 7 };
+            yield return new object[] { "!\u20D1bo\uFE22\u20D1\u20EB|", 4 };
+            yield return new object[] { "1\uDBFF\uDFFF@\uFE22\u20D1\u20EB9", 4 };
+            yield return new object[] { "   ", 3 };
+            yield return new object[] { "", 0 };
         }
 
-        // PosTest2: The string in stringinfo is white space or empty string
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData("LengthInTextElements_TestData")]
+        public void LengthInTextElements(string value, int expected)
         {
-            VerificationHelper("   ", 3);
-            VerificationHelper(string.Empty, 0);
-        }
-
-        private void VerificationHelper(string str, int expected)
-        {
-            StringInfo stringInfo = new StringInfo(str);
-            int result = stringInfo.LengthInTextElements;
-            Assert.Equal(expected, result);
+            Assert.Equal(expected, new StringInfo(value).LengthInTextElements);
         }
     }
 }

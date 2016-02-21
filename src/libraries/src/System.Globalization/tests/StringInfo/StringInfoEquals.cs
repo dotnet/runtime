@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,73 +11,32 @@ namespace System.Globalization.Tests
 {
     public class StringInfoEquals
     {
-        private const int c_MINI_STRING_LENGTH = 8;
-        private const int c_MAX_STRING_LENGTH = 256;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private const int MinStringLength = 8;
+        private const int MaxStringLength = 256;
+        private static readonly RandomDataGenerator s_RandomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Compare two equal StringInfo
-        [Fact]
-        public void TestEqualStringInfoWithArg()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            StringInfo stringInfo1 = new StringInfo(str);
-            StringInfo stringInfo2 = new StringInfo(str);
-            Assert.True(stringInfo1.Equals(stringInfo2));
+            string randomString = s_RandomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
+            StringInfo randomStringInfo = new StringInfo(randomString);
+            yield return new object[] { randomStringInfo, new StringInfo(randomString), true };
+            yield return new object[] { randomStringInfo, randomStringInfo, true };
+            yield return new object[] { new StringInfo(), new StringInfo(), true };
+            yield return new object[] { new StringInfo("stringinfo1"), new StringInfo("stringinfo2"), false };
+            yield return new object[] { new StringInfo("stringinfo1"), "stringinfo1", false };
+            yield return new object[] { new StringInfo("stringinfo1"), 123, false };
+            yield return new object[] { new StringInfo("stringinfo1"), null, false };
         }
-
-        // PosTest2: The two stringinfos reference to one object
-        [Fact]
-        public void TestSameReference()
+        
+        [Theory]
+        [MemberData("Equals_TestData")]
+        public void Equals(StringInfo stringInfo, object value, bool expected)
         {
-            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            StringInfo stringInfo1 = new StringInfo(str);
-            StringInfo stringInfo2 = stringInfo1;
-            Assert.True(stringInfo1.Equals(stringInfo2));
-        }
-
-        // PosTest3: Using default constructor to create two equal instance
-        [Fact]
-        public void TestEqualStringInfoWithNoArg()
-        {
-            StringInfo stringInfo1 = new StringInfo();
-            StringInfo stringInfo2 = new StringInfo();
-            Assert.True(stringInfo1.Equals(stringInfo2));
-        }
-
-        // PosTest4: Compare two instance with different string value
-        [Fact]
-        public void TestDiffStringInfo()
-        {
-            StringInfo stringInfo1 = new StringInfo("stringinfo1");
-            StringInfo stringInfo2 = new StringInfo("stringinfo2");
-            Assert.False(stringInfo1.Equals(stringInfo2));
-        }
-
-        // PosTest5: Compare with a different kind of type
-        [Fact]
-        public void TestDiffType()
-        {
-            StringInfo stringInfo1 = new StringInfo("stringinfo1");
-            string str = "stringinfo1";
-            Assert.False(stringInfo1.Equals(str));
-        }
-
-        // PosTest6: The argument is a null reference
-        [Fact]
-        public void TestNullReference()
-        {
-            StringInfo stringInfo1 = new StringInfo("stringinfo1");
-            object ob = null;
-            Assert.False(stringInfo1.Equals(ob));
-        }
-
-        // PosTest7: The argument is value type
-        [Fact]
-        public void TestValueType()
-        {
-            StringInfo stringInfo1 = new StringInfo("123");
-            int i = 123;
-            Assert.False(stringInfo1.Equals(i));
+            Assert.Equal(expected, stringInfo.Equals(value));
+            if (value is StringInfo)
+            {
+                Assert.Equal(expected, stringInfo.GetHashCode().Equals(value.GetHashCode()));
+            }
         }
     }
 }
