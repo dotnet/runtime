@@ -424,15 +424,7 @@ if defined __MscorlibOnly (
     exit /b 0
 )
 
-REM Consider doing crossgen build of mscorlib.
-
-if /i "%__BuildArch%" == "x86" (
-    if not defined __DoCrossgen (
-        echo %__MsgPrefix%Skipping Crossgen
-        goto SkipCrossGenBuild
-    )
-)
-
+REM Consider doing crossgen build of mscorlib unless we are skipping it intentionally
 if /i "%__BuildArch%" == "arm64" (
     if not defined __DoCrossgen (
         echo %__MsgPrefix%Skipping Crossgen
