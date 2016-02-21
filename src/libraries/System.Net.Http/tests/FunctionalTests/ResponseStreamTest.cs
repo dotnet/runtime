@@ -112,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(LoopbackServer.TransferType.None, LoopbackServer.TransferError.None)]
         [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.None)]
         [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.None)]
-        public async Task ReadAsStreamAsync_ValidServerResponse_ThrowsIOException(
+        public async Task ReadAsStreamAsync_ValidServerResponse_Success(
             LoopbackServer.TransferType transferType,
             LoopbackServer.TransferError transferError)
         {
