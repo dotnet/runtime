@@ -17,8 +17,8 @@
     <NugetPackageBuildTargets>BuildNuGetPackages</NugetPackageBuildTargets>
   </PropertyGroup>
 
-  <!-- Generate RyuJIT nuget package -->
-  <Target Name="BuildNuGetPackages" AfterTargets="MovePDB" Condition="'$(BuildNugetPackage)' != 'false'">
+  <!-- Generate RyuJIT nuget package - currently only supported for x64 -->
+  <Target Name="BuildNuGetPackages" AfterTargets="MovePDB" Condition="'$(BuildNugetPackage)' != 'false' and '$(BuildArch)' == 'x64'">
     <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
     <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(PackagesBinDir)" />
     <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
